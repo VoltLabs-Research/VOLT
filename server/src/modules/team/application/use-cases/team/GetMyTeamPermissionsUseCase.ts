@@ -4,13 +4,11 @@ import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import { GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO } from '@modules/team/application/dtos/team/GetMyTeamPermissionsDTO';
 import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
 import { getTeamMemberRolePermissions, isPopulatedTeamMemberRole } from '@modules/team/domain/entities/team-member/TeamMember';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO, ApplicationError> {
+export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
@@ -34,7 +32,7 @@ export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPe
         return getTeamMemberRolePermissions(memberRole);
     }
 
-    async execute(input: GetMyTeamPermissionsInputDTO): Promise<Result<GetMyTeamPermissionsOutputDTO, ApplicationError>> {
+    async execute(input: GetMyTeamPermissionsInputDTO): Promise<GetMyTeamPermissionsOutputDTO> {
         const { teamId, userId } = input;
 
         const member = await this.teamMemberRepository.findOne(
@@ -43,12 +41,12 @@ export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPe
         );
 
         if (!member) {
-            return Result.ok({ permissions: [] });
+            return { permissions: [] };
         }
 
         const rolePermissions = this.getPermissions(member.props.role);
         const permissions = Array.from(new Set(rolePermissions));
 
-        return Result.ok({ permissions });
+        return { permissions };
     }
 }

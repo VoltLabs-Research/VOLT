@@ -34,9 +34,8 @@ export class ValidateWorkflowAITool extends AITool {
             workflow: params.workflow as unknown as WorkflowProps,
             pluginId: params.pluginId
         });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         const summary = value.validated
             ? 'Workflow is valid and publishable.'
             : `Workflow is invalid: ${(value.errors ?? []).join('; ') || 'see errors.'}`;

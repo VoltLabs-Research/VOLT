@@ -14,7 +14,6 @@ import type { IWorkflowValidatorService } from '@modules/plugin/domain/port/plug
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 
@@ -26,13 +25,13 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
+    async execute(input: CreatePluginInputDTO): Promise<CreatePluginOutputDTO> {
         const validation = await this.workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Draft);
         if (!validation.isValid) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                 `Plugin workflow is invalid: ${(validation.errors ?? []).join(', ')}`
-            ));
+            );
         }
 
         const workflow = new Workflow('', input.workflow);
@@ -53,8 +52,8 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
             teamId: input.teamId
         }));
 
-        return Result.ok({
+        return {
             plugin: mapPluginToPersistedDTO(plugin)
-        });
+        };
     }
 }

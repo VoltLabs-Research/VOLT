@@ -31,10 +31,9 @@ export class ManageLatexAssetsAITool extends AITool {
                 teamId: scope.teamId,
                 documentId: params.documentId
             });
-            if (!result.success) throw result.error;
             return {
-                summary: `Found ${result.value.length} LaTeX assets.`,
-                data: result.value
+                summary: `Found ${result.length} LaTeX assets.`,
+                data: result
             };
         }
 
@@ -45,13 +44,11 @@ export class ManageLatexAssetsAITool extends AITool {
             teamId: scope.teamId,
             documentId: params.documentId
         });
-        if (!result.success) throw result.error;
-
-        if (result.value.prepare) {
-            await result.value.prepare();
+        if (result.prepare) {
+            await result.prepare();
         }
 
-        const headers = result.value.headers;
+        const headers = result.headers;
         const disposition = headers['Content-Disposition'] ?? '';
         const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? `document.${format}`;
 

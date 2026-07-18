@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { TriggerRasterizationUseCase } from '@modules/raster/application/use-cases/TriggerRasterizationUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -52,11 +53,12 @@ export class RenderSceneScreenshotAITool extends AITool {
             };
         }
 
-        const triggered = await this.triggerRasterization.execute({ trajectoryId, teamId: scope.teamId });
-
-        if (!triggered.success) {
-            if (triggered.error.code !== ErrorCodes.RASTER_ALREADY_QUEUED) {
-                if (triggered.error.code === ErrorCodes.RASTER_NOT_FOUND) {
+        try {
+            await this.triggerRasterization.execute({ trajectoryId, teamId: scope.teamId });
+        } catch (error) {
+            const code = error instanceof ApplicationError ? error.code : undefined;
+            if (code !== ErrorCodes.RASTER_ALREADY_QUEUED) {
+                if (code === ErrorCodes.RASTER_NOT_FOUND) {
                     return {
                         summary: 'No rasterizable models were found for this trajectory; nothing to render.',
                         error: 'no_rasterizable_models'

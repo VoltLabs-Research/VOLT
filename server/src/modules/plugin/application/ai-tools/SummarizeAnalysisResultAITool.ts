@@ -28,9 +28,8 @@ export class SummarizeAnalysisResultAITool extends AITool {
             exposureId: params.exposureId,
             maxRows: params.maxRows
         });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         if (!value.hasResults) {
             return { summary: value.note ?? 'No results available.', data: value };
         }

@@ -3,9 +3,7 @@ import { inject } from 'tsyringe';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { ListTeamSceneArtifactsInputDTO, ListTeamSceneArtifactsOutputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTeamSceneArtifactsDTO';
 import type SceneArtifact from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 const toOutput = (artifact: SceneArtifact) => ({
@@ -14,7 +12,7 @@ const toOutput = (artifact: SceneArtifact) => ({
 });
 
 @injectable()
-export class ListTeamSceneArtifactsUseCase implements IUseCase<ListTeamSceneArtifactsInputDTO, ListTeamSceneArtifactsOutputDTO, ApplicationError> {
+export class ListTeamSceneArtifactsUseCase implements IUseCase<ListTeamSceneArtifactsInputDTO, ListTeamSceneArtifactsOutputDTO> {
     constructor(
         
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
@@ -34,9 +32,9 @@ export class ListTeamSceneArtifactsUseCase implements IUseCase<ListTeamSceneArti
             }
         );
 
-        return Result.ok({
+        return {
             ...result,
             data: result.data.map(toOutput)
-        });
+        };
     }
 };

@@ -24,13 +24,9 @@ export default class DeleteTrajectoryFolderUseCase extends DeleteCatalogFolderUs
             trajectoryFolderRepository,
             trajectoryRepository,
             async (trajectory) => {
-                const result = await deleteTrajectoryByIdUseCase.execute({
+                await deleteTrajectoryByIdUseCase.execute({
                     trajectoryId: trajectory._id
                 });
-
-                if (!result.success) {
-                    throw result.error;
-                }
             },
             { folderLabel: 'Trajectory folder' }
         );

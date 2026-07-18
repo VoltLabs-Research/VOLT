@@ -9,7 +9,6 @@ import {
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -17,7 +16,7 @@ const MB_PER_GB = 1024;
 
 @Singleton()
 export default class GetClusterResourceLimitsUseCase
-    implements IUseCase<GetClusterResourceLimitsInputDTO, GetClusterResourceLimitsOutputDTO, ApplicationError> {
+    implements IUseCase<GetClusterResourceLimitsInputDTO, GetClusterResourceLimitsOutputDTO> {
 
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
@@ -26,31 +25,31 @@ export default class GetClusterResourceLimitsUseCase
 
     async execute(
         input: GetClusterResourceLimitsInputDTO
-    ): Promise<Result<GetClusterResourceLimitsOutputDTO, ApplicationError>> {
+    ): Promise<GetClusterResourceLimitsOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const metrics = await this.systemMetricsRepository.getLatestByClusterId(input.teamClusterId);
         if (!metrics) {
-            return Result.ok({
+            return {
                 resourceLimits: {
                     maxCpus: null,
                     maxMemoryMB: null,
                     status: null,
                     lastUpdatedAt: null
                 }
-            });
+            };
         }
 
-        return Result.ok({
+        return {
             resourceLimits: {
                 maxCpus: metrics.cpu.cores,
                 maxMemoryMB: Math.floor(metrics.memory.total * MB_PER_GB),
                 status: metrics.status,
                 lastUpdatedAt: metrics.timestamp.toISOString()
             }
-        });
+        };
     }
 };

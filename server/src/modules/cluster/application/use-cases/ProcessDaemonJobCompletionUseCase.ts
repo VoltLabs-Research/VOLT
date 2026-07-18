@@ -5,7 +5,6 @@ import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -123,11 +122,7 @@ interface ProcessDaemonJobCompletionOutputDTO {
 }
 
 @Singleton()
-export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
-    ProcessDaemonJobCompletionInputDTO,
-    ProcessDaemonJobCompletionOutputDTO,
-    ApplicationError
-> {
+export default class ProcessDaemonJobCompletionUseCase implements IUseCase<ProcessDaemonJobCompletionInputDTO, ProcessDaemonJobCompletionOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
         @inject(CLUSTER_TOKENS.DaemonAnalysisCompletionService) private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
@@ -135,7 +130,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
     async execute(
         input: ProcessDaemonJobCompletionInputDTO
-    ): Promise<Result<ProcessDaemonJobCompletionOutputDTO, ApplicationError>> {
+    ): Promise<ProcessDaemonJobCompletionOutputDTO> {
         try {
             await this.teamClusterLifecycleService.authenticateDaemonConnection(
                 input.teamClusterId,
@@ -167,7 +162,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     durationMs: input.durationMs
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
             if (this.isAnalysisJobStatusInput(input)) {
@@ -183,7 +178,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     error: input.error
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
             if (this.isAnalysisJobCompletionInput(input)) {
@@ -199,7 +194,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     error: input.error
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
             if (this.isGlbJobStatusInput(input)) {
@@ -213,7 +208,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     error: input.error
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
             if (this.isArtifactUploadJobStatusInput(input)) {
@@ -228,7 +223,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     error: input.error
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
             if (this.isRasterJobStatusInput(input)) {
@@ -242,23 +237,19 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     error: input.error
                 });
 
-                return Result.ok({ acknowledged: true });
+                return { acknowledged: true };
             }
 
-            return Result.fail(
-                ApplicationError.badRequest(
-                    'TEAM_CLUSTER_DAEMON_INVALID_JOB_COMPLETION_PAYLOAD',
-                    'Invalid daemon job completion payload'
-                )
+            throw ApplicationError.badRequest(
+                'TEAM_CLUSTER_DAEMON_INVALID_JOB_COMPLETION_PAYLOAD',
+                'Invalid daemon job completion payload'
             );
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(
-                ApplicationError.internalServerError('Failed to process daemon job completion')
-            );
+            throw ApplicationError.internalServerError('Failed to process daemon job completion');
         }
     }
 

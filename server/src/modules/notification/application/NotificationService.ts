@@ -30,12 +30,7 @@ export default class NotificationService {
      * channel used by every other NotificationService method.
      */
     async getMyNotifications(input: GetMyNotificationsInputDTO): Promise<GetMyNotificationsOutputDTO> {
-        const result = await this.getMyNotificationsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getMyNotificationsUseCase.execute(input);
     }
 
     async markAllAsRead(input: MarkAllMyNotificationsAsReadInputDTO): Promise<void> {

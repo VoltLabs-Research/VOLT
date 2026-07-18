@@ -12,7 +12,6 @@ import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/c
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
@@ -65,12 +64,12 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
+    async execute(input: GetPluginListingDocumentsInputDTO): Promise<GetPluginListingDocumentsOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
 
         const resolved = await this.resolveTeamCluster(input);
         if (!resolved) {
-            return Result.ok(EMPTY_RESULT);
+            return EMPTY_RESULT;
         }
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
@@ -96,14 +95,14 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
         });
         const data = rows.map(mapDaemonRow);
 
-        return Result.ok({
+        return {
             data,
             total: daemonResult.total || 0,
             page: daemonResult.page || page,
             totalPages: daemonResult.totalPages || 1,
             limit: daemonResult.limit || limit,
             _meta: buildMeta(input.pluginId, rows, daemonResult, input)
-        });
+        };
     }
 
     private async resolveTeamCluster(

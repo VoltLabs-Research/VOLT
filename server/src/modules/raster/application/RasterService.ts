@@ -38,21 +38,11 @@ export default class RasterService {
     ) {}
 
     async triggerRasterization(input: TriggerRasterizationInputDTO): Promise<TriggerRasterizationOutputDTO> {
-        const result = await this.triggerRasterizationUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.triggerRasterizationUseCase.execute(input);
     }
 
     async getRasterMetadata(input: GetRasterMetadataInputDTO): Promise<GetRasterMetadataOutputDTO> {
-        const result = await this.getRasterMetadataUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getRasterMetadataUseCase.execute(input);
     }
 
     async getRasterFramePNG(input: GetRasterFramePNGInputDTO): Promise<DownloadStreamOutputDTO> {

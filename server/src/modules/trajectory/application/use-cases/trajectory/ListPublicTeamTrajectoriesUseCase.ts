@@ -12,7 +12,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
@@ -23,8 +22,7 @@ const escapeRegex = (value: string): string => (
 @injectable()
 export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
     ListPublicTeamTrajectoriesInputDTO,
-    ListPublicTeamTrajectoriesOutputDTO,
-    ApplicationError
+    ListPublicTeamTrajectoriesOutputDTO
 > {
     constructor(
         @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
@@ -32,15 +30,15 @@ export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameRepository
     ) {}
 
-    async execute(input: ListPublicTeamTrajectoriesInputDTO): Promise<Result<ListPublicTeamTrajectoriesOutputDTO, ApplicationError>> {
+    async execute(input: ListPublicTeamTrajectoriesInputDTO): Promise<ListPublicTeamTrajectoriesOutputDTO> {
         const { teamId, page = 1, limit = 20 } = input;
         const team = await this.teamRepository.findById(teamId);
 
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
-            ));
+            );
         }
 
         const filter: Record<string, unknown> = {
@@ -83,7 +81,7 @@ export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
             return toPersistedOutput(trajectory);
         });
 
-        return Result.ok({
+        return {
             ...results,
             data,
             _meta: {
@@ -92,6 +90,6 @@ export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
                     name: team.props.name
                 }
             }
-        });
+        };
     }
 }

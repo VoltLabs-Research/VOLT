@@ -9,7 +9,6 @@ import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDoc
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
 import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolder';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
@@ -17,7 +16,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class MoveLatexDocumentUseCase
     extends MoveCatalogItemUseCase<MoveLatexDocumentInputDTO, LatexFolder, LatexFolderProps, LatexDocumentProps>
-    implements IUseCase<MoveLatexDocumentInputDTO, MoveLatexDocumentOutputDTO, ApplicationError> {
+    implements IUseCase<MoveLatexDocumentInputDTO, MoveLatexDocumentOutputDTO> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexFolderRepository) latexFolderRepository: ILatexFolderRepository

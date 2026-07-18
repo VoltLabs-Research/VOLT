@@ -9,23 +9,22 @@ import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterD
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 @injectable()
-export default class GetTeamClusterByIdUseCase implements IUseCase<GetTeamClusterByIdInputDTO, GetTeamClusterByIdOutputDTO, ApplicationError> {
+export default class GetTeamClusterByIdUseCase implements IUseCase<GetTeamClusterByIdInputDTO, GetTeamClusterByIdOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository
     ){}
 
-    async execute(input: GetTeamClusterByIdInputDTO): Promise<Result<GetTeamClusterByIdOutputDTO, ApplicationError>> {
+    async execute(input: GetTeamClusterByIdInputDTO): Promise<GetTeamClusterByIdOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
-        return Result.ok({
+        return {
             teamCluster: toTeamClusterDTO(teamCluster)
-        });
+        };
     }
 }

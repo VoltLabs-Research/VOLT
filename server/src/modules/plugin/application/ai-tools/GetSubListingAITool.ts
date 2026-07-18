@@ -34,9 +34,8 @@ export class GetSubListingAITool extends AITool {
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         return {
             summary: `Sub-listing "${value.subListingName}" returned ${value.rows.length} of ${value.total} rows (page ${value.page}/${value.totalPages || 1}).`,
             data: value

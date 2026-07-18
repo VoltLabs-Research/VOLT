@@ -9,34 +9,33 @@ import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens/RasterTokens';
 import type { IGetRasterMetadataUseCase } from '@shared/contracts/ports/IGetRasterMetadataUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
 @AliasOf(RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase)
 export class GetRasterMetadataUseCase implements
-    IUseCase<GetRasterMetadataInputDTO, GetRasterMetadataOutputDTO, ApplicationError>,
+    IUseCase<GetRasterMetadataInputDTO, GetRasterMetadataOutputDTO>,
     IGetRasterMetadataUseCase {
     constructor(
         @inject(RASTER_TOKENS.RasterMetadataService) private readonly rasterMetadataReader: IRasterMetadataService
     ) {}
 
-    async execute(input: GetRasterMetadataInputDTO): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {
+    async execute(input: GetRasterMetadataInputDTO): Promise<GetRasterMetadataOutputDTO> {
         try {
             const metadata = await this.rasterMetadataReader.getRasterMetadata(input.trajectoryId, input.teamId);
 
-            return Result.ok({ metadata });
+            return { metadata };
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
                 'Failed to retrieve raster metadata',
                 500
-            ));
+            );
         }
     }
 }

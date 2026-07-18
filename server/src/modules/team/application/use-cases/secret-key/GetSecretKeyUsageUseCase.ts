@@ -6,7 +6,6 @@ import type { ISecretKeyUsageMetricsMapper } from '@modules/team/domain/port/sec
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 interface SecretKeyRolePopulate {
@@ -16,7 +15,7 @@ interface SecretKeyRolePopulate {
 
 @injectable()
 export default class GetSecretKeyUsageUseCase
-    implements IUseCase<GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, ApplicationError> {
+    implements IUseCase<GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO> {
 
     constructor(
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepo: ISecretKeyRepository,
@@ -25,7 +24,7 @@ export default class GetSecretKeyUsageUseCase
         private readonly metricsMapper: ISecretKeyUsageMetricsMapper
     ) {}
 
-    async execute(input: GetSecretKeyUsageInputDTO): Promise<Result<GetSecretKeyUsageOutputDTO, ApplicationError>> {
+    async execute(input: GetSecretKeyUsageInputDTO): Promise<GetSecretKeyUsageOutputDTO> {
         const { teamId, secretKeyId } = input;
         const days = input.days !== undefined ? Number(input.days) : 30;
 
@@ -37,14 +36,14 @@ export default class GetSecretKeyUsageUseCase
         const secretKey = await this.secretKeyRepo.findById(secretKeyId, { populate });
 
         if (!secretKey || String(secretKey.props.team) !== teamId) {
-            return Result.fail(ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found'));
+            throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
 
         const metrics = this.metricsMapper.toKeyMetrics(
             await this.usageLogRepo.getKeyUsageAnalytics(secretKeyId, days)
         );
 
-        return Result.ok({
+        return {
             key: {
                 _id: secretKey._id,
                 name: secretKey.props.name,
@@ -55,6 +54,6 @@ export default class GetSecretKeyUsageUseCase
                 lastUsedAt: secretKey.props.lastUsedAt || null
             },
             ...metrics
-        });
+        };
     }
 }

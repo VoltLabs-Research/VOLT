@@ -24,7 +24,6 @@ export class GetContainerPortAccessUrlAITool extends AITool {
             teamId: scope.teamId,
             userId: scope.userId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Generated a temporary access URL for port ${params.port}.`, data: result.value };
+        return { summary: `Generated a temporary access URL for port ${params.port}.`, data: result };
     }
 }

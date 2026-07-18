@@ -16,7 +16,6 @@ import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -65,11 +64,7 @@ interface PreparedSceneArtifactUpsertEntry {
 }
 
 @Singleton()
-export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase<
-    ProcessDaemonSceneArtifactUpsertInputDTO,
-    ProcessDaemonSceneArtifactUpsertOutputDTO,
-    ApplicationError
-> {
+export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase<ProcessDaemonSceneArtifactUpsertInputDTO, ProcessDaemonSceneArtifactUpsertOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
@@ -81,43 +76,39 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 
     async execute(
         input: ProcessDaemonSceneArtifactUpsertInputDTO
-    ): Promise<Result<ProcessDaemonSceneArtifactUpsertOutputDTO, ApplicationError>> {
+    ): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
         try {
             const entries = await this.prepareUpsertEntries([input]);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
             await this.markAnalysisArtifactsReady(entries);
             await this.publishBatchUpserted(entries);
 
-            return Result.ok({ acknowledged: true });
+            return { acknowledged: true };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(
-                ApplicationError.internalServerError('Failed to process daemon scene artifact upsert')
-            );
+            throw ApplicationError.internalServerError('Failed to process daemon scene artifact upsert');
         }
     }
 
     async executeBatch(
         inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]
-    ): Promise<Result<ProcessDaemonSceneArtifactUpsertOutputDTO, ApplicationError>> {
+    ): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
         try {
             const entries = await this.prepareUpsertEntries(inputs);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
             await this.markAnalysisArtifactsReady(entries);
             await this.publishBatchUpserted(entries);
 
-            return Result.ok({ acknowledged: true });
+            return { acknowledged: true };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(
-                ApplicationError.internalServerError('Failed to process daemon scene artifact upsert batch')
-            );
+            throw ApplicationError.internalServerError('Failed to process daemon scene artifact upsert batch');
         }
     }
 

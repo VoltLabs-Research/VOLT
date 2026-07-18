@@ -5,7 +5,6 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import type { ITrajectoryRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import {
     COMPUTE_CLUSTER_POPULATE,
@@ -13,7 +12,6 @@ import {
     TRAJECTORY_POPULATE,
     USER_POPULATE
 } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 interface TeamAnalysesFilter extends Partial<AnalysisProps> {
@@ -21,13 +19,13 @@ interface TeamAnalysesFilter extends Partial<AnalysisProps> {
 }
 
 @injectable()
-export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
+export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
-    async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
+    async execute(input: GetAnalysesByTeamIdInputDTO): Promise<GetAnalysesByTeamIdOutputDTO> {
         const { teamId } = input;
         const normalizedSearch = input.search?.trim();
         const hasSearch = Boolean(normalizedSearch);
@@ -86,9 +84,9 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             };
         });
 
-        return Result.ok({
+        return {
             ...results,
             data: mappedData
-        });
+        };
     }
 }

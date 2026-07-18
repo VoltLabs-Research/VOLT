@@ -8,7 +8,6 @@ import { Container } from '@modules/container/domain/entities/Container';
 import type ContainerFolder from '@modules/container/domain/entities/ContainerFolder';
 import type { ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { inject, injectable } from 'tsyringe';
 
@@ -22,7 +21,7 @@ export class DeleteContainerFolderUseCase
         DeleteContainerFolderInputDTO,
         { userId: string }
     >
-    implements IUseCase<DeleteContainerFolderInputDTO, DeleteContainerFolderOutputDTO, ApplicationError> {
+    implements IUseCase<DeleteContainerFolderInputDTO, DeleteContainerFolderOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly containerFolderRepository: IContainerFolderRepository,
         @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
@@ -32,15 +31,11 @@ export class DeleteContainerFolderUseCase
             containerFolderRepository,
             containerRepository,
             async (container, teamId, context) => {
-                const result = await deleteContainerUseCase.execute({
+                await deleteContainerUseCase.execute({
                     teamId,
                     containerId: container._id,
                     userId: context.userId
                 });
-
-                if (!result.success) {
-                    throw result.error;
-                }
             },
             {
                 folderLabel: 'Container folder',

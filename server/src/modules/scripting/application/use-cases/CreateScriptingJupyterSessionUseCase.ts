@@ -19,7 +19,6 @@ import type {
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import pRetry from 'p-retry';
 
@@ -69,7 +68,7 @@ const selectExistingTrajectoryNotebook = (
 };
 
 @Singleton()
-export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
+export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator) private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
@@ -78,22 +77,22 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
-    async execute(input: CreateScriptingJupyterSessionInputDTO): Promise<Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError>> {
+    async execute(input: CreateScriptingJupyterSessionInputDTO): Promise<CreateScriptingJupyterSessionOutputDTO> {
         if (!input.userId) {
-            return Result.fail(ApplicationError.unauthorized(
+            throw ApplicationError.unauthorized(
                 ErrorCodes.AUTHENTICATION_REQUIRED,
                 ErrorCodes.AUTHENTICATION_REQUIRED
-            ));
+            );
         }
 
         const userId = input.userId;
 
         const lockKey = this.buildLockKey(input);
         if (!lockKey) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
                 'Trajectory id or notebook id is required'
-            ));
+            );
         }
 
         let lease: Awaited<ReturnType<IScriptingSessionLock['acquire']>> = null;
@@ -101,10 +100,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             lease = await this.scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if (!lease) {
                 const pendingNotebookId = await this.resolvePendingNotebookId(input);
-                return Result.ok({
+                return {
                     ...PENDING_JUPYTER_SESSION,
                     notebookId: pendingNotebookId
-                });
+                };
             }
 
             const notebook = await this.resolveNotebookForSession(input, userId);
@@ -123,12 +122,12 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             };
             const session = await this.scriptingSessionOrchestrator.startSession(sessionInput);
 
-            return Result.ok({
+            return {
                 notebookId: notebook._id,
                 jupyter: session.jupyter
-            });
+            };
         } catch (error) {
-            return this.mapError(error);
+            throw this.mapError(error);
         } finally {
             await lease?.release();
         }
@@ -293,9 +292,9 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         }
     }
 
-    private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
+    private mapError(error: unknown): ApplicationError {
         if (error instanceof ApplicationError) {
-            return Result.fail(error);
+            return error;
         }
 
         if (error instanceof Error) {
@@ -308,17 +307,17 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                 : ErrorCodes.SCRIPTING_SESSION_FAILED;
             const statusCode = isDaemonError ? 502 : 500;
 
-            return Result.fail(new ApplicationError(
+            return new ApplicationError(
                 errorCode,
                 error.message,
                 statusCode
-            ));
+            );
         }
 
-        return Result.fail(new ApplicationError(
+        return new ApplicationError(
             ErrorCodes.SCRIPTING_SESSION_FAILED,
             'Unexpected scripting error',
             500
-        ));
+        );
     }
 }

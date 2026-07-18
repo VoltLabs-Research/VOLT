@@ -7,7 +7,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { injectable } from 'tsyringe';
 
@@ -16,8 +15,7 @@ import type { CancelTrajectoryUploadSessionInputDTO } from '@modules/trajectory/
 @injectable()
 export default class CancelTrajectoryUploadSessionUseCase implements IUseCase<
     CancelTrajectoryUploadSessionInputDTO,
-    void,
-    ApplicationError
+    void
 > {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
@@ -25,27 +23,27 @@ export default class CancelTrajectoryUploadSessionUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
-    async execute(input: CancelTrajectoryUploadSessionInputDTO): Promise<Result<void, ApplicationError>> {
+    async execute(input: CancelTrajectoryUploadSessionInputDTO): Promise<void> {
         const session = await this.uploadSessionRepository.findById(input.uploadSessionId);
         if (!session) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'TrajectoryUploadSession::NotFound',
                 'Upload session not found'
-            ));
+            );
         }
 
         if (session.team.toString() !== input.teamId || session.user.toString() !== input.userId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 'TrajectoryUploadSession::Forbidden',
                 'Upload session does not belong to this user and team'
-            ));
+            );
         }
 
         if (session.status === 'committed') {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'TrajectoryUploadSession::AlreadyCommitted',
                 'Committed upload sessions cannot be cancelled'
-            ));
+            );
         }
 
         const ownerClusterId = session.ownerClusterId.toString();
@@ -62,7 +60,5 @@ export default class CancelTrajectoryUploadSessionUseCase implements IUseCase<
 
         await this.uploadSessionRepository.markStatus(session.id, 'cancelled');
         await this.trajectoryRepo.updateById(session.resourceId.toString(), { status: TrajectoryStatus.Failed }).catch(() => {});
-
-        return Result.ok(undefined);
     }
 }

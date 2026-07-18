@@ -13,7 +13,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 /**
  * Distills a plugin's `arguments` node into a flat, LLM-friendly schema. The
@@ -23,27 +22,27 @@ import { Result } from '@shared/domain/port/Result';
  * rest into a human-readable `note`.
  */
 @Singleton()
-export class DescribePluginArgumentsUseCase implements IUseCase<DescribePluginArgumentsInputDTO, DescribePluginArgumentsOutputDTO, ApplicationError> {
+export class DescribePluginArgumentsUseCase implements IUseCase<DescribePluginArgumentsInputDTO, DescribePluginArgumentsOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository
     ) {}
 
-    async execute(input: DescribePluginArgumentsInputDTO): Promise<Result<DescribePluginArgumentsOutputDTO, ApplicationError>> {
+    async execute(input: DescribePluginArgumentsInputDTO): Promise<DescribePluginArgumentsOutputDTO> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const definitions = plugin.props.arguments ?? [];
 
-        return Result.ok({
+        return {
             pluginId: plugin._id,
             name: plugin.props.modifier?.name ?? plugin._id,
             arguments: definitions.map((definition) => this.describeArgument(definition))
-        });
+        };
     }
 
     private describeArgument(definition: ArgumentDefinition): DescribedPluginArgument {

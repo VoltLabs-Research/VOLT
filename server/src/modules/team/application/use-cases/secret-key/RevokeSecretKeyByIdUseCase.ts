@@ -4,23 +4,22 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO } from '@modules/team/application/dtos/secret-key/RevokeSecretKeyByIdDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO, ApplicationError> {
+export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository
     ) {}
 
-    async execute(input: RevokeSecretKeyByIdInputDTO): Promise<Result<RevokeSecretKeyByIdOutputDTO, ApplicationError>> {
+    async execute(input: RevokeSecretKeyByIdInputDTO): Promise<RevokeSecretKeyByIdOutputDTO> {
         const key = await this.secretKeyRepository.findById(input.secretKeyId);
 
         if (!key || key.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SECRET_KEY_NOT_FOUND,
                 'Secret key not found'
-            ));
+            );
         }
 
         const updated = await this.secretKeyRepository.updateById(key._id, {
@@ -29,17 +28,17 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
         });
 
         if (!updated) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SECRET_KEY_NOT_FOUND,
                 'Secret key not found'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             _id: updated._id,
             teamId: input.teamId,
             isActive: updated.props.isActive,
             updatedAt: updated.props.updatedAt
-        });
+        };
     }
 }

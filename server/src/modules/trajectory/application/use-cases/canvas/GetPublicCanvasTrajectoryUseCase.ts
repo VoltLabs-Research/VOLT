@@ -5,7 +5,6 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -19,8 +18,7 @@ interface GetPublicCanvasTrajectoryInput {
 @Singleton()
 export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
     GetPublicCanvasTrajectoryInput,
-    GetTrajectoryByIdOutputDTO,
-    ApplicationError
+    GetTrajectoryByIdOutputDTO
 > {
     constructor(
 
@@ -31,29 +29,22 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: ITrajectoryFrameRepository
     ) {}
 
-    async execute(input: GetPublicCanvasTrajectoryInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
-        try {
-            await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: GetPublicCanvasTrajectoryInput): Promise<GetTrajectoryByIdOutputDTO> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            const entity = await this.repository.findById(input.trajectoryId, {
-                populate: ['team', 'analysis']
-            });
+        const entity = await this.repository.findById(input.trajectoryId, {
+            populate: ['team', 'analysis']
+        });
 
-            if (!entity) {
-                return Result.fail(ApplicationError.notFound(
-                    'Trajectory::NotFound',
-                    'Trajectory not found'
-                ));
-            }
-
-            entity.props.frames = await this.frameRepository.getFrames(entity.id);
-
-            return Result.ok(toPersistedOutput(entity));
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
+        if (!entity) {
+            throw ApplicationError.notFound(
+                'Trajectory::NotFound',
+                'Trajectory not found'
+            );
         }
+
+        entity.props.frames = await this.frameRepository.getFrames(entity.id);
+
+        return toPersistedOutput(entity);
     }
 };

@@ -6,33 +6,32 @@ import SecretKeyDeletedEvent from '@modules/team/domain/events/secret-key/Secret
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecretKeyByIdInputDTO, null, ApplicationError> {
+export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecretKeyByIdInputDTO, null> {
     constructor(
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: DeleteSecretKeyByIdInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: DeleteSecretKeyByIdInputDTO): Promise<null> {
         if (!input.userId) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.SECRET_KEY_PARAMS_REQUIRED,
                 'User ID is required'
-            ));
+            );
         }
 
         const key = await this.secretKeyRepository.findById(input.secretKeyId);
 
         if (!key || key.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SECRET_KEY_NOT_FOUND,
                 'Secret key not found'
-            ));
+            );
         }
 
         await this.secretKeyRepository.deleteById(key._id);
@@ -44,6 +43,6 @@ export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecret
             secretKeyName: key.props.name ?? ''
         }));
 
-        return Result.ok(null);
+        return null;
     }
 }

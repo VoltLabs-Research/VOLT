@@ -14,7 +14,6 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeam
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
@@ -132,16 +131,16 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         }));
     }
 
-    async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
+    async execute(input: CreateContainerInputDTO): Promise<CreateContainerOutputDTO> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
 
         if (input.folderId) {
             const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);
             if (!folder) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Target container folder not found'
-                ));
+                );
             }
         }
 
@@ -225,7 +224,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
                 userId: input.userId
             }));
 
-            return Result.ok({ container });
+            return { container };
         } catch (error) {
             this.publicPortAllocator.releaseReservations(reservedPortMappings.reservedPublicPorts);
 

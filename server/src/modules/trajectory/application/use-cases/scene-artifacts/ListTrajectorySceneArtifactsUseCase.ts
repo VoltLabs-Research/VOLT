@@ -1,7 +1,5 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -103,7 +101,7 @@ const projectRenderableExposures = (artifacts: SceneArtifact[]) => {
 };
 
 @Singleton()
-export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInputDTO, PaginatedResult<unknown>, ApplicationError> {
+export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInputDTO, PaginatedResult<unknown>> {
     constructor(
         
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
@@ -128,16 +126,16 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
         if (sourceType === 'plugin-exposure' && projection === 'renderable-exposures') {
             const data = projectRenderableExposures(result.data);
 
-            return Result.ok({
+            return {
                 ...result,
                 total: data.length,
                 data
-            });
+            };
         }
 
-        return Result.ok({
+        return {
             ...result,
             data: result.data.map(toOutput)
-        });
+        };
     }
 };

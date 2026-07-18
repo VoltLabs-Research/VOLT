@@ -18,17 +18,16 @@ export class GetSimulationCellAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             trajectoryId: params.trajectoryId,
             timestep: params.timestep
         });
-        if (!result.success) throw result.error;
         return {
-            summary: result.value
+            summary: value
                 ? `Found simulation cell for trajectory ${params.trajectoryId}.`
                 : `No simulation cell found for trajectory ${params.trajectoryId}.`,
-            data: result.value
+            data: value
         };
     }
 }

@@ -24,14 +24,13 @@ export class ListScriptingNotebooksAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             trajectoryId: params.trajectoryId,
             scope: params.scope,
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} scripting notebooks.`, data: result.value.data };
+        return { summary: `Found ${value.total} scripting notebooks.`, data: value.data };
     }
 }

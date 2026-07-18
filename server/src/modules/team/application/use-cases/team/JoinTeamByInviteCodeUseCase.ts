@@ -8,23 +8,22 @@ import { JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO } from '@mo
 import { invalidInviteCodeError, normalizeInviteCode } from '@modules/team/application/use-cases/team/invite-code-helpers';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO, ApplicationError> {
+export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamMembershipService) private readonly membershipService: ITeamMembershipService
     ) {}
 
-    async execute(input: JoinTeamByInviteCodeInputDTO): Promise<Result<JoinTeamByInviteCodeOutputDTO, ApplicationError>> {
+    async execute(input: JoinTeamByInviteCodeInputDTO): Promise<JoinTeamByInviteCodeOutputDTO> {
         const { userId, code } = input;
 
         const team = await this.teamRepository.findByInviteCode(normalizeInviteCode(code));
         if (!team) {
-            return Result.fail(invalidInviteCodeError());
+            throw invalidInviteCodeError();
         }
 
         const existing = await this.teamMemberRepository.findOne({
@@ -33,22 +32,22 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
         });
 
         if (existing) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITE_CODE_ALREADY_MEMBER,
                 'You are already a member of this team'
-            ));
+            );
         }
 
         try {
             await this.membershipService.addMemberToTeam(userId, team._id, SystemRoleNames.OWNER);
         } catch (err) {
-            if (err instanceof ApplicationError) return Result.fail(err);
+            if (err instanceof ApplicationError) throw err;
             throw err;
         }
 
-        return Result.ok({
+        return {
             message: 'Successfully joined team',
             teamId: team._id
-        });
+        };
     }
 }

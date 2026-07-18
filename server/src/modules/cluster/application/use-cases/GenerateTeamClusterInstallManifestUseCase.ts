@@ -6,20 +6,15 @@ import type { ITeamClusterInstallManifestService } from '@modules/cluster/domain
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class GenerateTeamClusterInstallManifestUseCase implements IUseCase<
-    GenerateTeamClusterInstallManifestInputDTO,
-    GenerateTeamClusterInstallManifestOutputDTO,
-    ApplicationError
-> {
+export default class GenerateTeamClusterInstallManifestUseCase implements IUseCase<GenerateTeamClusterInstallManifestInputDTO, GenerateTeamClusterInstallManifestOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterInstallManifestService) private readonly teamClusterInstallManifestService: ITeamClusterInstallManifestService
     ){}
 
-    async execute(input: GenerateTeamClusterInstallManifestInputDTO): Promise<Result<GenerateTeamClusterInstallManifestOutputDTO, ApplicationError>> {
+    async execute(input: GenerateTeamClusterInstallManifestInputDTO): Promise<GenerateTeamClusterInstallManifestOutputDTO> {
         try {
             const manifest = await this.teamClusterInstallManifestService.generateInstallManifest(
                 input.teamClusterId,
@@ -28,15 +23,15 @@ export default class GenerateTeamClusterInstallManifestUseCase implements IUseCa
                 input.ports
             );
 
-            return Result.ok({
+            return {
                 manifest
-            });
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(ApplicationError.internalServerError('Failed to generate team cluster install manifest'));
+            throw ApplicationError.internalServerError('Failed to generate team cluster install manifest');
         }
     }
 };

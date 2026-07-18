@@ -38,41 +38,37 @@ export class ChatCollaborationAITool extends AITool<ChatCollaborationParams> {
     async execute(params: ChatCollaborationParams, scope: AIToolScope) {
         switch (params.action) {
             case 'list': {
-                const result = await this.getUserChatsUseCase.execute({ userId: scope.userId });
-                if (!result.success) throw result.error;
-                return { summary: `Found ${result.value.length} chats.`, data: result.value };
+                const value = await this.getUserChatsUseCase.execute({ userId: scope.userId });
+                return { summary: `Found ${value.length} chats.`, data: value };
             }
             case 'summarize': {
                 if (!params.chatId) throw new Error('chatId is required to summarize a chat.');
-                const result = await this.getChatMessagesUseCase.execute({
+                const value = await this.getChatMessagesUseCase.execute({
                     userId: scope.userId,
                     chatId: params.chatId
                 });
-                if (!result.success) throw result.error;
-                return { summary: `Loaded ${result.value.data.length} messages from chat ${params.chatId}.`, data: result.value };
+                return { summary: `Loaded ${value.data.length} messages from chat ${params.chatId}.`, data: value };
             }
             case 'post': {
                 if (!params.chatId) throw new Error('chatId is required to post a message.');
                 if (!params.text) throw new Error('text is required to post a message.');
-                const result = await this.sendChatMessageUseCase.execute({
+                const value = await this.sendChatMessageUseCase.execute({
                     userId: scope.userId,
                     chatId: params.chatId,
                     content: params.text,
                     messageType: ChatMessageType.Text
                 });
-                if (!result.success) throw result.error;
-                return { summary: `Posted a message to chat ${params.chatId}.`, data: result.value };
+                return { summary: `Posted a message to chat ${params.chatId}.`, data: value };
             }
             case 'create': {
                 if (!params.name) throw new Error('name is required to create a group chat.');
-                const result = await this.createGroupChatUseCase.execute({
+                const value = await this.createGroupChatUseCase.execute({
                     userId: scope.userId,
                     teamId: scope.teamId,
                     groupName: params.name,
                     participantIds: params.memberIds ?? []
                 });
-                if (!result.success) throw result.error;
-                return { summary: `Created group chat "${params.name}".`, data: result.value };
+                return { summary: `Created group chat "${params.name}".`, data: value };
             }
         }
     }

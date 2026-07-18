@@ -7,17 +7,15 @@ import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import type { INewMemberDefaultTeamEnroller } from '@modules/team/domain/port/team/INewMemberDefaultTeamEnroller';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
+export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO>{
     constructor(
         @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService,
@@ -25,7 +23,7 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
         @inject(TEAM_CONTRACT_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
     ) {}
 
-    async execute(input: OAuthLoginInputDTO): Promise<Result<OAuthLoginOutputDTO, ApplicationError>>{
+    async execute(input: OAuthLoginInputDTO): Promise<OAuthLoginOutputDTO>{
         let user = await this.userRepository.findOne({
             oauthProvider: input.oauthProvider,
             oauthId: input.oauthId
@@ -74,9 +72,9 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
             activityType: SessionActivityType.OAuthLogin
         });
 
-        return Result.ok({
+        return {
             user: toPersistedUserDTO(user),
             token
-        });
+        };
     }
 }

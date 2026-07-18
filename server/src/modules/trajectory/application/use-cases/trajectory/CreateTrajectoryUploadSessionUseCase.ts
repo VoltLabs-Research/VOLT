@@ -18,7 +18,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import path from 'node:path';
@@ -89,8 +88,7 @@ const buildParts = (
 @injectable()
 export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
     CreateTrajectoryUploadSessionInputDTO,
-    CreateTrajectoryUploadSessionOutputDTO,
-    ApplicationError
+    CreateTrajectoryUploadSessionOutputDTO
 > {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
@@ -104,32 +102,32 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CreateTrajectoryUploadSessionInputDTO): Promise<Result<CreateTrajectoryUploadSessionOutputDTO, ApplicationError>> {
+    async execute(input: CreateTrajectoryUploadSessionInputDTO): Promise<CreateTrajectoryUploadSessionOutputDTO> {
         const { teamId, userId } = input;
         const files = Array.isArray(input.files) ? input.files : [];
         const name = resolveTrajectoryName(input.name, files);
 
         if (!name || files.length === 0) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
                 'At least one uploaded trajectory file is required'
-            ));
+            );
         }
 
         if (files.some((file) => !file.name || !Number.isFinite(file.size) || file.size <= 0)) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
                 'Each uploaded trajectory file must include a name and positive size'
-            ));
+            );
         }
 
         if (input.folderId) {
             const folder = await this.trajectoryFolderRepository.findByTeamAndFolderId(teamId, input.folderId);
             if (!folder) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Target trajectory folder not found'
-                ));
+                );
             }
         }
 
@@ -222,7 +220,7 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
             })
         }));
 
-        return Result.ok({
+        return {
             trajectory: toPersistedOutput(trajectory),
             uploadSession: {
                 id: uploadSession.id,
@@ -230,6 +228,6 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
                 expiresAt: expiresAt.toISOString(),
                 files: filesOutput
             }
-        });
+        };
     }
 }

@@ -61,11 +61,9 @@ export class ComparePluginsAITool extends AITool {
             this.useCase.execute({ pluginId: params.pluginIdA }),
             this.useCase.execute({ pluginId: params.pluginIdB })
         ]);
-        if (!resultA.success) throw resultA.error;
-        if (!resultB.success) throw resultB.error;
 
-        const a = summarize(resultA.value);
-        const b = summarize(resultB.value);
+        const a = summarize(resultA);
+        const b = summarize(resultB);
 
         const data = {
             a,

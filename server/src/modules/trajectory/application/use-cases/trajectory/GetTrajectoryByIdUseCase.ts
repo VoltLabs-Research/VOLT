@@ -6,7 +6,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
@@ -19,7 +18,7 @@ interface GetTrajectoryByIdInput {
 };
 
 @injectable()
-export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryByIdInput, GetTrajectoryByIdOutputDTO, ApplicationError> {
+export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryByIdInput, GetTrajectoryByIdOutputDTO> {
     constructor(
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly repository: ITrajectoryRepository,
@@ -27,19 +26,19 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: ITrajectoryFrameRepository
     ) {}
 
-    async execute(input: GetTrajectoryByIdInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
+    async execute(input: GetTrajectoryByIdInput): Promise<GetTrajectoryByIdOutputDTO> {
         const entity = await this.repository.findById(input.trajectoryId, {
             populate: ['team', 'analysis']
         });
         if (!entity) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
         entity.props.frames = await this.frameRepository.getFrames(entity.id);
 
-        return Result.ok(toPersistedOutput(entity));
+        return toPersistedOutput(entity);
     }
 };

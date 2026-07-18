@@ -22,10 +22,9 @@ export class GetClusterRuntimeSnapshotAITool extends AITool {
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId
         });
-        if (!result.success) throw result.error;
         return {
-            summary: `Captured ${result.value.daemonQueues.length} daemon queues at ${result.value.capturedAt}.`,
-            data: result.value
+            summary: `Captured ${result.daemonQueues.length} daemon queues at ${result.capturedAt}.`,
+            data: result
         };
     }
 }

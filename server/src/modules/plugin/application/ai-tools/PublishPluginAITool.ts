@@ -25,11 +25,10 @@ export class PublishPluginAITool extends AITool {
             pluginId: params.pluginId,
             status: PluginStatus.Published
         });
-        if (!result.success) throw result.error;
 
         return {
-            summary: `Published plugin "${result.value.modifier?.name ?? result.value._id}".`,
-            data: result.value
+            summary: `Published plugin "${result.modifier?.name ?? result._id}".`,
+            data: result
         };
     }
 }

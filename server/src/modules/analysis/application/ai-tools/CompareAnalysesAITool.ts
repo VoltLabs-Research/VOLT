@@ -29,15 +29,10 @@ export class CompareAnalysesAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const [resultA, resultB] = await Promise.all([
+        const [a, b] = await Promise.all([
             this.useCase.execute({ analysisId: params.analysisIdA, teamId: scope.teamId }),
             this.useCase.execute({ analysisId: params.analysisIdB, teamId: scope.teamId })
         ]);
-        if (!resultA.success) throw resultA.error;
-        if (!resultB.success) throw resultB.error;
-
-        const a = resultA.value;
-        const b = resultB.value;
 
         const configDelta = this.diffConfig(a.config, b.config);
         const statusDelta = {

@@ -4,18 +4,16 @@ import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
 import { CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO } from '@modules/team/application/dtos/team/CheckInvitePermissionDTO';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO, ApplicationError>{
+export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO>{
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ){}
 
-    async execute(input: CheckInvitePermissionInputDTO): Promise<Result<CheckInvitePermissionOutputDTO, ApplicationError>>{
+    async execute(input: CheckInvitePermissionInputDTO): Promise<CheckInvitePermissionOutputDTO>{
         const { teamId, userId } = input;
 
         const member = await this.teamMemberRepository.findOne(
@@ -24,7 +22,7 @@ export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvit
         );
 
         if(!member){
-            return Result.ok({ canInvite: false });
+            return { canInvite: false };
         }
 
         const permissions = getTeamMemberRolePermissions(member.props.role);
@@ -32,6 +30,6 @@ export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvit
 
         const canInvite = permissions.includes('*') || permissions.includes(requiredPermission);
 
-        return Result.ok({ canInvite });
+        return { canInvite };
     }
 }

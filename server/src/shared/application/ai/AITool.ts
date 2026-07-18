@@ -63,12 +63,7 @@ export abstract class AITool<
             }
 
             if (this.useCase) {
-                const result = await this.useCase.execute(Object.assign({}, params, scope));
-                if (!result.success) {
-                    throw result.error;
-                }
-
-                return result.value as TResult;
+                return (await this.useCase.execute(Object.assign({}, params, scope))) as TResult;
             }
 
             throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);

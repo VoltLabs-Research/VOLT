@@ -7,7 +7,6 @@ import { getInviteCodePermissionError } from '@modules/team/application/use-case
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 const INVITE_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -23,26 +22,26 @@ const generateCode = (): string => {
 };
 
 @injectable()
-export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO, ApplicationError> {
+export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
 
-    async execute(input: GenerateTeamInviteCodeInputDTO): Promise<Result<GenerateTeamInviteCodeOutputDTO, ApplicationError>> {
+    async execute(input: GenerateTeamInviteCodeInputDTO): Promise<GenerateTeamInviteCodeOutputDTO> {
         const { teamId, userId } = input;
 
         const permissionError = await getInviteCodePermissionError(this.teamMemberRepository, teamId, userId);
         if (permissionError) {
-            return Result.fail(permissionError);
+            throw permissionError;
         }
 
         const team = await this.teamRepository.findById(teamId);
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
-            ));
+            );
         }
 
         let code = generateCode();
@@ -54,9 +53,9 @@ export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateT
 
         const updated = await this.teamRepository.updateById(teamId, { inviteCode: code });
         if (!updated) {
-            return Result.fail(ApplicationError.internalServerError('Failed to update team'));
+            throw ApplicationError.internalServerError('Failed to update team');
         }
 
-        return Result.ok(toPersistedOutput(updated));
+        return toPersistedOutput(updated);
     }
 }

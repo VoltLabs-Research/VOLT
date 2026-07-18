@@ -10,8 +10,6 @@
  * dual-registered (`@Singleton()` + `@AliasOf(token)`) so existing by-class
  * resolution (the raster controller) keeps working unchanged.
  */
-import type { Result } from '@shared/domain/port/Result';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetRasterMetadataInputDTO,
     GetRasterMetadataOutputDTO
@@ -20,5 +18,5 @@ import type {
 export interface IGetRasterMetadataUseCase {
     execute(
         input: GetRasterMetadataInputDTO
-    ): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>>;
+    ): Promise<GetRasterMetadataOutputDTO>;
 }

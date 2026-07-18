@@ -11,7 +11,6 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -19,8 +18,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 @Singleton()
 export class GetPublicCanvasGLBUseCase implements IUseCase<
     GetPublicCanvasGLBInputDTO,
-    GetPublicCanvasGLBOutputDTO,
-    ApplicationError
+    GetPublicCanvasGLBOutputDTO
 > {
     constructor(
         
@@ -31,7 +29,7 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
 
     async execute(
         input: GetPublicCanvasGLBInputDTO
-    ): Promise<Result<GetPublicCanvasGLBOutputDTO, ApplicationError>> {
+    ): Promise<GetPublicCanvasGLBOutputDTO> {
         try {
             const trajectory = await this.trajectoryReadAccessService.assertReadable(
                 input.trajectoryId,
@@ -39,21 +37,21 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
             );
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
             if (!storageClusterId) {
-                return Result.fail(ApplicationError.conflict(
+                throw ApplicationError.conflict(
                     'Trajectory::StorageClusterRequired',
                     'Trajectory storage cluster is required'
-                ));
+                );
             }
             const objectName = buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep);
             const requestContext = { acceptEncoding: input.acceptEncoding };
 
-            return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext));
+            return await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext);
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));
+            throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404);
         }
     }
 };

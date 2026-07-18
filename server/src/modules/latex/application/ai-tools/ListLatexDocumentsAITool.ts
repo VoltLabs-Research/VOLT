@@ -30,7 +30,6 @@ export class ListLatexDocumentsAITool extends AITool {
             search: params.search,
             folderId: params.folderId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} LaTeX documents.`, data: result.value.data };
+        return { summary: `Found ${result.total} LaTeX documents.`, data: result.data };
     }
 }

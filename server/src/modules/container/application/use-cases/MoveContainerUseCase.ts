@@ -6,14 +6,13 @@ import type { IContainerProps } from '@modules/container/domain/entities/Contain
 import type ContainerFolder from '@modules/container/domain/entities/ContainerFolder';
 import type { ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class MoveContainerUseCase
     extends MoveCatalogItemUseCase<MoveContainerInputDTO, ContainerFolder, ContainerFolderProps, IContainerProps>
-    implements IUseCase<MoveContainerInputDTO, MoveContainerOutputDTO, ApplicationError> {
+    implements IUseCase<MoveContainerInputDTO, MoveContainerOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly containerFolderRepository: IContainerFolderRepository

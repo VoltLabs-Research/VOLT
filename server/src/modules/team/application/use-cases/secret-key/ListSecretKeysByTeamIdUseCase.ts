@@ -3,7 +3,6 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO, SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
 import { IUseCase } from '@shared/application/IUseCase';
 import { ROLE_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -12,7 +11,7 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository
     ) {}
 
-    async execute(input: ListSecretKeysByTeamIdInputDTO): Promise<Result<ListSecretKeysByTeamIdOutputDTO>> {
+    async execute(input: ListSecretKeysByTeamIdInputDTO): Promise<ListSecretKeysByTeamIdOutputDTO> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
@@ -45,9 +44,9 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
             updatedAt: secretKey.props.updatedAt
         } satisfies SecretKeyListItemDTO));
 
-        return Result.ok({
+        return {
             ...result,
             data
-        });
+        };
     }
 }

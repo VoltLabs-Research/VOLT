@@ -13,7 +13,6 @@ import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/p
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import {
     createDownloadStreamResponse,
     sanitizeDownloadName
@@ -22,7 +21,7 @@ import { injectable } from 'tsyringe';
 import { v4 } from 'uuid';
 
 @injectable()
-export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO, ApplicationError> {
+export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO> {
     constructor(
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
@@ -34,48 +33,48 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 
-    async execute(input: DownloadTrajectoryInputDTO): Promise<Result<DownloadTrajectoryOutputDTO, ApplicationError>> {
+    async execute(input: DownloadTrajectoryInputDTO): Promise<DownloadTrajectoryOutputDTO> {
         const { trajectoryId, archive } = input;
 
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
         if (!trajectory || trajectory.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
         const timesteps = await this.dumpStorage.listDumps(trajectoryId);
         if (timesteps.length === 0) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'Trajectory::Dump::NotFound',
                 'No dump data available for this trajectory'
-            ));
+            );
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',
                 'Trajectory storage cluster is required'
-            ));
+            );
         }
         const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
 
         if (archive) {
-            return Result.ok(await this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps));
+            return this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps);
         }
 
         const firstTimestep = timesteps[0];
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, firstTimestep);
 
         const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
-        return Result.ok(createDownloadStreamResponse({
+        return createDownloadStreamResponse({
             stream: response.stream,
             contentType: response.contentType || 'application/octet-stream',
             filename: objectName.split('/').pop() || `${filenameBase}.dump.zst`,
             cacheControl: 'no-cache'
-        }));
+        });
     }
 
     private async createArchiveDownloadResponse(

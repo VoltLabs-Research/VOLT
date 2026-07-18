@@ -8,36 +8,34 @@ import {
     GetDemoTeamClusterStatusOutputDTO
 } from '@modules/cluster/application/dtos/DemoTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 
 @injectable()
-export default class GetDemoTeamClusterStatusUseCase implements IUseCase<GetDemoTeamClusterStatusInputDTO, GetDemoTeamClusterStatusOutputDTO, ApplicationError> {
+export default class GetDemoTeamClusterStatusUseCase implements IUseCase<GetDemoTeamClusterStatusInputDTO, GetDemoTeamClusterStatusOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
         @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService
     ){}
 
-    async execute(input: GetDemoTeamClusterStatusInputDTO): Promise<Result<GetDemoTeamClusterStatusOutputDTO, ApplicationError>> {
+    async execute(input: GetDemoTeamClusterStatusInputDTO): Promise<GetDemoTeamClusterStatusOutputDTO> {
         const demo = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
         if (!demo) {
-            return Result.ok({
+            return {
                 teamCluster: null,
                 remainingMs: null,
                 hasActiveDemo: false
-            });
+            };
         }
 
         const expiresAt = demo.props.demoExpiresAt;
         if (!expiresAt) {
-            return Result.ok({
+            return {
                 teamCluster: toTeamClusterDTO(demo),
                 remainingMs: null,
                 hasActiveDemo: true
-            });
+            };
         }
 
         const now = Date.now();
@@ -46,18 +44,18 @@ export default class GetDemoTeamClusterStatusUseCase implements IUseCase<GetDemo
         if (remainingMs <= 0) {
             void this.scheduleExpiredDemoCleanup(demo.id, input.teamId);
 
-            return Result.ok({
+            return {
                 teamCluster: toTeamClusterDTO(demo),
                 remainingMs: 0,
                 hasActiveDemo: false
-            });
+            };
         }
 
-        return Result.ok({
+        return {
             teamCluster: toTeamClusterDTO(demo),
             remainingMs,
             hasActiveDemo: true
-        });
+        };
     }
 
     private async scheduleExpiredDemoCleanup(teamClusterId: string, teamId: string): Promise<void> {

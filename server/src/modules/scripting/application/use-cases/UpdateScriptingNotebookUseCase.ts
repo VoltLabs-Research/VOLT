@@ -11,18 +11,17 @@ import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/
 import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingNotebookInputDTO, ScriptingNotebookDTO, ApplicationError> {
+export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingNotebookInputDTO, ScriptingNotebookDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
-    async execute(input: UpdateScriptingNotebookInputDTO): Promise<Result<ScriptingNotebookDTO, ApplicationError>> {
+    async execute(input: UpdateScriptingNotebookInputDTO): Promise<ScriptingNotebookDTO> {
         try {
             const existing = await this.scriptingNotebookRepository.findByTeamAndNotebookId(
                 input.teamId,
@@ -30,10 +29,10 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
             );
 
             if (!existing) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Notebook not found'
-                ));
+                );
             }
 
             const updateData: Partial<ScriptingNotebookProps> = {
@@ -44,10 +43,10 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
             if (typeof input.title === 'string') {
                 const title = input.title.trim();
                 if (!title) {
-                    return Result.fail(ApplicationError.badRequest(
+                    throw ApplicationError.badRequest(
                         ErrorCodes.VALIDATION_INVALID_INPUT,
                         'Notebook title is required'
-                    ));
+                    );
                 }
 
                 updateData.title = title;
@@ -83,10 +82,10 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
                 && updateData.teamCluster === undefined
                 && updateData.containerResources === undefined
             ) {
-                return Result.fail(ApplicationError.badRequest(
+                throw ApplicationError.badRequest(
                     ErrorCodes.VALIDATION_INVALID_INPUT,
                     'At least one notebook field must be updated'
-                ));
+                );
             }
 
             if (resetRuntime) {
@@ -103,23 +102,23 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
             const updated = await this.scriptingNotebookRepository.updateById(input.notebookId, updateData);
 
             if (!updated) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Notebook not found'
-                ));
+                );
             }
 
-            return Result.ok(toScriptingNotebookDTO(updated));
+            return toScriptingNotebookDTO(updated);
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to update notebook',
                 500
-            ));
+            );
         }
     }
 }

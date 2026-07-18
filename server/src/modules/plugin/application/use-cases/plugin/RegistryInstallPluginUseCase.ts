@@ -12,7 +12,6 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import {
     ChannelCommands,
@@ -34,7 +33,7 @@ export class RegistryInstallPluginUseCase implements IUseCase<RegistryInstallPlu
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: RegistryInstallPluginInputDTO): Promise<Result<RegistryInstallPluginOutputDTO>> {
+    async execute(input: RegistryInstallPluginInputDTO): Promise<RegistryInstallPluginOutputDTO> {
         if (!input.name) {
             throw ApplicationError.badRequest('Registry::PackageNameRequired', 'A registry package name is required');
         }
@@ -68,6 +67,6 @@ export class RegistryInstallPluginUseCase implements IUseCase<RegistryInstallPlu
             teamId: input.teamId
         }));
 
-        return Result.ok(mapPluginToPersistedDTO(plugin));
+        return mapPluginToPersistedDTO(plugin);
     }
 }

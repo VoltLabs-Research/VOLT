@@ -18,7 +18,6 @@ import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/Daemo
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
-import { Result } from '@shared/domain/port/Result';
 
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
@@ -91,17 +90,17 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async execute(input: ExportPluginListingDocumentsInputDTO): Promise<Result<DownloadStreamOutputDTO>> {
+    async execute(input: ExportPluginListingDocumentsInputDTO): Promise<DownloadStreamOutputDTO> {
         const format = input.format ?? ExportType.Json;
 
         const resolved = await this.resolveTeamCluster(input);
         if (!resolved) {
-            return Result.ok(createListingDownloadResponse({
+            return createListingDownloadResponse({
                 filename: `${input.pluginId}_${input.exposureId || 'unknown'}_listing`,
                 format,
                 rows: [],
                 columns: []
-            }));
+            });
         }
 
         const allRows: DaemonListingRow[] = [];
@@ -138,12 +137,12 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
         const columns = buildListingExportColumns(rows);
         const exposureId = input.exposureId || rows[0]?.exposureId || '';
 
-        return Result.ok(createListingDownloadResponse({
+        return createListingDownloadResponse({
             filename: `${input.pluginId}_${exposureId}_listing`,
             format,
             rows,
             columns
-        }));
+        });
     }
 
     private async resolveTeamCluster(

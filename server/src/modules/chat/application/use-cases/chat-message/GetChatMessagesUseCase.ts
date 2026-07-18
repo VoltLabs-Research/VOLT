@@ -4,21 +4,19 @@ import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-mess
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, PaginatedResult<PersistedChatMessageDTO>, ApplicationError> {
+export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, PaginatedResult<PersistedChatMessageDTO>> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository) private readonly messageRepo: IChatMessageRepository,
         @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository
     ){}
 
-    async execute(input: GetChatMessagesInputDTO): Promise<Result<PaginatedResult<PersistedChatMessageDTO>, ApplicationError>> {
+    async execute(input: GetChatMessagesInputDTO): Promise<PaginatedResult<PersistedChatMessageDTO>> {
         const { chatId } = input;
         const options = {
             filter: {
@@ -32,15 +30,12 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
             }
         } as const;
 
-        const chatResult = await resolveAccessibleChat(this.chatRepo, chatId, input.userId);
-        if (!chatResult.success) {
-            return Result.fail(chatResult.error!);
-        }
+        await resolveAccessibleChat(this.chatRepo, chatId, input.userId);
 
         const messages = await this.messageRepo.findAll(options);
-        return Result.ok({
+        return {
             ...messages,
             data: messages.data.map((message) => toPersistedEntity(message))
-        });
+        };
     }
 }

@@ -26,12 +26,11 @@ export class UpdateProfileAITool extends AITool<UpdateProfileParams> {
     }
 
     async execute(params: UpdateProfileParams, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             userId: scope.userId,
             fullName: params.name,
             email: params.email
         });
-        if (!result.success) throw result.error;
-        return { summary: `Updated profile for ${result.value.fullName}.`, data: result.value };
+        return { summary: `Updated profile for ${value.fullName}.`, data: value };
     }
 }

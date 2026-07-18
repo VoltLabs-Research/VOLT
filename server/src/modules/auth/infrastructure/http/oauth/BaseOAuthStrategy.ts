@@ -88,7 +88,7 @@ export default abstract class BaseOAuthStrategy<TProfile extends Profile = Profi
 
             const ip = req.ip || req.socket.remoteAddress || 'unknown';
             const userAgent = req.headers['user-agent'] || 'unknown';
-            const result = await this.oauthLoginUseCase.execute({
+            const { user, token } = await this.oauthLoginUseCase.execute({
                 email: email.toLowerCase(),
                 firstName: normalizeOptionalString(mappedProfile.firstName),
                 lastName: normalizeOptionalString(mappedProfile.lastName),
@@ -99,12 +99,6 @@ export default abstract class BaseOAuthStrategy<TProfile extends Profile = Profi
                 userAgent
             });
 
-            if (!result.success) {
-                done(null, false, toOAuthFailure(result.error.code, result.error.statusCode));
-                return;
-            }
-
-            const { user, token } = result.value;
             req.user = user;
             req.token = token;
 

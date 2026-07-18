@@ -24,9 +24,8 @@ export class ListAnalysisResultOptionsAITool extends AITool {
             analysisId: params.analysisId,
             teamId: scope.teamId
         });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         return {
             summary: `Analysis has ${value.listings.length} listing(s) and ${value.subListings.length} sub-listing(s).`,
             data: value

@@ -5,7 +5,6 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -14,28 +13,28 @@ export default class GetAnalysisByIdUseCase {
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly repository: IAnalysisRepository
     ) {}
 
-    async execute(input: GetAnalysisByIdInputDTO): Promise<Result<GetAnalysisByIdOutputDTO, ApplicationError>> {
+    async execute(input: GetAnalysisByIdInputDTO): Promise<GetAnalysisByIdOutputDTO> {
         const analysis = await this.repository.findById(input.analysisId);
 
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
-            ));
+            );
         }
 
         if (input.teamId && analysis.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_ACCESS_DENIED,
                 'Analysis does not belong to this team'
-            ));
+            );
         }
 
         const persisted = toPersistedOutput(analysis);
 
-        return Result.ok({
+        return {
             ...persisted,
             plugin: extractPluginId(persisted.plugin)
-        });
+        };
     }
 }

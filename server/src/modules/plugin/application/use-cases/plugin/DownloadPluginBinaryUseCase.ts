@@ -15,31 +15,30 @@ import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { IStoragePlacementService, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 @Singleton()
-export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO, ApplicationError> {
+export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
-    async execute(input: DownloadPluginBinaryInputDTO): Promise<Result<DownloadPluginBinaryOutputDTO, ApplicationError>> {
+    async execute(input: DownloadPluginBinaryInputDTO): Promise<DownloadPluginBinaryOutputDTO> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         if (plugin.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const entrypointNode = plugin.props.workflow.props.nodes.find(
@@ -50,10 +49,10 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
         const binaryHash = entrypointNode?.data.entrypoint?.binaryHash;
 
         if (!binaryObjectPath) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 `Plugin binary not found for plugin ${input.pluginId}`
-            ));
+            );
         }
 
         const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
@@ -67,10 +66,10 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
             );
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     `Plugin binary not found for plugin ${input.pluginId}`
-                ));
+                );
             }
             throw error;
         }
@@ -87,9 +86,9 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
             response.headers['X-Plugin-Binary-Sha256'] = binaryHash;
         }
 
-        return Result.ok({
+        return {
             ...response,
             fileName
-        });
+        };
     }
 }

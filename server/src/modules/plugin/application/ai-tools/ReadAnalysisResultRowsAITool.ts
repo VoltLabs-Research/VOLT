@@ -28,9 +28,8 @@ export class ReadAnalysisResultRowsAITool extends AITool {
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         return {
             summary: `Returned ${value.data.length} of ${value.total} result rows (page ${value.page}/${value.totalPages || 1}).`,
             data: value

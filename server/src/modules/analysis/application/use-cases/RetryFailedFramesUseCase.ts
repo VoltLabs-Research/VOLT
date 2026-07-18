@@ -7,18 +7,17 @@ import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO, ApplicationError> {
+export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         private readonly teamJobsService: TeamJobsService,
         @inject(COMPUTE_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 
-    async execute(input: RetryFailedFramesInputDTO): Promise<Result<RetryFailedFramesOutputDTO, ApplicationError>> {
+    async execute(input: RetryFailedFramesInputDTO): Promise<RetryFailedFramesOutputDTO> {
         const { analysisId, teamId } = input;
 
         const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
@@ -48,38 +47,38 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
         if (totalFrames === 0) {
             const analysis = await this.analysisRepository.findById(analysisId);
             if (!analysis) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.ANALYSIS_NOT_FOUND,
                     'Analysis not found'
-                ));
+                );
             }
 
             if (analysis.props.team !== teamId) {
-                return Result.fail(ApplicationError.forbidden(
+                throw ApplicationError.forbidden(
                     ErrorCodes.TEAM_ACCESS_DENIED,
                     'Analysis does not belong to this team'
-                ));
+                );
             }
         }
 
         if (failedFrames === 0) {
-            return Result.ok({
+            return {
                 message: 'No failed frames found for this analysis',
                 retriedFrames: 0,
                 totalFrames,
                 failedTimesteps: failedTimesteps.length > 0 ? failedTimesteps : undefined
-            });
+            };
         }
 
         const retryResult = await this.teamJobMaintenanceService.retryJobs(teamId, failedJobIds);
 
-        return Result.ok({
+        return {
             message: retryResult.retriedFrames > 0
                 ? `Requested retry for ${retryResult.retriedFrames} failed frame(s)`
                 : 'No retriable failed frames found for this analysis',
             retriedFrames: retryResult.retriedFrames,
             totalFrames,
             failedTimesteps: failedTimesteps.length > 0 ? failedTimesteps : undefined
-        });
+        };
     }
 }

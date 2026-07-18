@@ -7,25 +7,23 @@ import {
     DeleteDemoTeamClusterInputDTO,
     DeleteDemoTeamClusterOutputDTO
 } from '@modules/cluster/application/dtos/DemoTeamClusterDTO';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 
 @injectable()
-export default class DeleteDemoTeamClusterUseCase implements IUseCase<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO, ApplicationError> {
+export default class DeleteDemoTeamClusterUseCase implements IUseCase<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
         @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService
     ){}
 
-    async execute(input: DeleteDemoTeamClusterInputDTO): Promise<Result<DeleteDemoTeamClusterOutputDTO, ApplicationError>> {
+    async execute(input: DeleteDemoTeamClusterInputDTO): Promise<DeleteDemoTeamClusterOutputDTO> {
         const demo = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
         if (!demo) {
-            return Result.ok({
+            return {
                 teardownScheduled: false
-            });
+            };
         }
 
         try {
@@ -47,8 +45,8 @@ export default class DeleteDemoTeamClusterUseCase implements IUseCase<DeleteDemo
             }
         })();
 
-        return Result.ok({
+        return {
             teardownScheduled: true
-        });
+        };
     }
 }

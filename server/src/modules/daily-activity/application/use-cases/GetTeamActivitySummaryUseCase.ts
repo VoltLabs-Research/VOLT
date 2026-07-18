@@ -3,7 +3,6 @@ import type { DailyActivityRecord, IDailyActivityRepository } from '@modules/dai
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
@@ -28,31 +27,31 @@ export interface GetTeamActivitySummaryOutputDTO {
  */
 @Singleton()
 export default class GetTeamActivitySummaryUseCase
-implements IUseCase<GetTeamActivitySummaryInputDTO, GetTeamActivitySummaryOutputDTO, ApplicationError> {
+implements IUseCase<GetTeamActivitySummaryInputDTO, GetTeamActivitySummaryOutputDTO> {
     constructor(
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository) private readonly repository: IDailyActivityRepository
     ) {}
 
-    async execute(input: GetTeamActivitySummaryInputDTO): Promise<Result<GetTeamActivitySummaryOutputDTO, ApplicationError>> {
+    async execute(input: GetTeamActivitySummaryInputDTO): Promise<GetTeamActivitySummaryOutputDTO> {
         const range = input.range !== undefined && Number.isFinite(input.range) && input.range > 0
             ? Math.floor(input.range)
             : 7;
 
         try {
             const records = await this.repository.findActivityByTeamId(input.teamId, range, { userId: input.userId });
-            return Result.ok({ range, records });
+            return { range, records };
         } catch (error: unknown) {
             logger.error(error, 'Failed to read team activity summary');
 
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to read team activity summary',
                 500
-            ));
+            );
         }
     }
 }

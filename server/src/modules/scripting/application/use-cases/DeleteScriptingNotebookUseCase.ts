@@ -8,13 +8,12 @@ import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO, ApplicationError> {
+export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SHARED_TOKENS.EventBus)
@@ -23,14 +22,14 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
-    async execute(input: DeleteScriptingNotebookInputDTO): Promise<Result<DeleteScriptingNotebookOutputDTO, ApplicationError>> {
+    async execute(input: DeleteScriptingNotebookInputDTO): Promise<DeleteScriptingNotebookOutputDTO> {
         try {
             const notebook = await this.scriptingNotebookRepository.findById(input.notebookId);
             if (!notebook) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Notebook not found'
-                ));
+                );
             }
 
             if (notebook.props.teamCluster && notebook.props.runtimeNotebookId) {
@@ -49,17 +48,17 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
                 teamId: input.teamId
             }));
 
-            return Result.ok(null);
+            return null;
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to delete notebook',
                 500
-            ));
+            );
         }
     }
 }

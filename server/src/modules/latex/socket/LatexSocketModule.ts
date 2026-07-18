@@ -416,13 +416,15 @@ export default class LatexSocketModule extends BaseSocketModule {
             return existing.teamId === teamId ? existing : null;
         }
 
-        const filesResult = await this.listFilesUseCase.execute({ documentId, teamId });
-        if (!filesResult.success) {
-            logger.warn(`@latex-socket - failed to load files for document ${documentId}: ${filesResult.error.message}`);
+        const files = await this.listFilesUseCase.execute({ documentId, teamId }).catch((error: unknown) => {
+            logger.warn(`@latex-socket - failed to load files for document ${documentId}: ${(error as Error).message}`);
+            return null;
+        });
+        if (!files) {
             return null;
         }
 
-        const file = filesResult.value.find((candidate) => candidate._id === fileId);
+        const file = files.find((candidate) => candidate._id === fileId);
         if (!file) {
             return null;
         }
@@ -527,15 +529,12 @@ export default class LatexSocketModule extends BaseSocketModule {
         content: string
     ): Promise<void> {
         try {
-            const result = await this.updateFileUseCase.execute({
+            await this.updateFileUseCase.execute({
                 documentId,
                 teamId,
                 fileId,
                 content
             });
-            if (!result.success) {
-                logger.warn(`@latex-socket - auto-save failed for file ${fileId}: ${result.error?.message}`);
-            }
         } catch (error) {
             logger.error(`@latex-socket - auto-save error for document ${documentId}: ${error}`);
         }

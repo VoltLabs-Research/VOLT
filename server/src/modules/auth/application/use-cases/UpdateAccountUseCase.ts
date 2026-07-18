@@ -7,23 +7,22 @@ import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository'
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
+export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO>{
     constructor(
         @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.AvatarService) private readonly avatarService: IAvatarService
     ) {}
 
-    async execute(input: UpdateAccountInputDTO): Promise<Result<UpdateAccountOutputDTO, ApplicationError>>{
+    async execute(input: UpdateAccountInputDTO): Promise<UpdateAccountOutputDTO>{
         const user = await this.userRepository.findById(input.userId);
         if(!user){
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'User not found'
-            ));
+            );
         }
 
         let normalizedEmail: string | undefined;
@@ -34,10 +33,10 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         if (normalizedEmail && normalizedEmail !== user.props.email) {
             const exists = await this.userRepository.emailExists(normalizedEmail);
             if(exists){
-                return Result.fail(ApplicationError.conflict(
+                throw ApplicationError.conflict(
                     ErrorCodes.AUTH_CREDENTIALS_INVALID,
                     'Email already registered'
-                ));
+                );
             }
         }
 
@@ -73,16 +72,16 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
 
         const updatedUser = await this.userRepository.updateById(input.userId, updateData);
         if(!updatedUser){
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'User not found afer update'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             _id: updatedUser._id,
             ...updatedUser.props,
             fullName: `${updatedUser.props.firstName} ${updatedUser.props.lastName}`.trim()
-        });
+        };
     }
 }

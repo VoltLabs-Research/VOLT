@@ -11,11 +11,10 @@ import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {
+export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
         @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepo: ITeamRepository,
@@ -23,22 +22,19 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
         @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
-    async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {
+    async execute(input: CreateGroupChatInputDTO): Promise<CreateGroupChatOutputDTO> {
         const { teamId, participantIds, groupName, userId, groupDescription } = input;
 
         const team = await this.teamRepo.findById(teamId);
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
-            ));
+            );
         }
 
         const allUserIds = [...new Set([userId, ...participantIds])];
-        const membersResult = await ensureTeamMembersExist(this.teamMemberRepo, teamId, allUserIds);
-        if (!membersResult.success) {
-            return Result.fail(membersResult.error!);
-        }
+        await ensureTeamMembersExist(this.teamMemberRepo, teamId, allUserIds);
 
         const chat = await this.chatRepo.create({
             participants: allUserIds,
@@ -58,6 +54,6 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
             });
         }
 
-        return Result.ok(toPersistedEntity(chat));
+        return toPersistedEntity(chat);
     }
 }

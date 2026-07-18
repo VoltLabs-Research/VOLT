@@ -20,9 +20,7 @@ import RevealTeamClusterCredentialsUseCase from '@modules/cluster/application/us
 import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
 import UpdateTeamClusterRoleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterRoleUseCase';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { UseCaseInput, UseCaseOutput } from '@shared/application/IUseCase';
-import type { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -64,142 +62,130 @@ export default class ClusterHttpService {
         @inject(UpdateTeamClusterRoleUseCase) private readonly updateTeamClusterRoleUseCase: UpdateTeamClusterRoleUseCase
     ) {}
 
-    /**
-     * Awaits a use-case execution and unwraps the `Result`, throwing the
-     * `ApplicationError` on failure so it reaches `httpErrorMiddleware`.
-     */
-    private async run<T>(execution: Promise<Result<T, ApplicationError>>): Promise<T> {
-        const result = await execution;
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
-    }
 
     create(
         input: UseCaseInput<CreateTeamClusterUseCase>
     ): Promise<UseCaseOutput<CreateTeamClusterUseCase>> {
-        return this.run(this.createTeamClusterUseCase.execute(input));
+        return this.createTeamClusterUseCase.execute(input);
     }
 
     createRemoteAccessSession(
         input: UseCaseInput<CreateTeamClusterRemoteAccessSessionUseCase>
     ): Promise<UseCaseOutput<CreateTeamClusterRemoteAccessSessionUseCase>> {
-        return this.run(this.createTeamClusterRemoteAccessSessionUseCase.execute(input));
+        return this.createTeamClusterRemoteAccessSessionUseCase.execute(input);
     }
 
     createTransferRequest(
         input: UseCaseInput<CreateTeamClusterTransferRequestUseCase>
     ): Promise<UseCaseOutput<CreateTeamClusterTransferRequestUseCase>> {
-        return this.run(this.createTeamClusterTransferRequestUseCase.execute(input));
+        return this.createTeamClusterTransferRequestUseCase.execute(input);
     }
 
     deleteById(
         input: UseCaseInput<DeleteTeamClusterByIdUseCase>
     ): Promise<UseCaseOutput<DeleteTeamClusterByIdUseCase>> {
-        return this.run(this.deleteTeamClusterByIdUseCase.execute(input));
+        return this.deleteTeamClusterByIdUseCase.execute(input);
     }
 
     deleteDemo(
         input: UseCaseInput<DeleteDemoTeamClusterUseCase>
     ): Promise<UseCaseOutput<DeleteDemoTeamClusterUseCase>> {
-        return this.run(this.deleteDemoTeamClusterUseCase.execute(input));
+        return this.deleteDemoTeamClusterUseCase.execute(input);
     }
 
     downloadRemoteExplorerObject(
         input: UseCaseInput<DownloadTeamClusterRemoteExplorerObjectUseCase>
     ): Promise<UseCaseOutput<DownloadTeamClusterRemoteExplorerObjectUseCase>> {
-        return this.run(this.downloadTeamClusterRemoteExplorerObjectUseCase.execute(input));
+        return this.downloadTeamClusterRemoteExplorerObjectUseCase.execute(input);
     }
 
     generateInstallManifest(
         input: UseCaseInput<GenerateTeamClusterInstallManifestUseCase>
     ): Promise<UseCaseOutput<GenerateTeamClusterInstallManifestUseCase>> {
-        return this.run(this.generateTeamClusterInstallManifestUseCase.execute(input));
+        return this.generateTeamClusterInstallManifestUseCase.execute(input);
     }
 
     getResourceLimits(
         input: UseCaseInput<GetClusterResourceLimitsUseCase>
     ): Promise<UseCaseOutput<GetClusterResourceLimitsUseCase>> {
-        return this.run(this.getClusterResourceLimitsUseCase.execute(input));
+        return this.getClusterResourceLimitsUseCase.execute(input);
     }
 
     getDemoStatus(
         input: UseCaseInput<GetDemoTeamClusterStatusUseCase>
     ): Promise<UseCaseOutput<GetDemoTeamClusterStatusUseCase>> {
-        return this.run(this.getDemoTeamClusterStatusUseCase.execute(input));
+        return this.getDemoTeamClusterStatusUseCase.execute(input);
     }
 
     getById(
         input: UseCaseInput<GetTeamClusterByIdUseCase>
     ): Promise<UseCaseOutput<GetTeamClusterByIdUseCase>> {
-        return this.run(this.getTeamClusterByIdUseCase.execute(input));
+        return this.getTeamClusterByIdUseCase.execute(input);
     }
 
     getRemoteExplorerNode(
         input: UseCaseInput<GetTeamClusterRemoteExplorerNodeUseCase>
     ): Promise<UseCaseOutput<GetTeamClusterRemoteExplorerNodeUseCase>> {
-        return this.run(this.getTeamClusterRemoteExplorerNodeUseCase.execute(input));
+        return this.getTeamClusterRemoteExplorerNodeUseCase.execute(input);
     }
 
     getRuntimeSnapshot(
         input: UseCaseInput<GetTeamClusterRuntimeSnapshotUseCase>
     ): Promise<UseCaseOutput<GetTeamClusterRuntimeSnapshotUseCase>> {
-        return this.run(this.getTeamClusterRuntimeSnapshotUseCase.execute(input));
+        return this.getTeamClusterRuntimeSnapshotUseCase.execute(input);
     }
 
     listRemoteExplorerEntries(
         input: UseCaseInput<ListTeamClusterRemoteExplorerEntriesUseCase>
     ): Promise<UseCaseOutput<ListTeamClusterRemoteExplorerEntriesUseCase>> {
-        return this.run(this.listTeamClusterRemoteExplorerEntriesUseCase.execute(input));
+        return this.listTeamClusterRemoteExplorerEntriesUseCase.execute(input);
     }
 
     listTransferJobs(
         input: UseCaseInput<ListTeamClusterTransferJobsUseCase>
     ): Promise<UseCaseOutput<ListTeamClusterTransferJobsUseCase>> {
-        return this.run(this.listTeamClusterTransferJobsUseCase.execute(input));
+        return this.listTeamClusterTransferJobsUseCase.execute(input);
     }
 
     listByTeamId(
         input: UseCaseInput<ListTeamClustersByTeamIdUseCase>
     ): Promise<UseCaseOutput<ListTeamClustersByTeamIdUseCase>> {
-        return this.run(this.listTeamClustersByTeamIdUseCase.execute(input));
+        return this.listTeamClustersByTeamIdUseCase.execute(input);
     }
 
     processHealthcheck(
         input: UseCaseInput<ProcessTeamClusterHealthcheckUseCase>
     ): Promise<UseCaseOutput<ProcessTeamClusterHealthcheckUseCase>> {
-        return this.run(this.processTeamClusterHealthcheckUseCase.execute(input));
+        return this.processTeamClusterHealthcheckUseCase.execute(input);
     }
 
     provisionDemo(
         input: UseCaseInput<ProvisionDemoTeamClusterUseCase>
     ): Promise<UseCaseOutput<ProvisionDemoTeamClusterUseCase>> {
-        return this.run(this.provisionDemoTeamClusterUseCase.execute(input));
+        return this.provisionDemoTeamClusterUseCase.execute(input);
     }
 
     regenerateEnrollmentToken(
         input: UseCaseInput<RegenerateTeamClusterEnrollmentTokenUseCase>
     ): Promise<UseCaseOutput<RegenerateTeamClusterEnrollmentTokenUseCase>> {
-        return this.run(this.regenerateTeamClusterEnrollmentTokenUseCase.execute(input));
+        return this.regenerateTeamClusterEnrollmentTokenUseCase.execute(input);
     }
 
     revealCredentials(
         input: UseCaseInput<RevealTeamClusterCredentialsUseCase>
     ): Promise<UseCaseOutput<RevealTeamClusterCredentialsUseCase>> {
-        return this.run(this.revealTeamClusterCredentialsUseCase.execute(input));
+        return this.revealTeamClusterCredentialsUseCase.execute(input);
     }
 
     updateQueueConcurrency(
         input: UseCaseInput<UpdateTeamClusterQueueConcurrencyUseCase>
     ): Promise<UseCaseOutput<UpdateTeamClusterQueueConcurrencyUseCase>> {
-        return this.run(this.updateTeamClusterQueueConcurrencyUseCase.execute(input));
+        return this.updateTeamClusterQueueConcurrencyUseCase.execute(input);
     }
 
     updateRole(
         input: UseCaseInput<UpdateTeamClusterRoleUseCase>
     ): Promise<UseCaseOutput<UpdateTeamClusterRoleUseCase>> {
-        return this.run(this.updateTeamClusterRoleUseCase.execute(input));
+        return this.updateTeamClusterRoleUseCase.execute(input);
     }
 }

@@ -34,8 +34,7 @@ export class GenerateClusterInstallManifestAITool extends AITool {
             installRoot: params.installRoot,
             ports: params.ports
         });
-        if (!result.success) throw result.error;
-        const { manifest } = result.value;
+        const { manifest } = result;
         return {
             summary: `Generated install manifest v${manifest.manifestVersion} (${manifest.files.length} files) for project "${manifest.composeProjectName}".`,
             data: manifest

@@ -12,7 +12,6 @@ import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
@@ -26,7 +25,7 @@ interface DaemonSnapshotResponse {
 
 @Singleton()
 export default class GetTeamClusterRuntimeSnapshotUseCase
-    implements IUseCase<GetTeamClusterRuntimeSnapshotInputDTO, GetTeamClusterRuntimeSnapshotOutputDTO, ApplicationError> {
+    implements IUseCase<GetTeamClusterRuntimeSnapshotInputDTO, GetTeamClusterRuntimeSnapshotOutputDTO> {
 
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
@@ -35,10 +34,10 @@ export default class GetTeamClusterRuntimeSnapshotUseCase
 
     async execute(
         input: GetTeamClusterRuntimeSnapshotInputDTO
-    ): Promise<Result<GetTeamClusterRuntimeSnapshotOutputDTO, ApplicationError>> {
+    ): Promise<GetTeamClusterRuntimeSnapshotOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         let daemonQueues: DaemonQueueSnapshotEntry[] = [];
@@ -59,11 +58,11 @@ export default class GetTeamClusterRuntimeSnapshotUseCase
             }
         }
 
-        return Result.ok({
+        return {
             capturedAt,
             queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
             daemonQueues,
             serverQueues: []
-        });
+        };
     }
 }

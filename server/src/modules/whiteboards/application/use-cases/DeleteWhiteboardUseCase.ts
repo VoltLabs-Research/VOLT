@@ -10,12 +10,11 @@ import WhiteboardDeletedEvent from '@modules/whiteboards/domain/events/Whiteboar
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 @Singleton()
-export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO, ApplicationError> {
+export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
@@ -23,7 +22,7 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: DeleteWhiteboardInputDTO): Promise<Result<DeleteWhiteboardOutputDTO, ApplicationError>> {
+    async execute(input: DeleteWhiteboardInputDTO): Promise<DeleteWhiteboardOutputDTO> {
         try {
             const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
                 input.teamId,
@@ -31,10 +30,10 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             );
 
             if (!whiteboard) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     'Whiteboard not found'
-                ));
+                );
             }
 
             await this.whiteboardRepository.deleteById(input.whiteboardId);
@@ -53,17 +52,17 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
                 whiteboardTitle: whiteboard.props.title ?? ''
             }));
 
-            return Result.ok(null);
+            return null;
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to delete whiteboard',
                 500
-            ));
+            );
         }
     }
 }

@@ -34,10 +34,6 @@ export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, UpdateL
      * open editing session — letting the edit appear live in open editors.
      */
     async execute(params: UpdateLatexFileParams, scope: AIToolScope): Promise<UpdateLatexFileOutputDTO> {
-        const result = await this.useCase.execute({ ...params, ...scope, source: 'ai' });
-        if (!result.success) {
-            throw result.error;
-        }
-        return result.value;
+        return this.useCase.execute({ ...params, ...scope, source: 'ai' });
     }
 }

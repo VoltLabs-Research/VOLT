@@ -1,5 +1,4 @@
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetAnalysisFrameLogInputDTO,
     GetAnalysisFrameLogOutputDTO
@@ -12,4 +11,4 @@ import type {
  * `@modules/analysis` use-case class.
  */
 export interface IGetAnalysisFrameLogUseCase
-    extends IUseCase<GetAnalysisFrameLogInputDTO, GetAnalysisFrameLogOutputDTO, ApplicationError> {}
+    extends IUseCase<GetAnalysisFrameLogInputDTO, GetAnalysisFrameLogOutputDTO> {}

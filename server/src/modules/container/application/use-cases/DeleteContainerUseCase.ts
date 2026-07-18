@@ -8,7 +8,6 @@ import type { IContainerPortProxyRelayService } from '@modules/container/domain/
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
@@ -22,7 +21,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
         @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService
     ) {}
 
-    async execute(input: DeleteContainerInputDTO): Promise<Result<DeleteContainerOutputDTO>> {
+    async execute(input: DeleteContainerInputDTO): Promise<DeleteContainerOutputDTO> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
         const teamClusterId = this.requireTeamClusterId(container.teamCluster);
         const userId = input.userId;
@@ -38,7 +37,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
             containerName: container.name ?? ''
         }));
 
-        return Result.ok({ message: 'Container deleted successfully' });
+        return { message: 'Container deleted successfully' };
     }
 
     private requireTeamClusterId(teamClusterId?: string): string {

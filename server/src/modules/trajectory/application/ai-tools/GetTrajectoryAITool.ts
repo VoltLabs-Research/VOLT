@@ -18,8 +18,7 @@ export class GetTrajectoryAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
-        const result = await this.useCase.execute({ trajectoryId: params.trajectoryId });
-        if (!result.success) throw result.error;
-        return { summary: `Trajectory "${result.value.name}" (${result.value.status}).`, data: result.value };
+        const value = await this.useCase.execute({ trajectoryId: params.trajectoryId });
+        return { summary: `Trajectory "${value.name}" (${value.status}).`, data: value };
     }
 }

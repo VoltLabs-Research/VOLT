@@ -7,14 +7,13 @@ import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajec
 import type TrajectoryFolder from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import type { TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
 export default class MoveTrajectoryUseCase
     extends MoveCatalogItemUseCase<MoveTrajectoryInputDTO, TrajectoryFolder, TrajectoryFolderProps, TrajectoryProps>
-    implements IUseCase<MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO, ApplicationError> {
+    implements IUseCase<MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) trajectoryRepository: ITrajectoryRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) trajectoryFolderRepository: ITrajectoryFolderRepository

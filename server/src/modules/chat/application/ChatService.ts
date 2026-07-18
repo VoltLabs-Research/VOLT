@@ -80,12 +80,7 @@ export default class ChatService {
      * channel used by every other ChatService method.
      */
     async getUserChats(input: GetUserChatsInputDTO): Promise<PersistedChatDTO[]> {
-        const result = await this.getUserChatsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getUserChatsUseCase.execute(input);
     }
 
     async getOrCreateChat(input: GetOrCreateChatInputDTO): Promise<GetOrCreateChatOutputDTO> {
@@ -108,28 +103,16 @@ export default class ChatService {
      * channel used by every other ChatService method.
      */
     async createGroupChat(input: CreateGroupChatInputDTO): Promise<CreateGroupChatOutputDTO> {
-        const result = await this.createGroupChatUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createGroupChatUseCase.execute(input);
     }
 
     async addUsersToGroup(input: AddUsersToGroupInputDTO): Promise<AddUsersToGroupOutputDTO> {
         const { userId, chatId, userIds } = input;
 
-        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
-        const chat = chatResult.value!;
+        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
 
         const teamId = chat.props.team;
-        const membersResult = await ensureTeamMembersExist(this.teamMemberRepo, teamId, userIds);
-        if (!membersResult.success) {
-            throw membersResult.error!;
-        }
+        await ensureTeamMembersExist(this.teamMemberRepo, teamId, userIds);
 
         const newParticipants = new Set([...chat.props.participants, ...userIds]);
 
@@ -153,11 +136,7 @@ export default class ChatService {
     async removeUsersFromGroup(input: RemoveUsersFromGroupInputDTO): Promise<RemoveUsersFromGroupOutputDTO> {
         const { userId, chatId, userIds } = input;
 
-        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
-        const chat = chatResult.value!;
+        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
 
         const newParticipants = chat.props.participants.filter((participant) => !userIds.includes(toParticipantId(participant)));
         if (newParticipants.length < 2) {
@@ -192,10 +171,7 @@ export default class ChatService {
     async updateGroupInfo(input: UpdateGroupInfoInputDTO): Promise<UpdateGroupInfoOutputDTO> {
         const { userId, chatId, groupName, groupDescription } = input;
 
-        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
+        await resolveGroupChat(this.chatRepo, chatId, userId, true);
 
         const updateData: Partial<ChatProps> = {};
         if (groupName) updateData.groupName = groupName;
@@ -222,11 +198,7 @@ export default class ChatService {
     async updateGroupAdmins(input: UpdateGroupAdminsInputDTO): Promise<UpdateGroupAdminsOutputDTO> {
         const { action, chatId, userId, targetUserIds } = input;
 
-        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
-        const chat = chatResult.value!;
+        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
 
         const validUsers = targetUserIds.filter((id) => isParticipant(chat, id));
         if (validUsers.length !== targetUserIds.length) {
@@ -271,11 +243,7 @@ export default class ChatService {
     async leaveGroup(input: LeaveGroupInputDTO): Promise<void> {
         const { chatId, userId } = input;
 
-        const chatResult = await resolveGroupChat(this.chatRepo, chatId, userId);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
-        const chat = chatResult.value!;
+        const chat = await resolveGroupChat(this.chatRepo, chatId, userId);
 
         const newParticipants = chat.props.participants.filter((participant) => participant !== userId);
         let newAdmins = chat.props.admins.filter((admin) => admin !== userId);
@@ -311,12 +279,7 @@ export default class ChatService {
      * channel used by every other ChatService method.
      */
     async getChatMessages(input: GetChatMessagesInputDTO): Promise<PaginatedResult<PersistedChatMessageDTO>> {
-        const result = await this.getChatMessagesUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getChatMessagesUseCase.execute(input);
     }
 
     /**
@@ -326,12 +289,7 @@ export default class ChatService {
      * method.
      */
     async sendChatMessage(input: SendChatMessageInputDTO): Promise<SendChatMessageOutputDTO> {
-        const result = await this.sendChatMessageUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.sendChatMessageUseCase.execute(input);
     }
 
     async editMessage(input: EditMessageInputDTO): Promise<PersistedChatMessageDTO> {
@@ -402,10 +360,7 @@ export default class ChatService {
     async markMessagesAsRead(input: MarkMessageAsReadInputDTO): Promise<void> {
         const { chatId, userId } = input;
 
-        const chatResult = await resolveAccessibleChat(this.chatRepo, chatId, userId);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
+        await resolveAccessibleChat(this.chatRepo, chatId, userId);
 
         await this.messageRepo.markAllAsRead(chatId, userId);
 
@@ -426,10 +381,7 @@ export default class ChatService {
             );
         }
 
-        const chatResult = await resolveAccessibleChat(this.chatRepo, String(message.props.chat), userId);
-        if (!chatResult.success) {
-            throw chatResult.error!;
-        }
+        await resolveAccessibleChat(this.chatRepo, String(message.props.chat), userId);
 
         message.toggleReaction(userId, emoji);
         const updatedMessage = await this.messageRepo.updateById(messageId, {
@@ -464,17 +416,12 @@ export default class ChatService {
             filePath: fileData.filename
         };
 
-        const result = await this.sendChatMessageUseCase.execute({
+        return this.sendChatMessageUseCase.execute({
             userId,
             chatId,
             content: fileData.originalName,
             messageType: ChatMessageType.File,
             metadata
         });
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
     }
 }

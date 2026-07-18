@@ -9,24 +9,23 @@ import type {
 import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSessionInputDTO, DeleteScriptingSessionOutputDTO, ApplicationError> {
+export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSessionInputDTO, DeleteScriptingSessionOutputDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
-    async execute(input: DeleteScriptingSessionInputDTO): Promise<Result<DeleteScriptingSessionOutputDTO, ApplicationError>> {
+    async execute(input: DeleteScriptingSessionInputDTO): Promise<DeleteScriptingSessionOutputDTO> {
         const notebook = await this.scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId);
 
         if (!notebook) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SCRIPTING_NOTEBOOK_NOT_FOUND,
                 'Notebook not found'
-            ));
+            );
         }
 
         const runtimeNotebookId = notebook.props.runtimeNotebookId;
@@ -40,10 +39,10 @@ export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSe
             runtimeNotebookId: undefined
         });
 
-        return Result.ok({
+        return {
             notebookId: notebook._id,
             deleted: Boolean(runtimeNotebookId),
             runtimeNotebookId: runtimeNotebookId || undefined
-        });
+        };
     }
 }

@@ -10,7 +10,6 @@
  * and is dual-registered (`@injectable()` + `@AliasOf(token)`, preserving its
  * transient lifecycle) so existing by-class resolution keeps working unchanged.
  */
-import type { Result } from '@shared/domain/port/Result';
 import type {
     GetPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsOutputDTO
@@ -19,5 +18,5 @@ import type {
 export interface IGetPluginListingDocumentsUseCase {
     execute(
         input: GetPluginListingDocumentsInputDTO
-    ): Promise<Result<GetPluginListingDocumentsOutputDTO>>;
+    ): Promise<GetPluginListingDocumentsOutputDTO>;
 }

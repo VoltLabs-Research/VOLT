@@ -12,7 +12,6 @@ import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
@@ -22,7 +21,7 @@ const DASHBOARD_PREVIEW_MAX_WIDTH = 960;
 const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 
 @injectable()
-export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
+export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO> {
     constructor(
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
@@ -30,20 +29,20 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ){}
 
-    async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
+    async execute(input: GetTrajectoryPreviewInputDTO): Promise<GetTrajectoryPreviewOutputDTO> {
         const { trajectoryId } = input;
 
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
         if (!trajectory) {
-            return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found', 404));
+            throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found', 404);
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',
                 'Trajectory storage cluster is required'
-            ));
+            );
         }
 
         const preview = await readTrajectoryPreview({
@@ -53,10 +52,10 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             createOutput: this.createPreviewOutput.bind(this)
         });
         if (preview) {
-            return Result.ok(preview);
+            return preview;
         }
 
-        return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404));
+        throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404);
     }
 
     private async createPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutputDTO> {

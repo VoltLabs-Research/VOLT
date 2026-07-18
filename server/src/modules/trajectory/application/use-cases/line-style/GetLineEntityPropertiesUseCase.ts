@@ -6,24 +6,23 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import type { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class GetLineEntityPropertiesUseCase implements IUseCase<GetLineEntityPropertiesInputDTO, GetLineEntityPropertiesOutputDTO, ApplicationError> {
+export class GetLineEntityPropertiesUseCase implements IUseCase<GetLineEntityPropertiesInputDTO, GetLineEntityPropertiesOutputDTO> {
     constructor(
         @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
         private readonly atomPropertiesService: IAtomPropertiesService
     ) { }
 
-    async execute(input: GetLineEntityPropertiesInputDTO): Promise<Result<GetLineEntityPropertiesOutputDTO, ApplicationError>> {
+    async execute(input: GetLineEntityPropertiesInputDTO): Promise<GetLineEntityPropertiesOutputDTO> {
         const entityId = Number(input.entityId);
         if (!Number.isInteger(entityId) || entityId < 0) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 'LINE_ENTITY_ID_INVALID',
                 'The entity id must be a non-negative integer.'
-            ));
+            );
         }
 
         const index = await this.atomPropertiesService.buildPluginIndexForAtomIds(
@@ -36,12 +35,12 @@ export class GetLineEntityPropertiesUseCase implements IUseCase<GetLineEntityPro
 
         const properties = index?.get(entityId);
         if (!properties) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'LINE_ENTITY_NOT_FOUND',
                 `No entity ${entityId} found for exposure "${input.exposureId}" at timestep ${input.timestep}`
-            ));
+            );
         }
 
-        return Result.ok({ entityId, properties });
+        return { entityId, properties };
     }
 };

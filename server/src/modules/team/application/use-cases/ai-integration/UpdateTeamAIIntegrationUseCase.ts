@@ -6,12 +6,11 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
 @injectable()
-export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
+export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
@@ -19,21 +18,21 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
-    async execute(input: UpdateTeamAIIntegrationInputDTO): Promise<Result<UpdateTeamAIIntegrationOutputDTO, ApplicationError>> {
+    async execute(input: UpdateTeamAIIntegrationInputDTO): Promise<UpdateTeamAIIntegrationOutputDTO> {
         const provider = this.providerCatalog.normalize(input.provider);
         if (!provider) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED,
                 'Provider is not supported'
-            ));
+            );
         }
 
         const existing = await this.integrationRepository.findByTeamAndProviderWithSecret(input.teamId, provider);
         if (!existing) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND,
                 'AI integration not found for this provider'
-            ));
+            );
         }
 
         const apiKey = input.apiKey?.trim();
@@ -43,10 +42,10 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
 
         const defaultModel = input.defaultModel?.trim() || existing.props.defaultModel || null;
         if (!defaultModel) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED,
                 'Default model is required'
-            ));
+            );
         }
 
         const metadata = input.metadata ?? existing.props.metadata;
@@ -65,14 +64,14 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         }));
 
         if (!persisted) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND,
                 'AI integration could not be updated'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             integration: toTeamAIIntegrationItemDTO(persisted, this.providerCatalog)
-        });
+        };
     }
 }

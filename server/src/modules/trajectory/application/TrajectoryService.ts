@@ -63,10 +63,10 @@ import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 /**
  * The single HTTP-facing application service for the trajectory module. Each
- * method is a thin delegator to a retained use case: it runs the use case and
- * unwraps the `Result` onto the thrown-error channel (`ApplicationError`s
- * propagate to `httpErrorMiddleware` via Express 5 async forwarding), mirroring
- * the auth/latex/raster modules.
+ * method is a thin delegator to a retained use case: it runs the use case,
+ * which throws `ApplicationError`s directly (they propagate to
+ * `httpErrorMiddleware` via Express 5 async forwarding), mirroring the
+ * auth/latex/raster modules.
  *
  * No heavy domain logic lives here — the native daemon, trajectory
  * reader/parser, particle-filter, LOD, color-coding, canvas realtime/collab and
@@ -138,20 +138,15 @@ export default class TrajectoryService {
     ) {}
 
     /**
-     * Runs a use case and unwraps the Result: success returns the value, failure
-     * throws the error so Express 5 forwards it to `httpErrorMiddleware`.
+     * Runs a use case, delegating to its `execute`. Use cases throw
+     * `ApplicationError`s directly, which Express 5 forwards to
+     * `httpErrorMiddleware`.
      */
     private async run<TInput, TOutput>(
-        useCase: IUseCase<TInput, TOutput, unknown>,
+        useCase: IUseCase<TInput, TOutput>,
         input: TInput
     ): Promise<TOutput> {
-        const result = await useCase.execute(input);
-
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return useCase.execute(input);
     }
 
     // --- Trajectory ---

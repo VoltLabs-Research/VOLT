@@ -9,7 +9,6 @@ import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 
 import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -22,8 +21,7 @@ interface GetPublicCanvasPreviewInput {
 @Singleton()
 export class GetPublicCanvasPreviewUseCase implements IUseCase<
     GetPublicCanvasPreviewInput,
-    GetTrajectoryPreviewOutputDTO,
-    ApplicationError
+    GetTrajectoryPreviewOutputDTO
 > {
     constructor(
         
@@ -32,42 +30,35 @@ export class GetPublicCanvasPreviewUseCase implements IUseCase<
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
-    async execute(input: GetPublicCanvasPreviewInput): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
-        try {
-            const trajectory = await this.trajectoryReadAccessService.assertReadable(
-                input.trajectoryId,
-                input.userId
+    async execute(input: GetPublicCanvasPreviewInput): Promise<GetTrajectoryPreviewOutputDTO> {
+        const trajectory = await this.trajectoryReadAccessService.assertReadable(
+            input.trajectoryId,
+            input.userId
+        );
+
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
             );
-
-            const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
-            if (!storageClusterId) {
-                return Result.fail(ApplicationError.conflict(
-                    'Trajectory::StorageClusterRequired',
-                    'Trajectory storage cluster is required'
-                ));
-            }
-
-            const preview = await readTrajectoryPreview({
-                trajectoryId: input.trajectoryId,
-                storageClusterId,
-                objectGatewayClient: this.objectGatewayClient,
-                createOutput: this.createPreviewOutput.bind(this)
-            });
-            if (preview) {
-                return Result.ok(preview);
-            }
-
-            return Result.fail(new ApplicationError(
-                ErrorCodes.RESOURCE_NOT_FOUND,
-                'No preview available for this trajectory',
-                404
-            ));
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
         }
+
+        const preview = await readTrajectoryPreview({
+            trajectoryId: input.trajectoryId,
+            storageClusterId,
+            objectGatewayClient: this.objectGatewayClient,
+            createOutput: this.createPreviewOutput.bind(this)
+        });
+        if (preview) {
+            return preview;
+        }
+
+        throw new ApplicationError(
+            ErrorCodes.RESOURCE_NOT_FOUND,
+            'No preview available for this trajectory',
+            404
+        );
     }
 
     private createPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutputDTO {

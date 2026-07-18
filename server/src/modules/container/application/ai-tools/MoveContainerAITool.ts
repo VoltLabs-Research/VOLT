@@ -19,17 +19,16 @@ export class MoveContainerAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        await this.useCase.execute({
             containerId: params.containerId,
             folderId: params.folderId,
             teamId: scope.teamId
         });
-        if (!result.success) throw result.error;
         return {
             summary: params.folderId === null
                 ? 'Moved the container to the root folder.'
                 : `Moved the container into folder ${params.folderId}.`,
-            data: result.value
+            data: null
         };
     }
 }

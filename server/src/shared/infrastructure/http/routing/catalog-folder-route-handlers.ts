@@ -24,14 +24,6 @@ interface FolderBody {
     parentId?: string | null;
 }
 
-type UseCaseResult<TValue> = {
-    success: true;
-    value: TValue;
-} | {
-    success: false;
-    error: unknown;
-};
-
 interface CreateCatalogFolderRouteHandlersOptions<
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
@@ -39,7 +31,7 @@ interface CreateCatalogFolderRouteHandlersOptions<
 > {
     repository: ICatalogFolderRepository<TFolder, TFolderProps>;
     folderLabel: string;
-    deleteFolder: (input: TDeleteInput) => Promise<UseCaseResult<null>>;
+    deleteFolder: (input: TDeleteInput) => Promise<null>;
     deleteStatusCode?: HttpStatus;
     buildDeleteInput?: (req: AuthenticatedRequest) => TDeleteInput;
 }
@@ -109,18 +101,13 @@ export const createCatalogFolderRouteHandlers = <
         BaseResponse.success(res, presentCatalogFolder(updated ?? folder));
     },
     delete: async (req: AuthenticatedRequest, res: Response) => {
-        const result = await deleteFolder(buildDeleteInput(req));
-
-        if (!result.success) {
-            BaseResponse.fromError(res, result.error);
-            return;
-        }
+        const value = await deleteFolder(buildDeleteInput(req));
 
         if (deleteStatusCode === HttpStatus.NoContent) {
             res.status(deleteStatusCode).send();
             return;
         }
 
-        BaseResponse.success(res, result.value, deleteStatusCode);
+        BaseResponse.success(res, value, deleteStatusCode);
     }
 });

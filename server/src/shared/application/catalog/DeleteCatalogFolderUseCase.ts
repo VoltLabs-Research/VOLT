@@ -5,7 +5,6 @@ import { deleteCatalogFolderTree } from '@shared/application/catalog/deleteCatal
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import { Result } from '@shared/domain/port/Result';
 import type { DeleteCatalogFolderInputDTO } from './catalog-folder-dto';
 import type { CatalogFolderMessages } from './CatalogFolderMessages';
 
@@ -21,7 +20,7 @@ export abstract class DeleteCatalogFolderUseCase<
     TItemProps extends object,
     TInput extends DeleteCatalogFolderInputDTO = DeleteCatalogFolderInputDTO,
     TDeleteContext = void
-> implements IUseCase<TInput, null, ApplicationError> {
+> implements IUseCase<TInput, null> {
     constructor(
         private readonly folderRepository: ICatalogFolderRepository<TFolder, TFolderProps>,
         private readonly itemRepository: IBaseRepository<TItem, TItemProps>,
@@ -29,14 +28,14 @@ export abstract class DeleteCatalogFolderUseCase<
         private readonly options: DeleteCatalogFolderUseCaseOptions<TInput, TDeleteContext>
     ) {}
 
-    async execute(input: TInput): Promise<Result<null, ApplicationError>> {
+    async execute(input: TInput): Promise<null> {
         try {
             const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);
             if (!folder) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     `${this.options.folderLabel} not found`
-                ));
+                );
             }
 
             const deleteContext = this.options.getDeleteContext
@@ -51,17 +50,17 @@ export abstract class DeleteCatalogFolderUseCase<
                 deleteItem: (item, teamId) => this.deleteItem(item, teamId, deleteContext)
             });
 
-            return Result.ok(null);
+            return null;
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 `Failed to delete ${this.options.folderLabel}`,
                 500
-            ));
+            );
         }
     }
 }

@@ -3,10 +3,8 @@ import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { GetAnalysesByTrajectoryIdOutputDTO } from '@shared/contracts/dtos/GetAnalysesByTrajectoryIdDTO';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -20,8 +18,7 @@ interface ListPublicCanvasAnalysesInput {
 @Singleton()
 export class ListPublicCanvasAnalysesUseCase implements IUseCase<
     ListPublicCanvasAnalysesInput,
-    GetAnalysesByTrajectoryIdOutputDTO,
-    ApplicationError
+    GetAnalysesByTrajectoryIdOutputDTO
 > {
     constructor(
         
@@ -31,46 +28,39 @@ export class ListPublicCanvasAnalysesUseCase implements IUseCase<
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
-    async execute(input: ListPublicCanvasAnalysesInput): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {
-        try {
-            await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: ListPublicCanvasAnalysesInput): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            const analyses = await this.analysisRepository.findAll({
-                filter: {
-                    trajectory: input.trajectoryId
-                },
-                populate: [
-                    TRAJECTORY_POPULATE,
-                    { path: 'plugin' }
-                ],
-                page: input.page,
-                limit: input.limit,
-                sort: {
-                    createdAt: -1
-                }
-            });
-
-            const data = analyses.data.map((analysis) => {
-                const props = { ...analysis.props };
-                const pluginValue = props.plugin;
-                const pluginId = extractPluginId(pluginValue);
-
-                return {
-                    ...props,
-                    _id: analysis._id,
-                    plugin: pluginId
-                };
-            });
-
-            return Result.ok({
-                ...analyses,
-                data
-            });
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
+        const analyses = await this.analysisRepository.findAll({
+            filter: {
+                trajectory: input.trajectoryId
+            },
+            populate: [
+                TRAJECTORY_POPULATE,
+                { path: 'plugin' }
+            ],
+            page: input.page,
+            limit: input.limit,
+            sort: {
+                createdAt: -1
             }
-            throw error;
-        }
+        });
+
+        const data = analyses.data.map((analysis) => {
+            const props = { ...analysis.props };
+            const pluginValue = props.plugin;
+            const pluginId = extractPluginId(pluginValue);
+
+            return {
+                ...props,
+                _id: analysis._id,
+                plugin: pluginId
+            };
+        });
+
+        return {
+            ...analyses,
+            data
+        };
     }
 };

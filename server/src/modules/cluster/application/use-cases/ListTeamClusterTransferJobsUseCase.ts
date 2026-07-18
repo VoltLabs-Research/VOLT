@@ -11,7 +11,6 @@ import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/
 import type { ClusterTransferJobProps } from '@modules/cluster/domain/entities/ClusterTransferJob';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 interface ClusterTransferJobFilter {
@@ -21,11 +20,7 @@ interface ClusterTransferJobFilter {
 }
 
 @injectable()
-export default class ListTeamClusterTransferJobsUseCase implements IUseCase<
-    ListTeamClusterTransferJobsInputDTO,
-    ListTeamClusterTransferJobsOutputDTO,
-    ApplicationError
-> {
+export default class ListTeamClusterTransferJobsUseCase implements IUseCase<ListTeamClusterTransferJobsInputDTO, ListTeamClusterTransferJobsOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
@@ -33,10 +28,10 @@ export default class ListTeamClusterTransferJobsUseCase implements IUseCase<
 
     async execute(
         input: ListTeamClusterTransferJobsInputDTO
-    ): Promise<Result<ListTeamClusterTransferJobsOutputDTO, ApplicationError>> {
+    ): Promise<ListTeamClusterTransferJobsOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const filter: ClusterTransferJobFilter = {
@@ -65,9 +60,9 @@ export default class ListTeamClusterTransferJobsUseCase implements IUseCase<
             }
         });
 
-        return Result.ok({
+        return {
             ...result,
             data: result.data.map(toClusterTransferJobDTO)
-        });
+        };
     }
 }

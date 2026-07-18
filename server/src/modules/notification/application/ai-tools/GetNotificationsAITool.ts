@@ -23,27 +23,26 @@ export class GetNotificationsAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             userId: scope.userId,
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
 
-        const unreadCount = result.value.data.reduce((count, notification) => count + (notification.read ? 0 : 1), 0);
+        const unreadCount = value.data.reduce((count, notification) => count + (notification.read ? 0 : 1), 0);
 
         const notifications = params.unreadOnly
-            ? result.value.data.filter((notification) => !notification.read)
-            : result.value.data;
+            ? value.data.filter((notification) => !notification.read)
+            : value.data;
 
         return {
             summary: `Returned ${notifications.length} notification(s) (${unreadCount} unread on this page).`,
             data: {
                 notifications,
-                total: result.value.total,
-                page: result.value.page,
-                limit: result.value.limit,
-                totalPages: result.value.totalPages
+                total: value.total,
+                page: value.page,
+                limit: value.limit,
+                totalPages: value.totalPages
             }
         };
     }

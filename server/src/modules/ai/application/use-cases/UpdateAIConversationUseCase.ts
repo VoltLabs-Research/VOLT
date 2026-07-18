@@ -7,16 +7,15 @@ import { UpdateAIConversationInputDTO } from '@modules/ai/application/dtos/Updat
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, AIConversationDTO, ApplicationError> {
+export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, AIConversationDTO> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository
     ) {}
 
-    async execute(input: UpdateAIConversationInputDTO): Promise<Result<AIConversationDTO, ApplicationError>> {
+    async execute(input: UpdateAIConversationInputDTO): Promise<AIConversationDTO> {
         const conversation = await this.conversationRepository.findOwnedByUser(
             input.conversationId,
             input.teamId,
@@ -24,10 +23,10 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
         );
 
         if (!conversation) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.AI_CONVERSATION_NOT_FOUND,
                 'AI conversation not found'
-            ));
+            );
         }
 
         const updateData: Partial<AIConversationProps> = {};
@@ -37,15 +36,15 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
         const updatedConversation = await this.conversationRepository.updateById(conversation._id, updateData);
 
         if (!updatedConversation) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.AI_CONVERSATION_NOT_FOUND,
                 'AI conversation not found'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             _id: updatedConversation._id,
             ...updatedConversation.props
-        });
+        };
     }
 }

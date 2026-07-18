@@ -7,7 +7,6 @@ import { IUseCase } from '@shared/application/IUseCase';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 interface UpdateTeamMemberByIdInput {
@@ -17,19 +16,19 @@ interface UpdateTeamMemberByIdInput {
 }
 
 @injectable()
-export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInput, PersistedOutput<TeamMemberProps>, ApplicationError> {
+export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInput, PersistedOutput<TeamMemberProps>> {
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly repository: ITeamMemberRepository
     ) {}
 
-    async execute(input: UpdateTeamMemberByIdInput): Promise<Result<PersistedOutput<TeamMemberProps>, ApplicationError>> {
+    async execute(input: UpdateTeamMemberByIdInput): Promise<PersistedOutput<TeamMemberProps>> {
         const entity = await this.repository.updateById(input.teamMemberId, input.data, input.options);
         if (!entity) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_MEMBER_NOT_FOUND,
                 'TeamMember not found'
-            ));
+            );
         }
-        return Result.ok(toPersistedOutput(entity));
+        return toPersistedOutput(entity);
     }
 }

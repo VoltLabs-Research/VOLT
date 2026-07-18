@@ -14,7 +14,6 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
@@ -22,8 +21,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 @Singleton()
 export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
     GetPublicCanvasRasterFrameInputDTO,
-    GetPublicCanvasRasterFrameOutputDTO,
-    ApplicationError
+    GetPublicCanvasRasterFrameOutputDTO
 > {
     constructor(
 
@@ -41,13 +39,13 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
 
     async execute(
         input: GetPublicCanvasRasterFrameInputDTO
-    ): Promise<Result<GetPublicCanvasRasterFrameOutputDTO, ApplicationError>> {
+    ): Promise<GetPublicCanvasRasterFrameOutputDTO> {
         try {
             if ((input.analysisId && !input.model) || (!input.analysisId && input.model)) {
-                return Result.fail(ApplicationError.badRequest(
+                throw ApplicationError.badRequest(
                     ErrorCodes.VALIDATION_INVALID_INPUT,
                     'Analysis raster frame requests require both analysisId and model'
-                ));
+                );
             }
 
             const trajectory = await this.trajectoryReadAccessService.assertReadable(
@@ -59,10 +57,10 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
             if (input.analysisId && input.model) {
                 const analysis = await this.analysisRepository.findById(input.analysisId);
                 if (!analysis || analysis.props.trajectory !== input.trajectoryId) {
-                    return Result.fail(ApplicationError.notFound(
+                    throw ApplicationError.notFound(
                         'Analysis::NotFound',
                         'Analysis not found'
-                    ));
+                    );
                 }
 
                 const sceneArtifactClusterId = await resolveSceneArtifactStorageCluster({
@@ -72,10 +70,10 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
                     trajectoryRepository: this.trajectoryRepository
                 });
                 if (!sceneArtifactClusterId) {
-                    return Result.fail(ApplicationError.conflict(
+                    throw ApplicationError.conflict(
                         'Analysis::StorageClusterRequired',
                         'Analysis storage cluster is required'
-                    ));
+                    );
                 }
 
                 rasterFrame = await this.rasterStorage.getAnalysisRasterFramePNG(
@@ -88,10 +86,10 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
             } else {
                 const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
                 if (!storageClusterId) {
-                    return Result.fail(ApplicationError.conflict(
+                    throw ApplicationError.conflict(
                         'Trajectory::StorageClusterRequired',
                         'Trajectory storage cluster is required'
-                    ));
+                    );
                 }
 
                 rasterFrame = await this.rasterStorage.getRasterFramePNG(
@@ -101,24 +99,24 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
                 );
             }
 
-            return Result.ok(createDownloadStreamResponse({
+            return createDownloadStreamResponse({
                 stream: rasterFrame.stream,
                 contentType: rasterFrame.contentType,
                 contentLength: rasterFrame.contentLength,
                 cacheControl: rasterFrame.cacheControl,
                 filename: rasterFrame.filename,
                 disposition: 'inline'
-            }));
+            });
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
                 'Failed to retrieve raster frame PNG',
                 500
-            ));
+            );
         }
     }
 };

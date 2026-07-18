@@ -56,66 +56,31 @@ export default class WhiteboardService {
     ) {}
 
     async createWhiteboard(input: CreateWhiteboardInputDTO): Promise<CreateWhiteboardOutputDTO> {
-        const result = await this.createWhiteboardUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createWhiteboardUseCase.execute(input);
     }
 
     async listWhiteboards(input: ListWhiteboardsInputDTO): Promise<ListWhiteboardsOutputDTO> {
-        const result = await this.listWhiteboardsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listWhiteboardsUseCase.execute(input);
     }
 
     async getWhiteboard(input: GetWhiteboardInputDTO): Promise<GetWhiteboardOutputDTO> {
-        const result = await this.getWhiteboardUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getWhiteboardUseCase.execute(input);
     }
 
     async updateWhiteboard(input: UpdateWhiteboardInputDTO): Promise<UpdateWhiteboardOutputDTO> {
-        const result = await this.updateWhiteboardUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateWhiteboardUseCase.execute(input);
     }
 
     async deleteWhiteboard(input: DeleteWhiteboardInputDTO): Promise<DeleteWhiteboardOutputDTO> {
-        const result = await this.deleteWhiteboardUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteWhiteboardUseCase.execute(input);
     }
 
     async moveWhiteboard(input: MoveWhiteboardInputDTO): Promise<MoveWhiteboardOutputDTO> {
-        const result = await this.moveWhiteboardUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.moveWhiteboardUseCase.execute(input);
     }
 
     async getWhiteboardState(input: GetWhiteboardStateInputDTO): Promise<GetWhiteboardStateOutputDTO> {
-        const result = await this.getWhiteboardStateUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getWhiteboardStateUseCase.execute(input);
     }
 
     async saveWhiteboardState(input: SaveWhiteboardStateInputDTO): Promise<SaveWhiteboardStateOutputDTO> {

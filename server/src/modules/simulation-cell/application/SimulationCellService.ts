@@ -71,12 +71,7 @@ export default class SimulationCellService {
     }
 
     async getByTrajectory(input: GetSimulationCellByTrajectoryInputDTO): Promise<GetSimulationCellByTrajectoryOutputDTO> {
-        const result = await this.getByTrajectoryUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getByTrajectoryUseCase.execute(input);
     }
 
     async getById(input: GetSimulationCellByIdInput): Promise<PersistedOutput<SimulationCellProps>> {

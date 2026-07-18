@@ -41,7 +41,6 @@ export class ListClusterTransferJobsAITool extends AITool {
             limit: params.limit,
             state: params.state as ClusterTransferJobState | undefined
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} transfer jobs.`, data: result.value.data };
+        return { summary: `Found ${result.total} transfer jobs.`, data: result.data };
     }
 }

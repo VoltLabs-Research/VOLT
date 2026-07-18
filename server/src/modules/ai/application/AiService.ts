@@ -76,12 +76,7 @@ export default class AiService {
      * thrown-error channel used by every other AiService method.
      */
     async listConversations(input: ListAIConversationsInputDTO): Promise<PaginatedResult<AIConversationDTO>> {
-        const result = await this.listConversationsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listConversationsUseCase.execute(input);
     }
 
     async createConversation(input: CreateAIConversationInputDTO): Promise<CreateAIConversationOutputDTO> {
@@ -302,12 +297,7 @@ export default class AiService {
      * thrown-error channel used by every other AiService method.
      */
     async updateConversation(input: UpdateAIConversationInputDTO): Promise<AIConversationDTO> {
-        const result = await this.updateConversationUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateConversationUseCase.execute(input);
     }
 
     /**
@@ -316,10 +306,7 @@ export default class AiService {
      * thrown-error channel used by every other AiService method.
      */
     async deleteConversation(input: DeleteAIConversationInputDTO): Promise<void> {
-        const result = await this.deleteConversationUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
+        await this.deleteConversationUseCase.execute(input);
     }
 
     /**

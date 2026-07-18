@@ -9,11 +9,10 @@ import { SystemRoleNames } from '@core/constants/system-roles';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
+export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
@@ -21,45 +20,45 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository
     ){}
 
-    async execute(input: AcceptTeamInvitationInputDTO): Promise<Result<AcceptTeamInvitationOutputDTO, ApplicationError>> {
+    async execute(input: AcceptTeamInvitationInputDTO): Promise<AcceptTeamInvitationOutputDTO> {
         const { invitationId, userId } = input;
 
         const invitation = await this.invitationRepository.findById(invitationId);
         if (!invitation) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_INVITATION_NOT_FOUND,
                 'Invitation not found'
-            ));
+            );
         }
 
         if (!invitation.isPending()) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED,
                 'Invitation has already been processed'
-            ));
+            );
         }
 
         if (invitation.isExpired()) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_EXPIRED,
                 'Invitation has expired'
-            ));
+            );
         }
 
         if (invitation.getInvitedUserId() !== userId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_INVITATION_INVALID_USER,
                 'This invitation was not sent to you'
-            ));
+            );
         }
 
         const teamId = invitation.getTeamId();
         const ownerRole = await this.teamRoleRepository.findOne({ name: SystemRoleNames.OWNER, team: teamId });
         if (!ownerRole) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Owner role not found'
-            ));
+            );
         }
 
         await this.teamMemberRepository.create({
@@ -73,8 +72,8 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
 
         await this.invitationRepository.updateById(invitation._id, invitation.accept());
 
-        return Result.ok({
+        return {
             message: 'Invitation accepted successfully'
-        });
+        };
     }
 }

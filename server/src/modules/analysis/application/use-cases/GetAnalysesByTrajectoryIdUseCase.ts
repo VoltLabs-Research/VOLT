@@ -3,10 +3,8 @@ import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
@@ -15,12 +13,12 @@ interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
 }
 
 @injectable()
-export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO, ApplicationError> {
+export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
-    async execute(input: GetAnalysesByTrajectoryIdInputDTO): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {
+    async execute(input: GetAnalysesByTrajectoryIdInputDTO): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
         const filter: TrajectoryAnalysesFilter = {
             trajectory: input.trajectoryId
         };
@@ -55,9 +53,9 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
             };
         });
 
-        return Result.ok({
+        return {
             ...analyses,
             data
-        });
+        };
     }
 }

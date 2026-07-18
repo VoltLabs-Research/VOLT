@@ -1,7 +1,5 @@
-import type { Result } from '@shared/domain/port/Result';
-
 export interface IUseCase<TInput, TOutput, TError = Error> {
-    execute(input: TInput): Promise<Result<TOutput, TError>>;
+    execute(input: TInput): Promise<TOutput>;
 }
 
 export type UseCaseInput<TUseCase extends IUseCase<unknown, unknown, unknown>> =

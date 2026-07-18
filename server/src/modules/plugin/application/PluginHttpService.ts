@@ -60,7 +60,6 @@ import type { GetSubListingInputDTO } from '@modules/plugin/application/dtos/lis
 
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import type { Result } from '@shared/domain/port/Result';
 import { inject } from 'tsyringe';
 
 /**
@@ -103,127 +102,114 @@ export default class PluginHttpService {
         @inject(GetSubListingUseCase) private readonly getSubListingUseCase: GetSubListingUseCase
     ) {}
 
-    /**
-     * Collapses the use-case `Result` monad to the thrown-error convention: a
-     * failure re-throws the carried error (`ApplicationError` for the typed use
-     * cases) so Express 5 async forwarding routes it to `httpErrorMiddleware`,
-     * exactly as `BaseController.handleResultError` did.
-     */
-    private unwrap<T>(result: Result<T, unknown>): T {
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
-    }
 
     // -- plugin ------------------------------------------------------------
 
     async getNodeTypesSchema() {
-        return this.unwrap(await this.getNodeTypesSchemaUseCase.execute());
+        return this.getNodeTypesSchemaUseCase.execute();
     }
 
     async validateWorkflow(input: ValidateWorkflowInputDTO) {
-        return this.unwrap(await this.validateWorkflowUseCase.execute(input));
+        return this.validateWorkflowUseCase.execute(input);
     }
 
     async exportPlugin(input: ExportPluginInputDTO) {
-        return this.unwrap(await this.exportPluginUseCase.execute(input));
+        return this.exportPluginUseCase.execute(input);
     }
 
     async importPlugin(input: ImportPluginInputDTO) {
-        return this.unwrap(await this.importPluginUseCase.execute(input));
+        return this.importPluginUseCase.execute(input);
     }
 
     async searchRegistry(input: SearchRegistryPluginsInputDTO) {
-        return this.unwrap(await this.searchRegistryPluginsUseCase.execute(input));
+        return this.searchRegistryPluginsUseCase.execute(input);
     }
 
     async installRegistry(input: RegistryInstallPluginInputDTO) {
-        return this.unwrap(await this.registryInstallPluginUseCase.execute(input));
+        return this.registryInstallPluginUseCase.execute(input);
     }
 
     async listPlugins(input: ListPluginsInputDTO) {
-        return this.unwrap(await this.listPluginsUseCase.execute(input));
+        return this.listPluginsUseCase.execute(input);
     }
 
     async createPlugin(input: CreatePluginInputDTO) {
-        return this.unwrap(await this.createPluginUseCase.execute(input));
+        return this.createPluginUseCase.execute(input);
     }
 
     async commitBinaryUpload(input: CommitBinaryUploadInputDTO) {
-        return this.unwrap(await this.commitBinaryUploadUseCase.execute(input));
+        return this.commitBinaryUploadUseCase.execute(input);
     }
 
     async downloadBinary(input: DownloadPluginBinaryInputDTO) {
-        return this.unwrap(await this.downloadPluginBinaryUseCase.execute(input));
+        return this.downloadPluginBinaryUseCase.execute(input);
     }
 
     async uploadBinary(input: UploadBinaryInputDTO) {
-        return this.unwrap(await this.uploadBinaryUseCase.execute(input));
+        return this.uploadBinaryUseCase.execute(input);
     }
 
     async deleteBinary(input: DeleteBinaryInputDTO) {
-        return this.unwrap(await this.deleteBinaryUseCase.execute(input));
+        return this.deleteBinaryUseCase.execute(input);
     }
 
     async clonePlugin(input: ClonePluginInputDTO) {
-        return this.unwrap(await this.clonePluginUseCase.execute(input));
+        return this.clonePluginUseCase.execute(input);
     }
 
     async getPluginById(input: GetPluginByIdInputDTO) {
-        return this.unwrap(await this.getPluginByIdUseCase.execute(input));
+        return this.getPluginByIdUseCase.execute(input);
     }
 
     async updatePluginById(input: UpdatePluginByIdInputDTO) {
-        return this.unwrap(await this.updatePluginByIdUseCase.execute(input));
+        return this.updatePluginByIdUseCase.execute(input);
     }
 
     async deletePluginById(input: DeletePluginByIdInputDTO) {
-        return this.unwrap(await this.deletePluginByIdUseCase.execute(input));
+        return this.deletePluginByIdUseCase.execute(input);
     }
 
     async executePipeline(input: ExecutePipelineInputDTO) {
-        return this.unwrap(await this.executePipelineUseCase.execute(input));
+        return this.executePipelineUseCase.execute(input);
     }
 
     // -- exposure ----------------------------------------------------------
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInputDTO) {
-        return this.unwrap(await this.getPluginExposureGLBUseCase.execute(input));
+        return this.getPluginExposureGLBUseCase.execute(input);
     }
 
     async getPluginExposureChart(input: GetPluginExposureChartInputDTO) {
-        return this.unwrap(await this.getPluginExposureChartUseCase.execute(input));
+        return this.getPluginExposureChartUseCase.execute(input);
     }
 
     async getPluginExposureExport(input: GetPluginExposureExportInputDTO) {
-        return this.unwrap(await this.getPluginExposureExportUseCase.execute(input));
+        return this.getPluginExposureExportUseCase.execute(input);
     }
 
     // -- listing-row -------------------------------------------------------
 
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInputDTO) {
-        return this.unwrap(await this.getListingRowsByAnalysisIdUseCase.execute(input));
+        return this.getListingRowsByAnalysisIdUseCase.execute(input);
     }
 
     async getAnalysisListingExportOptions(input: GetAnalysisListingExportOptionsInputDTO) {
-        return this.unwrap(await this.getAnalysisListingExportOptionsUseCase.execute(input));
+        return this.getAnalysisListingExportOptionsUseCase.execute(input);
     }
 
     async exportListingRowsByAnalysisId(input: ExportListingRowsByAnalysisIdInputDTO) {
-        return this.unwrap(await this.exportListingRowsByAnalysisIdUseCase.execute(input));
+        return this.exportListingRowsByAnalysisIdUseCase.execute(input);
     }
 
     async getSubListing(input: GetSubListingInputDTO) {
-        return this.unwrap(await this.getSubListingUseCase.execute(input));
+        return this.getSubListingUseCase.execute(input);
     }
 
     async exportPluginListingDocuments(input: ExportPluginListingDocumentsInputDTO) {
-        return this.unwrap(await this.exportPluginListingDocumentsUseCase.execute(input));
+        return this.exportPluginListingDocumentsUseCase.execute(input);
     }
 
     async getPluginListingDocuments(input: GetPluginListingDocumentsInputDTO) {
-        return this.unwrap(await this.getPluginListingDocumentsUseCase.execute(input));
+        return this.getPluginListingDocumentsUseCase.execute(input);
     }
 }

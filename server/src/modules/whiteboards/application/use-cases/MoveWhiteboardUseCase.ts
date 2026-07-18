@@ -9,7 +9,6 @@ import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/White
 import type WhiteboardFolder from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import type { WhiteboardFolderProps } from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
@@ -17,7 +16,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class MoveWhiteboardUseCase
     extends MoveCatalogItemUseCase<MoveWhiteboardInputDTO, WhiteboardFolder, WhiteboardFolderProps, WhiteboardProps>
-    implements IUseCase<MoveWhiteboardInputDTO, MoveWhiteboardOutputDTO, ApplicationError> {
+    implements IUseCase<MoveWhiteboardInputDTO, MoveWhiteboardOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) whiteboardRepository: IWhiteboardRepository,
         @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) whiteboardFolderRepository: IWhiteboardFolderRepository

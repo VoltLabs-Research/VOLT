@@ -7,12 +7,11 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
 @injectable()
-export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationOutputDTO, ApplicationError> {
+export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
@@ -20,39 +19,39 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
         private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
-    async execute(input: CreateTeamAIIntegrationInputDTO): Promise<Result<CreateTeamAIIntegrationOutputDTO, ApplicationError>> {
+    async execute(input: CreateTeamAIIntegrationInputDTO): Promise<CreateTeamAIIntegrationOutputDTO> {
         const provider = this.providerCatalog.normalize(input.provider);
         if (!provider) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED,
                 'Provider is not supported'
-            ));
+            );
         }
 
         const existing = await this.integrationRepository.findOne({ team: input.teamId, provider });
         if (existing) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_ALREADY_EXISTS,
                 'An integration for this provider already exists in this team'
-            ));
+            );
         }
 
         const requiresApiKey = provider !== 'ollama';
         const providedApiKey = input.apiKey?.trim();
 
         if (requiresApiKey && !providedApiKey) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_API_KEY_REQUIRED,
                 'API key is required for new integration'
-            ));
+            );
         }
 
         const defaultModel = input.defaultModel?.trim() || null;
         if (!defaultModel) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED,
                 'Default model is required'
-            ));
+            );
         }
 
         const encryptedApiKey = await this.secretCipher.encrypt(providedApiKey || 'ollama-local');
@@ -72,8 +71,8 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
             userId: input.userId
         }));
 
-        return Result.ok({
+        return {
             integration: toTeamAIIntegrationItemDTO(persisted, this.providerCatalog)
-        });
+        };
     }
 }

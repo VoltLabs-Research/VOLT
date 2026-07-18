@@ -8,7 +8,6 @@ import type {
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -19,7 +18,7 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
         private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}
 
-    async execute(input: GetTeamAIIntegrationModelsInputDTO): Promise<Result<GetTeamAIIntegrationModelsOutputDTO>> {
+    async execute(input: GetTeamAIIntegrationModelsInputDTO): Promise<GetTeamAIIntegrationModelsOutputDTO> {
         const integrations = await this.integrationRepository.listEnabledByTeamIdWithSecrets(input.teamId);
 
         const providers: TeamAIProviderModelsDTO[] = [];
@@ -52,10 +51,10 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
             });
         }
 
-        return Result.ok({
+        return {
             teamId: input.teamId,
             providers,
             models
-        });
+        };
     }
 }

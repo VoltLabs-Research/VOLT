@@ -18,11 +18,10 @@ export class RemoveTeamRunningJobsAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             trajectoryId: params.trajectoryId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Removed ${result.value.deletedJobs} jobs across ${result.value.affectedClusters} clusters.`, data: result.value };
+        return { summary: `Removed ${value.deletedJobs} jobs across ${value.affectedClusters} clusters.`, data: value };
     }
 }

@@ -22,20 +22,10 @@ export default class JobsService {
     ) {}
 
     async removeRunningJobs(input: RemoveTeamRunningJobsInputDTO): Promise<RemoveTeamRunningJobsOutputDTO> {
-        const result = await this.removeTeamRunningJobsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.removeTeamRunningJobsUseCase.execute(input);
     }
 
     async retryFailedJobs(input: RetryTeamFailedJobsInputDTO): Promise<RetryTeamFailedJobsOutputDTO> {
-        const result = await this.retryTeamFailedJobsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.retryTeamFailedJobsUseCase.execute(input);
     }
 }

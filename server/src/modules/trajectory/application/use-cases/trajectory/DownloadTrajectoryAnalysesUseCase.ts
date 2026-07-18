@@ -12,7 +12,6 @@ import {
     DownloadTrajectoryAnalysesOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryAnalysesDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import { injectable } from 'tsyringe';
 import pLimit from 'p-limit';
@@ -48,8 +47,7 @@ const readFilenameFromContentDisposition = (value: string | undefined): string |
 @injectable()
 export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
     DownloadTrajectoryAnalysesInputDTO,
-    DownloadTrajectoryAnalysesOutputDTO,
-    ApplicationError
+    DownloadTrajectoryAnalysesOutputDTO
 > {
     constructor(
 
@@ -68,13 +66,13 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
 
     async execute(
         input: DownloadTrajectoryAnalysesInputDTO
-    ): Promise<Result<DownloadTrajectoryAnalysesOutputDTO, ApplicationError>> {
+    ): Promise<DownloadTrajectoryAnalysesOutputDTO> {
         const trajectory = await this.trajectoryRepository.findById(input.trajectoryId);
         if (!trajectory || trajectory.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'Trajectory::NotFound',
                 'Trajectory not found'
-            ));
+            );
         }
 
         const analyses = await this.analysisRepository.findAll({
@@ -93,19 +91,19 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         });
 
         if (completedAnalyses.length === 0) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Trajectory::Analyses::NoCompletedExports',
                 'No completed analyses are available to download for this trajectory'
-            ));
+            );
         }
 
         const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || input.trajectoryId, 'trajectory');
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',
                 'Trajectory storage cluster is required'
-            ));
+            );
         }
 
         const limit = pLimit(ANALYSIS_EXPORT_CONCURRENCY);
@@ -114,19 +112,19 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         }))).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
         if (archiveEntries.length === 0) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Trajectory::Analyses::NoTimestepArtifacts',
                 'No completed analysis artifacts are available to download for this trajectory'
-            ));
+            );
         }
 
-        return Result.ok(await this.archiveService.createArchiveDownload({
+        return this.archiveService.createArchiveDownload({
             teamClusterId: storageClusterId,
             outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
             outputObjectKey: `exports/trajectory-analyses/${input.trajectoryId}/${v4()}.zip`,
             filename: `${filenameBase}-analyses.zip`,
             entries: archiveEntries
-        }));
+        });
     }
 
     private async buildArchiveEntry(
@@ -173,16 +171,10 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         analysis: Analysis;
         teamId: string;
     }): Promise<DownloadStreamOutputDTO> {
-        const exportResult = await this.getPluginExposureExportUseCase.execute({
+        return this.getPluginExposureExportUseCase.execute({
             analysisId: input.analysis._id,
             teamId: input.teamId
         });
-
-        if (!exportResult.success) {
-            throw exportResult.error;
-        }
-
-        return exportResult.value;
     }
 
     private readClusterObjectReference(output: DownloadStreamOutputDTO): ClusterArchiveReference | null {

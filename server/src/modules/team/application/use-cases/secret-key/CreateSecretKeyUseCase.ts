@@ -7,13 +7,12 @@ import SecretKeyCreatedEvent from '@modules/team/domain/events/secret-key/Secret
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import crypto from 'node:crypto';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, ApplicationError> {
+export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
@@ -21,16 +20,16 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CreateSecretKeyInputDTO): Promise<Result<CreateSecretKeyOutputDTO, ApplicationError>> {
+    async execute(input: CreateSecretKeyInputDTO): Promise<CreateSecretKeyOutputDTO> {
         const { teamId, roleId, name, userId } = input;
 
         const role = await this.teamRoleRepository.findById(roleId);
 
         if (!role || role.props.team !== teamId) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
-            ));
+            );
         }
 
         const tokenSuffix = crypto.randomBytes(32).toString('hex');
@@ -59,7 +58,7 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
             userId
         }));
 
-        return Result.ok({
+        return {
             secretKeyId: created._id,
             teamId,
             roleId,
@@ -68,6 +67,6 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
             secretKey,
             isActive: created.props.isActive,
             createdAt: created.props.createdAt
-        });
+        };
     }
 }

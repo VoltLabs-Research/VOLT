@@ -22,11 +22,6 @@ export default class DailyActivityService {
     ) {}
 
     async getTeamActivitySummary(input: GetTeamActivitySummaryInputDTO): Promise<GetTeamActivitySummaryOutputDTO> {
-        const result = await this.getTeamActivitySummaryUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getTeamActivitySummaryUseCase.execute(input);
     }
 }

@@ -38,7 +38,6 @@ export class ListPluginListingDocumentsAITool extends AITool {
             limit: params.limit,
             sortAsc: params.sortAsc
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} listing rows.`, data: result.value.data };
+        return { summary: `Found ${result.total} listing rows.`, data: result.data };
     }
 }

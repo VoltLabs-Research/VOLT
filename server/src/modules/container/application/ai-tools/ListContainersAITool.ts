@@ -24,7 +24,6 @@ export class ListContainersAITool extends AITool {
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} containers.`, data: result.value.data };
+        return { summary: `Found ${result.total} containers.`, data: result.data };
     }
 }

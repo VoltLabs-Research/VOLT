@@ -12,14 +12,13 @@ import WhiteboardCreatedEvent from '@modules/whiteboards/domain/events/Whiteboar
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appState: {} }));
 
 @Singleton()
-export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO, ApplicationError> {
+export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
@@ -29,7 +28,7 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CreateWhiteboardInputDTO): Promise<Result<CreateWhiteboardOutputDTO, ApplicationError>> {
+    async execute(input: CreateWhiteboardInputDTO): Promise<CreateWhiteboardOutputDTO> {
         try {
             if (input.folderId) {
                 const folder = await this.whiteboardFolderRepository.findByTeamAndFolderId(
@@ -38,10 +37,10 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
                 );
 
                 if (!folder) {
-                    return Result.fail(ApplicationError.notFound(
+                    throw ApplicationError.notFound(
                         ErrorCodes.RESOURCE_NOT_FOUND,
                         'Target whiteboard folder not found'
-                    ));
+                    );
                 }
             }
 
@@ -82,24 +81,24 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
                 whiteboardTitle: finalWhiteboard.props.title ?? ''
             }));
 
-            return Result.ok({
+            return {
                 _id: finalWhiteboard._id,
                 title: finalWhiteboard.props.title,
                 folder: finalWhiteboard.props.folder,
                 payloadKey,
                 createdAt: finalWhiteboard.props.createdAt,
                 updatedAt: finalWhiteboard.props.updatedAt
-            });
+            };
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to create whiteboard',
                 500
-            ));
+            );
         }
     }
 }

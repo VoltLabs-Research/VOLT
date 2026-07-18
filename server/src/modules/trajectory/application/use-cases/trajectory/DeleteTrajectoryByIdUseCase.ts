@@ -8,7 +8,6 @@ import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 import { inject, injectable } from 'tsyringe';
@@ -25,7 +24,7 @@ interface DeleteTrajectoryByIdOutput {
 };
 
 @injectable()
-export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInput, DeleteTrajectoryByIdOutput, ApplicationError> {
+export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInput, DeleteTrajectoryByIdOutput> {
     constructor(
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly repository: ITrajectoryRepository,
@@ -34,22 +33,22 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: DeleteTrajectoryByIdInput): Promise<Result<DeleteTrajectoryByIdOutput, ApplicationError>> {
+    async execute(input: DeleteTrajectoryByIdInput): Promise<DeleteTrajectoryByIdOutput> {
         const trajectory = await this.repository.findById(input.trajectoryId);
         if (!trajectory) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
         const analysisRuntimeTargets = await this.analysisRepository.findRuntimeTargetsByTrajectoryId(input.trajectoryId);
         const deleted = await this.repository.deleteById(input.trajectoryId);
         if (!deleted) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
         await this.eventBus.publish(new TrajectoryDeletedEvent({
@@ -68,6 +67,6 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
             ]
         }));
 
-        return Result.ok({ success: true });
+        return { success: true };
     }
 };

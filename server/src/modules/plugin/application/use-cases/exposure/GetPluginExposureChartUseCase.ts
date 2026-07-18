@@ -11,7 +11,6 @@ import { resolveSceneArtifactStorageClusterId } from '@shared/application/utilit
 import { SceneArtifactSourceType } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
@@ -24,11 +23,7 @@ const isChartArtifact = (metadata: Record<string, unknown> | undefined, objectNa
 };
 
 @Singleton()
-export class GetPluginExposureChartUseCase implements IUseCase<
-    GetPluginExposureChartInputDTO,
-    GetPluginExposureChartOutputDTO,
-    ApplicationError
-> {
+export class GetPluginExposureChartUseCase implements IUseCase<GetPluginExposureChartInputDTO, GetPluginExposureChartOutputDTO> {
     constructor(
         @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
@@ -37,37 +32,37 @@ export class GetPluginExposureChartUseCase implements IUseCase<
 
     async execute(
         input: GetPluginExposureChartInputDTO
-    ): Promise<Result<GetPluginExposureChartOutputDTO, ApplicationError>> {
+    ): Promise<GetPluginExposureChartOutputDTO> {
         const artifact = await this.sceneArtifactRepository.findById(String(input.artifactId));
         if (!artifact || artifact.props.sourceType !== SceneArtifactSourceType.PluginExposure) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
                 ErrorCodes.FILE_NOT_FOUND
-            ));
+            );
         }
 
         const trajectory = await this.trajectoryRepository.findById(String(artifact.props.trajectory));
         if (!trajectory || String(trajectory.props.team) !== String(input.teamId)) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
                 ErrorCodes.FILE_NOT_FOUND
-            ));
+            );
         }
 
         const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
         if (!isChartArtifact(metadata, artifact.props.objectName)) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 'PluginExposureChart::UnsupportedArtifact',
                 'Scene artifact is not a plugin chart'
-            ));
+            );
         }
 
         const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
         if (!teamClusterId) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
                 'Scene artifact storage cluster is required'
-            ));
+            );
         }
 
         try {
@@ -77,25 +72,25 @@ export class GetPluginExposureChartUseCase implements IUseCase<
                 artifact.props.objectName
             );
 
-            return Result.ok(createDownloadStreamResponse({
+            return createDownloadStreamResponse({
                 stream: response.stream,
                 contentType: 'image/png',
                 contentLength: response.contentLength,
                 disposition: 'inline',
                 filename: artifact.props.displayName || 'plugin-chart.png',
                 cacheControl: 'public, max-age=31536000, immutable'
-            }));
+            });
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.FILE_NOT_FOUND,
                     ErrorCodes.FILE_NOT_FOUND
-                ));
+                );
             }
 
-            return Result.fail(ApplicationError.internalServerError(
+            throw ApplicationError.internalServerError(
                 'Failed to read plugin chart from team cluster daemon'
-            ));
+            );
         }
     }
 }

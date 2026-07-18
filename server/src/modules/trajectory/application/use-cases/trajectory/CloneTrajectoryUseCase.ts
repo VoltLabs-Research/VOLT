@@ -23,7 +23,6 @@ import type { ITrajectoryCloneRunner } from '@modules/trajectory/domain/port/tra
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
@@ -33,8 +32,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export default class CloneTrajectoryUseCase implements IUseCase<
     CloneTrajectoryInputDTO,
-    CloneTrajectoryOutputDTO,
-    ApplicationError
+    CloneTrajectoryOutputDTO
 > {
     constructor(
 
@@ -69,7 +67,7 @@ export default class CloneTrajectoryUseCase implements IUseCase<
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CloneTrajectoryInputDTO): Promise<Result<CloneTrajectoryOutputDTO, ApplicationError>> {
+    async execute(input: CloneTrajectoryInputDTO): Promise<CloneTrajectoryOutputDTO> {
         try {
             const source = await this.trajectoryReadAccessService.assertReadable(
                 input.sourceTrajectoryId,
@@ -138,23 +136,23 @@ export default class CloneTrajectoryUseCase implements IUseCase<
                 userId: input.userId
             }));
 
-            return Result.ok({
+            return {
                 trajectoryId: destinationTrajectory.id,
                 jobId: job.id,
                 sourceTrajectoryId: source.id,
                 destinationClusterId
-            });
+            };
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
             logger.error({ err: error }, '[CloneTrajectoryUseCase] Unexpected error');
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to start trajectory clone',
                 500
-            ));
+            );
         }
     }
 

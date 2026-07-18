@@ -1,20 +1,18 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
 import type { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInputDTO, CreateColoredModelOutputDTO, ApplicationError> {
+export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInputDTO, CreateColoredModelOutputDTO> {
     constructor(
         @inject(TRAJECTORY_TOKENS.ColorCodingService)
         private readonly colorCodingService: IColorCodingService
     ) { }
 
-    async execute(input: CreateColoredModelInputDTO): Promise<Result<CreateColoredModelOutputDTO, ApplicationError>> {
+    async execute(input: CreateColoredModelInputDTO): Promise<CreateColoredModelOutputDTO> {
         const { trajectoryId, timestep, property, gradient } = input;
 
         await this.colorCodingService.createColoredModel(
@@ -28,6 +26,6 @@ export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInp
             input.exposureId
         );
 
-        return Result.ok(null);
+        return null;
     }
 };

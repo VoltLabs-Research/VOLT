@@ -22,7 +22,6 @@ export class GetLatexDocumentAITool extends AITool {
             teamId: scope.teamId,
             documentId: params.documentId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Retrieved LaTeX document "${result.value.title}".`, data: result.value };
+        return { summary: `Retrieved LaTeX document "${result.title}".`, data: result };
     }
 }

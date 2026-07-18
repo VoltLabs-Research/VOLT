@@ -18,7 +18,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject } from 'tsyringe';
 
 const DAEMON_PAGE_SIZE = 200;
@@ -42,20 +41,20 @@ interface ExposureAccumulator {
  * pagination pattern of {@link AnalysisListingExportCatalogService}.
  */
 @Singleton()
-export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysisResultInputDTO, SummarizeAnalysisResultOutputDTO, ApplicationError> {
+export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysisResultInputDTO, SummarizeAnalysisResultOutputDTO> {
     constructor(
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async execute(input: SummarizeAnalysisResultInputDTO): Promise<Result<SummarizeAnalysisResultOutputDTO, ApplicationError>> {
+    async execute(input: SummarizeAnalysisResultInputDTO): Promise<SummarizeAnalysisResultOutputDTO> {
         const analysis = await this.analysisRepository.findById(input.analysisId);
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
-            ));
+            );
         }
 
         const status = analysis.props.status || 'pending';
@@ -63,8 +62,8 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
 
         if (!teamClusterId) {
-            return Result.ok(this.emptyResult(input.analysisId, pluginDisplayName, status,
-                'No results are available yet — the analysis has not produced queryable output (it may still be pending or running).'));
+            return this.emptyResult(input.analysisId, pluginDisplayName, status,
+                'No results are available yet — the analysis has not produced queryable output (it may still be pending or running).');
         }
 
         const { rows, truncated, maxRows } = await this.collectRows(teamClusterId, input.analysisId, input.maxRows);
@@ -84,13 +83,13 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
             : enriched;
 
         if (filtered.length === 0) {
-            return Result.ok({
+            return {
                 ...this.emptyResult(input.analysisId, pluginDisplayName, status,
                     status === 'completed'
                         ? 'The analysis completed but returned no tabular result rows for the requested exposure.'
                         : `The analysis is "${status}" and has not produced result rows yet.`),
                 trajectoryName
-            });
+            };
         }
 
         const exposures = this.summarizeExposures(filtered);
@@ -98,7 +97,7 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
             ? `Statistics computed from the first ${maxRows.toLocaleString('en-US')} rows (result set is larger; sample is truncated).`
             : undefined;
 
-        return Result.ok({
+        return {
             analysisId: input.analysisId,
             pluginDisplayName,
             trajectoryName,
@@ -109,7 +108,7 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
             truncated,
             exposures,
             note
-        });
+        };
     }
 
     private emptyResult(

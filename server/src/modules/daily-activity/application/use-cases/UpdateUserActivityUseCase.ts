@@ -4,18 +4,17 @@ import type { IDailyActivityRepository } from '@modules/daily-activity/domain/po
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO, ApplicationError> {
+export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO> {
     constructor(
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository) private readonly repository: IDailyActivityRepository
     ) {}
 
-    async execute(input: UpdateUserActivityInputDTO): Promise<Result<UpdateUserActivityOutputDTO, ApplicationError>> {
+    async execute(input: UpdateUserActivityInputDTO): Promise<UpdateUserActivityOutputDTO> {
         const { teamId, userId, durationInMinutes } = input;
 
         const date = new Date();
@@ -23,19 +22,19 @@ export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserAct
 
         try {
             await this.repository.updateOnlineMinutes(teamId, userId, date, durationInMinutes);
-            return Result.ok({ success: true });
+            return { success: true };
         } catch (error: unknown) {
             logger.error(error, 'Failed to update user activity');
 
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to update activity stats',
                 500
-            ));
+            );
         }
     }
 }

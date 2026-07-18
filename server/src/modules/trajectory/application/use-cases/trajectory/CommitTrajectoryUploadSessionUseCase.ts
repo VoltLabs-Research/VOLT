@@ -15,7 +15,6 @@ import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities
 import type { TrajectoryUploadSession } from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -61,8 +60,7 @@ const isNoValidFramesError = (error: unknown): boolean => {
 @injectable()
 export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
     CommitTrajectoryUploadSessionInputDTO,
-    CommitTrajectoryUploadSessionOutputDTO,
-    ApplicationError
+    CommitTrajectoryUploadSessionOutputDTO
 > {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
@@ -75,24 +73,24 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: CommitTrajectoryUploadSessionInputDTO): Promise<Result<CommitTrajectoryUploadSessionOutputDTO, ApplicationError>> {
+    async execute(input: CommitTrajectoryUploadSessionInputDTO): Promise<CommitTrajectoryUploadSessionOutputDTO> {
         const session = await this.uploadSessionRepository.findById(input.uploadSessionId);
         if (!session) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'TrajectoryUploadSession::NotFound',
                 'Upload session not found'
-            ));
+            );
         }
 
         const trajectoryId = session.resourceId.toString();
 
         if (session.status === 'committed') {
-            return Result.ok({ trajectoryId });
+            return { trajectoryId };
         }
 
         const validationError = this.validateSession(session, input);
         if (validationError) {
-            return Result.fail(validationError);
+            throw validationError;
         }
 
         try {
@@ -156,7 +154,7 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
                 updatedAt: new Date()
             }));
 
-            return Result.ok({ trajectoryId });
+            return { trajectoryId };
         } catch (error) {
             logger.error(error, `[CommitTrajectoryUploadSessionUseCase] Commit failed for uploadSessionId=${session.id}`);
             await this.uploadSessionRepository.markStatus(session.id, 'failed').catch(() => {});
@@ -175,10 +173,10 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
             })).catch(() => {});
 
             if (isNoValidFramesError(error)) {
-                return Result.fail(ApplicationError.unprocessableEntity(
+                throw ApplicationError.unprocessableEntity(
                     ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES,
                     'The uploaded file does not contain any readable trajectory frames. Upload a supported trajectory dump (e.g. a LAMMPS dump, XYZ, or a ZIP of frames).'
-                ));
+                );
             }
 
             throw error;

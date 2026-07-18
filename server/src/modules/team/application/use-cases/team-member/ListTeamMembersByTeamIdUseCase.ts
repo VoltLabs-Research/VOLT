@@ -5,9 +5,7 @@ import type { ITeamMemberRepository } from '@modules/team/domain/port/team-membe
 import type { ITeamRoomPresenceService } from '@modules/team/domain/port/team-member/ITeamRoomPresenceService';
 import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
 import { getTeamMemberUserId, isPopulatedTeamMemberUser } from '@modules/team/domain/entities/team-member/TeamMember';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable, injectAll } from 'tsyringe';
 
 interface TeamMemberFilter {
@@ -15,14 +13,14 @@ interface TeamMemberFilter {
 }
 
 @injectable()
-export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {
+export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoomPresenceService) private readonly teamRoomPresenceService: ITeamRoomPresenceService,
         @injectAll(MEMBER_CONTENT_COUNTER_TOKEN) private readonly memberContentCounters: IMemberContentCounter[] = []
     ) {}
 
-    async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
+    async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<ListTeamMembersByTeamIdOutputDTO> {
         const { teamId } = input;
         const filter: TeamMemberFilter = { team: teamId };
 
@@ -77,9 +75,9 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             };
         });
 
-        return Result.ok({
+        return {
             ...teamMembers,
             data
-        });
+        };
     }
 }

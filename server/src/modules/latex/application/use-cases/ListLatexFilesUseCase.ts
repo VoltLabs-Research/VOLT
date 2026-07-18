@@ -6,7 +6,6 @@ import type { ListLatexFilesInputDTO, ListLatexFilesOutputDTO } from '@modules/l
 import type LatexFile from '@modules/latex/domain/entities/LatexFile';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -22,35 +21,27 @@ const toDTO = (file: LatexFile) => ({
 });
 
 @Singleton()
-export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, ListLatexFilesOutputDTO, ApplicationError> {
+export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, ListLatexFilesOutputDTO> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: ILatexFileRepository
     ) {}
 
-    async execute(input: ListLatexFilesInputDTO): Promise<Result<ListLatexFilesOutputDTO, ApplicationError>> {
-        try {
-            const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
-                input.teamId,
-                input.documentId
+    async execute(input: ListLatexFilesInputDTO): Promise<ListLatexFilesOutputDTO> {
+        const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
+            input.teamId,
+            input.documentId
+        );
+
+        if (!document) {
+            throw ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                'LaTeX document not found'
             );
-
-            if (!document) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
-                    'LaTeX document not found'
-                ));
-            }
-
-            const files = await this.latexFileRepository.findAllByDocument(input.documentId);
-
-            return Result.ok(files.map(toDTO));
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-
-            throw error;
         }
+
+        const files = await this.latexFileRepository.findAllByDocument(input.documentId);
+
+        return files.map(toDTO);
     }
 }

@@ -18,13 +18,10 @@ export class SummarizeAnalysisRunAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const analysis = await this.useCase.execute({
             analysisId: params.analysisId,
             teamId: scope.teamId
         });
-        if (!result.success) throw result.error;
-
-        const analysis = result.value;
         const totalFrames = analysis.totalFrames ?? 0;
 
         const failedStageFrames = (analysis.stages ?? [])

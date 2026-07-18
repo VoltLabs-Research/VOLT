@@ -12,7 +12,6 @@ import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/c
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
@@ -50,7 +49,7 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async execute(input: GetSubListingInputDTO): Promise<Result<GetSubListingOutputDTO>> {
+    async execute(input: GetSubListingInputDTO): Promise<GetSubListingOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
@@ -58,7 +57,7 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             ? resolveAnalysisComputeClusterId(analysis.props)
             : undefined;
         if (!teamClusterId) {
-            return Result.ok(EMPTY_RESULT(input.subListingName));
+            return EMPTY_RESULT(input.subListingName);
         }
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
@@ -93,7 +92,7 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             }
         }
 
-        return Result.ok({
+        return {
             subListingName: input.subListingName,
             columns,
             rows,
@@ -101,6 +100,6 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             page: daemonResult.page || page,
             totalPages: daemonResult.totalPages || 1,
             limit: daemonResult.limit || limit
-        });
+        };
     }
 }

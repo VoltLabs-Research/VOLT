@@ -4,44 +4,43 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/RejectTeamInvitationDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO, ApplicationError> {
+export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository
     ){}
 
-    async execute(input: RejectTeamInvitationInputDTO): Promise<Result<RejectTeamInvitationOutputDTO, ApplicationError>> {
+    async execute(input: RejectTeamInvitationInputDTO): Promise<RejectTeamInvitationOutputDTO> {
         const { invitationId, userId } = input;
 
         const invitation = await this.invitationRepository.findById(invitationId);
         if (!invitation) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_INVITATION_NOT_FOUND,
                 'Invitation not found'
-            ));
+            );
         }
 
         if (!invitation.isPending()) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED,
                 'Invitation has already been processed'
-            ));
+            );
         }
 
         if (invitation.getInvitedUserId() !== userId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_INVITATION_INVALID_USER,
                 'This invitation was not sent to you'
-            ));
+            );
         }
 
         await this.invitationRepository.updateById(invitation._id, invitation.reject());
 
-        return Result.ok({
+        return {
             message: 'Invitation rejected successfully'
-        });
+        };
     }
 }

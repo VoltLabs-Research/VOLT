@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import type Chat from '@modules/chat/domain/entities/chat/Chat';
 import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
@@ -62,9 +63,11 @@ export default class ChatSocketModule extends BaseSocketModule {
                 return this.rejectAuthentication(conn.id);
             }
 
-            const chatResult = await resolveAccessibleChat(this.chatRepository, payload, currentUserId);
-            if (!chatResult.success) {
-                return this.rejectApplicationError(conn.id, chatResult.error);
+            let chat: Chat;
+            try {
+                chat = await resolveAccessibleChat(this.chatRepository, payload, currentUserId);
+            } catch (error) {
+                return this.rejectApplicationError(conn.id, error as ApplicationError);
             }
 
             const previousChatId = this.getCurrentChatId(conn);
@@ -73,7 +76,7 @@ export default class ChatSocketModule extends BaseSocketModule {
             }
 
             await this.joinRoom(conn.id, this.buildChatRoomName(payload));
-            this.setCurrentChatContext(conn, payload, this.resolveTeamId(chatResult.value.props.team));
+            this.setCurrentChatContext(conn, payload, this.resolveTeamId(chat.props.team));
 
             return ackOk();
         });

@@ -15,7 +15,6 @@ import type { IWorkflowValidatorService } from '@modules/plugin/domain/port/plug
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
@@ -29,13 +28,13 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         private eventBus: IEventBus
     ) {}
 
-    async execute(input: UpdatePluginByIdInputDTO): Promise<Result<UpdatePluginByIdOutputDTO>> {
+    async execute(input: UpdatePluginByIdInputDTO): Promise<UpdatePluginByIdOutputDTO> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const update: Partial<PluginProps> = {};
@@ -48,10 +47,10 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
                 : WorkflowValidationMode.Draft;
             const { isValid, errors } = await this.workflowValidator.validate(input.workflow, plugin.id, validationMode);
             if (effectiveStatus === PluginStatus.Published && !isValid) {
-                return Result.fail(ApplicationError.badRequest(
+                throw ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
-                ));
+                );
             }
 
             if (!input._allowBinaryFieldUpdate) {
@@ -85,20 +84,20 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         if (input.status === PluginStatus.Published && !input.workflow) {
             const { isValid, errors } = await this.workflowValidator.validate(plugin.props.workflow.props, plugin.id, WorkflowValidationMode.Strict);
             if (!isValid) {
-                return Result.fail(ApplicationError.badRequest(
+                throw ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
-                ));
+                );
             }
         }
 
         const updatedPlugin = await this.pluginRepository.updateById(input.pluginId, update);
 
         if (!updatedPlugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const transitionedToPublished = input.status === PluginStatus.Published
@@ -121,6 +120,6 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             });
         }
 
-        return Result.ok(mapPluginToPersistedDTO(updatedPlugin));
+        return mapPluginToPersistedDTO(updatedPlugin);
     }
 }

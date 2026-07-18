@@ -20,9 +20,8 @@ export class DescribePluginArgumentsAITool extends AITool {
 
     async execute(params: z.infer<typeof this.parameters>) {
         const result = await this.useCase.execute({ pluginId: params.pluginId });
-        if (!result.success) throw result.error;
 
-        const value = result.value;
+        const value = result;
         return {
             summary: `Plugin "${value.name}" accepts ${value.arguments.length} argument(s).`,
             data: value

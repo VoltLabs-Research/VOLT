@@ -7,12 +7,11 @@ import TeamMemberDeletedEvent from '@modules/team/domain/events/team-member/Team
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedEntityIdInputDTO<'teamMemberId'>, null, ApplicationError>{
+export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedEntityIdInputDTO<'teamMemberId'>, null>{
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamMembershipService) private readonly teamMembershipService: ITeamMembershipService,
@@ -20,14 +19,14 @@ export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedE
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: TeamScopedEntityIdInputDTO<'teamMemberId'>): Promise<Result<null, ApplicationError>>{
+    async execute(input: TeamScopedEntityIdInputDTO<'teamMemberId'>): Promise<null>{
         const { teamMemberId, teamId } = input;
         const teamMember = await this.teamMemberRepository.findById(teamMemberId);
         if(!teamMember){
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_MEMBER_NOT_FOUND,
                 'Team member not found'
-            ));
+            );
         }
 
         await this.teamMembershipService.removeMemberFromTeam(teamMemberId, teamId);
@@ -37,6 +36,6 @@ export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedE
             teamId
         }));
 
-        return Result.ok(null);
+        return null;
     }
 }

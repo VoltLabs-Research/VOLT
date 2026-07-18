@@ -4,30 +4,29 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { GetWhiteboardInputDTO, GetWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, GetWhiteboardOutputDTO, ApplicationError> {
+export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, GetWhiteboardOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository
     ) {}
 
-    async execute(input: GetWhiteboardInputDTO): Promise<Result<GetWhiteboardOutputDTO, ApplicationError>> {
+    async execute(input: GetWhiteboardInputDTO): Promise<GetWhiteboardOutputDTO> {
         const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
             input.teamId,
             input.whiteboardId
         );
 
         if (!whiteboard) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'Whiteboard not found'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             _id: whiteboard._id,
             title: whiteboard.props.title,
             payloadKey: whiteboard.props.payloadKey,
@@ -35,6 +34,6 @@ export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, Get
             lastEditedBy: whiteboard.props.lastEditedBy,
             createdAt: whiteboard.props.createdAt,
             updatedAt: whiteboard.props.updatedAt
-        });
+        };
     }
 }

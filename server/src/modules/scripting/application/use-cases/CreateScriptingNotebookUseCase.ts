@@ -14,24 +14,23 @@ import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/
 import type { IJupyterNotebookService } from '@modules/scripting/domain/port/IJupyterNotebookService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { randomUUID } from 'node:crypto';
 
 @Singleton()
-export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO, ApplicationError> {
+export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SCRIPTING_TOKENS.JupyterNotebookService) private readonly jupyterNotebookService: IJupyterNotebookService,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
-    async execute(input: CreateScriptingNotebookInputDTO): Promise<Result<CreateScriptingNotebookOutputDTO, ApplicationError>> {
+    async execute(input: CreateScriptingNotebookInputDTO): Promise<CreateScriptingNotebookOutputDTO> {
         if (!input.userId) {
-            return Result.fail(ApplicationError.unauthorized(
+            throw ApplicationError.unauthorized(
                 ErrorCodes.AUTHENTICATION_REQUIRED,
                 ErrorCodes.AUTHENTICATION_REQUIRED
-            ));
+            );
         }
 
         try {
@@ -51,17 +50,17 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
             };
             const notebook = await this.scriptingNotebookRepository.create(createData);
 
-            return Result.ok(toScriptingNotebookDTO(notebook));
+            return toScriptingNotebookDTO(notebook);
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 'Failed to create notebook',
                 500
-            ));
+            );
         }
     }
 }

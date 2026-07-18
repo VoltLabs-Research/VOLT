@@ -7,7 +7,6 @@ import type { ITeamClusterContainerRuntimeService, RuntimeContainerSummary } fro
 import type { IContainerAccessiblePortResolver } from '@modules/container/domain/port/IContainerAccessiblePortResolver';
 import { IUseCase } from '@shared/application/IUseCase';
 import { CLUSTER_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
@@ -32,7 +31,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         @inject(CONTAINER_TOKENS.ContainerAccessiblePortResolver) private readonly accessiblePortResolver: IContainerAccessiblePortResolver
     ) {}
 
-    async execute(input: ListContainersInputDTO): Promise<Result<ListContainersOutputDTO>> {
+    async execute(input: ListContainersInputDTO): Promise<ListContainersOutputDTO> {
         const filter: ListContainersFilter = {
             team: input.teamId
         };
@@ -70,7 +69,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             );
         });
 
-        return Result.ok(result);
+        return result;
     }
 
     private scheduleRuntimeStatusSync(containers: Container[]): void {

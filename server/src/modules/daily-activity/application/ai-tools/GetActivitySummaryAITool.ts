@@ -28,16 +28,11 @@ export class GetActivitySummaryAITool extends AITool<GetActivitySummaryParams> {
     }
 
     async execute(params: GetActivitySummaryParams, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const { range, records } = await this.useCase.execute({
             teamId: scope.teamId,
             range: params.range,
             userId: params.scope === 'self' ? scope.userId : undefined
         });
-        if (!result.success) {
-            throw result.error;
-        }
-
-        const { range, records } = result.value;
         return {
             summary: `Found ${records.length} activity record(s) over the last ${range} day(s).`,
             data: { range, records }

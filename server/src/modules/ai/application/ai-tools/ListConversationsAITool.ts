@@ -27,11 +27,10 @@ export class ListConversationsAITool extends AITool {
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
         return {
-            summary: `Found ${result.value.total} conversations.`,
-            data: result.value.data,
-            total: result.value.total
+            summary: `Found ${result.total} conversations.`,
+            data: result.data,
+            total: result.total
         };
     }
 }

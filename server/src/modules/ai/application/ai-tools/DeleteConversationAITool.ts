@@ -20,12 +20,11 @@ export class DeleteConversationAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        await this.useCase.execute({
             conversationId: params.conversationId,
             teamId: scope.teamId,
             userId: scope.userId
         });
-        if (!result.success) throw result.error;
         return { deleted: true };
     }
 }

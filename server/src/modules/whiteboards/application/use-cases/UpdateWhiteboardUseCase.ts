@@ -5,27 +5,26 @@ import type { UpdateWhiteboardInputDTO, UpdateWhiteboardOutputDTO } from '@modul
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDTO, UpdateWhiteboardOutputDTO, ApplicationError> {
+export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDTO, UpdateWhiteboardOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository
     ) {}
 
-    async execute(input: UpdateWhiteboardInputDTO): Promise<Result<UpdateWhiteboardOutputDTO, ApplicationError>> {
+    async execute(input: UpdateWhiteboardInputDTO): Promise<UpdateWhiteboardOutputDTO> {
         const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
             input.teamId,
             input.whiteboardId
         );
 
         if (!whiteboard) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'Whiteboard not found'
-            ));
+            );
         }
 
         const updates: Partial<WhiteboardProps> = {};
@@ -39,10 +38,10 @@ export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDT
         const updated = await this.whiteboardRepository.updateById(input.whiteboardId, updates);
         const finalWhiteboard = updated ?? whiteboard;
 
-        return Result.ok({
+        return {
             _id: finalWhiteboard._id,
             title: finalWhiteboard.props.title,
             updatedAt: finalWhiteboard.props.updatedAt
-        });
+        };
     }
 }

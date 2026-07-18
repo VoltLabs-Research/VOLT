@@ -9,7 +9,6 @@ import type {
 } from '@modules/trajectory/domain/port/line-style/ILineStyleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -31,13 +30,13 @@ export const parseLineStyle = (style: string | undefined): LineStyleSpec => {
 };
 
 @Singleton()
-export class GetLineStyledModelStreamUseCase implements IUseCase<GetLineStyledModelStreamInputDTO, StreamableOutput, ApplicationError> {
+export class GetLineStyledModelStreamUseCase implements IUseCase<GetLineStyledModelStreamInputDTO, StreamableOutput> {
     constructor(
         @inject(TRAJECTORY_TOKENS.LineStyleService)
         private readonly lineStyleService: ILineStyleService
     ) { }
 
-    async execute(input: GetLineStyledModelStreamInputDTO): Promise<Result<StreamableOutput, ApplicationError>> {
+    async execute(input: GetLineStyledModelStreamInputDTO): Promise<StreamableOutput> {
         const response = await this.lineStyleService.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -46,6 +45,6 @@ export class GetLineStyledModelStreamUseCase implements IUseCase<GetLineStyledMo
             parseLineStyle(input.style)
         );
 
-        return Result.ok(response satisfies GetLineStyledModelStreamOutputDTO & StreamableOutput);
+        return response satisfies GetLineStyledModelStreamOutputDTO & StreamableOutput;
     }
 };

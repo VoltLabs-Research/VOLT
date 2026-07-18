@@ -37,12 +37,11 @@ export class ExecutePipelineAITool extends AITool {
             teamClusterId: params.teamClusterId,
             stages: params.stages.map((stage) => ({ kind: 'plugin', pluginId: stage.pluginId, config: stage.config }))
         });
-        if (!result.success) throw result.error;
 
-        const analysisIds = result.value.analysisIds;
+        const analysisIds = result.analysisIds;
         const summary = analysisIds.length
             ? `Started a ${params.stages.length}-stage pipeline. Computed analyses (in order): ${analysisIds.join(', ')}. Track each with get_analysis.`
             : 'Every pipeline stage was served from cache; no new analysis was created.';
-        return { summary, data: result.value };
+        return { summary, data: result };
     }
 }

@@ -27,7 +27,6 @@ export class UpdateConversationAITool extends AITool {
             teamId: scope.teamId,
             userId: scope.userId
         });
-        if (!result.success) throw result.error;
-        return result.value;
+        return result;
     }
 }

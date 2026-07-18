@@ -1,9 +1,7 @@
 import type { GetAtomsColumnarOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/trajectory/GetAtomsUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasAtomsInput {
@@ -18,8 +16,7 @@ interface GetPublicCanvasAtomsInput {
 @Singleton()
 export class GetPublicCanvasAtomsUseCase implements IUseCase<
     GetPublicCanvasAtomsInput,
-    GetAtomsColumnarOutputDTO,
-    ApplicationError
+    GetAtomsColumnarOutputDTO
 > {
     constructor(
         
@@ -29,22 +26,15 @@ export class GetPublicCanvasAtomsUseCase implements IUseCase<
         private readonly getAtomsUseCase: GetAtomsUseCase
     ) {}
 
-    async execute(input: GetPublicCanvasAtomsInput): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {
-        try {
-            await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: GetPublicCanvasAtomsInput): Promise<GetAtomsColumnarOutputDTO> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            return this.getAtomsUseCase.execute({
-                trajectoryId: input.trajectoryId,
-                analysisId: input.analysisId,
-                timestep: input.timestep,
-                page: input.page,
-                limit: input.limit
-            });
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
-        }
+        return this.getAtomsUseCase.execute({
+            trajectoryId: input.trajectoryId,
+            analysisId: input.analysisId,
+            timestep: input.timestep,
+            page: input.page,
+            limit: input.limit
+        });
     }
 };

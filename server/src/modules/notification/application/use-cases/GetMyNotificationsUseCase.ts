@@ -2,19 +2,17 @@ import type { GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO } from '@m
 import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
 import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class GetMyNotificationsUseCase
-    implements IUseCase<GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO, ApplicationError> {
+    implements IUseCase<GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO> {
 
     constructor(
         @inject(NOTIFICATION_TOKENS.NotificationRepository) private readonly notificationRepo: INotificationRepository
     ) {}
 
-    async execute(input: GetMyNotificationsInputDTO): Promise<Result<GetMyNotificationsOutputDTO, ApplicationError>> {
+    async execute(input: GetMyNotificationsInputDTO): Promise<GetMyNotificationsOutputDTO> {
         const { userId } = input;
         const result = await this.notificationRepo.findAll({
             filter: { recipient: userId },
@@ -23,12 +21,12 @@ export default class GetMyNotificationsUseCase
             limit: input.limit
         });
 
-        return Result.ok({
+        return {
             data: result.data.map((notification) => ({ _id: notification._id, ...notification.props })),
             total: result.total,
             page: result.page,
             limit: result.limit,
             totalPages: result.totalPages
-        });
+        };
     }
 }

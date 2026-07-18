@@ -4,32 +4,31 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO } from '@modules/team/application/dtos/secret-key/GetCurrentSecretKeyDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO, ApplicationError> {
+export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository
     ) {}
 
-    async execute(input: GetCurrentSecretKeyInputDTO): Promise<Result<GetCurrentSecretKeyOutputDTO, ApplicationError>> {
+    async execute(input: GetCurrentSecretKeyInputDTO): Promise<GetCurrentSecretKeyOutputDTO> {
         if (input.authType !== 'secret-key' || !input.secretKeyId) {
-            return Result.fail(ApplicationError.unauthorized(
+            throw ApplicationError.unauthorized(
                 ErrorCodes.AUTHENTICATION_REQUIRED,
                 'Secret key authentication required'
-            ));
+            );
         }
 
         const secretKey = await this.secretKeyRepository.findById(input.secretKeyId);
         if (!secretKey) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SECRET_KEY_INVALID,
                 'Secret key not found'
-            ));
+            );
         }
 
-        return Result.ok({
+        return {
             _id: secretKey._id,
             team: typeof secretKey.props.team === 'string'
                 ? secretKey.props.team
@@ -42,6 +41,6 @@ export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSe
             lastUsedAt: secretKey.props.lastUsedAt,
             createdAt: secretKey.props.createdAt,
             updatedAt: secretKey.props.updatedAt
-        });
+        };
     }
 }

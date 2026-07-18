@@ -7,12 +7,11 @@ import TeamRoleDeletedEvent from '@modules/team/domain/events/team-role/TeamRole
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO, ApplicationError> {
+export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
@@ -20,29 +19,29 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: DeleteTeamRoleByIdInputDTO): Promise<Result<DeleteTeamRoleByIdOutputDTO, ApplicationError>> {
+    async execute(input: DeleteTeamRoleByIdInputDTO): Promise<DeleteTeamRoleByIdOutputDTO> {
         const { roleId, teamId } = input;
 
         if (!input.userId) {
-            return Result.fail(ApplicationError.unauthorized(
+            throw ApplicationError.unauthorized(
                 ErrorCodes.AUTHENTICATION_REQUIRED,
                 'Authentication required'
-            ));
+            );
         }
 
         const roleToDelete = await this.teamRoleRepository.findById(roleId);
         if (!roleToDelete) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
-            ));
+            );
         }
 
         if (roleToDelete.props.isSystem) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_ROLE_IS_SYSTEM,
                 'Cannot delete system roles'
-            ));
+            );
         }
 
         const memberRole = await this.teamRoleRepository.findOne({
@@ -52,10 +51,10 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
         });
 
         if (!memberRole) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Member role not found'
-            ));
+            );
         }
 
         await this.teamMemberRepository.updateMany(
@@ -65,10 +64,10 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
 
         const result = await this.teamRoleRepository.deleteById(roleId);
         if (!result) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Failed to delete team role'
-            ));
+            );
         }
 
         await this.eventBus.publish(new TeamRoleDeletedEvent({
@@ -78,6 +77,6 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
             roleName: roleToDelete.props.name ?? ''
         }));
 
-        return Result.ok({ success: true });
+        return { success: true };
     }
 }

@@ -7,7 +7,6 @@ import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugi
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @Singleton()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
@@ -15,7 +14,7 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository
     ) {}
 
-    async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {
+    async execute(input: ListPluginsInputDTO): Promise<ListPluginsOutputDTO> {
         const result = await this.pluginRepository.findAll({
             filter: {
                 team: input.teamId,
@@ -27,9 +26,9 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
 
         const data = result.data.map((plugin) => mapPluginToPersistedDTO(plugin));
 
-        return Result.ok({
+        return {
             ...result,
             data
-        });
+        };
     }
 }

@@ -105,138 +105,63 @@ export default class LatexService {
     // --- Delegators to retained use cases (non-controller consumers) ---
 
     async compileDocument(input: CompileLatexDocumentInputDTO): Promise<CompileLatexDocumentOutputDTO> {
-        const result = await this.compileLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.compileLatexDocumentUseCase.execute(input);
     }
 
     async createDocument(input: CreateLatexDocumentInputDTO): Promise<CreateLatexDocumentOutputDTO> {
-        const result = await this.createLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createLatexDocumentUseCase.execute(input);
     }
 
     async createFile(input: CreateLatexFileInputDTO): Promise<CreateLatexFileOutputDTO> {
-        const result = await this.createLatexFileUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createLatexFileUseCase.execute(input);
     }
 
     async deleteDocument(input: DeleteLatexDocumentInputDTO): Promise<DeleteLatexDocumentOutputDTO> {
-        const result = await this.deleteLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteLatexDocumentUseCase.execute(input);
     }
 
     async deleteFile(input: DeleteLatexFileInputDTO): Promise<DeleteLatexFileOutputDTO> {
-        const result = await this.deleteLatexFileUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteLatexFileUseCase.execute(input);
     }
 
     async exportDocumentTex(input: ExportLatexDocumentInputDTO): Promise<ExportLatexDocumentOutputDTO> {
-        const result = await this.exportLatexDocumentTexUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.exportLatexDocumentTexUseCase.execute(input);
     }
 
     async exportDocumentZip(input: ExportLatexDocumentInputDTO): Promise<ExportLatexDocumentOutputDTO> {
-        const result = await this.exportLatexDocumentZipUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.exportLatexDocumentZipUseCase.execute(input);
     }
 
     async getDocument(input: GetLatexDocumentInputDTO): Promise<LatexDocumentDTO> {
-        const result = await this.getLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getLatexDocumentUseCase.execute(input);
     }
 
     async listAssets(input: ListLatexAssetsInputDTO): Promise<ListLatexAssetsOutputDTO> {
-        const result = await this.listLatexAssetsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listLatexAssetsUseCase.execute(input);
     }
 
     async listDocuments(input: ListLatexDocumentsInputDTO): Promise<ListLatexDocumentsOutputDTO> {
-        const result = await this.listLatexDocumentsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listLatexDocumentsUseCase.execute(input);
     }
 
     async listFiles(input: ListLatexFilesInputDTO): Promise<ListLatexFilesOutputDTO> {
-        const result = await this.listLatexFilesUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listLatexFilesUseCase.execute(input);
     }
 
     async moveDocument(input: MoveLatexDocumentInputDTO): Promise<MoveLatexDocumentOutputDTO> {
-        const result = await this.moveLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.moveLatexDocumentUseCase.execute(input);
     }
 
     async setFileEntrypoint(input: SetLatexFileEntrypointInputDTO): Promise<LatexFileDTO> {
-        const result = await this.setLatexFileEntrypointUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.setLatexFileEntrypointUseCase.execute(input);
     }
 
     async updateDocument(input: UpdateLatexDocumentInputDTO): Promise<UpdateLatexDocumentOutputDTO> {
-        const result = await this.updateLatexDocumentUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateLatexDocumentUseCase.execute(input);
     }
 
     async updateFile(input: UpdateLatexFileInputDTO): Promise<UpdateLatexFileOutputDTO> {
-        const result = await this.updateLatexFileUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateLatexFileUseCase.execute(input);
     }
 
     // --- Folded logic (controller-only use cases) ---

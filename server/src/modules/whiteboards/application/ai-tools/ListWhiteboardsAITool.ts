@@ -22,13 +22,12 @@ export class ListWhiteboardsAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             page: params.page,
             limit: params.limit,
             folderId: params.folderId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} whiteboards.`, data: result.value.data };
+        return { summary: `Found ${value.total} whiteboards.`, data: value.data };
     }
 }

@@ -11,7 +11,6 @@
  * the neutral DTO contract. No `@modules/*` imports.
  */
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetSimulationCellByTrajectoryInputDTO,
     GetSimulationCellByTrajectoryOutputDTO
@@ -19,6 +18,5 @@ import type {
 
 export interface IGetSimulationCellByTrajectoryUseCase extends IUseCase<
     GetSimulationCellByTrajectoryInputDTO,
-    GetSimulationCellByTrajectoryOutputDTO,
-    ApplicationError
+    GetSimulationCellByTrajectoryOutputDTO
 > {}

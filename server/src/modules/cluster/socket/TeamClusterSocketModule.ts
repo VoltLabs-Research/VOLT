@@ -47,7 +47,6 @@ import {
     type TeamClusterDaemonRegisterPayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
-import type { Result } from '@shared/domain/port/Result';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
@@ -399,10 +398,11 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             status: item.status as ProcessDaemonSceneArtifactUpsertInputDTO['status'],
             metadata: item.metadata
         }));
-        const result = await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
-
-        if (!result.success) {
-            logger.warn(`Failed to process daemon scene artifact batch streamId=${message.streamId} batchSize=${payload.items.length} statusCode=${result.error.statusCode} message=${result.error.message}`);
+        try {
+            await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
+        } catch (error: unknown) {
+            const appError = error as ApplicationError;
+            logger.warn(`Failed to process daemon scene artifact batch streamId=${message.streamId} batchSize=${payload.items.length} statusCode=${appError.statusCode} message=${appError.message}`);
         }
     }
 
@@ -492,20 +492,32 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         }
 
         if (payload.command === 'runtime.heartbeat') {
-            const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
+            try {
+                const value = await this.recordTeamClusterHeartbeatUseCase.execute(payload.payload as never);
+                this.emitUseCaseSuccess(socketId, payload.requestId, value);
+            } catch (error: unknown) {
+                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
+            }
             return;
         }
 
         if (payload.command === 'runtime.lifecycle') {
-            const result = await this.updateTeamClusterLifecycleUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
+            try {
+                const value = await this.updateTeamClusterLifecycleUseCase.execute(payload.payload as never);
+                this.emitUseCaseSuccess(socketId, payload.requestId, value);
+            } catch (error: unknown) {
+                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
+            }
             return;
         }
 
         if (payload.command === 'runtime.delete-completed') {
-            const result = await this.completeTeamClusterDeletionUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
+            try {
+                const value = await this.completeTeamClusterDeletionUseCase.execute(payload.payload as never);
+                this.emitUseCaseSuccess(socketId, payload.requestId, value);
+            } catch (error: unknown) {
+                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
+            }
             return;
         }
 
@@ -534,9 +546,11 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             || payload.type === 'trajectory-glb-job-status'
             || payload.type === 'artifact-upload-job-status'
         ) {
-            const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
-            if (!result.success) {
-                logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${result.error.statusCode} message=${result.error.message}`);
+            try {
+                await this.processDaemonJobCompletionUseCase.execute(payload as never);
+            } catch (error: unknown) {
+                const appError = error as ApplicationError;
+                logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${appError.statusCode} message=${appError.message}`);
             }
 
             return true;
@@ -544,9 +558,11 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.type === 'runtime-heartbeat') {
             this.clearPendingDaemonDisconnect(payload.teamClusterId);
-            const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload as never);
-            if (!result.success) {
-                logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${result.error.statusCode} message=${result.error.message}`);
+            try {
+                await this.recordTeamClusterHeartbeatUseCase.execute(payload as never);
+            } catch (error: unknown) {
+                const appError = error as ApplicationError;
+                logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${appError.statusCode} message=${appError.message}`);
             }
 
             return true;
@@ -634,18 +650,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         }
     }
 
-    private emitUseCaseResult<T>(socketId: string, requestId: string, result: Result<T, ApplicationError>): void {
-        if (!result.success) {
-            this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-                type: 'response',
-                requestId,
-                ok: false,
-                status: result.error.statusCode,
-                message: result.error.message
-            });
-            return;
-        }
-
+    private emitUseCaseSuccess<T>(socketId: string, requestId: string, data: T): void {
         this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
             type: 'response',
             requestId,
@@ -653,8 +658,18 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             status: 200,
             data: {
                 status: 'success',
-                data: result.value
+                data
             }
+        });
+    }
+
+    private emitUseCaseError(socketId: string, requestId: string, error: ApplicationError): void {
+        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+            type: 'response',
+            requestId,
+            ok: false,
+            status: error.statusCode,
+            message: error.message
         });
     }
 }

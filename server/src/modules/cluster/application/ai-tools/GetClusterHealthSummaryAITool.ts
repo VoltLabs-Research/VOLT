@@ -24,16 +24,14 @@ export class GetClusterHealthSummaryAITool extends AITool {
             teamId: scope.teamId,
             teamClusterId: params.clusterId
         });
-        if (!clusterResult.success) throw clusterResult.error;
 
         const snapshotResult = await this.snapshotUseCase.execute({
             teamId: scope.teamId,
             teamClusterId: params.clusterId
         });
-        if (!snapshotResult.success) throw snapshotResult.error;
 
-        const cluster = clusterResult.value.teamCluster;
-        const snapshot = snapshotResult.value;
+        const cluster = clusterResult.teamCluster;
+        const snapshot = snapshotResult;
 
         return {
             summary: `Cluster "${cluster.name}" is ${cluster.status} with ${snapshot.daemonQueues.length} live daemon queue(s).`,

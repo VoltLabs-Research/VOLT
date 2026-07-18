@@ -14,14 +14,9 @@ import type ClusterTransferJob from '@modules/cluster/domain/entities/ClusterTra
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @injectable()
-export default class CreateTeamClusterTransferRequestUseCase implements IUseCase<
-    CreateTeamClusterTransferRequestInputDTO,
-    CreateTeamClusterTransferRequestOutputDTO,
-    ApplicationError
-> {
+export default class CreateTeamClusterTransferRequestUseCase implements IUseCase<CreateTeamClusterTransferRequestInputDTO, CreateTeamClusterTransferRequestOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         private readonly storagePlacementService: StoragePlacementService,
@@ -31,10 +26,10 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
 
     async execute(
         input: CreateTeamClusterTransferRequestInputDTO
-    ): Promise<Result<CreateTeamClusterTransferRequestOutputDTO, ApplicationError>> {
+    ): Promise<CreateTeamClusterTransferRequestOutputDTO> {
         const sourceCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (sourceCluster instanceof ApplicationError) {
-            return Result.fail(sourceCluster);
+            throw sourceCluster;
         }
 
         const destinationCluster = await requireOwnedTeamCluster(this.teamClusterRepository, {
@@ -42,39 +37,39 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
             teamClusterId: input.destinationClusterId
         });
         if (destinationCluster instanceof ApplicationError) {
-            return Result.fail(destinationCluster);
+            throw destinationCluster;
         }
 
         if (sourceCluster.id === destinationCluster.id) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'ClusterTransfer::DestinationMustDiffer',
                 'Destination cluster must be different from the source cluster'
-            ));
+            );
         }
 
         if (sourceCluster.props.status !== TeamClusterStatus.Connected || !sourceCluster.effectiveCapabilities.servesStorageReads) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'ClusterTransfer::SourceClusterUnavailable',
                 'Source cluster must be connected and able to serve authoritative storage reads'
-            ));
+            );
         }
 
         if (
             destinationCluster.props.status !== TeamClusterStatus.Connected
             || !destinationCluster.effectiveCapabilities.acceptsStorageWrites
         ) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'ClusterTransfer::DestinationClusterUnavailable',
                 'Destination cluster must be connected and able to accept storage writes'
-            ));
+            );
         }
 
         const placements = await this.storagePlacementService.resolveTransferPlacementsForCluster(input.teamId, sourceCluster.id);
         if (!placements.length) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'ClusterTransfer::NoPlacements',
                 'This cluster has no authoritative storage placements to transfer'
-            ));
+            );
         }
 
         const requestedJobs: ClusterTransferJob[] = [];
@@ -90,13 +85,13 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
 
         this.clusterTransferRunner.kick(Math.min(Math.max(requestedJobs.length, 1), 10));
 
-        return Result.ok({
+        return {
             message: requestedJobs.length === 1
                 ? 'Queued 1 transfer job for this cluster.'
                 : `Queued ${requestedJobs.length} transfer jobs for this cluster.`,
             sourceClusterId: sourceCluster.id,
             destinationClusterId: destinationCluster.id,
             requestedJobs: requestedJobs.map(toClusterTransferJobDTO)
-        });
+        };
     }
 }

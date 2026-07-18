@@ -32,10 +32,9 @@ export class ListRemoteClusterFilesAITool extends AITool {
             target: params.target,
             path: params.path
         });
-        if (!result.success) throw result.error;
         return {
-            summary: `Found ${result.value.entries.length} entr${result.value.entries.length === 1 ? 'y' : 'ies'} at "${result.value.path || '/'}" in ${result.value.target}.`,
-            data: result.value
+            summary: `Found ${result.entries.length} entr${result.entries.length === 1 ? 'y' : 'ies'} at "${result.path || '/'}" in ${result.target}.`,
+            data: result
         };
     }
 }

@@ -43,8 +43,8 @@ interface DeleteAnalysisByIdOutputDTO {
  * and by the cross-module `IGetAnalysisFrameLogUseCase` contract port
  * (`GetAnalysisFrameLogUseCase`, aliased to
  * `COMPUTE_TOKENS.GetAnalysisFrameLogUseCase`). Each is therefore retained and
- * this service delegates to it, unwrapping the Result error channel onto thrown
- * `ApplicationError`s so Express 5 forwards them to the global error middleware.
+ * this service delegates to it; use cases throw `ApplicationError`s directly so
+ * Express 5 forwards them to the global error middleware.
  */
 @Singleton(ANALYSIS_TOKENS.AnalysisService)
 export default class AnalysisService {
@@ -58,56 +58,26 @@ export default class AnalysisService {
     ) {}
 
     async getAnalysesByTeamId(input: GetAnalysesByTeamIdInputDTO): Promise<GetAnalysesByTeamIdOutputDTO> {
-        const result = await this.getAnalysesByTeamIdUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getAnalysesByTeamIdUseCase.execute(input);
     }
 
     async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInputDTO): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
-        const result = await this.getAnalysesByTrajectoryIdUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getAnalysesByTrajectoryIdUseCase.execute(input);
     }
 
     async getAnalysisFrameLog(input: GetAnalysisFrameLogInputDTO): Promise<GetAnalysisFrameLogOutputDTO> {
-        const result = await this.getAnalysisFrameLogUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getAnalysisFrameLogUseCase.execute(input);
     }
 
     async retryFailedFrames(input: RetryFailedFramesInputDTO): Promise<RetryFailedFramesOutputDTO> {
-        const result = await this.retryFailedFramesUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.retryFailedFramesUseCase.execute(input);
     }
 
     async getAnalysisById(input: GetAnalysisByIdInputDTO): Promise<GetAnalysisByIdOutputDTO> {
-        const result = await this.getAnalysisByIdUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getAnalysisByIdUseCase.execute(input);
     }
 
     async deleteAnalysisById(input: DeleteAnalysisByIdInputDTO): Promise<DeleteAnalysisByIdOutputDTO> {
-        const result = await this.deleteAnalysisByIdUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteAnalysisByIdUseCase.execute(input);
     }
 }

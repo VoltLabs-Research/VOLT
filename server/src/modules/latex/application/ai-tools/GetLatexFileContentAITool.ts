@@ -25,9 +25,7 @@ export class GetLatexFileContentAITool extends AITool {
             teamId: scope.teamId,
             documentId: params.documentId
         });
-        if (!result.success) throw result.error;
-
-        const file = result.value.find((candidate) => candidate._id === params.fileId);
+        const file = result.find((candidate) => candidate._id === params.fileId);
         if (!file) {
             throw new Error(`LaTeX file ${params.fileId} was not found in document ${params.documentId}.`);
         }

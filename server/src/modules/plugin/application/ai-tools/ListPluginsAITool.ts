@@ -28,7 +28,6 @@ export class ListPluginsAITool extends AITool {
             limit: params.limit,
             status: params.status
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} plugins.`, data: result.value.data };
+        return { summary: `Found ${result.total} plugins.`, data: result.data };
     }
 }

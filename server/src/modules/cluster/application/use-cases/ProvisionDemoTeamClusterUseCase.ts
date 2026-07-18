@@ -18,7 +18,6 @@ import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
@@ -42,20 +41,20 @@ const buildPlaintextCredentials = (enrollmentToken: string): DemoClusterPlaintex
 };
 
 @injectable()
-export default class ProvisionDemoTeamClusterUseCase implements IUseCase<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO, ApplicationError> {
+export default class ProvisionDemoTeamClusterUseCase implements IUseCase<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
         @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService
     ){}
 
-    async execute(input: ProvisionDemoTeamClusterInputDTO): Promise<Result<ProvisionDemoTeamClusterOutputDTO, ApplicationError>> {
+    async execute(input: ProvisionDemoTeamClusterInputDTO): Promise<ProvisionDemoTeamClusterOutputDTO> {
         const existingDemo = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
         if (existingDemo) {
             logger.info(`[ProvisionDemoTeamClusterUseCase] Returning existing demo teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
-            return Result.ok({
+            return {
                 teamCluster: toTeamClusterDTO(existingDemo)
-            });
+            };
         }
 
         const enrollmentToken = createEnrollmentToken();
@@ -99,13 +98,13 @@ export default class ProvisionDemoTeamClusterUseCase implements IUseCase<Provisi
             if (code === 11000) {
                 const fallback = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
                 if (fallback) {
-                    return Result.ok({
+                    return {
                         teamCluster: toTeamClusterDTO(fallback)
-                    });
+                    };
                 }
             }
             logger.error(error, `[ProvisionDemoTeamClusterUseCase] Failed to persist demo cluster teamId=${input.teamId}`);
-            return Result.fail(ApplicationError.internalServerError('Failed to provision demo cluster'));
+            throw ApplicationError.internalServerError('Failed to provision demo cluster');
         }
 
         logger.info(`[ProvisionDemoTeamClusterUseCase] Demo cluster persisted teamClusterId=${createdTeamCluster.id} teamId=${input.teamId} expiresAt=${expiresAt.toISOString()}`);
@@ -114,8 +113,8 @@ export default class ProvisionDemoTeamClusterUseCase implements IUseCase<Provisi
             logger.error(error, `[ProvisionDemoTeamClusterUseCase] Demo stack deploy failed teamClusterId=${createdTeamCluster.id} teamId=${input.teamId}`);
         });
 
-        return Result.ok({
+        return {
             teamCluster: toTeamClusterDTO(createdTeamCluster)
-        });
+        };
     }
 }

@@ -23,15 +23,14 @@ export class GlobalSearchAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             userId: scope.userId,
             query: params.query,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
 
-        const { analyses, containers, trajectories, teams, plugins, chats } = result.value;
+        const { analyses, containers, trajectories, teams, plugins, chats } = value;
 
         const trajectoryItems = trajectories.map((trajectory) => ({
             ...trajectory,

@@ -12,7 +12,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
@@ -23,13 +22,13 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: ClonePluginInputDTO): Promise<Result<ClonePluginOutputDTO>> {
+    async execute(input: ClonePluginInputDTO): Promise<ClonePluginOutputDTO> {
         const original = await this.pluginRepository.findById(input.pluginId);
         if (!original) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const clonedNodes = original.props.workflow.props.nodes.map((node) => {
@@ -69,8 +68,8 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
             teamId: input.teamId
         }));
 
-        return Result.ok({
+        return {
             plugin: mapPluginToPersistedDTO(plugin)
-        });
+        };
     }
 }

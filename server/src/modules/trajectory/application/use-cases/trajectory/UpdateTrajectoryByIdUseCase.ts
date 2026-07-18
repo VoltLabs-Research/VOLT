@@ -6,17 +6,16 @@ import { UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO } from '@mo
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
 @injectable()
-export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO, ApplicationError>{
+export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO>{
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ){}
 
-    async execute(input: UpdateTrajectoryByIdInputDTO): Promise<Result<UpdateTrajectoryByIdOutputDTO, ApplicationError>>{
+    async execute(input: UpdateTrajectoryByIdInputDTO): Promise<UpdateTrajectoryByIdOutputDTO>{
         const { trajectoryId, name, isPublic } = input;
         const result = await this.trajectoryRepo.updateById(trajectoryId, {
             name,
@@ -26,12 +25,12 @@ export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTraje
         });
 
         if(!result){
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
-        return Result.ok(toPersistedOutput(result));
+        return toPersistedOutput(result);
     }
 }

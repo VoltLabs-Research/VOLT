@@ -14,7 +14,6 @@ import { requireOwnedTeamClusterWithSensitiveData } from '@modules/cluster/appli
 import { assertConfirmedPassword } from '@modules/cluster/utilities/assertConfirmedPassword';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 
 const decryptRequiredValue = async (
@@ -31,7 +30,7 @@ const decryptRequiredValue = async (
 };
 
 @injectable()
-export default class RevealTeamClusterCredentialsUseCase implements IUseCase<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO, ApplicationError> {
+export default class RevealTeamClusterCredentialsUseCase implements IUseCase<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
@@ -39,10 +38,10 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
         @inject(AUTH_CONTRACT_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher
     ){}
 
-    async execute(input: RevealTeamClusterCredentialsInputDTO): Promise<Result<RevealTeamClusterCredentialsOutputDTO, ApplicationError>> {
+    async execute(input: RevealTeamClusterCredentialsInputDTO): Promise<RevealTeamClusterCredentialsOutputDTO> {
         const teamCluster = await requireOwnedTeamClusterWithSensitiveData(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const passwordError = await assertConfirmedPassword({
@@ -52,7 +51,7 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             password: input.password
         });
         if (passwordError) {
-            return Result.fail(passwordError);
+            throw passwordError;
         }
 
         const services = teamCluster.props.services;
@@ -115,9 +114,9 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
 
         logger.info(`Team cluster credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
-        return Result.ok({
+        return {
             teamClusterId: input.teamClusterId,
             services: revealedServices
-        });
+        };
     }
 }

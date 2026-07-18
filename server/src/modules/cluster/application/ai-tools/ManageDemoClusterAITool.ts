@@ -31,31 +31,28 @@ export class ManageDemoClusterAITool extends AITool<ManageDemoClusterParams> {
     async execute(params: ManageDemoClusterParams, scope: AIToolScope) {
         if (params.action === 'provision') {
             const result = await this.provisionUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
-            if (!result.success) throw result.error;
             return {
-                summary: `Demo cluster "${result.value.teamCluster.name}" provisioned.`,
-                data: result.value
+                summary: `Demo cluster "${result.teamCluster.name}" provisioned.`,
+                data: result
             };
         }
 
         if (params.action === 'delete') {
             const result = await this.deleteUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
-            if (!result.success) throw result.error;
             return {
-                summary: result.value.teardownScheduled
+                summary: result.teardownScheduled
                     ? 'Demo cluster teardown scheduled.'
                     : 'No active demo cluster to delete.',
-                data: result.value
+                data: result
             };
         }
 
         const result = await this.statusUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
-        if (!result.success) throw result.error;
         return {
-            summary: result.value.hasActiveDemo
-                ? `Active demo cluster${result.value.remainingMs !== null ? ` (${Math.max(0, Math.round(result.value.remainingMs / 60000))} min remaining)` : ''}.`
+            summary: result.hasActiveDemo
+                ? `Active demo cluster${result.remainingMs !== null ? ` (${Math.max(0, Math.round(result.remainingMs / 60000))} min remaining)` : ''}.`
                 : 'No active demo cluster.',
-            data: result.value
+            data: result
         };
     }
 }

@@ -22,8 +22,7 @@ export class GetClusterResourceLimitsAITool extends AITool {
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId
         });
-        if (!result.success) throw result.error;
-        const { resourceLimits } = result.value;
+        const { resourceLimits } = result;
         return {
             summary: `Cluster limits: ${resourceLimits.maxCpus ?? 'unknown'} CPUs, ${resourceLimits.maxMemoryMB ?? 'unknown'} MB.`,
             data: resourceLimits

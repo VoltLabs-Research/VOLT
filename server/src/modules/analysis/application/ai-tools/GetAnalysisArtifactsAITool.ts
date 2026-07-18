@@ -18,13 +18,12 @@ export class GetAnalysisArtifactsAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             analysisId: params.analysisId,
             teamId: scope.teamId
         });
-        if (!result.success) throw result.error;
 
-        const artifacts = (result.value.expectedArtifacts ?? []).map((artifact) => ({
+        const artifacts = (value.expectedArtifacts ?? []).map((artifact) => ({
             exposureId: artifact.exposureId,
             name: artifact.name,
             status: artifact.status,

@@ -12,7 +12,6 @@ import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import {
     ChannelCommands,
     type TeamClusterDaemonRoleApplyPayload,
@@ -23,11 +22,7 @@ import { inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 
 @Singleton()
-export default class UpdateTeamClusterRoleUseCase implements IUseCase<
-    UpdateTeamClusterRoleInputDTO,
-    UpdateTeamClusterRoleOutputDTO,
-    ApplicationError
-> {
+export default class UpdateTeamClusterRoleUseCase implements IUseCase<UpdateTeamClusterRoleInputDTO, UpdateTeamClusterRoleOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
@@ -36,10 +31,10 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
 
     async execute(
         input: UpdateTeamClusterRoleInputDTO
-    ): Promise<Result<UpdateTeamClusterRoleOutputDTO, ApplicationError>> {
+    ): Promise<UpdateTeamClusterRoleOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const currentRoleConfig = teamCluster.props.roleConfig;
@@ -56,7 +51,7 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
         });
 
         if (!updatedTeamCluster) {
-            return Result.fail(ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found'));
+            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
 
         this.teamClusterLifecycleService.publishTeamClusterUpdate(updatedTeamCluster);
@@ -91,9 +86,9 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
             }
         }
 
-        return Result.ok({
+        return {
             message: 'Team cluster role saved.',
             teamCluster: toTeamClusterDTO(updatedTeamCluster)
-        });
+        };
     }
 }

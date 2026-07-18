@@ -7,7 +7,6 @@ import type { IGetPluginByIdUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -20,8 +19,7 @@ interface GetPublicCanvasPluginInput {
 @Singleton()
 export class GetPublicCanvasPluginUseCase implements IUseCase<
     GetPublicCanvasPluginInput,
-    GetPluginByIdOutputDTO,
-    ApplicationError
+    GetPluginByIdOutputDTO
 > {
     constructor(
         
@@ -34,33 +32,26 @@ export class GetPublicCanvasPluginUseCase implements IUseCase<
         @inject(PLUGIN_USECASE_TOKENS.GetPluginByIdUseCase) private readonly getPluginByIdUseCase: IGetPluginByIdUseCase
     ) {}
 
-    async execute(input: GetPublicCanvasPluginInput): Promise<Result<GetPluginByIdOutputDTO, ApplicationError>> {
-        try {
-            await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: GetPublicCanvasPluginInput): Promise<GetPluginByIdOutputDTO> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            const analyses = await this.analysisRepository.findAll({
-                filter: { trajectory: input.trajectoryId },
-                limit: 1000
-            });
+        const analyses = await this.analysisRepository.findAll({
+            filter: { trajectory: input.trajectoryId },
+            limit: 1000
+        });
 
-            const pluginAttached = analyses.data.some((analysis) => {
-                const pluginId = extractPluginId(analysis.props.plugin);
-                return pluginId === input.pluginId;
-            });
+        const pluginAttached = analyses.data.some((analysis) => {
+            const pluginId = extractPluginId(analysis.props.plugin);
+            return pluginId === input.pluginId;
+        });
 
-            if (!pluginAttached) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.PLUGIN_NOT_FOUND,
-                    'Plugin not found'
-                ));
-            }
-
-            return this.getPluginByIdUseCase.execute({ pluginId: input.pluginId });
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
+        if (!pluginAttached) {
+            throw ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            );
         }
+
+        return this.getPluginByIdUseCase.execute({ pluginId: input.pluginId });
     }
 };

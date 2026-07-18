@@ -24,10 +24,9 @@ export class RegenerateClusterTokenAITool extends AITool {
             userId: scope.userId,
             teamClusterId: params.clusterId
         });
-        if (!result.success) throw result.error;
         return {
             summary: 'Cluster enrollment token regenerated.',
-            data: { enrollmentToken: result.value.enrollmentToken }
+            data: { enrollmentToken: result.enrollmentToken }
         };
     }
 }

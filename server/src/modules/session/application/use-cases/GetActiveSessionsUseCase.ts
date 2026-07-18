@@ -3,18 +3,16 @@ import { toPersistedSessionDTO } from '@modules/session/application/dtos/Persist
 import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class GetActiveSessionsUseCase implements IUseCase<GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO[], ApplicationError>{
+export default class GetActiveSessionsUseCase implements IUseCase<GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO[]>{
     constructor(
         @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository
     ){}
 
-    async execute(input: GetActiveSessionsInputDTO): Promise<Result<GetActiveSessionsOutputDTO[], ApplicationError>>{
+    async execute(input: GetActiveSessionsInputDTO): Promise<GetActiveSessionsOutputDTO[]>{
         const sessions = await this.sessionRepository.findActiveByUserId(input.userId);
-        return Result.ok(sessions.map((session) => toPersistedSessionDTO(session, input.token)));
+        return sessions.map((session) => toPersistedSessionDTO(session, input.token));
     }
 }

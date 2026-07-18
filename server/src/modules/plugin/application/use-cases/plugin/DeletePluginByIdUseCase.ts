@@ -8,32 +8,31 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
+export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(SHARED_TOKENS.EventBus) private eventBus: IEventBus
     ) {}
 
-    async execute(input: DeletePluginByIdInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: DeletePluginByIdInputDTO): Promise<null> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const deleted = await this.pluginRepository.deleteById(input.pluginId);
         if (!deleted) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         await this.eventBus.publish(new PluginDeletedEvent({
@@ -42,6 +41,6 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
             workflow: plugin.props.workflow
         }));
 
-        return Result.ok(null);
+        return null;
     }
 }

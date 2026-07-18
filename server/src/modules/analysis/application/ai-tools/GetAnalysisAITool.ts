@@ -18,11 +18,10 @@ export class GetAnalysisAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             analysisId: params.analysisId,
             teamId: scope.teamId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Retrieved analysis ${params.analysisId}.`, data: result.value };
+        return { summary: `Retrieved analysis ${params.analysisId}.`, data: value };
     }
 }

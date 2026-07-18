@@ -1,7 +1,6 @@
 import { GetNodeTypesSchemaOutputDTO } from '@modules/plugin/application/dtos/plugin/GetNodeTypesSchemaDTO';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
@@ -20,9 +19,9 @@ const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
 
 @Singleton()
 export default class GetNodeTypesSchemaUseCase implements IUseCase<void, GetNodeTypesSchemaOutputDTO> {
-    async execute(): Promise<Result<GetNodeTypesSchemaOutputDTO>> {
-        return Result.ok({
+    async execute(): Promise<GetNodeTypesSchemaOutputDTO> {
+        return {
             nodeTypes: NODE_OUTPUT_PROPERTIES
-        });
+        };
     }
 }

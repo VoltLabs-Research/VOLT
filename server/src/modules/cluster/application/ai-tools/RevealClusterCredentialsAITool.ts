@@ -30,9 +30,8 @@ export class RevealClusterCredentialsAITool extends AITool {
             teamClusterId: params.clusterId,
             password: params.password
         });
-        if (!result.success) throw result.error;
 
-        const { services } = result.value;
+        const { services } = result;
         const maskedServices = {
             minio: { port: services.minio.port, username: MASKED, password: MASKED },
             redis: { port: services.redis.port, username: MASKED, password: MASKED },
@@ -43,7 +42,7 @@ export class RevealClusterCredentialsAITool extends AITool {
         return {
             summary: 'Cluster credentials confirmed for minio, redis, mongodb, and daemon (values masked).',
             data: {
-                teamClusterId: result.value.teamClusterId,
+                teamClusterId: result.teamClusterId,
                 credentialKeys: ['minio.username', 'minio.password', 'redis.username', 'redis.password', 'mongodb.username', 'mongodb.password', 'daemon.password'],
                 services: maskedServices
             }

@@ -6,17 +6,16 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteAIConversationInputDTO } from '@modules/ai/application/dtos/DeleteAIConversationDTO';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null, ApplicationError> {
+export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
         @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository
     ) {}
 
-    async execute(input: DeleteAIConversationInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: DeleteAIConversationInputDTO): Promise<null> {
         const conversation = await this.conversationRepository.findOwnedByUser(
             input.conversationId,
             input.teamId,
@@ -24,10 +23,10 @@ export default class DeleteAIConversationUseCase implements IUseCase<DeleteAICon
         );
 
         if (!conversation) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.AI_CONVERSATION_NOT_FOUND,
                 'AI conversation not found'
-            ));
+            );
         }
 
         await this.messageRepository.deleteMany({
@@ -36,6 +35,6 @@ export default class DeleteAIConversationUseCase implements IUseCase<DeleteAICon
 
         await this.conversationRepository.deleteById(conversation._id);
 
-        return Result.ok(null);
+        return null;
     }
 }

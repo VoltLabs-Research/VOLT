@@ -40,18 +40,12 @@ export class NotebookCredentialService implements INotebookCredentialService {
 
         const roleId = await this.resolveLauncherRoleId(notebook.props.team, userId);
 
-        const result = await this.createSecretKeyUseCase.execute({
+        const { secretKeyId, secretKey } = await this.createSecretKeyUseCase.execute({
             teamId: notebook.props.team,
             roleId,
             name: `notebook:${notebook._id}`,
             userId
         });
-
-        if (!result.success) {
-            throw result.error;
-        }
-
-        const { secretKeyId, secretKey } = result.value;
         await this.scriptingNotebookRepository.updateById(notebook._id, {
             secretKeyId,
             secretKeyEncrypted: await encrypt(secretKey)
@@ -69,15 +63,15 @@ export class NotebookCredentialService implements INotebookCredentialService {
             return;
         }
 
-        const result = await this.deleteSecretKeyByIdUseCase.execute({
-            secretKeyId,
-            teamId: team,
-            userId: createdBy
-        });
-
-        if (!result.success) {
+        try {
+            await this.deleteSecretKeyByIdUseCase.execute({
+                secretKeyId,
+                teamId: team,
+                userId: createdBy
+            });
+        } catch (err) {
             logger.warn(
-                { secretKeyId, notebookId: notebook._id, err: result.error },
+                { secretKeyId, notebookId: notebook._id, err },
                 '[Scripting] Failed to revoke notebook secret key'
             );
         }

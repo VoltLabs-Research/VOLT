@@ -18,8 +18,7 @@ export class ListSampleSimulationsAITool extends AITool {
     }
 
     async execute(_params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
-        const result = await this.useCase.execute();
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.length} sample simulations.`, data: result.value };
+        const value = await this.useCase.execute();
+        return { summary: `Found ${value.length} sample simulations.`, data: value };
     }
 }

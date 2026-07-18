@@ -15,7 +15,6 @@ import type { IContainerPublicPortAllocator } from '@modules/container/domain/po
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
@@ -30,7 +29,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: UpdateContainerInputDTO): Promise<Result<UpdateContainerOutputDTO>> {
+    async execute(input: UpdateContainerInputDTO): Promise<UpdateContainerOutputDTO> {
         const { containerId, teamId, action, env, ports } = input;
 
         const container = await this.ownershipService.getOwnedByTeam(containerId, teamId);
@@ -74,7 +73,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
             await this.publishContainerUpdatedEvent(containerId, teamId, container.name);
 
-            return Result.ok({ container, status: container.status });
+            return { container, status: container.status };
         }
 
         const effectiveEnv = env || container.env;
@@ -131,7 +130,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
             await this.publishContainerUpdatedEvent(containerId, teamId, updated?.name ?? container.name);
 
-            return Result.ok({ container: updated });
+            return { container: updated };
         } catch (error) {
             this.publicPortAllocator.releaseReservations(reservedPublicPorts);
             await this.relayService.stopPublicPortRelays(newPublicPorts).catch(() => undefined);

@@ -11,26 +11,25 @@ import type { IGetPluginByIdUseCase } from '@shared/contracts/ports/IGetPluginBy
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @Singleton()
 @AliasOf(PLUGIN_USECASE_TOKENS.GetPluginByIdUseCase)
 export class GetPluginByIdUseCase implements
-    IUseCase<GetPluginByIdInputDTO, GetPluginByIdOutputDTO, ApplicationError>,
+    IUseCase<GetPluginByIdInputDTO, GetPluginByIdOutputDTO>,
     IGetPluginByIdUseCase {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository
     ) {}
 
-    async execute(input: GetPluginByIdInputDTO): Promise<Result<PersistedPluginDTO, ApplicationError>> {
+    async execute(input: GetPluginByIdInputDTO): Promise<PersistedPluginDTO> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
-        return Result.ok(mapPluginToPersistedDTO(plugin));
+        return mapPluginToPersistedDTO(plugin);
     }
 }

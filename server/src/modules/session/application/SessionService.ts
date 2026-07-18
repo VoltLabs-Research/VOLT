@@ -30,12 +30,7 @@ export default class SessionService {
     ) {}
 
     async getActiveSessions(input: GetActiveSessionsInputDTO): Promise<GetActiveSessionsOutputDTO[]> {
-        const result = await this.getActiveSessionsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getActiveSessionsUseCase.execute(input);
     }
 
     async getLoginActivity(input: GetLoginActivityInputDTO): Promise<GetLoginActivityOutputDTO> {
@@ -46,18 +41,10 @@ export default class SessionService {
     }
 
     async revokeSession(input: RevokeSessionInputDTO): Promise<void> {
-        const result = await this.revokeSessionUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
+        await this.revokeSessionUseCase.execute(input);
     }
 
     async revokeAllSessions(input: RevokeAllSessionsInputDTO): Promise<RevokeAllSessionsOutputDTO> {
-        const result = await this.revokeAllSessionsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.revokeAllSessionsUseCase.execute(input);
     }
 }

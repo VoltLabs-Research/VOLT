@@ -9,16 +9,11 @@ import {
 import { preflightRemoteExplorerAccess } from '@modules/cluster/application/utilities/remote-explorer-access';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUseCase<
-    ListTeamClusterRemoteExplorerEntriesInputDTO,
-    ListTeamClusterRemoteExplorerEntriesOutputDTO,
-    ApplicationError
-> {
+export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUseCase<ListTeamClusterRemoteExplorerEntriesInputDTO, ListTeamClusterRemoteExplorerEntriesOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService) private readonly sessionService: ITeamClusterRemoteAccessSessionService,
@@ -27,14 +22,14 @@ export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUse
 
     async execute(
         input: ListTeamClusterRemoteExplorerEntriesInputDTO
-    ): Promise<Result<ListTeamClusterRemoteExplorerEntriesOutputDTO, ApplicationError>> {
+    ): Promise<ListTeamClusterRemoteExplorerEntriesOutputDTO> {
         const preflight = await preflightRemoteExplorerAccess(
             this.teamClusterRepository,
             this.sessionService,
             input
         );
         if (preflight instanceof ApplicationError) {
-            return Result.fail(preflight);
+            throw preflight;
         }
 
         try {
@@ -44,21 +39,21 @@ export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUse
                 path: input.path
             });
 
-            return Result.ok({
+            return {
                 teamClusterId: preflight.teamClusterId,
                 target: preflight.target,
                 path: input.path,
                 entries
-            });
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 'TeamCluster::RemoteExplorerListFailed',
                 error instanceof Error ? error.message : 'Failed to load remote explorer entries'
-            ));
+            );
         }
     }
 }

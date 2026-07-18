@@ -22,13 +22,12 @@ export class ListPublicTrajectoriesAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             page: params.page,
             limit: params.limit,
             search: params.search
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} public trajectories.`, data: result.value.data };
+        return { summary: `Found ${value.total} public trajectories.`, data: value.data };
     }
 }

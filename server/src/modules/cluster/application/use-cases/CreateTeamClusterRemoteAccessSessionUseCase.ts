@@ -12,17 +12,12 @@ import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/
 import { assertConfirmedPassword } from '@modules/cluster/utilities/assertConfirmedPassword';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 
 @Singleton()
-export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUseCase<
-    CreateTeamClusterRemoteAccessSessionInputDTO,
-    CreateTeamClusterRemoteAccessSessionOutputDTO,
-    ApplicationError
-> {
+export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUseCase<CreateTeamClusterRemoteAccessSessionInputDTO, CreateTeamClusterRemoteAccessSessionOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
@@ -32,10 +27,10 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
 
     async execute(
         input: CreateTeamClusterRemoteAccessSessionInputDTO
-    ): Promise<Result<CreateTeamClusterRemoteAccessSessionOutputDTO, ApplicationError>> {
+    ): Promise<CreateTeamClusterRemoteAccessSessionOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const passwordError = await assertConfirmedPassword({
@@ -45,7 +40,7 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
             password: input.password
         });
         if (passwordError) {
-            return Result.fail(passwordError);
+            throw passwordError;
         }
 
         const session = this.sessionService.createSession({
@@ -57,8 +52,8 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
 
         logger.info(`Created team cluster remote access session teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} target=${input.target}`);
 
-        return Result.ok({
+        return {
             session
-        });
+        };
     }
 }

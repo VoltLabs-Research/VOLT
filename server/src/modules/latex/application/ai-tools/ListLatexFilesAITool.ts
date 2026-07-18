@@ -22,7 +22,6 @@ export class ListLatexFilesAITool extends AITool {
             teamId: scope.teamId,
             documentId: params.documentId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.length} LaTeX files.`, data: result.value };
+        return { summary: `Found ${result.length} LaTeX files.`, data: result };
     }
 }

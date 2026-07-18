@@ -8,15 +8,13 @@ import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import { CreateTeamInputDTO, CreateTeamOutputDTO } from '@modules/team/application/dtos/team/CreateTeamDTO';
 import TeamRole from '@modules/team/domain/entities/team-role/TeamRole';
 import TeamCreatedEvent from '@modules/team/domain/events/team/TeamCreatedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError> {
+export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
@@ -26,7 +24,7 @@ export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, C
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: CreateTeamInputDTO): Promise<Result<CreateTeamOutputDTO, ApplicationError>> {
+    async execute(input: CreateTeamInputDTO): Promise<CreateTeamOutputDTO> {
         const { name, description, userId } = input;
         const team = await this.teamRepository.create({
             name,
@@ -73,9 +71,9 @@ export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, C
             teamId: team._id
         }));
 
-        return Result.ok({
+        return {
             _id: team._id,
             ...team.props
-        });
+        };
     }
 }

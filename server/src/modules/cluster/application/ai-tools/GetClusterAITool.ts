@@ -22,8 +22,7 @@ export class GetClusterAITool extends AITool {
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId
         });
-        if (!result.success) throw result.error;
-        const { teamCluster } = result.value;
+        const { teamCluster } = result;
         return { summary: `Cluster "${teamCluster.name}" is ${teamCluster.status}.`, data: teamCluster };
     }
 }

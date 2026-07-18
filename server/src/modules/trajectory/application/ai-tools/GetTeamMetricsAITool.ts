@@ -18,8 +18,7 @@ export class GetTeamMetricsAITool extends AITool {
     }
 
     async execute(_params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({ teamId: scope.teamId });
-        if (!result.success) throw result.error;
-        return { summary: 'Retrieved team trajectory metrics.', data: result.value };
+        const value = await this.useCase.execute({ teamId: scope.teamId });
+        return { summary: 'Retrieved team trajectory metrics.', data: value };
     }
 }

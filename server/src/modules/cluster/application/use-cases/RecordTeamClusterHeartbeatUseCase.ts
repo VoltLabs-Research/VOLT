@@ -6,21 +6,16 @@ import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export default class RecordTeamClusterHeartbeatUseCase implements IUseCase<
-    RecordTeamClusterHeartbeatInputDTO,
-    RecordTeamClusterHeartbeatOutputDTO,
-    ApplicationError
-> {
+export default class RecordTeamClusterHeartbeatUseCase implements IUseCase<RecordTeamClusterHeartbeatInputDTO, RecordTeamClusterHeartbeatOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}
 
-    async execute(input: RecordTeamClusterHeartbeatInputDTO): Promise<Result<RecordTeamClusterHeartbeatOutputDTO, ApplicationError>> {
+    async execute(input: RecordTeamClusterHeartbeatInputDTO): Promise<RecordTeamClusterHeartbeatOutputDTO> {
         try {
             const teamCluster = await this.teamClusterLifecycleService.recordHeartbeat(
                 input.teamClusterId,
@@ -30,15 +25,15 @@ export default class RecordTeamClusterHeartbeatUseCase implements IUseCase<
                 input.metrics
             );
 
-            return Result.ok({
+            return {
                 teamCluster
-            });
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(ApplicationError.internalServerError('Failed to record team cluster heartbeat'));
+            throw ApplicationError.internalServerError('Failed to record team cluster heartbeat');
         }
     }
 };

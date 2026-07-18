@@ -55,65 +55,30 @@ export default class ScriptingService {
     ) {}
 
     async createJupyterSession(input: CreateScriptingJupyterSessionInputDTO): Promise<CreateScriptingJupyterSessionOutputDTO> {
-        const result = await this.createScriptingJupyterSessionUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createScriptingJupyterSessionUseCase.execute(input);
     }
 
     async createNotebook(input: CreateScriptingNotebookInputDTO): Promise<CreateScriptingNotebookOutputDTO> {
-        const result = await this.createScriptingNotebookUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createScriptingNotebookUseCase.execute(input);
     }
 
     async deleteNotebook(input: DeleteScriptingNotebookInputDTO): Promise<DeleteScriptingNotebookOutputDTO> {
-        const result = await this.deleteScriptingNotebookUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteScriptingNotebookUseCase.execute(input);
     }
 
     async deleteSession(input: DeleteScriptingSessionInputDTO): Promise<DeleteScriptingSessionOutputDTO> {
-        const result = await this.deleteScriptingSessionUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteScriptingSessionUseCase.execute(input);
     }
 
     async getSessionStatus(input: GetScriptingSessionStatusInputDTO): Promise<GetScriptingSessionStatusOutputDTO> {
-        const result = await this.getScriptingSessionStatusUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getScriptingSessionStatusUseCase.execute(input);
     }
 
     async listNotebooks(input: ListScriptingNotebooksInputDTO): Promise<ListScriptingNotebooksOutputDTO> {
-        const result = await this.listScriptingNotebooksUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listScriptingNotebooksUseCase.execute(input);
     }
 
     async updateNotebook(input: UpdateScriptingNotebookInputDTO): Promise<ScriptingNotebookDTO> {
-        const result = await this.updateScriptingNotebookUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateScriptingNotebookUseCase.execute(input);
     }
 }

@@ -7,33 +7,32 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRoleByIdInputDTO, UpdateTeamRoleByIdOutputDTO, ApplicationError> {
+export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRoleByIdInputDTO, UpdateTeamRoleByIdOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: UpdateTeamRoleByIdInputDTO): Promise<Result<UpdateTeamRoleByIdOutputDTO, ApplicationError>> {
+    async execute(input: UpdateTeamRoleByIdInputDTO): Promise<UpdateTeamRoleByIdOutputDTO> {
         const currentRole = await this.teamRoleRepository.findById(input.roleId);
 
         if (!currentRole) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
-            ));
+            );
         }
 
         if (!currentRole.canRenameTo(input.name)) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_ROLE_IS_SYSTEM,
                 'Cannot rename system roles'
-            ));
+            );
         }
 
         const updateData = currentRole.getUpdatePayload({
@@ -44,10 +43,10 @@ export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRol
         const teamRole = await this.teamRoleRepository.updateById(input.roleId, updateData);
 
         if (!teamRole) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Failed to update team role'
-            ));
+            );
         }
 
         await this.eventBus.publish(new TeamRoleUpdatedEvent({
@@ -57,6 +56,6 @@ export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRol
             permissions: teamRole.props.permissions
         }));
 
-        return Result.ok(toPersistedOutput(teamRole));
+        return toPersistedOutput(teamRole);
     }
 }

@@ -19,7 +19,6 @@ export class GetPluginByIdAITool extends AITool {
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const result = await this.useCase.execute({ pluginId: params.pluginId });
-        if (!result.success) throw result.error;
-        return { summary: `Plugin "${result.value.modifier?.name ?? result.value._id}" (${result.value.status}).`, data: result.value };
+        return { summary: `Plugin "${result.modifier?.name ?? result._id}" (${result.status}).`, data: result };
     }
 }

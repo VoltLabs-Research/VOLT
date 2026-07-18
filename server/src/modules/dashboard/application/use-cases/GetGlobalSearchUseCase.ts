@@ -26,7 +26,6 @@ import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPlugin
 import { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 type PluginEntity = Parameters<typeof mapPluginToPersistedDTO>[0];
@@ -99,10 +98,10 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
         @inject(CHAT_CONTRACT_TOKENS.ChatRepository) private readonly chatRepository: IChatRepository<unknown, ChatSearchView>
     ) {}
 
-    async execute(input: GetGlobalSearchInputDTO): Promise<Result<GetGlobalSearchOutputDTO>> {
+    async execute(input: GetGlobalSearchInputDTO): Promise<GetGlobalSearchOutputDTO> {
         const normalizedQuery = normalizeQuery(input.query);
         if (normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH) {
-            return Result.ok(EMPTY_GLOBAL_SEARCH_RESULTS);
+            return EMPTY_GLOBAL_SEARCH_RESULTS;
         }
 
         const limit = normalizeLimit(input.limit);
@@ -165,7 +164,7 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
             })
         ]);
 
-        return Result.ok({
+        return {
             analyses: analysesResult.data.map((analysis: Analysis) => ({
                 ...analysis.props,
                 _id: analysis._id,
@@ -212,6 +211,6 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
                     );
                 })
                 .slice(0, limit)
-        });
+        };
     }
 }

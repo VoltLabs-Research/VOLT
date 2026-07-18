@@ -4,7 +4,6 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import { Result } from '@shared/domain/port/Result';
 import type { CatalogFolderMessages } from './CatalogFolderMessages';
 
 interface MoveCatalogItemInputDTO {
@@ -23,14 +22,14 @@ export abstract class MoveCatalogItemUseCase<
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
     TItemProps extends object
-> implements IUseCase<TInput, null, ApplicationError> {
+> implements IUseCase<TInput, null> {
     constructor(
         private readonly itemRepository: IBaseRepository<unknown, TItemProps>,
         private readonly folderRepository: ICatalogFolderRepository<TFolder, TFolderProps>,
         private readonly options: MoveCatalogItemUseCaseOptions<TInput, TItemProps>
     ) {}
 
-    async execute(input: TInput): Promise<Result<null, ApplicationError>> {
+    async execute(input: TInput): Promise<null> {
         try {
             const itemId = this.options.getItemId(input);
             const item = await this.itemRepository.findOne({
@@ -39,19 +38,19 @@ export abstract class MoveCatalogItemUseCase<
             } as unknown as Partial<TItemProps>);
 
             if (!item) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     `${this.options.itemLabel ?? 'Item'} not found`
-                ));
+                );
             }
 
             if (input.folderId !== null) {
                 const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);
                 if (!folder) {
-                    return Result.fail(ApplicationError.notFound(
+                    throw ApplicationError.notFound(
                         ErrorCodes.RESOURCE_NOT_FOUND,
                         `Target ${this.options.folderLabel} not found`
-                    ));
+                    );
                 }
             }
 
@@ -59,17 +58,17 @@ export abstract class MoveCatalogItemUseCase<
                 [this.options.itemFolderField ?? 'folder']: input.folderId
             } as unknown as Partial<TItemProps>);
 
-            return Result.ok(null);
+            return null;
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(new ApplicationError(
+            throw new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
                 `Failed to move ${this.options.itemLabel ?? 'item'}`,
                 500
-            ));
+            );
         }
     }
 }

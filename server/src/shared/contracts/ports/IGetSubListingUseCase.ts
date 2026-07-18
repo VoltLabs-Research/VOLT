@@ -10,7 +10,6 @@
  * dual-registered (`@injectable()` + `@AliasOf(token)`, preserving its transient
  * lifecycle) so existing by-class resolution keeps working unchanged.
  */
-import type { Result } from '@shared/domain/port/Result';
 import type {
     GetSubListingInputDTO,
     GetSubListingOutputDTO
@@ -19,5 +18,5 @@ import type {
 export interface IGetSubListingUseCase {
     execute(
         input: GetSubListingInputDTO
-    ): Promise<Result<GetSubListingOutputDTO>>;
+    ): Promise<GetSubListingOutputDTO>;
 }

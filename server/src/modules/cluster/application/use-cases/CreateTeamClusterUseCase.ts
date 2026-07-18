@@ -21,7 +21,6 @@ import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 
 interface MongoDuplicateKeyError {
@@ -33,7 +32,7 @@ const isMongoDuplicateKeyError = (error: unknown): error is MongoDuplicateKeyErr
 };
 
 @injectable()
-export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO, ApplicationError> {
+export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
@@ -42,13 +41,13 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}
 
-    async execute(input: CreateTeamClusterInputDTO): Promise<Result<CreateTeamClusterOutputDTO, ApplicationError>> {
+    async execute(input: CreateTeamClusterInputDTO): Promise<CreateTeamClusterOutputDTO> {
         const user = await this.userRepository.findById(input.userId);
         if (!user) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 'TeamCluster::UserNotFound',
                 'User not found'
-            ));
+            );
         }
 
         const existingDemo = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
@@ -79,13 +78,13 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             createdTeamCluster = await this.teamClusterRepository.create(teamCluster.props);
         } catch (error: unknown) {
             if (isMongoDuplicateKeyError(error) && error.code === 11000) {
-                return Result.fail(ApplicationError.conflict(
+                throw ApplicationError.conflict(
                     'TeamCluster::AlreadyExists',
                     'A team cluster with this name already exists'
-                ));
+                );
             }
 
-            return Result.fail(ApplicationError.internalServerError('Failed to create team cluster'));
+            throw ApplicationError.internalServerError('Failed to create team cluster');
         }
 
         logger.info(`Team cluster created teamClusterId=${createdTeamCluster._id} teamId=${input.teamId} userId=${input.userId}`);
@@ -110,9 +109,9 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             })();
         }
 
-        return Result.ok({
+        return {
             teamCluster: toTeamClusterDTO(createdTeamCluster),
             enrollmentToken
-        });
+        };
     }
 }

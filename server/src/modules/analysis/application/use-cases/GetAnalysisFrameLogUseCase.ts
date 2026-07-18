@@ -10,7 +10,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IGetAnalysisFrameLogUseCase } from '@shared/contracts/ports/IGetAnalysisFrameLogUseCase';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -18,8 +17,7 @@ import { inject } from 'tsyringe';
 @AliasOf(COMPUTE_TOKENS.GetAnalysisFrameLogUseCase)
 export default class GetAnalysisFrameLogUseCase implements IUseCase<
     GetAnalysisFrameLogInputDTO,
-    GetAnalysisFrameLogOutputDTO,
-    ApplicationError
+    GetAnalysisFrameLogOutputDTO
 >, IGetAnalysisFrameLogUseCase {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
@@ -28,21 +26,21 @@ export default class GetAnalysisFrameLogUseCase implements IUseCase<
 
     async execute(
         input: GetAnalysisFrameLogInputDTO
-    ): Promise<Result<GetAnalysisFrameLogOutputDTO, ApplicationError>> {
+    ): Promise<GetAnalysisFrameLogOutputDTO> {
         const analysis = await this.analysisRepository.findById(input.analysisId);
 
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
-            ));
+            );
         }
 
         if (analysis.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_ACCESS_DENIED,
                 'Analysis does not belong to this team'
-            ));
+            );
         }
 
         const log = await this.analysisExecutionLogService.getFrameLog({
@@ -53,6 +51,6 @@ export default class GetAnalysisFrameLogUseCase implements IUseCase<
             afterCursor: input.afterCursor
         });
 
-        return Result.ok(log);
+        return log;
     }
 }

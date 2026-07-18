@@ -8,7 +8,6 @@ import {
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @Singleton()
 export class SearchRegistryPluginsUseCase implements IUseCase<SearchRegistryPluginsInputDTO, SearchRegistryPluginsOutputDTO> {
@@ -16,8 +15,8 @@ export class SearchRegistryPluginsUseCase implements IUseCase<SearchRegistryPlug
         @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: IRegistryGateway
     ) {}
 
-    async execute(input: SearchRegistryPluginsInputDTO): Promise<Result<SearchRegistryPluginsOutputDTO>> {
+    async execute(input: SearchRegistryPluginsInputDTO): Promise<SearchRegistryPluginsOutputDTO> {
         const result = await this.registryGateway.search(input.q ?? '', input.page ?? 1, input.limit ?? 20);
-        return Result.ok(result);
+        return result;
     }
 }

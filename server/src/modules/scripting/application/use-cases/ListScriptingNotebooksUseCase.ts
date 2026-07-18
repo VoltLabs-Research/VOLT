@@ -7,19 +7,17 @@ import {
 } from '@modules/scripting/application/dtos/ListScriptingNotebooksDTO';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import { ScriptingNotebookScope } from '@modules/scripting/domain/entities/ScriptingNotebookScope';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO, ApplicationError> {
+export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository
     ) {}
 
-    async execute(input: ListScriptingNotebooksInputDTO): Promise<Result<ListScriptingNotebooksOutputDTO, ApplicationError>> {
+    async execute(input: ListScriptingNotebooksInputDTO): Promise<ListScriptingNotebooksOutputDTO> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(500, input.limit ?? 500));
         const filter: Record<string, unknown> = { team: input.teamId };
@@ -50,9 +48,9 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
             ]
         });
 
-        return Result.ok({
+        return {
             ...result,
             data: result.data.map(toScriptingNotebookDTO)
-        });
+        };
     }
 }

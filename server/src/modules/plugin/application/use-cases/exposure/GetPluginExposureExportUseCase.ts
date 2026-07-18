@@ -13,7 +13,6 @@ import type { IGetPluginExposureExportUseCase } from '@shared/contracts/ports/IG
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 
 import type { IUseCase } from '@shared/application/IUseCase';
 
@@ -21,11 +20,7 @@ import type { IPluginExposureExportService } from '@modules/plugin/domain/port/e
 
 @Singleton()
 @AliasOf(PLUGIN_USECASE_TOKENS.GetPluginExposureExportUseCase)
-export class GetPluginExposureExportUseCase implements IUseCase<
-    GetPluginExposureExportInputDTO,
-    GetPluginExposureExportOutputDTO,
-    ApplicationError
->, IGetPluginExposureExportUseCase {
+export class GetPluginExposureExportUseCase implements IUseCase<GetPluginExposureExportInputDTO, GetPluginExposureExportOutputDTO>, IGetPluginExposureExportUseCase {
     constructor(
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
@@ -34,21 +29,21 @@ export class GetPluginExposureExportUseCase implements IUseCase<
 
     async execute(
         input: GetPluginExposureExportInputDTO
-    ): Promise<Result<GetPluginExposureExportOutputDTO, ApplicationError>> {
+    ): Promise<GetPluginExposureExportOutputDTO> {
         const analysis = await this.analysisRepository.findById(String(input.analysisId));
 
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
-            ));
+            );
         }
 
         if (String(analysis.props.team) !== String(input.teamId)) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
-            ));
+            );
         }
 
         const pluginId = String(analysis.props.plugin);
@@ -60,14 +55,14 @@ export class GetPluginExposureExportUseCase implements IUseCase<
         }
 
         try {
-            return Result.ok(await this.pluginExposureExportService.exportAnalysisExposureBundle({
+            return await this.pluginExposureExportService.exportAnalysisExposureBundle({
                 analysisId: String(input.analysisId),
                 trajectoryId: String(analysis.props.trajectory),
                 pluginName
-            }));
+            });
         } catch (error) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
             throw error;

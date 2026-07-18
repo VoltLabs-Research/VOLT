@@ -9,8 +9,6 @@
  * implements this port and is dual-registered (`@Singleton()` + `@AliasOf(token)`)
  * so existing by-class resolution keeps working unchanged.
  */
-import type { Result } from '@shared/domain/port/Result';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetPluginByIdInputDTO,
     GetPluginByIdOutputDTO
@@ -19,5 +17,5 @@ import type {
 export interface IGetPluginByIdUseCase {
     execute(
         input: GetPluginByIdInputDTO
-    ): Promise<Result<GetPluginByIdOutputDTO, ApplicationError>>;
+    ): Promise<GetPluginByIdOutputDTO>;
 }

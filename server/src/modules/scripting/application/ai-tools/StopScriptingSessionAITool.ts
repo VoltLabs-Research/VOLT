@@ -18,11 +18,10 @@ export class StopScriptingSessionAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             notebookId: params.notebookId
         });
-        if (!result.success) throw result.error;
-        return { summary: `Session ${result.value.deleted ? 'stopped' : 'not running'} for notebook ${result.value.notebookId}.`, data: result.value };
+        return { summary: `Session ${value.deleted ? 'stopped' : 'not running'} for notebook ${value.notebookId}.`, data: value };
     }
 }

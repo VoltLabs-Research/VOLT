@@ -19,7 +19,6 @@ import {
 } from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import {
     ChannelCommands,
     type TeamClusterDaemonQueueConcurrencyApplyPayload
@@ -30,7 +29,7 @@ import logger from '@shared/infrastructure/logger';
 
 @Singleton()
 export default class UpdateTeamClusterQueueConcurrencyUseCase
-    implements IUseCase<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO, ApplicationError> {
+    implements IUseCase<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO> {
 
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
@@ -40,10 +39,10 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
 
     async execute(
         input: UpdateTeamClusterQueueConcurrencyInputDTO
-    ): Promise<Result<UpdateTeamClusterQueueConcurrencyOutputDTO, ApplicationError>> {
+    ): Promise<UpdateTeamClusterQueueConcurrencyOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const persistedQueueConcurrency = {
@@ -60,7 +59,7 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
         });
 
         if (!updatedTeamCluster) {
-            return Result.fail(ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found'));
+            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
 
         this.teamClusterLifecycleService.publishTeamClusterUpdate(updatedTeamCluster);
@@ -89,9 +88,9 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
             }
         }
 
-        return Result.ok({
+        return {
             message: 'Queue settings saved.',
             teamCluster: toTeamClusterDTO(updatedTeamCluster)
-        });
+        };
     }
 }

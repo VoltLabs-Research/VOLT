@@ -9,7 +9,6 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
@@ -24,30 +23,30 @@ export default class DeleteAnalysisByIdUseCase {
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<DeleteAnalysisByIdOutputDTO, ApplicationError>> {
+    async execute(input: DeleteAnalysisByIdInputDTO): Promise<DeleteAnalysisByIdOutputDTO> {
         const analysis = await this.repository.findById(input.analysisId);
 
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
-            ));
+            );
         }
 
         if (input.teamId && analysis.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.TEAM_ACCESS_DENIED,
                 'Analysis does not belong to this team'
-            ));
+            );
         }
 
         const deleted = await this.repository.deleteById(input.analysisId);
 
         if (!deleted) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
-            ));
+            );
         }
 
         await this.eventBus.publish(new AnalysisDeletedEvent({
@@ -62,8 +61,8 @@ export default class DeleteAnalysisByIdUseCase {
             pluginDisplayName: analysis.props.pluginDisplayName
         }));
 
-        return Result.ok({
+        return {
             success: true
-        });
+        };
     }
 }

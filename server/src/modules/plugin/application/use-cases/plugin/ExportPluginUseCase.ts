@@ -9,35 +9,34 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @Singleton()
-export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, ExportPluginOutputDTO, ApplicationError> {
+export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, ExportPluginOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginStorageService) private readonly storageService: IPluginStorageService
     ) {}
 
-    async execute(input: ExportPluginInputDTO): Promise<Result<ExportPluginOutputDTO, ApplicationError>> {
+    async execute(input: ExportPluginInputDTO): Promise<ExportPluginOutputDTO> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
 
         if (!plugin) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
-            ));
+            );
         }
 
         const fileName = `${plugin._id}.zip`;
         const stream = await this.storageService.exportPlugin(input.pluginId);
 
-        return Result.ok({
+        return {
             ...createDownloadStreamResponse({
                 stream,
                 contentType: 'application/zip',
                 filename: fileName
             }),
             fileName
-        });
+        };
     }
 }

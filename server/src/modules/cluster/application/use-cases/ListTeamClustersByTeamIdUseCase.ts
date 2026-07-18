@@ -9,9 +9,7 @@ import {
     ListTeamClustersOutputDTO
 } from '@modules/cluster/application/dtos/ListTeamClustersDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 interface ListTeamClustersFilter extends Record<string, unknown> {
@@ -19,13 +17,13 @@ interface ListTeamClustersFilter extends Record<string, unknown> {
 }
 
 @injectable()
-export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO, ApplicationError> {
+export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
     ){}
 
-    async execute(input: ListTeamClustersInputDTO): Promise<Result<ListTeamClustersOutputDTO, ApplicationError>> {
+    async execute(input: ListTeamClustersInputDTO): Promise<ListTeamClustersOutputDTO> {
         const filter: ListTeamClustersFilter = {
             team: input.teamId
         };
@@ -90,11 +88,11 @@ export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTea
             }
         }
 
-        return Result.ok({
+        return {
             ...result,
             data: result.data.map((teamCluster) => toTeamClusterDTO(teamCluster, {
                 activeTransfers: activeTransfersByClusterId.get(teamCluster.id) ?? []
             }))
-        });
+        };
     }
 }

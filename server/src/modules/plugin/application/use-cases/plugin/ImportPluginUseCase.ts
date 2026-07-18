@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 
@@ -18,7 +17,7 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
-    async execute(input: ImportPluginInputDTO): Promise<Result<ImportPluginOutputDTO>> {
+    async execute(input: ImportPluginInputDTO): Promise<ImportPluginOutputDTO> {
         const data = await this.storageService.importPlugin(
             input.file.buffer,
             input.teamId
@@ -29,6 +28,6 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
             teamId: input.teamId
         }));
 
-        return Result.ok(mapPluginToPersistedDTO(data.plugin));
+        return mapPluginToPersistedDTO(data.plugin);
     }
 }

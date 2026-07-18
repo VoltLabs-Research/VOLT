@@ -56,101 +56,46 @@ export default class ContainerService {
     ) {}
 
     async create(input: CreateContainerInputDTO): Promise<CreateContainerOutputDTO> {
-        const result = await this.createContainerUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createContainerUseCase.execute(input);
     }
 
     async list(input: ListContainersInputDTO): Promise<ListContainersOutputDTO> {
-        const result = await this.listContainersUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.listContainersUseCase.execute(input);
     }
 
     async getById(input: GetContainerByIdInputDTO): Promise<GetContainerByIdOutputDTO> {
-        const result = await this.getContainerByIdUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getContainerByIdUseCase.execute(input);
     }
 
     async update(input: UpdateContainerInputDTO): Promise<UpdateContainerOutputDTO> {
-        const result = await this.updateContainerUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateContainerUseCase.execute(input);
     }
 
     async delete(input: DeleteContainerInputDTO): Promise<DeleteContainerOutputDTO> {
-        const result = await this.deleteContainerUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.deleteContainerUseCase.execute(input);
     }
 
     async createPortAccessUrl(input: CreateContainerPortAccessUrlInputDTO): Promise<CreateContainerPortAccessUrlOutputDTO> {
-        const result = await this.createContainerPortAccessUrlUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.createContainerPortAccessUrlUseCase.execute(input);
     }
 
     async move(input: MoveContainerInputDTO): Promise<MoveContainerOutputDTO> {
-        const result = await this.moveContainerUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.moveContainerUseCase.execute(input);
     }
 
     async getFiles(input: GetContainerFilesInputDTO): Promise<GetContainerFilesOutputDTO> {
-        const result = await this.getContainerFilesUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getContainerFilesUseCase.execute(input);
     }
 
     async getProcesses(input: GetContainerProcessesInputDTO): Promise<GetContainerProcessesOutputDTO> {
-        const result = await this.getContainerProcessesUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getContainerProcessesUseCase.execute(input);
     }
 
     async getStats(input: GetContainerStatsInputDTO): Promise<GetContainerStatsOutputDTO> {
-        const result = await this.getContainerStatsUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getContainerStatsUseCase.execute(input);
     }
 
     async readFile(input: ReadContainerFileInputDTO): Promise<ReadContainerFileOutputDTO> {
-        const result = await this.readContainerFileUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.readContainerFileUseCase.execute(input);
     }
 }

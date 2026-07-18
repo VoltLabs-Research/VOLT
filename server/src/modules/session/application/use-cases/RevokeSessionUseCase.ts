@@ -4,32 +4,30 @@ import type { ISessionRepository } from '@modules/session/domain/port/ISessionRe
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void, ApplicationError>{
+export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void>{
     constructor(
         @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository
     ){}
 
-    async execute(input: RevokeSessionInputDTO): Promise<Result<void, ApplicationError>>{
+    async execute(input: RevokeSessionInputDTO): Promise<void>{
         const session = await this.sessionRepository.findById(input.sessionId);
         if(!session){
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.SESSION_NOT_FOUND,
                 'Session not found'
-            ));
+            );
         }
 
         if(session.props.user !== input.userId){
-            return Result.fail(ApplicationError.forbidden(
+            throw ApplicationError.forbidden(
                 ErrorCodes.SESSION_REVOKE_FAILED,
                 'You do not have permission to revoke this session'
-            ));
+            );
         }
 
         await this.sessionRepository.updateById(input.sessionId, { isActive: false });
-        return Result.ok(undefined);
     }
 }

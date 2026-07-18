@@ -6,9 +6,7 @@ import {
     PreviewJoinTeamByInviteCodeOutputDTO
 } from '@modules/team/application/dtos/team/PreviewJoinTeamByInviteCodeDTO';
 import { invalidInviteCodeError, normalizeInviteCode } from '@modules/team/application/use-cases/team/invite-code-helpers';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 interface PopulatedTeamOwner {
@@ -19,17 +17,17 @@ interface PopulatedTeamOwner {
 }
 
 @injectable()
-export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<PreviewJoinTeamByInviteCodeInputDTO, PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError> {
+export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<PreviewJoinTeamByInviteCodeInputDTO, PreviewJoinTeamByInviteCodeOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
 
-    async execute(input: PreviewJoinTeamByInviteCodeInputDTO): Promise<Result<PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError>> {
+    async execute(input: PreviewJoinTeamByInviteCodeInputDTO): Promise<PreviewJoinTeamByInviteCodeOutputDTO> {
         const team = await this.teamRepository.findByInviteCode(normalizeInviteCode(input.code));
 
         if (!team) {
-            return Result.fail(invalidInviteCodeError());
+            throw invalidInviteCodeError();
         }
 
         const existingMember = await this.teamMemberRepository.findOne({
@@ -42,12 +40,12 @@ export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<Prev
         const ownerLastName = ownerDetails?.lastName?.trim() ?? '';
         const ownerName = `${ownerFirstName} ${ownerLastName}`.trim() || 'Team owner';
 
-        return Result.ok({
+        return {
             message: 'Invite preview loaded',
             teamId: team._id,
             teamName: team.props.name,
             ownerName,
             isAlreadyMember: Boolean(existingMember)
-        });
+        };
     }
 }

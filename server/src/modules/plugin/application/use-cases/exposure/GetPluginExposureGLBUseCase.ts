@@ -15,7 +15,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveSceneArtifactStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 
 import type { SceneArtifactProps } from '@shared/contracts/types';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
@@ -24,11 +23,7 @@ import type { Readable } from 'node:stream';
 
 @Singleton()
 @AliasOf(PLUGIN_USECASE_TOKENS.GetPluginExposureGLBUseCase)
-export class GetPluginExposureGLBUseCase implements IUseCase<
-    GetPluginExposureGLBInputDTO,
-    GetPluginExposureGLBOutputDTO,
-    ApplicationError
->, IGetPluginExposureGLBUseCase {
+export class GetPluginExposureGLBUseCase implements IUseCase<GetPluginExposureGLBInputDTO, GetPluginExposureGLBOutputDTO>, IGetPluginExposureGLBUseCase {
     constructor(
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
@@ -37,21 +32,21 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
     async execute(
         input: GetPluginExposureGLBInputDTO
-    ): Promise<Result<GetPluginExposureGLBOutputDTO, ApplicationError>> {
+    ): Promise<GetPluginExposureGLBOutputDTO> {
         const analysis = await this.analysisRepository.findById(String(input.analysisId));
 
         if (!analysis) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
-            ));
+            );
         }
 
         if (String(analysis.props.team) !== String(input.teamId)) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
-            ));
+            );
         }
 
         const artifactFilter: Partial<SceneArtifactProps> = {
@@ -67,19 +62,19 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         const artifact = await this.sceneArtifactRepository.findOne(artifactFilter);
 
         if (!artifact) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
                 ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND
-            ));
+            );
         }
 
         const objectName = artifact.props.objectName;
         const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
         if (!teamClusterId) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
                 'Scene artifact storage cluster is required'
-            ));
+            );
         }
         const requestContext = { acceptEncoding: input.acceptEncoding };
 
@@ -109,23 +104,23 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         try {
             const response = await getClusterGlbStream(this.objectGatewayClient, teamClusterId, objectName, requestContext);
 
-            return Result.ok(buildDownloadResponse(
+            return buildDownloadResponse(
                 response.stream,
                 response.size,
                 response.objectName,
                 response.contentEncoding
-            ));
+            );
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
                     ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND
-                ));
+                );
             }
 
-            return Result.fail(ApplicationError.internalServerError(
+            throw ApplicationError.internalServerError(
                 'Failed to read plugin exposure GLB from team cluster daemon'
-            ));
+            );
         }
     }
 }

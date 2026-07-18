@@ -3,16 +3,14 @@ import { inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
 @injectable()
-export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO, ApplicationError> {
+export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO> {
     constructor(
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
@@ -20,7 +18,7 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepo: ITrajectoryFrameRepository
     ) {}
 
-    async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {
+    async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<GetTrajectoriesByTeamIdOutputDTO> {
         const { teamId, page = 1, limit = 20, search } = input;
 
         const filter: Record<string, unknown> = { team: teamId };
@@ -57,9 +55,9 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
             return toPersistedOutput(trajectory);
         });
 
-        return Result.ok({
+        return {
             ...results,
             data
-        });
+        };
     }
 };

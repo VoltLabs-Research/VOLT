@@ -5,37 +5,36 @@ import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integr
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class DeleteTeamAIIntegrationUseCase implements IUseCase<ProviderScopedInputDTO, null, ApplicationError> {
+export default class DeleteTeamAIIntegrationUseCase implements IUseCase<ProviderScopedInputDTO, null> {
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}
 
-    async execute(input: ProviderScopedInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: ProviderScopedInputDTO): Promise<null> {
         const provider = this.providerCatalog.normalize(input.provider);
         if (!provider) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED,
                 'Provider is not supported'
-            ));
+            );
         }
 
         const integration = await this.integrationRepository.findOne({ team: input.teamId, provider });
 
         if (!integration) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND,
                 'Team AI integration not found'
-            ));
+            );
         }
 
         await this.integrationRepository.deleteByTeamAndProvider(input.teamId, provider);
 
-        return Result.ok(null);
+        return null;
     }
 }

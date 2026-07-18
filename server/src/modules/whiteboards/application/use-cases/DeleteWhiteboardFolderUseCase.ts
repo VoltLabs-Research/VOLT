@@ -8,7 +8,6 @@ import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/White
 import type WhiteboardFolder from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import type { WhiteboardFolderProps } from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
@@ -23,7 +22,7 @@ export class DeleteWhiteboardFolderUseCase
         DeleteWhiteboardFolderInputDTO,
         { userId: string }
     >
-    implements IUseCase<DeleteWhiteboardFolderInputDTO, DeleteWhiteboardFolderOutputDTO, ApplicationError> {
+    implements IUseCase<DeleteWhiteboardFolderInputDTO, DeleteWhiteboardFolderOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) whiteboardFolderRepository: IWhiteboardFolderRepository,
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) whiteboardRepository: IWhiteboardRepository,
@@ -33,15 +32,11 @@ export class DeleteWhiteboardFolderUseCase
             whiteboardFolderRepository,
             whiteboardRepository,
             async (whiteboard, teamId, context) => {
-                const result = await deleteWhiteboardUseCase.execute({
+                await deleteWhiteboardUseCase.execute({
                     teamId,
                     whiteboardId: whiteboard._id,
                     userId: context.userId
                 });
-
-                if (!result.success) {
-                    throw result.error;
-                }
             },
             {
                 folderLabel: 'Whiteboard folder',

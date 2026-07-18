@@ -13,7 +13,6 @@ import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/c
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
@@ -47,7 +46,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async execute(input: GetListingRowsByAnalysisIdInputDTO): Promise<Result<GetListingRowsByAnalysisIdOutputDTO>> {
+    async execute(input: GetListingRowsByAnalysisIdInputDTO): Promise<GetListingRowsByAnalysisIdOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
@@ -55,7 +54,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             ? resolveAnalysisComputeClusterId(analysis.props)
             : undefined;
         if (!teamClusterId) {
-            return Result.ok(EMPTY_RESULT);
+            return EMPTY_RESULT;
         }
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
@@ -77,12 +76,12 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
         });
         const data = rows.map(mapDaemonListingRow);
 
-        return Result.ok({
+        return {
             data,
             total: daemonResult.total || 0,
             page: daemonResult.page || page,
             totalPages: daemonResult.totalPages || 1,
             limit: daemonResult.limit || limit
-        });
+        };
     }
 }

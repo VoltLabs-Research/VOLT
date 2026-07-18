@@ -17,7 +17,6 @@ import { assertConfirmedPassword } from '@modules/cluster/utilities/assertConfir
 import { buildManualTeamClusterUninstallCommand } from '@modules/cluster/utilities/installRoot';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -31,7 +30,7 @@ const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersio
 };
 
 @injectable()
-export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeamClusterByIdInputDTO, DeleteTeamClusterByIdOutputDTO, ApplicationError> {
+export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeamClusterByIdInputDTO, DeleteTeamClusterByIdOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
@@ -40,10 +39,10 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ){}
 
-    async execute(input: DeleteTeamClusterByIdInputDTO): Promise<Result<DeleteTeamClusterByIdOutputDTO, ApplicationError>> {
+    async execute(input: DeleteTeamClusterByIdInputDTO): Promise<DeleteTeamClusterByIdOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         const passwordError = await assertConfirmedPassword({
@@ -53,14 +52,14 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
             password: input.password
         });
         if (passwordError) {
-            return Result.fail(passwordError);
+            throw passwordError;
         }
 
         if (teamCluster.props.status === TeamClusterStatus.Deleting) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'TeamCluster::DeletionAlreadyInProgress',
                 'Team cluster deletion is already in progress'
-            ));
+            );
         }
 
         if (teamCluster.props.status === TeamClusterStatus.Connected) {
@@ -80,10 +79,10 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
             } catch {
                 logger.warn(`Failed to request remote team cluster uninstall teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
-                return Result.fail(ApplicationError.conflict(
+                throw ApplicationError.conflict(
                     'TeamCluster::RemoteUninstallRequestFailed',
                     'Failed to request uninstall from the connected cluster daemon'
-                ));
+                );
             }
 
             if (!uninstallCommandResult.accepted) {
@@ -94,23 +93,23 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
 
                 logger.warn(`Cluster daemon rejected runtime.uninstall command teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} reason=${rejectionReason}`);
 
-                return Result.fail(ApplicationError.conflict(
+                throw ApplicationError.conflict(
                     'TeamCluster::RemoteUninstallRejected',
                     rejectionReason
-                ));
+                );
             }
 
             const updatedTeamCluster = await this.teamClusterLifecycleService.markDeleting(input.teamClusterId);
 
             logger.info(`Team cluster uninstall requested from daemon teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
-            return Result.ok({
+            return {
                 success: true,
                 deleted: false,
                 manualUninstallRequired: false,
                 message: 'Remote uninstall requested. Volt will remove the cluster after the daemon confirms cleanup or the connection times out.',
                 teamCluster: updatedTeamCluster
-            });
+            };
         }
 
         const manualUninstallRequired = shouldRequireManualUninstall(
@@ -126,7 +125,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
 
         logger.info(`Team cluster deleted without remote uninstall confirmation teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} manualUninstallRequired=${manualUninstallRequired}`);
 
-        return Result.ok({
+        return {
             success: true,
             deleted: true,
             manualUninstallRequired,
@@ -134,6 +133,6 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
                 ? 'Volt removed the cluster from the control plane. Remote uninstall could not be confirmed, so run the manual uninstall command on the host if the stack is still installed.'
                 : 'Team cluster deleted from the control plane.',
             manualUninstallCommand
-        });
+        };
     }
 }

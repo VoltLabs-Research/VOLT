@@ -9,7 +9,6 @@ import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster'
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
@@ -23,7 +22,7 @@ const WAITING_STATUSES = new Set<TeamClusterStatus>([
 
 @Singleton()
 export default class RegenerateTeamClusterEnrollmentTokenUseCase
-    implements IUseCase<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO, ApplicationError> {
+    implements IUseCase<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO> {
 
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository
@@ -31,17 +30,17 @@ export default class RegenerateTeamClusterEnrollmentTokenUseCase
 
     async execute(
         input: RegenerateTeamClusterEnrollmentTokenInputDTO
-    ): Promise<Result<RegenerateTeamClusterEnrollmentTokenOutputDTO, ApplicationError>> {
+    ): Promise<RegenerateTeamClusterEnrollmentTokenOutputDTO> {
         const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
         if (teamCluster instanceof ApplicationError) {
-            return Result.fail(teamCluster);
+            throw teamCluster;
         }
 
         if (!WAITING_STATUSES.has(teamCluster.props.status)) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'TeamCluster::InvalidStatusForTokenRegeneration',
                 'Enrollment token can only be regenerated for clusters in a waiting or disconnected state'
-            ));
+            );
         }
 
         const enrollmentToken = createEnrollmentToken();
@@ -53,8 +52,8 @@ export default class RegenerateTeamClusterEnrollmentTokenUseCase
 
         logger.info(`Team cluster enrollment token regenerated teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
-        return Result.ok({
+        return {
             enrollmentToken
-        });
+        };
     }
 };

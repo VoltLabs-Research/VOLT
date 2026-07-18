@@ -11,7 +11,6 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { injectable } from 'tsyringe';
@@ -49,7 +48,7 @@ const isNonNumericString = (value: unknown): boolean =>
     typeof value === 'string' && !Number.isFinite(Number(value));
 
 @injectable()
-export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO, ApplicationError> {
+export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryReader)
         private readonly trajectoryReader: ITrajectoryReader,
@@ -61,7 +60,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
-    async execute(input: GetAtomsColumnarInputDTO): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {
+    async execute(input: GetAtomsColumnarInputDTO): Promise<GetAtomsColumnarOutputDTO> {
         try {
             const { trajectoryId, timestep } = input;
             const analysisId = normalizeAnalysisId(input.analysisId);
@@ -73,10 +72,10 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
             if (!trajectory) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.TRAJECTORY_NOT_FOUND,
                     'Trajectory not found'
-                ));
+                );
             }
 
             const ownerClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
@@ -85,17 +84,17 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
                 const analysis = await this.analysisRepository.findById(analysisId);
 
                 if (!analysis) {
-                    return Result.fail(ApplicationError.notFound(
+                    throw ApplicationError.notFound(
                         ErrorCodes.ANALYSIS_NOT_FOUND,
                         'Analysis not found'
-                    ));
+                    );
                 }
 
                 if (analysis.props.trajectory !== trajectoryId) {
-                    return Result.fail(ApplicationError.badRequest(
+                    throw ApplicationError.badRequest(
                         ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH,
                         'Analysis does not belong to the requested trajectory'
-                    ));
+                    );
                 }
 
                 teamClusterId = resolveAnalysisComputeClusterId(analysis.props) ?? teamClusterId;
@@ -109,10 +108,10 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             }
 
             if (!teamClusterId) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
                     'Trajectory storage or compute cluster is required to retrieve atoms'
-                ));
+                );
             }
 
             const atomsPage = await this.trajectoryReader.readPage(
@@ -198,7 +197,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             const totalAtoms = atomsPage.totalAtoms;
             const totalPages = Math.ceil(totalAtoms / limitNum);
 
-            return Result.ok({
+            return {
                 count: rowCount,
                 total: totalAtoms,
                 page: pageNum,
@@ -206,15 +205,13 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
                 totalPages,
                 columns,
                 propertyNames: allProps
-            });
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(
-                ApplicationError.internalServerError('Failed to retrieve trajectory atoms')
-            );
+            throw ApplicationError.internalServerError('Failed to retrieve trajectory atoms');
         }
     }
 };

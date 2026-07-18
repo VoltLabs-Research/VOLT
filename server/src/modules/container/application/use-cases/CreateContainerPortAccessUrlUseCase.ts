@@ -6,7 +6,6 @@ import type { IContainerOwnershipService } from '@modules/container/domain/port/
 import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -20,7 +19,7 @@ export class CreateContainerPortAccessUrlUseCase implements IUseCase<
         @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService
     ) {}
 
-    async execute(input: CreateContainerPortAccessUrlInputDTO): Promise<Result<CreateContainerPortAccessUrlOutputDTO>> {
+    async execute(input: CreateContainerPortAccessUrlInputDTO): Promise<CreateContainerPortAccessUrlOutputDTO> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
         const accessiblePorts = this.accessiblePortResolver.resolve(
             input.teamId,
@@ -31,38 +30,38 @@ export class CreateContainerPortAccessUrlUseCase implements IUseCase<
         const port = accessiblePorts.find((item) => item.private === input.privatePort);
 
         if (!port) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'Container port is not exposed'
-            ));
+            );
         }
 
         if (!port.browserAccessible) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
                 'Container port is not browser accessible'
-            ));
+            );
         }
 
         if (port.status !== 'available') {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Container::PortUnavailable',
                 'Container must be running to open this port'
-            ));
+            );
         }
 
         if (!port.public) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Container::PublicPortUnavailable',
                 'Container port has no public port assigned'
-            ));
+            );
         }
 
         if (!container.teamCluster || !container.internalIp) {
-            return Result.fail(ApplicationError.conflict(
+            throw ApplicationError.conflict(
                 'Container::PortUnavailable',
                 'Container networking is not ready yet'
-            ));
+            );
         }
 
         const accessUrl = await this.relayService.createAccessUrl({
@@ -75,10 +74,10 @@ export class CreateContainerPortAccessUrlUseCase implements IUseCase<
             publicPort: port.public
         });
 
-        return Result.ok({
+        return {
             url: accessUrl.url,
             expiresAt: accessUrl.expiresAt,
             port
-        });
+        };
     }
 }

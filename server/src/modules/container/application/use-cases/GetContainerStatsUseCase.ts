@@ -4,7 +4,6 @@ import type { IContainerOwnershipService } from '@modules/container/domain/port/
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -14,7 +13,7 @@ export class GetContainerStatsUseCase implements IUseCase<GetContainerStatsInput
         @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService
     ) {}
 
-    async execute(input: GetContainerStatsInputDTO): Promise<Result<GetContainerStatsOutputDTO>> {
+    async execute(input: GetContainerStatsInputDTO): Promise<GetContainerStatsOutputDTO> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
         const teamClusterId = this.requireTeamClusterId(container.teamCluster);
 
@@ -33,7 +32,7 @@ export class GetContainerStatsUseCase implements IUseCase<GetContainerStatsInput
             txBytes += iface.tx_bytes ?? 0;
         }
 
-        return Result.ok({
+        return {
             stats,
             limits: {
                 memory: container.memory * 1024 * 1024,
@@ -48,7 +47,7 @@ export class GetContainerStatsUseCase implements IUseCase<GetContainerStatsInput
                 rxBytes,
                 txBytes
             }
-        });
+        };
     }
 
     private requireTeamClusterId(teamClusterId?: string): string {

@@ -6,49 +6,40 @@ import type { ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO } from '@modules
 import { buildLatexAssetContentUrl } from '@modules/latex/application/utilities/latex-storage';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class ListLatexAssetsUseCase implements IUseCase<ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO, ApplicationError> {
+export class ListLatexAssetsUseCase implements IUseCase<ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository
     ) {}
 
-    async execute(input: ListLatexAssetsInputDTO): Promise<Result<ListLatexAssetsOutputDTO, ApplicationError>> {
-        try {
-            const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
-                input.teamId,
-                input.documentId
+    async execute(input: ListLatexAssetsInputDTO): Promise<ListLatexAssetsOutputDTO> {
+        const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
+            input.teamId,
+            input.documentId
+        );
+
+        if (!document) {
+            throw ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                'LaTeX document not found'
             );
-
-            if (!document) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
-                    'LaTeX document not found'
-                ));
-            }
-
-            const assets = await this.latexAssetRepository.findAllByDocument(input.documentId);
-
-            return Result.ok(assets.map((asset) => ({
-                _id: asset._id,
-                documentId: asset.props.document,
-                originalName: asset.props.originalName,
-                path: asset.props.path,
-                url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.props.storageKey),
-                mimetype: asset.props.mimetype,
-                size: asset.props.size,
-                createdAt: asset.props.createdAt
-            })));
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-
-            throw error;
         }
+
+        const assets = await this.latexAssetRepository.findAllByDocument(input.documentId);
+
+        return assets.map((asset) => ({
+            _id: asset._id,
+            documentId: asset.props.document,
+            originalName: asset.props.originalName,
+            path: asset.props.path,
+            url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.props.storageKey),
+            mimetype: asset.props.mimetype,
+            size: asset.props.size,
+            createdAt: asset.props.createdAt
+        }));
     }
 }

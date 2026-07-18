@@ -2,9 +2,7 @@ import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import type { GetRasterMetadataOutputDTO } from '@shared/contracts/dtos';
 import type { IGetRasterMetadataUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -16,8 +14,7 @@ interface GetPublicCanvasRasterMetadataInput {
 @Singleton()
 export class GetPublicCanvasRasterMetadataUseCase implements IUseCase<
     GetPublicCanvasRasterMetadataInput,
-    GetRasterMetadataOutputDTO,
-    ApplicationError
+    GetRasterMetadataOutputDTO
 > {
     constructor(
 
@@ -27,19 +24,12 @@ export class GetPublicCanvasRasterMetadataUseCase implements IUseCase<
         private readonly getRasterMetadataUseCase: IGetRasterMetadataUseCase
     ) {}
 
-    async execute(input: GetPublicCanvasRasterMetadataInput): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {
-        try {
-            const trajectory = await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: GetPublicCanvasRasterMetadataInput): Promise<GetRasterMetadataOutputDTO> {
+        const trajectory = await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            return this.getRasterMetadataUseCase.execute({
-                trajectoryId: input.trajectoryId,
-                teamId: String(trajectory.props.team)
-            });
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
-        }
+        return this.getRasterMetadataUseCase.execute({
+            trajectoryId: input.trajectoryId,
+            teamId: String(trajectory.props.team)
+        });
     }
 };

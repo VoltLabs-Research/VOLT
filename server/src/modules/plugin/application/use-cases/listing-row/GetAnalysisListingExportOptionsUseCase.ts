@@ -3,7 +3,6 @@ import { AnalysisListingExportCatalogService } from '@modules/plugin/application
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 @Singleton()
 export class GetAnalysisListingExportOptionsUseCase implements IUseCase<
@@ -16,7 +15,7 @@ export class GetAnalysisListingExportOptionsUseCase implements IUseCase<
 
     async execute(
         input: GetAnalysisListingExportOptionsInputDTO
-    ): Promise<Result<GetAnalysisListingExportOptionsOutputDTO>> {
-        return Result.ok(await this.analysisListingExportCatalogService.getExportOptions(input.analysisId));
+    ): Promise<GetAnalysisListingExportOptionsOutputDTO> {
+        return await this.analysisListingExportCatalogService.getExportOptions(input.analysisId);
     }
 }

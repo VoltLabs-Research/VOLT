@@ -1,20 +1,18 @@
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO } from '@modules/whiteboards/application/dtos/ListWhiteboardsDTO';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { LAST_EDITED_BY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO, ApplicationError> {
+export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository
     ) {}
 
-    async execute(input: ListWhiteboardsInputDTO): Promise<Result<ListWhiteboardsOutputDTO, ApplicationError>> {
+    async execute(input: ListWhiteboardsInputDTO): Promise<ListWhiteboardsOutputDTO> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(500, input.limit ?? 500));
 
@@ -54,6 +52,6 @@ export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO,
             }))
         };
 
-        return Result.ok(value);
+        return value;
     }
 }

@@ -26,13 +26,12 @@ export class GetWhiteboardStateAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             teamId: scope.teamId,
             whiteboardId: params.whiteboardId
         });
-        if (!result.success) throw result.error;
 
-        const raw = await text(result.value.stream);
+        const raw = await text(value.stream);
         let scene: ParsedWhiteboardScene;
         try {
             scene = JSON.parse(raw) as ParsedWhiteboardScene;

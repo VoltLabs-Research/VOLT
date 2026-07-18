@@ -13,13 +13,12 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import crypto from 'crypto';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
+export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository,
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
@@ -30,24 +29,24 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: SendTeamInvitationInputDTO): Promise<Result<SendTeamInvitationOutputDTO, ApplicationError>> {
+    async execute(input: SendTeamInvitationInputDTO): Promise<SendTeamInvitationOutputDTO> {
         const { teamId, userId, email, roleId } = input;
         const normalizedEmail = TeamInvitation.normalizeEmail(email);
 
         const team = await this.teamRepository.findById(teamId);
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
-            ));
+            );
         }
 
         const user = await this.userRepository.findByEmail(normalizedEmail);
         if (!user) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
                 'User not found'
-            ));
+            );
         }
 
         const isMember = await this.teamMemberRepository.findOne({
@@ -56,10 +55,10 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         });
 
         if (isMember) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER,
                 'User is already a member of this team'
-            ));
+            );
         }
 
         const existingInvitation = await this.invitationRepository.findOne({
@@ -69,20 +68,20 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         });
 
         if (existingInvitation) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_ALREADY_SENT,
                 'Invitation already sent to this email'
-            ));
+            );
         }
 
         const role = roleId
             ? await this.teamRoleRepository.findById(roleId)
             : await this.teamRoleRepository.findOne({ name: 'Member', team: teamId });
         if (!role) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
-            ));
+            );
         }
 
         const token = crypto.randomBytes(32).toString('hex');
@@ -106,6 +105,6 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             invitedUserId: invitation.getInvitedUserId()
         }));
 
-        return Result.ok(toPersistedOutput(invitation));
+        return toPersistedOutput(invitation);
     }
 }

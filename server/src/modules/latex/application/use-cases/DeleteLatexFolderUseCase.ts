@@ -21,14 +21,10 @@ export class DeleteLatexFolderUseCase extends DeleteCatalogFolderUseCase<LatexFo
             latexFolderRepository,
             latexDocumentRepository,
             async (document, teamId) => {
-                const result = await deleteLatexDocumentUseCase.execute({
+                await deleteLatexDocumentUseCase.execute({
                     teamId,
                     documentId: document._id
                 });
-
-                if (!result.success) {
-                    throw result.error;
-                }
             },
             { folderLabel: 'LaTeX folder' }
         );

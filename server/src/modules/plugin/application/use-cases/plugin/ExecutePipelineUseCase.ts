@@ -36,7 +36,6 @@ import type { Analysis, AnalysisExpectedArtifact } from '@shared/contracts/types
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 
@@ -93,7 +92,7 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
 };
 
 @Singleton()
-export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO, ExecutePipelineOutputDTO, ApplicationError> {
+export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO, ExecutePipelineOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepo: IPluginRepository,
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
@@ -106,20 +105,20 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
         @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService
     ) {}
 
-    async execute(input: ExecutePipelineInputDTO): Promise<Result<ExecutePipelineOutputDTO, ApplicationError>> {
+    async execute(input: ExecutePipelineInputDTO): Promise<ExecutePipelineOutputDTO> {
         if (input.stages.length === 0) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
                 'Pipeline has no stages to execute'
-            ));
+            );
         }
 
         const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
         if (!trajectory) {
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
-            ));
+            );
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
@@ -143,10 +142,10 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             : trajectoryFramePayloads.map((frame) => frame.timestep);
 
         if (resolvedSelectedTimesteps.length === 0) {
-            return Result.fail(ApplicationError.unprocessableEntity(
+            throw ApplicationError.unprocessableEntity(
                 ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
                 'This trajectory has no frames to run the pipeline on. Wait for trajectory processing to finish, or re-upload a valid trajectory.'
-            ));
+            );
         }
 
         const upstreamStageHashes: string[] = [];
@@ -173,7 +172,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                     resolvedSelectedTimesteps
                 );
                 if (stageResult.error) {
-                    return Result.fail(stageResult.error);
+                    throw stageResult.error;
                 }
 
                 upstreamStageHashes.push(stageResult.stageHash);
@@ -210,7 +209,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             throw error;
         }
 
-        return Result.ok({ analysisIds });
+        return { analysisIds };
     }
 
     private async buildPluginStage(

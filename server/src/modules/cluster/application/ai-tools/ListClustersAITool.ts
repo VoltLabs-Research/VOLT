@@ -28,7 +28,6 @@ export class ListClustersAITool extends AITool {
             limit: params.limit,
             search: params.search
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} clusters.`, data: result.value.data };
+        return { summary: `Found ${result.total} clusters.`, data: result.data };
     }
 }

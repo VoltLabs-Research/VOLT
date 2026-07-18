@@ -11,7 +11,6 @@ import {
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import { preflightRemoteExplorerAccess } from '@modules/cluster/application/utilities/remote-explorer-access';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import type { IUseCase } from '@shared/application/IUseCase';
 
@@ -56,11 +55,7 @@ const readFilenameFromContentDisposition = (value: string | undefined): string |
 };
 
 @injectable()
-export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements IUseCase<
-    DownloadTeamClusterRemoteExplorerObjectInputDTO,
-    DownloadTeamClusterRemoteExplorerObjectOutputDTO,
-    ApplicationError
-> {
+export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements IUseCase<DownloadTeamClusterRemoteExplorerObjectInputDTO, DownloadTeamClusterRemoteExplorerObjectOutputDTO> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService) private readonly sessionService: ITeamClusterRemoteAccessSessionService,
@@ -69,14 +64,14 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
 
     async execute(
         input: DownloadTeamClusterRemoteExplorerObjectInputDTO
-    ): Promise<Result<DownloadTeamClusterRemoteExplorerObjectOutputDTO, ApplicationError>> {
+    ): Promise<DownloadTeamClusterRemoteExplorerObjectOutputDTO> {
         const preflight = await preflightRemoteExplorerAccess(
             this.teamClusterRepository,
             this.sessionService,
             input
         );
         if (preflight instanceof ApplicationError) {
-            return Result.fail(preflight);
+            throw preflight;
         }
 
         try {
@@ -95,7 +90,7 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
             const filename = readFilenameFromContentDisposition(response.headers['content-disposition'])
                 || deriveFallbackFilename(preflight.target, input.path);
 
-            return Result.ok(createDownloadStreamResponse({
+            return createDownloadStreamResponse({
                 stream: response.stream,
                 contentType,
                 filename,
@@ -103,27 +98,27 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
                     ? contentLength
                     : undefined,
                 disposition: 'attachment'
-            }));
+            });
         } catch (error: unknown) {
             if (
                 error instanceof ApplicationError
                 && error.code === ErrorCodes.TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED
                 && error.statusCode === 404
             ) {
-                return Result.fail(ApplicationError.notFound(
+                throw ApplicationError.notFound(
                     'TeamCluster::RemoteExplorerObjectNotFound',
                     'The requested remote explorer object was not found'
-                ));
+                );
             }
 
             if (error instanceof ApplicationError) {
-                return Result.fail(error);
+                throw error;
             }
 
-            return Result.fail(ApplicationError.badRequest(
+            throw ApplicationError.badRequest(
                 'TeamCluster::RemoteExplorerDownloadFailed',
                 error instanceof Error ? error.message : 'Failed to download remote explorer object'
-            ));
+            );
         }
     }
 };

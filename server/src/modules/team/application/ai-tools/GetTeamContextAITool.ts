@@ -25,33 +25,26 @@ export class GetTeamContextAITool extends AITool {
     }
 
     async execute(_params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const teamResult = await this.getTeamByIdUseCase.execute({ teamId: scope.teamId });
-        if (!teamResult.success) throw teamResult.error;
+        const team = await this.getTeamByIdUseCase.execute({ teamId: scope.teamId });
+        const membersOutput = await this.listTeamMembersUseCase.execute({ teamId: scope.teamId });
+        const integrations = await this.getAIIntegrationsUseCase.execute({ teamId: scope.teamId });
+        const models = await this.getAIIntegrationModelsUseCase.execute({ teamId: scope.teamId });
 
-        const membersResult = await this.listTeamMembersUseCase.execute({ teamId: scope.teamId });
-        if (!membersResult.success) throw membersResult.error;
-
-        const integrationsResult = await this.getAIIntegrationsUseCase.execute({ teamId: scope.teamId });
-        if (!integrationsResult.success) throw integrationsResult.error;
-
-        const modelsResult = await this.getAIIntegrationModelsUseCase.execute({ teamId: scope.teamId });
-        if (!modelsResult.success) throw modelsResult.error;
-
-        const members = membersResult.value.data;
+        const members = membersOutput.data;
         const onlineCount = members.filter((member) =>
             isPopulatedTeamMemberUser(member.user) && member.user.isOnline === true
         ).length;
 
-        const enabledIntegrations = integrationsResult.value.integrations.filter((integration) => integration.isEnabled);
+        const enabledIntegrations = integrations.integrations.filter((integration) => integration.isEnabled);
 
         return {
-            summary: `Team "${teamResult.value.name}" has ${members.length} members (${onlineCount} online), ${enabledIntegrations.length} enabled AI integration(s), and ${modelsResult.value.models.length} available model(s).`,
+            summary: `Team "${team.name}" has ${members.length} members (${onlineCount} online), ${enabledIntegrations.length} enabled AI integration(s), and ${models.models.length} available model(s).`,
             data: {
-                team: teamResult.value,
+                team,
                 members,
-                aiIntegrations: integrationsResult.value.integrations,
-                aiProviders: integrationsResult.value.providers,
-                aiModels: modelsResult.value.models
+                aiIntegrations: integrations.integrations,
+                aiProviders: integrations.providers,
+                aiModels: models.models
             }
         };
     }

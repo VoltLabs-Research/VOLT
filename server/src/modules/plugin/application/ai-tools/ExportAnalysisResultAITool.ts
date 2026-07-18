@@ -35,9 +35,8 @@ export class ExportAnalysisResultAITool extends AITool {
             selectedSubListingIds: params.selectedSubListingIds,
             sortAsc: params.sortAsc
         });
-        if (!result.success) throw result.error;
 
-        const { headers } = result.value;
+        const { headers } = result;
         const filename = headers['Content-Disposition'] ?? headers['content-disposition'];
         const contentType = headers['Content-Type'] ?? headers['content-type'];
 

@@ -369,11 +369,6 @@ export default class AuthService {
      * channel used by every other AuthService method.
      */
     async updateAccount(input: UpdateAccountInputDTO): Promise<UpdateAccountOutputDTO> {
-        const result = await this.updateAccountUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.updateAccountUseCase.execute(input);
     }
 }

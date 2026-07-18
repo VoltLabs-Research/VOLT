@@ -3,19 +3,17 @@ import type { IPluginStorageService } from '@modules/plugin/domain/port/plugin/I
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { inject } from 'tsyringe';
 
 @Singleton()
-export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {
+export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginStorageService) private readonly storageService: IPluginStorageService
     ) {}
 
-    async execute(input: DeleteBinaryInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: DeleteBinaryInputDTO): Promise<null> {
         await this.storageService.deleteBinary(input.pluginId);
-        return Result.ok(null);
+        return null;
     }
 }

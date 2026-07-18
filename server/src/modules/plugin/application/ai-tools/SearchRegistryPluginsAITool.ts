@@ -28,7 +28,6 @@ export class SearchRegistryPluginsAITool extends AITool {
             page: params.page,
             limit: params.limit
         });
-        if (!result.success) throw result.error;
-        return { summary: `Found ${result.value.total} registry plugins.`, data: result.value.items };
+        return { summary: `Found ${result.total} registry plugins.`, data: result.items };
     }
 }

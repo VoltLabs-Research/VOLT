@@ -6,11 +6,9 @@ import type { SimulationCellProps } from '@modules/simulation-cell/domain/entiti
 import type { ISimulationCellRepository } from '@shared/contracts/ports/ISimulationCellRepository';
 import type { IGetSimulationCellByTrajectoryUseCase } from '@shared/contracts/ports/IGetSimulationCellByTrajectoryUseCase';
 import { SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens/SimulationCellTokens';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -22,7 +20,7 @@ export default class GetSimulationCellByTrajectoryUseCase implements IGetSimulat
 
     async execute(
         input: GetSimulationCellByTrajectoryInputDTO
-    ): Promise<Result<GetSimulationCellByTrajectoryOutputDTO, ApplicationError>> {
+    ): Promise<GetSimulationCellByTrajectoryOutputDTO> {
         const baseFilter: Partial<SimulationCellProps> = {
             team: input.teamId,
             trajectory: input.trajectoryId
@@ -38,7 +36,7 @@ export default class GetSimulationCellByTrajectoryUseCase implements IGetSimulat
             );
 
             if (exactMatch) {
-                return Result.ok(toPersistedOutput(exactMatch));
+                return toPersistedOutput(exactMatch);
             }
         }
 
@@ -55,6 +53,6 @@ export default class GetSimulationCellByTrajectoryUseCase implements IGetSimulat
             ? toPersistedOutput(fallbackEntity)
             : null;
 
-        return Result.ok(simulationCell);
+        return simulationCell;
     }
 }

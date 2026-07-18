@@ -1,9 +1,7 @@
 import type { GetColoredModelStreamInputDTO } from '@modules/trajectory/application/dtos/color-coding';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { GetColoredModelStreamUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColoredModelStreamUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
 
@@ -14,8 +12,7 @@ interface GetPublicCanvasColoredModelStreamInput extends GetColoredModelStreamIn
 @Singleton()
 export class GetPublicCanvasColoredModelStreamUseCase implements IUseCase<
     GetPublicCanvasColoredModelStreamInput,
-    StreamableOutput,
-    ApplicationError
+    StreamableOutput
 > {
     constructor(
         
@@ -25,18 +22,11 @@ export class GetPublicCanvasColoredModelStreamUseCase implements IUseCase<
         private readonly getColoredModelStreamUseCase: GetColoredModelStreamUseCase
     ) {}
 
-    async execute(input: GetPublicCanvasColoredModelStreamInput): Promise<Result<StreamableOutput, ApplicationError>> {
-        try {
-            await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+    async execute(input: GetPublicCanvasColoredModelStreamInput): Promise<StreamableOutput> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            const { userId: _userId, ...delegated } = input;
+        const { userId: _userId, ...delegated } = input;
 
-            return this.getColoredModelStreamUseCase.execute(delegated);
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-            throw error;
-        }
+        return this.getColoredModelStreamUseCase.execute(delegated);
     }
 };

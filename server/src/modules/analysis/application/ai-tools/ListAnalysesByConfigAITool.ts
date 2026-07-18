@@ -22,18 +22,17 @@ export class ListAnalysesByConfigAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const value = await this.useCase.execute({
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,
             page: 1,
             limit: 1000
         });
-        if (!result.success) throw result.error;
 
         const configFilter = params.configFilter ?? {};
         const configFilterKeys = Object.keys(configFilter);
 
-        const filtered = result.value.data.filter((analysis) => {
+        const filtered = value.data.filter((analysis) => {
             if (params.status && analysis.status !== params.status) {
                 return false;
             }
@@ -47,7 +46,7 @@ export class ListAnalysesByConfigAITool extends AITool {
         });
 
         return {
-            summary: `Matched ${filtered.length} of ${result.value.total} analyses for trajectory ${params.trajectoryId}.`,
+            summary: `Matched ${filtered.length} of ${value.total} analyses for trajectory ${params.trajectoryId}.`,
             data: filtered
         };
     }

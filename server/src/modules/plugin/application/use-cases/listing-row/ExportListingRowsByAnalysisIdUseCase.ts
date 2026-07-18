@@ -3,7 +3,6 @@ import { AnalysisListingExportCatalogService } from '@modules/plugin/application
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
 
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/presenters/listing-row/ListingRowsExportPresenter';
@@ -18,9 +17,9 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         private readonly analysisListingExportCatalogService: AnalysisListingExportCatalogService
     ) {}
 
-    async execute(input: ExportListingRowsByAnalysisIdInputDTO): Promise<Result<DownloadStreamOutputDTO>> {
+    async execute(input: ExportListingRowsByAnalysisIdInputDTO): Promise<DownloadStreamOutputDTO> {
         const payload = await this.analysisListingExportCatalogService.buildExportPayload(input);
 
-        return Result.ok(await this.listingRowsExportPresenter.present(payload));
+        return await this.listingRowsExportPresenter.present(payload);
     }
 }

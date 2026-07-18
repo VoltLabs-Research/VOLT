@@ -4,9 +4,7 @@ import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConve
 import { AIConversationDTO, ListAIConversationsInputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
 import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ListAIConversationsFilter extends Partial<AIConversationProps> {
@@ -15,12 +13,12 @@ interface ListAIConversationsFilter extends Partial<AIConversationProps> {
 }
 
 @Singleton()
-export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, PaginatedResult<AIConversationDTO>, ApplicationError> {
+export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, PaginatedResult<AIConversationDTO>> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository
     ) {}
 
-    async execute(input: ListAIConversationsInputDTO): Promise<Result<PaginatedResult<AIConversationDTO>, ApplicationError>> {
+    async execute(input: ListAIConversationsInputDTO): Promise<PaginatedResult<AIConversationDTO>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
         const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
@@ -49,9 +47,9 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
             ...conversation.props
         }));
 
-        return Result.ok({
+        return {
             ...result,
             data
-        });
+        };
     }
 }

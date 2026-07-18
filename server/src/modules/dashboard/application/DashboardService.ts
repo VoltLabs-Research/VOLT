@@ -20,11 +20,6 @@ export default class DashboardService {
     ) {}
 
     async getGlobalSearch(input: GetGlobalSearchInputDTO): Promise<GetGlobalSearchOutputDTO> {
-        const result = await this.getGlobalSearchUseCase.execute(input);
-        if (!result.success) {
-            throw result.error;
-        }
-
-        return result.value;
+        return this.getGlobalSearchUseCase.execute(input);
     }
 }
