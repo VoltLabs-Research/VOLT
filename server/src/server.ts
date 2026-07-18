@@ -29,7 +29,7 @@ import whiteboardSocketModule from './modules/whiteboards/socket/WhiteboardSocke
 import pluginDebugSocketModule from './modules/plugin/socket/PluginDebugSocketModule';
 import teamClusterSocketModule from './modules/cluster/socket/TeamClusterSocketModule';
 import analysisLogSocketModule from './modules/analysis/socket/AnalysisLogSocketModule';
-import { flushPendingSubscriptions } from './shared/infrastructure/events/Subscribe';
+import { flushPendingSubscriptions } from './shared/infrastructure/events/event-registry';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
