@@ -25,9 +25,9 @@ const useGroupActions = () => {
     const updateGroupAdminsMutationResult = useUpdateGroupAdminsMutation();
     const leaveGroupMutationResult = useLeaveGroupMutation();
 
-    const createGroup = useCallback(async (dto: CreateGroupChat) => {
+    const createGroup = useCallback(async (input: CreateGroupChat) => {
         return runAction({
-            action: () => createGroupMutationResult.mutateAsync(dto),
+            action: () => createGroupMutationResult.mutateAsync(input),
             toast: createPromiseToastOptions({
                 loading: 'Creating group...',
                 success: 'Group created',
@@ -68,9 +68,9 @@ const useGroupActions = () => {
         });
     }, [queryClient, removeUsersFromGroupMutationResult]);
 
-    const updateGroupInfo = useCallback(async (chatId: string, dto: UpdateGroupInfo) => {
+    const updateGroupInfo = useCallback(async (chatId: string, changes: UpdateGroupInfo) => {
         return runAction({
-            action: () => updateGroupInfoMutationResult.mutateAsync({ chatId, ...dto }),
+            action: () => updateGroupInfoMutationResult.mutateAsync({ chatId, ...changes }),
             toast: createPromiseToastOptions({
                 loading: 'Updating group...',
                 success: 'Group updated',
@@ -82,9 +82,9 @@ const useGroupActions = () => {
         });
     }, [queryClient, updateGroupInfoMutationResult]);
 
-    const updateGroupAdmins = useCallback(async (chatId: string, dto: UpdateGroupAdmins) => {
+    const updateGroupAdmins = useCallback(async (chatId: string, changes: UpdateGroupAdmins) => {
         return runAction({
-            action: () => updateGroupAdminsMutationResult.mutateAsync({ chatId, ...dto }),
+            action: () => updateGroupAdminsMutationResult.mutateAsync({ chatId, ...changes }),
             toast: createPromiseToastOptions({
                 loading: 'Updating admins...',
                 success: 'Group admins updated',

@@ -1,29 +1,29 @@
 
 
-export interface TeamClusterInstallManifestPortsDTO {
+export interface TeamClusterInstallManifestPortsView {
     minio: number;
     redis: number;
     mongodb: number;
     daemon: number;
 }
 
-export interface TeamClusterInstallManifestFileDTO {
+export interface TeamClusterInstallManifestFileView {
     path: string;
     contents: string;
     mode: string;
 }
 
-export interface TeamClusterInstallManifestImagesDTO {
+export interface TeamClusterInstallManifestImagesView {
     minio: string;
     redis: string;
     mongodb: string;
     daemon: string;
 }
 
-export interface TeamClusterInstallManifestDTO {
+export interface TeamClusterInstallManifestView {
     manifestVersion: string;
     composeProjectName: string;
     buildContextArchiveBase64?: string;
-    files: TeamClusterInstallManifestFileDTO[];
-    images: TeamClusterInstallManifestImagesDTO;
+    files: TeamClusterInstallManifestFileView[];
+    images: TeamClusterInstallManifestImagesView;
 }

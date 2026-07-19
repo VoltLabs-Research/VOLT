@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import type { Document, Model } from 'mongoose';
-import type { AnalysisProvenance } from '@modules/analysis/schemas/AnalysisMetadata';
+import type { AnalysisProvenance } from '@modules/analysis/models/AnalysisMetadata';
 
 export interface AnalysisProvenanceDocument extends Omit<AnalysisProvenance, '_id'>, Document {}
 

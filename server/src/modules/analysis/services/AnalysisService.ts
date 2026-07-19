@@ -17,13 +17,13 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import type {
-    GetAnalysesByTeamIdItemDTO,
-    GetAnalysesByTrajectoryIdOutputDTO
-} from '@shared/contracts/dtos';
+    GetAnalysesByTeamIdItemView,
+    GetAnalysesByTrajectoryIdOutput
+} from '@shared/contracts/operations';
 import type {
-    GetAnalysisFrameLogInputDTO,
-    GetAnalysisFrameLogOutputDTO
-} from '@shared/contracts/dtos/GetAnalysisFrameLogDTO';
+    GetAnalysisFrameLogInput,
+    GetAnalysisFrameLogOutput
+} from '@shared/contracts/operations/GetAnalysisFrameLog';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import {
     COMPUTE_CLUSTER_POPULATE,
@@ -121,7 +121,7 @@ export default class AnalysisService {
         };
     }
 
-    async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemDTO>> {
+    async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemView>> {
         const { teamId } = input;
         const normalizedSearch = input.search?.trim();
         const hasSearch = Boolean(normalizedSearch);
@@ -174,10 +174,10 @@ export default class AnalysisService {
         return {
             ...results,
             data: mappedData
-        } as unknown as PaginatedResult<GetAnalysesByTeamIdItemDTO>;
+        } as unknown as PaginatedResult<GetAnalysesByTeamIdItemView>;
     }
 
-    async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInput): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
+    async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInput): Promise<GetAnalysesByTrajectoryIdOutput> {
         const filter: Record<string, unknown> = { trajectory: input.trajectoryId };
         const sort = { createdAt: -1 } as const;
 
@@ -208,10 +208,10 @@ export default class AnalysisService {
         return {
             ...analyses,
             data
-        } as unknown as GetAnalysesByTrajectoryIdOutputDTO;
+        } as unknown as GetAnalysesByTrajectoryIdOutput;
     }
 
-    async getAnalysisFrameLog(input: GetAnalysisFrameLogInputDTO): Promise<GetAnalysisFrameLogOutputDTO> {
+    async getAnalysisFrameLog(input: GetAnalysisFrameLogInput): Promise<GetAnalysisFrameLogOutput> {
         const analysis = await AnalysisModel.findById(input.analysisId);
 
         if (!analysis) {

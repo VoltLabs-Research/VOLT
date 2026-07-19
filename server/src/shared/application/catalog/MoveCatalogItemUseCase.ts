@@ -6,7 +6,7 @@ import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFo
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import type { CatalogFolderMessages } from './CatalogFolderMessages';
 
-interface MoveCatalogItemInputDTO {
+interface MoveCatalogItemInput {
     teamId: string;
     folderId: string | null;
 }
@@ -18,7 +18,7 @@ interface MoveCatalogItemUseCaseOptions<TInput, TItemProps extends object> exten
 }
 
 export abstract class MoveCatalogItemUseCase<
-    TInput extends MoveCatalogItemInputDTO,
+    TInput extends MoveCatalogItemInput,
     TFolder extends CatalogFolderEntity<TFolderProps>,
     TFolderProps extends CatalogFolderProps,
     TItemProps extends object

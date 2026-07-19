@@ -19,7 +19,7 @@ export interface AnalysisListUser {
     avatar?: string;
 }
 
-export interface GetAnalysesByTeamIdItemDTO {
+export interface GetAnalysesByTeamIdItemView {
     _id: string;
     plugin: string;
     pluginDisplayName: string;

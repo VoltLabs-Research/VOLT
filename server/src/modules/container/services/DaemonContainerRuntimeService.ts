@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import type {
     ContainerFileEntry,
     ContainerProcessInfo,

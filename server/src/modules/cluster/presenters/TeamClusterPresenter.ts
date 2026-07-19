@@ -7,37 +7,37 @@ import type {
     TeamClusterServiceProps,
     TeamClusterServicesProps
 } from '@shared/contracts/types/TeamCluster';
-import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
+import type { ClusterTransferJobView } from '@modules/cluster/contracts/ClusterTransferJobView';
 import type {
-    TeamClusterServiceDTO,
-    TeamClusterQueueConcurrencyDTO,
-    TeamClusterQueueScopeLimitsDTO,
-    TeamClusterDTO
+    TeamClusterServiceView,
+    TeamClusterQueueConcurrencyView,
+    TeamClusterQueueScopeLimitsView,
+    TeamClusterView
 } from '@modules/cluster/contracts/TeamClusterView';
 
 export type {
-    TeamClusterServiceDTO,
-    TeamClusterServicesDTO,
-    TeamClusterCredentialServiceDTO,
-    TeamClusterDaemonCredentialServiceDTO,
-    TeamClusterCredentialServicesDTO,
-    TeamClusterQueueConcurrencyDTO,
-    TeamClusterQueueScopeLimitDTO,
-    TeamClusterQueueScopeLimitsDTO,
-    TeamClusterRuntimeRoleConfigDTO,
-    TeamClusterEffectiveCapabilitiesDTO,
-    TeamClusterDTO
+    TeamClusterServiceView,
+    TeamClusterServicesView,
+    TeamClusterCredentialServiceView,
+    TeamClusterDaemonCredentialServiceView,
+    TeamClusterCredentialServicesView,
+    TeamClusterQueueConcurrencyView,
+    TeamClusterQueueScopeLimitView,
+    TeamClusterQueueScopeLimitsView,
+    TeamClusterRuntimeRoleConfigView,
+    TeamClusterEffectiveCapabilitiesView,
+    TeamClusterView
 } from '@modules/cluster/contracts/TeamClusterView';
 
-const toServiceDTO = (service: TeamClusterServiceProps | TeamClusterDaemonServiceProps): TeamClusterServiceDTO => {
+const toServiceView = (service: TeamClusterServiceProps | TeamClusterDaemonServiceProps): TeamClusterServiceView => {
     return {
         port: service.port
     };
 };
 
-export const toTeamClusterQueueConcurrencyDTO = (
+export const toTeamClusterQueueConcurrencyView = (
     queueConcurrency: TeamClusterQueueConcurrencyProps
-): TeamClusterQueueConcurrencyDTO => ({
+): TeamClusterQueueConcurrencyView => ({
     analysis: queueConcurrency.analysis,
     rasterizer: queueConcurrency.rasterizer,
     glbPreprocessing: queueConcurrency.glbPreprocessing,
@@ -45,9 +45,9 @@ export const toTeamClusterQueueConcurrencyDTO = (
     pluginWarmup: queueConcurrency.pluginWarmup
 });
 
-export const toTeamClusterQueueScopeLimitsDTO = (
+export const toTeamClusterQueueScopeLimitsView = (
     queueScopeLimits: TeamClusterQueueScopeLimitsProps
-): TeamClusterQueueScopeLimitsDTO => ({
+): TeamClusterQueueScopeLimitsView => ({
     analysisProcessing: {
         maxRunningPerTrajectory: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory
     },
@@ -62,12 +62,12 @@ export const toTeamClusterQueueScopeLimitsDTO = (
     }
 });
 
-export const toTeamClusterDTO = (
+export const toTeamClusterView = (
     teamCluster: TeamCluster,
     options: {
-        activeTransfers?: ClusterTransferJobDTO[];
+        activeTransfers?: ClusterTransferJobView[];
     } = {}
-): TeamClusterDTO => {
+): TeamClusterView => {
     const services: TeamClusterServicesProps = teamCluster.props.services;
     const roleConfig = teamCluster.props.roleConfig;
     const effectiveCapabilities = teamCluster.effectiveCapabilities;
@@ -100,13 +100,13 @@ export const toTeamClusterDTO = (
         lastHeartbeatAt: teamCluster.props.lastHeartbeatAt,
         lastDisconnectAt: teamCluster.props.lastDisconnectAt,
         services: {
-            minio: toServiceDTO(services.minio),
-            redis: toServiceDTO(services.redis),
-            mongodb: toServiceDTO(services.mongodb),
-            daemon: toServiceDTO(services.daemon)
+            minio: toServiceView(services.minio),
+            redis: toServiceView(services.redis),
+            mongodb: toServiceView(services.mongodb),
+            daemon: toServiceView(services.daemon)
         },
-        queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
-        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(
+        queueConcurrency: toTeamClusterQueueConcurrencyView(teamCluster.props.queueConcurrency),
+        queueScopeLimits: toTeamClusterQueueScopeLimitsView(
             teamCluster.props.queueScopeLimits ?? DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
         ),
         roleConfig: {

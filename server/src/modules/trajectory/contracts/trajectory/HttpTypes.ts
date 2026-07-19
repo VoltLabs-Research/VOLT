@@ -10,26 +10,26 @@ import type {
 import { ParticleFilterCombinator } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import type { TeamMetricsSnapshot } from '@modules/trajectory/contracts/trajectory/TeamMetrics';
 import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
 
 export { ParticleFilterCombinator };
 
-export interface CreateTrajectoryOutputDTO extends TrajectoryProps {
+export interface CreateTrajectoryOutput extends TrajectoryProps {
     _id: string;
 }
 
-export interface TrajectoryPersistedDTO extends TrajectoryProps {
+export interface TrajectoryRecord extends TrajectoryProps {
     _id: string;
 }
 
-export interface GetTrajectoryByIdOutputDTO extends TrajectoryProps {
+export interface GetTrajectoryByIdOutput extends TrajectoryProps {
     _id: string;
 }
 
-export interface GetTrajectoriesByTeamIdInputDTO {
+export interface GetTrajectoriesByTeamIdInput {
     teamId: string;
     page?: number;
     limit?: number;
@@ -37,75 +37,75 @@ export interface GetTrajectoriesByTeamIdInputDTO {
     search?: string;
 }
 
-export interface GetTrajectoriesByTeamIdOutputDTO extends PaginatedResult<TrajectoryPersistedDTO> {}
+export interface GetTrajectoriesByTeamIdOutput extends PaginatedResult<TrajectoryRecord> {}
 
-export interface UpdateTrajectoryByIdInputDTO {
+export interface UpdateTrajectoryByIdInput {
     trajectoryId: string;
     name: string;
     isPublic: boolean;
 }
 
-export interface UpdateTrajectoryByIdOutputDTO extends TrajectoryProps {
+export interface UpdateTrajectoryByIdOutput extends TrajectoryProps {
     _id: string;
 }
 
-export interface MoveTrajectoryInputDTO {
+export interface MoveTrajectoryInput {
     teamId: string;
     trajectoryId: string;
     folderId: string | null;
 }
 
-export type MoveTrajectoryOutputDTO = null;
+export type MoveTrajectoryOutput = null;
 
-export interface GetTeamMetricsInputDTO {
+export interface GetTeamMetricsInput {
     teamId: string;
 }
 
-export type GetTeamMetricsResultDTO = TeamMetricsSnapshot;
-export type GetTeamMetricsOutputDTO = GetTeamMetricsResultDTO;
+export type GetTeamMetricsResult = TeamMetricsSnapshot;
+export type GetTeamMetricsOutput = GetTeamMetricsResult;
 
-export interface GetTrajectoryPreviewInputDTO {
+export interface GetTrajectoryPreviewInput {
     trajectoryId: string;
 }
 
-export interface GetTrajectoryPreviewOutputDTO {
+export interface GetTrajectoryPreviewOutput {
     base64: string;
     etag: string;
 }
 
-export interface PublicTeamDiscoveryDTO {
+export interface PublicTeamDiscoveryView {
     _id: string;
     name: string;
 }
 
-export interface ListPublicTeamTrajectoriesInputDTO {
+export interface ListPublicTeamTrajectoriesInput {
     teamId: string;
     page?: number;
     limit?: number;
     search?: string;
 }
 
-export interface ListPublicTeamTrajectoriesOutputDTO extends PaginatedResult<TrajectoryPersistedDTO> {
+export interface ListPublicTeamTrajectoriesOutput extends PaginatedResult<TrajectoryRecord> {
     _meta: {
-        team: PublicTeamDiscoveryDTO;
+        team: PublicTeamDiscoveryView;
     };
 }
 
-export interface CloneTrajectoryInputDTO {
+export interface CloneTrajectoryInput {
     teamId: string;
     userId: string;
     sourceTrajectoryId: string;
     targetClusterId?: string;
 }
 
-export interface CloneTrajectoryOutputDTO {
+export interface CloneTrajectoryOutput {
     trajectoryId: string;
     jobId: string;
     sourceTrajectoryId: string;
     destinationClusterId: string;
 }
 
-export interface DownloadTrajectoryInputDTO {
+export interface DownloadTrajectoryInput {
     trajectoryId: string;
     teamId: string;
     userId: string;
@@ -113,29 +113,29 @@ export interface DownloadTrajectoryInputDTO {
     archive?: boolean;
 }
 
-export interface DownloadTrajectoryOutputDTO {
+export interface DownloadTrajectoryOutput {
     stream: Readable;
     headers: Record<string, string>;
     prepare?: () => Promise<void>;
 }
 
-export interface DownloadTrajectoryAnalysesInputDTO {
+export interface DownloadTrajectoryAnalysesInput {
     trajectoryId: string;
     teamId: string;
     name?: string;
 }
 
-export interface DownloadTrajectoryAnalysesOutputDTO {
+export interface DownloadTrajectoryAnalysesOutput {
     stream: Readable;
     headers: Record<string, string>;
     prepare?: () => Promise<void>;
 }
 
-export interface DownloadSampleSimulationsInputDTO {
+export interface DownloadSampleSimulationsInput {
     filename?: string;
 }
 
-export interface DownloadSampleSimulationsOutputDTO {
+export interface DownloadSampleSimulationsOutput {
     stream: ReadStream;
     filename: string;
 }
@@ -146,7 +146,7 @@ export interface TrajectoryUploadSessionFileInput {
     type?: string;
 }
 
-export interface CreateTrajectoryUploadSessionInputDTO {
+export interface CreateTrajectoryUploadSessionInput {
     name: string;
     files: TrajectoryUploadSessionFileInput[];
     userId: string;
@@ -155,7 +155,7 @@ export interface CreateTrajectoryUploadSessionInputDTO {
     folderId?: string | null;
 }
 
-export interface TrajectoryUploadPartDTO {
+export interface TrajectoryUploadPartView {
     partNumber: number;
     offset: number;
     size: number;
@@ -163,42 +163,42 @@ export interface TrajectoryUploadPartDTO {
     expiresAt: string;
 }
 
-export interface TrajectoryUploadSessionFileDTO {
+export interface TrajectoryUploadSessionFileView {
     index: number;
     originalName: string;
     size: number;
     contentType?: string;
     finalObjectKey: string;
-    parts: TrajectoryUploadPartDTO[];
+    parts: TrajectoryUploadPartView[];
 }
 
-export interface CreateTrajectoryUploadSessionOutputDTO {
-    trajectory: CreateTrajectoryOutputDTO;
+export interface CreateTrajectoryUploadSessionOutput {
+    trajectory: CreateTrajectoryOutput;
     uploadSession: {
         id: string;
         chunkSize: number;
         expiresAt: string;
-        files: TrajectoryUploadSessionFileDTO[];
+        files: TrajectoryUploadSessionFileView[];
     };
 }
 
-export interface CommitTrajectoryUploadSessionInputDTO {
+export interface CommitTrajectoryUploadSessionInput {
     teamId: string;
     userId: string;
     uploadSessionId: string;
 }
 
-export interface CommitTrajectoryUploadSessionOutputDTO {
+export interface CommitTrajectoryUploadSessionOutput {
     trajectoryId: string;
 }
 
-export interface CancelTrajectoryUploadSessionInputDTO {
+export interface CancelTrajectoryUploadSessionInput {
     teamId: string;
     userId: string;
     uploadSessionId: string;
 }
 
-export interface CreateColoredModelInputDTO {
+export interface CreateColoredModelInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
@@ -209,22 +209,22 @@ export interface CreateColoredModelInputDTO {
     gradient: string;
 }
 
-export type CreateColoredModelOutputDTO = null;
+export type CreateColoredModelOutput = null;
 
-export interface GetColorCodingPropertiesInputDTO {
+export interface GetColorCodingPropertiesInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     exposureId?: string;
 }
 
-export interface GetColorCodingPropertiesOutputDTO {
+export interface GetColorCodingPropertiesOutput {
     base: string[];
     modifiers: Record<string, string[]>;
     modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
 }
 
-export interface GetColorCodingStatsInputDTO {
+export interface GetColorCodingStatsInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
@@ -233,12 +233,12 @@ export interface GetColorCodingStatsInputDTO {
     type: string;
 }
 
-export interface GetColorCodingStatsOutputDTO {
+export interface GetColorCodingStatsOutput {
     min: number;
     max: number;
 }
 
-export interface GetColoredModelStreamInputDTO {
+export interface GetColoredModelStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
@@ -249,11 +249,11 @@ export interface GetColoredModelStreamInputDTO {
     gradient: string;
 }
 
-export interface GetColoredModelStreamOutputDTO {
+export interface GetColoredModelStreamOutput {
     stream: Readable;
 }
 
-export interface ParticleFilterConditionDTO {
+export interface ParticleFilterConditionRequestInput {
     kind?: 'property';
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
@@ -261,62 +261,62 @@ export interface ParticleFilterConditionDTO {
     exposureId?: string;
 }
 
-export interface PreviewParticleFilterInputDTO {
+export interface PreviewParticleFilterInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionDTO[];
+    conditions: ParticleFilterConditionRequestInput[];
 }
 
-export interface PreviewParticleFilterOutputDTO {
+export interface PreviewParticleFilterOutput {
     matchCount: number;
     totalAtoms: number;
 }
 
-export interface ApplyParticleFilterActionInputDTO {
+export interface ApplyParticleFilterActionInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     action: 'delete' | 'highlight';
     combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionDTO[];
+    conditions: ParticleFilterConditionRequestInput[];
 }
 
-export interface ApplyParticleFilterActionOutputDTO {
+export interface ApplyParticleFilterActionOutput {
     fileId: string;
     atomsResult: number;
     action: string;
 }
 
-export interface GetFilteredModelStreamInputDTO {
+export interface GetFilteredModelStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     action?: string;
     combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionDTO[];
+    conditions: ParticleFilterConditionRequestInput[];
 }
 
-export interface GetFilteredModelStreamOutputDTO {
+export interface GetFilteredModelStreamOutput {
     stream: Readable;
 }
 
-export interface GetParticleFilterPropertiesInputDTO {
+export interface GetParticleFilterPropertiesInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     exposureId?: string;
 }
 
-export interface GetParticleFilterPropertiesOutputDTO {
+export interface GetParticleFilterPropertiesOutput {
     dump: string[];
     perAtom: Record<string, string[]>;
     perAtomTypes: Record<string, Record<string, 'number' | 'string'>>;
     exposureNames: Record<string, string>;
 }
 
-export interface GetParticleFilterUniqueValuesInputDTO {
+export interface GetParticleFilterUniqueValuesInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
@@ -325,11 +325,11 @@ export interface GetParticleFilterUniqueValuesInputDTO {
     maxValues?: number;
 }
 
-export interface GetParticleFilterUniqueValuesOutputDTO {
+export interface GetParticleFilterUniqueValuesOutput {
     values: Array<number | string>;
 }
 
-export interface CreateLineStyledModelInputDTO {
+export interface CreateLineStyledModelInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
@@ -337,9 +337,9 @@ export interface CreateLineStyledModelInputDTO {
     style?: LineStyleSpec;
 }
 
-export type CreateLineStyledModelOutputDTO = CreateLineStyledModelResult;
+export type CreateLineStyledModelOutput = CreateLineStyledModelResult;
 
-export interface GetLineStyledModelStreamInputDTO {
+export interface GetLineStyledModelStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
@@ -347,11 +347,11 @@ export interface GetLineStyledModelStreamInputDTO {
     style?: string;
 }
 
-export interface GetLineStyledModelStreamOutputDTO {
+export interface GetLineStyledModelStreamOutput {
     stream: Readable;
 }
 
-export interface GetLineModelRangesStreamInputDTO {
+export interface GetLineModelRangesStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
@@ -359,14 +359,14 @@ export interface GetLineModelRangesStreamInputDTO {
     style?: string;
 }
 
-export interface GetOctreeMetadataStreamInputDTO {
+export interface GetOctreeMetadataStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
     exposureId: string;
 }
 
-export interface GetLineEntityPropertiesInputDTO {
+export interface GetLineEntityPropertiesInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
@@ -374,7 +374,7 @@ export interface GetLineEntityPropertiesInputDTO {
     entityId: string;
 }
 
-export interface GetLineEntityPropertiesOutputDTO {
+export interface GetLineEntityPropertiesOutput {
     entityId: number;
     properties: Record<string, unknown>;
 }
@@ -397,7 +397,7 @@ export interface TeamSceneArtifactOutput {
     updatedAt: Date;
 }
 
-export interface ListTeamSceneArtifactsInputDTO {
+export interface ListTeamSceneArtifactsInput {
     teamId: string;
     sourceType?: SceneArtifactProps['sourceType'];
     analysisId?: string;
@@ -406,9 +406,9 @@ export interface ListTeamSceneArtifactsInputDTO {
     limit?: number;
 }
 
-export interface ListTeamSceneArtifactsOutputDTO extends PaginatedResult<TeamSceneArtifactOutput> {}
+export interface ListTeamSceneArtifactsOutput extends PaginatedResult<TeamSceneArtifactOutput> {}
 
-export interface ListTrajectorySceneArtifactsInputDTO {
+export interface ListTrajectorySceneArtifactsInput {
     trajectoryId: string;
     sourceType?: SceneArtifactSourceType;
     analysisId?: string;
@@ -422,54 +422,54 @@ export enum PublicCanvasAccessMode {
     ReadOnly = 'read-only'
 }
 
-export interface GetPublicCanvasBootstrapInputDTO {
+export interface GetPublicCanvasBootstrapInput {
     trajectoryId: string;
     userId?: string;
 }
 
-export interface PublicCanvasFrameDTO {
+export interface PublicCanvasFrameView {
     timestep: number;
     natoms: number;
     simulationCell: string;
 }
 
-export interface PublicCanvasBootstrapTrajectoryDTO {
+export interface PublicCanvasBootstrapTrajectoryView {
     _id: string;
     name: string;
     status: string;
     isPublic: boolean;
     teamId: string;
     analysisIds: string[];
-    frames: PublicCanvasFrameDTO[];
+    frames: PublicCanvasFrameView[];
 }
 
-export interface PublicCanvasAccessDTO {
+export interface PublicCanvasAccessView {
     mode: PublicCanvasAccessMode;
     isGuest: boolean;
     isPublic: boolean;
     hasTeamMembership: boolean;
 }
 
-export interface GetPublicCanvasBootstrapOutputDTO {
-    access: PublicCanvasAccessDTO;
-    trajectory: PublicCanvasBootstrapTrajectoryDTO;
+export interface GetPublicCanvasBootstrapOutput {
+    access: PublicCanvasAccessView;
+    trajectory: PublicCanvasBootstrapTrajectoryView;
 }
 
-export interface GetPublicCanvasGLBInputDTO {
+export interface GetPublicCanvasGLBInput {
     trajectoryId: string;
     timestep: string;
     userId?: string;
     acceptEncoding?: string;
 }
 
-export interface GetPublicCanvasGLBOutputDTO {
+export interface GetPublicCanvasGLBOutput {
     stream: Readable;
     size?: number;
     objectName: string;
     contentEncoding: GlbContentEncoding;
 }
 
-export interface GetPublicCanvasRasterFrameInputDTO {
+export interface GetPublicCanvasRasterFrameInput {
     trajectoryId: string;
     timestep: number;
     analysisId?: string;
@@ -477,4 +477,4 @@ export interface GetPublicCanvasRasterFrameInputDTO {
     userId?: string;
 }
 
-export type GetPublicCanvasRasterFrameOutputDTO = DownloadStreamOutputDTO;
+export type GetPublicCanvasRasterFrameOutput = DownloadStreamOutput;

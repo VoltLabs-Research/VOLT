@@ -1,17 +1,17 @@
 import type { AnalysisProps } from '@shared/contracts/types';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-export interface GetAnalysesByTrajectoryIdInputDTO {
+export interface GetAnalysesByTrajectoryIdInput {
     teamId?: string;
     trajectoryId: string;
     page?: number;
     limit?: number;
 }
 
-export interface GetAnalysesByTrajectoryItemDTO extends Omit<AnalysisProps, 'plugin'> {
+export interface GetAnalysesByTrajectoryItemView extends Omit<AnalysisProps, 'plugin'> {
     _id: string;
     plugin: string;
     pluginDisplayName: string;
 }
 
-export interface GetAnalysesByTrajectoryIdOutputDTO extends PaginatedResult<GetAnalysesByTrajectoryItemDTO> {}
+export interface GetAnalysesByTrajectoryIdOutput extends PaginatedResult<GetAnalysesByTrajectoryItemView> {}

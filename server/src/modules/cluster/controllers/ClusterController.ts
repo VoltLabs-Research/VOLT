@@ -1,8 +1,8 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -10,7 +10,7 @@ import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-li
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.TEAM))

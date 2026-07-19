@@ -4,7 +4,7 @@ import { presentCatalogFolder } from '@shared/application/catalog/catalog-folder
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import type { Response } from 'express';
 

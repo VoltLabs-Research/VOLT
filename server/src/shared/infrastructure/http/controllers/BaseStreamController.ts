@@ -3,7 +3,7 @@ import logger from '@shared/infrastructure/logger';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 export interface StreamableOutput {
     stream: Readable;

@@ -1,5 +1,5 @@
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 export const readUserAgent = (req: AuthenticatedRequest): string => {
     const userAgent = req.headers['user-agent'];

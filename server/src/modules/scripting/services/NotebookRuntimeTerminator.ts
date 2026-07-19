@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';

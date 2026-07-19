@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/contracts/trajectory';

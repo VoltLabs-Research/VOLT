@@ -22,7 +22,7 @@ import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
 
-export interface AIConversationDTO {
+export interface AIConversationView {
     _id: string;
     userId: string;
     teamId: string;
@@ -35,24 +35,24 @@ export interface AIConversationDTO {
     updatedAt: Date;
 }
 
-interface AIMessageArtifactsDTO {
+interface AIMessageArtifactsView {
     items: Record<string, unknown>[];
 }
 
-export interface AIMessageDTO {
+export interface AIMessageView {
     _id: string;
     conversationId: string;
     role: AIMessageRole;
     parts: AIConversationMessageParts;
     content: string;
-    artifacts: AIMessageArtifactsDTO | null;
+    artifacts: AIMessageArtifactsView | null;
     modelInfo: AIMessageModelInfo | null;
     tokenUsage: AIMessageTokenUsage | null;
     createdAt: Date;
     updatedAt: Date;
 }
 
-interface ListAIConversationsInputDTO {
+interface ListAIConversationsInput {
     teamId: string;
     userId: string;
     page?: number;
@@ -60,19 +60,19 @@ interface ListAIConversationsInputDTO {
     includeArchived?: boolean | string;
 }
 
-interface CreateAIConversationInputDTO {
+interface CreateAIConversationInput {
     teamId: string;
     userId: string;
     title?: string;
     message?: string;
 }
 
-interface CreateAIConversationOutputDTO {
-    conversation: AIConversationDTO;
-    userMessage?: AIMessageDTO;
+interface CreateAIConversationOutput {
+    conversation: AIConversationView;
+    userMessage?: AIMessageView;
 }
 
-interface ListAIConversationMessagesInputDTO {
+interface ListAIConversationMessagesInput {
     teamId: string;
     userId: string;
     conversationId: string;
@@ -80,7 +80,7 @@ interface ListAIConversationMessagesInputDTO {
     limit?: number;
 }
 
-interface SendAIConversationMessageInputDTO {
+interface SendAIConversationMessageInput {
     teamId: string;
     conversationId: string;
     userId: string;
@@ -91,13 +91,13 @@ interface SendAIConversationMessageInputDTO {
     model?: string;
 }
 
-interface SendAIConversationMessageOutputDTO {
+interface SendAIConversationMessageOutput {
     streamResult: AIChatReplyStream;
-    userMessage?: AIMessageDTO;
-    assistantMessage?: Promise<AIMessageDTO | undefined>;
+    userMessage?: AIMessageView;
+    assistantMessage?: Promise<AIMessageView | undefined>;
 }
 
-interface UpdateAIConversationInputDTO {
+interface UpdateAIConversationInput {
     teamId: string;
     userId: string;
     conversationId: string;
@@ -105,7 +105,7 @@ interface UpdateAIConversationInputDTO {
     isArchived?: boolean;
 }
 
-interface DeleteAIConversationInputDTO {
+interface DeleteAIConversationInput {
     teamId: string;
     userId: string;
     conversationId: string;
@@ -121,7 +121,7 @@ interface ConversationUpdatePayload {
 const VALID_ARTIFACT_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
 
 export default class AiService {
-    async listConversations(input: ListAIConversationsInputDTO): Promise<PaginatedResult<AIConversationDTO>> {
+    async listConversations(input: ListAIConversationsInput): Promise<PaginatedResult<AIConversationView>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
         const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
@@ -148,7 +148,7 @@ export default class AiService {
         ]);
 
         return {
-            data: docs.map((doc) => this.#toConversationDTO(doc)),
+            data: docs.map((doc) => this.#toConversationView(doc)),
             total,
             page,
             totalPages: Math.ceil(total / limit),
@@ -156,7 +156,7 @@ export default class AiService {
         };
     }
 
-    async createConversation(input: CreateAIConversationInputDTO): Promise<CreateAIConversationOutputDTO> {
+    async createConversation(input: CreateAIConversationInput): Promise<CreateAIConversationOutput> {
         const title = input.title?.trim() || 'New Conversation';
         const normalizedMessage = input.message?.trim();
 
@@ -197,14 +197,14 @@ export default class AiService {
             : null;
 
         return {
-            conversation: this.#toConversationDTO(conversation),
+            conversation: this.#toConversationView(conversation),
             userMessage: userMessage
-                ? this.#toMessageDTO(userMessage)
+                ? this.#toMessageView(userMessage)
                 : undefined
         };
     }
 
-    async listMessages(input: ListAIConversationMessagesInputDTO): Promise<PaginatedResult<AIMessageDTO>> {
+    async listMessages(input: ListAIConversationMessagesInput): Promise<PaginatedResult<AIMessageView>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
@@ -232,7 +232,7 @@ export default class AiService {
         ]);
 
         return {
-            data: docs.map((doc) => this.#toMessageDTO(doc)),
+            data: docs.map((doc) => this.#toMessageView(doc)),
             total,
             page,
             totalPages: Math.ceil(total / limit),
@@ -240,7 +240,7 @@ export default class AiService {
         };
     }
 
-    async streamMessage(input: SendAIConversationMessageInputDTO): Promise<SendAIConversationMessageOutputDTO> {
+    async streamMessage(input: SendAIConversationMessageInput): Promise<SendAIConversationMessageOutput> {
         const uiMessages = normalizeUIMessages(input.messages);
 
         if (!uiMessages) {
@@ -317,9 +317,9 @@ export default class AiService {
             uiMessages.length
         );
 
-        let resolveAssistantMessage: (message: AIMessageDTO | undefined) => void = () => undefined;
+        let resolveAssistantMessage: (message: AIMessageView | undefined) => void = () => undefined;
         let rejectAssistantMessage: (error: unknown) => void = () => undefined;
-        const assistantMessage = new Promise<AIMessageDTO | undefined>((resolve, reject) => {
+        const assistantMessage = new Promise<AIMessageView | undefined>((resolve, reject) => {
             resolveAssistantMessage = resolve;
             rejectAssistantMessage = reject;
         });
@@ -359,7 +359,7 @@ export default class AiService {
 
             return {
                 streamResult,
-                userMessage: userMessage ? this.#toMessageDTO(userMessage) : undefined,
+                userMessage: userMessage ? this.#toMessageView(userMessage) : undefined,
                 assistantMessage
             };
         } catch (error) {
@@ -368,7 +368,7 @@ export default class AiService {
         }
     }
 
-    async updateConversation(input: UpdateAIConversationInputDTO): Promise<AIConversationDTO> {
+    async updateConversation(input: UpdateAIConversationInput): Promise<AIConversationView> {
         const conversation = await this.#findOwnedConversation(
             input.conversationId,
             input.teamId,
@@ -399,10 +399,10 @@ export default class AiService {
             );
         }
 
-        return this.#toConversationDTO(updatedConversation);
+        return this.#toConversationView(updatedConversation);
     }
 
-    async deleteConversation(input: DeleteAIConversationInputDTO): Promise<void> {
+    async deleteConversation(input: DeleteAIConversationInput): Promise<void> {
         const conversation = await this.#findOwnedConversation(
             input.conversationId,
             input.teamId,
@@ -449,11 +449,11 @@ export default class AiService {
         conversationId: string,
         event: AIChatFinishEvent,
         existingMessage?: AIMessageDocument | null
-    ): Promise<AIMessageDTO | undefined> {
+    ): Promise<AIMessageView | undefined> {
         const { parts: newParts, textContent: newTextContent } = mapAssistantResponseParts(event.responseMessages);
 
         if (newParts.length === 0) {
-            return existingMessage ? this.#toMessageDTO(existingMessage) : undefined;
+            return existingMessage ? this.#toMessageView(existingMessage) : undefined;
         }
 
         if (existingMessage) {
@@ -468,7 +468,7 @@ export default class AiService {
         event: AIChatFinishEvent,
         newParts: AIMessageProps['parts'],
         newTextContent: string
-    ): Promise<AIMessageDTO | undefined> {
+    ): Promise<AIMessageView | undefined> {
         const existing = existingMessage.toObject({ flattenMaps: true }) as unknown as AIMessageProps;
 
         const mergedParts = mergeAssistantParts(
@@ -510,7 +510,7 @@ export default class AiService {
         ).exec();
 
         if (!updatedMessage) return undefined;
-        return this.#toMessageDTO(updatedMessage);
+        return this.#toMessageView(updatedMessage);
     }
 
     async #createAssistantResponse(
@@ -518,7 +518,7 @@ export default class AiService {
         event: AIChatFinishEvent,
         parts: AIMessageProps['parts'],
         textContent: string
-    ): Promise<AIMessageDTO> {
+    ): Promise<AIMessageView> {
         const now = new Date();
         const assistantMessage = await AIMessageModel.create({
             conversationId,
@@ -540,10 +540,10 @@ export default class AiService {
             updatedAt: now
         });
 
-        return this.#toMessageDTO(assistantMessage);
+        return this.#toMessageView(assistantMessage);
     }
 
-    #toConversationDTO(doc: AIConversationDocument): AIConversationDTO {
+    #toConversationView(doc: AIConversationDocument): AIConversationView {
         const props = doc.toObject({ flattenMaps: true }) as unknown as AIConversationProps;
 
         return {
@@ -560,7 +560,7 @@ export default class AiService {
         };
     }
 
-    #toMessageDTO(doc: AIMessageDocument): AIMessageDTO {
+    #toMessageView(doc: AIMessageDocument): AIMessageView {
         const props = doc.toObject({ flattenMaps: true }) as unknown as AIMessageProps;
         const messageId = String(doc._id);
         const steps = props.modelInfo?.steps ?? [];

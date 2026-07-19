@@ -1,11 +1,10 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/utilities/jupyter-proxy';
 import { scriptingRoutes } from '@volt/contracts/modules/scripting/routes';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
@@ -15,13 +14,12 @@ import type {
     CreateScriptingJupyterSessionInput
 } from '@volt/contracts/modules/scripting/http';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.SCRIPTING))
 export default class ScriptingController extends Controller {
     #service = new ScriptingService();
-    #accessToken = new ScriptingJupyterAccessTokenService();
 
     @Route(scriptingRoutes.listNotebooks)
     @Route(scriptingRoutes.listNotebooksByTrajectory)
@@ -83,10 +81,17 @@ export default class ScriptingController extends Controller {
         @Res() res: Response
     ): Promise<void> {
         const value = await this.#service.getSessionStatus({ teamId, notebookId, userId });
-        const { runtimeNotebookId, accessToken, ...response } = value;
+        const { accessGrant, ...response } = value;
 
-        if (runtimeNotebookId && accessToken && teamId) {
-            setJupyterProxyAccessCookie(req, res, accessToken, teamId, runtimeNotebookId, this.#accessToken.getCookieMaxAgeMs());
+        if (accessGrant) {
+            setJupyterProxyAccessCookie(
+                req,
+                res,
+                accessGrant.token,
+                accessGrant.teamId,
+                accessGrant.runtimeNotebookId,
+                accessGrant.maxAgeMs
+            );
         }
 
         BaseResponse.success(res, response);
@@ -127,15 +132,18 @@ export default class ScriptingController extends Controller {
             teamClusterId: body.teamClusterId
         });
 
-        if (value.jupyter.url && teamId && userId && value.notebookId) {
-            const accessToken = this.#accessToken.create({
-                teamId,
-                runtimeNotebookId: value.notebookId,
-                userId
-            });
-            setJupyterProxyAccessCookie(req, res, accessToken, teamId, value.notebookId, this.#accessToken.getCookieMaxAgeMs());
+        const { accessGrant, ...response } = value;
+        if (accessGrant) {
+            setJupyterProxyAccessCookie(
+                req,
+                res,
+                accessGrant.token,
+                accessGrant.teamId,
+                accessGrant.runtimeNotebookId,
+                accessGrant.maxAgeMs
+            );
         }
 
-        BaseResponse.success(res, value, 201);
+        BaseResponse.success(res, response, 201);
     }
 }

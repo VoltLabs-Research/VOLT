@@ -1,26 +1,22 @@
 import Controller from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import objectGatewayClient, { type TeamClusterObjectGatewayClient } from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ClusterObjectTransferService, {
+    type ClusterObjectTransferReadResponse
+} from '@modules/cluster/services/ClusterObjectTransferService';
 import { clusterObjectRoutes } from '@volt/contracts/modules/cluster/routes';
 import { pipeline } from 'node:stream/promises';
 
 import type { Request, Response } from 'express';
-import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster/contracts/ClusterObjectGateway';
 
-const readContentLength = (request: Request): number => {
+const readRouteParam = (request: Request, paramName: 'teamId' | 'token'): string | undefined => {
+    const value = request.params[paramName];
+    return Array.isArray(value) ? value[0] : value;
+};
+
+const readContentLength = (request: Request): number | undefined => {
     const rawContentLength = request.header('content-length');
-    const contentLength = rawContentLength ? Number(rawContentLength) : Number.NaN;
-    if (!Number.isInteger(contentLength) || contentLength < 0) {
-        throw ApplicationError.badRequest(
-            'ClusterObject::ContentLengthRequired',
-            'content-length header is required for object uploads'
-        );
-    }
-
-    return contentLength;
+    return rawContentLength ? Number(rawContentLength) : undefined;
 };
 
 const sendError = (response: Response, error: unknown): void => {
@@ -44,7 +40,7 @@ const sendError = (response: Response, error: unknown): void => {
 
 const applyReadHeaders = (
     response: Response,
-    streamResponse: Awaited<ReturnType<TeamClusterObjectGatewayClient['getStream']>>
+    streamResponse: ClusterObjectTransferReadResponse
 ): void => {
     if (typeof streamResponse.contentLength === 'number') {
         response.setHeader('content-length', String(streamResponse.contentLength));
@@ -81,46 +77,21 @@ const applyReadHeaders = (
 };
 
 export default class ClusterObjectController extends Controller {
-    #signedUrlService = new ClusterObjectSignedUrlService();
-    #objectGatewayClient = objectGatewayClient;
-
-    #resolveClaims(request: Request, operation: ClusterObjectOperation): ClusterObjectAccessClaims {
-        const token = Array.isArray(request.params.token) ? request.params.token[0] : request.params.token;
-        const teamId = Array.isArray(request.params.teamId) ? request.params.teamId[0] : request.params.teamId;
-        const claims = token ? this.#signedUrlService.verify(token) : null;
-
-        if (!claims || claims.operation !== operation || claims.teamId !== teamId) {
-            throw ApplicationError.unauthorized(
-                'ClusterObject::InvalidSignedUrl',
-                'Object URL is invalid or expired'
-            );
-        }
-
-        return claims;
-    }
+    readonly #transferService = new ClusterObjectTransferService();
 
     @Route(clusterObjectRoutes.write)
     async write(@Req() request: Request, @Res() response: Response): Promise<void> {
         try {
-            const claims = this.#resolveClaims(request, 'write');
-            const contentLength = readContentLength(request);
-
-            if (typeof claims.contentLength === 'number' && claims.contentLength !== contentLength) {
-                throw ApplicationError.badRequest(
-                    'ClusterObject::ContentLengthMismatch',
-                    'Uploaded object size does not match the signed URL'
-                );
-            }
-
-            await this.#objectGatewayClient.putStream(claims.ownerClusterId, {
-                bucket: claims.bucket,
-                objectKey: claims.objectKey,
-                stream: request,
-                contentLength,
-                contentType: request.header('content-type') || claims.contentType || 'application/octet-stream',
-                contentEncoding: request.header('content-encoding') || undefined,
-                metadata: claims.metadata
-            });
+            await this.#transferService.write(
+                readRouteParam(request, 'teamId'),
+                readRouteParam(request, 'token'),
+                {
+                    stream: request,
+                    contentLength: readContentLength(request),
+                    contentType: request.header('content-type') || undefined,
+                    contentEncoding: request.header('content-encoding') || undefined
+                }
+            );
 
             response.status(201).end();
         } catch (error) {
@@ -136,11 +107,9 @@ export default class ClusterObjectController extends Controller {
     @Route(clusterObjectRoutes.readHead)
     async readHead(@Req() request: Request, @Res() response: Response): Promise<void> {
         try {
-            const claims = this.#resolveClaims(request, 'read');
-            const head = await this.#objectGatewayClient.head(
-                claims.ownerClusterId,
-                claims.bucket,
-                claims.objectKey
+            const head = await this.#transferService.head(
+                readRouteParam(request, 'teamId'),
+                readRouteParam(request, 'token')
             );
 
             if (typeof head.contentLength === 'number') {
@@ -159,16 +128,11 @@ export default class ClusterObjectController extends Controller {
     @Route(clusterObjectRoutes.read)
     async read(@Req() request: Request, @Res() response: Response): Promise<void> {
         try {
-            const claims = this.#resolveClaims(request, 'read');
             const rangeHeader = request.header('range') || undefined;
-            const streamResponse = await this.#objectGatewayClient.getStream(
-                claims.ownerClusterId,
-                claims.bucket,
-                claims.objectKey,
-                {
-                    skipMetadata: true,
-                    ...(rangeHeader ? { rangeHeader } : {})
-                }
+            const streamResponse = await this.#transferService.openRead(
+                readRouteParam(request, 'teamId'),
+                readRouteParam(request, 'token'),
+                rangeHeader ? { rangeHeader } : undefined
             );
 
             applyReadHeaders(response, streamResponse);

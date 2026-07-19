@@ -1,5 +1,5 @@
 import Workflow, { type WorkflowProps } from '@modules/plugin/workflow/Workflow';
-import { PluginSchema, PluginStatus } from '@modules/plugin/schemas/plugin/PluginSchema';
+import { PluginSchema, PluginStatus } from '@modules/plugin/models/plugin/PluginSchema';
 import WorkflowProjectionService, { type PluginProjection } from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';

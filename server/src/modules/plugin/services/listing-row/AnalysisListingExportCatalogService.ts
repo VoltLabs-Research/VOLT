@@ -2,13 +2,13 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import {
-    AnalysisListingExportOptionDTO,
-    AnalysisSubListingExportOptionDTO,
-    GetAnalysisListingExportOptionsOutputDTO,
+    AnalysisListingExportOptionView,
+    AnalysisSubListingExportOptionView,
+    GetAnalysisListingExportOptionsOutput,
     AnalysisListingExportData,
     AnalysisSubListingExportData,
-    ExportListingRowsByAnalysisIdInputDTO,
-    ExportListingRowsByAnalysisIdOutputDTO,
+    ExportListingRowsByAnalysisIdInput,
+    ExportListingRowsByAnalysisIdOutput,
     ListingRowByAnalysisData
 } from '@modules/plugin/utilities/listing-row/listing-row-types';
 import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/listing-row-enrichment';
@@ -106,7 +106,7 @@ export class AnalysisListingExportCatalogService {
         private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
-    async getExportOptions(analysisId: string): Promise<GetAnalysisListingExportOptionsOutputDTO> {
+    async getExportOptions(analysisId: string): Promise<GetAnalysisListingExportOptionsOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(analysisId);
 
         if (!teamClusterId) {
@@ -130,7 +130,7 @@ export class AnalysisListingExportCatalogService {
         };
     }
 
-    async buildExportPayload(input: ExportListingRowsByAnalysisIdInputDTO): Promise<ExportListingRowsByAnalysisIdOutputDTO> {
+    async buildExportPayload(input: ExportListingRowsByAnalysisIdInput): Promise<ExportListingRowsByAnalysisIdOutput> {
         const format = input.format ?? ExportType.Csv;
         const includeConfig = input.includeConfig ?? true;
         const selectedListingIds = this.normalizeSelectionSet(input.selectedListingIds);
@@ -289,8 +289,8 @@ export class AnalysisListingExportCatalogService {
         });
     }
 
-    private buildListingOptions(rows: DaemonListingRow[]): AnalysisListingExportOptionDTO[] {
-        const listings = new Map<string, AnalysisListingExportOptionDTO>();
+    private buildListingOptions(rows: DaemonListingRow[]): AnalysisListingExportOptionView[] {
+        const listings = new Map<string, AnalysisListingExportOptionView>();
 
         for (const row of rows) {
             const listingId = row.exposureId || 'listing';
@@ -313,7 +313,7 @@ export class AnalysisListingExportCatalogService {
             .sort((left, right) => left.label.localeCompare(right.label));
     }
 
-    private buildSubListingOptions(rows: DaemonListingRow[]): AnalysisSubListingExportOptionDTO[] {
+    private buildSubListingOptions(rows: DaemonListingRow[]): AnalysisSubListingExportOptionView[] {
         return this.discoverSubListingReferences(rows).map((reference) => ({
             id: reference.id,
             exposureId: reference.exposureId,

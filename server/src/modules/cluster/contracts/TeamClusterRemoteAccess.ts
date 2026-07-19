@@ -1,12 +1,12 @@
 
 
-export enum TeamClusterRemoteAccessTargetDTO {
+export enum TeamClusterRemoteAccessTarget {
     MongoDocuments = 'mongo-documents',
     RedisData = 'redis-data',
     Minio = 'minio'
 }
 
-export enum TeamClusterRemoteExplorerEntryTypeDTO {
+export enum TeamClusterRemoteExplorerEntryType {
     Directory = 'directory',
     Collection = 'collection',
     RedisDatabase = 'redis-database',
@@ -15,46 +15,46 @@ export enum TeamClusterRemoteExplorerEntryTypeDTO {
     Object = 'object'
 }
 
-export enum TeamClusterRemoteExplorerNodeTypeDTO {
+export enum TeamClusterRemoteExplorerNodeType {
     Collection = 'collection',
     RedisValue = 'redis-value',
     Object = 'object'
 }
 
-export enum TeamClusterRemoteExplorerContentTypeDTO {
+export enum TeamClusterRemoteExplorerContentType {
     Empty = 'empty',
     Text = 'text',
     MongoDocuments = 'mongo-documents'
 }
 
-export interface TeamClusterRemoteExplorerEntryDTO {
+export interface TeamClusterRemoteExplorerEntryView {
     id: string;
     name: string;
     path: string;
-    type: TeamClusterRemoteExplorerEntryTypeDTO;
+    type: TeamClusterRemoteExplorerEntryType;
     size: number | null;
     updatedAt: string | null;
     description: string | null;
 }
 
-export interface TeamClusterMongoDocumentDTO {
+export interface TeamClusterMongoDocumentView {
     id: string;
     value: Record<string, unknown>;
 }
 
-export interface TeamClusterRemoteExplorerNodeDTO {
+export interface TeamClusterRemoteExplorerNodeView {
     path: string;
     title: string;
-    type: TeamClusterRemoteExplorerNodeTypeDTO;
-    contentType: TeamClusterRemoteExplorerContentTypeDTO;
+    type: TeamClusterRemoteExplorerNodeType;
+    contentType: TeamClusterRemoteExplorerContentType;
     textContent: string | null;
-    mongoDocuments: TeamClusterMongoDocumentDTO[];
+    mongoDocuments: TeamClusterMongoDocumentView[];
 }
 
-export interface TeamClusterRemoteAccessSessionDTO {
+export interface TeamClusterRemoteAccessSessionView {
     sessionId: string;
     teamClusterId: string;
-    target: TeamClusterRemoteAccessTargetDTO;
+    target: TeamClusterRemoteAccessTarget;
     createdAt: string;
     expiresAt: string;
 }

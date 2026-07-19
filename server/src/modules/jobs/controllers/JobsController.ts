@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Param } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import JobsService from '@modules/jobs/services/JobsService';
 import { jobsRoutes } from '@volt/contracts/modules/jobs/routes';

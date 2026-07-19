@@ -1,5 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';

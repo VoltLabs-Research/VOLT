@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import Workflow, { type WorkflowProps } from '@modules/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';

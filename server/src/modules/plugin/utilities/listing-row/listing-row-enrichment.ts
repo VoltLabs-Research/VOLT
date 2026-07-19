@@ -1,6 +1,6 @@
 import { deriveColumns } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 
-import type { ColumnDef } from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
+import type { ColumnDef } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { DaemonListingRow } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';

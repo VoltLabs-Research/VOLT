@@ -5,8 +5,7 @@ import { logSecretKeyUsageRequest } from '@modules/team/services/secret-key/Secr
 import {
     HttpRequestAuthType,
     setHttpRequestContextAuth,
-    type HttpRequestAuthContext,
-    type HttpRequestContext
+    type HttpRequestAuthContext
 } from '@shared/infrastructure/http/request-context';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
@@ -15,24 +14,8 @@ import crypto from 'node:crypto';
 import UserModel from '@modules/auth/models/UserModel';
 import JwtTokenService from '@modules/auth/services/JwtTokenService';
 import SessionModel from '@modules/session/models/SessionModel';
-import type { NextFunction, Request, Response } from 'express';
-
-export enum AuthenticationType {
-    User = 'user',
-    SecretKey = 'secret-key'
-}
-
-export interface AuthenticatedRequest extends Request {
-    user?: Request['user'];
-    userId?: string;
-    token?: string;
-    authType?: AuthenticationType;
-    secretKeyId?: string;
-    secretKeyTeamId?: string;
-    secretKeyRoleId?: string;
-    teamPermissions?: string[];
-    requestContext?: HttpRequestContext;
-}
+import { AuthenticationType, type AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
+import type { NextFunction, Response } from 'express';
 
 const setRequestAuthContext = (
     request: AuthenticatedRequest,

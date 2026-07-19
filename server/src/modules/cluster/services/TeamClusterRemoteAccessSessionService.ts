@@ -1,6 +1,6 @@
 import {
-    TeamClusterRemoteAccessSessionDTO,
-    TeamClusterRemoteAccessTargetDTO
+    TeamClusterRemoteAccessSessionView,
+    TeamClusterRemoteAccessTarget
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
@@ -10,7 +10,7 @@ interface CreateRemoteAccessSessionParams {
     userId: string;
     teamId: string;
     teamClusterId: string;
-    target: TeamClusterRemoteAccessTargetDTO;
+    target: TeamClusterRemoteAccessTarget;
 }
 
 interface ValidateRemoteAccessSessionParams {
@@ -18,10 +18,10 @@ interface ValidateRemoteAccessSessionParams {
     userId: string;
     teamId?: string;
     teamClusterId?: string;
-    target?: TeamClusterRemoteAccessTargetDTO;
+    target?: TeamClusterRemoteAccessTarget;
 }
 
-interface StoredRemoteAccessSession extends TeamClusterRemoteAccessSessionDTO {
+interface StoredRemoteAccessSession extends TeamClusterRemoteAccessSessionView {
     userId: string;
     teamId: string;
 }
@@ -43,7 +43,7 @@ export class TeamClusterRemoteAccessSessionService {
         sweepIntervalMs: SESSION_SWEEP_INTERVAL_MS
     });
 
-    createSession(params: CreateRemoteAccessSessionParams): TeamClusterRemoteAccessSessionDTO {
+    createSession(params: CreateRemoteAccessSessionParams): TeamClusterRemoteAccessSessionView {
         this.cleanupExpiredSessions();
 
         const createdAt = new Date();
@@ -60,7 +60,7 @@ export class TeamClusterRemoteAccessSessionService {
 
         this.sessions.set(session.sessionId, session);
 
-        return this.toDTO(session);
+        return this.toView(session);
     }
 
     validateSession(params: ValidateRemoteAccessSessionParams): StoredRemoteAccessSession | ApplicationError {
@@ -118,7 +118,7 @@ export class TeamClusterRemoteAccessSessionService {
         this.sessions.sweepExpired();
     }
 
-    private toDTO(session: StoredRemoteAccessSession): TeamClusterRemoteAccessSessionDTO {
+    private toView(session: StoredRemoteAccessSession): TeamClusterRemoteAccessSessionView {
         return {
             sessionId: session.sessionId,
             teamClusterId: session.teamClusterId,

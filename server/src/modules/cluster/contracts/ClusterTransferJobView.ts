@@ -9,7 +9,7 @@ import type {
     ClusterTransferJobStats
 } from '@modules/cluster/utilities/cluster-transfer-job';
 
-export interface ClusterTransferJobDTO {
+export interface ClusterTransferJobView {
     _id: string;
     team: string;
     scopeType: StoragePlacementScopeType;

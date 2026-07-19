@@ -10,6 +10,8 @@ import notebookCredentialService from '@modules/scripting/services/NotebookCrede
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
+import { attachScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
 import NotebookDeletedEvent from '@modules/scripting/events/NotebookDeletedEvent';
 import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/utilities/build-scripting-notebook';
 import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/utilities/jupyter-proxy';
@@ -67,17 +69,17 @@ interface NotebookIdentityInput {
 interface CreateJupyterSessionResult {
     notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
+    accessGrant?: ScriptingJupyterAccessGrant;
 }
 
 interface GetSessionStatusResult {
     notebookId: string;
-    runtimeNotebookId?: string;
-    accessToken?: string;
     jupyter: {
         ready: boolean;
         url: string;
         containerStage?: 'creating' | 'starting' | 'ready';
     };
+    accessGrant?: ScriptingJupyterAccessGrant;
 }
 
 interface DeleteSessionResult {
@@ -306,31 +308,36 @@ export default class ScriptingService {
             return { notebookId, jupyter: { ready: false, url: '', containerStage: 'creating' } };
         }
 
-        const accessToken = this.#accessToken.create({ teamId: input.teamId, runtimeNotebookId, userId: input.userId });
+        const accessGrant = this.#accessToken.createAccessGrant({
+            teamId: input.teamId,
+            runtimeNotebookId,
+            userId: input.userId
+        });
         const url = buildJupyterProxyUrl({
             teamId: input.teamId,
             runtimeNotebookId,
             notebookPath: notebook.notebookPath,
-            accessToken
+            accessToken: accessGrant.token
         });
 
         if (!notebook.teamCluster) {
-            return { notebookId, runtimeNotebookId, accessToken, jupyter: { ready: false, url, containerStage: 'creating' } };
+            return attachScriptingJupyterAccessGrant({
+                notebookId,
+                jupyter: { ready: false, url, containerStage: 'creating' }
+            }, accessGrant);
         }
 
         const exposures = this.#exposureRegistry.listTeamClusterExposures(String(notebook.teamCluster));
         const match = findNotebookExposure(exposures, runtimeNotebookId);
 
-        return {
+        return attachScriptingJupyterAccessGrant({
             notebookId,
-            runtimeNotebookId,
-            accessToken,
             jupyter: {
                 ready: Boolean(match?.ready),
                 url,
                 containerStage: match?.ready ? 'ready' : 'starting'
             }
-        };
+        }, accessGrant);
     }
 
     async deleteSession(input: NotebookIdentityInput): Promise<DeleteSessionResult> {
@@ -390,7 +397,10 @@ export default class ScriptingService {
             };
             const session = await this.#orchestrator.startSession(sessionInput);
 
-            return { notebookId: String(notebook._id), jupyter: session.jupyter };
+            return attachScriptingJupyterAccessGrant({
+                notebookId: String(notebook._id),
+                jupyter: session.jupyter
+            }, session.accessGrant);
         } catch (error) {
             throw this.#mapError(error);
         } finally {

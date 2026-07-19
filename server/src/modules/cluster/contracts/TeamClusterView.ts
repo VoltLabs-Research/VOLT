@@ -2,36 +2,36 @@ import type {
     TeamClusterStatus,
     TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
-import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
+import type { ClusterTransferJobView } from '@modules/cluster/contracts/ClusterTransferJobView';
 
-export interface TeamClusterServiceDTO {
+export interface TeamClusterServiceView {
     port: number | null;
 }
 
-export interface TeamClusterServicesDTO {
-    minio: TeamClusterServiceDTO;
-    redis: TeamClusterServiceDTO;
-    mongodb: TeamClusterServiceDTO;
-    daemon: TeamClusterServiceDTO;
+export interface TeamClusterServicesView {
+    minio: TeamClusterServiceView;
+    redis: TeamClusterServiceView;
+    mongodb: TeamClusterServiceView;
+    daemon: TeamClusterServiceView;
 }
 
-export interface TeamClusterCredentialServiceDTO extends TeamClusterServiceDTO {
+export interface TeamClusterCredentialServiceView extends TeamClusterServiceView {
     username: string;
     password: string;
 }
 
-export interface TeamClusterDaemonCredentialServiceDTO extends TeamClusterServiceDTO {
+export interface TeamClusterDaemonCredentialServiceView extends TeamClusterServiceView {
     password: string;
 }
 
-export interface TeamClusterCredentialServicesDTO {
-    minio: TeamClusterCredentialServiceDTO;
-    redis: TeamClusterCredentialServiceDTO;
-    mongodb: TeamClusterCredentialServiceDTO;
-    daemon: TeamClusterDaemonCredentialServiceDTO;
+export interface TeamClusterCredentialServicesView {
+    minio: TeamClusterCredentialServiceView;
+    redis: TeamClusterCredentialServiceView;
+    mongodb: TeamClusterCredentialServiceView;
+    daemon: TeamClusterDaemonCredentialServiceView;
 }
 
-export interface TeamClusterQueueConcurrencyDTO {
+export interface TeamClusterQueueConcurrencyView {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
@@ -39,18 +39,18 @@ export interface TeamClusterQueueConcurrencyDTO {
     pluginWarmup: number;
 }
 
-export interface TeamClusterQueueScopeLimitDTO {
+export interface TeamClusterQueueScopeLimitView {
     maxRunningPerTrajectory: number;
 }
 
-export interface TeamClusterQueueScopeLimitsDTO {
-    analysisProcessing: TeamClusterQueueScopeLimitDTO;
-    artifactUpload: TeamClusterQueueScopeLimitDTO;
-    trajectoryRasterization: TeamClusterQueueScopeLimitDTO;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimitDTO;
+export interface TeamClusterQueueScopeLimitsView {
+    analysisProcessing: TeamClusterQueueScopeLimitView;
+    artifactUpload: TeamClusterQueueScopeLimitView;
+    trajectoryRasterization: TeamClusterQueueScopeLimitView;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimitView;
 }
 
-export interface TeamClusterRuntimeRoleConfigDTO {
+export interface TeamClusterRuntimeRoleConfigView {
     desiredRole: TeamClusterRuntimeRoleConfigProps['desiredRole'];
     effectiveRole: TeamClusterRuntimeRoleConfigProps['effectiveRole'];
     runtimeVersion: number;
@@ -61,14 +61,14 @@ export interface TeamClusterRuntimeRoleConfigDTO {
     lastAppliedAt?: Date | null;
 }
 
-export interface TeamClusterEffectiveCapabilitiesDTO {
+export interface TeamClusterEffectiveCapabilitiesView {
     acceptsComputeJobs: boolean;
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
 }
 
-export interface TeamClusterDTO {
+export interface TeamClusterView {
     _id: string;
     name: string;
     team: string;
@@ -77,12 +77,12 @@ export interface TeamClusterDTO {
     installedVersion: string | null;
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
-    services: TeamClusterServicesDTO;
-    queueConcurrency: TeamClusterQueueConcurrencyDTO;
-    queueScopeLimits: TeamClusterQueueScopeLimitsDTO;
-    roleConfig: TeamClusterRuntimeRoleConfigDTO;
-    effectiveCapabilities: TeamClusterEffectiveCapabilitiesDTO;
-    activeTransfers?: ClusterTransferJobDTO[];
+    services: TeamClusterServicesView;
+    queueConcurrency: TeamClusterQueueConcurrencyView;
+    queueScopeLimits: TeamClusterQueueScopeLimitsView;
+    roleConfig: TeamClusterRuntimeRoleConfigView;
+    effectiveCapabilities: TeamClusterEffectiveCapabilitiesView;
+    activeTransfers?: ClusterTransferJobView[];
     isDemo: boolean;
     demoExpiresAt: Date | null;
     createdAt: Date;

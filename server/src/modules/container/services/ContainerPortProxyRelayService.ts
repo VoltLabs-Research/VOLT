@@ -10,8 +10,8 @@ import {
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
-import reverseWsHttpRelay from '@shared/infrastructure/services/ReverseWsHttpRelay';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import reverseWsHttpRelay from '@modules/cluster/services/ReverseWsHttpRelay';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,

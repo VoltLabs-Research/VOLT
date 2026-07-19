@@ -1,4 +1,4 @@
-export interface CatalogFolderDTO {
+export interface CatalogFolderView {
     _id: string;
     title: string;
     parent: string | null;
@@ -6,7 +6,7 @@ export interface CatalogFolderDTO {
     updatedAt: Date;
 }
 
-export interface DeleteCatalogFolderInputDTO {
+export interface DeleteCatalogFolderInput {
     teamId: string;
     folderId: string;
 }

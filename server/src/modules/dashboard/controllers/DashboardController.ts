@@ -1,7 +1,7 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Param, Query, CurrentUser } from '@shared/http/params';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { checkTeamMembership } from '@modules/team/middlewares/check-team-membership';
 import DashboardService from '@modules/dashboard/services/DashboardService';
 import { dashboardRoutes } from '@volt/contracts/modules/dashboard/routes';

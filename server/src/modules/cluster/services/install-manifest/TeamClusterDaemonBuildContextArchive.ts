@@ -1,12 +1,12 @@
 import archiver from 'archiver';
 import { PassThrough } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import type { TeamClusterInstallManifestFileDTO } from '@modules/cluster/contracts/TeamClusterInstallManifest';
+import type { TeamClusterInstallManifestFileView } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 
 const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
 
 export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
-    files: TeamClusterInstallManifestFileDTO[]
+    files: TeamClusterInstallManifestFileView[]
 ): Promise<string> => {
     const output = new PassThrough();
     const archive = archiver('tar', {

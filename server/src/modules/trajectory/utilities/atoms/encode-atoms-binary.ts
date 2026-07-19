@@ -1,6 +1,6 @@
 import type {
     AtomColumnDType,
-    GetAtomsColumnarOutputDTO
+    GetAtomsColumnarOutput
 } from '@modules/trajectory/contracts/trajectory';
 
 const DTYPE_ID: Record<AtomColumnDType, number> = {
@@ -19,7 +19,7 @@ const DTYPE_BYTES: Record<AtomColumnDType, number> = {
     i32: 4
 };
 
-export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => {
+export const encodeAtomsBinary = (result: GetAtomsColumnarOutput): Buffer => {
     const columns = result.columns;
     const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));
 

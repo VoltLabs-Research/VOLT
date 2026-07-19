@@ -1,5 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { STATIC_ROOT } from '@core/config/paths';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -56,7 +56,7 @@ import {
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
@@ -97,86 +97,86 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
-    CreateTrajectoryOutputDTO,
-    TrajectoryPersistedDTO,
-    GetTrajectoryByIdOutputDTO,
-    GetTrajectoriesByTeamIdInputDTO,
-    GetTrajectoriesByTeamIdOutputDTO,
-    UpdateTrajectoryByIdInputDTO,
-    UpdateTrajectoryByIdOutputDTO,
-    MoveTrajectoryInputDTO,
-    MoveTrajectoryOutputDTO,
-    GetTeamMetricsInputDTO,
-    GetTeamMetricsOutputDTO,
-    GetTrajectoryPreviewInputDTO,
-    GetTrajectoryPreviewOutputDTO,
-    PublicTeamDiscoveryDTO,
-    ListPublicTeamTrajectoriesInputDTO,
-    ListPublicTeamTrajectoriesOutputDTO,
-    CloneTrajectoryInputDTO,
-    CloneTrajectoryOutputDTO,
-    DownloadTrajectoryInputDTO,
-    DownloadTrajectoryOutputDTO,
-    DownloadTrajectoryAnalysesInputDTO,
-    DownloadTrajectoryAnalysesOutputDTO,
-    DownloadSampleSimulationsInputDTO,
-    DownloadSampleSimulationsOutputDTO,
+    CreateTrajectoryOutput,
+    TrajectoryRecord,
+    GetTrajectoryByIdOutput,
+    GetTrajectoriesByTeamIdInput,
+    GetTrajectoriesByTeamIdOutput,
+    UpdateTrajectoryByIdInput,
+    UpdateTrajectoryByIdOutput,
+    MoveTrajectoryInput,
+    MoveTrajectoryOutput,
+    GetTeamMetricsInput,
+    GetTeamMetricsOutput,
+    GetTrajectoryPreviewInput,
+    GetTrajectoryPreviewOutput,
+    PublicTeamDiscoveryView,
+    ListPublicTeamTrajectoriesInput,
+    ListPublicTeamTrajectoriesOutput,
+    CloneTrajectoryInput,
+    CloneTrajectoryOutput,
+    DownloadTrajectoryInput,
+    DownloadTrajectoryOutput,
+    DownloadTrajectoryAnalysesInput,
+    DownloadTrajectoryAnalysesOutput,
+    DownloadSampleSimulationsInput,
+    DownloadSampleSimulationsOutput,
     TrajectoryUploadSessionFileInput,
-    CreateTrajectoryUploadSessionInputDTO,
-    CreateTrajectoryUploadSessionOutputDTO,
-    TrajectoryUploadSessionFileDTO,
-    CommitTrajectoryUploadSessionInputDTO,
-    CommitTrajectoryUploadSessionOutputDTO,
-    CancelTrajectoryUploadSessionInputDTO,
-    CreateColoredModelInputDTO,
-    CreateColoredModelOutputDTO,
-    GetColorCodingPropertiesInputDTO,
-    GetColorCodingPropertiesOutputDTO,
-    GetColorCodingStatsInputDTO,
-    GetColorCodingStatsOutputDTO,
-    GetColoredModelStreamInputDTO,
-    GetColoredModelStreamOutputDTO,
-    PreviewParticleFilterInputDTO,
-    PreviewParticleFilterOutputDTO,
-    ApplyParticleFilterActionInputDTO,
-    ApplyParticleFilterActionOutputDTO,
-    GetFilteredModelStreamInputDTO,
-    GetFilteredModelStreamOutputDTO,
-    GetParticleFilterPropertiesInputDTO,
-    GetParticleFilterPropertiesOutputDTO,
-    GetParticleFilterUniqueValuesInputDTO,
-    GetParticleFilterUniqueValuesOutputDTO,
-    CreateLineStyledModelInputDTO,
-    CreateLineStyledModelOutputDTO,
-    GetLineStyledModelStreamInputDTO,
-    GetLineStyledModelStreamOutputDTO,
-    GetLineModelRangesStreamInputDTO,
-    GetOctreeMetadataStreamInputDTO,
-    GetLineEntityPropertiesInputDTO,
-    GetLineEntityPropertiesOutputDTO,
+    CreateTrajectoryUploadSessionInput,
+    CreateTrajectoryUploadSessionOutput,
+    TrajectoryUploadSessionFileView,
+    CommitTrajectoryUploadSessionInput,
+    CommitTrajectoryUploadSessionOutput,
+    CancelTrajectoryUploadSessionInput,
+    CreateColoredModelInput,
+    CreateColoredModelOutput,
+    GetColorCodingPropertiesInput,
+    GetColorCodingPropertiesOutput,
+    GetColorCodingStatsInput,
+    GetColorCodingStatsOutput,
+    GetColoredModelStreamInput,
+    GetColoredModelStreamOutput,
+    PreviewParticleFilterInput,
+    PreviewParticleFilterOutput,
+    ApplyParticleFilterActionInput,
+    ApplyParticleFilterActionOutput,
+    GetFilteredModelStreamInput,
+    GetFilteredModelStreamOutput,
+    GetParticleFilterPropertiesInput,
+    GetParticleFilterPropertiesOutput,
+    GetParticleFilterUniqueValuesInput,
+    GetParticleFilterUniqueValuesOutput,
+    CreateLineStyledModelInput,
+    CreateLineStyledModelOutput,
+    GetLineStyledModelStreamInput,
+    GetLineStyledModelStreamOutput,
+    GetLineModelRangesStreamInput,
+    GetOctreeMetadataStreamInput,
+    GetLineEntityPropertiesInput,
+    GetLineEntityPropertiesOutput,
     TeamSceneArtifactOutput,
-    ListTeamSceneArtifactsInputDTO,
-    ListTeamSceneArtifactsOutputDTO,
-    ListTrajectorySceneArtifactsInputDTO,
-    GetPublicCanvasBootstrapInputDTO,
-    GetPublicCanvasBootstrapOutputDTO,
-    PublicCanvasBootstrapTrajectoryDTO,
-    GetPublicCanvasGLBInputDTO,
-    GetPublicCanvasGLBOutputDTO,
-    GetPublicCanvasRasterFrameInputDTO,
-    GetPublicCanvasRasterFrameOutputDTO
+    ListTeamSceneArtifactsInput,
+    ListTeamSceneArtifactsOutput,
+    ListTrajectorySceneArtifactsInput,
+    GetPublicCanvasBootstrapInput,
+    GetPublicCanvasBootstrapOutput,
+    PublicCanvasBootstrapTrajectoryView,
+    GetPublicCanvasGLBInput,
+    GetPublicCanvasGLBOutput,
+    GetPublicCanvasRasterFrameInput,
+    GetPublicCanvasRasterFrameOutput
 } from '@modules/trajectory/contracts/trajectory/HttpTypes';
 import { PublicCanvasAccessMode } from '@modules/trajectory/contracts/trajectory/HttpTypes';
 import type {
-    GetAtomsColumnarInputDTO,
-    GetAtomsColumnarOutputDTO,
+    GetAtomsColumnarInput,
+    GetAtomsColumnarOutput,
     AtomColumn
 } from '@modules/trajectory/contracts/trajectory/ServiceTypes';
-import type { GetRasterMetadataOutputDTO } from '@shared/contracts/dtos/GetRasterMetadataDTO';
-import type { GetSimulationCellByTrajectoryOutputDTO } from '@shared/contracts/dtos/GetSimulationCellByTrajectoryDTO';
-import type { GetAnalysisFrameLogOutputDTO } from '@shared/contracts/dtos/GetAnalysisFrameLogDTO';
-import type { GetPluginExposureGLBOutputDTO, GetPluginByIdOutputDTO, GetPluginListingDocumentsOutputDTO, GetSubListingOutputDTO } from '@shared/contracts/dtos';
-import type { GetAnalysesByTrajectoryIdOutputDTO } from '@shared/contracts/dtos/GetAnalysesByTrajectoryIdDTO';
+import type { GetRasterMetadataOutput } from '@shared/contracts/operations/GetRasterMetadata';
+import type { GetSimulationCellByTrajectoryOutput } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
+import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/GetAnalysisFrameLog';
+import type { GetPluginExposureGLBOutput, GetPluginByIdOutput, GetPluginListingDocumentsOutput, GetSubListingOutput } from '@shared/contracts/operations';
+import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 
 type TrajectoryDoc = mongoose.Document & {
     _id: mongoose.Types.ObjectId;
@@ -392,7 +392,7 @@ export default class TrajectoryService {
     #cloneCoordinator = trajectoryCloneCoordinator;
     #cloneRunner = trajectoryCloneRunner;
 
-    async createUploadSession(input: CreateTrajectoryUploadSessionInputDTO): Promise<CreateTrajectoryUploadSessionOutputDTO> {
+    async createUploadSession(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
         const { teamId, userId } = input;
         const files = Array.isArray(input.files) ? input.files : [];
         const name = resolveTrajectoryName(input.name, files);
@@ -470,7 +470,7 @@ export default class TrajectoryService {
             userId
         }));
 
-        const filesOutput: TrajectoryUploadSessionFileDTO[] = sessionFiles.map((file) => ({
+        const filesOutput: TrajectoryUploadSessionFileView[] = sessionFiles.map((file) => ({
             index: file.index,
             originalName: file.originalName,
             size: file.size,
@@ -504,7 +504,7 @@ export default class TrajectoryService {
         }));
 
         return {
-            trajectory: this.#toTrajectoryOutput(trajectory) as unknown as CreateTrajectoryOutputDTO,
+            trajectory: this.#toTrajectoryOutput(trajectory) as unknown as CreateTrajectoryOutput,
             uploadSession: {
                 id: String(uploadSession._id),
                 chunkSize: TRAJECTORY_UPLOAD_CHUNK_SIZE,
@@ -514,7 +514,7 @@ export default class TrajectoryService {
         };
     }
 
-    async commitUploadSession(input: CommitTrajectoryUploadSessionInputDTO): Promise<CommitTrajectoryUploadSessionOutputDTO> {
+    async commitUploadSession(input: CommitTrajectoryUploadSessionInput): Promise<CommitTrajectoryUploadSessionOutput> {
         const session = await TrajectoryUploadSessionModel.findById(input.uploadSessionId).exec();
         if (!session) {
             throw ApplicationError.notFound('TrajectoryUploadSession::NotFound', 'Upload session not found');
@@ -617,7 +617,7 @@ export default class TrajectoryService {
         }
     }
 
-    async cancelUploadSession(input: CancelTrajectoryUploadSessionInputDTO): Promise<void> {
+    async cancelUploadSession(input: CancelTrajectoryUploadSessionInput): Promise<void> {
         const session = await TrajectoryUploadSessionModel.findById(input.uploadSessionId).exec();
         if (!session) {
             throw ApplicationError.notFound('TrajectoryUploadSession::NotFound', 'Upload session not found');
@@ -684,11 +684,11 @@ export default class TrajectoryService {
         return { success: true };
     }
 
-    async getTeamMetrics(input: GetTeamMetricsInputDTO): Promise<GetTeamMetricsOutputDTO> {
+    async getTeamMetrics(input: GetTeamMetricsInput): Promise<GetTeamMetricsOutput> {
         return this.#teamMetrics.getTeamMetrics(input.teamId);
     }
 
-    async getByTeamId(input: GetTrajectoriesByTeamIdInputDTO): Promise<GetTrajectoriesByTeamIdOutputDTO> {
+    async getByTeamId(input: GetTrajectoriesByTeamIdInput): Promise<GetTrajectoriesByTeamIdOutput> {
         const { teamId, page = 1, limit = 20, search } = input;
 
         const filter: Record<string, unknown> = { team: teamId };
@@ -714,7 +714,7 @@ export default class TrajectoryService {
         const summaries = await this.#getFrameListingSummaries(docs.map((doc) => String(doc._id)));
 
         const data = docs.map((doc) => {
-            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryPersistedDTO;
+            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryRecord;
             const summary = summaries.get(String(doc._id));
             view.framesCount = summary?.framesCount ?? 0;
             view.atoms = summary?.atoms ?? 0;
@@ -731,18 +731,18 @@ export default class TrajectoryService {
         };
     }
 
-    async getById(input: { trajectoryId: string; options?: { populate?: unknown; select?: string[] } }): Promise<GetTrajectoryByIdOutputDTO> {
+    async getById(input: { trajectoryId: string; options?: { populate?: unknown; select?: string[] } }): Promise<GetTrajectoryByIdOutput> {
         const doc = await TrajectoryModel.findById(input.trajectoryId).populate(['team', 'analysis']).exec();
         if (!doc) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as GetTrajectoryByIdOutputDTO;
+        const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as GetTrajectoryByIdOutput;
         (view as unknown as { frames: TrajectoryFrame[] }).frames = await this.#getFrames(String(doc._id));
         return view;
     }
 
-    async updateById(input: UpdateTrajectoryByIdInputDTO): Promise<UpdateTrajectoryByIdOutputDTO> {
+    async updateById(input: UpdateTrajectoryByIdInput): Promise<UpdateTrajectoryByIdOutput> {
         const { trajectoryId, name, isPublic } = input;
         const doc = await TrajectoryModel.findByIdAndUpdate(
             trajectoryId,
@@ -754,10 +754,10 @@ export default class TrajectoryService {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        return this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as UpdateTrajectoryByIdOutputDTO;
+        return this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as UpdateTrajectoryByIdOutput;
     }
 
-    async move(input: MoveTrajectoryInputDTO): Promise<MoveTrajectoryOutputDTO> {
+    async move(input: MoveTrajectoryInput): Promise<MoveTrajectoryOutput> {
         try {
             const trajectory = await TrajectoryModel.findOne({ _id: input.trajectoryId, team: input.teamId });
             if (!trajectory) {
@@ -793,7 +793,7 @@ export default class TrajectoryService {
         return entries.filter((entry) => entry.endsWith('.zip'));
     }
 
-    async cloneTrajectory(input: CloneTrajectoryInputDTO): Promise<CloneTrajectoryOutputDTO> {
+    async cloneTrajectory(input: CloneTrajectoryInput): Promise<CloneTrajectoryOutput> {
         try {
             const source = await this.#assertReadable(input.sourceTrajectoryId, input.userId);
 
@@ -869,7 +869,7 @@ export default class TrajectoryService {
         }
     }
 
-    async getPreview(input: GetTrajectoryPreviewInputDTO): Promise<GetTrajectoryPreviewOutputDTO> {
+    async getPreview(input: GetTrajectoryPreviewInput): Promise<GetTrajectoryPreviewOutput> {
         const { trajectoryId } = input;
 
         const trajectory = await TrajectoryModel.findById(trajectoryId);
@@ -895,7 +895,7 @@ export default class TrajectoryService {
         throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404);
     }
 
-    async downloadTrajectory(input: DownloadTrajectoryInputDTO): Promise<DownloadTrajectoryOutputDTO> {
+    async downloadTrajectory(input: DownloadTrajectoryInput): Promise<DownloadTrajectoryOutput> {
         const { trajectoryId, archive } = input;
 
         const trajectory = await TrajectoryModel.findById(trajectoryId);
@@ -952,7 +952,7 @@ export default class TrajectoryService {
         return { data, total, page, totalPages: Math.ceil(total / limit), limit };
     }
 
-    async downloadTrajectoryAnalyses(input: DownloadTrajectoryAnalysesInputDTO): Promise<DownloadTrajectoryAnalysesOutputDTO> {
+    async downloadTrajectoryAnalyses(input: DownloadTrajectoryAnalysesInput): Promise<DownloadTrajectoryAnalysesOutput> {
         const trajectory = await TrajectoryModel.findById(input.trajectoryId);
         if (!trajectory || String(trajectory.team) !== input.teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
@@ -1002,7 +1002,7 @@ export default class TrajectoryService {
         });
     }
 
-    async downloadSamples(input: DownloadSampleSimulationsInputDTO): Promise<DownloadSampleSimulationsOutputDTO> {
+    async downloadSamples(input: DownloadSampleSimulationsInput): Promise<DownloadSampleSimulationsOutput> {
         const { filename } = input;
 
         if (!filename || !filename.endsWith('.zip')) {
@@ -1020,7 +1020,7 @@ export default class TrajectoryService {
         return { stream: createReadStream(filePath), filename };
     }
 
-    async getAtoms(input: GetAtomsColumnarInputDTO): Promise<GetAtomsColumnarOutputDTO> {
+    async getAtoms(input: GetAtomsColumnarInput): Promise<GetAtomsColumnarOutput> {
         try {
             const { trajectoryId, timestep } = input;
             const analysisId = normalizeAnalysisId(input.analysisId);
@@ -1142,11 +1142,11 @@ export default class TrajectoryService {
         }
     }
 
-    async getSceneArtifacts(input: ListTrajectorySceneArtifactsInputDTO): Promise<PaginatedResult<unknown>> {
+    async getSceneArtifacts(input: ListTrajectorySceneArtifactsInput): Promise<PaginatedResult<unknown>> {
         return this.#listTrajectorySceneArtifacts(input);
     }
 
-    async listTeamSceneArtifacts(input: ListTeamSceneArtifactsInputDTO): Promise<ListTeamSceneArtifactsOutputDTO> {
+    async listTeamSceneArtifacts(input: ListTeamSceneArtifactsInput): Promise<ListTeamSceneArtifactsOutput> {
         const page = input.page ?? 1;
         const limit = input.limit ?? 100;
         const skip = (page - 1) * limit;
@@ -1202,11 +1202,11 @@ export default class TrajectoryService {
         };
     }
 
-    async getColorCodingProperties(input: GetColorCodingPropertiesInputDTO): Promise<GetColorCodingPropertiesOutputDTO> {
+    async getColorCodingProperties(input: GetColorCodingPropertiesInput): Promise<GetColorCodingPropertiesOutput> {
         return this.#runService(() => this.#colorCoding.getProperties(input.trajectoryId, input.timestep, input.analysisId));
     }
 
-    async getColorCodingStats(input: GetColorCodingStatsInputDTO): Promise<GetColorCodingStatsOutputDTO> {
+    async getColorCodingStats(input: GetColorCodingStatsInput): Promise<GetColorCodingStatsOutput> {
         return this.#runService(() => this.#colorCoding.getStats(
             input.trajectoryId,
             input.timestep,
@@ -1217,7 +1217,7 @@ export default class TrajectoryService {
         ));
     }
 
-    async createColoredModel(input: CreateColoredModelInputDTO): Promise<CreateColoredModelOutputDTO> {
+    async createColoredModel(input: CreateColoredModelInput): Promise<CreateColoredModelOutput> {
         await this.#colorCoding.createColoredModel(
             input.trajectoryId,
             input.timestep,
@@ -1231,7 +1231,7 @@ export default class TrajectoryService {
         return null;
     }
 
-    async getColoredModelStream(input: GetColoredModelStreamInputDTO): Promise<GetColoredModelStreamOutputDTO & StreamableOutput> {
+    async getColoredModelStream(input: GetColoredModelStreamInput): Promise<GetColoredModelStreamOutput & StreamableOutput> {
         const response = await this.#colorCoding.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -1242,14 +1242,14 @@ export default class TrajectoryService {
             input.analysisId,
             input.exposureId
         );
-        return response as GetColoredModelStreamOutputDTO & StreamableOutput;
+        return response as GetColoredModelStreamOutput & StreamableOutput;
     }
 
-    async getParticleFilterProperties(input: GetParticleFilterPropertiesInputDTO): Promise<GetParticleFilterPropertiesOutputDTO> {
+    async getParticleFilterProperties(input: GetParticleFilterPropertiesInput): Promise<GetParticleFilterPropertiesOutput> {
         return this.#runService(() => this.#particleFilter.getProperties(input.trajectoryId, input.timestep, input.analysisId));
     }
 
-    async previewParticleFilter(input: PreviewParticleFilterInputDTO): Promise<PreviewParticleFilterOutputDTO> {
+    async previewParticleFilter(input: PreviewParticleFilterInput): Promise<PreviewParticleFilterOutput> {
         return this.#particleFilter.preview(
             input.trajectoryId,
             input.timestep,
@@ -1258,7 +1258,7 @@ export default class TrajectoryService {
         );
     }
 
-    async applyParticleFilterAction(input: ApplyParticleFilterActionInputDTO): Promise<ApplyParticleFilterActionOutputDTO> {
+    async applyParticleFilterAction(input: ApplyParticleFilterActionInput): Promise<ApplyParticleFilterActionOutput> {
         return this.#particleFilter.applyAction(
             input.trajectoryId,
             input.timestep,
@@ -1268,7 +1268,7 @@ export default class TrajectoryService {
         );
     }
 
-    async getFilteredModelStream(input: GetFilteredModelStreamInputDTO): Promise<GetFilteredModelStreamOutputDTO & StreamableOutput> {
+    async getFilteredModelStream(input: GetFilteredModelStreamInput): Promise<GetFilteredModelStreamOutput & StreamableOutput> {
         const response = await this.#particleFilter.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -1276,10 +1276,10 @@ export default class TrajectoryService {
             input.action,
             input.analysisId
         );
-        return response as GetFilteredModelStreamOutputDTO & StreamableOutput;
+        return response as GetFilteredModelStreamOutput & StreamableOutput;
     }
 
-    async getParticleFilterUniqueValues(input: GetParticleFilterUniqueValuesInputDTO): Promise<GetParticleFilterUniqueValuesOutputDTO> {
+    async getParticleFilterUniqueValues(input: GetParticleFilterUniqueValuesInput): Promise<GetParticleFilterUniqueValuesOutput> {
         return this.#runService(async () => {
             const values = await this.#particleFilter.getUniqueValues(
                 input.trajectoryId,
@@ -1293,7 +1293,7 @@ export default class TrajectoryService {
         });
     }
 
-    async createLineStyledModel(input: CreateLineStyledModelInputDTO): Promise<CreateLineStyledModelOutputDTO> {
+    async createLineStyledModel(input: CreateLineStyledModelInput): Promise<CreateLineStyledModelOutput> {
         return this.#lineStyle.createStyledModel(
             input.trajectoryId,
             input.timestep,
@@ -1303,7 +1303,7 @@ export default class TrajectoryService {
         );
     }
 
-    async getLineStyledModelStream(input: GetLineStyledModelStreamInputDTO): Promise<GetLineStyledModelStreamOutputDTO & StreamableOutput> {
+    async getLineStyledModelStream(input: GetLineStyledModelStreamInput): Promise<GetLineStyledModelStreamOutput & StreamableOutput> {
         const response = await this.#lineStyle.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -1311,10 +1311,10 @@ export default class TrajectoryService {
             input.exposureId,
             parseLineStyle(input.style)
         );
-        return response as GetLineStyledModelStreamOutputDTO & StreamableOutput;
+        return response as GetLineStyledModelStreamOutput & StreamableOutput;
     }
 
-    async getLineModelRangesStream(input: GetLineModelRangesStreamInputDTO): Promise<StreamableOutput> {
+    async getLineModelRangesStream(input: GetLineModelRangesStreamInput): Promise<StreamableOutput> {
         const response = await this.#lineStyle.getRangesStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -1325,7 +1325,7 @@ export default class TrajectoryService {
         return response as StreamableOutput;
     }
 
-    async getLineEntityProperties(input: GetLineEntityPropertiesInputDTO): Promise<GetLineEntityPropertiesOutputDTO> {
+    async getLineEntityProperties(input: GetLineEntityPropertiesInput): Promise<GetLineEntityPropertiesOutput> {
         const entityId = Number(input.entityId);
         if (!Number.isInteger(entityId) || entityId < 0) {
             throw ApplicationError.badRequest('LINE_ENTITY_ID_INVALID', 'The entity id must be a non-negative integer.');
@@ -1350,7 +1350,7 @@ export default class TrajectoryService {
         return { entityId, properties };
     }
 
-    async getOctreeMetadataStream(input: GetOctreeMetadataStreamInputDTO): Promise<StreamableOutput> {
+    async getOctreeMetadataStream(input: GetOctreeMetadataStreamInput): Promise<StreamableOutput> {
         const response = await this.#lineStyle.getOctreeMetadataStreamResponse(
             input.trajectoryId,
             input.timestep,
@@ -1360,7 +1360,7 @@ export default class TrajectoryService {
         return response as StreamableOutput;
     }
 
-    async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInputDTO): Promise<ListPublicTeamTrajectoriesOutputDTO> {
+    async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInput): Promise<ListPublicTeamTrajectoriesOutput> {
         const { teamId, page = 1, limit = 20 } = input;
         const team = await TeamModel.findById(teamId);
         if (!team) {
@@ -1386,7 +1386,7 @@ export default class TrajectoryService {
         const summaries = await this.#getFrameListingSummaries(docs.map((doc) => String(doc._id)));
 
         const data = docs.map((doc) => {
-            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryPersistedDTO;
+            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryRecord;
             const summary = summaries.get(String(doc._id));
             view.framesCount = summary?.framesCount ?? 0;
             view.atoms = summary?.atoms ?? 0;
@@ -1394,7 +1394,7 @@ export default class TrajectoryService {
             return view;
         });
 
-        const teamDiscovery: PublicTeamDiscoveryDTO = { _id: String(team._id), name: team.name };
+        const teamDiscovery: PublicTeamDiscoveryView = { _id: String(team._id), name: team.name };
 
         return {
             data,
@@ -1406,7 +1406,7 @@ export default class TrajectoryService {
         };
     }
 
-    async getPublicCanvasBootstrap(input: GetPublicCanvasBootstrapInputDTO): Promise<GetPublicCanvasBootstrapOutputDTO> {
+    async getPublicCanvasBootstrap(input: GetPublicCanvasBootstrapInput): Promise<GetPublicCanvasBootstrapOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
 
         let hasTeamMembership = false;
@@ -1431,12 +1431,12 @@ export default class TrajectoryService {
         };
     }
 
-    async getPublicCanvasTrajectory(input: { trajectoryId: string; userId?: string }): Promise<GetTrajectoryByIdOutputDTO> {
+    async getPublicCanvasTrajectory(input: { trajectoryId: string; userId?: string }): Promise<GetTrajectoryByIdOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         return this.getById({ trajectoryId: input.trajectoryId });
     }
 
-    async getPublicCanvasPreview(input: { trajectoryId: string; userId?: string }): Promise<GetTrajectoryPreviewOutputDTO> {
+    async getPublicCanvasPreview(input: { trajectoryId: string; userId?: string }): Promise<GetTrajectoryPreviewOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
 
         const storageClusterId = storageClusterIdOf(trajectory);
@@ -1457,7 +1457,7 @@ export default class TrajectoryService {
         throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404);
     }
 
-    async getPublicCanvasRasterFrame(input: GetPublicCanvasRasterFrameInputDTO): Promise<GetPublicCanvasRasterFrameOutputDTO> {
+    async getPublicCanvasRasterFrame(input: GetPublicCanvasRasterFrameInput): Promise<GetPublicCanvasRasterFrameOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         return new RasterService().getRasterFramePNG({
             trajectoryId: input.trajectoryId,
@@ -1468,7 +1468,7 @@ export default class TrajectoryService {
         });
     }
 
-    async getPublicCanvasDump(input: { trajectoryId: string; timestep: string; userId?: string }): Promise<DownloadStreamOutputDTO> {
+    async getPublicCanvasDump(input: { trajectoryId: string; timestep: string; userId?: string }): Promise<DownloadStreamOutput> {
         try {
             await this.#assertReadable(input.trajectoryId, input.userId);
 
@@ -1497,7 +1497,7 @@ export default class TrajectoryService {
         }
     }
 
-    async getPublicCanvasGLB(input: GetPublicCanvasGLBInputDTO): Promise<GetPublicCanvasGLBOutputDTO> {
+    async getPublicCanvasGLB(input: GetPublicCanvasGLBInput): Promise<GetPublicCanvasGLBOutput> {
         try {
             const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
             const storageClusterId = storageClusterIdOf(trajectory);
@@ -1514,7 +1514,7 @@ export default class TrajectoryService {
         }
     }
 
-    async listPublicCanvasAnalyses(input: { trajectoryId: string; userId?: string; page?: number; limit?: number }): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
+    async listPublicCanvasAnalyses(input: { trajectoryId: string; userId?: string; page?: number; limit?: number }): Promise<GetAnalysesByTrajectoryIdOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analyses = await this.#findAnalyses({
@@ -1532,10 +1532,10 @@ export default class TrajectoryService {
             return { ...props, _id: analysis._id, plugin: pluginId };
         });
 
-        return { ...analyses, data } as unknown as GetAnalysesByTrajectoryIdOutputDTO;
+        return { ...analyses, data } as unknown as GetAnalysesByTrajectoryIdOutput;
     }
 
-    async getPublicCanvasSimulationCell(input: { trajectoryId: string; timestep?: number; userId?: string }): Promise<GetSimulationCellByTrajectoryOutputDTO> {
+    async getPublicCanvasSimulationCell(input: { trajectoryId: string; timestep?: number; userId?: string }): Promise<GetSimulationCellByTrajectoryOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         return new SimulationCellService().getByTrajectory({
             teamId: String(trajectory.team),
@@ -1544,55 +1544,55 @@ export default class TrajectoryService {
         });
     }
 
-    async listPublicCanvasSceneArtifacts(input: ListTrajectorySceneArtifactsInputDTO & { userId?: string }): Promise<PaginatedResult<unknown>> {
+    async listPublicCanvasSceneArtifacts(input: ListTrajectorySceneArtifactsInput & { userId?: string }): Promise<PaginatedResult<unknown>> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.#listTrajectorySceneArtifacts(delegated);
     }
 
-    async getPublicCanvasColorCodingProperties(input: GetColorCodingPropertiesInputDTO & { userId?: string }): Promise<GetColorCodingPropertiesOutputDTO> {
+    async getPublicCanvasColorCodingProperties(input: GetColorCodingPropertiesInput & { userId?: string }): Promise<GetColorCodingPropertiesOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getColorCodingProperties(delegated);
     }
 
-    async getPublicCanvasColorCodingStats(input: GetColorCodingStatsInputDTO & { userId?: string }): Promise<GetColorCodingStatsOutputDTO> {
+    async getPublicCanvasColorCodingStats(input: GetColorCodingStatsInput & { userId?: string }): Promise<GetColorCodingStatsOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getColorCodingStats(delegated);
     }
 
-    async getPublicCanvasColoredModelStream(input: GetColoredModelStreamInputDTO & { userId?: string }): Promise<StreamableOutput> {
+    async getPublicCanvasColoredModelStream(input: GetColoredModelStreamInput & { userId?: string }): Promise<StreamableOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getColoredModelStream(delegated);
     }
 
-    async getPublicCanvasParticleFilterProperties(input: GetParticleFilterPropertiesInputDTO & { userId?: string }): Promise<GetParticleFilterPropertiesOutputDTO> {
+    async getPublicCanvasParticleFilterProperties(input: GetParticleFilterPropertiesInput & { userId?: string }): Promise<GetParticleFilterPropertiesOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getParticleFilterProperties(delegated);
     }
 
-    async getPublicCanvasParticleFilterUniqueValues(input: GetParticleFilterUniqueValuesInputDTO & { userId?: string }): Promise<GetParticleFilterUniqueValuesOutputDTO> {
+    async getPublicCanvasParticleFilterUniqueValues(input: GetParticleFilterUniqueValuesInput & { userId?: string }): Promise<GetParticleFilterUniqueValuesOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getParticleFilterUniqueValues(delegated);
     }
 
-    async getPublicCanvasParticleFilterPreview(input: PreviewParticleFilterInputDTO & { userId?: string }): Promise<PreviewParticleFilterOutputDTO> {
+    async getPublicCanvasParticleFilterPreview(input: PreviewParticleFilterInput & { userId?: string }): Promise<PreviewParticleFilterOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.previewParticleFilter(delegated);
     }
 
-    async getPublicCanvasFilteredModelStream(input: GetFilteredModelStreamInputDTO & { userId?: string }): Promise<StreamableOutput> {
+    async getPublicCanvasFilteredModelStream(input: GetFilteredModelStreamInput & { userId?: string }): Promise<StreamableOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         const { userId: _userId, ...delegated } = input;
         return this.getFilteredModelStream(delegated);
     }
 
-    async getPublicCanvasPlugin(input: { trajectoryId: string; pluginId: string; userId?: string }): Promise<GetPluginByIdOutputDTO> {
+    async getPublicCanvasPlugin(input: { trajectoryId: string; pluginId: string; userId?: string }): Promise<GetPluginByIdOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analyses = await this.#findAnalyses({ filter: { trajectory: input.trajectoryId }, limit: 1000 });
@@ -1615,7 +1615,7 @@ export default class TrajectoryService {
         limit?: number;
         sortAsc?: boolean;
         userId?: string;
-    }): Promise<GetPluginListingDocumentsOutputDTO> {
+    }): Promise<GetPluginListingDocumentsOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         const teamId = String(trajectory.team);
 
@@ -1654,7 +1654,7 @@ export default class TrajectoryService {
         page?: number;
         limit?: number;
         userId?: string;
-    }): Promise<GetSubListingOutputDTO> {
+    }): Promise<GetSubListingOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analysis = await AnalysisModel.findById(input.analysisId);
@@ -1683,7 +1683,7 @@ export default class TrajectoryService {
         timestep: string;
         userId?: string;
         acceptEncoding?: string;
-    }): Promise<GetPluginExposureGLBOutputDTO> {
+    }): Promise<GetPluginExposureGLBOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analysis = await AnalysisModel.findById(input.analysisId);
@@ -1710,7 +1710,7 @@ export default class TrajectoryService {
         timestep: number;
         afterCursor?: string;
         userId?: string;
-    }): Promise<GetAnalysisFrameLogOutputDTO> {
+    }): Promise<GetAnalysisFrameLogOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analysis = await AnalysisModel.findById(input.analysisId);
@@ -1730,12 +1730,12 @@ export default class TrajectoryService {
         });
     }
 
-    async getPublicCanvasRasterMetadata(input: { trajectoryId: string; userId?: string }): Promise<GetRasterMetadataOutputDTO> {
+    async getPublicCanvasRasterMetadata(input: { trajectoryId: string; userId?: string }): Promise<GetRasterMetadataOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         return new RasterService().getRasterMetadata({ trajectoryId: input.trajectoryId, teamId: String(trajectory.team) });
     }
 
-    async getPublicCanvasAtoms(input: { trajectoryId: string; analysisId?: string; timestep: number; page?: number; limit?: number; userId?: string }): Promise<GetAtomsColumnarOutputDTO> {
+    async getPublicCanvasAtoms(input: { trajectoryId: string; analysisId?: string; timestep: number; page?: number; limit?: number; userId?: string }): Promise<GetAtomsColumnarOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
         return this.getAtoms({
             trajectoryId: input.trajectoryId,
@@ -1818,7 +1818,7 @@ export default class TrajectoryService {
         return { ...doc.toObject(), _id: String(doc._id) };
     }
 
-    #toBootstrapTrajectory(trajectory: TrajectoryDoc, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryDTO {
+    #toBootstrapTrajectory(trajectory: TrajectoryDoc, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryView {
         return {
             _id: String(trajectory._id),
             name: trajectory.name,
@@ -1836,7 +1836,7 @@ export default class TrajectoryService {
         };
     }
 
-    async #createDashboardPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutputDTO> {
+    async #createDashboardPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutput> {
         const resized = await sharp(buffer)
             .resize(DASHBOARD_PREVIEW_MAX_WIDTH, DASHBOARD_PREVIEW_MAX_HEIGHT, { fit: 'inside', withoutEnlargement: true })
             .png({ compressionLevel: 9 })
@@ -1846,7 +1846,7 @@ export default class TrajectoryService {
         return { base64: `data:image/png;base64,${resized.toString('base64')}`, etag };
     }
 
-    #createCanvasPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutputDTO {
+    #createCanvasPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutput {
         const etag = `"${createHash('sha256').update(buffer).digest('hex')}"`;
         return { base64: `data:image/png;base64,${buffer.toString('base64')}`, etag };
     }
@@ -1879,7 +1879,7 @@ export default class TrajectoryService {
 
     #validateUploadSession(
         session: { status: string; expiresAt: Date; team: mongoose.Types.ObjectId; user: mongoose.Types.ObjectId; resourceKind: string },
-        input: CommitTrajectoryUploadSessionInputDTO
+        input: CommitTrajectoryUploadSessionInput
     ): ApplicationError | null {
         if (session.status !== 'pending') {
             return ApplicationError.conflict('TrajectoryUploadSession::NotPending', 'Upload session is not pending');
@@ -1929,11 +1929,11 @@ export default class TrajectoryService {
     }
 
     async #createTrajectoryArchiveDownload(
-        input: DownloadTrajectoryInputDTO,
+        input: DownloadTrajectoryInput,
         trajectoryName: string | undefined,
         teamClusterId: string,
         timesteps: string[]
-    ): Promise<DownloadTrajectoryOutputDTO> {
+    ): Promise<DownloadTrajectoryOutput> {
         const filenameBase = sanitizeDownloadName(input.name || trajectoryName || input.trajectoryId, 'trajectory');
 
         return this.#archiveService.createArchiveDownload({
@@ -1956,7 +1956,7 @@ export default class TrajectoryService {
     }
 
     async #buildAnalysisArchiveEntry(analysisId: string, teamId: string): Promise<ClusterArchiveObjectEntry | null> {
-        let exportArtifact: DownloadStreamOutputDTO;
+        let exportArtifact: DownloadStreamOutput;
 
         try {
             exportArtifact = await this.#pluginService.getPluginExposureExport({ analysisId, teamId });
@@ -1969,7 +1969,7 @@ export default class TrajectoryService {
 
         await exportArtifact.prepare?.();
 
-        const candidate = exportArtifact as DownloadStreamOutputDTO & { clusterObject?: ClusterArchiveReference };
+        const candidate = exportArtifact as DownloadStreamOutput & { clusterObject?: ClusterArchiveReference };
         const clusterObject = candidate.clusterObject ?? null;
         exportArtifact.stream.destroy();
         if (!clusterObject) {
@@ -1993,7 +1993,7 @@ export default class TrajectoryService {
         atomsPage: Awaited<ReturnType<typeof trajectoryReader.readPage>>,
         page: number,
         limitNum: number
-    ): GetAtomsColumnarOutputDTO {
+    ): GetAtomsColumnarOutput {
         const ID_PROPERTY_NAME = 'id';
         const TYPE_PROPERTY_NAME = 'type';
         const POSITION_PROPERTY_NAMES = ['x', 'y', 'z'] as const;
@@ -2097,7 +2097,7 @@ export default class TrajectoryService {
         return { ...doc.toObject(), _id: String(doc._id) };
     }
 
-    async #listTrajectorySceneArtifacts(input: ListTrajectorySceneArtifactsInputDTO): Promise<PaginatedResult<unknown>> {
+    async #listTrajectorySceneArtifacts(input: ListTrajectorySceneArtifactsInput): Promise<PaginatedResult<unknown>> {
         const { trajectoryId, sourceType, analysisId, projection, timestep } = input;
         const parsedTimestep = timestep !== undefined ? Number(timestep) : undefined;
 

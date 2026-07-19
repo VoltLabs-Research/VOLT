@@ -1,4 +1,4 @@
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 export type ParamResolver = (req: AuthenticatedRequest, res: Response) => unknown | Promise<unknown>;

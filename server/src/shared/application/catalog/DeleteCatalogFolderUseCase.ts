@@ -5,10 +5,10 @@ import { deleteCatalogFolderTree } from '@shared/application/catalog/deleteCatal
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import type { DeleteCatalogFolderInputDTO } from './catalog-folder-dto';
+import type { DeleteCatalogFolderInput } from './catalog-folder-view';
 import type { CatalogFolderMessages } from './CatalogFolderMessages';
 
-interface DeleteCatalogFolderUseCaseOptions<TInput extends DeleteCatalogFolderInputDTO, TDeleteContext>
+interface DeleteCatalogFolderUseCaseOptions<TInput extends DeleteCatalogFolderInput, TDeleteContext>
     extends CatalogFolderMessages {
     getDeleteContext?: (input: TInput) => TDeleteContext;
 }
@@ -18,7 +18,7 @@ export abstract class DeleteCatalogFolderUseCase<
     TFolderProps extends CatalogFolderProps,
     TItem extends { _id: string },
     TItemProps extends object,
-    TInput extends DeleteCatalogFolderInputDTO = DeleteCatalogFolderInputDTO,
+    TInput extends DeleteCatalogFolderInput = DeleteCatalogFolderInput,
     TDeleteContext = void
 > implements IUseCase<TInput, null> {
     constructor(

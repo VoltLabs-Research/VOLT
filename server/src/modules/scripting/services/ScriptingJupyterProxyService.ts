@@ -21,8 +21,8 @@ import TeamMemberModel, { getTeamMemberRolePermissions } from '@modules/team/mod
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import reverseWsHttpRelay from '@shared/infrastructure/services/ReverseWsHttpRelay';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import reverseWsHttpRelay from '@modules/cluster/services/ReverseWsHttpRelay';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     applyEmbeddableHeadersToProxyResponse,

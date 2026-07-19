@@ -15,7 +15,7 @@ const EXCLUDED_BASENAMES = new Set<string>([
 
 const EXCLUDED_SEGMENTS = new Set<string>([
     'domain',
-    'dtos',
+    'operations',
     'validation',
     'constants',
     'presenters',

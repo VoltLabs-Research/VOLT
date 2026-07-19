@@ -22,7 +22,7 @@ export type {
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayComposeRequest
 } from './TeamClusterObjectGateway';
-export type { DownloadStreamOutputDTO } from './DownloadStream';
+export type { DownloadStreamOutput } from './DownloadStream';
 export type {
     ClusterObjectOperation,
     ClusterObjectAccessClaims,

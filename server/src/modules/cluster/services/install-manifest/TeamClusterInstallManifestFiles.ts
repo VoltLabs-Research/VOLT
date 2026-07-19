@@ -1,7 +1,7 @@
 import { DaemonDistributionMode } from '@modules/cluster/services/install-manifest/TeamClusterDaemonManifestSource';
 import type {
-    TeamClusterInstallManifestFileDTO,
-    TeamClusterInstallManifestPortsDTO
+    TeamClusterInstallManifestFileView,
+    TeamClusterInstallManifestPortsView
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/services/DaemonCredentialGuard';
 
@@ -18,11 +18,11 @@ interface BuildInstallManifestFilesInput {
     teamId: string;
     teamClusterId: string;
     installRoot: string;
-    ports: TeamClusterInstallManifestPortsDTO;
+    ports: TeamClusterInstallManifestPortsView;
     cloudUrl: string;
     credentials: DecryptedTeamClusterServiceCredentials;
     daemonDistributionMode: DaemonDistributionMode;
-    daemonFiles: TeamClusterInstallManifestFileDTO[];
+    daemonFiles: TeamClusterInstallManifestFileView[];
 }
 
 export const sanitizeComposeProjectName = (teamClusterId: string): string => {
@@ -97,7 +97,7 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
 const buildRootEnvFile = (
     teamClusterId: string,
     installRoot: string,
-    ports: TeamClusterInstallManifestPortsDTO,
+    ports: TeamClusterInstallManifestPortsView,
     cloudUrl: string
 ): string => {
     return [
@@ -182,7 +182,7 @@ export const buildTeamClusterInstallManifestFiles = ({
     credentials,
     daemonDistributionMode,
     daemonFiles
-}: BuildInstallManifestFilesInput): TeamClusterInstallManifestFileDTO[] => {
+}: BuildInstallManifestFilesInput): TeamClusterInstallManifestFileView[] => {
     return [
         {
             path: 'docker-compose.yml',

@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
-import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+import { TeamClusterRemoteAccessTarget } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 
@@ -10,7 +10,7 @@ export class ListRemoteClusterFilesAITool extends AITool {
     readonly parameters = z.object({
         clusterId: z.string(),
         sessionId: z.string().describe('An active remote-access session id, obtained after password confirmation for the chosen storage target.'),
-        target: z.nativeEnum(TeamClusterRemoteAccessTargetDTO).describe('The remote storage target to browse: minio, mongo-documents, or redis-data.'),
+        target: z.nativeEnum(TeamClusterRemoteAccessTarget).describe('The remote storage target to browse: minio, mongo-documents, or redis-data.'),
         path: z.string().describe('The path within the target to list. Use an empty string for the root.')
     });
 

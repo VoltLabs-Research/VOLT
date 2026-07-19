@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import AiService from '@modules/ai/services/AiService';
 import { aiRoutes } from '@volt/contracts/modules/ai/routes';
@@ -12,7 +12,7 @@ import type {
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
 import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
-import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import express from 'express';
 import type { Response } from 'express';
 
@@ -84,7 +84,7 @@ export default class AiController extends Controller {
             message: body.message,
             messages: body.messages as AIConversationMessage[] | undefined,
             title: body.title,
-            provider: body.provider as TeamAIProvider | undefined,
+            provider: body.provider as AIProvider | undefined,
             model: body.model
         });
         value.streamResult.pipeToResponse(res);

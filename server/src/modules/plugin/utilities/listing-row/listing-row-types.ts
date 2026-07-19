@@ -1,18 +1,18 @@
 import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-export interface GetAnalysisListingExportOptionsInputDTO {
+export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
     teamId: string;
 }
 
-export interface AnalysisListingExportOptionDTO {
+export interface AnalysisListingExportOptionView {
     id: string;
     listingId: string;
     listingName: string;
     label: string;
 }
 
-export interface AnalysisSubListingExportOptionDTO {
+export interface AnalysisSubListingExportOptionView {
     id: string;
     exposureId: string;
     exposureName: string;
@@ -21,14 +21,14 @@ export interface AnalysisSubListingExportOptionDTO {
     label: string;
 }
 
-export interface GetAnalysisListingExportOptionsOutputDTO {
+export interface GetAnalysisListingExportOptionsOutput {
     analysisId: string;
     hasConfig: boolean;
-    listings: AnalysisListingExportOptionDTO[];
-    subListings: AnalysisSubListingExportOptionDTO[];
+    listings: AnalysisListingExportOptionView[];
+    subListings: AnalysisSubListingExportOptionView[];
 }
 
-export interface GetListingRowsByAnalysisIdInputDTO {
+export interface GetListingRowsByAnalysisIdInput {
     analysisId: string;
     teamId: string;
     page?: number;
@@ -47,9 +47,9 @@ export interface ListingRowByAnalysisData {
     row: Record<string, unknown>;
 }
 
-export interface GetListingRowsByAnalysisIdOutputDTO extends PaginatedResult<ListingRowByAnalysisData> {}
+export interface GetListingRowsByAnalysisIdOutput extends PaginatedResult<ListingRowByAnalysisData> {}
 
-export interface ExportListingRowsByAnalysisIdInputDTO {
+export interface ExportListingRowsByAnalysisIdInput {
     analysisId: string;
     teamId: string;
     format?: ExportType;
@@ -75,7 +75,7 @@ export interface AnalysisSubListingExportData {
     columns: string[];
 }
 
-export interface ExportListingRowsByAnalysisIdOutputDTO {
+export interface ExportListingRowsByAnalysisIdOutput {
     analysisId: string;
     teamClusterId?: string;
     format: ExportType;
@@ -84,7 +84,7 @@ export interface ExportListingRowsByAnalysisIdOutputDTO {
     subListings: AnalysisSubListingExportData[];
 }
 
-export interface SummarizeAnalysisResultInputDTO {
+export interface SummarizeAnalysisResultInput {
     analysisId: string;
     teamId: string;
     exposureId?: string;
@@ -128,7 +128,7 @@ export interface SummarizedExposure {
     columns: SummarizedColumn[];
 }
 
-export interface SummarizeAnalysisResultOutputDTO {
+export interface SummarizeAnalysisResultOutput {
     analysisId: string;
     pluginDisplayName: string;
     trajectoryName: string;

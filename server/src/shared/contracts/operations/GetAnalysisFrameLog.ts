@@ -1,10 +1,10 @@
 import type { AnalysisFrameLogSnapshot } from '@shared/contracts/types/AnalysisFrameLog';
 
-export interface GetAnalysisFrameLogInputDTO {
+export interface GetAnalysisFrameLogInput {
     teamId: string;
     analysisId: string;
     timestep: number;
     afterCursor?: string;
 }
 
-export type GetAnalysisFrameLogOutputDTO = AnalysisFrameLogSnapshot;
+export type GetAnalysisFrameLogOutput = AnalysisFrameLogSnapshot;

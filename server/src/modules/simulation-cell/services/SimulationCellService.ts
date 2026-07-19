@@ -3,9 +3,9 @@ import SimulationCellModel from '@modules/simulation-cell/models/SimulationCellM
 import type { SimulationCellDocument } from '@modules/simulation-cell/models/SimulationCellModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
-    GetSimulationCellByTrajectoryInputDTO,
-    GetSimulationCellByTrajectoryOutputDTO
-} from '@shared/contracts/dtos/GetSimulationCellByTrajectoryDTO';
+    GetSimulationCellByTrajectoryInput,
+    GetSimulationCellByTrajectoryOutput
+} from '@shared/contracts/operations/GetSimulationCellByTrajectory';
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
@@ -66,7 +66,7 @@ export default class SimulationCellService {
         };
     }
 
-    async getByTrajectory(input: GetSimulationCellByTrajectoryInputDTO): Promise<GetSimulationCellByTrajectoryOutputDTO> {
+    async getByTrajectory(input: GetSimulationCellByTrajectoryInput): Promise<GetSimulationCellByTrajectoryOutput> {
         const baseFilter: Record<string, unknown> = {
             team: input.teamId,
             trajectory: input.trajectoryId

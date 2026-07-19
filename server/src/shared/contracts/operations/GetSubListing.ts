@@ -1,5 +1,5 @@
 
-export interface GetSubListingInputDTO {
+export interface GetSubListingInput {
     analysisId: string;
     exposureId: string;
     timestep: number;
@@ -20,7 +20,7 @@ export interface SubListingRowShape {
 
 export type SubListingRowData = SubListingRowShape;
 
-export interface GetSubListingOutputDTO {
+export interface GetSubListingOutput {
     subListingName: string;
     columns: SubListingColumn[];
     rows: SubListingRowData[];

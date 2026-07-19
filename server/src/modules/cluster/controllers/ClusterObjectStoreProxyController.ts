@@ -1,9 +1,7 @@
-import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
-import objectGatewayClient, {
-    TeamClusterObjectGatewayHeadResponse
-} from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
+import TeamClusterObjectStoreProxyService, {
+    type TeamClusterObjectStoreHeadResponse
+} from '@modules/cluster/services/TeamClusterObjectStoreProxyService';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
@@ -112,24 +110,9 @@ const resolveRoute = (
     };
 };
 
-const readContentLength = (request: Request): number => {
+const readContentLength = (request: Request): number | undefined => {
     const rawContentLength = request.header('content-length');
-    if (!rawContentLength) {
-        throw ApplicationError.badRequest(
-            'TeamCluster::ObjectStoreProxyContentLengthRequired',
-            'content-length header is required for uploads'
-        );
-    }
-
-    const contentLength = Number(rawContentLength);
-    if (!Number.isInteger(contentLength) || contentLength < 0) {
-        throw ApplicationError.badRequest(
-            'TeamCluster::ObjectStoreProxyInvalidContentLength',
-            'content-length must be a non-negative integer'
-        );
-    }
-
-    return contentLength;
+    return rawContentLength ? Number(rawContentLength) : undefined;
 };
 
 const readMetadataHeaders = (request: Request): Record<string, string> => {
@@ -154,7 +137,7 @@ const readMetadataHeaders = (request: Request): Record<string, string> => {
 };
 
 const applyResponseHeaders = (
-    headers: TeamClusterObjectGatewayHeadResponse,
+    headers: TeamClusterObjectStoreHeadResponse,
     response: Response
 ): void => {
     if (typeof headers.contentLength === 'number') {
@@ -221,60 +204,26 @@ const sendError = (response: Response, error: unknown): void => {
 };
 
 export default class ClusterObjectStoreProxyController {
-    #objectGatewayClient = objectGatewayClient;
-    #daemonCredentialGuard = new DaemonCredentialGuard();
-
-    async #assertOwnerAccess(
-        requesterClusterId: string,
-        ownerClusterId: string,
-        daemonPassword: string
-    ): Promise<void> {
-        const requesterCluster = await this.#daemonCredentialGuard.requireByDaemonPassword(
-            requesterClusterId,
-            daemonPassword
-        );
-
-        const ownerClusterDocument = await TeamClusterModel.findById(ownerClusterId).exec();
-        const ownerCluster = ownerClusterDocument ? toTeamClusterLike(ownerClusterDocument) : null;
-        if (!ownerCluster) {
-            throw ApplicationError.notFound(
-                'TeamCluster::ObjectStoreProxyOwnerNotFound',
-                'The requested owner cluster does not exist'
-            );
-        }
-
-        if (ownerCluster.props.team !== requesterCluster.props.team) {
-            throw ApplicationError.forbidden(
-                'TeamCluster::ObjectStoreProxyForbidden',
-                'The requested owner cluster does not belong to the same team'
-            );
-        }
-    }
+    readonly #proxyService = new TeamClusterObjectStoreProxyService();
 
     buildRouter(): Router {
         const router = Router();
 
         router.use(TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH, async (request: Request, response: Response) => {
             try {
-                const requesterClusterId = readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER);
-                const daemonPassword = readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER);
-                if (!requesterClusterId || !daemonPassword) {
-                    throw ApplicationError.unauthorized(
-                        'TeamCluster::ObjectStoreProxyUnauthorized',
-                        'Daemon authentication headers are required'
-                    );
-                }
-
+                const requesterCredentials = this.#proxyService.requireRequesterCredentials(
+                    readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER),
+                    readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER)
+                );
                 const resolvedRoute = resolveRoute(request.path);
-                await this.#assertOwnerAccess(
-                    requesterClusterId,
-                    resolvedRoute.ownerClusterId,
-                    daemonPassword
+                const access = await this.#proxyService.authorizeOwner(
+                    requesterCredentials,
+                    resolvedRoute.ownerClusterId
                 );
 
                 if (resolvedRoute.type === 'collection') {
                     if (request.method === 'GET') {
-                        const listResponse = await this.#objectGatewayClient.list(resolvedRoute.ownerClusterId, {
+                        const listResponse = await this.#proxyService.list(access, {
                             bucket: resolvedRoute.bucket,
                             prefix: request.query.prefix as string | undefined,
                             cursor: request.query.cursor as string | undefined,
@@ -290,8 +239,8 @@ export default class ClusterObjectStoreProxyController {
                         const prefix = typeof request.query.prefix === 'string'
                             ? request.query.prefix
                             : '';
-                        const deletedCount = await this.#objectGatewayClient.deleteByPrefix(
-                            resolvedRoute.ownerClusterId,
+                        const deletedCount = await this.#proxyService.deletePrefix(
+                            access,
                             resolvedRoute.bucket,
                             prefix
                         );
@@ -308,8 +257,8 @@ export default class ClusterObjectStoreProxyController {
                 }
 
                 if (request.method === 'HEAD') {
-                    const head = await this.#objectGatewayClient.head(
-                        resolvedRoute.ownerClusterId,
+                    const head = await this.#proxyService.head(
+                        access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey
                     );
@@ -324,8 +273,8 @@ export default class ClusterObjectStoreProxyController {
                     const readOptions: { skipMetadata?: boolean; rangeHeader?: string } = {};
                     if (skipMetadata) readOptions.skipMetadata = true;
                     if (rangeHeader) readOptions.rangeHeader = rangeHeader;
-                    const streamResponse = await this.#objectGatewayClient.getStream(
-                        resolvedRoute.ownerClusterId,
+                    const streamResponse = await this.#proxyService.openRead(
+                        access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey,
                         Object.keys(readOptions).length > 0 ? readOptions : undefined
@@ -340,7 +289,7 @@ export default class ClusterObjectStoreProxyController {
                 if (request.method === 'PUT') {
                     const contentType = request.header('content-type') || undefined;
                     const contentEncoding = request.header('content-encoding') || undefined;
-                    await this.#objectGatewayClient.putStream(resolvedRoute.ownerClusterId, {
+                    await this.#proxyService.write(access, {
                         bucket: resolvedRoute.bucket,
                         objectKey: resolvedRoute.objectKey,
                         stream: request,
@@ -354,8 +303,8 @@ export default class ClusterObjectStoreProxyController {
                 }
 
                 if (request.method === 'DELETE') {
-                    await this.#objectGatewayClient.deleteObject(
-                        resolvedRoute.ownerClusterId,
+                    await this.#proxyService.delete(
+                        access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey
                     );

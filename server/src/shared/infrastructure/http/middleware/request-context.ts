@@ -2,7 +2,7 @@ import logger from '@shared/infrastructure/logger';
 import { runWithHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Response } from 'express';
-import type { AuthenticatedRequest } from './authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { HttpRequestContext } from '@shared/infrastructure/http/request-context';
 
 export const TRACE_ID_HEADER = 'x-trace-id';

@@ -16,9 +16,9 @@ import { v4 } from 'uuid';
 import type {
     AnalysisListingExportData,
     AnalysisSubListingExportData,
-    ExportListingRowsByAnalysisIdOutputDTO
+    ExportListingRowsByAnalysisIdOutput
 } from '@modules/plugin/utilities/listing-row/listing-row-types';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 const titleCaseName = (name: string): string => {
     return name
@@ -98,7 +98,7 @@ export class ListingRowsExportPresenter {
         return config !== undefined && Object.keys(config).length > 0;
     }
 
-    private buildArchiveEntries(payload: ExportListingRowsByAnalysisIdOutputDTO): ClusterArchiveInlineEntry[] {
+    private buildArchiveEntries(payload: ExportListingRowsByAnalysisIdOutput): ClusterArchiveInlineEntry[] {
         const entries: ClusterArchiveInlineEntry[] = [];
 
         if (this.hasConfig(payload.config)) {
@@ -116,7 +116,7 @@ export class ListingRowsExportPresenter {
         return entries;
     }
 
-    private presentSingleInlineEntry(payload: ExportListingRowsByAnalysisIdOutputDTO, entry: ClusterArchiveInlineEntry): DownloadStreamOutputDTO {
+    private presentSingleInlineEntry(payload: ExportListingRowsByAnalysisIdOutput, entry: ClusterArchiveInlineEntry): DownloadStreamOutput {
         const filename = entry.name.split('/').pop() || `AnalysisID-${payload.analysisId}.csv`;
 
         return createDownloadStreamResponse({
@@ -126,7 +126,7 @@ export class ListingRowsExportPresenter {
         });
     }
 
-    async present(payload: ExportListingRowsByAnalysisIdOutputDTO): Promise<DownloadStreamOutputDTO> {
+    async present(payload: ExportListingRowsByAnalysisIdOutput): Promise<DownloadStreamOutput> {
         const hasConfig = this.hasConfig(payload.config);
 
         if (payload.listings.length <= 1 && payload.subListings.length === 0 && !hasConfig) {

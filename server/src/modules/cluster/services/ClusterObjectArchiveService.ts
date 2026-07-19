@@ -1,11 +1,11 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import objectGatewayClient from './TeamClusterObjectGatewayClient';
 
 import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 
 export interface ClusterArchiveObjectEntry {
     type: 'object';
@@ -31,7 +31,7 @@ export interface ClusterArchiveReference {
     objectKey: string;
 }
 
-export type ClusterArchiveDownload = DownloadStreamOutputDTO & {
+export type ClusterArchiveDownload = DownloadStreamOutput & {
     clusterObject: ClusterArchiveReference;
 };
 

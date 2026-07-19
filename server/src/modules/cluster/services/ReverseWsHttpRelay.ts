@@ -1,6 +1,6 @@
 import logger from '@shared/infrastructure/logger';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import {
     normalizeWebSocketCloseCode,
     normalizeWebSocketPayload,

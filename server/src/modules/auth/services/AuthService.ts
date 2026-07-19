@@ -1,6 +1,7 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel, { OAuthProvider, UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
+import type { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
+import UserModel, { UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
 import type { UserDocument } from '@modules/auth/models/UserModel';
 import AuthSessionService from '@modules/auth/services/AuthSessionService';
 import AvatarService from '@modules/auth/services/AvatarService';

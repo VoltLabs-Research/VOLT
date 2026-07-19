@@ -19,7 +19,11 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import crypto from 'crypto';
-import type { SendTeamInvitationInput, UpdateTeamInvitationInput } from '@volt/contracts/modules/team/http';
+import type {
+    SendTeamInvitationInput,
+    TeamInvitationStatusInput,
+    UpdateTeamInvitationInput
+} from '@volt/contracts/modules/team/http';
 
 const INVITATION_RELATIONS = ['team', 'invitedBy', 'invitedUser', 'role'];
 
@@ -105,15 +109,19 @@ export default class TeamInvitationService {
         };
     }
 
-    async deleteById(invitationId: string): Promise<void> {
-        const deleted = await TeamInvitationModel.findByIdAndDelete(invitationId);
+    async deleteById(teamId: string, invitationId: string): Promise<void> {
+        const deleted = await TeamInvitationModel.findOneAndDelete({ _id: invitationId, team: teamId });
         if (!deleted) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'TeamInvitation not found');
         }
     }
 
-    async updateById(invitationId: string, data: UpdateTeamInvitationInput): Promise<PersistedOutput<TeamInvitationProps>> {
-        const updated = await TeamInvitationModel.findByIdAndUpdate(invitationId, { $set: data }, { new: true });
+    async updateById(teamId: string, invitationId: string, data: UpdateTeamInvitationInput): Promise<PersistedOutput<TeamInvitationProps>> {
+        const updated = await TeamInvitationModel.findOneAndUpdate(
+            { _id: invitationId, team: teamId },
+            { $set: data },
+            { new: true }
+        );
         if (!updated) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'TeamInvitation not found');
         }
@@ -129,8 +137,25 @@ export default class TeamInvitationService {
         return toPersistedOutput(invitation, INVITATION_RELATIONS);
     }
 
-    async accept(invitationId: string, userId: string): Promise<{ message: string }> {
-        const invitation = await TeamInvitationModel.findById(invitationId);
+    async updateStatus(
+        invitationId: string,
+        userId: string,
+        input: TeamInvitationStatusInput,
+        teamId?: string
+    ): Promise<{ message: string }> {
+        if (input?.status === 'accepted') {
+            return this.accept(invitationId, userId, teamId);
+        }
+        if (input?.status === 'rejected') {
+            return this.reject(invitationId, userId, teamId);
+        }
+        throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Invalid status. Must be "accepted" or "rejected".');
+    }
+
+    async accept(invitationId: string, userId: string, teamId?: string): Promise<{ message: string }> {
+        const invitation = teamId === undefined
+            ? await TeamInvitationModel.findById(invitationId)
+            : await TeamInvitationModel.findOne({ _id: invitationId, team: teamId });
         if (!invitation) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'Invitation not found');
         }
@@ -144,24 +169,31 @@ export default class TeamInvitationService {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_INVITATION_INVALID_USER, 'This invitation was not sent to you');
         }
 
-        const teamId = String(invitation.team);
-        const ownerRole = await TeamRoleModel.findOne({ name: SystemRoleNames.OWNER, team: teamId });
+        const invitationTeamId = String(invitation.team);
+        const ownerRole = await TeamRoleModel.findOne({ name: SystemRoleNames.OWNER, team: invitationTeamId });
         if (!ownerRole) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Owner role not found');
         }
 
-        await TeamMemberModel.create({ team: teamId, user: userId, role: ownerRole._id, joinedAt: new Date() });
-        await this.#users.addTeamToUser(userId, teamId);
-        await TeamInvitationModel.findByIdAndUpdate(invitation._id, {
+        await TeamMemberModel.create({ team: invitationTeamId, user: userId, role: ownerRole._id, joinedAt: new Date() });
+        await this.#users.addTeamToUser(userId, invitationTeamId);
+        const update = {
             status: TeamInvitationStatus.Accepted,
             acceptedAt: new Date()
-        });
+        };
+        if (teamId === undefined) {
+            await TeamInvitationModel.findByIdAndUpdate(invitation._id, update);
+        } else {
+            await TeamInvitationModel.findOneAndUpdate({ _id: invitationId, team: teamId }, update);
+        }
 
         return { message: 'Invitation accepted successfully' };
     }
 
-    async reject(invitationId: string, userId: string): Promise<{ message: string }> {
-        const invitation = await TeamInvitationModel.findById(invitationId);
+    async reject(invitationId: string, userId: string, teamId?: string): Promise<{ message: string }> {
+        const invitation = teamId === undefined
+            ? await TeamInvitationModel.findById(invitationId)
+            : await TeamInvitationModel.findOne({ _id: invitationId, team: teamId });
         if (!invitation) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'Invitation not found');
         }
@@ -172,7 +204,12 @@ export default class TeamInvitationService {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_INVITATION_INVALID_USER, 'This invitation was not sent to you');
         }
 
-        await TeamInvitationModel.findByIdAndUpdate(invitation._id, { status: TeamInvitationStatus.Rejected });
+        const update = { status: TeamInvitationStatus.Rejected };
+        if (teamId === undefined) {
+            await TeamInvitationModel.findByIdAndUpdate(invitation._id, update);
+        } else {
+            await TeamInvitationModel.findOneAndUpdate({ _id: invitationId, team: teamId }, update);
+        }
 
         return { message: 'Invitation rejected successfully' };
     }

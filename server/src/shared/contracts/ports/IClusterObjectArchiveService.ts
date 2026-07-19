@@ -1,4 +1,4 @@
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 export interface ClusterArchiveObjectEntry {
     type: 'object';
@@ -24,7 +24,7 @@ export interface ClusterArchiveReference {
     objectKey: string;
 }
 
-export type ClusterArchiveDownload = DownloadStreamOutputDTO & {
+export type ClusterArchiveDownload = DownloadStreamOutput & {
     clusterObject: ClusterArchiveReference;
 };
 

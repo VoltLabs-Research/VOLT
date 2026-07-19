@@ -17,9 +17,9 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import path from 'node:path';
 import type {
-    TeamClusterInstallManifestDTO,
-    TeamClusterInstallManifestFileDTO,
-    TeamClusterInstallManifestPortsDTO
+    TeamClusterInstallManifestView,
+    TeamClusterInstallManifestFileView,
+    TeamClusterInstallManifestPortsView
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 
 export class TeamClusterInstallManifestService {
@@ -29,8 +29,8 @@ export class TeamClusterInstallManifestService {
         teamClusterId: string,
         daemonPassword: string,
         installRoot: string,
-        ports: TeamClusterInstallManifestPortsDTO
-    ): Promise<TeamClusterInstallManifestDTO> {
+        ports: TeamClusterInstallManifestPortsView
+    ): Promise<TeamClusterInstallManifestView> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
         const normalizedInstallRoot = this.requireInstallRoot(installRoot);
@@ -39,10 +39,10 @@ export class TeamClusterInstallManifestService {
 
         await this.persistInstallContext(teamCluster, normalizedInstallRoot, ports);
 
-        let daemonFiles: TeamClusterInstallManifestFileDTO[] = [];
+        let daemonFiles: TeamClusterInstallManifestFileView[] = [];
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
             const daemonManifestFiles = await readTeamClusterDaemonManifestFiles();
-            daemonFiles = daemonManifestFiles.map((file): TeamClusterInstallManifestFileDTO => ({
+            daemonFiles = daemonManifestFiles.map((file): TeamClusterInstallManifestFileView => ({
                 path: path.posix.join('cluster-daemon', file.relativePath.split(path.sep).join(path.posix.sep)),
                 contents: file.contents,
                 mode: '0644'
@@ -95,7 +95,7 @@ export class TeamClusterInstallManifestService {
     private async persistInstallContext(
         teamCluster: TeamCluster,
         installRoot: string,
-        ports: TeamClusterInstallManifestPortsDTO
+        ports: TeamClusterInstallManifestPortsView
     ): Promise<void> {
         const updatedTeamCluster = await TeamClusterModel.findByIdAndUpdate(teamCluster.id, {
             $set: {

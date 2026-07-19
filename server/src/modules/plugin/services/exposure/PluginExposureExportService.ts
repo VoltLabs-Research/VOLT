@@ -16,7 +16,7 @@ import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryMod
 import path from 'node:path';
 import { v4 } from 'uuid';
 
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 export interface PluginExposureExportParams {
     analysisId: string;
@@ -147,7 +147,7 @@ export class PluginExposureExportService {
         return groups.flat().sort(sortAnalysisFilesByObjectName);
     }
 
-    async exportAnalysisExposureBundle(params: PluginExposureExportParams): Promise<DownloadStreamOutputDTO> {
+    async exportAnalysisExposureBundle(params: PluginExposureExportParams): Promise<DownloadStreamOutput> {
         const pluginName = sanitizeDownloadName(params.pluginName, 'plugin');
         const teamClusterId = await this.resolveTeamClusterId(params.trajectoryId);
         const groupedFiles = await this.collectFilesByTimestep(params.trajectoryId, params.analysisId);

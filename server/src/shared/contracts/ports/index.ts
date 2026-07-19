@@ -45,7 +45,7 @@ export type {
     ContainerTerminalExec,
     ContainerTerminalAttachment
 } from './IContainerService';
-export type { PersistedChatDTO } from './IChatRepository';
+export type { ChatRecord } from './IChatRepository';
 export type { IDeploymentSettingsRepository, DeploymentSettingsView } from './IDeploymentSettingsRepository';
 export type { IPluginDebugSessionRegistryService } from './IPluginDebugSessionRegistryService';
 export type { IGetAnalysisFrameLogUseCase } from './IGetAnalysisFrameLogUseCase';

@@ -1,6 +1,6 @@
 import logger from '@shared/infrastructure/logger';
 import AnalysisProvenanceModel from '@modules/analysis/models/AnalysisProvenanceModel';
-import type { AnalysisProvenance } from '@modules/analysis/schemas/AnalysisMetadata';
+import type { AnalysisProvenance } from '@modules/analysis/models/AnalysisMetadata';
 import crypto from 'node:crypto';
 
 export interface RecordProvenanceInput {
@@ -17,6 +17,18 @@ export interface RecordProvenanceInput {
     executedBy: string;
     executionTimeMs: number;
     outputArtifactIds: string[];
+}
+
+export interface ProvenanceReproduction {
+    command: string;
+    provenanceId: string;
+}
+
+export class ProvenanceNotFoundError extends Error {
+    constructor() {
+        super('Provenance record not found');
+        this.name = 'ProvenanceNotFoundError';
+    }
 }
 
 export class ProvenanceService {
@@ -57,6 +69,17 @@ export class ProvenanceService {
     async getProvenance(id: string): Promise<AnalysisProvenance | null> {
         const doc = await AnalysisProvenanceModel.findById(id).lean();
         return doc as unknown as AnalysisProvenance | null;
+    }
+
+    async getRequired(id: string): Promise<AnalysisProvenance> {
+        const record = await this.getProvenance(id);
+        if (!record) throw new ProvenanceNotFoundError();
+        return record;
+    }
+
+    async getReproduction(id: string): Promise<ProvenanceReproduction> {
+        const record = await this.getRequired(id);
+        return { command: record.reproductionCommand, provenanceId: id };
     }
 
     async queryProvenance(filters: {

@@ -1,7 +1,6 @@
 import type { Resource } from '@core/constants/resources';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { Router } from 'express';
-import type { RouterOptions } from 'express';
+import type { RequestHandler, RouterOptions } from 'express';
 import { HttpModuleTeamScope } from './HttpModule';
 import type { HttpModule } from './HttpModule';
 
@@ -10,6 +9,7 @@ interface CreateHttpModuleConfig {
     resource?: Resource;
     teamScope?: HttpModuleTeamScope;
     protected?: boolean;
+    authenticationMiddleware?: RequestHandler;
     routerOptions?: RouterOptions;
     moduleKey?: string;
     routes: (router: Router) => void;
@@ -18,9 +18,16 @@ interface CreateHttpModuleConfig {
 export const createHttpModule = (config: CreateHttpModuleConfig): HttpModule => {
     const router = Router({ mergeParams: true, ...config.routerOptions });
     const isProtected = config.protected ?? Boolean(config.teamScope);
+    const requiresAuthenticationMiddleware = isProtected && config.teamScope !== HttpModuleTeamScope.BasePath;
 
-    if (isProtected && config.teamScope !== HttpModuleTeamScope.BasePath) {
-        router.use(protect);
+    if (requiresAuthenticationMiddleware) {
+        const authenticationMiddleware = config.authenticationMiddleware;
+
+        if (!authenticationMiddleware) {
+            throw new Error('Protected HTTP modules require an authentication middleware');
+        }
+
+        router.use(authenticationMiddleware);
     }
 
     config.routes(router);

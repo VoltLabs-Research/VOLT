@@ -1,7 +1,7 @@
 
 import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-export interface GetPluginListingDocumentsInputDTO {
+export interface GetPluginListingDocumentsInput {
     pluginId: string;
     exposureName?: string;
     exposureId?: string;
@@ -13,7 +13,7 @@ export interface GetPluginListingDocumentsInputDTO {
     sortAsc?: boolean;
 }
 
-export interface ExportPluginListingDocumentsInputDTO {
+export interface ExportPluginListingDocumentsInput {
     pluginId: string;
     exposureId?: string;
     teamId: string;
@@ -50,6 +50,6 @@ export interface PluginListingDocumentsMeta extends Record<string, unknown> {
     subListingNames: string[];
 }
 
-export interface GetPluginListingDocumentsOutputDTO extends PaginatedResult<ListingRowData> {
+export interface GetPluginListingDocumentsOutput extends PaginatedResult<ListingRowData> {
     _meta: PluginListingDocumentsMeta;
 }

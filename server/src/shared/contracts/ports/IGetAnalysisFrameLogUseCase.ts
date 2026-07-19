@@ -1,8 +1,8 @@
 import type { IUseCase } from '@shared/application/IUseCase';
 import type {
-    GetAnalysisFrameLogInputDTO,
-    GetAnalysisFrameLogOutputDTO
-} from '@shared/contracts/dtos/GetAnalysisFrameLogDTO';
+    GetAnalysisFrameLogInput,
+    GetAnalysisFrameLogOutput
+} from '@shared/contracts/operations/GetAnalysisFrameLog';
 
 export interface IGetAnalysisFrameLogUseCase
-    extends IUseCase<GetAnalysisFrameLogInputDTO, GetAnalysisFrameLogOutputDTO> {}
+    extends IUseCase<GetAnalysisFrameLogInput, GetAnalysisFrameLogOutput> {}

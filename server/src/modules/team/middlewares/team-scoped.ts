@@ -4,7 +4,7 @@ import { checkTeamMembership } from '@modules/team/middlewares/check-team-member
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import type { RequestHandler, Response, NextFunction } from 'express';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 const METHOD_ACTION: Record<string, Action> = {
     GET: Action.READ,

@@ -3,7 +3,7 @@ import { Req, Res } from '@shared/http/params';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 export default class DiscoverController extends TrajectoryControllerBase {

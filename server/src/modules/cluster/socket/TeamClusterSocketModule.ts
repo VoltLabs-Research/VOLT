@@ -8,11 +8,11 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 import {
-    toTeamClusterQueueConcurrencyDTO,
-    toTeamClusterQueueScopeLimitsDTO
-} from '@modules/cluster/dtos/TeamClusterDTO';
+    toTeamClusterQueueConcurrencyView,
+    toTeamClusterQueueScopeLimitsView
+} from '@modules/cluster/presenters/TeamClusterPresenter';
 import ClusterService, {
-    type ProcessDaemonSceneArtifactUpsertInputDTO
+    type ProcessDaemonSceneArtifactUpsertInput
 } from '@modules/cluster/services/ClusterService';
 import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
@@ -371,20 +371,20 @@ export class TeamClusterSocketModule extends BaseSocketModule {
             return;
         }
 
-        const inputs: ProcessDaemonSceneArtifactUpsertInputDTO[] = payload.items.map((item) => ({
+        const inputs: ProcessDaemonSceneArtifactUpsertInput[] = payload.items.map((item) => ({
             teamClusterId: payload.teamClusterId,
             daemonPassword: payload.daemonPassword,
             trajectory: item.trajectory,
             storageClusterId: item.storageClusterId,
             analysis: item.analysis,
             plugin: item.plugin,
-            sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInputDTO['sourceType'],
+            sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInput['sourceType'],
             timestep: item.timestep,
             objectName: item.objectName,
             storageBucket: item.storageBucket,
-            params: item.params as ProcessDaemonSceneArtifactUpsertInputDTO['params'],
+            params: item.params as ProcessDaemonSceneArtifactUpsertInput['params'],
             displayName: item.displayName,
-            status: item.status as ProcessDaemonSceneArtifactUpsertInputDTO['status'],
+            status: item.status as ProcessDaemonSceneArtifactUpsertInput['status'],
             metadata: item.metadata
         }));
         try {
@@ -470,8 +470,8 @@ export class TeamClusterSocketModule extends BaseSocketModule {
                 data: {
                     status: 'success',
                     data: {
-                        queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
-                        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(teamCluster.props.queueScopeLimits),
+                        queueConcurrency: toTeamClusterQueueConcurrencyView(teamCluster.props.queueConcurrency),
+                        queueScopeLimits: toTeamClusterQueueScopeLimitsView(teamCluster.props.queueScopeLimits),
                         roleConfig: teamCluster.props.roleConfig,
                         effectiveCapabilities: teamCluster.effectiveCapabilities
                     }

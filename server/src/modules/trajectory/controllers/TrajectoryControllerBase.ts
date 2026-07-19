@@ -3,13 +3,13 @@ import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import { encodeAtomsBinary } from '@modules/trajectory/utilities/atoms/encode-atoms-binary';
 import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
+import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 
-import type { GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO } from '@modules/trajectory/contracts/trajectory/ServiceTypes';
+import type { GetAtomsColumnarInput, GetAtomsColumnarOutput } from '@modules/trajectory/contracts/trajectory/ServiceTypes';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
 
@@ -157,7 +157,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
         return true;
     }
 
-    protected buildAtomsInput(req: AuthenticatedRequest): GetAtomsColumnarInputDTO {
+    protected buildAtomsInput(req: AuthenticatedRequest): GetAtomsColumnarInput {
         return {
             trajectoryId: getParamValue(req.params.trajectoryId),
             timestep: Number(req.params.timestep),
@@ -167,7 +167,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
         };
     }
 
-    protected sendAtomsBinary(res: Response, value: GetAtomsColumnarOutputDTO): void {
+    protected sendAtomsBinary(res: Response, value: GetAtomsColumnarOutput): void {
         const body = encodeAtomsBinary(value);
 
         res.setHeader('Content-Type', 'application/octet-stream');

@@ -1,5 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
@@ -14,7 +14,7 @@ import {
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type { TeamClusterDaemonSemanticCommandResult } from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -60,23 +60,23 @@ import type { ClusterTransferJobState } from '@modules/cluster/utilities/cluster
 import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 
 import type {
-    TeamClusterDTO,
-    TeamClusterQueueConcurrencyDTO,
-    TeamClusterQueueScopeLimitsDTO,
-    TeamClusterCredentialServicesDTO
+    TeamClusterView,
+    TeamClusterQueueConcurrencyView,
+    TeamClusterQueueScopeLimitsView,
+    TeamClusterCredentialServicesView
 } from '@modules/cluster/contracts/TeamClusterView';
-import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
+import type { ClusterTransferJobView } from '@modules/cluster/contracts/ClusterTransferJobView';
 import {
-    TeamClusterRemoteAccessTargetDTO,
-    type TeamClusterRemoteAccessSessionDTO,
-    type TeamClusterRemoteExplorerEntryDTO,
-    type TeamClusterRemoteExplorerNodeDTO
+    TeamClusterRemoteAccessTarget,
+    type TeamClusterRemoteAccessSessionView,
+    type TeamClusterRemoteExplorerEntryView,
+    type TeamClusterRemoteExplorerNodeView
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import type {
-    TeamClusterInstallManifestDTO,
-    TeamClusterInstallManifestPortsDTO
+    TeamClusterInstallManifestView,
+    TeamClusterInstallManifestPortsView
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
-import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
+import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/contracts/TeamClusterHeartbeat';
 
 import clusterTransferCoordinator from '@modules/cluster/services/ClusterTransferCoordinator';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
@@ -164,7 +164,7 @@ interface ServerQueueSnapshotEntry {
     concurrency: number;
 }
 
-interface ClusterResourceLimitsDTO {
+interface ClusterResourceLimitsView {
     maxCpus: number | null;
     maxMemoryMB: number | null;
     status: SystemStatus | null;
@@ -175,7 +175,7 @@ type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Faile
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type ArtifactUploadJobStatus = JobStatus.Queued | JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
-interface ProcessDaemonAnalysisJobCompletionInputDTO {
+interface ProcessDaemonAnalysisJobCompletionInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -188,7 +188,7 @@ interface ProcessDaemonAnalysisJobCompletionInputDTO {
     error?: string;
 }
 
-interface ProcessDaemonAnalysisJobStatusInputDTO {
+interface ProcessDaemonAnalysisJobStatusInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -201,7 +201,7 @@ interface ProcessDaemonAnalysisJobStatusInputDTO {
     error?: string;
 }
 
-interface ProcessDaemonAnalysisStageStatusInputDTO {
+interface ProcessDaemonAnalysisStageStatusInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -226,7 +226,7 @@ interface ProcessDaemonAnalysisStageStatusInputDTO {
     durationMs?: number;
 }
 
-interface ProcessDaemonRasterJobStatusInputDTO {
+interface ProcessDaemonRasterJobStatusInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -237,11 +237,11 @@ interface ProcessDaemonRasterJobStatusInputDTO {
     error?: string;
 }
 
-interface ValidProcessDaemonRasterJobStatusInputDTO extends ProcessDaemonRasterJobStatusInputDTO {
+interface ValidProcessDaemonRasterJobStatusInput extends ProcessDaemonRasterJobStatusInput {
     status: RasterJobStatus;
 }
 
-interface ProcessDaemonGlbJobStatusInputDTO {
+interface ProcessDaemonGlbJobStatusInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -252,11 +252,11 @@ interface ProcessDaemonGlbJobStatusInputDTO {
     error?: string;
 }
 
-interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStatusInputDTO {
+interface ValidProcessDaemonGlbJobStatusInput extends ProcessDaemonGlbJobStatusInput {
     status: GlbJobStatus;
 }
 
-interface ProcessDaemonArtifactUploadJobStatusInputDTO {
+interface ProcessDaemonArtifactUploadJobStatusInput {
     teamClusterId: string;
     daemonPassword: string;
     jobId: string;
@@ -268,23 +268,23 @@ interface ProcessDaemonArtifactUploadJobStatusInputDTO {
     error?: string;
 }
 
-interface ValidProcessDaemonArtifactUploadJobStatusInputDTO extends ProcessDaemonArtifactUploadJobStatusInputDTO {
+interface ValidProcessDaemonArtifactUploadJobStatusInput extends ProcessDaemonArtifactUploadJobStatusInput {
     status: ArtifactUploadJobStatus;
 }
 
-export type ProcessDaemonJobCompletionInputDTO =
-    | ProcessDaemonAnalysisJobCompletionInputDTO
-    | ProcessDaemonAnalysisJobStatusInputDTO
-    | ProcessDaemonAnalysisStageStatusInputDTO
-    | ProcessDaemonRasterJobStatusInputDTO
-    | ProcessDaemonGlbJobStatusInputDTO
-    | ProcessDaemonArtifactUploadJobStatusInputDTO;
+export type ProcessDaemonJobCompletionInput =
+    | ProcessDaemonAnalysisJobCompletionInput
+    | ProcessDaemonAnalysisJobStatusInput
+    | ProcessDaemonAnalysisStageStatusInput
+    | ProcessDaemonRasterJobStatusInput
+    | ProcessDaemonGlbJobStatusInput
+    | ProcessDaemonArtifactUploadJobStatusInput;
 
-interface ProcessDaemonJobCompletionOutputDTO {
+interface ProcessDaemonJobCompletionOutput {
     acknowledged: boolean;
 }
 
-export interface ProcessDaemonSceneArtifactUpsertInputDTO {
+export interface ProcessDaemonSceneArtifactUpsertInput {
     teamClusterId: string;
     daemonPassword: string;
     trajectory: string;
@@ -301,7 +301,7 @@ export interface ProcessDaemonSceneArtifactUpsertInputDTO {
     metadata?: Record<string, unknown>;
 }
 
-interface ProcessDaemonSceneArtifactUpsertOutputDTO {
+interface ProcessDaemonSceneArtifactUpsertOutput {
     acknowledged: boolean;
 }
 
@@ -392,7 +392,7 @@ export default class ClusterService {
     #transferCoordinator = clusterTransferCoordinator;
     #storagePlacementService = storagePlacementService;
 
-    async create(input: { teamId: string; userId: string; name: string }): Promise<{ teamCluster: TeamClusterDTO; enrollmentToken: string }> {
+    async create(input: { teamId: string; userId: string; name: string }): Promise<{ teamCluster: TeamClusterView; enrollmentToken: string }> {
         const user = await this.#userRepository.findById(input.userId);
         if (!user) {
             throw ApplicationError.notFound('TeamCluster::UserNotFound', 'User not found');
@@ -458,7 +458,7 @@ export default class ClusterService {
         };
     }
 
-    async listByTeamId(input: { teamId: string; page?: number; limit?: number; search?: string }): Promise<PaginatedResult<TeamClusterDTO>> {
+    async listByTeamId(input: { teamId: string; page?: number; limit?: number; search?: string }): Promise<PaginatedResult<TeamClusterView>> {
         const filter: Record<string, unknown> = { team: input.teamId };
 
         const search = input.search?.trim();
@@ -480,7 +480,7 @@ export default class ClusterService {
 
         const clusterIds = docs.map((doc) => String(doc._id));
         const clusterIdSet = new Set(clusterIds);
-        const activeTransfersByClusterId = new Map<string, ClusterTransferJobDTO[]>();
+        const activeTransfersByClusterId = new Map<string, ClusterTransferJobView[]>();
         const normalizedClusterIds = [...new Set(clusterIds.filter(Boolean))];
 
         if (normalizedClusterIds.length > 0) {
@@ -494,17 +494,17 @@ export default class ClusterService {
             }).sort({ updatedAt: -1, createdAt: -1 }).exec();
 
             for (const job of activeTransferJobs) {
-                const jobDTO = this.#presentClusterTransferJob(job);
+                const jobView = this.#presentClusterTransferJob(job);
 
                 if (clusterIdSet.has(job.sourceClusterId)) {
                     const sourceJobs = activeTransfersByClusterId.get(job.sourceClusterId) ?? [];
-                    sourceJobs.push(jobDTO);
+                    sourceJobs.push(jobView);
                     activeTransfersByClusterId.set(job.sourceClusterId, sourceJobs);
                 }
 
                 if (job.destinationClusterId !== job.sourceClusterId && clusterIdSet.has(job.destinationClusterId)) {
                     const destinationJobs = activeTransfersByClusterId.get(job.destinationClusterId) ?? [];
-                    destinationJobs.push(jobDTO);
+                    destinationJobs.push(jobView);
                     activeTransfersByClusterId.set(job.destinationClusterId, destinationJobs);
                 }
             }
@@ -521,7 +521,7 @@ export default class ClusterService {
         };
     }
 
-    async provisionDemo(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterDTO }> {
+    async provisionDemo(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterView }> {
         const existingDemo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
         if (existingDemo) {
             logger.info(`[ClusterService.provisionDemo] Returning existing demo teamClusterId=${existingDemo._id} teamId=${input.teamId}`);
@@ -602,7 +602,7 @@ export default class ClusterService {
         return { teardownScheduled: true };
     }
 
-    async getDemoStatus(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterDTO | null; remainingMs: number | null; hasActiveDemo: boolean }> {
+    async getDemoStatus(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterView | null; remainingMs: number | null; hasActiveDemo: boolean }> {
         const demo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
         if (!demo) {
             return { teamCluster: null, remainingMs: null, hasActiveDemo: false };
@@ -624,14 +624,14 @@ export default class ClusterService {
         return { teamCluster: this.#presentTeamCluster(demo), remainingMs, hasActiveDemo: true };
     }
 
-    async getById(input: { teamId: string; teamClusterId: string }): Promise<{ teamCluster: TeamClusterDTO }> {
+    async getById(input: { teamId: string; teamClusterId: string }): Promise<{ teamCluster: TeamClusterView }> {
         const doc = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
         return { teamCluster: this.#presentTeamCluster(doc) };
     }
 
     async getRuntimeSnapshot(input: { teamId: string; teamClusterId: string }): Promise<{
         capturedAt: string;
-        queueConcurrency: TeamClusterQueueConcurrencyDTO;
+        queueConcurrency: TeamClusterQueueConcurrencyView;
         daemonQueues: DaemonQueueSnapshotEntry[];
         serverQueues: ServerQueueSnapshotEntry[];
     }> {
@@ -668,7 +668,7 @@ export default class ClusterService {
         teamClusterId: string;
         queueConcurrency: TeamClusterQueueConcurrencyProps;
         queueScopeLimits: TeamClusterQueueScopeLimitsProps;
-    }): Promise<{ message: string; teamCluster: TeamClusterDTO }> {
+    }): Promise<{ message: string; teamCluster: TeamClusterView }> {
         const doc = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const persistedQueueConcurrency = {
@@ -713,7 +713,7 @@ export default class ClusterService {
         return { message: 'Queue settings saved.', teamCluster: this.#presentTeamCluster(updated) };
     }
 
-    async updateRole(input: { teamId: string; userId: string; teamClusterId: string; role: TeamClusterRole }): Promise<{ message: string; teamCluster: TeamClusterDTO }> {
+    async updateRole(input: { teamId: string; userId: string; teamClusterId: string; role: TeamClusterRole }): Promise<{ message: string; teamCluster: TeamClusterView }> {
         const doc = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const currentRoleConfig = doc.roleConfig;
@@ -758,7 +758,7 @@ export default class ClusterService {
         return { message: 'Team cluster role saved.', teamCluster: this.#presentTeamCluster(updated) };
     }
 
-    async listTransferJobs(input: { teamId: string; teamClusterId: string; page?: number; limit?: number; state?: ClusterTransferJobState }): Promise<PaginatedResult<ClusterTransferJobDTO>> {
+    async listTransferJobs(input: { teamId: string; teamClusterId: string; page?: number; limit?: number; state?: ClusterTransferJobState }): Promise<PaginatedResult<ClusterTransferJobView>> {
         const teamCluster = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const filter: Record<string, unknown> = {
@@ -793,7 +793,7 @@ export default class ClusterService {
         message: string;
         sourceClusterId: string;
         destinationClusterId: string;
-        requestedJobs: ClusterTransferJobDTO[];
+        requestedJobs: ClusterTransferJobView[];
     }> {
         const sourceCluster = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
         const destinationCluster = await this.#getOwnedTeamCluster(input.destinationClusterId, input.teamId);
@@ -840,7 +840,7 @@ export default class ClusterService {
         };
     }
 
-    async getResourceLimits(input: { teamId: string; teamClusterId: string }): Promise<{ resourceLimits: ClusterResourceLimitsDTO }> {
+    async getResourceLimits(input: { teamId: string; teamClusterId: string }): Promise<{ resourceLimits: ClusterResourceLimitsView }> {
         await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const metrics = await this.#systemMetricsRepository.getLatestByClusterId(input.teamClusterId);
@@ -858,7 +858,7 @@ export default class ClusterService {
         };
     }
 
-    async revealCredentials(input: { teamId: string; teamClusterId: string; userId: string; password: string }): Promise<{ teamClusterId: string; services: TeamClusterCredentialServicesDTO }> {
+    async revealCredentials(input: { teamId: string; teamClusterId: string; userId: string; password: string }): Promise<{ teamClusterId: string; services: TeamClusterCredentialServicesView }> {
         const doc = await this.#getOwnedTeamClusterWithSensitiveData(input.teamClusterId, input.teamId);
 
         const passwordError = await assertConfirmedPassword({
@@ -874,7 +874,7 @@ export default class ClusterService {
         const services = doc.services;
         const teamClusterId = String(doc._id);
 
-        const revealedServices: TeamClusterCredentialServicesDTO = {
+        const revealedServices: TeamClusterCredentialServicesView = {
             minio: {
                 port: services.minio.port,
                 username: await this.#decryptRequiredValue(services.minio.username, teamClusterId, 'services.minio.username'),
@@ -901,7 +901,7 @@ export default class ClusterService {
         return { teamClusterId: input.teamClusterId, services: revealedServices };
     }
 
-    async createRemoteAccessSession(input: { teamId: string; teamClusterId: string; userId: string; password: string; target: TeamClusterRemoteAccessTargetDTO }): Promise<{ session: TeamClusterRemoteAccessSessionDTO }> {
+    async createRemoteAccessSession(input: { teamId: string; teamClusterId: string; userId: string; password: string; target: TeamClusterRemoteAccessTarget }): Promise<{ session: TeamClusterRemoteAccessSessionView }> {
         await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const passwordError = await assertConfirmedPassword({
@@ -926,11 +926,11 @@ export default class ClusterService {
         return { session };
     }
 
-    async listRemoteExplorerEntries(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTargetDTO; path: string }): Promise<{
+    async listRemoteExplorerEntries(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTarget; path: string }): Promise<{
         teamClusterId: string;
-        target: TeamClusterRemoteAccessTargetDTO;
+        target: TeamClusterRemoteAccessTarget;
         path: string;
-        entries: TeamClusterRemoteExplorerEntryDTO[];
+        entries: TeamClusterRemoteExplorerEntryView[];
     }> {
         const preflight = await this.#preflightRemoteExplorerAccess(input);
 
@@ -951,10 +951,10 @@ export default class ClusterService {
         }
     }
 
-    async getRemoteExplorerNode(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTargetDTO; path: string }): Promise<{
+    async getRemoteExplorerNode(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTarget; path: string }): Promise<{
         teamClusterId: string;
-        target: TeamClusterRemoteAccessTargetDTO;
-        node: TeamClusterRemoteExplorerNodeDTO;
+        target: TeamClusterRemoteAccessTarget;
+        node: TeamClusterRemoteExplorerNodeView;
     }> {
         const preflight = await this.#preflightRemoteExplorerAccess(input);
 
@@ -975,7 +975,7 @@ export default class ClusterService {
         }
     }
 
-    async downloadRemoteExplorerObject(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTargetDTO; path: string }): Promise<{
+    async downloadRemoteExplorerObject(input: { teamId: string; teamClusterId: string; userId: string; sessionId: string; target: TeamClusterRemoteAccessTarget; path: string }): Promise<{
         stream: Readable;
         headers: Record<string, string>;
         prepare?: () => Promise<void>;
@@ -1043,7 +1043,7 @@ export default class ClusterService {
         manualUninstallRequired: boolean;
         message: string;
         manualUninstallCommand?: string;
-        teamCluster?: TeamClusterDTO;
+        teamCluster?: TeamClusterView;
     }> {
         const doc = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
@@ -1121,7 +1121,7 @@ export default class ClusterService {
         };
     }
 
-    async processHealthcheck(input: { teamClusterId: string; enrollmentToken: string; installedVersion?: string }): Promise<{ teamCluster: TeamClusterDTO; daemonPassword: string }> {
+    async processHealthcheck(input: { teamClusterId: string; enrollmentToken: string; installedVersion?: string }): Promise<{ teamCluster: TeamClusterView; daemonPassword: string }> {
         try {
             return await this.#lifecycleService.processHealthcheck(input.teamClusterId, input.enrollmentToken, input.installedVersion);
         } catch (error: unknown) {
@@ -1133,7 +1133,7 @@ export default class ClusterService {
         }
     }
 
-    async generateInstallManifest(input: { teamClusterId: string; daemonPassword: string; installRoot: string; ports: TeamClusterInstallManifestPortsDTO }): Promise<{ manifest: TeamClusterInstallManifestDTO }> {
+    async generateInstallManifest(input: { teamClusterId: string; daemonPassword: string; installRoot: string; ports: TeamClusterInstallManifestPortsView }): Promise<{ manifest: TeamClusterInstallManifestView }> {
         try {
             const manifest = await this.#installManifestService.generateInstallManifest(
                 input.teamClusterId,
@@ -1175,8 +1175,8 @@ export default class ClusterService {
         daemonPassword: string;
         installedVersion?: string;
         runtime?: { roleConfig: TeamClusterRuntimeRoleConfigProps };
-        metrics?: TeamClusterHeartbeatMetricsDTO;
-    }): Promise<{ teamCluster: TeamClusterDTO }> {
+        metrics?: TeamClusterHeartbeatMetricsInput;
+    }): Promise<{ teamCluster: TeamClusterView }> {
         try {
             const teamCluster = await this.#lifecycleService.recordHeartbeat(
                 input.teamClusterId,
@@ -1196,7 +1196,7 @@ export default class ClusterService {
         }
     }
 
-    async updateLifecycle(input: { teamClusterId: string; daemonPassword: string; status: TeamClusterStatus; installedVersion?: string }): Promise<{ teamCluster: TeamClusterDTO }> {
+    async updateLifecycle(input: { teamClusterId: string; daemonPassword: string; status: TeamClusterStatus; installedVersion?: string }): Promise<{ teamCluster: TeamClusterView }> {
         if (input.status === TeamClusterStatus.Connected) {
             throw ApplicationError.badRequest('TeamCluster::SocketLifecycleOnly', 'Connected status is managed by daemon socket registration');
         }
@@ -1223,7 +1223,7 @@ export default class ClusterService {
         }
     }
 
-    async processDaemonJobCompletion(input: ProcessDaemonJobCompletionInputDTO): Promise<ProcessDaemonJobCompletionOutputDTO> {
+    async processDaemonJobCompletion(input: ProcessDaemonJobCompletionInput): Promise<ProcessDaemonJobCompletionOutput> {
         try {
             await this.#lifecycleService.authenticateDaemonConnection(input.teamClusterId, input.daemonPassword);
 
@@ -1340,7 +1340,7 @@ export default class ClusterService {
         }
     }
 
-    async processDaemonSceneArtifactUpsert(input: ProcessDaemonSceneArtifactUpsertInputDTO): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
+    async processDaemonSceneArtifactUpsert(input: ProcessDaemonSceneArtifactUpsertInput): Promise<ProcessDaemonSceneArtifactUpsertOutput> {
         try {
             const entries = await this.#prepareSceneArtifactUpsertEntries([input]);
             await this.#upsertSceneArtifactsByObjectName(entries);
@@ -1357,7 +1357,7 @@ export default class ClusterService {
         }
     }
 
-    async processDaemonSceneArtifactUpsertBatch(inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
+    async processDaemonSceneArtifactUpsertBatch(inputs: ProcessDaemonSceneArtifactUpsertInput[]): Promise<ProcessDaemonSceneArtifactUpsertOutput> {
         try {
             const entries = await this.#prepareSceneArtifactUpsertEntries(inputs);
             await this.#upsertSceneArtifactsByObjectName(entries);
@@ -1390,7 +1390,7 @@ export default class ClusterService {
         return doc;
     }
 
-    async #preflightRemoteExplorerAccess(input: { teamId: string; teamClusterId: string; sessionId: string; target: TeamClusterRemoteAccessTargetDTO; userId: string }): Promise<{ teamClusterId: string; target: TeamClusterRemoteAccessTargetDTO }> {
+    async #preflightRemoteExplorerAccess(input: { teamId: string; teamClusterId: string; sessionId: string; target: TeamClusterRemoteAccessTarget; userId: string }): Promise<{ teamClusterId: string; target: TeamClusterRemoteAccessTarget }> {
         await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
         const sessionResult = this.#remoteAccessSessionService.validateSession({
@@ -1463,13 +1463,13 @@ export default class ClusterService {
         return status !== TeamClusterStatus.Connected;
     }
 
-    #deriveRemoteExplorerFallbackFilename(target: TeamClusterRemoteAccessTargetDTO, path: string): string {
+    #deriveRemoteExplorerFallbackFilename(target: TeamClusterRemoteAccessTarget, path: string): string {
         const lastSegment = path.split('/').filter(Boolean).pop() ?? 'download';
 
-        if (target === TeamClusterRemoteAccessTargetDTO.MongoDocuments) {
+        if (target === TeamClusterRemoteAccessTarget.MongoDocuments) {
             return `${lastSegment}.json`;
         }
-        if (target === TeamClusterRemoteAccessTargetDTO.RedisData) {
+        if (target === TeamClusterRemoteAccessTarget.RedisData) {
             return `${lastSegment}.json`;
         }
         return lastSegment;
@@ -1494,7 +1494,7 @@ export default class ClusterService {
         return bareMatch?.[1]?.trim();
     }
 
-    #presentTeamCluster(doc: TeamClusterDocument, options: { activeTransfers?: ClusterTransferJobDTO[] } = {}): TeamClusterDTO {
+    #presentTeamCluster(doc: TeamClusterDocument, options: { activeTransfers?: ClusterTransferJobView[] } = {}): TeamClusterView {
         const services = doc.services;
         const roleConfig = doc.roleConfig;
         const effectiveCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(roleConfig);
@@ -1533,7 +1533,7 @@ export default class ClusterService {
         };
     }
 
-    #presentQueueConcurrency(queueConcurrency: TeamClusterQueueConcurrencyProps): TeamClusterQueueConcurrencyDTO {
+    #presentQueueConcurrency(queueConcurrency: TeamClusterQueueConcurrencyProps): TeamClusterQueueConcurrencyView {
         return {
             analysis: queueConcurrency.analysis,
             rasterizer: queueConcurrency.rasterizer,
@@ -1543,7 +1543,7 @@ export default class ClusterService {
         };
     }
 
-    #presentQueueScopeLimits(queueScopeLimits: TeamClusterQueueScopeLimitsProps): TeamClusterQueueScopeLimitsDTO {
+    #presentQueueScopeLimits(queueScopeLimits: TeamClusterQueueScopeLimitsProps): TeamClusterQueueScopeLimitsView {
         return {
             analysisProcessing: { maxRunningPerTrajectory: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory },
             artifactUpload: { maxRunningPerTrajectory: queueScopeLimits.artifactUpload.maxRunningPerTrajectory },
@@ -1552,7 +1552,7 @@ export default class ClusterService {
         };
     }
 
-    #presentClusterTransferJob(doc: ClusterTransferJobDocument): ClusterTransferJobDTO {
+    #presentClusterTransferJob(doc: ClusterTransferJobDocument): ClusterTransferJobView {
         return {
             _id: String(doc._id),
             team: String(doc.team),
@@ -1582,7 +1582,7 @@ export default class ClusterService {
         };
     }
 
-    #presentClusterTransferJobEntity(job: ClusterTransferJob): ClusterTransferJobDTO {
+    #presentClusterTransferJobEntity(job: ClusterTransferJob): ClusterTransferJobView {
         return {
             _id: job.id,
             team: job.props.team,
@@ -1606,11 +1606,11 @@ export default class ClusterService {
         };
     }
 
-    #isAnalysisJobStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ProcessDaemonAnalysisJobStatusInputDTO {
+    #isAnalysisJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisJobStatusInput {
         return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
     }
 
-    #isAnalysisStageStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ProcessDaemonAnalysisStageStatusInputDTO {
+    #isAnalysisStageStatusInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisStageStatusInput {
         return 'analysisId' in input
             && 'name' in input
             && 'stageKey' in input
@@ -1618,25 +1618,25 @@ export default class ClusterService {
             && 'stageType' in input;
     }
 
-    #isAnalysisJobCompletionInput(input: ProcessDaemonJobCompletionInputDTO): input is ProcessDaemonAnalysisJobCompletionInputDTO {
+    #isAnalysisJobCompletionInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisJobCompletionInput {
         return 'analysisId' in input && 'name' in input && 'success' in input && !this.#hasJobStatusFields(input);
     }
 
-    #isGlbJobStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ValidProcessDaemonGlbJobStatusInputDTO {
+    #isGlbJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonGlbJobStatusInput {
         return this.#hasJobStatusFields(input)
             && !this.#hasAnalysisJobCompletionFields(input)
             && this.#isGlbJobId(input.jobId)
             && this.#isValidJobStatus(input.status);
     }
 
-    #isArtifactUploadJobStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ValidProcessDaemonArtifactUploadJobStatusInputDTO {
+    #isArtifactUploadJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonArtifactUploadJobStatusInput {
         return this.#hasJobStatusFields(input)
             && !this.#hasAnalysisJobCompletionFields(input)
             && this.#isArtifactUploadJobId(input.jobId)
             && this.#isValidArtifactUploadJobStatus(input.status);
     }
 
-    #isRasterJobStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ValidProcessDaemonRasterJobStatusInputDTO {
+    #isRasterJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonRasterJobStatusInput {
         return this.#hasJobStatusFields(input)
             && !this.#hasAnalysisJobCompletionFields(input)
             && !this.#isGlbJobId(input.jobId)
@@ -1644,11 +1644,11 @@ export default class ClusterService {
             && this.#isValidJobStatus(input.status);
     }
 
-    #hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInputDTO): boolean {
+    #hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInput): boolean {
         return 'name' in input || 'success' in input;
     }
 
-    #hasJobStatusFields(input: ProcessDaemonJobCompletionInputDTO): input is ProcessDaemonRasterJobStatusInputDTO {
+    #hasJobStatusFields(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonRasterJobStatusInput {
         return 'jobId' in input && 'trajectoryId' in input && 'status' in input;
     }
 
@@ -1785,7 +1785,7 @@ export default class ClusterService {
         });
     }
 
-    async #prepareSceneArtifactUpsertEntries(inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]): Promise<PreparedSceneArtifactUpsertEntry[]> {
+    async #prepareSceneArtifactUpsertEntries(inputs: ProcessDaemonSceneArtifactUpsertInput[]): Promise<PreparedSceneArtifactUpsertEntry[]> {
         if (!inputs.length) {
             return [];
         }

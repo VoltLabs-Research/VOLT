@@ -36,7 +36,7 @@ import type {
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
@@ -412,7 +412,7 @@ export default class LatexService {
         return this.#toAssetView(input.teamId, input.documentId, updated);
     }
 
-    async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutputDTO> {
+    async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutput> {
         const document = await this.#requireDocument(input.teamId, input.documentId);
 
         const files = await LatexFileModel.find({ document: input.documentId }).sort({ isEntrypoint: -1, createdAt: 1 }).exec();
@@ -433,7 +433,7 @@ export default class LatexService {
         });
     }
 
-    async exportDocumentZip(input: DocumentScoped): Promise<DownloadStreamOutputDTO> {
+    async exportDocumentZip(input: DocumentScoped): Promise<DownloadStreamOutput> {
         const document = await this.#requireDocument(input.teamId, input.documentId);
         const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
 
@@ -472,7 +472,7 @@ export default class LatexService {
         });
     }
 
-    async compileDocument(input: DocumentScoped): Promise<DownloadStreamOutputDTO> {
+    async compileDocument(input: DocumentScoped): Promise<DownloadStreamOutput> {
         const workDir = this.#tempFileService.getDirPath(
             getDocumentCompileWorkDirSegment(input.teamId, input.documentId)
         );

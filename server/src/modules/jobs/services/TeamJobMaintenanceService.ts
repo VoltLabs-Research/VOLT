@@ -1,6 +1,6 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import redisClient from '@shared/infrastructure/redis/redisClient';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import JobStatusChangedEvent from '@modules/jobs/events/JobStatusChangedEvent';
 import type {
@@ -17,7 +17,7 @@ import type {
 } from '@shared/contracts/events';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type TeamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';

@@ -4,7 +4,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { getRoutes } from '@shared/http/route';
 import { getParamResolvers } from '@shared/http/params';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 const classMiddleware = new WeakMap<object, RequestHandler[]>();
 const handlerMiddleware = new WeakMap<object, Map<string | symbol, RequestHandler[]>>();

@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';

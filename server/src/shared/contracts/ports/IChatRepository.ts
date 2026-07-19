@@ -1,3 +1,3 @@
-export type PersistedChatDTO<TChatProps = unknown> = TChatProps & {
+export type ChatRecord<TChatProps = unknown> = TChatProps & {
     _id: string;
 };

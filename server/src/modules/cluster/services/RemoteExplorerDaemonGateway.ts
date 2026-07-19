@@ -1,15 +1,15 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import { TeamClusterRemoteAccessTarget } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import type {
-    TeamClusterRemoteExplorerEntryDTO,
-    TeamClusterRemoteExplorerNodeDTO
+    TeamClusterRemoteExplorerEntryView,
+    TeamClusterRemoteExplorerNodeView
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelService';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;
-    target: TeamClusterRemoteAccessTargetDTO;
+    target: TeamClusterRemoteAccessTarget;
     path: string;
 }
 
@@ -18,8 +18,8 @@ export class RemoteExplorerDaemonGateway {
 
     async listEntries(
         request: RemoteExplorerDaemonRequest
-    ): Promise<TeamClusterRemoteExplorerEntryDTO[]> {
-        return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerEntryDTO[]>(
+    ): Promise<TeamClusterRemoteExplorerEntryView[]> {
+        return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerEntryView[]>(
             request.teamClusterId,
             ChannelCommands.RemoteExplorerList,
             this.createPayload(request)
@@ -28,8 +28,8 @@ export class RemoteExplorerDaemonGateway {
 
     async getNode(
         request: RemoteExplorerDaemonRequest
-    ): Promise<TeamClusterRemoteExplorerNodeDTO> {
-        return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerNodeDTO>(
+    ): Promise<TeamClusterRemoteExplorerNodeView> {
+        return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerNodeView>(
             request.teamClusterId,
             ChannelCommands.RemoteExplorerNode,
             this.createPayload(request)

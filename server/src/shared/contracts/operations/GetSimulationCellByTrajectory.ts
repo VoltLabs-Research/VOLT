@@ -2,10 +2,10 @@
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 
-export interface GetSimulationCellByTrajectoryInputDTO {
+export interface GetSimulationCellByTrajectoryInput {
     teamId: string;
     trajectoryId: string;
     timestep?: number;
 }
 
-export type GetSimulationCellByTrajectoryOutputDTO = PersistedOutput<SimulationCellProps> | null;
+export type GetSimulationCellByTrajectoryOutput = PersistedOutput<SimulationCellProps> | null;

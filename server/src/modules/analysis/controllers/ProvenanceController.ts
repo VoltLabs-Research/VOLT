@@ -1,12 +1,27 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Param, Query, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
-import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
+import {
+    ProvenanceNotFoundError,
+    ProvenanceService
+} from '@modules/analysis/services/ProvenanceService';
 import { provenanceRoutes } from '@volt/contracts/modules/analysis/routes';
 import type { Response } from 'express';
+
+const sendServiceResult = async <T>(res: Response, operation: () => Promise<T>): Promise<void> => {
+    try {
+        res.json(await operation());
+    } catch (error) {
+        if (error instanceof ProvenanceNotFoundError) {
+            res.status(404).json({ error: error.message });
+            return;
+        }
+        throw error;
+    }
+};
 
 @Middleware(protect, teamScoped(Resource.ANALYSIS))
 export default class ProvenanceController extends Controller {
@@ -30,21 +45,11 @@ export default class ProvenanceController extends Controller {
 
     @Route(provenanceRoutes.get)
     async get(@Param('provenanceId') provenanceId: string, @Res() res: Response): Promise<void> {
-        const record = await this.#service.getProvenance(provenanceId);
-        if (!record) {
-            res.status(404).json({ error: 'Provenance record not found' });
-            return;
-        }
-        res.json(record);
+        await sendServiceResult(res, () => this.#service.getRequired(provenanceId));
     }
 
     @Route(provenanceRoutes.reproduce)
     async reproduce(@Param('provenanceId') provenanceId: string, @Res() res: Response): Promise<void> {
-        const record = await this.#service.getProvenance(provenanceId);
-        if (!record) {
-            res.status(404).json({ error: 'Provenance record not found' });
-            return;
-        }
-        res.json({ command: record.reproductionCommand, provenanceId });
+        await sendServiceResult(res, () => this.#service.getReproduction(provenanceId));
     }
 }

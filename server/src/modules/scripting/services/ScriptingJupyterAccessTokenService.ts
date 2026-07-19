@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import ms from 'ms';
 import type { StringValue } from 'ms';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
 
 interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     type: 'scripting-jupyter';
@@ -103,6 +104,15 @@ export class ScriptingJupyterAccessTokenService {
             runtimeNotebookId: input.runtimeNotebookId,
             userId: input.userId
         }, this.secret, this.signOptions);
+    }
+
+    createAccessGrant(input: CreateScriptingJupyterAccessTokenInput): ScriptingJupyterAccessGrant {
+        return {
+            token: this.create(input),
+            teamId: input.teamId,
+            runtimeNotebookId: input.runtimeNotebookId,
+            maxAgeMs: this.cookieMaxAgeMs
+        };
     }
 
     getCookieMaxAgeMs(): number {

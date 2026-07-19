@@ -1,16 +1,16 @@
-import type { PersistedChatDTO } from '@shared/contracts/ports';
+import type { ChatRecord } from '@shared/contracts/ports';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import type { Analysis, ChatParticipant } from '@shared/contracts/types';
-import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
+import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import type { TeamProps } from '@modules/team/models/team/TeamModel';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type {
-    GetAnalysesByTeamIdItemDTO,
-    ListContainersOutputDTO,
-    PersistedPluginDTO,
-    TrajectoryPersistedDTO
-} from '@shared/contracts/dtos';
+    GetAnalysesByTeamIdItemView,
+    ListContainersOutput,
+    PluginRecord,
+    TrajectoryRecord
+} from '@shared/contracts/operations';
 import { findByTeamAndSearch } from '@modules/analysis/models/analysis-queries';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
@@ -56,7 +56,7 @@ export interface PluginSearchProps {
     workflow?: unknown;
 }
 
-export type PluginSearchDTO = PersistedPluginDTO<PluginSearchProps, unknown>;
+export type PluginSearchRecord = PluginRecord<PluginSearchProps, unknown>;
 
 export interface GetGlobalSearchInput {
     teamId: string;
@@ -66,12 +66,12 @@ export interface GetGlobalSearchInput {
 }
 
 export interface GetGlobalSearchResult {
-    analyses: GetAnalysesByTeamIdItemDTO[];
-    containers: ListContainersOutputDTO<ContainerSearchView>['data'];
-    trajectories: TrajectoryPersistedDTO[];
+    analyses: GetAnalysesByTeamIdItemView[];
+    containers: ListContainersOutput<ContainerSearchView>['data'];
+    trajectories: TrajectoryRecord[];
     teams: PersistedOutput<TeamProps>[];
-    plugins: PluginSearchDTO[];
-    chats: PersistedChatDTO<ChatSearchView>[];
+    plugins: PluginSearchRecord[];
+    chats: ChatRecord<ChatSearchView>[];
 }
 
 const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
@@ -83,7 +83,7 @@ const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
     chats: []
 };
 
-type PluginEntity = Parameters<typeof mapPluginToPersistedDTO>[0];
+type PluginEntity = Parameters<typeof mapPluginToRecord>[0];
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 10;
@@ -122,7 +122,7 @@ const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
     return searchTokens;
 };
 
-const getLastMessageContent = (chat: PersistedChatDTO<ChatSearchView>): string | undefined => {
+const getLastMessageContent = (chat: ChatRecord<ChatSearchView>): string | undefined => {
     const lastMessage = chat.lastMessage;
     if (typeof lastMessage !== 'object' || lastMessage === null) {
         return undefined;
@@ -231,8 +231,8 @@ export default class DashboardService {
                     team.description
                 ))
                 .slice(0, limit),
-            plugins: pluginsResult.data.map((plugin): PluginSearchDTO => mapPluginToPersistedDTO(plugin)),
-            chats: (chats as unknown as PersistedChatDTO<ChatSearchView>[])
+            plugins: pluginsResult.data.map((plugin): PluginSearchRecord => mapPluginToRecord(plugin)),
+            chats: (chats as unknown as ChatRecord<ChatSearchView>[])
                 .filter((chat) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
                     getLastMessageContent(chat),
@@ -300,7 +300,7 @@ export default class DashboardService {
         return docs.map((doc) => doc._id.toString());
     }
 
-    async #searchTrajectories(teamId: string, regex: RegExp, limit: number): Promise<TrajectoryPersistedDTO[]> {
+    async #searchTrajectories(teamId: string, regex: RegExp, limit: number): Promise<TrajectoryRecord[]> {
         const docs = await TrajectoryModel.find({ team: teamId, name: regex })
             .sort({ updatedAt: -1 })
             .limit(limit)

@@ -1,4 +1,4 @@
-import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
 
 export const getConfiguredOAuthProviders = (): OAuthProvider[] => {
     const providers: OAuthProvider[] = [];

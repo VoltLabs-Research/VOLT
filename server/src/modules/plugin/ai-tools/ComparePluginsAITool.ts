@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import type { PersistedPluginDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import type { PluginRecord } from '@modules/plugin/utilities/mappers/plugin/mapPluginToRecord';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 
@@ -14,7 +14,7 @@ interface PluginTopology {
     nodeTypeCounts: Record<string, number>;
 }
 
-const summarize = (plugin: PersistedPluginDTO): PluginTopology => {
+const summarize = (plugin: PluginRecord): PluginTopology => {
     const nodes = plugin.workflow?.nodes ?? [];
     const edges = plugin.workflow?.edges ?? [];
     const nodeTypeCounts: Record<string, number> = {};

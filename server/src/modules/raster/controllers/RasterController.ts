@@ -1,14 +1,14 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Param, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import RasterService from '@modules/raster/services/RasterService';
 import { rasterRoutes } from '@volt/contracts/modules/raster/routes';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.RASTER))
@@ -48,7 +48,7 @@ export default class RasterController extends Controller {
         await this.#pipeStream(res, output);
     }
 
-    #pipeStream(res: Response, output: DownloadStreamOutputDTO): Promise<void> {
+    #pipeStream(res: Response, output: DownloadStreamOutput): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(output.headers)) {
                 res.setHeader(name, value);

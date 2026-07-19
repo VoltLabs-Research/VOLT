@@ -1,4 +1,4 @@
-import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
 import BaseOAuthStrategy from '@modules/auth/oauth/BaseOAuthStrategy';
 import type AuthService from '@modules/auth/services/AuthService';
 import { Strategy as GithubStrategy } from 'passport-github2';

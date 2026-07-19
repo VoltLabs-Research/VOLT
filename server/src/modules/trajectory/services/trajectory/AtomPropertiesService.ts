@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, PluginLike, WorkflowNodeLike } from '@shared/contracts/types';
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';

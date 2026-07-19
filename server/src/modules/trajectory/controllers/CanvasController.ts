@@ -1,7 +1,8 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { authenticateOptional, AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
+import { authenticateOptional } from '@modules/auth/middlewares/authentication';
+import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import {
     sendTrajectoryPreview,
@@ -12,7 +13,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 @Middleware(authenticateOptional)

@@ -1,8 +1,8 @@
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
-import { TeamClusterDTO, toTeamClusterDTO } from '@modules/cluster/dtos/TeamClusterDTO';
+import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/contracts/TeamClusterHeartbeat';
+import { TeamClusterView, toTeamClusterView } from '@modules/cluster/presenters/TeamClusterPresenter';
 import TeamClusterModel, { toTeamClusterLike, type TeamCluster, type TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
 import {
     TeamClusterRuntimeRoleConfigProps,
@@ -120,7 +120,7 @@ interface TeamClusterLifecycleEventPayload {
     teamClusterId: string;
     teamId: string;
     deleted: boolean;
-    teamCluster?: TeamClusterDTO;
+    teamCluster?: TeamClusterView;
     status?: TeamClusterStatus;
     timestamp: string;
 }
@@ -131,7 +131,7 @@ export class TeamClusterLifecycleService {
     private readonly systemMetricsRepository = systemMetricsRepository;
 
     async processHealthcheck(teamClusterId: string, enrollmentToken: string, installedVersion?: string): Promise<{
-        teamCluster: TeamClusterDTO;
+        teamCluster: TeamClusterView;
         daemonPassword: string;
     }> {
         const teamCluster = await this.daemonCredentialGuard.requireByEnrollment(teamClusterId, enrollmentToken);
@@ -148,7 +148,7 @@ export class TeamClusterLifecycleService {
         });
 
         return {
-            teamCluster: toTeamClusterDTO(updatedTeamCluster),
+            teamCluster: toTeamClusterView(updatedTeamCluster),
             daemonPassword
         };
     }
@@ -158,7 +158,7 @@ export class TeamClusterLifecycleService {
         daemonPassword: string,
         status: TeamClusterStatus,
         installedVersion?: string
-    ): Promise<TeamClusterDTO> {
+    ): Promise<TeamClusterView> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
 
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
@@ -172,7 +172,7 @@ export class TeamClusterLifecycleService {
             logContext: 'lifecycle-status'
         });
 
-        return toTeamClusterDTO(updatedTeamCluster);
+        return toTeamClusterView(updatedTeamCluster);
     }
 
     async recordHeartbeat(
@@ -182,8 +182,8 @@ export class TeamClusterLifecycleService {
         runtime?: {
             roleConfig: TeamClusterRuntimeRoleConfigProps;
         },
-        metrics?: TeamClusterHeartbeatMetricsDTO
-    ): Promise<TeamClusterDTO> {
+        metrics?: TeamClusterHeartbeatMetricsInput
+    ): Promise<TeamClusterView> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: teamCluster.props.status,
@@ -207,10 +207,10 @@ export class TeamClusterLifecycleService {
             this.emitMetricsUpdate(updatedTeamCluster, systemMetrics);
         }
 
-        return toTeamClusterDTO(updatedTeamCluster);
+        return toTeamClusterView(updatedTeamCluster);
     }
 
-    async markDaemonConnected(teamClusterId: string): Promise<TeamClusterDTO> {
+    async markDaemonConnected(teamClusterId: string): Promise<TeamClusterView> {
         const teamCluster = await this.requireTeamClusterById(teamClusterId);
         const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
             ? teamCluster.props.status
@@ -226,10 +226,10 @@ export class TeamClusterLifecycleService {
             logContext: 'daemon-socket-connected'
         });
 
-        return toTeamClusterDTO(updatedTeamCluster);
+        return toTeamClusterView(updatedTeamCluster);
     }
 
-    async markDaemonDisconnected(teamClusterId: string): Promise<TeamClusterDTO> {
+    async markDaemonDisconnected(teamClusterId: string): Promise<TeamClusterView> {
         const teamCluster = await this.requireTeamClusterById(teamClusterId);
         const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
             ? teamCluster.props.status
@@ -246,10 +246,10 @@ export class TeamClusterLifecycleService {
             logContext: 'daemon-socket-disconnected'
         });
 
-        return toTeamClusterDTO(updatedTeamCluster);
+        return toTeamClusterView(updatedTeamCluster);
     }
 
-    private toSystemMetrics(teamClusterId: string, metrics: TeamClusterHeartbeatMetricsDTO): SystemMetrics {
+    private toSystemMetrics(teamClusterId: string, metrics: TeamClusterHeartbeatMetricsInput): SystemMetrics {
         const timestamp = new Date(metrics.timestamp);
         const safeTimestamp = Number.isNaN(timestamp.getTime()) ? new Date() : timestamp;
 
@@ -313,7 +313,7 @@ export class TeamClusterLifecycleService {
         await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
     }
 
-    async markDeleting(teamClusterId: string): Promise<TeamClusterDTO> {
+    async markDeleting(teamClusterId: string): Promise<TeamClusterView> {
         const teamCluster = await this.requireTeamClusterById(teamClusterId);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.Deleting
@@ -324,7 +324,7 @@ export class TeamClusterLifecycleService {
             logContext: 'mark-deleting'
         });
 
-        return toTeamClusterDTO(updatedTeamCluster);
+        return toTeamClusterView(updatedTeamCluster);
     }
 
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {
@@ -489,7 +489,7 @@ export class TeamClusterLifecycleService {
             teamClusterId: teamCluster.id,
             teamId: teamCluster.props.team,
             deleted: false,
-            teamCluster: toTeamClusterDTO(teamCluster),
+            teamCluster: toTeamClusterView(teamCluster),
             status: teamCluster.props.status,
             timestamp: new Date().toISOString()
         };

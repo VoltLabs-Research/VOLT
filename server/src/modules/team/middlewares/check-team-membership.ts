@@ -6,8 +6,8 @@ import {
 } from '@modules/team/models/team-member/TeamMemberModel';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
+import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import {
     HttpRequestTeamContextSource,
     setHttpRequestContextTeam,

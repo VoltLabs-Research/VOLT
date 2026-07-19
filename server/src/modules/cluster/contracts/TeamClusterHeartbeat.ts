@@ -1,5 +1,5 @@
 
-export interface TeamClusterHeartbeatMetricsDTO {
+export interface TeamClusterHeartbeatMetricsInput {
     timestamp: string;
     hostname: string;
     uptimeSeconds: number;

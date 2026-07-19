@@ -2,7 +2,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import type { Response } from 'express';
 import type { IUseCase, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
@@ -18,8 +18,8 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
     }
 
     protected executeUseCase(req: AuthenticatedRequest): Promise<UseCaseOutput<TUseCase>> {
-        const dto = this.getParams(req);
-        return (this.useCase as IUseCase<UseCaseInput<TUseCase>, UseCaseOutput<TUseCase>>).execute(dto);
+        const input = this.getParams(req);
+        return (this.useCase as IUseCase<UseCaseInput<TUseCase>, UseCaseOutput<TUseCase>>).execute(input);
     }
 
     protected handleSuccess(_req: AuthenticatedRequest, res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {

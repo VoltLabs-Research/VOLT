@@ -1,4 +1,4 @@
-import type { ColumnDef, ListingRowData } from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
+import type { ColumnDef, ListingRowData } from '@shared/contracts/operations/GetPluginListingDocuments';
 
 export interface DaemonListingRow {
     _id: string;

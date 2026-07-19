@@ -1,6 +1,6 @@
 
 
-export interface GetAtomsColumnarInputDTO {
+export interface GetAtomsColumnarInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -17,7 +17,7 @@ export interface AtomColumn {
     buffer: Uint8Array;
 }
 
-export interface GetAtomsColumnarOutputDTO {
+export interface GetAtomsColumnarOutput {
     count: number;
     total: number;
     page: number;

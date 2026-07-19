@@ -1,7 +1,7 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser } from '@shared/http/params';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { checkTeamMembership } from '@modules/team/middlewares/check-team-membership';
 import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
 import { uploadToStorage } from '@modules/chat/middlewares/upload-to-storage';

@@ -1,5 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
@@ -25,7 +25,7 @@ import PluginCreatedEvent from '@modules/plugin/events/PluginCreatedEvent';
 import PluginDeletedEvent from '@modules/plugin/events/PluginDeletedEvent';
 import PluginPublishedEvent from '@modules/plugin/events/PluginPublishedEvent';
 
-import { mapPluginToPersistedDTO, type PersistedPluginDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import { mapPluginToRecord, type PluginRecord } from '@modules/plugin/utilities/mappers/plugin/mapPluginToRecord';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
 import { computeDumpStageHash, computePipelineStageHash } from '@modules/plugin/utilities/plugin/pipeline-stage-hash';
@@ -40,14 +40,14 @@ import { resolveListingPagination } from '@modules/plugin/utilities/listing-row/
 import { mapDaemonRow, type DaemonListingRow, type DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
 import type {
-    GetAnalysisListingExportOptionsInputDTO,
-    GetAnalysisListingExportOptionsOutputDTO,
-    GetListingRowsByAnalysisIdInputDTO,
-    GetListingRowsByAnalysisIdOutputDTO,
+    GetAnalysisListingExportOptionsInput,
+    GetAnalysisListingExportOptionsOutput,
+    GetListingRowsByAnalysisIdInput,
+    GetListingRowsByAnalysisIdOutput,
     ListingRowByAnalysisData,
-    ExportListingRowsByAnalysisIdInputDTO,
-    SummarizeAnalysisResultInputDTO,
-    SummarizeAnalysisResultOutputDTO,
+    ExportListingRowsByAnalysisIdInput,
+    SummarizeAnalysisResultInput,
+    SummarizeAnalysisResultOutput,
     ColumnStats,
     SummarizedColumn,
     SummarizedExposure
@@ -80,39 +80,39 @@ import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import type { Analysis, AnalysisExpectedArtifact, SceneArtifactProps } from '@shared/contracts/types';
 import { SceneArtifactSourceType } from '@shared/contracts/types';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
-import type { GetPluginByIdInputDTO } from '@shared/contracts/dtos/GetPluginByIdDTO';
-import type { GetPluginExposureGLBInputDTO, GetPluginExposureGLBOutputDTO } from '@shared/contracts/dtos/GetPluginExposureGLBDTO';
-import type { GetPluginExposureExportInputDTO, GetPluginExposureExportOutputDTO } from '@shared/contracts/dtos/GetPluginExposureExportDTO';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
+import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
+import type { GetPluginExposureGLBInput, GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
+import type { GetPluginExposureExportInput, GetPluginExposureExportOutput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type {
-    ExportPluginListingDocumentsInputDTO,
-    GetPluginListingDocumentsInputDTO,
-    GetPluginListingDocumentsOutputDTO,
+    ExportPluginListingDocumentsInput,
+    GetPluginListingDocumentsInput,
+    GetPluginListingDocumentsOutput,
     PluginListingDocumentsMeta
-} from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
-import type { GetSubListingInputDTO, GetSubListingOutputDTO, SubListingColumn } from '@shared/contracts/dtos/GetSubListingDTO';
+} from '@shared/contracts/operations/GetPluginListingDocuments';
+import type { GetSubListingInput, GetSubListingOutput, SubListingColumn } from '@shared/contracts/operations/GetSubListing';
 import logger from '@shared/infrastructure/logger';
 import { Readable } from 'node:stream';
 
-export interface ClonePluginInputDTO {
+export interface ClonePluginInput {
     pluginId: string;
     teamId: string;
 }
 
-export interface CreatePluginInputDTO {
+export interface CreatePluginInput {
     workflow: WorkflowProps;
     teamId: string;
 }
 
-export interface DeleteBinaryInputDTO {
+export interface DeleteBinaryInput {
     pluginId: string;
 }
 
-export interface DeletePluginByIdInputDTO {
+export interface DeletePluginByIdInput {
     pluginId: string;
 }
 
-export interface DescribePluginArgumentsInputDTO {
+export interface DescribePluginArgumentsInput {
     pluginId: string;
 }
 
@@ -136,18 +136,18 @@ export interface DescribedPluginArgument {
     note?: string;
 }
 
-export interface DescribePluginArgumentsOutputDTO {
+export interface DescribePluginArgumentsOutput {
     pluginId: string;
     name: string;
     arguments: DescribedPluginArgument[];
 }
 
-export interface DownloadPluginBinaryInputDTO {
+export interface DownloadPluginBinaryInput {
     teamId: string;
     pluginId: string;
 }
 
-export interface DownloadPluginBinaryOutputDTO extends DownloadStreamOutputDTO {
+export interface DownloadPluginBinaryOutput extends DownloadStreamOutput {
     fileName: string;
 }
 
@@ -159,7 +159,7 @@ export interface PipelineStageInput {
     config: Record<string, unknown>;
 }
 
-export interface ExecutePipelineInputDTO {
+export interface ExecutePipelineInput {
     trajectoryId: string;
     userId: string;
     teamId: string;
@@ -169,19 +169,19 @@ export interface ExecutePipelineInputDTO {
     stages: PipelineStageInput[];
 }
 
-export interface ExecutePipelineOutputDTO {
+export interface ExecutePipelineOutput {
     analysisIds: string[];
 }
 
-export interface ExportPluginInputDTO {
+export interface ExportPluginInput {
     pluginId: string;
 }
 
-export interface ExportPluginOutputDTO extends DownloadStreamOutputDTO {
+export interface ExportPluginOutput extends DownloadStreamOutput {
     fileName: string;
 }
 
-export interface GetNodeTypesSchemaOutputDTO {
+export interface GetNodeTypesSchemaOutput {
     nodeTypes: Record<string, string[]>;
 }
 
@@ -193,43 +193,43 @@ interface ImportPluginFile {
     size?: number;
 }
 
-export interface ImportPluginInputDTO {
+export interface ImportPluginInput {
     file: ImportPluginFile;
     teamId: string;
 }
 
-export interface ListPluginsInputDTO {
+export interface ListPluginsInput {
     teamId: string;
     page?: number;
     limit?: number;
     status?: string;
 }
 
-export interface ListPluginsOutputDTO extends PaginatedResult<PersistedPluginDTO> {}
+export interface ListPluginsOutput extends PaginatedResult<PluginRecord> {}
 
-export interface RegistryInstallPluginInputDTO {
+export interface RegistryInstallPluginInput {
     teamId: string;
     name: string;
     version?: string;
 }
 
-export interface SearchRegistryPluginsInputDTO {
+export interface SearchRegistryPluginsInput {
     teamId: string;
     q?: string;
     page?: number;
     limit?: number;
 }
 
-export interface SearchRegistryPluginsOutputDTO extends RegistrySearchResult {}
+export interface SearchRegistryPluginsOutput extends RegistrySearchResult {}
 
-export interface UpdatePluginByIdInputDTO {
+export interface UpdatePluginByIdInput {
     pluginId: string;
     workflow?: WorkflowProps;
     status?: PluginStatus;
     _allowBinaryFieldUpdate?: boolean;
 }
 
-export interface UploadBinaryInputDTO {
+export interface UploadBinaryInput {
     pluginId: string;
     teamId: string;
     userId: string;
@@ -239,7 +239,7 @@ export interface UploadBinaryInputDTO {
     sha256?: string;
 }
 
-export interface CommitBinaryUploadInputDTO {
+export interface CommitBinaryUploadInput {
     pluginId: string;
     teamId: string;
     userId: string;
@@ -249,23 +249,23 @@ export interface CommitBinaryUploadInputDTO {
     sha256?: string;
 }
 
-export interface ValidateWorkflowInputDTO {
+export interface ValidateWorkflowInput {
     workflow: WorkflowProps;
     pluginId?: string;
 }
 
-export interface ValidateWorkflowOutputDTO {
+export interface ValidateWorkflowOutput {
     validated: boolean;
     errors?: string[];
     modifier?: WorkflowNode;
 }
 
-export interface GetPluginExposureChartInputDTO {
+export interface GetPluginExposureChartInput {
     teamId: string;
     artifactId: string;
 }
 
-export type GetPluginExposureChartOutputDTO = DownloadStreamOutputDTO;
+export type GetPluginExposureChartOutput = DownloadStreamOutput;
 
 const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 
@@ -358,7 +358,7 @@ const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData =>
     };
 };
 
-const EMPTY_LISTING_ROWS_RESULT: GetListingRowsByAnalysisIdOutputDTO = {
+const EMPTY_LISTING_ROWS_RESULT: GetListingRowsByAnalysisIdOutput = {
     data: [],
     total: 0,
     page: 1,
@@ -366,7 +366,7 @@ const EMPTY_LISTING_ROWS_RESULT: GetListingRowsByAnalysisIdOutputDTO = {
     limit: 0
 };
 
-const emptySubListingResult = (subListingName: string): GetSubListingOutputDTO => ({
+const emptySubListingResult = (subListingName: string): GetSubListingOutput => ({
     subListingName,
     columns: [],
     rows: [],
@@ -380,7 +380,7 @@ const buildPluginListingDocumentsMeta = (
     pluginId: string,
     rows: DaemonListingRow[],
     daemonResult: DaemonPaginatedResult,
-    input: GetPluginListingDocumentsInputDTO
+    input: GetPluginListingDocumentsInput
 ): PluginListingDocumentsMeta => {
     const firstRow = rows[0];
 
@@ -397,7 +397,7 @@ const buildPluginListingDocumentsMeta = (
     };
 };
 
-const EMPTY_PLUGIN_LISTING_DOCUMENTS_RESULT: GetPluginListingDocumentsOutputDTO = {
+const EMPTY_PLUGIN_LISTING_DOCUMENTS_RESULT: GetPluginListingDocumentsOutput = {
     data: [],
     total: 0,
     page: 1,
@@ -511,13 +511,13 @@ export default class PluginService {
 
         #eventBus = eventBus;
 
-    async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutputDTO> {
+    async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutput> {
         return {
             nodeTypes: NODE_OUTPUT_PROPERTIES
         };
     }
 
-    async validateWorkflow(input: ValidateWorkflowInputDTO): Promise<ValidateWorkflowOutputDTO> {
+    async validateWorkflow(input: ValidateWorkflowInput): Promise<ValidateWorkflowOutput> {
         const validation = await this.#workflowValidator.validate(input.workflow, input.pluginId, WorkflowValidationMode.Strict);
 
         return {
@@ -527,7 +527,7 @@ export default class PluginService {
         };
     }
 
-    async exportPlugin(input: ExportPluginInputDTO): Promise<ExportPluginOutputDTO> {
+    async exportPlugin(input: ExportPluginInput): Promise<ExportPluginOutput> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
 
@@ -551,7 +551,7 @@ export default class PluginService {
         };
     }
 
-    async importPlugin(input: ImportPluginInputDTO): Promise<PersistedPluginDTO> {
+    async importPlugin(input: ImportPluginInput): Promise<PluginRecord> {
         const data = await this.#pluginStorageService.importPlugin(
             input.file.buffer,
             input.teamId
@@ -562,14 +562,14 @@ export default class PluginService {
             teamId: input.teamId
         }));
 
-        return mapPluginToPersistedDTO(data.plugin);
+        return mapPluginToRecord(data.plugin);
     }
 
-    async searchRegistry(input: SearchRegistryPluginsInputDTO): Promise<SearchRegistryPluginsOutputDTO> {
+    async searchRegistry(input: SearchRegistryPluginsInput): Promise<SearchRegistryPluginsOutput> {
         return this.#registryGateway.search(input.q ?? '', input.page ?? 1, input.limit ?? 20);
     }
 
-    async installRegistry(input: RegistryInstallPluginInputDTO): Promise<PersistedPluginDTO> {
+    async installRegistry(input: RegistryInstallPluginInput): Promise<PluginRecord> {
         if (!input.name) {
             throw ApplicationError.badRequest('Registry::PackageNameRequired', 'A registry package name is required');
         }
@@ -603,10 +603,10 @@ export default class PluginService {
             teamId: input.teamId
         }));
 
-        return mapPluginToPersistedDTO(plugin);
+        return mapPluginToRecord(plugin);
     }
 
-    async listPlugins(input: ListPluginsInputDTO): Promise<ListPluginsOutputDTO> {
+    async listPlugins(input: ListPluginsInput): Promise<ListPluginsOutput> {
         const filter: Record<string, unknown> = {
             team: input.teamId,
             ...(input.status ? { status: input.status as PluginStatus } : {})
@@ -620,7 +620,7 @@ export default class PluginService {
             PluginModel.countDocuments(filter)
         ]);
 
-        const data = docs.map((doc) => mapPluginToPersistedDTO(toPluginLike(doc)));
+        const data = docs.map((doc) => mapPluginToRecord(toPluginLike(doc)));
 
         return {
             data,
@@ -631,7 +631,7 @@ export default class PluginService {
         };
     }
 
-    async createPlugin(input: CreatePluginInputDTO): Promise<{ plugin: PersistedPluginDTO }> {
+    async createPlugin(input: CreatePluginInput): Promise<{ plugin: PluginRecord }> {
         const validation = await this.#workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Draft);
         if (!validation.isValid) {
             throw ApplicationError.badRequest(
@@ -660,11 +660,11 @@ export default class PluginService {
         }));
 
         return {
-            plugin: mapPluginToPersistedDTO(plugin)
+            plugin: mapPluginToRecord(plugin)
         };
     }
 
-    async commitBinaryUpload(input: CommitBinaryUploadInputDTO): Promise<BinaryUploadResult> {
+    async commitBinaryUpload(input: CommitBinaryUploadInput): Promise<BinaryUploadResult> {
         return this.#pluginStorageService.commitBinaryUpload(
             input.pluginId,
             input.teamId,
@@ -677,7 +677,7 @@ export default class PluginService {
         );
     }
 
-    async downloadBinary(input: DownloadPluginBinaryInputDTO): Promise<DownloadPluginBinaryOutputDTO> {
+    async downloadBinary(input: DownloadPluginBinaryInput): Promise<DownloadPluginBinaryOutput> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
@@ -745,7 +745,7 @@ export default class PluginService {
         };
     }
 
-    async uploadBinary(input: UploadBinaryInputDTO): Promise<BinaryUploadTarget> {
+    async uploadBinary(input: UploadBinaryInput): Promise<BinaryUploadTarget> {
         return this.#pluginStorageService.createBinaryUploadTarget(
             input.pluginId,
             input.teamId,
@@ -759,12 +759,12 @@ export default class PluginService {
         );
     }
 
-    async deleteBinary(input: DeleteBinaryInputDTO): Promise<null> {
+    async deleteBinary(input: DeleteBinaryInput): Promise<null> {
         await this.#pluginStorageService.deleteBinary(input.pluginId);
         return null;
     }
 
-    async clonePlugin(input: ClonePluginInputDTO): Promise<{ plugin: PersistedPluginDTO }> {
+    async clonePlugin(input: ClonePluginInput): Promise<{ plugin: PluginRecord }> {
         const originalDoc = await PluginModel.findById(input.pluginId);
         const original = originalDoc ? toPluginLike(originalDoc) : null;
         if (!original) {
@@ -813,11 +813,11 @@ export default class PluginService {
         }));
 
         return {
-            plugin: mapPluginToPersistedDTO(plugin)
+            plugin: mapPluginToRecord(plugin)
         };
     }
 
-    async getPluginById(input: GetPluginByIdInputDTO): Promise<PersistedPluginDTO> {
+    async getPluginById(input: GetPluginByIdInput): Promise<PluginRecord> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
@@ -827,10 +827,10 @@ export default class PluginService {
             );
         }
 
-        return mapPluginToPersistedDTO(plugin);
+        return mapPluginToRecord(plugin);
     }
 
-    async updatePluginById(input: UpdatePluginByIdInputDTO): Promise<PersistedPluginDTO> {
+    async updatePluginById(input: UpdatePluginByIdInput): Promise<PluginRecord> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
@@ -927,10 +927,10 @@ export default class PluginService {
             });
         }
 
-        return mapPluginToPersistedDTO(updatedPlugin);
+        return mapPluginToRecord(updatedPlugin);
     }
 
-    async deletePluginById(input: DeletePluginByIdInputDTO): Promise<null> {
+    async deletePluginById(input: DeletePluginByIdInput): Promise<null> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
@@ -957,7 +957,7 @@ export default class PluginService {
         return null;
     }
 
-    async describePluginArguments(input: DescribePluginArgumentsInputDTO): Promise<DescribePluginArgumentsOutputDTO> {
+    async describePluginArguments(input: DescribePluginArgumentsInput): Promise<DescribePluginArgumentsOutput> {
         const pluginDoc = await PluginModel.findById(input.pluginId);
         const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
@@ -1041,7 +1041,7 @@ export default class PluginService {
         return notes.length ? notes.join(' ') : undefined;
     }
 
-    async executePipeline(input: ExecutePipelineInputDTO): Promise<ExecutePipelineOutputDTO> {
+    async executePipeline(input: ExecutePipelineInput): Promise<ExecutePipelineOutput> {
         if (input.stages.length === 0) {
             throw ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
@@ -1152,7 +1152,7 @@ export default class PluginService {
 
     async #buildPluginStage(
         stage: PipelineStageInput,
-        input: ExecutePipelineInputDTO,
+        input: ExecutePipelineInput,
         trajectoryName: string,
         storageClusterId: string | undefined,
         computeClusterId: string,
@@ -1313,7 +1313,7 @@ export default class PluginService {
         };
     }
 
-    async getPluginExposureGLB(input: GetPluginExposureGLBInputDTO): Promise<GetPluginExposureGLBOutputDTO> {
+    async getPluginExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {
         const analysis = await AnalysisModel.findById(String(input.analysisId));
 
         if (!analysis) {
@@ -1405,7 +1405,7 @@ export default class PluginService {
         }
     }
 
-    async getPluginExposureChart(input: GetPluginExposureChartInputDTO): Promise<GetPluginExposureChartOutputDTO> {
+    async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<GetPluginExposureChartOutput> {
         const artifact = await SceneArtifactModel.findById(String(input.artifactId));
         if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
             throw ApplicationError.notFound(
@@ -1467,7 +1467,7 @@ export default class PluginService {
         }
     }
 
-    async getPluginExposureExport(input: GetPluginExposureExportInputDTO): Promise<GetPluginExposureExportOutputDTO> {
+    async getPluginExposureExport(input: GetPluginExposureExportInput): Promise<GetPluginExposureExportOutput> {
         const analysis = await AnalysisModel.findById(String(input.analysisId));
 
         if (!analysis) {
@@ -1500,7 +1500,7 @@ export default class PluginService {
         });
     }
 
-    async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInputDTO): Promise<GetListingRowsByAnalysisIdOutputDTO> {
+    async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInput): Promise<GetListingRowsByAnalysisIdOutput> {
         const { page, limit } = resolveListingPagination(input);
 
         const analysis = await AnalysisModel.findById(input.analysisId);
@@ -1537,17 +1537,17 @@ export default class PluginService {
         };
     }
 
-    async getAnalysisListingExportOptions(input: GetAnalysisListingExportOptionsInputDTO): Promise<GetAnalysisListingExportOptionsOutputDTO> {
+    async getAnalysisListingExportOptions(input: GetAnalysisListingExportOptionsInput): Promise<GetAnalysisListingExportOptionsOutput> {
         return this.#analysisListingExportCatalogService.getExportOptions(input.analysisId);
     }
 
-    async exportListingRowsByAnalysisId(input: ExportListingRowsByAnalysisIdInputDTO): Promise<DownloadStreamOutputDTO> {
+    async exportListingRowsByAnalysisId(input: ExportListingRowsByAnalysisIdInput): Promise<DownloadStreamOutput> {
         const payload = await this.#analysisListingExportCatalogService.buildExportPayload(input);
 
         return this.#listingRowsExportPresenter.present(payload);
     }
 
-    async getSubListing(input: GetSubListingInputDTO): Promise<GetSubListingOutputDTO> {
+    async getSubListing(input: GetSubListingInput): Promise<GetSubListingOutput> {
         const { page, limit } = resolveListingPagination(input);
 
         const analysis = await AnalysisModel.findById(input.analysisId);
@@ -1601,7 +1601,7 @@ export default class PluginService {
         };
     }
 
-    async exportPluginListingDocuments(input: ExportPluginListingDocumentsInputDTO): Promise<DownloadStreamOutputDTO> {
+    async exportPluginListingDocuments(input: ExportPluginListingDocumentsInput): Promise<DownloadStreamOutput> {
         const format = input.format ?? ExportType.Json;
 
         const resolved = await this.#resolvePluginListingTeamCluster(input);
@@ -1654,7 +1654,7 @@ export default class PluginService {
         });
     }
 
-    async getPluginListingDocuments(input: GetPluginListingDocumentsInputDTO): Promise<GetPluginListingDocumentsOutputDTO> {
+    async getPluginListingDocuments(input: GetPluginListingDocumentsInput): Promise<GetPluginListingDocumentsOutput> {
         const { page, limit } = resolveListingPagination(input);
 
         const resolved = await this.#resolvePluginListingTeamCluster(input);
@@ -1726,7 +1726,7 @@ export default class PluginService {
         return null;
     }
 
-    async summarizeAnalysisResult(input: SummarizeAnalysisResultInputDTO): Promise<SummarizeAnalysisResultOutputDTO> {
+    async summarizeAnalysisResult(input: SummarizeAnalysisResultInput): Promise<SummarizeAnalysisResultOutput> {
         const analysis = await AnalysisModel.findById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound(
@@ -1792,7 +1792,7 @@ export default class PluginService {
         pluginDisplayName: string,
         status: string,
         note: string
-    ): SummarizeAnalysisResultOutputDTO {
+    ): SummarizeAnalysisResultOutput {
         return {
             analysisId,
             pluginDisplayName,

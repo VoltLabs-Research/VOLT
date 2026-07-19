@@ -1,9 +1,11 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
+import { attachScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -36,6 +38,7 @@ export interface ScriptingSessionStartInput {
 export interface ScriptingSessionStartResult {
     notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
+    accessGrant: ScriptingJupyterAccessGrant;
 }
 
 interface DaemonNotebookJupyterResponse {
@@ -112,7 +115,7 @@ export class DaemonScriptingSessionOrchestrator {
 
         const jupyter = this.requireDaemonJupyterResponse(response);
         const daemonPath = jupyter.internalPath;
-        const accessToken = this.accessTokenService.create({
+        const accessGrant = this.accessTokenService.createAccessGrant({
             teamId: input.teamId,
             runtimeNotebookId,
             userId: input.userId
@@ -121,16 +124,16 @@ export class DaemonScriptingSessionOrchestrator {
             teamId: input.teamId,
             runtimeNotebookId,
             daemonPath,
-            accessToken
+            accessToken: accessGrant.token
         });
-        return {
+        return attachScriptingJupyterAccessGrant({
             notebookId: input.notebookId,
             jupyter: {
                 ...jupyter,
                 url: jupyterUrl,
                 containerStage: jupyter.containerStage
             }
-        };
+        }, accessGrant);
     }
 
     async deleteSession(trajectoryId: string): Promise<void> {

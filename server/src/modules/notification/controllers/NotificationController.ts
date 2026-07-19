@@ -1,7 +1,7 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Query, CurrentUser } from '@shared/http/params';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { protect } from '@modules/auth/middlewares/authentication';
 import NotificationService from '@modules/notification/services/NotificationService';
 import { notificationRoutes } from '@volt/contracts/modules/notification/routes';
 

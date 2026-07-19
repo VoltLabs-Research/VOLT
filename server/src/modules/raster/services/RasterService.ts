@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RasterFrameService } from '@modules/raster/services/RasterFrameService';
 import { RasterJobEnqueuerService } from '@modules/raster/services/RasterJobEnqueuerService';
@@ -6,10 +6,10 @@ import { RasterMetadataService } from '@modules/raster/services/RasterMetadataSe
 import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
-    GetRasterMetadataInputDTO,
-    GetRasterMetadataOutputDTO
-} from '@shared/contracts/dtos/GetRasterMetadataDTO';
-import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
+    GetRasterMetadataInput,
+    GetRasterMetadataOutput
+} from '@shared/contracts/operations/GetRasterMetadata';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -18,7 +18,7 @@ import type {
     IDaemonAnalysisCompletionService,
     ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type TeamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 
 interface TriggerRasterizationInput {
     trajectoryId: string;
@@ -100,7 +100,7 @@ export default class RasterService {
         }
     }
 
-    async getRasterMetadata(input: GetRasterMetadataInputDTO): Promise<GetRasterMetadataOutputDTO> {
+    async getRasterMetadata(input: GetRasterMetadataInput): Promise<GetRasterMetadataOutput> {
         try {
             const metadata = await this.#metadata.getRasterMetadata(input.trajectoryId, input.teamId);
 
@@ -118,7 +118,7 @@ export default class RasterService {
         }
     }
 
-    async getRasterFramePNG(input: GetRasterFramePNGInput): Promise<DownloadStreamOutputDTO> {
+    async getRasterFramePNG(input: GetRasterFramePNGInput): Promise<DownloadStreamOutput> {
         try {
             if ((input.analysisId && !input.model) || (!input.analysisId && input.model)) {
                 throw ApplicationError.badRequest(

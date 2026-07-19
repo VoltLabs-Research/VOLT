@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import PluginService from '@modules/plugin/services/PluginService';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
@@ -15,37 +15,37 @@ import logger from '@shared/infrastructure/logger';
 import multer from 'multer';
 
 import type {
-    ClonePluginInputDTO,
-    CreatePluginInputDTO,
-    DeleteBinaryInputDTO,
-    DeletePluginByIdInputDTO,
-    DownloadPluginBinaryInputDTO,
-    ExecutePipelineInputDTO,
-    ExportPluginInputDTO,
-    ImportPluginInputDTO,
-    ListPluginsInputDTO,
-    RegistryInstallPluginInputDTO,
-    SearchRegistryPluginsInputDTO,
-    UpdatePluginByIdInputDTO,
-    CommitBinaryUploadInputDTO,
-    UploadBinaryInputDTO,
-    ValidateWorkflowInputDTO,
-    GetPluginExposureChartInputDTO
+    ClonePluginInput,
+    CreatePluginInput,
+    DeleteBinaryInput,
+    DeletePluginByIdInput,
+    DownloadPluginBinaryInput,
+    ExecutePipelineInput,
+    ExportPluginInput,
+    ImportPluginInput,
+    ListPluginsInput,
+    RegistryInstallPluginInput,
+    SearchRegistryPluginsInput,
+    UpdatePluginByIdInput,
+    CommitBinaryUploadInput,
+    UploadBinaryInput,
+    ValidateWorkflowInput,
+    GetPluginExposureChartInput
 } from '@modules/plugin/services/PluginService';
-import type { GetPluginByIdInputDTO } from '@shared/contracts/dtos/GetPluginByIdDTO';
-import type { GetPluginExposureExportInputDTO } from '@shared/contracts/dtos/GetPluginExposureExportDTO';
-import type { GetPluginExposureGLBInputDTO } from '@shared/contracts/dtos/GetPluginExposureGLBDTO';
+import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
+import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
+import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
 import type {
-    GetAnalysisListingExportOptionsInputDTO,
-    ExportListingRowsByAnalysisIdInputDTO,
-    GetListingRowsByAnalysisIdInputDTO
+    GetAnalysisListingExportOptionsInput,
+    ExportListingRowsByAnalysisIdInput,
+    GetListingRowsByAnalysisIdInput
 } from '@modules/plugin/utilities/listing-row/listing-row-types';
 import type {
-    ExportPluginListingDocumentsInputDTO,
-    GetPluginListingDocumentsInputDTO
-} from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
-import type { GetSubListingInputDTO } from '@shared/contracts/dtos/GetSubListingDTO';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+    ExportPluginListingDocumentsInput,
+    GetPluginListingDocumentsInput
+} from '@shared/contracts/operations/GetPluginListingDocuments';
+import type { GetSubListingInput } from '@shared/contracts/operations/GetSubListing';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { NextFunction, Request, Response } from 'express';
 import type { Readable } from 'node:stream';
 
@@ -121,21 +121,21 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)
     async getListingRowsByAnalysisId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetListingRowsByAnalysisIdInputDTO;
+        const input = buildControllerParams(req) as unknown as GetListingRowsByAnalysisIdInput;
         const value = await this.#service.getListingRowsByAnalysisId(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.getAnalysisListingExportOptions)
     async getAnalysisListingExportOptions(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetAnalysisListingExportOptionsInputDTO;
+        const input = buildControllerParams(req) as unknown as GetAnalysisListingExportOptionsInput;
         const value = await this.#service.getAnalysisListingExportOptions(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.exportListingRowsByAnalysisId)
     async exportListingRowsByAnalysisId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ExportListingRowsByAnalysisIdInputDTO;
+        const input = buildControllerParams(req) as unknown as ExportListingRowsByAnalysisIdInput;
         const output = await this.#service.exportListingRowsByAnalysisId(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -143,7 +143,7 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getSubListing)
     async getSubListing(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetSubListingInputDTO;
+        const input = buildControllerParams(req) as unknown as GetSubListingInput;
         const value = await this.#service.getSubListing(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
@@ -151,7 +151,7 @@ export default class PluginController extends Controller {
     @Route(pluginRoutes.exportPluginListingDocuments)
     @Route(pluginRoutes.exportPluginListingDocumentsByTrajectory)
     async exportPluginListingDocuments(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ExportPluginListingDocumentsInputDTO;
+        const input = buildControllerParams(req) as unknown as ExportPluginListingDocumentsInput;
         const output = await this.#service.exportPluginListingDocuments(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -159,7 +159,7 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getPluginListingDocuments)
     async getPluginListingDocuments(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetPluginListingDocumentsInputDTO;
+        const input = buildControllerParams(req) as unknown as GetPluginListingDocumentsInput;
         const value = await this.#service.getPluginListingDocuments(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
@@ -168,7 +168,7 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getPluginExposureGLB)
     async getPluginExposureGLB(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInputDTO;
+        const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInput;
         const output = await this.#service.getPluginExposureGLB(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -176,7 +176,7 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getPluginExposureChart)
     async getPluginExposureChart(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetPluginExposureChartInputDTO;
+        const input = buildControllerParams(req) as unknown as GetPluginExposureChartInput;
         const output = await this.#service.getPluginExposureChart(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -184,7 +184,7 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getPluginExposureExport)
     async getPluginExposureExport(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetPluginExposureExportInputDTO;
+        const input = buildControllerParams(req) as unknown as GetPluginExposureExportInput;
         const output = await this.#service.getPluginExposureExport(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -200,14 +200,14 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.validateWorkflow)
     async validateWorkflow(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ValidateWorkflowInputDTO;
+        const input = buildControllerParams(req) as unknown as ValidateWorkflowInput;
         const value = await this.#service.validateWorkflow(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.exportPlugin)
     async exportPlugin(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ExportPluginInputDTO;
+        const input = buildControllerParams(req) as unknown as ExportPluginInput;
         const output = await this.#service.exportPlugin(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -216,49 +216,49 @@ export default class PluginController extends Controller {
     @Route(pluginRoutes.importPlugin)
     @Middleware(importUploadSingleFile('file'))
     async importPlugin(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ImportPluginInputDTO;
+        const input = buildControllerParams(req) as unknown as ImportPluginInput;
         const value = await this.#service.importPlugin(input);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
     @Route(pluginRoutes.searchRegistry)
     async searchRegistry(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as SearchRegistryPluginsInputDTO;
+        const input = buildControllerParams(req) as unknown as SearchRegistryPluginsInput;
         const value = await this.#service.searchRegistry(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.installRegistry)
     async installRegistry(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as RegistryInstallPluginInputDTO;
+        const input = buildControllerParams(req) as unknown as RegistryInstallPluginInput;
         const value = await this.#service.installRegistry(input);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
     @Route(pluginRoutes.list)
     async listPlugins(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ListPluginsInputDTO;
+        const input = buildControllerParams(req) as unknown as ListPluginsInput;
         const value = await this.#service.listPlugins(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.create)
     async create(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as CreatePluginInputDTO;
+        const input = buildControllerParams(req) as unknown as CreatePluginInput;
         const value = await this.#service.createPlugin(input);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
     @Route(pluginRoutes.commitBinaryUpload)
     async commitBinaryUpload(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as CommitBinaryUploadInputDTO;
+        const input = buildControllerParams(req) as unknown as CommitBinaryUploadInput;
         const value = await this.#service.commitBinaryUpload(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.downloadBinary)
     async downloadBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as DownloadPluginBinaryInputDTO;
+        const input = buildControllerParams(req) as unknown as DownloadPluginBinaryInput;
         const output = await this.#service.downloadBinary(input);
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
@@ -266,14 +266,14 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.uploadBinary)
     async uploadBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as UploadBinaryInputDTO;
+        const input = buildControllerParams(req) as unknown as UploadBinaryInput;
         const value = await this.#service.uploadBinary(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.removeBinary)
     async deleteBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as DeleteBinaryInputDTO;
+        const input = buildControllerParams(req) as unknown as DeleteBinaryInput;
         await this.#service.deleteBinary(input);
         
         res.status(HttpStatus.NoContent).send();
@@ -281,28 +281,28 @@ export default class PluginController extends Controller {
 
     @Route(pluginRoutes.clone)
     async clone(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as ClonePluginInputDTO;
+        const input = buildControllerParams(req) as unknown as ClonePluginInput;
         const value = await this.#service.clonePlugin(input);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
     @Route(pluginRoutes.get)
     async getPluginById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as GetPluginByIdInputDTO;
+        const input = buildControllerParams(req) as unknown as GetPluginByIdInput;
         const value = await this.#service.getPluginById(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.update)
     async updatePluginById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as UpdatePluginByIdInputDTO;
+        const input = buildControllerParams(req) as unknown as UpdatePluginByIdInput;
         const value = await this.#service.updatePluginById(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.remove)
     async deleteById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        const input = buildControllerParams(req) as unknown as DeletePluginByIdInputDTO;
+        const input = buildControllerParams(req) as unknown as DeletePluginByIdInput;
         await this.#service.deletePluginById(input);
         
         res.status(HttpStatus.NoContent).send();
@@ -312,7 +312,7 @@ export default class PluginController extends Controller {
     async executePipeline(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         
         
-        const input = buildControllerParams(req) as unknown as ExecutePipelineInputDTO;
+        const input = buildControllerParams(req) as unknown as ExecutePipelineInput;
         const value = await this.#service.executePipeline(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }

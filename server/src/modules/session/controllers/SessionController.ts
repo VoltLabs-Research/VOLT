@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Param, Query, CurrentUser, Req } from '@shared/http/params';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { protect } from '@modules/auth/middlewares/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import SessionService from '@modules/session/services/SessionService';
 import { sessionRoutes } from '@volt/contracts/modules/session/routes';
 

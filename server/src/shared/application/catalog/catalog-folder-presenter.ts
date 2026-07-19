@@ -1,9 +1,9 @@
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
-import type { CatalogFolderDTO } from './catalog-folder-dto';
+import type { CatalogFolderView } from './catalog-folder-view';
 
 export const presentCatalogFolder = <TFolder extends CatalogFolderEntity<TProps>, TProps extends CatalogFolderProps>(
     folder: TFolder
-): CatalogFolderDTO => {
+): CatalogFolderView => {
     return {
         _id: folder._id,
         title: folder.props.title,

@@ -1,8 +1,8 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Req, Res, Param, Query, Body, CurrentUser } from '@shared/http/params';
-import { teamScoped } from '@shared/http/guards';
-import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { teamScoped } from '@modules/team/middlewares/team-scoped';
+import { protect } from '@modules/auth/middlewares/authentication';
 import { Resource } from '@core/constants/resources';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import { presentTeamMetrics } from '@modules/trajectory/presenters/trajectory';
@@ -15,7 +15,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))

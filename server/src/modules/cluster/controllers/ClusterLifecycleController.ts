@@ -5,7 +5,7 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { clusterLifecycleRoutes } from '@volt/contracts/modules/cluster/routes';
 
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 export default class ClusterLifecycleController extends ClusterControllerBase {
