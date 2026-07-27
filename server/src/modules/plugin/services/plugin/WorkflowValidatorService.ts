@@ -1,13 +1,15 @@
 import { PluginStatus, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
-import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
-import { WorkflowEdge } from '@modules/plugin/workflow/WorkflowEdge';
-import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
+import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
-    ArgumentType, ArgumentVisibilityOperators,
-    type ArgumentDefinition
-} from '@modules/plugin/workflow/nodes/ArgumentNode';
-import { EntrypointNodeType } from '@modules/plugin/workflow/nodes/EntrypointNode';
-import { PluginNodeExecutionMode } from '@modules/plugin/workflow/nodes/PluginNode';
+    ArgumentType,
+    ArgumentVisibilityOperators,
+    EntrypointNodeType,
+    PluginNodeExecutionMode,
+    WorkflowNodeType,
+    type ArgumentDefinition,
+    type WorkflowEdge,
+    type WorkflowNode
+} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 
 export interface WorkflowValidationPluginReference {

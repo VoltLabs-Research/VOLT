@@ -1,10 +1,10 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser } from '@shared/http/params';
-import { protect } from '@modules/auth/middlewares/authentication';
-import { checkTeamMembership } from '@modules/team/middlewares/check-team-membership';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
+import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
 import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
-import { uploadToStorage } from '@modules/chat/middlewares/upload-to-storage';
+import { uploadToStorage } from '@modules/chat/controllers/ChatFileUploadMiddleware';
 import ChatService from '@modules/chat/services/ChatService';
 import { chatRoutes } from '@volt/contracts/modules/chat/routes';
 import type {
@@ -31,8 +31,6 @@ interface ChatFileBody {
 @Middleware(protect)
 export default class ChatController extends Controller {
     #service = new ChatService();
-
-    
 
     @Route(chatRoutes.listUserChats)
     listUserChats(@CurrentUser() userId: string) {
@@ -79,8 +77,6 @@ export default class ChatController extends Controller {
     async leaveGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
         await this.#service.leaveGroup(userId, chatId);
     }
-
-    
 
     @Route(chatRoutes.listMessages)
     listMessages(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Query() query: Record<string, string>) {

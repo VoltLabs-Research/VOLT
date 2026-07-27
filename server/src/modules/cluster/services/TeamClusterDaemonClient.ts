@@ -4,10 +4,10 @@ import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,
     TeamClusterTunnelOpenRequest
-} from '@modules/cluster/services/TeamClusterReverseChannelService';
-import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
-import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
-import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
+} from '@modules/cluster/services/TeamClusterReverseChannelTypes';
+import type { TeamClusterTunnelStream } from '@modules/cluster/services/TeamClusterReverseTunnelStream';
+import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
+import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -177,7 +177,6 @@ class TeamClusterDaemonClient {
         };
     }
 
-    
     private throwDaemonError(
         command: string,
         response: { ok: boolean; status: number; message?: string; data?: unknown },
@@ -331,7 +330,6 @@ class TeamClusterDaemonClient {
         });
     }
 
-    
     async commandBuffer(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Buffer> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
         const dispatchContext = this.createDispatchLogContext(

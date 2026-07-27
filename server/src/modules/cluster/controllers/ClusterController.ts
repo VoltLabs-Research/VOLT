@@ -1,8 +1,8 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';

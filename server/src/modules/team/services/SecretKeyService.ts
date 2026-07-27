@@ -15,7 +15,7 @@ import SecretKeyCreatedEvent from '@modules/team/events/secret-key/SecretKeyCrea
 import SecretKeyDeletedEvent from '@modules/team/events/secret-key/SecretKeyDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { ROLE_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import crypto from 'node:crypto';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';

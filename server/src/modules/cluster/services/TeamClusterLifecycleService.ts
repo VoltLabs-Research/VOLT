@@ -1,8 +1,8 @@
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/contracts/TeamClusterHeartbeat';
-import { TeamClusterView, toTeamClusterView } from '@modules/cluster/presenters/TeamClusterPresenter';
+import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import { TeamClusterView, toTeamClusterView } from '@modules/cluster/services/TeamClusterView';
 import TeamClusterModel, { toTeamClusterLike, type TeamCluster, type TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
 import {
     TeamClusterRuntimeRoleConfigProps,
@@ -11,8 +11,8 @@ import {
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     toTeamClusterClientMetrics
-} from '@modules/cluster/utilities/teamClusterMetricsSocket';
-import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/cluster/utilities/teamClusterSocket';
+} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';

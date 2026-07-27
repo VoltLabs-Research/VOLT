@@ -26,7 +26,7 @@ const mongoConnector = async () => {
         autoIndex: NODE_ENV !== 'production',
         connectTimeoutMS: 100000,
         socketTimeoutMS: 60000,
-        authSource: 'admin',
+        authSource: process.env.MONGO_AUTH_SOURCE || 'admin',
         appName: 'volt',
         serverSelectionTimeoutMS: 5000,
         maxIdleTimeMS: 30000,

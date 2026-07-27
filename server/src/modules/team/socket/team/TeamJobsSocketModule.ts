@@ -1,5 +1,5 @@
-import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
-import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
+import { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';

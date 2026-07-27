@@ -10,21 +10,26 @@ import notebookCredentialService from '@modules/scripting/services/NotebookCrede
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
-import { attachScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
-import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
+import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import NotebookDeletedEvent from '@modules/scripting/events/NotebookDeletedEvent';
-import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/utilities/build-scripting-notebook';
-import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/utilities/jupyter-proxy';
+import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { randomUUID } from 'node:crypto';
 import pRetry from 'p-retry';
+
+const DEFAULT_SCRIPTING_NOTEBOOK_TITLE = 'Untitled Notebook';
+
+const buildScriptingNotebookPath = (suffix: string): string => {
+    return `scripting-notebook-${suffix}.ipynb`;
+};
 
 const LOCK_TTL_MS = 90_000;
 const LOCK_BUSY_WAIT_ATTEMPTS = 5;

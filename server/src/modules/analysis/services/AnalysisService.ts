@@ -1,8 +1,7 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
-import AnalysisModel, { toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
-import { findByTeamAndSearch } from '@modules/analysis/models/analysis-queries';
+import AnalysisModel, { findByTeamAndSearch, toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
@@ -24,7 +23,7 @@ import type {
     GetAnalysisFrameLogInput,
     GetAnalysisFrameLogOutput
 } from '@shared/contracts/operations/GetAnalysisFrameLog';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import {
     COMPUTE_CLUSTER_POPULATE,
     STORAGE_CLUSTER_POPULATE,

@@ -1,11 +1,10 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Req, Res, Param, Query, Body, CurrentUser } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
-import { presentTeamMetrics } from '@modules/trajectory/presenters/trajectory';
 import {
     sendTrajectoryPreview,
     sendTrajectoryPreviewError
@@ -20,8 +19,6 @@ import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))
 export default class TrajectoryController extends TrajectoryControllerBase {
-    
-
     @Route(trajectoryRoutes.listSamples)
     async listSamples(@Res() res: Response): Promise<void> {
         const value = await this.service.listSamples();
@@ -118,7 +115,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.getMetrics)
     async getMetrics(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getTeamMetrics(this.params(req));
-        BaseResponse.success(res, presentTeamMetrics(value));
+        BaseResponse.success(res, value);
     }
 
     @Route(trajectoryRoutes.getPreview)
@@ -188,8 +185,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         res.status(HttpStatus.NoContent).send();
     }
 
-    
-
     @Route(trajectoryRoutes.colorCodingProperties)
     @Route(trajectoryRoutes.colorCodingPropertiesByAnalysis)
     async colorCodingGetProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
@@ -217,8 +212,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         const value = await this.service.createColoredModel(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
-
-    
 
     @Route(trajectoryRoutes.particleFilterProperties)
     @Route(trajectoryRoutes.particleFilterPropertiesByAnalysis)
@@ -255,8 +248,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    
-
     @Route(trajectoryRoutes.lineStyleModel)
     async lineStyleGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getLineStyledModelStream(this.params(req));
@@ -280,8 +271,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         const value = await this.service.getLineEntityProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
-
-    
 
     @Route(trajectoryRoutes.lodOctreeMetadata)
     async lodGetOctreeMetadata(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {

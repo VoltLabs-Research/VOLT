@@ -3,7 +3,7 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
 import LatexFileModel from '@modules/latex/models/LatexFileModel';
 import type LatexDocumentDeletedEvent from '@modules/latex/events/LatexDocumentDeletedEvent';
-import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@modules/latex/utilities/latex-storage';
+import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@modules/latex/services/LatexAssetStorage';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 

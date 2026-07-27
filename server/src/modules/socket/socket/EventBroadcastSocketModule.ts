@@ -4,7 +4,7 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import logger from '@shared/infrastructure/logger';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';

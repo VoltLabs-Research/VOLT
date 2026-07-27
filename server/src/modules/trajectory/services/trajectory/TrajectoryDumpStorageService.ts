@@ -4,7 +4,7 @@ import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { TeamClusterObjectGatewayStreamResponse } from '@shared/contracts/types';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Readable } from 'node:stream';
 

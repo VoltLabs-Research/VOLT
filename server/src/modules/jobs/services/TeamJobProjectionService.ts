@@ -8,7 +8,7 @@ import {
     projectedTeamJobsKey as buildProjectedTeamJobsKey,
     projectedTeamJobsRevisionKey as buildProjectedTeamJobsRevisionKey,
     projectedAnalysisJobsKey as buildProjectedAnalysisJobsKey
-} from '@modules/jobs/services/job-redis-keys';
+} from '@modules/jobs/services/JobRedisKeys';
 
 const STATUS_TTL_SECONDS = 86400;
 const PROJECTED_JOB_SOURCE = 'projected';

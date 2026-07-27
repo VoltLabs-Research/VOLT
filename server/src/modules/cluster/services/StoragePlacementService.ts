@@ -1,16 +1,16 @@
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
-import {
-    buildAnalysisPlacementBuckets,
-    buildPluginBinaryPlacementBuckets,
-    buildTrajectoryPlacementBuckets
-} from '@modules/cluster/utilities/storage-placement-targets';
-import {
+import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
+import { getTrajectoryStorageCleanupTargets } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
+import StoragePlacementModel, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps,
+    toStoragePlacementLike,
+    type StoragePlacement,
+    type StoragePlacementDocument,
     type StoragePlacementProps
-} from '@modules/cluster/utilities/storage-placement';
-import StoragePlacementModel, { toStoragePlacementLike, type StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
+} from '@modules/cluster/models/StoragePlacementModel';
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginModel from '@modules/plugin/models/plugin/PluginModel';
@@ -20,7 +20,37 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import type { FilterQuery, UpdateQuery } from 'mongoose';
-import type { StoragePlacementDocument } from '@modules/cluster/models/StoragePlacementModel';
+
+const dedupeBucketRefs = (bucketRefs: StoragePlacementBucketRef[]): StoragePlacementBucketRef[] => {
+    const deduped = new Map<string, StoragePlacementBucketRef>();
+
+    for (const bucketRef of bucketRefs) {
+        const key = `${bucketRef.bucket}:${bucketRef.prefix}`;
+        if (!deduped.has(key)) {
+            deduped.set(key, bucketRef);
+        }
+    }
+
+    return [...deduped.values()];
+};
+
+export const buildTrajectoryPlacementBuckets = (trajectoryId: string): StoragePlacementBucketRef[] => {
+    return dedupeBucketRefs(getTrajectoryStorageCleanupTargets(trajectoryId));
+};
+
+export const buildAnalysisPlacementBuckets = (
+    trajectoryId: string,
+    analysisId: string
+): StoragePlacementBucketRef[] => {
+    return dedupeBucketRefs(getAnalysisStorageCleanupTargets(trajectoryId, analysisId));
+};
+
+export const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => {
+    return [{
+        bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+        prefix: `plugin-binaries/${pluginId}/`
+    }];
+};
 
 interface ResolvedPlacementDefinition {
     team: string;

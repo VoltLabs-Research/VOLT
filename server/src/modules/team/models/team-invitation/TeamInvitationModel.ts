@@ -8,11 +8,6 @@ export enum TeamInvitationStatus{
     Rejected = 'rejected'
 }
 
-export interface TeamInvitationRef {
-    _id?: string;
-    toString?: () => string;
-}
-
 export interface TeamInvitationProps{
     team: string;
     invitedBy: string;

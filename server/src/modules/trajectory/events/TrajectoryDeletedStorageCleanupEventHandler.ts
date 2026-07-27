@@ -1,12 +1,43 @@
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import StoragePlacementModel from '@modules/cluster/models/StoragePlacementModel';
 import ClusterTransferJobModel from '@modules/cluster/models/ClusterTransferJobModel';
 import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
-import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
-import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
+
+export interface TrajectoryStorageCleanupTarget {
+    bucket: string;
+    prefix: string;
+}
+
+export const getTrajectoryStorageCleanupTargets = (trajectoryId: string): TrajectoryStorageCleanupTarget[] => {
+    const trajectoryPrefix = `trajectory-${trajectoryId}/`;
+
+    return [
+        {
+            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+            prefix: trajectoryPrefix
+        },
+        {
+            bucket: TEAM_CLUSTER_BUCKETS.MODELS,
+            prefix: trajectoryPrefix
+        },
+        {
+            bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
+            prefix: trajectoryPrefix
+        },
+        {
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            prefix: trajectoryPrefix
+        },
+        {
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            prefix: `plugins/trajectory-${trajectoryId}/`
+        }
+    ];
+};
 
 class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     private readonly objectGatewayClient = objectGatewayClient;

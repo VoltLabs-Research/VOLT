@@ -1,5 +1,5 @@
 import type { AnalysisProps } from '@shared/contracts/types';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 
 export interface GetAnalysesByTrajectoryIdInput {
     teamId?: string;

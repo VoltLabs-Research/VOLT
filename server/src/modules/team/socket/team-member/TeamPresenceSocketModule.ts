@@ -1,8 +1,8 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
-import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/contracts/team-subscription';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
@@ -20,16 +20,10 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
 
     private unsubscribeFromTeamSubscription?: () => void;
 
-    
-    
     private readonly teamPresenceService = new TeamPresenceService();
     private readonly teamRoomPresenceService = new TeamRoomPresenceService();
     private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
 
-    
-    
-    
-    
         private readonly eventBus = eventBus;
 
     constructor() {

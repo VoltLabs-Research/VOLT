@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import type { WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

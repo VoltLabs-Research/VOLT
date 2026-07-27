@@ -1,7 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 import validator from 'validator';
+
+export enum OAuthProvider {
+    GitHub = 'github',
+    Microsoft = 'microsoft',
+    Google = 'google'
+}
 
 export enum UserRole {
     Admin = 'admin',

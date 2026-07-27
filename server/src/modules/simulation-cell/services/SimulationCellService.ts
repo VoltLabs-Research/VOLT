@@ -7,7 +7,7 @@ import type {
     GetSimulationCellByTrajectoryOutput
 } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 

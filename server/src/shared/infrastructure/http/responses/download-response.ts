@@ -1,4 +1,4 @@
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { ExportType } from '@shared/domain/port/persistence';
 import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
 import { Readable } from 'node:stream';
 
@@ -16,7 +16,7 @@ interface StreamResponseParams {
     contentLength?: number;
     cacheControl?: string;
     prepare?: () => Promise<void>;
-    
+
     extraHeaders?: Record<string, string>;
 }
 

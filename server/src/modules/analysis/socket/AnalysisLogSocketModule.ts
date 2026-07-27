@@ -5,7 +5,7 @@ import analysisExecutionLogService, {
     getAnalysisLogRoom,
     type AnalysisLogChunkEventPayload
 } from '@modules/analysis/services/AnalysisExecutionLogService';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';

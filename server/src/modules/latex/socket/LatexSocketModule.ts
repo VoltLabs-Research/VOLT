@@ -1,7 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import LatexService from '@modules/latex/services/LatexService';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
+import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';

@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import AiService from '@modules/ai/services/AiService';
 import { aiRoutes } from '@volt/contracts/modules/ai/routes';
@@ -11,7 +11,7 @@ import type {
     UpdateAIConversationInput,
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
-import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
+import type { AIConversationMessage } from '@modules/ai/models/AIMessageModel';
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import express from 'express';
 import type { Response } from 'express';

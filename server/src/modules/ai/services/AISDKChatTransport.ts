@@ -11,9 +11,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createXai } from '@ai-sdk/xai';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
-import type { AIMessageToolCall, AIMessageToolResult, AIMessageToolStep } from '@modules/ai/models/AIMessageModel';
+import type {
+    AIConversationMessage,
+    AIMessageToolCall,
+    AIMessageToolResult,
+    AIMessageToolStep
+} from '@modules/ai/models/AIMessageModel';
 import type AIToolServiceType from '@modules/ai/services/AIToolService';
 import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import TeamAIIntegrationModel from '@modules/team/models/ai-integration/TeamAIIntegrationModel';

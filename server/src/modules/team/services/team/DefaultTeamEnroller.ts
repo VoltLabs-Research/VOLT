@@ -1,10 +1,10 @@
 import { SystemRoleNames } from '@core/constants/system-roles';
 import TeamModel from '@modules/team/models/team/TeamModel';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import DeploymentSettingsRepository from '@modules/system/repositories/DeploymentSettingsRepository';
+import DeploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
 
 export default class DefaultTeamEnroller {
-    #deploymentSettings = new DeploymentSettingsRepository();
+    #deploymentSettings = new DeploymentSettingsService();
     #membership = new TeamMembershipService();
 
     async enrollIfConfigured(userId: string): Promise<void> {

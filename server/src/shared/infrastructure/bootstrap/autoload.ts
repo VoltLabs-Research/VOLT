@@ -14,12 +14,10 @@ const EXCLUDED_BASENAMES = new Set<string>([
 ]);
 
 const EXCLUDED_SEGMENTS = new Set<string>([
+    'contracts',
     'domain',
-    'operations',
-    'validation',
-    'constants',
-    'presenters',
-    'routes'
+    'models',
+    'operations'
 ]);
 
 const FILE_SUFFIXES: readonly string[] = ['.ts', '.js'];

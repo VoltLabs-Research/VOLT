@@ -22,9 +22,9 @@ export interface DailyActivityRecordView {
 
 export interface GetTeamActivitySummaryInput {
     teamId: string;
-    
+
     range?: number;
-    
+
     userId?: string;
 }
 

@@ -1,5 +1,4 @@
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
-import DiscoverTeamEmailPrompt from '@/modules/early-access/components/DiscoverTeamEmailPrompt';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Heading, SearchInput, Text } from '@voltstack/bravais';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
@@ -90,7 +89,6 @@ export default function DiscoverTeamTrajectoriesPage() {
                     />
                 </section>
             </div>
-            <DiscoverTeamEmailPrompt teamId={teamId} />
         </main>
     );
 }

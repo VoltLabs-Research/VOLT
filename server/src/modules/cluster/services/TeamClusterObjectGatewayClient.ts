@@ -1,6 +1,6 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/team-cluster-queries';
-import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/TeamClusterModel';
+import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
@@ -10,20 +10,11 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import jwt from 'jsonwebtoken';
+import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
-
-type ObjectGatewayOperationName =
-    | 'list'
-    | 'head'
-    | 'get'
-    | 'put'
-    | 'compose'
-    | 'delete'
-    | 'delete-prefix';
-
 import type {
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayListEntry,
@@ -34,7 +25,48 @@ import type {
     TeamClusterObjectGatewayPutStreamRequest,
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayComposeRequest
-} from '@modules/cluster/contracts/TeamClusterObjectGateway';
+} from '@shared/contracts/types/TeamClusterObjectGateway';
+
+export type DirectAccessRequesterKind = 'daemon' | 'server';
+
+export interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
+    requesterKind: DirectAccessRequesterKind;
+    requesterId: string;
+    ownerClusterId: string;
+    teamId: string;
+    exposureId: string;
+    exposureName: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+    iat: number;
+    exp: number;
+}
+
+const DIRECT_ACCESS_TOKEN_SIGN_OPTIONS: SignOptions = {
+    algorithm: 'HS256'
+};
+
+export class TeamClusterDirectAccessTokenService {
+    create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
+        return jwt.sign(claims, secret as Secret, DIRECT_ACCESS_TOKEN_SIGN_OPTIONS);
+    }
+
+    verify(secret: string, token: string): TeamClusterDirectAccessTokenClaims | null {
+        try {
+            return jwt.verify(token, secret as Secret) as TeamClusterDirectAccessTokenClaims;
+        } catch {
+            return null;
+        }
+    }
+}
+
+type ObjectGatewayOperationName =
+    | 'list'
+    | 'head'
+    | 'get'
+    | 'put'
+    | 'compose'
+    | 'delete'
+    | 'delete-prefix';
 
 interface TeamClusterObjectGatewayReadOptions {
     skipMetadata?: boolean;
@@ -258,11 +290,6 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
     private readonly directAccessTokenService = new TeamClusterDirectAccessTokenService();
 
-    
-    
-    
-    
-    
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async list(

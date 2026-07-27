@@ -1,6 +1,6 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
-import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
+import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 import {
     AnalysisListingExportOptionView,
     AnalysisSubListingExportOptionView,
@@ -10,14 +10,14 @@ import {
     ExportListingRowsByAnalysisIdInput,
     ExportListingRowsByAnalysisIdOutput,
     ListingRowByAnalysisData
-} from '@modules/plugin/utilities/listing-row/listing-row-types';
-import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/listing-row-enrichment';
-import { Exporter } from '@modules/plugin/workflow/nodes/ExportNode';
+} from '@modules/plugin/services/listing-row/ListingRowTypes';
+import { enrichDaemonListingRows } from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
+import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { ExportType } from '@shared/domain/port/persistence';
 
 interface ListingAggregation {
     listingId: string;

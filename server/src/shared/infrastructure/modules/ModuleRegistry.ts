@@ -8,7 +8,6 @@ export interface ValidationResult {
 export class ModuleRegistry {
     private readonly manifests = new Map<string, ModuleManifest>();
 
-    
     register(manifest: ModuleManifest): void {
         if (this.manifests.has(manifest.key)) {
             throw new Error(`Module "${manifest.key}" is already registered.`);
@@ -16,17 +15,14 @@ export class ModuleRegistry {
         this.manifests.set(manifest.key, manifest);
     }
 
-    
     all(): ModuleManifest[] {
         return [...this.manifests.values()];
     }
 
-    
     kernelKeys(): string[] {
         return this.all().filter((m) => m.tier === 'kernel').map((m) => m.key);
     }
 
-    
     resolveEnabled(options: { envOverride?: string[] | null }): Set<string> {
         const { envOverride } = options;
         const seed = envOverride ?? [...this.manifests.keys()];
@@ -50,7 +46,6 @@ export class ModuleRegistry {
         return enabled;
     }
 
-    
     validate(enabled: Set<string>): ValidationResult {
         const errors: string[] = [];
 
@@ -79,12 +74,10 @@ export class ModuleRegistry {
         return { ok: errors.length === 0, errors };
     }
 
-    
     isEnabled(key: string, enabled: Set<string>): boolean {
         return enabled.has(key);
     }
 
-    
     private findRequiresCycles(enabled: Set<string>): string[][] {
         const WHITE = 0, GREY = 1, BLACK = 2;
         const color = new Map<string, number>();

@@ -1,9 +1,19 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
-import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
-import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
-import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/workflow/nodes/ArgumentNode';
+import PluginModel, {
+    PluginStatus,
+    toPluginLike,
+    mapPluginToRecord,
+    type Plugin,
+    type PluginRecord
+} from '@modules/plugin/models/plugin/PluginModel';
+import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
+import {
+    ArgumentType,
+    WorkflowNodeType,
+    type ArgumentDefinition,
+    type WorkflowNode
+} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 import PluginStorageService, {
     type BinaryUploadResult,
@@ -15,43 +25,43 @@ import pluginExecutionRouter, {
     type PipelineStageExecutionInput,
     type RoutePluginExecutionInput
 } from '@modules/plugin/services/plugin/PluginExecutionRouter';
-import RegistryGateway from '@modules/plugin/services/plugin/RegistryGateway';
+import RegistryGateway, { type RegistrySearchResult } from '@modules/plugin/services/plugin/RegistryGateway';
 import { PluginExposureExportService } from '@modules/plugin/services/exposure/PluginExposureExportService';
 import { AnalysisListingExportCatalogService } from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
-import { ListingRowsExportPresenter } from '@modules/plugin/presenters/listing-row/ListingRowsExportPresenter';
-import type { RegistrySearchResult } from '@modules/plugin/contracts/plugin/RegistryGateway';
+import { ListingRowsExportService } from '@modules/plugin/services/listing-row/ListingRowsExportService';
 
 import PluginCreatedEvent from '@modules/plugin/events/PluginCreatedEvent';
 import PluginDeletedEvent from '@modules/plugin/events/PluginDeletedEvent';
 import PluginPublishedEvent from '@modules/plugin/events/PluginPublishedEvent';
 
-import { mapPluginToRecord, type PluginRecord } from '@modules/plugin/utilities/mappers/plugin/mapPluginToRecord';
-import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
-import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
-import { computeDumpStageHash, computePipelineStageHash } from '@modules/plugin/utilities/plugin/pipeline-stage-hash';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
+import WorkflowProjectionService, {
+    PluginDisplayNameResolver,
+    computeDumpStageHash,
+    computePipelineStageHash
+} from '@modules/plugin/services/plugin/WorkflowProjection';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
 
 import {
     buildListingColumns,
     buildListingExportColumns,
     enrichDaemonListingRows
-} from '@modules/plugin/utilities/listing-row/listing-row-enrichment';
-import { resolveListingPagination } from '@modules/plugin/utilities/listing-row/listing-row-pagination';
-import { mapDaemonRow, type DaemonListingRow, type DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
-import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
-import type {
-    GetAnalysisListingExportOptionsInput,
-    GetAnalysisListingExportOptionsOutput,
-    GetListingRowsByAnalysisIdInput,
-    GetListingRowsByAnalysisIdOutput,
-    ListingRowByAnalysisData,
-    ExportListingRowsByAnalysisIdInput,
-    SummarizeAnalysisResultInput,
-    SummarizeAnalysisResultOutput,
-    ColumnStats,
-    SummarizedColumn,
-    SummarizedExposure
-} from '@modules/plugin/utilities/listing-row/listing-row-types';
+} from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
+import { mapDaemonRow, type DaemonListingRow, type DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
+import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
+import {
+    resolveListingPagination,
+    type GetAnalysisListingExportOptionsInput,
+    type GetAnalysisListingExportOptionsOutput,
+    type GetListingRowsByAnalysisIdInput,
+    type GetListingRowsByAnalysisIdOutput,
+    type ListingRowByAnalysisData,
+    type ExportListingRowsByAnalysisIdInput,
+    type SummarizeAnalysisResultInput,
+    type SummarizeAnalysisResultOutput,
+    type ColumnStats,
+    type SummarizedColumn,
+    type SummarizedExposure
+} from '@modules/plugin/services/listing-row/ListingRowTypes';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -72,12 +82,12 @@ import storagePlacementService from '@modules/cluster/services/StoragePlacementS
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
+import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
+import { ExportType } from '@shared/domain/port/persistence';
 import type { Analysis, AnalysisExpectedArtifact, SceneArtifactProps } from '@shared/contracts/types';
 import { SceneArtifactSourceType } from '@shared/contracts/types';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
@@ -497,7 +507,7 @@ export default class PluginService {
     #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
         teamClusterDaemonClient
     );
-    #listingRowsExportPresenter = new ListingRowsExportPresenter(
+    #listingRowsExportService = new ListingRowsExportService(
         new ClusterObjectArchiveService()
     );
 
@@ -840,9 +850,6 @@ export default class PluginService {
             );
         }
 
-        
-        
-        
         const update: Record<string, unknown> = {};
         if (input.status) update.status = input.status;
 
@@ -1544,7 +1551,7 @@ export default class PluginService {
     async exportListingRowsByAnalysisId(input: ExportListingRowsByAnalysisIdInput): Promise<DownloadStreamOutput> {
         const payload = await this.#analysisListingExportCatalogService.buildExportPayload(input);
 
-        return this.#listingRowsExportPresenter.present(payload);
+        return this.#listingRowsExportService.present(payload);
     }
 
     async getSubListing(input: GetSubListingInput): Promise<GetSubListingOutput> {

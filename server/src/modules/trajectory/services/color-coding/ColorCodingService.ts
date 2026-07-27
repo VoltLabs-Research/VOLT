@@ -5,19 +5,40 @@ import teamClusterSelectionService from '@modules/container/services/TeamCluster
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
-import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/contracts/native';
-import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
-import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
-import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
+import {
+    recordSceneArtifact,
+    resolveSceneArtifactExecutionContext
+} from '@modules/trajectory/services/SceneArtifactService';
+import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
+import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
-import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
+import trajectoryNativeDaemonService, {
+    resolveTrajectoryNativeClusterContext
+} from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { Readable } from 'node:stream';
+
+const DEFAULT_ANALYSIS_ID = 'default';
+
+const buildColorCodingObjectName = (
+    trajectoryId: string,
+    analysisSegment: string | undefined,
+    timestep: string | number,
+    exposureId: string | undefined,
+    property: string,
+    startValue: number,
+    endValue: number,
+    gradient: string
+): string => {
+    const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
+    const formattedStart = formatValueForPath(startValue);
+    const formattedEnd = formatValueForPath(endValue);
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
+};
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(

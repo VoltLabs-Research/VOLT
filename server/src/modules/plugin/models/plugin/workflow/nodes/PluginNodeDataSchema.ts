@@ -1,7 +1,7 @@
 import {
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode
-} from '@modules/plugin/workflow/nodes/PluginNode';
+} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { Schema } from 'mongoose';
 
 export const PluginNodeDataSchema = new Schema({

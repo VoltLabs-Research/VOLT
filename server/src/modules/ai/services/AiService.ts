@@ -1,10 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { AIConversationMessage, AIConversationMessageParts } from '@modules/ai/contracts/AIConversationMessage';
-import { AIConversationMessageRole } from '@modules/ai/contracts/AIConversationMessage';
 import AIConversationModel from '@modules/ai/models/AIConversationModel';
 import type { AIConversationProps, AIConversationDocument } from '@modules/ai/models/AIConversationModel';
-import AIMessageModel, { AIMessageRole } from '@modules/ai/models/AIMessageModel';
+import AIMessageModel, { AIConversationMessageRole, AIMessageRole } from '@modules/ai/models/AIMessageModel';
 import type {
+    AIConversationMessage,
+    AIConversationMessagePart,
+    AIConversationMessageParts,
     AIMessageProps,
     AIMessageDocument,
     AIMessageModelInfo,
@@ -13,14 +14,40 @@ import type {
 } from '@modules/ai/models/AIMessageModel';
 import type { AIChatFinishEvent, AIChatReplyStream } from '@modules/ai/services/AISDKChatTransport';
 import aiSdkChatTransport from '@modules/ai/services/AISDKChatTransport';
-import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/utilities/AIResponseMessagePartsMapper';
-import { extractLastUserMessageText, normalizeUIMessages } from '@modules/ai/utilities/AIUIMessageUtils';
+import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/services/AIResponseMessagePartsMapper';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
+
+type AITextPart = AIConversationMessagePart & { text: string };
+
+const isTextPart = (part: AIConversationMessagePart): part is AITextPart => (
+    part.type === 'text' && typeof part.text === 'string'
+);
+
+const normalizeUIMessages = (messages?: AIConversationMessage[]): AIConversationMessage[] | null => {
+    return messages?.length ? messages : null;
+};
+
+const extractLastUserMessageText = (messages: AIConversationMessage[]): string => {
+    for (let index = messages.length - 1; index >= 0; index--) {
+        const message = messages[index];
+        if (message.role !== AIConversationMessageRole.User) {
+            continue;
+        }
+
+        return message.parts
+            .filter(isTextPart)
+            .map((part) => part.text)
+            .join('\n')
+            .trim();
+    }
+
+    return '';
+};
 
 export interface AIConversationView {
     _id: string;

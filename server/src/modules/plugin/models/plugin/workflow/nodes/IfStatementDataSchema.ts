@@ -1,4 +1,4 @@
-import { IfStatementConditionType, IfStatementConditionHandler } from '@modules/plugin/workflow/nodes/IfStatementNode';
+import { IfStatementConditionType, IfStatementConditionHandler } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 import { Schema } from 'mongoose';
 

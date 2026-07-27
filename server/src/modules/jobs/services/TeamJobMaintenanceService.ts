@@ -27,7 +27,7 @@ import {
     projectedTeamJobsKey,
     projectedTeamJobsRevisionKey,
     projectedAnalysisJobsKey
-} from '@modules/jobs/services/job-redis-keys';
+} from '@modules/jobs/services/JobRedisKeys';
 
 const TOMBSTONE_TTL_SECONDS = 600;
 

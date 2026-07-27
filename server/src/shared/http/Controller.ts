@@ -3,7 +3,7 @@ import type { RequestHandler, Response } from 'express';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { getRoutes } from '@shared/http/route';
 import { getParamResolvers } from '@shared/http/params';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 const classMiddleware = new WeakMap<object, RequestHandler[]>();
@@ -58,9 +58,6 @@ export default abstract class Controller {
     }
 
     #respond(res: Response, result: unknown, statusCode?: number): void {
-        
-        
-        
         if (res.headersSent || res.writableEnded) {
             return;
         }

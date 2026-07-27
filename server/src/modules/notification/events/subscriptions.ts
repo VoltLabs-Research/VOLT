@@ -1,5 +1,4 @@
-import NotificationRepository from '@modules/notification/services/NotificationRepository';
+import NotificationModel from '@modules/notification/models/NotificationModel';
 import { deleteManyOnUserDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
 
-deleteManyOnUserDeleted(new NotificationRepository(),
-    { filterField: 'recipient' });
+deleteManyOnUserDeleted(NotificationModel, { filterField: 'recipient' });

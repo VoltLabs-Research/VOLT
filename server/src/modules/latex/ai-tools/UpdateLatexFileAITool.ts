@@ -21,7 +21,6 @@ export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, LatexFi
 
     #service = new LatexService();
 
-    
     async execute(params: UpdateLatexFileParams, scope: AIToolScope): Promise<LatexFileView> {
         return this.#service.updateFile({ teamId: scope.teamId, ...params, source: 'ai' });
     }

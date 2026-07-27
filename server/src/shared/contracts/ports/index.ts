@@ -45,7 +45,5 @@ export type {
     ContainerTerminalExec,
     ContainerTerminalAttachment
 } from './IContainerService';
-export type { ChatRecord } from './IChatRepository';
-export type { IDeploymentSettingsRepository, DeploymentSettingsView } from './IDeploymentSettingsRepository';
+export type { ChatRecord } from './ChatRecord';
 export type { IPluginDebugSessionRegistryService } from './IPluginDebugSessionRegistryService';
-export type { IGetAnalysisFrameLogUseCase } from './IGetAnalysisFrameLogUseCase';

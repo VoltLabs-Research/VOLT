@@ -27,8 +27,7 @@ const MODULE_MANIFESTS = [
     defineModule({ key: 'chat', tier: 'leaf', requires: ['team'], description: 'Team chat' }),
     defineModule({ key: 'scripting', tier: 'leaf', requires: ['team', 'container'], optional: ['cluster'], description: 'Jupyter notebooks' }),
     defineModule({ key: 'dashboard', tier: 'leaf', requires: ['team'], optional: ['analysis', 'chat', 'container', 'plugin', 'trajectory'], description: 'Dashboard aggregation' }),
-    defineModule({ key: 'daily-activity', tier: 'leaf', requires: ['team'], description: 'Activity log' }),
-    defineModule({ key: 'early-access', tier: 'leaf', optional: ['team'], description: 'Early-access gating' })
+    defineModule({ key: 'daily-activity', tier: 'leaf', requires: ['team'], description: 'Activity log' })
 ];
 
 let registered = false;

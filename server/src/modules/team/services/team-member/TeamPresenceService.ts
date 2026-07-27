@@ -1,7 +1,17 @@
-import type {
-    AttachTeamPresenceResult,
-    DetachedTeamPresenceSession
-} from '@modules/team/contracts/team-member/TeamPresenceTypes';
+export interface DetachedTeamPresenceSession {
+    teamId: string;
+    userId: string;
+    endedAt: Date;
+    minutesToPersist: number;
+    userWentOfflineCompletely: boolean;
+    userWentOffline: boolean;
+};
+
+export interface AttachTeamPresenceResult {
+    onlineUserIds: string[];
+    userBecameOnline: boolean;
+    detachedSession: DetachedTeamPresenceSession | null;
+};
 
 interface TeamPresenceSession {
     teamId: string;
@@ -18,11 +28,6 @@ interface HeartbeatResult {
     userId: string;
     minutesToPersist: number;
 };
-
-export type {
-    AttachTeamPresenceResult,
-    DetachedTeamPresenceSession
-} from '@modules/team/contracts/team-member/TeamPresenceTypes';
 
 export default class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();

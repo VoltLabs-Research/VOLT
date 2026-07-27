@@ -10,7 +10,7 @@ import ContainerDeletedEvent from '@modules/container/events/ContainerDeletedEve
 import ContainerUpdatedEvent from '@modules/container/events/ContainerUpdatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import type {
     ContainerAccessiblePort
@@ -33,7 +33,7 @@ import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { USER_POPULATE, CLUSTER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import logger from '@shared/infrastructure/logger';
 import mongoose from 'mongoose';
 import type { HydratedDocument } from 'mongoose';

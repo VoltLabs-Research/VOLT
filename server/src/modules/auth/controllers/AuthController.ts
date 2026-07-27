@@ -2,12 +2,11 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/http/params';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import AuthService from '@modules/auth/services/AuthService';
-import { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
-import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/oauth/route-helpers';
-import avatarUpload from '@modules/auth/middlewares/avatar-upload';
+import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/controllers/oauth-route-helpers';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import type {
     SignInInput,
@@ -16,7 +15,22 @@ import type {
     UpdateAccountInput
 } from '@volt/contracts/modules/auth/http';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
+import multer from 'multer';
 import type { RequestHandler, Response, Router } from 'express';
+
+const avatarUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
+    fileFilter: (_req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(null, false);
+        }
+    }
+});
 
 const appendQueryParameter = (url: string, key: string, value: string): string => {
     const hashIndex = url.indexOf('#');

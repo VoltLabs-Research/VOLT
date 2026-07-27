@@ -1,6 +1,6 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import SystemService from '@modules/system/services/SystemService';
 import { systemRoutes } from '@volt/contracts/modules/system/routes';
 

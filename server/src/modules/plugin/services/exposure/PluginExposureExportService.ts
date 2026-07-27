@@ -1,8 +1,3 @@
-import {
-    groupAnalysisFilesByTimestep,
-    type AnalysisFileRef,
-    type AnalysisFileType
-} from '@modules/plugin/utilities/exposure/analysis-file-collection';
 import type {
     IClusterObjectArchiveService,
     ITeamClusterObjectGatewayClient
@@ -17,6 +12,41 @@ import path from 'node:path';
 import { v4 } from 'uuid';
 
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
+
+export type AnalysisFileType = 'data' | 'chart' | 'model';
+
+export interface AnalysisFileRef {
+    bucket: string;
+    objectName: string;
+    type: AnalysisFileType;
+    timestep: number;
+}
+
+const sortByTimestepAndName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
+    if (left.timestep !== right.timestep) {
+        return left.timestep - right.timestep;
+    }
+
+    return left.objectName.localeCompare(right.objectName);
+};
+
+export const groupAnalysisFilesByTimestep = (
+    files: AnalysisFileRef[]
+): Map<number, AnalysisFileRef[]> => {
+    const groupedFiles = new Map<number, AnalysisFileRef[]>();
+
+    for (const file of files) {
+        const group = groupedFiles.get(file.timestep) || [];
+        group.push(file);
+        groupedFiles.set(file.timestep, group);
+    }
+
+    for (const [timestep, group] of groupedFiles.entries()) {
+        groupedFiles.set(timestep, group.sort(sortByTimestepAndName));
+    }
+
+    return groupedFiles;
+};
 
 export interface PluginExposureExportParams {
     analysisId: string;

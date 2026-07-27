@@ -16,7 +16,7 @@ import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGate
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { LAST_EDITED_BY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Readable } from 'node:stream';
 import { v4 as uuidv4 } from 'uuid';

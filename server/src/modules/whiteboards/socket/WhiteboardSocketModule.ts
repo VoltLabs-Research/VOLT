@@ -3,8 +3,7 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import realtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
 import logger from '@shared/infrastructure/logger';
 
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
+import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';

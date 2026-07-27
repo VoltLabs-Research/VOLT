@@ -1,6 +1,6 @@
 import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
 import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
-import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
+import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/services/SceneArtifactService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';

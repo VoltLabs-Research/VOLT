@@ -4,9 +4,9 @@ import './shared/infrastructure/logging/installOutputDuplicateGuard';
 import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import type { Duplex } from 'node:stream';
-import { registerAllDependencies } from './core/bootstrap/register-deps';
+import { loadAllModules } from './core/bootstrap/load-modules';
 import { isModuleEnabled } from './core/bootstrap/module-state';
-import { configureOAuthStrategies } from './modules/auth/oauth/config';
+import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
 import { initializeMinio } from './core/config/minio';
@@ -124,7 +124,7 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
-    await registerAllDependencies();
+    await loadAllModules();
 
     configureOAuthStrategies();
 

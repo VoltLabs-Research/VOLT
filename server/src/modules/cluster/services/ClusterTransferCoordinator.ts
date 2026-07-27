@@ -1,8 +1,8 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import ClusterTransferJobModel, { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/models/ClusterTransferJobModel';
@@ -20,7 +20,7 @@ import {
     type ClusterTransferJobReason,
     type ClusterTransferJobState,
     createClusterTransferJobProps
-} from '@modules/cluster/utilities/cluster-transfer-job';
+} from '@modules/cluster/models/ClusterTransferJobModel';
 import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';

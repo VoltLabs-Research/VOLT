@@ -1,11 +1,11 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
-import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/utilities/jupyter-proxy';
+import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { scriptingRoutes } from '@volt/contracts/modules/scripting/routes';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type {

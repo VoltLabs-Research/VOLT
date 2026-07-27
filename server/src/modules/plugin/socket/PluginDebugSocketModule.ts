@@ -1,6 +1,6 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
-import Workflow, { type WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import {
     WorkflowValidationMode
@@ -8,8 +8,8 @@ import {
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
@@ -21,7 +21,7 @@ import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
+import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 
 interface DebugStartPayload {
     pluginId: string;
@@ -118,9 +118,6 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 export class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
-    
-    
-    
     private readonly pluginDependencyResolverService: PluginDependencyResolverService;
     private readonly workflowValidator: WorkflowValidatorService;
 

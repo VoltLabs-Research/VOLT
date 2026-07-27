@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { ExportType } from '@shared/domain/port/persistence';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

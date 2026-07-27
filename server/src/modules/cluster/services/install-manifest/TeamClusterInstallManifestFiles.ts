@@ -2,7 +2,7 @@ import { DaemonDistributionMode } from '@modules/cluster/services/install-manife
 import type {
     TeamClusterInstallManifestFileView,
     TeamClusterInstallManifestPortsView
-} from '@modules/cluster/contracts/TeamClusterInstallManifest';
+} from '@modules/cluster/services/TeamClusterInstallManifest';
 import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/services/DaemonCredentialGuard';
 
 export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';

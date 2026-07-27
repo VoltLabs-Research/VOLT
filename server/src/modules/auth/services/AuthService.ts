@@ -1,15 +1,13 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { OAuthProvider } from '@modules/auth/domain/OAuthProvider';
 import UserModel, { UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
-import type { UserDocument } from '@modules/auth/models/UserModel';
+import type { OAuthProvider, UserDocument } from '@modules/auth/models/UserModel';
 import AuthSessionService from '@modules/auth/services/AuthSessionService';
 import AvatarService from '@modules/auth/services/AvatarService';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import UserCreatedEvent from '@modules/auth/events/UserCreatedEvent';
 import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
-import { validatePassword } from '@modules/auth/domain/password-policy';
-import { getConfiguredOAuthProviders } from '@modules/auth/oauth/providers';
+import { getConfiguredOAuthProviders } from '@modules/auth/services/oauth/config';
 import SessionModel, { SessionActivityType } from '@modules/session/models/SessionModel';
 import DefaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -23,6 +21,26 @@ import type {
     UpdateAccountInput
 } from '@volt/contracts/modules/auth/http';
 import crypto from 'node:crypto';
+
+const PASSWORD_MIN_LENGTH = 8;
+
+const validatePassword = (password: unknown): ApplicationError | null => {
+    if (typeof password !== 'string' || password.length === 0) {
+        return ApplicationError.badRequest(
+            ErrorCodes.AUTH_PASSWORD_REQUIRED,
+            'Password is required'
+        );
+    }
+
+    if ([...password].length < PASSWORD_MIN_LENGTH) {
+        return ApplicationError.badRequest(
+            ErrorCodes.AUTH_PASSWORD_TOO_SHORT,
+            `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
+        );
+    }
+
+    return null;
+};
 
 interface RequestContext {
     ip: string;

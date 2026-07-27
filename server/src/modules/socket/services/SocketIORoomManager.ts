@@ -1,6 +1,5 @@
-import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
+import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
 import logger from '@shared/infrastructure/logger';
 import { Server, Socket } from 'socket.io';
 

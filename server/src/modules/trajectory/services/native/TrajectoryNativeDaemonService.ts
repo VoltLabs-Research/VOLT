@@ -1,16 +1,22 @@
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import type { FrameMetadata } from '@modules/trajectory/contracts/trajectory';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import TrajectoryModel, {
+    type TrajectoryDocument
+} from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import type {
+    FrameMetadata,
     LineExportBaseOptions,
     LineStyleFilterParam,
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/contracts/native';
+} from '@modules/trajectory/services/native/TrajectoryNativeTypes';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type {
+    ITeamClusterObjectGatewayClient,
+    ITeamClusterSelectionService
+} from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
 
@@ -20,7 +26,7 @@ export type {
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/contracts/native';
+} from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -99,6 +105,42 @@ interface TrajectoryNativeFilterPreviewResponse {
     matchCount: number;
     totalAtoms: number;
 }
+
+interface ResolveTrajectoryNativeClusterContextInput {
+    trajectoryId: string;
+    teamClusterSelectionService: ITeamClusterSelectionService;
+}
+
+interface TrajectoryNativeClusterContext {
+    trajectory: TrajectoryDocument;
+    storageClusterId: string;
+    computeClusterId: string;
+}
+
+export const resolveTrajectoryNativeClusterContext = async (
+    input: ResolveTrajectoryNativeClusterContextInput
+): Promise<TrajectoryNativeClusterContext | null> => {
+    const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+    const storageClusterId = trajectory
+        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+        : undefined;
+
+    if (!trajectory || !storageClusterId) {
+        return null;
+    }
+
+    const computeClusterId = await input.teamClusterSelectionService.resolveComputeClusterId(
+        trajectory.team.toString(),
+        undefined,
+        storageClusterId
+    );
+
+    return {
+        trajectory,
+        storageClusterId,
+        computeClusterId
+    };
+};
 
 export class TrajectoryNativeDaemonService {
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;

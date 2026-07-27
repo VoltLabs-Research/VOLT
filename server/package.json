@@ -1,13 +1,15 @@
 {
   "scripts": {
-    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register/transpile-only -r tsconfig-paths/register src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
-    "dev:drop:redis": "tsx tools/drop-redis.ts",
     "dev:drop:minio": "tsx tools/drop-minio.ts",
-    "depcruise": "npx --yes dependency-cruiser@^17.4.3 src --config .dependency-cruiser.cjs",
+    "dev:drop:redis": "tsx tools/drop-redis.ts",
     "lint": "eslint .",
-    "smoke:modules": "node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/module-boot-smoke.ts"
+    "smoke:modules": "node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/module-boot-smoke.ts",
+    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register/transpile-only -r tsconfig-paths/register src/server.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

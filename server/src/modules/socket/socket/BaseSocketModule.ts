@@ -1,14 +1,43 @@
+import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
-import { SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
-import { ISocketConnection, ISocketModule } from '@modules/socket/ports/ISocketModule';
-import { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
+import type {
+    ISocketConnection,
+    ISocketModule,
+    PresenceUser,
+    SocketEventHandler
+} from '@modules/socket/socket/ISocketModule';
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-import {
-    createSocketErrorEnvelope,
-    type SocketErrorEnvelope
-} from '@modules/socket/utilities/socket-error-envelope';
+
+export interface SocketErrorEnvelope {
+    code: ErrorCode;
+    details?: string;
+}
+
+const resolveSocketErrorCode = (value: unknown): ErrorCode => {
+    if (isErrorCode(value)) {
+        return value;
+    }
+
+    return ErrorCodes.INTERNAL_SERVER_ERROR;
+};
+
+export const createSocketErrorEnvelope = (
+    code: unknown,
+    details?: string
+): SocketErrorEnvelope => {
+    const resolvedCode = resolveSocketErrorCode(code);
+    const errorEnvelope: SocketErrorEnvelope = {
+        code: resolvedCode
+    };
+
+    if (details) {
+        errorEnvelope.details = details;
+    }
+
+    return errorEnvelope;
+};
 
 export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;

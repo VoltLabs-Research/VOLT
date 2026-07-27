@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import { getEnabledModules } from '@core/bootstrap/module-state';
+import Controller from '@shared/http/Controller';
 import logger from '@shared/infrastructure/logger';
-
-interface RouterProvider {
-    buildRouter(): Router;
-}
 
 import AuthController from '@modules/auth/controllers/AuthController';
 import SessionController from '@modules/session/controllers/SessionController';
@@ -37,62 +34,66 @@ import AnalysisController from '@modules/analysis/controllers/AnalysisController
 import ProvenanceController from '@modules/analysis/controllers/ProvenanceController';
 import DashboardController from '@modules/dashboard/controllers/DashboardController';
 import DailyActivityController from '@modules/daily-activity/controllers/DailyActivityController';
-import EarlyAccessController from '@modules/early-access/controllers/EarlyAccessController';
 
-interface ControllerBinding {
-    moduleKey: string;
-    Controller: new () => RouterProvider;
-}
+type ControllerClass = new () => Controller;
 
-const CONTROLLERS: ControllerBinding[] = [
-    { moduleKey: 'system', Controller: SystemController },
-    { moduleKey: 'auth', Controller: AuthController },
-    { moduleKey: 'session', Controller: SessionController },
-    { moduleKey: 'team', Controller: TeamController },
-    { moduleKey: 'team', Controller: TeamMemberController },
-    { moduleKey: 'team', Controller: TeamRoleController },
-    { moduleKey: 'team', Controller: TeamInvitationController },
-    { moduleKey: 'team', Controller: SecretKeyController },
-    { moduleKey: 'team', Controller: TeamAIIntegrationController },
-    { moduleKey: 'cluster', Controller: ClusterController },
-    { moduleKey: 'cluster', Controller: ClusterLifecycleController },
-    { moduleKey: 'cluster', Controller: ClusterObjectController },
-    { moduleKey: 'cluster', Controller: ClusterObjectStoreProxyController },
-    { moduleKey: 'container', Controller: ContainerController },
-    { moduleKey: 'trajectory', Controller: TrajectoryController },
-    { moduleKey: 'trajectory', Controller: CanvasController },
-    { moduleKey: 'trajectory', Controller: DiscoverController },
-    { moduleKey: 'plugin', Controller: PluginController },
-    { moduleKey: 'scripting', Controller: ScriptingController },
-    { moduleKey: 'jobs', Controller: JobsController },
-    { moduleKey: 'raster', Controller: RasterController },
-    { moduleKey: 'simulation-cell', Controller: SimulationCellController },
-    { moduleKey: 'chat', Controller: ChatController },
-    { moduleKey: 'latex', Controller: LatexController },
-    { moduleKey: 'whiteboards', Controller: WhiteboardController },
-    { moduleKey: 'ai', Controller: AiController },
-    { moduleKey: 'analysis', Controller: AnalysisController },
-    { moduleKey: 'analysis', Controller: ProvenanceController },
-    { moduleKey: 'dashboard', Controller: DashboardController },
-    { moduleKey: 'daily-activity', Controller: DailyActivityController },
-    { moduleKey: 'early-access', Controller: EarlyAccessController }
-];
+type RouterProviderClass = new () => { buildRouter(): Router };
+
+const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
+    system: [SystemController],
+    auth: [AuthController],
+    session: [SessionController],
+    notification: [NotificationController],
+    team: [
+        TeamController,
+        TeamMemberController,
+        TeamRoleController,
+        TeamInvitationController,
+        SecretKeyController,
+        TeamAIIntegrationController
+    ],
+    cluster: [ClusterController, ClusterLifecycleController, ClusterObjectController],
+    container: [ContainerController],
+    trajectory: [TrajectoryController, CanvasController, DiscoverController],
+    plugin: [PluginController],
+    scripting: [ScriptingController],
+    jobs: [JobsController],
+    raster: [RasterController],
+    'simulation-cell': [SimulationCellController],
+    chat: [ChatController],
+    latex: [LatexController],
+    whiteboards: [WhiteboardController],
+    ai: [AiController],
+    analysis: [AnalysisController, ProvenanceController],
+    dashboard: [DashboardController],
+    'daily-activity': [DailyActivityController]
+};
+
+const LEGACY_ROUTER_PROVIDERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
+    cluster: [ClusterObjectStoreProxyController]
+};
+
+const collectMountable = (enabled: Set<string>): RouterProviderClass[] => [
+    ...Object.entries(CONTROLLERS),
+    ...Object.entries(LEGACY_ROUTER_PROVIDERS)
+]
+    .filter(([moduleKey]) => enabled.has(moduleKey))
+    .flatMap(([, classes]) => classes as readonly RouterProviderClass[]);
+
+const countAll = (): number =>
+    [...Object.values(CONTROLLERS), ...Object.values(LEGACY_ROUTER_PROVIDERS)]
+        .reduce((count, classes) => count + classes.length, 0);
 
 const mountHttpRoutes = (): Router => {
     const startedAt = Date.now();
     const router = Router();
-    const enabled = getEnabledModules();
+    const mountable = collectMountable(getEnabledModules());
 
-    let mounted = 0;
-    for (const { moduleKey, Controller } of CONTROLLERS) {
-        if (!enabled.has(moduleKey)) {
-            continue;
-        }
-        router.use(new Controller().buildRouter());
-        mounted += 1;
+    for (const Provider of mountable) {
+        router.use(new Provider().buildRouter());
     }
 
-    logger.info(`@http-bootstrap: mounted ${mounted}/${CONTROLLERS.length} controllers durationMs=${Date.now() - startedAt}`);
+    logger.info(`@http-bootstrap: mounted ${mountable.length}/${countAll()} controllers durationMs=${Date.now() - startedAt}`);
 
     return router;
 };

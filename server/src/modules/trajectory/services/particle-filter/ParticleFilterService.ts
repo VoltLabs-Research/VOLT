@@ -5,18 +5,22 @@ import teamClusterSelectionService from '@modules/container/services/TeamCluster
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { FilterExpression } from '@modules/trajectory/services/trajectory/AtomPropertiesService';
-import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/contracts/native';
-import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
-import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
-import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
+import {
+    recordSceneArtifact,
+    resolveSceneArtifactExecutionContext
+} from '@modules/trajectory/services/SceneArtifactService';
+import type { ParticleFilterConditionInput } from '@modules/trajectory/services/TrajectoryServiceTypes';
+import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
+import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
-import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
+import trajectoryNativeDaemonService, {
+    resolveTrajectoryNativeClusterContext
+} from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 
@@ -34,6 +38,85 @@ export interface ParticleFilterRequest {
     combinator: ParticleFilterCombinator;
     conditions: ParticleFilterCondition[];
 }
+
+interface ParticleFilterRequestInputLike {
+    combinator: ParticleFilterCombinator;
+    conditions: ParticleFilterConditionInput[] | string;
+}
+
+const normalizeConditions = (
+    conditions: ParticleFilterConditionInput[] | string
+): ParticleFilterConditionInput[] => {
+    if (typeof conditions !== 'string') {
+        return Array.isArray(conditions) ? conditions : [];
+    }
+
+    try {
+        const parsed = JSON.parse(conditions);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const resolveFilterOperator = (operator: string | undefined): '==' | '!=' | '>' | '>=' | '<' | '<=' => {
+    switch (operator) {
+        case '!=':
+        case '>':
+        case '>=':
+        case '<':
+        case '<=':
+            return operator;
+        case '==':
+        default:
+            return '==';
+    }
+};
+
+const buildPropertyCondition = (input: {
+    property: string;
+    operator: string;
+    value: number | string;
+    exposureId?: string;
+}): ParticleFilterCondition => ({
+    property: input.property,
+    operator: resolveFilterOperator(input.operator),
+    value: input.value,
+    ...(input.exposureId ? { exposureId: input.exposureId } : {})
+});
+
+export const buildParticleFilterRequest = (
+    input: ParticleFilterRequestInputLike
+): ParticleFilterRequest => {
+    const conditions = normalizeConditions(input.conditions);
+
+    if (conditions.length === 0) {
+        throw new Error('Particle filter requires at least one condition');
+    }
+
+    return {
+        combinator: input.combinator,
+        conditions: conditions.map(buildPropertyCondition)
+    };
+};
+
+const DEFAULT_ANALYSIS_ID = 'default';
+
+const buildParticleFilterObjectName = (
+    trajectoryId: string,
+    analysisSegment: string | undefined,
+    timestep: string | number,
+    exposureId: string | undefined,
+    property: string,
+    operator: string,
+    value: number | string,
+    action: string
+): string => {
+    const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
+    const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
+    const exposurePart = exposureId ? String(exposureId) : 'dump';
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${action}.glb.zst`;
+};
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(

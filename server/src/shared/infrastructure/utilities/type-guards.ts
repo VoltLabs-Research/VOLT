@@ -8,4 +8,3 @@ export const asRecord = (value: unknown): Record<string, unknown> | undefined =>
     }
     return value;
 };
-

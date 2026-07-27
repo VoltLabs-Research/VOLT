@@ -1,6 +1,10 @@
 import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 import TeamClusterModel from '@modules/cluster/models/TeamClusterModel';
-import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonBuildContextArchive';
+import type {
+    TeamClusterInstallManifestView,
+    TeamClusterInstallManifestFileView,
+    TeamClusterInstallManifestPortsView
+} from '@modules/cluster/services/TeamClusterInstallManifest';
 import {
     DaemonDistributionMode,
     getTeamClusterDaemonDistributionMode,
@@ -12,15 +16,43 @@ import {
     TEAM_CLUSTER_IMAGES,
     TEAM_CLUSTER_INSTALL_MANIFEST_VERSION
 } from '@modules/cluster/services/install-manifest/TeamClusterInstallManifestFiles';
-import { normalizeTeamClusterInstallRoot } from '@modules/cluster/utilities/installRoot';
+import { normalizeTeamClusterInstallRoot } from '@modules/cluster/services/TeamClusterInstallRoot';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
+import archiver from 'archiver';
 import path from 'node:path';
-import type {
-    TeamClusterInstallManifestView,
-    TeamClusterInstallManifestFileView,
-    TeamClusterInstallManifestPortsView
-} from '@modules/cluster/contracts/TeamClusterInstallManifest';
+import { PassThrough } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
+
+const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
+
+export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
+    files: TeamClusterInstallManifestFileView[]
+): Promise<string> => {
+    const output = new PassThrough();
+    const archive = archiver('tar', {
+        gzip: true
+    });
+
+    archive.on('error', (error) => output.destroy(error));
+    archive.pipe(output);
+
+    for (const file of files) {
+        if (!file.path.startsWith(DAEMON_BUILD_CONTEXT_PREFIX)) {
+            continue;
+        }
+
+        archive.append(`${file.contents}\n`, {
+            name: file.path.slice(DAEMON_BUILD_CONTEXT_PREFIX.length),
+            mode: parseInt(file.mode, 8)
+        });
+    }
+
+    await archive.finalize();
+
+    const compressedArchive = await buffer(output);
+    return compressedArchive.toString('base64');
+};
 
 export class TeamClusterInstallManifestService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();

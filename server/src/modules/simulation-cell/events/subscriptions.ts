@@ -1,7 +1,5 @@
-import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
+import SimulationCellModel from '@modules/simulation-cell/models/SimulationCellModel';
 import { deleteManyOnTeamDeleted, deleteManyOnTrajectoryDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
 
-const simulationCellRepositoryAdapter = new SimulationCellRepositoryAdapter();
-
-deleteManyOnTeamDeleted(simulationCellRepositoryAdapter);
-deleteManyOnTrajectoryDeleted(simulationCellRepositoryAdapter);
+deleteManyOnTeamDeleted(SimulationCellModel);
+deleteManyOnTrajectoryDeleted(SimulationCellModel);

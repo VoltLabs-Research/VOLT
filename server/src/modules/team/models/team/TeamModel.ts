@@ -16,20 +16,6 @@ export interface TeamProps {
     updatedAt: Date;
 }
 
-export const getTeamOwnerId = (team: Pick<TeamProps, 'owner'>): string => {
-    const { owner } = team;
-
-    if (typeof owner === 'string') {
-        return owner;
-    }
-
-    if (owner._id) {
-        return owner._id;
-    }
-
-    return owner.toString?.() ?? '';
-};
-
 type TeamRelations = 'owner';
 
 export interface TeamDocument extends Persistable<TeamProps, TeamRelations>, Document { };

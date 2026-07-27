@@ -17,9 +17,3 @@ export const resolveAnalysisStorageClusterId = (
 ): string | undefined => {
     return analysis.storageClusterId;
 };
-
-export const resolveSceneArtifactStorageClusterId = (
-    sceneArtifact: { storageClusterId?: string }
-): string | undefined => {
-    return sceneArtifact.storageClusterId;
-};

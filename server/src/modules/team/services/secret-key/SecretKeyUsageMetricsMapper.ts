@@ -1,5 +1,5 @@
-import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/contracts/secret-key/SecretKeyUsageAnalytics';
-import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/contracts/secret-key/SecretKeyUsageMetrics';
+import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/services/secret-key/SecretKeyUsageAnalytics';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetrics';
 
 interface TeamMetricsDailySeries {
     labels: string[];

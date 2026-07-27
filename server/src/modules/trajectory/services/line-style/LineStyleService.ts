@@ -4,10 +4,11 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
-import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
-import { buildLineStyleObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { stripTrailingZstdExtension } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import {
+    recordSceneArtifact,
+    resolveSceneArtifactExecutionContext
+} from '@modules/trajectory/services/SceneArtifactService';
+import { stripTrailingZstdExtension } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
 
@@ -18,7 +19,7 @@ import trajectoryDumpStorageService from '@modules/trajectory/services/trajector
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { createHash } from 'node:crypto';
 
-import type { LineExportBaseOptions, LineStyleParams } from '@modules/trajectory/contracts/native';
+import type { LineExportBaseOptions, LineStyleParams } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import { Readable } from 'node:stream';
 
 export type LineStyleSpec = LineStyleParams;
@@ -35,6 +36,16 @@ export interface LineStyleStreamResponse {
     contentEncoding?: string;
     contentLength?: number;
 }
+
+const buildLineStyleObjectName = (
+    trajectoryId: string,
+    analysisId: string,
+    timestep: string | number,
+    exposureId: string,
+    styleHash: string
+): string => {
+    return `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/line-style/${exposureId}/${styleHash}.glb.zst`;
+};
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(

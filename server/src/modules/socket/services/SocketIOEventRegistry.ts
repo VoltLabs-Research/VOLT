@@ -1,6 +1,5 @@
-import { SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
-import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import type { ISocketConnection, SocketEventHandler } from '@modules/socket/socket/ISocketModule';
+import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
 import { Socket } from 'socket.io';
 
 export default class SocketIOEventRegistry {

@@ -1,6 +1,23 @@
-import type { AIConversationMessageParts } from '@modules/ai/contracts/AIConversationMessage';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export enum AIConversationMessageRole {
+    User = 'user',
+    Assistant = 'assistant',
+    System = 'system'
+}
+
+export type AIConversationMessagePart = {
+    type: string;
+} & Record<string, unknown>;
+
+export type AIConversationMessageParts = AIConversationMessagePart[];
+
+export interface AIConversationMessage {
+    id: string;
+    role: AIConversationMessageRole;
+    parts: AIConversationMessageParts;
+}
 
 export enum AIMessageRole {
     User = 'user',
@@ -41,11 +58,11 @@ export interface AIMessageProps {
     conversationId: string;
     role: AIMessageRole;
     parts: AIConversationMessageParts;
-    
+
     content: string;
-    
+
     modelInfo: AIMessageModelInfo | null;
-    
+
     tokenUsage: AIMessageTokenUsage | null;
     createdAt: Date;
     updatedAt: Date;

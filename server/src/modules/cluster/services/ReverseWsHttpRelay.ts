@@ -1,5 +1,5 @@
 import logger from '@shared/infrastructure/logger';
-import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
+import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import {
     normalizeWebSocketCloseCode,
@@ -15,23 +15,22 @@ import { WebSocket, WebSocketServer } from 'ws';
 export type ReverseWsHttpRelaySettleReason = 'end' | 'close' | 'error' | 'aborted';
 
 export interface ReverseWsHttpProxyOptions {
-    
     req: IncomingMessage;
-    
+
     res: ServerResponse;
-    
+
     agent: http.Agent;
-    
+
     upstreamOrigin: string;
-    
+
     rewrittenUrl: string;
-    
+
     requestBody?: Buffer;
-    
+
     onProxyRes?: (proxyRes: IncomingMessage) => void;
-    
+
     onSettled?: (destroy: boolean, reason: ReverseWsHttpRelaySettleReason) => void;
-    
+
     onError: (error: Error) => void;
 }
 
@@ -40,7 +39,7 @@ export interface ReverseWsWebSocketUpgradeOptions {
     request: IncomingMessage;
     socket: Duplex;
     head: Buffer;
-    
+
     upstreamWebSocketUrl: string;
     requestedProtocols?: string[];
 }
@@ -48,7 +47,6 @@ export interface ReverseWsWebSocketUpgradeOptions {
 class ReverseWsHttpRelay {
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    
     createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
         const agent = new http.Agent({
             keepAlive: false,
@@ -59,7 +57,6 @@ class ReverseWsHttpRelay {
         return agent;
     }
 
-    
     proxyHttp(options: ReverseWsHttpProxyOptions): void {
         const proxy = httpProxy.createProxyServer();
         const originalUrl = options.req.url;
@@ -106,7 +103,6 @@ class ReverseWsHttpRelay {
         });
     }
 
-    
     async proxyWebSocketUpgrade(options: ReverseWsWebSocketUpgradeOptions): Promise<void> {
         const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(
             options.teamClusterId,

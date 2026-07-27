@@ -16,9 +16,9 @@ import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@share
 import TrajectoryCloneJobModel, { createTrajectoryCloneJobProps } from '@modules/trajectory/models/trajectory/TrajectoryCloneJobModel';
 
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
-import trajectoryReader from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import trajectoryReader, { readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
-import particleFilterService from '@modules/trajectory/services/particle-filter/ParticleFilterService';
+import particleFilterService, { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import lineStyleService, { type LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
@@ -34,10 +34,8 @@ import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/Trajec
 import {
     buildTrajectoryDumpObjectName,
     buildTrajectoryGlbObjectName
-} from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
-import { buildParticleFilterRequest } from '@modules/trajectory/utilities/build-particle-filter-request';
-import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
-import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
+} from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
+import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
 
 import RasterService from '@modules/raster/services/RasterService';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
@@ -74,16 +72,15 @@ import type {
     IDaemonAnalysisCompletionService
 } from '@shared/contracts/ports';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
-import AnalysisModel, { toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
-import { findRuntimeTargetsByTrajectoryId } from '@modules/analysis/models/analysis-queries';
+import AnalysisModel, { findRuntimeTargetsByTrajectoryId, toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import PluginService from '@modules/plugin/services/PluginService';
-import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
+import { insertSimulationCells } from '@modules/simulation-cell/models/SimulationCellModel';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import TeamModel from '@modules/team/models/team/TeamModel';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 
 import mongoose from 'mongoose';
 import type { PipelineStage } from 'mongoose';
@@ -165,13 +162,13 @@ import type {
     GetPublicCanvasGLBOutput,
     GetPublicCanvasRasterFrameInput,
     GetPublicCanvasRasterFrameOutput
-} from '@modules/trajectory/contracts/trajectory/HttpTypes';
-import { PublicCanvasAccessMode } from '@modules/trajectory/contracts/trajectory/HttpTypes';
+} from '@modules/trajectory/services/TrajectoryServiceTypes';
+import { PublicCanvasAccessMode } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type {
     GetAtomsColumnarInput,
     GetAtomsColumnarOutput,
     AtomColumn
-} from '@modules/trajectory/contracts/trajectory/ServiceTypes';
+} from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { GetRasterMetadataOutput } from '@shared/contracts/operations/GetRasterMetadata';
 import type { GetSimulationCellByTrajectoryOutput } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
 import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/GetAnalysisFrameLog';
@@ -377,7 +374,6 @@ export default class TrajectoryService {
     #signedUrlService = new ClusterObjectSignedUrlService();
     #archiveService = new ClusterObjectArchiveService();
     #daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
-    #simulationCellRepository = new SimulationCellRepositoryAdapter();
     #pluginService = new PluginService();
     #analysisService = new AnalysisService();
 
@@ -1906,13 +1902,13 @@ export default class TrajectoryService {
                 timestep: frame.timestep
             }));
 
-        const cells = cellItems.length > 0 ? await this.#simulationCellRepository.createMany(cellItems as never) : [];
+        const cells = await insertSimulationCells(cellItems as never);
 
         let cellIndex = 0;
         return frames.map((frame) => ({
             timestep: frame.timestep,
             natoms: frame.natoms,
-            simulationCell: frame.simulationCell ? (cells[cellIndex++] as unknown as { _id: string })._id : undefined
+            simulationCell: frame.simulationCell ? cells[cellIndex++]._id : undefined
         }));
     }
 

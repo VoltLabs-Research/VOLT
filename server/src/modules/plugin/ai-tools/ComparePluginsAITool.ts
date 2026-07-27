@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import type { PluginRecord } from '@modules/plugin/utilities/mappers/plugin/mapPluginToRecord';
+import type { PluginRecord } from '@modules/plugin/models/plugin/PluginModel';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

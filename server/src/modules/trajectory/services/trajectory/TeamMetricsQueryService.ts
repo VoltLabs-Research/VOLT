@@ -1,4 +1,11 @@
-import { TeamMetricsSnapshot } from '@modules/trajectory/contracts/trajectory';
+export interface TeamMetricsSnapshot {
+    totals: Record<string, number>;
+    lastMonth: Record<string, number>;
+    weekly: {
+        labels: string[];
+        [series: string]: number[] | string[];
+    };
+}
 
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';

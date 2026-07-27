@@ -1,8 +1,8 @@
 import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
-import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
-import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
+import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
+import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
+import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
 import type {
     IClusterObjectArchiveService,
     IClusterObjectSignedUrlService,
@@ -511,8 +511,6 @@ export default class PluginStorageService {
             listingExposures: projection.listingExposures
         };
 
-        
-        
         const modifierKey = projection.modifier?.key?.trim();
         const existingDoc = modifierKey
             ? await PluginModel.findOne({ team: teamId, 'modifier.key': modifierKey }).exec()

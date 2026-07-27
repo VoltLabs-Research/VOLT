@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
-import type { ClusterTransferJobState } from '@modules/cluster/utilities/cluster-transfer-job';
+import type { ClusterTransferJobState } from '@modules/cluster/models/ClusterTransferJobModel';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

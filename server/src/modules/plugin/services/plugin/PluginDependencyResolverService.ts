@@ -1,12 +1,11 @@
-import { PluginStatus, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
-import type {
-    ArgumentDefinition,
-    PluginReferenceArgumentMapping
-} from '@modules/plugin/workflow/nodes/ArgumentNode';
-import { ArgumentType } from '@modules/plugin/workflow/nodes/ArgumentNode';
-import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
-import { findPluginsByIds } from '@modules/plugin/models/plugin/plugin-queries';
-import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
+import { PluginStatus, findPluginsByIds, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import {
+    ArgumentType,
+    WorkflowNodeType,
+    type ArgumentDefinition,
+    type PluginReferenceArgumentMapping
+} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import { isArgumentVisible } from '@modules/plugin/services/plugin/ArgumentVisibility';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface PluginDependencyTraversalResult {

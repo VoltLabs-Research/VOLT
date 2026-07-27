@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ChatService from '@modules/chat/services/ChatService';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';

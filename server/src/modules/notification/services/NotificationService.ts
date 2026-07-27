@@ -1,6 +1,6 @@
 import NotificationModel from '@modules/notification/models/NotificationModel';
 import type { NotificationDocument } from '@modules/notification/models/NotificationModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 
 interface NotificationView{
     _id: string;

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ModuleRegistry } from './ModuleRegistry';
-import { defineModule } from './defineModule';
+import { ModuleRegistry } from '@shared/infrastructure/modules/ModuleRegistry';
+import { defineModule } from '@shared/infrastructure/modules/defineModule';
 
 const KERNEL_KEYS = ['auth', 'session', 'socket', 'team'] as const;
 

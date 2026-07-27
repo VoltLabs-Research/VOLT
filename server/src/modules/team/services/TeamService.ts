@@ -13,12 +13,12 @@ import TeamMemberModel, {
 import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
 import TeamRoleModel, { buildTeamRoleCreatePayload } from '@modules/team/models/team-role/TeamRoleModel';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import { toPersistedOutput } from '@modules/team/utilities/toPersistedOutput';
+import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
 import TeamCreatedEvent from '@modules/team/events/team/TeamCreatedEvent';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import DeploymentSettingsRepository from '@modules/system/repositories/DeploymentSettingsRepository';
+import DeploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type {
     CreateTeamInput,
@@ -47,7 +47,7 @@ interface PopulatedTeamOwner {
 export default class TeamService {
     #membership = new TeamMembershipService();
     #users = { addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }) };
-    #deploymentSettings = new DeploymentSettingsRepository();
+    #deploymentSettings = new DeploymentSettingsService();
     #eventBus = eventBus;
 
     async create(userId: string, input: CreateTeamInput): Promise<PersistedOutput<TeamProps>> {

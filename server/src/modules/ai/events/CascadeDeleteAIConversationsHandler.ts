@@ -5,7 +5,6 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 export default abstract class CascadeDeleteAIConversationsHandler<TEvent extends IDomainEvent>
     implements IEventHandler<TEvent> {
-    
     protected abstract readonly ownerField: 'teamId' | 'userId';
 
     protected abstract resolveOwnerId(event: TEvent): string;

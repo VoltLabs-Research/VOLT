@@ -26,9 +26,6 @@
       ],
       "@volt/contracts/*": [
         "../contracts/src/*"
-      ],
-      "@/*": [
-        "./*"
       ]
     }
   },

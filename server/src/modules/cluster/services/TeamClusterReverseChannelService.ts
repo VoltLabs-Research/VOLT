@@ -5,12 +5,12 @@ import type {
 } from '@shared/contracts/ports';
 import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/utilities/TeamClusterReverseTerminal';
+import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/services/TeamClusterReverseTerminal';
 import {
     TeamClusterReverseTunnelStream,
     type TeamClusterTunnelStream
-} from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
-import { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
+} from '@modules/cluster/services/TeamClusterReverseTunnelStream';
+import { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
@@ -37,10 +37,10 @@ import {
     type TeamClusterDaemonTunnelDataPayload,
     type TeamClusterDaemonTunnelDrainPayload,
     type TeamClusterDaemonTunnelStatePayload
-} from '@modules/cluster/utilities/teamClusterSocket';
+} from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterReverseChannelService } from '@modules/cluster/ports/ITeamClusterReverseChannelService';
 import type {
+    ITeamClusterReverseChannelService,
     TeamClusterDaemonCommandData,
     TeamClusterDaemonCommandPayload,
     TeamClusterCommandOptions,
@@ -52,20 +52,7 @@ import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterDaemonInboundStreamPayload,
     TeamClusterDaemonInboundStreamConsumer
-} from '@modules/cluster/contracts/TeamClusterReverseChannel';
-export type {
-    TeamClusterDaemonCommandData,
-    TeamClusterDaemonCommandPayload,
-    TeamClusterCommandOptions,
-    TeamClusterDaemonSocketRegistration,
-    TeamClusterExposureTunnelOpenRequest,
-    TeamClusterDirectTunnelOpenRequest,
-    TeamClusterTunnelOpenRequest,
-    TeamClusterTunnelOpenOptions,
-    TeamClusterReverseChannelStreamAttachment,
-    TeamClusterDaemonInboundStreamPayload,
-    TeamClusterDaemonInboundStreamConsumer
-};
+} from '@modules/cluster/services/TeamClusterReverseChannelTypes';
 import logger from '@shared/infrastructure/logger';
 import {
     EnvelopeKind,

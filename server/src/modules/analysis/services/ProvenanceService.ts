@@ -1,6 +1,6 @@
 import logger from '@shared/infrastructure/logger';
 import AnalysisProvenanceModel from '@modules/analysis/models/AnalysisProvenanceModel';
-import type { AnalysisProvenance } from '@modules/analysis/models/AnalysisMetadata';
+import type { AnalysisProvenance } from '@modules/analysis/models/AnalysisProvenanceModel';
 import crypto from 'node:crypto';
 
 export interface RecordProvenanceInput {

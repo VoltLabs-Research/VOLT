@@ -1,7 +1,7 @@
 import {
     TeamClusterRemoteAccessSessionView,
     TeamClusterRemoteAccessTarget
-} from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+} from '@modules/cluster/services/TeamClusterRemoteAccess';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';

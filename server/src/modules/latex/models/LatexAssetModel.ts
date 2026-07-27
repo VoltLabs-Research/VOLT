@@ -6,7 +6,7 @@ export interface LatexAssetProps {
     team: string;
     document: string;
     originalName: string;
-    
+
     path: string;
     storageKey: string;
     url: string;

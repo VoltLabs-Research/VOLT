@@ -1,11 +1,11 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import { TeamClusterRemoteAccessTarget } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+import { TeamClusterRemoteAccessTarget } from '@modules/cluster/services/TeamClusterRemoteAccess';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import type {
     TeamClusterRemoteExplorerEntryView,
     TeamClusterRemoteExplorerNodeView
-} from '@modules/cluster/contracts/TeamClusterRemoteAccess';
-import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelService';
+} from '@modules/cluster/services/TeamClusterRemoteAccess';
+import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelTypes';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;

@@ -1,5 +1,5 @@
 
-import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
 
 export interface GetPluginListingDocumentsInput {
     pluginId: string;

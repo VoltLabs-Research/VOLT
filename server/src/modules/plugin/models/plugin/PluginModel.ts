@@ -1,7 +1,9 @@
-import Workflow, { type WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { PluginSchema, PluginStatus } from '@modules/plugin/models/plugin/PluginSchema';
-import WorkflowProjectionService, { type PluginProjection } from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
+import WorkflowProjectionService, { type PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
 
+import type { PluginRecord as PluginRecordContract } from '@shared/contracts/operations/PluginRecord';
+import { mapPluginToRecord as mapPluginToRecordNeutral } from '@shared/application/utilities/mapPluginToRecord';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Model, Document } from 'mongoose';
 
@@ -75,6 +77,25 @@ export const toPluginLike = (doc: PluginDocument): Plugin => {
             requiresExposures: resolvedRequiresExposures
         } as unknown as PluginProps
     };
+};
+
+export type PluginRecord = PluginRecordContract<PluginProps, WorkflowProps>;
+
+export const mapPluginToRecord = (plugin: Plugin): PluginRecord =>
+    mapPluginToRecordNeutral(plugin) as PluginRecord;
+
+export const findPluginsByIds = async (ids: string[]): Promise<Plugin[]> => {
+    if (!ids.length) {
+        return [];
+    }
+
+    const documents = await PluginModel.find({
+        _id: {
+            $in: ids
+        }
+    }).exec();
+
+    return documents.map((document) => toPluginLike(document));
 };
 
 export default PluginModel;

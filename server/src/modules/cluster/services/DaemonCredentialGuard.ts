@@ -1,8 +1,8 @@
 import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
-import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/team-cluster-queries';
-import TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterCredentialsCipher';
-import { hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
-import { secureCompare } from '@modules/cluster/utilities/secureCompare';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterCredentialService from '@modules/cluster/services/TeamClusterCredentialService';
+import { hashEnrollmentToken } from '@modules/cluster/services/TeamClusterCredentialService';
+import { secureCompare } from '@modules/cluster/services/TeamClusterCredentialService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 export interface DecryptedTeamClusterServiceCredentials {
@@ -16,13 +16,13 @@ export interface DecryptedTeamClusterServiceCredentials {
 }
 
 export default class DaemonCredentialGuard {
-    private readonly teamClusterCredentialsCipher = new TeamClusterCredentialsCipher();
+    private readonly teamClusterCredentialService = new TeamClusterCredentialService();
 
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
         const teamCluster = await this.requireSensitiveCluster(teamClusterId);
         const persistedDaemonPassword = this.requireEncryptedDaemonPassword(teamCluster);
 
-        if (!secureCompare(await this.teamClusterCredentialsCipher.decrypt(persistedDaemonPassword), daemonPassword)) {
+        if (!secureCompare(await this.teamClusterCredentialService.decrypt(persistedDaemonPassword), daemonPassword)) {
             throw ApplicationError.unauthorized('TeamCluster::DaemonUnauthorized', 'Invalid daemon credentials');
         }
 
@@ -51,7 +51,7 @@ export default class DaemonCredentialGuard {
     }
 
     async getDecryptedDaemonPassword(teamCluster: TeamCluster): Promise<string> {
-        return this.teamClusterCredentialsCipher.decrypt(this.requireEncryptedDaemonPassword(teamCluster));
+        return this.teamClusterCredentialService.decrypt(this.requireEncryptedDaemonPassword(teamCluster));
     }
 
     async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
@@ -68,13 +68,13 @@ export default class DaemonCredentialGuard {
         }
 
         return {
-            minioUsername: await this.teamClusterCredentialsCipher.decrypt(minioUsername),
-            minioPassword: await this.teamClusterCredentialsCipher.decrypt(minioPassword),
-            redisUsername: await this.teamClusterCredentialsCipher.decrypt(redisUsername),
-            redisPassword: await this.teamClusterCredentialsCipher.decrypt(redisPassword),
-            mongodbUsername: await this.teamClusterCredentialsCipher.decrypt(mongodbUsername),
-            mongodbPassword: await this.teamClusterCredentialsCipher.decrypt(mongodbPassword),
-            daemonPassword: await this.teamClusterCredentialsCipher.decrypt(daemonPassword)
+            minioUsername: await this.teamClusterCredentialService.decrypt(minioUsername),
+            minioPassword: await this.teamClusterCredentialService.decrypt(minioPassword),
+            redisUsername: await this.teamClusterCredentialService.decrypt(redisUsername),
+            redisPassword: await this.teamClusterCredentialService.decrypt(redisPassword),
+            mongodbUsername: await this.teamClusterCredentialService.decrypt(mongodbUsername),
+            mongodbPassword: await this.teamClusterCredentialService.decrypt(mongodbPassword),
+            daemonPassword: await this.teamClusterCredentialService.decrypt(daemonPassword)
         };
     }
 

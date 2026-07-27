@@ -4,7 +4,7 @@ import { buildControllerParams } from '@shared/infrastructure/http/controllers/c
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
@@ -20,7 +20,6 @@ export default abstract class ClusterControllerBase extends Controller {
         BaseResponse.paginated(res, value, value._meta);
     }
 
-    
     protected pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {

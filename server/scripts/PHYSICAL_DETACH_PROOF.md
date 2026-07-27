@@ -34,10 +34,9 @@ kernel), so nothing should depend on them. Safe-to-test-first leaves:
 - `whiteboards`
 - `chat`
 - `daily-activity`
-- `early-access`
 
 (`scripting` and `dashboard` are also leaves but `scripting` requires
-`container` and `dashboard` has many `optional` edges — exercise the five above
+`container` and `dashboard` has many `optional` edges — exercise the four above
 first.) Do **not** start with `compute`/`capability`/`kernel` modules; kernel
 (`auth`, `session`, `socket`, `team`) is by definition non-detachable.
 
@@ -47,7 +46,7 @@ Run from the server root: `app/VOLT/server`. Replace `<leaf>` with one of the
 modules above (example uses `latex`).
 
 ```bash
-LEAF=latex     # one of: latex whiteboards chat daily-activity early-access
+LEAF=latex     # one of: latex whiteboards chat daily-activity
 
 # 0) Confirm a clean baseline FIRST — the proof is only meaningful if tsc is
 #    green before you remove anything. (Concurrent module migrations may make

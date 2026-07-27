@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
 import LatexService from '@modules/latex/services/LatexService';
@@ -27,8 +27,6 @@ import type {
 @Middleware(protect, teamScoped(Resource.LATEX))
 export default class LatexController extends Controller {
     #service = new LatexService();
-
-    
 
     @Route(latexRoutes.listDocuments)
     listDocuments(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
@@ -79,8 +77,6 @@ export default class LatexController extends Controller {
     moveDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Body() body: MoveLatexDocumentInput) {
         return this.#service.moveDocument({ teamId, documentId, folderId: body.folderId });
     }
-
-    
 
     @Route(latexRoutes.listAssets)
     listAssets(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
@@ -136,8 +132,6 @@ export default class LatexController extends Controller {
         return this.#service.updateAsset({ teamId, documentId, assetId, path: body.path });
     }
 
-    
-
     @Route(latexRoutes.exportDocumentTex)
     async exportDocumentTex(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
         const output = await this.#service.exportDocumentTex({ teamId, documentId });
@@ -158,8 +152,6 @@ export default class LatexController extends Controller {
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
     }
-
-    
 
     @Route(latexRoutes.listFiles)
     listFiles(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
@@ -197,8 +189,6 @@ export default class LatexController extends Controller {
         return this.#service.setFileEntrypoint({ teamId, documentId, fileId });
     }
 
-    
-
     @Route(latexRoutes.listFolders)
     listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
         return this.#service.listFolders({ teamId, ...query });
@@ -225,7 +215,6 @@ export default class LatexController extends Controller {
         await this.#service.deleteFolder({ teamId, folderId });
     }
 
-    
     #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {

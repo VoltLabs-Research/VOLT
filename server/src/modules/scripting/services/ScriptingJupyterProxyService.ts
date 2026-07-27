@@ -12,7 +12,7 @@ import {
     matchJupyterProxyPath,
     PROXY_URL_ORIGIN,
     setJupyterProxyAccessCookie
-} from '@modules/scripting/utilities/jupyter-proxy';
+} from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import {
     TeamClusterServiceExposureAccessMode
 } from '@shared/contracts/types';

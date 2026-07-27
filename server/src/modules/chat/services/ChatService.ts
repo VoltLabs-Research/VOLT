@@ -11,7 +11,7 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import TeamModel from '@modules/team/models/team/TeamModel';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import logger from '@shared/infrastructure/logger';
 import type { HydratedDocument } from 'mongoose';
 import type {

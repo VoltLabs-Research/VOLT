@@ -1,6 +1,6 @@
 import SecretKeyUsageLogModel, { SecretKeyUsageLogProps } from '@modules/team/models/secret-key/SecretKeyUsageLogModel';
-import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/contracts/secret-key/SecretKeyUsageAnalytics';
-import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/contracts/secret-key/SecretKeyUsageMetrics';
+import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/services/secret-key/SecretKeyUsageAnalytics';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetrics';
 import mongoose from 'mongoose';
 import type { PipelineStage } from 'mongoose';
 

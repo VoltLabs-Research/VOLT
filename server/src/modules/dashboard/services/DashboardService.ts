@@ -11,13 +11,13 @@ import type {
     PluginRecord,
     TrajectoryRecord
 } from '@shared/contracts/operations';
-import { findByTeamAndSearch } from '@modules/analysis/models/analysis-queries';
+import { findByTeamAndSearch } from '@modules/analysis/models/AnalysisModel';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginModel, { toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import TeamService from '@modules/team/services/TeamService';
 import ChatModel from '@modules/chat/models/chat/ChatModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 
 export interface ContainerSearchView {
     _id: string;

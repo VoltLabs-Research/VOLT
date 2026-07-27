@@ -7,13 +7,13 @@ import TeamRoleModel, {
     canRenameTeamRoleTo
 } from '@modules/team/models/team-role/TeamRoleModel';
 import type { TeamRoleProps } from '@modules/team/models/team-role/TeamRoleModel';
-import { toPersistedOutput } from '@modules/team/utilities/toPersistedOutput';
+import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
 import TeamRoleCreatedEvent from '@modules/team/events/team-role/TeamRoleCreatedEvent';
 import TeamRoleUpdatedEvent from '@modules/team/events/team-role/TeamRoleUpdatedEvent';
 import TeamRoleDeletedEvent from '@modules/team/events/team-role/TeamRoleDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 

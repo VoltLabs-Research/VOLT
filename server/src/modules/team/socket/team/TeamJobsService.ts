@@ -1,9 +1,13 @@
 import redisClient from '@shared/infrastructure/redis/redisClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
+import {
+    JOB_STATUS_KEY_PREFIX,
+    projectedTeamJobsKey as buildProjectedTeamJobsKey,
+    projectedTeamJobsRevisionKey as buildProjectedTeamJobsRevisionKey
+} from '@modules/jobs/services/JobRedisKeys';
 import type { TeamJobSnapshot, TeamJobStatus } from '@shared/contracts/types/TeamJobSnapshot';
 import logger from '@shared/infrastructure/logger';
 
-const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const UNGROUPED_TIMESTEP = -1;
 const MAX_INITIAL_SNAPSHOT_ATTEMPTS = 5;
@@ -297,10 +301,10 @@ export default class TeamJobsService {
     }
 
     private projectedTeamJobsKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs`;
+        return buildProjectedTeamJobsKey(teamId);
     }
 
     private projectedTeamJobsRevisionKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs:revision`;
+        return buildProjectedTeamJobsRevisionKey(teamId);
     }
 };

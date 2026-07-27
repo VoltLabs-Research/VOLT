@@ -5,16 +5,16 @@ import TeamMemberModel, { getTeamMemberUserId, isPopulatedTeamMemberUser } from 
 import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import { toPersistedOutput } from '@modules/team/utilities/toPersistedOutput';
+import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
 import TeamMemberDeletedEvent from '@modules/team/events/team-member/TeamMemberDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import analysisMemberContentCounter from '@modules/analysis/member-content/AnalysisMemberContentCounter';
-import latexMemberContentCounter from '@modules/latex/member-content/LatexMemberContentCounter';
-import trajectoryMemberContentCounter from '@modules/trajectory/member-content/TrajectoryMemberContentCounter';
-import whiteboardMemberContentCounter from '@modules/whiteboards/member-content/WhiteboardMemberContentCounter';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
+import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
+import latexMemberContentCounter from '@modules/latex/services/LatexMemberContentCounter';
+import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';
+import whiteboardMemberContentCounter from '@modules/whiteboards/services/WhiteboardMemberContentCounter';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
 
 const buildContentCounters = (): IMemberContentCounter[] => {

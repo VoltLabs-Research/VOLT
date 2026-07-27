@@ -1,5 +1,5 @@
-import type { NormalizedTeamSubscription } from '@modules/socket/contracts/team-subscription';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
+import type { NormalizedTeamSubscription } from '@modules/socket/socket/team-subscription/team-subscription';
 
 export interface TeamSubscriptionContext {
     connection: ISocketConnection;

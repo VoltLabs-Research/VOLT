@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import ms from 'ms';
 import type { StringValue } from 'ms';
-import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 
 interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     type: 'scripting-jupyter';

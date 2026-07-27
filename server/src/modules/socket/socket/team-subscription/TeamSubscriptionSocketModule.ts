@@ -1,13 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
-import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
-import type { ISocketConnectionUser } from '@modules/socket/ports/ISocketModule';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import type {
+    ISocketConnection,
+    ISocketConnectionUser
+} from '@modules/socket/socket/ISocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 
 interface SocketAck<T = unknown> {

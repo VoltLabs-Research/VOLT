@@ -1,8 +1,8 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { teamScoped } from '@modules/team/middlewares/team-scoped';
-import { protect } from '@modules/auth/middlewares/authentication';
+import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
+import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import PluginService from '@modules/plugin/services/PluginService';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
@@ -39,7 +39,7 @@ import type {
     GetAnalysisListingExportOptionsInput,
     ExportListingRowsByAnalysisIdInput,
     GetListingRowsByAnalysisIdInput
-} from '@modules/plugin/utilities/listing-row/listing-row-types';
+} from '@modules/plugin/services/listing-row/ListingRowTypes';
 import type {
     ExportPluginListingDocumentsInput,
     GetPluginListingDocumentsInput
@@ -85,7 +85,6 @@ const importUploadSingleFile = (fieldName: string) => (
 export default class PluginController extends Controller {
     #service = new PluginService();
 
-    
     #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {
@@ -116,8 +115,6 @@ export default class PluginController extends Controller {
             stream.pipe(res);
         });
     }
-
-    
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)
     async getListingRowsByAnalysisId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
@@ -164,8 +161,6 @@ export default class PluginController extends Controller {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    
-
     @Route(pluginRoutes.getPluginExposureGLB)
     async getPluginExposureGLB(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInput;
@@ -189,8 +184,6 @@ export default class PluginController extends Controller {
         await output.prepare?.();
         await this.#pipeStream(res, output.stream, output.headers);
     }
-
-    
 
     @Route(pluginRoutes.getNodeTypesSchema)
     async getNodeTypesSchema(@Res() res: Response): Promise<void> {
@@ -275,7 +268,7 @@ export default class PluginController extends Controller {
     async deleteBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as DeleteBinaryInput;
         await this.#service.deleteBinary(input);
-        
+
         res.status(HttpStatus.NoContent).send();
     }
 
@@ -304,14 +297,12 @@ export default class PluginController extends Controller {
     async deleteById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as DeletePluginByIdInput;
         await this.#service.deletePluginById(input);
-        
+
         res.status(HttpStatus.NoContent).send();
     }
 
     @Route(pluginRoutes.executePipeline)
     async executePipeline(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        
-        
         const input = buildControllerParams(req) as unknown as ExecutePipelineInput;
         const value = await this.#service.executePipeline(input);
         BaseResponse.success(res, value, HttpStatus.OK);

@@ -18,14 +18,14 @@ import {
     prepareWorkDir,
     runCompiler,
     withDocumentCompileLock
-} from '@modules/latex/ai-tools/compile-helpers';
+} from '@modules/latex/services/LatexCompiler';
 import {
     assertLatexAssetStorageKey,
     buildLatexAssetContentUrl,
     buildLatexAssetStorageKey,
-    requireLatexStorageClusterId
-} from '@modules/latex/utilities/latex-storage';
-import { sanitizeAssetPath } from '@modules/latex/utilities/sanitize-asset-path';
+    requireLatexStorageClusterId,
+    sanitizeAssetPath
+} from '@modules/latex/services/LatexAssetStorage';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
@@ -39,7 +39,7 @@ import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGate
 import type { DownloadStreamOutput } from '@shared/contracts/types';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 import type { HydratedDocument } from 'mongoose';
 import fs from 'node:fs/promises';

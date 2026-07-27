@@ -6,8 +6,8 @@ import {
 import { TeamClusterStatus } from '@shared/contracts/types';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
 import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
 

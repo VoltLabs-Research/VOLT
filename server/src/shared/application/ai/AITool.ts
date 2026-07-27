@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import type { Tool } from 'ai';
 import { z } from 'zod';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import type { UseCaseInstance } from '@shared/application/IUseCase';
 
 type AIToolInput<TInput> = [TInput] extends [never] ? unknown : TInput;
 
@@ -17,11 +16,8 @@ export abstract class AITool<
     abstract readonly description: string;
     abstract readonly parameters: TSchema;
 
-    protected useCase?: UseCaseInstance;
-
     protected needsApproval?: AIToolNeedsApproval<TInput>;
 
-    
     protected readonly clientExecuted?: boolean;
 
     execute?(params: TInput, scope: AIToolScope): Promise<TResult>;
@@ -50,11 +46,7 @@ export abstract class AITool<
                 return customExecute.call(this, params, scope);
             }
 
-            if (this.useCase) {
-                return (await this.useCase.execute(Object.assign({}, params, scope))) as TResult;
-            }
-
-            throw new Error(`AI tool "${this.name}" requires an execute method or a use case.`);
+            throw new Error(`AI tool "${this.name}" requires an execute method.`);
         };
 
         const toolDefinition = this.needsApproval === undefined

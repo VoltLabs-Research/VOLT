@@ -12,11 +12,11 @@ import TeamInvitationModel, {
     normalizeInvitationEmail
 } from '@modules/team/models/team-invitation/TeamInvitationModel';
 import type { TeamInvitationProps } from '@modules/team/models/team-invitation/TeamInvitationModel';
-import { toPersistedOutput } from '@modules/team/utilities/toPersistedOutput';
+import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
 import InvitationSentEvent from '@modules/team/events/team-invitation/InvitationSentEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import crypto from 'crypto';
 import type {

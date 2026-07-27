@@ -1,4 +1,4 @@
-import { Exporter, ExportType } from '@modules/plugin/workflow/nodes/ExportNode';
+import { Exporter, ExportType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';

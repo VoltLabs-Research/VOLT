@@ -5,12 +5,12 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 export interface LatexFileProps {
     document: string;
     team: string;
-    
+
     name: string;
-    
+
     path: string;
     content: string;
-    
+
     isEntrypoint: boolean;
     createdBy: string;
     createdAt: Date;

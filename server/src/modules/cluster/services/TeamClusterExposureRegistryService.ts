@@ -1,9 +1,15 @@
-import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/cluster/utilities/teamClusterSocket';
+import {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    type TeamClusterServiceExposure
+} from '@shared/contracts/types/TeamClusterExposure';
 import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports';
 import { EventEmitter } from 'node:events';
-import type { ExposureRegistryChangeEvent } from '@modules/cluster/contracts/ExposureRegistryChangeEvent';
-export type { ExposureRegistryChangeEvent };
+
+export interface ExposureRegistryChangeEvent {
+    teamClusterId: string;
+    exposures: TeamClusterServiceExposure[];
+}
 
 const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
     return `${teamClusterId}:${exposureId}`;

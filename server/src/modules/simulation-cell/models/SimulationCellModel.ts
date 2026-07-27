@@ -42,4 +42,15 @@ const SimulationCellSchema: Schema<SimulationCellDocument> = new Schema({
 
 const SimulationCellModel: Model<SimulationCellDocument> = mongoose.model<SimulationCellDocument>('SimulationCell', SimulationCellSchema);
 
+export const insertSimulationCells = async (
+    items: Array<Partial<SimulationCellProps>>
+): Promise<Array<{ _id: string }>> => {
+    if (items.length === 0) {
+        return [];
+    }
+
+    const inserted = await SimulationCellModel.insertMany(items, { ordered: true });
+    return inserted.map((doc) => ({ _id: String(doc._id) }));
+};
+
 export default SimulationCellModel;

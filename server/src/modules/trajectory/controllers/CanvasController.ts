@@ -1,7 +1,7 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import { authenticateOptional } from '@modules/auth/middlewares/authentication';
+import { authenticateOptional } from '@modules/auth/controllers/middleware/authentication';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import {

@@ -3,12 +3,16 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import JwtTokenService from '@modules/auth/services/JwtTokenService';
 import SessionModel from '@modules/session/models/SessionModel';
-import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/ports/ISocketModule';
-import { ISocketModule } from '@modules/socket/ports/ISocketModule';
+import type {
+    ISocketAuthenticationResult,
+    ISocketConnectionData,
+    ISocketConnectionUser,
+    ISocketModule
+} from '@modules/socket/socket/ISocketModule';
 import SocketIOEmitter, { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import SocketIOEventRegistry, { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import SocketIORoomManager, { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
-import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import logger from '@shared/infrastructure/logger';
 import { createAdapter } from '@socket.io/redis-adapter';

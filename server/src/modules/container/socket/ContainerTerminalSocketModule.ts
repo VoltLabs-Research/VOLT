@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import daemonContainerRuntimeService, { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';

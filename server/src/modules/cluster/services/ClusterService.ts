@@ -6,8 +6,8 @@ import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import type { SystemStatus } from '@modules/system/value-objects/SystemMetrics';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import type { SystemStatus } from '@modules/system/services/SystemMetrics';
 import type { TrajectoryLike } from '@shared/contracts/types';
 import {
     resolveAnalysisComputeClusterId,
@@ -53,10 +53,10 @@ import type {
 import {
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
     DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
-} from '@modules/cluster/utilities/team-cluster-defaults';
+} from '@modules/cluster/services/TeamClusterFactory';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import type { ClusterTransferJob } from '@modules/cluster/models/ClusterTransferJobModel';
-import type { ClusterTransferJobState } from '@modules/cluster/utilities/cluster-transfer-job';
+import type { ClusterTransferJobState } from '@modules/cluster/models/ClusterTransferJobModel';
 import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 
 import type {
@@ -64,19 +64,19 @@ import type {
     TeamClusterQueueConcurrencyView,
     TeamClusterQueueScopeLimitsView,
     TeamClusterCredentialServicesView
-} from '@modules/cluster/contracts/TeamClusterView';
-import type { ClusterTransferJobView } from '@modules/cluster/contracts/ClusterTransferJobView';
+} from '@modules/cluster/services/TeamClusterView';
+import type { ClusterTransferJobView } from '@modules/cluster/services/TeamClusterView';
 import {
     TeamClusterRemoteAccessTarget,
     type TeamClusterRemoteAccessSessionView,
     type TeamClusterRemoteExplorerEntryView,
     type TeamClusterRemoteExplorerNodeView
-} from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+} from '@modules/cluster/services/TeamClusterRemoteAccess';
 import type {
     TeamClusterInstallManifestView,
     TeamClusterInstallManifestPortsView
-} from '@modules/cluster/contracts/TeamClusterInstallManifest';
-import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/contracts/TeamClusterHeartbeat';
+} from '@modules/cluster/services/TeamClusterInstallManifest';
+import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 
 import clusterTransferCoordinator from '@modules/cluster/services/ClusterTransferCoordinator';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
@@ -84,7 +84,7 @@ import clusterTransferRunner from '@modules/cluster/services/ClusterTransferRunn
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import demoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
 import type { DemoClusterPlaintextCredentials } from '@modules/cluster/services/DemoClusterDeploymentService';
-import TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterCredentialsCipher';
+import TeamClusterCredentialService from '@modules/cluster/services/TeamClusterCredentialService';
 import teamClusterInstallManifestService from '@modules/cluster/services/TeamClusterInstallManifestService';
 import teamClusterRemoteAccessSessionService from '@modules/cluster/services/TeamClusterRemoteAccessSessionService';
 import remoteExplorerDaemonGateway from '@modules/cluster/services/RemoteExplorerDaemonGateway';
@@ -93,17 +93,17 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAna
 import {
     createEnrollmentToken,
     hashEnrollmentToken
-} from '@modules/cluster/utilities/enrollmentToken';
+} from '@modules/cluster/services/TeamClusterCredentialService';
 import {
     buildTeamClusterProps,
     createServiceCredentials,
     createDaemonPassword,
     encryptTeamClusterServices
-} from '@modules/cluster/utilities/team-cluster-builder';
-import { buildManualTeamClusterUninstallCommand } from '@modules/cluster/utilities/installRoot';
-import { assertConfirmedPassword } from '@modules/cluster/utilities/assertConfirmedPassword';
+} from '@modules/cluster/services/TeamClusterFactory';
+import { buildManualTeamClusterUninstallCommand } from '@modules/cluster/services/TeamClusterInstallRoot';
+import { assertConfirmedPassword } from '@modules/cluster/services/TeamClusterCredentialService';
 
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 
 const SENSITIVE_FIELDS_SELECTION = [
     '+enrollmentTokenHash',
@@ -383,7 +383,7 @@ export default class ClusterService {
 
     #lifecycleService = teamClusterLifecycleService;
     #demoDeploymentService = demoClusterDeploymentService;
-    #credentialsCipher = new TeamClusterCredentialsCipher();
+    #credentialService = new TeamClusterCredentialService();
     #installManifestService = teamClusterInstallManifestService;
     #remoteAccessSessionService = teamClusterRemoteAccessSessionService;
     #remoteExplorerDaemonGateway = remoteExplorerDaemonGateway;
@@ -401,7 +401,7 @@ export default class ClusterService {
         const existingDemo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
 
         const enrollmentToken = createEnrollmentToken();
-        const encryptedServices = await encryptTeamClusterServices(this.#credentialsCipher, {
+        const encryptedServices = await encryptTeamClusterServices(this.#credentialService, {
             minio: createServiceCredentials('minio'),
             redis: createServiceCredentials('redis'),
             mongodb: createServiceCredentials('mongodb'),
@@ -532,7 +532,7 @@ export default class ClusterService {
         const credentials = this.#buildDemoPlaintextCredentials(enrollmentToken);
         const now = new Date();
         const expiresAt = new Date(now.getTime() + DEMO_CLUSTER_TTL_MINUTES * 60_000);
-        const encryptedServices = await encryptTeamClusterServices(this.#credentialsCipher, {
+        const encryptedServices = await encryptTeamClusterServices(this.#credentialService, {
             minio: { username: credentials.minioUsername, password: credentials.minioPassword },
             redis: { username: credentials.redisUsername, password: credentials.redisPassword },
             mongodb: { username: credentials.mongodbUsername, password: credentials.mongodbPassword },
@@ -1453,7 +1453,7 @@ export default class ClusterService {
         if (!value) {
             throw ApplicationError.internalServerError(`Missing sensitive field ${field} for team cluster ${teamClusterId}`);
         }
-        return this.#credentialsCipher.decrypt(value);
+        return this.#credentialService.decrypt(value);
     }
 
     #shouldRequireManualUninstall(status: TeamClusterStatus, installedVersion: string | null, daemonPort: number | null): boolean {

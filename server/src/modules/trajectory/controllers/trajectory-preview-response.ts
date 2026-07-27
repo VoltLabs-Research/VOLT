@@ -1,5 +1,5 @@
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { TrajectoryPreviewResult } from '@modules/trajectory/contracts/trajectory';
+import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { Response } from 'express';
 
 export const sendTrajectoryPreview = (

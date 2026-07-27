@@ -276,6 +276,17 @@ export interface TeamCluster {
     readonly effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
 }
 
+const SENSITIVE_FIELDS_SELECTION = [
+    '+enrollmentTokenHash',
+    '+services.minio.username',
+    '+services.minio.password',
+    '+services.redis.username',
+    '+services.redis.password',
+    '+services.mongodb.username',
+    '+services.mongodb.password',
+    '+services.daemon.password'
+].join(' ');
+
 export const toTeamClusterLike = (doc: TeamClusterDocument): TeamCluster => {
     const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
     const { _id, __v: _ignoredVersion, effectiveCapabilities: _ignoredVirtual, ...rest } = documentProps;
@@ -297,6 +308,14 @@ export const toTeamClusterLike = (doc: TeamClusterDocument): TeamCluster => {
         props: rest as unknown as TeamClusterProps,
         effectiveCapabilities: resolveEffectiveCapabilitiesFromRoleConfig(rest.roleConfig as TeamClusterProps['roleConfig'])
     };
+};
+
+export const findTeamClusterByIdWithSensitiveData = async (teamClusterId: string): Promise<TeamCluster | null> => {
+    const document = await TeamClusterModel.findById(teamClusterId)
+        .select(SENSITIVE_FIELDS_SELECTION)
+        .exec();
+
+    return document ? toTeamClusterLike(document) : null;
 };
 
 export default TeamClusterModel;

@@ -7,8 +7,8 @@ import TeamAIIntegrationModel, {
 } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import type { TeamAIIntegrationDocument } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import TeamAIProviderCatalog from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
-import TeamAIIntegrationSecretCipher from '@modules/team/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';
 import type { HydratedDocument } from 'mongoose';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 import type {
@@ -21,6 +21,16 @@ import type {
 } from '@volt/contracts/modules/team/domain';
 
 type TeamAIIntegrationDoc = HydratedDocument<TeamAIIntegrationDocument>;
+
+export class TeamAIIntegrationSecretCipher {
+    async encrypt(value: string): Promise<string> {
+        return encrypt(value);
+    }
+
+    async decrypt(value: string): Promise<string> {
+        return decrypt(value);
+    }
+}
 
 export default class TeamAIIntegrationService {
     #providerCatalog = new TeamAIProviderCatalog();

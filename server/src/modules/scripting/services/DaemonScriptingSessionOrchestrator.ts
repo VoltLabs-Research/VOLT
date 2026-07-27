@@ -4,13 +4,12 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
-import { attachScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
-import type { ScriptingJupyterAccessGrant } from '@modules/scripting/models/ScriptingJupyterAccessGrant';
+import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
-import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/utilities/jupyter-proxy';
+import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
 export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 

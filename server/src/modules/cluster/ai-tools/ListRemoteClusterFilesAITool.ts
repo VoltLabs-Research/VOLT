@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
-import { TeamClusterRemoteAccessTarget } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
+import { TeamClusterRemoteAccessTarget } from '@modules/cluster/services/TeamClusterRemoteAccess';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

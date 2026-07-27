@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import analysisExecutionLogServiceInstance from '@modules/analysis/services/AnalysisExecutionLogService';
 import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
-import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
@@ -10,22 +10,21 @@ import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/
 import {
     toTeamClusterQueueConcurrencyView,
     toTeamClusterQueueScopeLimitsView
-} from '@modules/cluster/presenters/TeamClusterPresenter';
+} from '@modules/cluster/services/TeamClusterView';
 import ClusterService, {
     type ProcessDaemonSceneArtifactUpsertInput
 } from '@modules/cluster/services/ClusterService';
-import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import teamClusterReverseChannelService, {
-    type TeamClusterDaemonInboundStreamPayload
-} from '@modules/cluster/services/TeamClusterReverseChannelService';
+import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
+import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/TeamClusterReverseChannelTypes';
 import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,
     toTeamClusterClientMetrics
-} from '@modules/cluster/utilities/teamClusterMetricsSocket';
+} from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
@@ -38,11 +37,11 @@ import {
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonMessage,
     type TeamClusterDaemonRegisterPayload
-} from '@modules/cluster/utilities/teamClusterSocket';
+} from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 
 interface DaemonAppendFrameSegmentsService {
     appendFrameSegments(input: {
@@ -128,13 +127,6 @@ export class TeamClusterSocketModule extends BaseSocketModule {
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    
-    
-    
-    
-    
-    
-    
     #clusterServiceCache?: ClusterService;
     private get clusterService(): ClusterService {
         return (this.#clusterServiceCache ??= new ClusterService());
