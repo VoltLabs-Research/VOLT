@@ -191,7 +191,10 @@ export const useDeleteInviteCodeMutation = createMutation<void, DeleteInviteCode
             if (!previous) return previous;
             return previous.map((team) => {
                 if (team._id !== variables.teamId) return team;
-                return { ...team, inviteCode: undefined };
+                return {
+                    ...team,
+                    inviteCode: undefined
+                };
             });
         });
     }

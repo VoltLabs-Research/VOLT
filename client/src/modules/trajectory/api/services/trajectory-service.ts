@@ -9,7 +9,7 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 import { base64ToBlob } from '@/shared/utils/file';
-import { getAtomsBinary } from './atoms-binary-request';
+import { createGetAtomsBinary } from './atoms-binary-request';
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { VoltClient } from '@voltstack/voltclient';
@@ -135,13 +135,13 @@ const folderEndpoints = createFolderCrudEndpoints<
     FolderUpdateParams,
     FolderDeleteParams,
     TrajectoryFolder
->();
+>('/trajectory-folders');
 
 const endpoints = {
-    getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>('/'),
-    getById: get<GetTrajectoryByIdParams, Trajectory>('/:trajectoryId'),
+    getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>('/trajectories'),
+    getById: get<GetTrajectoryByIdParams, Trajectory>('/trajectories/:trajectoryId'),
     createUploadSession: custom<CreateTrajectoryInput, CreateTrajectoryUploadSessionResponse>(async ({ getClient }, params) => {
-        const response = await getClient().request<CreateTrajectoryUploadSessionApiResponse>('POST', '/upload-sessions', {
+        const response = await getClient().request<CreateTrajectoryUploadSessionApiResponse>('POST', '/trajectories/upload-sessions', {
             body: params
         });
         return response.data;
@@ -152,21 +152,21 @@ const endpoints = {
             ...(params.authToken ? { headers: { Authorization: `Bearer ${params.authToken}` } } : {})
         };
 
-        return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`, requestArgs);
+        return getClient().request('POST', `/trajectories/upload-sessions/${params.uploadSessionId}/commits`, requestArgs);
     }),
     cancelUploadSession: custom<CommitTrajectoryUploadSessionInput, void>(async ({ getClient }, params) => {
         const requestArgs = params.authToken
             ? { headers: { Authorization: `Bearer ${params.authToken}` } }
             : undefined;
 
-        return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`, requestArgs);
+        return getClient().request('DELETE', `/trajectories/upload-sessions/${params.uploadSessionId}`, requestArgs);
     }),
-    update: patch<UpdateTrajectoryParams, Trajectory>('/:trajectoryId'),
-    delete: del<DeleteTrajectoryInput>('/:trajectoryId'),
-    move: patch<{ trajectoryId: string; folderId: string | null }, void>('/:trajectoryId/folder', {
+    update: patch<UpdateTrajectoryParams, Trajectory>('/trajectories/:trajectoryId'),
+    delete: del<DeleteTrajectoryInput>('/trajectories/:trajectoryId'),
+    move: patch<{ trajectoryId: string; folderId: string | null }, void>('/trajectories/:trajectoryId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/:trajectoryId/preview', {
+    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/trajectories/:trajectoryId/preview', {
         query: ({ frame, quality }) => ({
             ...(frame !== undefined ? { frame } : {}),
             ...(quality ? { quality } : {})
@@ -183,7 +183,7 @@ const endpoints = {
             timeoutMs: 0
         };
 
-        return getClient().request('GET', `/${params.trajectoryId}/download`, requestArgs);
+        return getClient().request('GET', `/trajectories/${params.trajectoryId}/download`, requestArgs);
     }),
     downloadAnalyses: custom<DownloadTrajectoryAnalysesInput, Blob>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
@@ -194,19 +194,19 @@ const endpoints = {
             timeoutMs: 0
         };
 
-        return getClient().request('GET', `/${params.trajectoryId}/analyses/download`, requestArgs);
+        return getClient().request('GET', `/trajectories/${params.trajectoryId}/analyses/download`, requestArgs);
     }),
-    getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
+    getAtoms: custom<GetAtomsInput, GetAtomsResponse>(createGetAtomsBinary('/trajectories')),
     ...folderEndpoints,
-    getMetrics: get<EmptyParams, DashboardMetrics>('/metrics'),
-    listSamples: get<EmptyParams, string[]>('/samples'),
-    downloadSample: download<DownloadSampleInput>('GET', '/samples/:filename')
+    getMetrics: get<EmptyParams, DashboardMetrics>('/trajectory-metrics'),
+    listSamples: get<EmptyParams, string[]>('/sample-simulations'),
+    downloadSample: download<DownloadSampleInput>('GET', '/sample-simulations/:filename')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/trajectories',
+            basePath: '/teams',
             useRBAC: true
         }
     }

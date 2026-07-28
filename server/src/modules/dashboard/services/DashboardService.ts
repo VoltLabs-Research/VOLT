@@ -1,25 +1,31 @@
+import { ILike, In } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import type { ChatRecord } from '@shared/contracts/ports';
-import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
-import type { Analysis, ChatParticipant } from '@shared/contracts/types';
+import type { ChatParticipant } from '@shared/contracts/types';
 import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
-import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import type { TeamProps } from '@modules/team/models/team/TeamModel';
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type {
     GetAnalysesByTeamIdItemView,
     ListContainersOutput,
     PluginRecord,
     TrajectoryRecord
 } from '@shared/contracts/operations';
-import { findByTeamAndSearch } from '@modules/analysis/models/AnalysisModel';
-import { ContainerModel } from '@modules/container/models/ContainerModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import PluginModel, { toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import Analysis from '@modules/analysis/models/Analysis';
+import Chat from '@modules/chat/models/Chat';
+import ChatMessage from '@modules/chat/models/ChatMessage';
+import Container from '@modules/container/models/Container';
+import Plugin from '@modules/plugin/models/Plugin';
+import Team from '@modules/team/models/Team';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import User from '@modules/auth/models/User';
+import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
+import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
 import TeamService from '@modules/team/services/TeamService';
-import ChatModel from '@modules/chat/models/chat/ChatModel';
+import { isEntityId } from '@shared/infrastructure/persistence/entity-id';
+import { paginate, skipFor } from '@shared/infrastructure/persistence/paginate';
+import type { PageRequest } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 
-export interface ContainerSearchView {
+export interface ContainerSearchView{
     _id: string;
     name: string;
     image: string;
@@ -42,14 +48,14 @@ export interface ContainerSearchView {
     updatedAt?: Date;
 }
 
-export interface ChatSearchView {
+export interface ChatSearchView{
     participants: ChatParticipant[];
     lastMessage: string;
     isGroup: boolean;
     groupName: string;
 }
 
-export interface PluginSearchProps {
+export interface PluginSearchProps{
     modifier?: { name: string } | null;
     exposures?: Array<{ _id: string; hasListing: boolean }>;
     listingExposures?: { exposures: Array<{ exposureId: string }> } | null;
@@ -58,20 +64,28 @@ export interface PluginSearchProps {
 
 export type PluginSearchRecord = PluginRecord<PluginSearchProps, unknown>;
 
-export interface GetGlobalSearchInput {
+export interface GetGlobalSearchInput{
     teamId: string;
     userId: string;
     query?: string;
     limit?: number;
 }
 
-export interface GetGlobalSearchResult {
+export interface GetGlobalSearchResult{
     analyses: GetAnalysesByTeamIdItemView[];
     containers: ListContainersOutput<ContainerSearchView>['data'];
     trajectories: TrajectoryRecord[];
-    teams: PersistedOutput<TeamProps>[];
+    teams: Team[];
     plugins: PluginSearchRecord[];
     chats: ChatRecord<ChatSearchView>[];
+}
+
+interface FindAnalysesOptions{
+    teamId: string;
+    search: string;
+    searchPattern: string;
+    trajectoryIds: string[];
+    pageRequest: PageRequest;
 }
 
 const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
@@ -83,38 +97,45 @@ const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
     chats: []
 };
 
-type PluginEntity = Parameters<typeof mapPluginToRecord>[0];
-
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 10;
 const MIN_SEARCH_QUERY_LENGTH = 2;
+const LIKE_ESCAPE_CHARACTER = '\\';
 
 const normalizeQuery = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 const normalizeLimit = (value: unknown): number => {
     const parsedLimit = Number(value);
-    if (!Number.isFinite(parsedLimit)) {
+    if(!Number.isFinite(parsedLimit)){
         return DEFAULT_LIMIT;
     }
     return Math.min(MAX_LIMIT, Math.max(1, Math.trunc(parsedLimit)));
 };
 
-const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeLikePattern = (value: string): string =>
+    value.replace(/[\\%_]/g, (character) => `${LIKE_ESCAPE_CHARACTER}${character}`);
+
+const containsPattern = (value: string): string => `%${escapeLikePattern(value)}%`;
+
+const memberToken = (userId: string): string => `%,${escapeLikePattern(userId)},%`;
+
+const participantCondition = (parameter: string): string =>
+    `',' || COALESCE(chat.participants, '') || ',' LIKE :${parameter} ESCAPE '${LIKE_ESCAPE_CHARACTER}'`;
 
 const matchesNormalizedQuery = (normalizedQuery: string, ...values: unknown[]): boolean =>
     values.some((value) => typeof value === 'string' && value.toLowerCase().includes(normalizedQuery));
 
 const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
-    if (typeof participant === 'string') {
+    if(typeof participant === 'string'){
         return [participant];
     }
 
     const searchTokens: string[] = [];
     const candidateRecord = participant as Record<string, unknown>;
 
-    for (const key of ['firstName', 'lastName', 'email']) {
+    for(const key of ['firstName', 'lastName', 'email']){
         const value = candidateRecord[key];
-        if (typeof value === 'string' && value.length > 0) {
+        if(typeof value === 'string' && value.length > 0){
             searchTokens.push(value);
         }
     }
@@ -124,34 +145,86 @@ const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
 
 const getLastMessageContent = (chat: ChatRecord<ChatSearchView>): string | undefined => {
     const lastMessage = chat.lastMessage;
-    if (typeof lastMessage !== 'object' || lastMessage === null) {
+    if(typeof lastMessage !== 'object' || lastMessage === null){
         return undefined;
     }
     const content = (lastMessage as Record<string, unknown>).content;
     return typeof content === 'string' ? content : undefined;
 };
 
-const toId = (value: unknown): string | undefined => (value === undefined || value === null ? undefined : String(value));
+const toAnalysisView = (analysis: Analysis): GetAnalysesByTeamIdItemView => ({
+    ...analysis.toJSON(),
+    _id: analysis.id,
+    plugin: analysis.plugin,
+    trajectory: analysis.trajectoryRef
+        ? {
+            _id: analysis.trajectoryRef.id,
+            name: analysis.trajectoryRef.name
+        }
+        : analysis.trajectory
+}) as GetAnalysesByTeamIdItemView;
 
-export default class DashboardService {
+const toTrajectoryRecord = (trajectory: Trajectory): TrajectoryRecord => ({
+    _id: trajectory.id,
+    name: trajectory.name,
+    team: trajectory.team,
+    folder: trajectory.folder,
+    storageClusterId: trajectory.storageClusterId,
+    createdBy: trajectory.createdBy,
+    status: trajectory.status,
+    isPublic: trajectory.isPublic,
+    rasterSceneViews: trajectory.rasterSceneViews,
+    hasPreview: trajectory.hasPreview,
+    stats: trajectory.stats,
+    updatedAt: trajectory.updatedAt,
+    createdAt: trajectory.createdAt
+});
+
+const toPluginSearchRecord = (plugin: Plugin): PluginSearchRecord => {
+    const workflow = new Workflow(plugin.id, plugin.workflow);
+    const projection = WorkflowProjectionService.project(workflow, plugin.id);
+
+    return mapPluginToRecord({
+        _id: plugin.id,
+        props: {
+            team: plugin.team,
+            status: plugin.status,
+            modifier: plugin.modifier ?? projection.modifier,
+            exposures: plugin.exposures ?? projection.exposures,
+            arguments: plugin.arguments ?? projection.arguments,
+            listingExposures: plugin.listingExposures ?? projection.listingExposures,
+            producesExposures: projection.producesExposures,
+            requiresExposures: projection.requiresExposures,
+            createdAt: plugin.createdAt,
+            updatedAt: plugin.updatedAt,
+            workflow
+        }
+    }) as PluginSearchRecord;
+};
+
+export default class DashboardService{
     #teamService = new TeamService();
 
-    async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult> {
+    async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult>{
         const normalizedQuery = normalizeQuery(input.query);
-        if (normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH) {
+        if(normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH){
             return EMPTY_GLOBAL_SEARCH_RESULTS;
         }
 
         const limit = normalizeLimit(input.limit);
         const normalizedLowerCaseQuery = normalizedQuery.toLowerCase();
-        const regex = new RegExp(escapeRegex(normalizedQuery), 'i');
+        const searchPattern = containsPattern(normalizedQuery);
+        const pageRequest: PageRequest = {
+            page: 1,
+            limit
+        };
 
         const [
             trajectoryIds,
             teams,
             chats
         ] = await Promise.all([
-            this.#searchTrajectoryIdsByTeamAndName(input.teamId, regex),
+            this.#searchTrajectoryIdsByTeamAndName(input.teamId, searchPattern),
             this.#teamService.listUserTeams(input.userId),
             this.#findChatsByUserId(input.userId)
         ]);
@@ -162,45 +235,20 @@ export default class DashboardService {
             trajectoriesResult,
             pluginsResult
         ] = await Promise.all([
-            findByTeamAndSearch({
+            this.#findAnalyses({
                 teamId: input.teamId,
                 search: normalizedQuery,
+                searchPattern,
                 trajectoryIds,
-                limit,
-                page: 1,
-                populate: [TRAJECTORY_POPULATE]
+                pageRequest
             }),
-            this.#findContainers({
-                filter: {
-                    team: input.teamId,
-                    name: { $regex: regex }
-                },
-                sort: { updatedAt: -1 },
-                limit,
-                page: 1
-            }),
-            this.#searchTrajectories(input.teamId, regex, limit),
-            this.#findPlugins({
-                filter: {
-                    team: input.teamId,
-                    $or: [
-                        { 'modifier.name': { $regex: regex } },
-                        { 'modifier.description': { $regex: regex } }
-                    ]
-                },
-                sort: { updatedAt: -1 },
-                limit,
-                page: 1
-            })
+            this.#findContainers(input.teamId, searchPattern, pageRequest),
+            this.#searchTrajectories(input.teamId, searchPattern, limit),
+            this.#findPlugins(input.teamId, normalizedLowerCaseQuery, pageRequest)
         ]);
 
         return {
-            analyses: analysesResult.data.map((analysis: Analysis) => ({
-                ...analysis.props,
-                _id: analysis._id,
-                plugin: extractPluginId(analysis.props.plugin),
-                trajectory: analysis.props.trajectory
-            })),
+            analyses: analysesResult.data,
             containers: (containersResult.data as unknown as ContainerSearchView[]).map((container) => ({
                 _id: container._id,
                 name: container.name,
@@ -231,7 +279,7 @@ export default class DashboardService {
                     team.description
                 ))
                 .slice(0, limit),
-            plugins: pluginsResult.data.map((plugin): PluginSearchRecord => mapPluginToRecord(plugin)),
+            plugins: pluginsResult.data,
             chats: (chats as unknown as ChatRecord<ChatSearchView>[])
                 .filter((chat) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
@@ -242,96 +290,149 @@ export default class DashboardService {
         };
     }
 
-    async #findPlugins(options: {
-        filter: Record<string, unknown>;
-        sort: Record<string, 1 | -1>;
-        limit: number;
-        page: number;
-    }): Promise<PaginatedResult<Plugin>> {
-        const { filter, sort, limit, page } = options;
+    async #findAnalyses(options: FindAnalysesOptions): Promise<PaginatedResult<GetAnalysesByTeamIdItemView>>{
+        const { teamId, search, searchPattern, trajectoryIds, pageRequest } = options;
+        const where: FindOptionsWhere<Analysis>[] = [{
+            team: teamId,
+            pluginDisplayName: ILike(searchPattern)
+        }];
 
-        const [docs, total] = await Promise.all([
-            PluginModel.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).exec(),
-            PluginModel.countDocuments(filter)
+        if(trajectoryIds.length > 0){
+            where.push({
+                team: teamId,
+                trajectory: In(trajectoryIds)
+            });
+        }
+        if(isEntityId(search)){
+            where.push({
+                team: teamId,
+                id: search
+            });
+        }
+
+        const [analyses, total] = await Analysis.findAndCount({
+            where,
+            order: { createdAt: 'DESC' },
+            take: pageRequest.limit,
+            skip: skipFor(pageRequest),
+            relations: { trajectoryRef: true }
+        });
+
+        return paginate([analyses.map((analysis) => toAnalysisView(analysis)), total], pageRequest);
+    }
+
+    async #findPlugins(teamId: string, normalizedLowerCaseQuery: string, pageRequest: PageRequest): Promise<PaginatedResult<PluginSearchRecord>>{
+        const candidates = await Plugin.find({
+            where: { team: teamId },
+            select: {
+                id: true,
+                modifier: true,
+                updatedAt: true
+            }
+        });
+
+        const matches = candidates
+            .filter((candidate) => matchesNormalizedQuery(
+                normalizedLowerCaseQuery,
+                candidate.modifier?.name,
+                candidate.modifier?.description
+            ))
+            .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+
+        const skip = skipFor(pageRequest);
+        const pageIds = matches.slice(skip, skip + pageRequest.limit).map((candidate) => candidate.id);
+        const plugins = pageIds.length === 0 ? [] : await Plugin.findBy({ id: In(pageIds) });
+        const pluginsById = new Map(plugins.map((plugin) => [plugin.id, plugin]));
+        const data = pageIds.flatMap((pluginId) => {
+            const plugin = pluginsById.get(pluginId);
+            return plugin === undefined ? [] : [toPluginSearchRecord(plugin)];
+        });
+
+        return paginate([data, matches.length], pageRequest);
+    }
+
+    async #findContainers(teamId: string, searchPattern: string, pageRequest: PageRequest): Promise<PaginatedResult<Record<string, unknown>>>{
+        const [containers, total] = await Container.findAndCount({
+            where: {
+                team: teamId,
+                name: ILike(searchPattern)
+            },
+            order: { updatedAt: 'DESC' },
+            take: pageRequest.limit,
+            skip: skipFor(pageRequest)
+        });
+
+        return paginate([containers.map((container) => container.toJSON()), total], pageRequest);
+    }
+
+    async #searchTrajectoryIdsByTeamAndName(teamId: string, searchPattern: string): Promise<string[]>{
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                name: ILike(searchPattern)
+            },
+            select: { id: true }
+        });
+
+        return trajectories.map((trajectory) => trajectory.id);
+    }
+
+    async #searchTrajectories(teamId: string, searchPattern: string, limit: number): Promise<TrajectoryRecord[]>{
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                name: ILike(searchPattern)
+            },
+            order: { updatedAt: 'DESC' },
+            take: limit
+        });
+
+        return trajectories.map((trajectory) => toTrajectoryRecord(trajectory));
+    }
+
+    async #findChatsByUserId(userId: string): Promise<Array<Record<string, unknown>>>{
+        const chats = await Chat.createQueryBuilder('chat')
+            .where(participantCondition('member'), { member: memberToken(userId) })
+            .andWhere('chat.isActive = :isActive', { isActive: true })
+            .orderBy('chat.lastMessageAt', 'DESC', 'NULLS LAST')
+            .getMany();
+
+        const [participants, lastMessages] = await Promise.all([
+            this.#loadUsers(chats.flatMap((chat) => chat.participants ?? [])),
+            this.#loadMessages(chats.flatMap((chat) => (chat.lastMessage === null ? [] : [chat.lastMessage])))
         ]);
 
-        return {
-            data: docs.map((doc) => toPluginLike(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
-    }
-
-    async #findContainers(options: {
-        filter: Record<string, unknown>;
-        sort: Record<string, 1 | -1>;
-        limit: number;
-        page: number;
-    }): Promise<PaginatedResult<Record<string, unknown>>> {
-        const { filter, sort, limit, page } = options;
-
-        const [docs, total] = await Promise.all([
-            ContainerModel.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).lean().exec(),
-            ContainerModel.countDocuments(filter)
-        ]);
-
-        const data = docs.map((doc) => ({
-            ...doc,
-            _id: String(doc._id),
-            folder: toId(doc.folder) ?? null,
-            createdBy: toId(doc.createdBy),
-            team: toId(doc.team),
-            teamCluster: toId(doc.teamCluster)
-        }));
-
-        return {
-            data,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
-    }
-
-    async #searchTrajectoryIdsByTeamAndName(teamId: string, regex: RegExp): Promise<string[]> {
-        const docs = await TrajectoryModel.find({ team: teamId, name: regex }).select('_id').lean().exec();
-        return docs.map((doc) => doc._id.toString());
-    }
-
-    async #searchTrajectories(teamId: string, regex: RegExp, limit: number): Promise<TrajectoryRecord[]> {
-        const docs = await TrajectoryModel.find({ team: teamId, name: regex })
-            .sort({ updatedAt: -1 })
-            .limit(limit)
-            .lean()
-            .exec();
-
-        return docs.map((doc) => ({
-            _id: doc._id.toString(),
-            name: doc.name,
-            team: toId(doc.team) ?? '',
-            folder: toId(doc.folder) ?? null,
-            storageClusterId: toId(doc.storageClusterId),
-            createdBy: toId(doc.createdBy) ?? '',
-            status: doc.status,
-            isPublic: doc.isPublic,
-            rasterSceneViews: doc.rasterSceneViews,
-            hasPreview: doc.hasPreview,
-            stats: doc.stats,
-            updatedAt: doc.updatedAt,
-            createdAt: doc.createdAt
+        return chats.map((chat) => ({
+            ...chat.toJSON(),
+            participants: this.#resolveUsers(chat.participants, participants),
+            lastMessage: this.#resolveLastMessage(chat, lastMessages)
         }));
     }
 
-    async #findChatsByUserId(userId: string): Promise<Array<Record<string, unknown>>> {
-        const chats = await ChatModel.find({ participants: userId, isActive: true })
-            .populate('lastMessage')
-            .populate('participants')
-            .sort({ lastMessageAt: -1 })
-            .lean()
-            .exec();
+    async #loadUsers(userIds: string[]): Promise<Map<string, User>>{
+        const uniqueIds = Array.from(new Set(userIds));
+        if(uniqueIds.length === 0) return new Map();
 
-        return chats.map((chat) => ({ ...chat, _id: String(chat._id) }));
+        const users = await User.findBy({ id: In(uniqueIds) });
+        return new Map(users.map((user) => [user.id, user]));
+    }
+
+    async #loadMessages(messageIds: string[]): Promise<Map<string, ChatMessage>>{
+        const uniqueIds = Array.from(new Set(messageIds));
+        if(uniqueIds.length === 0) return new Map();
+
+        const messages = await ChatMessage.findBy({ id: In(uniqueIds) });
+        return new Map(messages.map((message) => [message.id, message]));
+    }
+
+    #resolveUsers(userIds: string[] | null, users: Map<string, User>): User[]{
+        return (userIds ?? [])
+            .map((userId) => users.get(userId))
+            .filter((user): user is User => user !== undefined);
+    }
+
+    #resolveLastMessage(chat: Chat, messages: Map<string, ChatMessage>): ChatMessage | null{
+        if(chat.lastMessage === null) return null;
+        return messages.get(chat.lastMessage) ?? null;
     }
 }

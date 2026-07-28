@@ -1,5 +1,6 @@
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
+import { escapeRegex } from '@shared/application/utilities/escape-regex';
 import mongoose, { Schema } from 'mongoose';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
 import type { PaginatedResult, PopulatePath } from '@shared/domain/port/persistence';
@@ -68,8 +69,14 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         default: 'pending'
     },
     expectedArtifacts: [{
-        exposureId: { type: String, required: true },
-        name: { type: String, required: true },
+        exposureId: {
+            type: String,
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
         pluginId: { type: String },
         exporter: { type: String },
         exportType: { type: String },
@@ -78,13 +85,22 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
             enum: ['pending', 'generating', 'uploading', 'ready', 'failed'],
             default: 'pending'
         },
-        isPrimary: { type: Boolean, default: false },
+        isPrimary: {
+            type: Boolean,
+            default: false
+        },
         objectName: { type: String },
         readyAt: { type: Date }
     }],
     stages: [{
-        stageKey: { type: String, required: true },
-        label: { type: String, required: true },
+        stageKey: {
+            type: String,
+            required: true
+        },
+        label: {
+            type: String,
+            required: true
+        },
         type: {
             type: String,
             enum: ['system', 'plugin-ref', 'entrypoint', 'exposure', 'artifact-upload'],
@@ -108,8 +124,14 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         durationMs: { type: Number }
     }],
     childAnalyses: [{
-        id: { type: String, required: true },
-        pluginId: { type: String, required: true },
+        id: {
+            type: String,
+            required: true
+        },
+        pluginId: {
+            type: String,
+            required: true
+        },
         pluginDisplayName: { type: String },
         configHash: { type: String },
         timestep: { type: Number },
@@ -143,11 +165,30 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
 });
 
 AnalysisSchema.index({ pluginDisplayName: 'text' });
-AnalysisSchema.index({ team: 1, createdAt: -1 });
-AnalysisSchema.index({ trajectory: 1, createdAt: -1 });
-AnalysisSchema.index({ plugin: 1, team: 1, trajectory: 1, computeClusterId: 1 });
-AnalysisSchema.index({ trajectory: 1, storageClusterId: 1, createdAt: -1 });
-AnalysisSchema.index({ team: 1, storageClusterId: 1, createdAt: 1 });
+AnalysisSchema.index({
+    team: 1,
+    createdAt: -1
+});
+AnalysisSchema.index({
+    trajectory: 1,
+    createdAt: -1
+});
+AnalysisSchema.index({
+    plugin: 1,
+    team: 1,
+    trajectory: 1,
+    computeClusterId: 1
+});
+AnalysisSchema.index({
+    trajectory: 1,
+    storageClusterId: 1,
+    createdAt: -1
+});
+AnalysisSchema.index({
+    team: 1,
+    storageClusterId: 1,
+    createdAt: 1
+});
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
 
@@ -214,7 +255,7 @@ export const findByTeamAndSearch = async ({
     populate
 }: FindByTeamAndSearchOptions): Promise<PaginatedResult<Analysis>> => {
     const normalizedSearch = search.trim();
-    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedSearch = escapeRegex(normalizedSearch);
     const regex = new RegExp(escapedSearch, 'i');
     const filter: FilterQuery<AnalysisDocument> = {
         team: teamId,

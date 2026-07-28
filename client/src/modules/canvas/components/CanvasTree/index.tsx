@@ -111,7 +111,10 @@ export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRet
         <Text size='sm' tone='muted'>Failed to load models</Text>
         <Box as='span' flex='1' />
         <Button variant='ghost' intent='neutral' size='sm' onClick={onRetry} aria-label='Retry loading models'>
-            <RefreshCw style={{ width: 12, height: 12 }} />
+            <RefreshCw style={{
+                width: 12,
+                height: 12
+            }} />
         </Button>
     </div>
 );

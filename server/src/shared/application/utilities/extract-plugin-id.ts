@@ -1,17 +1,13 @@
-
-import mongoose from 'mongoose';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 export const extractPluginId = (pluginValue: unknown): string => {
-    let pluginId = '';
-
     if (typeof pluginValue === 'string') {
-        pluginId = pluginValue;
-    } else if (pluginValue instanceof mongoose.Types.ObjectId) {
-        pluginId = pluginValue.toString();
-    } else if (isRecord(pluginValue) && pluginValue._id != null) {
-        pluginId = String(pluginValue._id);
+        return pluginValue;
     }
 
-    return pluginId;
+    if (isRecord(pluginValue) && pluginValue._id != null) {
+        return String(pluginValue._id);
+    }
+
+    return '';
 };

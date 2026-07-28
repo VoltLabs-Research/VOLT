@@ -27,7 +27,10 @@ const switchTeam: ClientToolHandler<SwitchTeamInput> = {
             return {
                 ok: true,
                 summary: 'Already on that team. Returned to the dashboard.',
-                data: { teamId, switched: false }
+                data: {
+                    teamId,
+                    switched: false
+                }
             };
         }
 
@@ -37,16 +40,26 @@ const switchTeam: ClientToolHandler<SwitchTeamInput> = {
         return {
             ok: true,
             summary: 'Switched the active team and opened the dashboard.',
-            data: { teamId, previousTeamId: previousTeamId ?? undefined, switched: true }
+            data: {
+                teamId,
+                previousTeamId: previousTeamId ?? undefined,
+                switched: true
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Could not switch team', icon: 'team' };
+            return {
+                label: 'Could not switch team',
+                icon: 'team'
+            };
         }
         const switched = (result.data as { switched?: boolean } | undefined)?.switched;
-        return { label: switched ? 'Switched active team' : 'Already on team', icon: 'team' };
+        return {
+            label: switched ? 'Switched active team' : 'Already on team',
+            icon: 'team'
+        };
     }
 };
 

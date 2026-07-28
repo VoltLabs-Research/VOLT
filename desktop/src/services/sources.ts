@@ -7,7 +7,19 @@ export const createSourceResolver = (appConfig: AppConfig, downloadDir: string):
         appConfig,
         downloadDir,
         repos: [
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }), envKey: 'VOLT_SOURCE_DIR' },
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }), envKey: 'CLUSTER_DAEMON_SOURCE_DIR' }
+            {
+                repo: new Repository({
+                    owner: 'voltlabs-research',
+                    repo: 'volt'
+                }),
+                envKey: 'VOLT_SOURCE_DIR'
+            },
+            {
+                repo: new Repository({
+                    owner: 'voltlabs-research',
+                    repo: 'clusterdaemon'
+                }),
+                envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
+            }
         ]
     });

@@ -40,15 +40,26 @@ const openInViewer: ClientToolHandler<OpenInViewerInput> = {
         return {
             ok: true,
             summary: 'Opened the trajectory in the 3D viewer.',
-            data: { path, trajectoryId, ownerId: ownerId || undefined, analysisId: analysisId || undefined }
+            data: {
+                path,
+                trajectoryId,
+                ownerId: ownerId || undefined,
+                analysisId: analysisId || undefined
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Could not open viewer', icon: 'viewer' };
+            return {
+                label: 'Could not open viewer',
+                icon: 'viewer'
+            };
         }
-        return { label: 'Opened trajectory in viewer', icon: 'viewer' };
+        return {
+            label: 'Opened trajectory in viewer',
+            icon: 'viewer'
+        };
     }
 };
 

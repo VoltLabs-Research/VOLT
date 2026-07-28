@@ -174,7 +174,10 @@ const useDashboardGlobalSearch = () => {
     }, [query]);
 
     const searchQuery = useGlobalSearchQuery(
-        { query: debouncedQuery, limit: SEARCH_RESULT_LIMIT },
+        {
+            query: debouncedQuery,
+            limit: SEARCH_RESULT_LIMIT
+        },
         { enabled: debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH }
     );
 

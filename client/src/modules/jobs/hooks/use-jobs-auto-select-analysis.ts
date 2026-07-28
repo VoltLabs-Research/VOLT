@@ -44,7 +44,10 @@ const useJobsAutoSelectAnalysis = ({
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const refreshInFlightRef = useRef(false);
     const location = useLocation();
-    const { trajectory, refetch: refetchTrajectory } = useGetTrajectoryById({ trajectoryId, enabled: false });
+    const { trajectory, refetch: refetchTrajectory } = useGetTrajectoryById({
+        trajectoryId,
+        enabled: false
+    });
     const { setAnalysisId } = useCanvasUrlState();
     const isCanvasRoute = location.pathname.startsWith('/canvas/');
 
@@ -117,7 +120,10 @@ const useJobsAutoSelectAnalysis = ({
 
             if (job.status === JobStatus.Completed && isTracked && analysisId) {
                 hasAutoSelectedRef.current = true;
-                const selection = { analysisId, timestep: job.timestep };
+                const selection = {
+                    analysisId,
+                    timestep: job.timestep
+                };
                 pendingSelectionRef.current = selection;
 
                 if (!applySelection(selection)) {

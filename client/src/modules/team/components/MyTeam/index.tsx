@@ -36,9 +36,18 @@ import './MyTeam.css';
 const TEAM_MEMBERS_QUERY_KEY = ['team-members'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_TEAM_MEMBER_EVENTS.CREATED, queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
-    { event: SOCKET_TEAM_MEMBER_EVENTS.DELETED, queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
-    { event: SOCKET_TEAM_MEMBER_EVENTS.LEFT, queryKeys: [TEAM_MEMBERS_QUERY_KEY] }
+    {
+        event: SOCKET_TEAM_MEMBER_EVENTS.CREATED,
+        queryKeys: [TEAM_MEMBERS_QUERY_KEY]
+    },
+    {
+        event: SOCKET_TEAM_MEMBER_EVENTS.DELETED,
+        queryKeys: [TEAM_MEMBERS_QUERY_KEY]
+    },
+    {
+        event: SOCKET_TEAM_MEMBER_EVENTS.LEFT,
+        queryKeys: [TEAM_MEMBERS_QUERY_KEY]
+    }
 ];
 
 const updateTeamNameToastOptions = createPromiseToastOptions({
@@ -113,14 +122,21 @@ export default function MyTeamTemplate() {
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         await runAction({
-            action: () => updateTeamMutation.mutateAsync({ teamId: selectedTeam._id, name: newName }),
+            action: () => updateTeamMutation.mutateAsync({
+                teamId: selectedTeam._id,
+                name: newName
+            }),
             toast: updateTeamNameToastOptions
         });
     }, [selectedTeam._id, updateTeamMutation]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
         await runAction({
-            action: () => updateTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId, role: roleId }),
+            action: () => updateTeamMemberMutation.mutateAsync({
+                teamId: selectedTeam._id,
+                memberId,
+                role: roleId
+            }),
             toast: updateRoleToastOptions
         });
     }, [selectedTeam._id, updateTeamMemberMutation]);
@@ -144,7 +160,10 @@ export default function MyTeamTemplate() {
 
         for (const member of members) {
             await runAction({
-                action: () => removeTeamMemberMutation.mutateAsync({ teamId: selectedTeam._id, memberId: member._id }),
+                action: () => removeTeamMemberMutation.mutateAsync({
+                    teamId: selectedTeam._id,
+                    memberId: member._id
+                }),
                 toast: getRemoveMemberToastOptions(member)
             });
         }
@@ -272,7 +291,10 @@ export default function MyTeamTemplate() {
                 );
             }
         },
-        dateColumn<TeamMemberStats>('joinedAt', 'Joined At', { sortable: false, withTitle: true })
+        dateColumn<TeamMemberStats>('joinedAt', 'Joined At', {
+            sortable: false,
+            withTitle: true
+        })
     ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({

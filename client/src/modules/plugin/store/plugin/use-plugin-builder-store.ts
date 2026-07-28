@@ -17,7 +17,13 @@ type BuilderHistoryState = {
     graphVersion: number;
 };
 
-const DEFAULT_EDGE_STYLE = { animated: true, style: { stroke: '#64748b', strokeWidth: 2 } };
+const DEFAULT_EDGE_STYLE = {
+    animated: true,
+    style: {
+        stroke: '#64748b',
+        strokeWidth: 2
+    }
+};
 
 const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges' | 'graphVersion'>): BuilderHistoryState => {
     return {
@@ -116,7 +122,12 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                     if (nodes.length > 1) errors.push('Modifier node has no outgoing connections.');
                 }
 
-                set({ validationResult: { valid: errors.length === 0, errors } });
+                set({
+                    validationResult: {
+                        valid: errors.length === 0,
+                        errors
+                    }
+                });
             };
 
             const _runWithoutHistory = (callback: () => void) => {
@@ -223,15 +234,27 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                         return null;
                     }
 
-                    const mergedNodeData = { ...targetNode.data, ...data };
+                    const mergedNodeData = {
+                        ...targetNode.data,
+                        ...data
+                    };
                     const nodes = state.nodes.map((node) =>
-                        node.id === nodeId ? { ...node, data: mergedNodeData } : node
+                        node.id === nodeId ? {
+                            ...node,
+                            data: mergedNodeData
+                        } : node
                     );
                     const selectedNode = state.selectedNode?.id === nodeId
-                        ? { ...state.selectedNode, data: mergedNodeData }
+                        ? {
+                            ...state.selectedNode,
+                            data: mergedNodeData
+                        }
                         : state.selectedNode;
 
-                    return { nodes, selectedNode };
+                    return {
+                        nodes,
+                        selectedNode
+                    };
                 });
             },
 
@@ -294,7 +317,11 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                         sourceHandle: e.sourceHandle ?? undefined,
                         targetHandle: e.targetHandle ?? undefined
                     })),
-                    viewport: { x: 0, y: 0, zoom: 1 }
+                    viewport: {
+                        x: 0,
+                        y: 0,
+                        zoom: 1
+                    }
                 };
             },
 

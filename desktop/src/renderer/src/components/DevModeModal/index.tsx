@@ -69,7 +69,11 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
 
     const apply = () => {
         if(blockApply) return;
-        onApply({ enabled, voltPath: voltPath.trim(), clusterDaemonPath: clusterDaemonPath.trim() });
+        onApply({
+            enabled,
+            voltPath: voltPath.trim(),
+            clusterDaemonPath: clusterDaemonPath.trim()
+        });
     };
 
     return (

@@ -58,5 +58,10 @@ export default function useTrajectoryFilePicker(
         fileInputRef.current?.click();
     }, []);
 
-    return { fileInputRef, handlePickerChange, openFilePicker, isUploading };
+    return {
+        fileInputRef,
+        handlePickerChange,
+        openFilePicker,
+        isUploading
+    };
 }

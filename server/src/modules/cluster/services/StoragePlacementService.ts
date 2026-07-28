@@ -3,30 +3,36 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
-import StoragePlacementModel, {
+import StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
+import {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps,
     toStoragePlacementLike,
+    StoragePlacementScopeType as StoragePlacementScopeTypeColumn,
+    StoragePlacementState as StoragePlacementStateColumn,
     type StoragePlacement,
-    type StoragePlacementDocument,
     type StoragePlacementProps
-} from '@modules/cluster/models/StoragePlacementModel';
-import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import PluginModel from '@modules/plugin/models/plugin/PluginModel';
-import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+} from '@modules/cluster/contracts/domain/storage-placement';
+import Analysis from '@modules/analysis/models/Analysis';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import Plugin from '@modules/plugin/models/Plugin';
+import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
+import type {
+    StoragePlacementBucketRef,
+    StoragePlacementScopeType,
+    StoragePlacementState
+} from '@shared/domain/contracts/team-cluster';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
-import type { FilterQuery, UpdateQuery } from 'mongoose';
+import { In } from 'typeorm';
 
 const dedupeBucketRefs = (bucketRefs: StoragePlacementBucketRef[]): StoragePlacementBucketRef[] => {
     const deduped = new Map<string, StoragePlacementBucketRef>();
 
-    for (const bucketRef of bucketRefs) {
+    for(const bucketRef of bucketRefs){
         const key = `${bucketRef.bucket}:${bucketRef.prefix}`;
-        if (!deduped.has(key)) {
+        if(!deduped.has(key)){
             deduped.set(key, bucketRef);
         }
     }
@@ -52,26 +58,26 @@ export const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlac
     }];
 };
 
-interface ResolvedPlacementDefinition {
+interface ResolvedPlacementDefinition{
     team: string;
     primaryClusterId: string;
     buckets: StoragePlacementBucketRef[];
 }
 
-export class StoragePlacementService implements IStoragePlacementService {
+export class StoragePlacementService implements IStoragePlacementService{
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async findByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string
-    ): Promise<StoragePlacement | null> {
+    ): Promise<StoragePlacement | null>{
         return this.findPlacementByScope(scopeType, scopeId);
     }
 
     async ensurePlacement(
         scopeType: StoragePlacementScopeType,
         scopeId: string
-    ): Promise<StoragePlacement> {
+    ): Promise<StoragePlacement>{
         const existingPlacement = await this.findPlacementByScope(scopeType, scopeId);
         const resolved = await this.resolvePlacementDefinition(scopeType, scopeId);
         return this.persistResolvedPlacement(scopeType, scopeId, existingPlacement, resolved);
@@ -80,36 +86,54 @@ export class StoragePlacementService implements IStoragePlacementService {
     private async findPlacementByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string
-    ): Promise<StoragePlacement | null> {
-        const document = await StoragePlacementModel.findOne({
-            scopeType,
+    ): Promise<StoragePlacement | null>{
+        const entity = await StoragePlacementEntity.findOneBy({
+            scopeType: scopeType as StoragePlacementScopeTypeColumn,
             scopeId
-        }).exec();
+        });
 
-        return document ? toStoragePlacementLike(document) : null;
+        return entity ? toStoragePlacementLike(entity) : null;
+    }
+
+    private toEntityPatch(data: Partial<StoragePlacementProps>): Partial<StoragePlacementEntity>{
+        const patch: Partial<StoragePlacementEntity> = {};
+
+        if(data.team !== undefined) patch.team = data.team;
+        if(data.scopeType !== undefined) patch.scopeType = data.scopeType as StoragePlacementScopeTypeColumn;
+        if(data.scopeId !== undefined) patch.scopeId = data.scopeId;
+        if(data.primaryClusterId !== undefined) patch.primaryClusterId = data.primaryClusterId;
+        if(data.replicaClusterIds !== undefined) patch.replicaClusterIds = data.replicaClusterIds;
+        if(data.buckets !== undefined) patch.buckets = data.buckets;
+        if(data.state !== undefined) patch.state = data.state as StoragePlacementStateColumn;
+        if(data.lastVerifiedAt !== undefined) patch.lastVerifiedAt = data.lastVerifiedAt;
+        if(data.bytesUsed !== undefined) patch.bytesUsed = data.bytesUsed;
+        if(data.lastAccessedAt !== undefined) patch.lastAccessedAt = data.lastAccessedAt;
+
+        return patch;
     }
 
     private async upsertPlacementByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         data: Partial<StoragePlacementProps>
-    ): Promise<StoragePlacement> {
-        const document = await StoragePlacementModel.findOneAndUpdate(
-            {
-                scopeType,
-                scopeId
-            },
-            {
-                $set: data
-            } as UpdateQuery<StoragePlacementDocument>,
-            {
-                new: true,
-                upsert: true,
-                setDefaultsOnInsert: true
-            }
-        ).exec();
+    ): Promise<StoragePlacement>{
+        const patch = this.toEntityPatch(data);
+        const existing = await StoragePlacementEntity.findOneBy({
+            scopeType: scopeType as StoragePlacementScopeTypeColumn,
+            scopeId
+        });
 
-        return toStoragePlacementLike(document);
+        if(existing){
+            return toStoragePlacementLike(await Object.assign(existing, patch).save());
+        }
+
+        const created = await StoragePlacementEntity.create({
+            ...patch,
+            scopeType: scopeType as StoragePlacementScopeTypeColumn,
+            scopeId
+        }).save();
+
+        return toStoragePlacementLike(created);
     }
 
     private async persistResolvedPlacement(
@@ -117,7 +141,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         scopeId: string,
         existingPlacement: StoragePlacement | null,
         resolved: ResolvedPlacementDefinition
-    ): Promise<StoragePlacement> {
+    ): Promise<StoragePlacement>{
         const nextPlacementProps = createStoragePlacementProps({
             team: existingPlacement?.props.team ?? resolved.team,
             scopeType,
@@ -140,7 +164,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         pluginId: string,
         team: string,
         primaryClusterId: string
-    ): Promise<StoragePlacement> {
+    ): Promise<StoragePlacement>{
         return this.upsertPlacementByScope('plugin-binary', pluginId, createStoragePlacementProps({
             team,
             scopeType: 'plugin-binary',
@@ -162,7 +186,7 @@ export class StoragePlacementService implements IStoragePlacementService {
             bytesUsed?: number | null;
             lastAccessedAt?: Date | null;
         } = {}
-    ): Promise<StoragePlacement> {
+    ): Promise<StoragePlacement>{
         const placement = await this.ensurePlacement(scopeType, scopeId);
 
         return this.upsertPlacementByScope(scopeType, scopeId, {
@@ -181,7 +205,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         state: StoragePlacementState
-    ): Promise<StoragePlacement> {
+    ): Promise<StoragePlacement>{
         const placement = await this.ensurePlacement(scopeType, scopeId);
 
         return this.upsertPlacementByScope(scopeType, scopeId, {
@@ -195,78 +219,69 @@ export class StoragePlacementService implements IStoragePlacementService {
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         storageClusterId: string
-    ): Promise<void> {
-        if (scopeType === 'trajectory') {
-            const analyses = await AnalysisModel.find({ trajectory: scopeId }).sort({ createdAt: 1 }).exec();
+    ): Promise<void>{
+        if(scopeType === 'trajectory'){
+            const analyses = await Analysis.find({
+                where: { trajectory: scopeId },
+                order: { createdAt: 'ASC' }
+            });
 
             await Promise.all([
-                TrajectoryModel.findByIdAndUpdate(scopeId, {
-                    $set: { storageClusterId }
-                }).exec(),
-                AnalysisModel.updateMany({
-                    trajectory: scopeId
-                }, {
-                    $set: { storageClusterId }
-                }).exec(),
-                SceneArtifactModel.updateMany({
-                    trajectory: scopeId
-                }, {
-                    $set: { storageClusterId }
-                }).exec()
+                Trajectory.update({ id: scopeId }, { storageClusterId }),
+                Analysis.update({ trajectory: scopeId }, { storageClusterId }),
+                SceneArtifact.update({ trajectory: scopeId }, { storageClusterId })
             ]);
             await this.synchronizeAnalysisPlacementsForTrajectory(scopeId, analyses, storageClusterId);
             return;
         }
 
-        if (scopeType === 'analysis') {
+        if(scopeType === 'analysis'){
             await Promise.all([
-                AnalysisModel.findByIdAndUpdate(scopeId, {
-                    $set: { storageClusterId }
-                }).exec(),
-                SceneArtifactModel.updateMany({
-                    analysis: scopeId
-                }, {
-                    $set: { storageClusterId }
-                }).exec()
+                Analysis.update({ id: scopeId }, { storageClusterId }),
+                SceneArtifact.update({ analysis: scopeId }, { storageClusterId })
             ]);
             return;
         }
     }
 
-    async listByPrimaryClusterId(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]> {
-        const documents = await StoragePlacementModel.find({
-            team: teamId,
-            primaryClusterId
-        }).sort({
-            updatedAt: 1
-        }).exec();
+    async listByPrimaryClusterId(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]>{
+        const entities = await StoragePlacementEntity.find({
+            where: {
+                team: teamId,
+                primaryClusterId
+            },
+            order: { updatedAt: 'ASC' }
+        });
 
-        return documents.map(toStoragePlacementLike);
+        return entities.map(toStoragePlacementLike);
     }
 
-    async resolveTransferPlacementsForCluster(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]> {
+    async resolveTransferPlacementsForCluster(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]>{
         const plannedPlacements = new Map<string, StoragePlacement>();
         const trajectoryTransferIds = new Set<string>();
 
-        const trajectories = await TrajectoryModel.find({
-            team: teamId,
-            storageClusterId: primaryClusterId
-        }).sort({ createdAt: 1 }).exec();
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                storageClusterId: primaryClusterId
+            },
+            order: { createdAt: 'ASC' }
+        });
 
         const trajectoryPlacements = await this.loadPlacementsByScope(
             'trajectory',
-            trajectories.map((trajectory) => trajectory._id.toString())
+            trajectories.map((trajectory) => trajectory.id)
         );
 
-        for (const trajectory of trajectories) {
-            const trajectoryId = trajectory._id.toString();
+        for(const trajectory of trajectories){
+            const trajectoryId = trajectory.id;
             const placement = await this.persistResolvedPlacement(
                 'trajectory',
                 trajectoryId,
                 trajectoryPlacements.get(trajectoryId) ?? null,
                 this.resolveTrajectoryPlacementDefinition(trajectory)
             );
-            if (placement.props.primaryClusterId !== primaryClusterId) {
+            if(placement.props.primaryClusterId !== primaryClusterId){
                 continue;
             }
 
@@ -274,29 +289,32 @@ export class StoragePlacementService implements IStoragePlacementService {
             trajectoryTransferIds.add(trajectoryId);
         }
 
-        const analyses = await AnalysisModel.find({
-            team: teamId,
-            storageClusterId: primaryClusterId
-        }).sort({ createdAt: 1 }).exec();
+        const analyses = await Analysis.find({
+            where: {
+                team: teamId,
+                storageClusterId: primaryClusterId
+            },
+            order: { createdAt: 'ASC' }
+        });
 
         const candidateAnalyses = analyses.filter(
-            (analysis) => !trajectoryTransferIds.has(analysis.trajectory.toString())
+            (analysis) => !trajectoryTransferIds.has(analysis.trajectory)
         );
 
         const analysisPlacements = await this.loadPlacementsByScope(
             'analysis',
-            candidateAnalyses.map((analysis) => analysis._id.toString())
+            candidateAnalyses.map((analysis) => analysis.id)
         );
 
-        for (const analysis of candidateAnalyses) {
-            const analysisId = analysis._id.toString();
+        for(const analysis of candidateAnalyses){
+            const analysisId = analysis.id;
             const placement = await this.persistResolvedPlacement(
                 'analysis',
                 analysisId,
                 analysisPlacements.get(analysisId) ?? null,
                 this.resolveAnalysisPlacementDefinition(analysis)
             );
-            if (placement.props.primaryClusterId !== primaryClusterId) {
+            if(placement.props.primaryClusterId !== primaryClusterId){
                 continue;
             }
 
@@ -309,18 +327,16 @@ export class StoragePlacementService implements IStoragePlacementService {
     private async loadPlacementsByScope(
         scopeType: StoragePlacementScopeType,
         scopeIds: string[]
-    ): Promise<Map<string, StoragePlacement>> {
-        if (!scopeIds.length) {
+    ): Promise<Map<string, StoragePlacement>>{
+        if(!scopeIds.length){
             return new Map();
         }
 
-        const documents = await StoragePlacementModel.find({
-            scopeType,
-            scopeId: {
-                $in: scopeIds
-            }
-        } as FilterQuery<StoragePlacementDocument>).exec();
-        const placements = documents.map(toStoragePlacementLike);
+        const entities = await StoragePlacementEntity.findBy({
+            scopeType: scopeType as StoragePlacementScopeTypeColumn,
+            scopeId: In(scopeIds)
+        });
+        const placements = entities.map(toStoragePlacementLike);
 
         return new Map(placements.map((placement) => [placement.props.scopeId, placement]));
     }
@@ -328,31 +344,37 @@ export class StoragePlacementService implements IStoragePlacementService {
     private async resolvePlacementDefinition(
         scopeType: StoragePlacementScopeType,
         scopeId: string
-    ): Promise<ResolvedPlacementDefinition> {
-        if (scopeType === 'trajectory') {
-            const trajectory = await TrajectoryModel.findById(scopeId);
-            if (!trajectory) {
+    ): Promise<ResolvedPlacementDefinition>{
+        if(scopeType === 'trajectory'){
+            const trajectory = await Trajectory.findOneBy({ id: scopeId });
+            if(!trajectory){
                 throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found for storage placement');
             }
 
             return this.resolveTrajectoryPlacementDefinition(trajectory);
         }
 
-        if (scopeType === 'analysis') {
-            const analysis = await AnalysisModel.findById(scopeId);
-            if (!analysis) {
+        if(scopeType === 'analysis'){
+            const analysis = await Analysis.findOneBy({ id: scopeId });
+            if(!analysis){
                 throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
             }
 
             return this.resolveAnalysisPlacementDefinition(analysis);
         }
 
-        const pluginDoc = await PluginModel.findById(scopeId).select('team').exec();
-        if (!pluginDoc) {
+        const plugin = await Plugin.findOne({
+            where: { id: scopeId },
+            select: {
+                id: true,
+                team: true
+            }
+        });
+        if(!plugin){
             throw ApplicationError.notFound('Plugin::NotFound', 'Plugin not found for storage placement');
         }
 
-        const pluginTeamId = String(pluginDoc.team);
+        const pluginTeamId = plugin.team;
         const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(pluginTeamId);
 
         return {
@@ -362,9 +384,9 @@ export class StoragePlacementService implements IStoragePlacementService {
         };
     }
 
-    private resolveTrajectoryPlacementDefinition(trajectory: TrajectoryDocument): ResolvedPlacementDefinition {
-        const storageClusterId = trajectory.storageClusterId?.toString();
-        if (!storageClusterId) {
+    private resolveTrajectoryPlacementDefinition(trajectory: Trajectory): ResolvedPlacementDefinition{
+        const storageClusterId = trajectory.storageClusterId;
+        if(!storageClusterId){
             throw ApplicationError.conflict(
                 'StoragePlacement::TrajectoryStorageClusterRequired',
                 'Trajectory storage cluster is required before creating a storage placement'
@@ -372,15 +394,15 @@ export class StoragePlacementService implements IStoragePlacementService {
         }
 
         return {
-            team: trajectory.team.toString(),
+            team: trajectory.team,
             primaryClusterId: storageClusterId,
-            buckets: buildTrajectoryPlacementBuckets(trajectory._id.toString())
+            buckets: buildTrajectoryPlacementBuckets(trajectory.id)
         };
     }
 
-    private resolveAnalysisPlacementDefinition(analysis: AnalysisDocument): ResolvedPlacementDefinition {
-        const storageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() });
-        if (!storageClusterId) {
+    private resolveAnalysisPlacementDefinition(analysis: Analysis): ResolvedPlacementDefinition{
+        const storageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined });
+        if(!storageClusterId){
             throw ApplicationError.conflict(
                 'StoragePlacement::AnalysisStorageClusterRequired',
                 'Analysis storage cluster is required before creating a storage placement'
@@ -388,24 +410,24 @@ export class StoragePlacementService implements IStoragePlacementService {
         }
 
         return {
-            team: analysis.team.toString(),
+            team: analysis.team,
             primaryClusterId: storageClusterId,
-            buckets: buildAnalysisPlacementBuckets(analysis.trajectory.toString(), analysis._id.toString())
+            buckets: buildAnalysisPlacementBuckets(analysis.trajectory, analysis.id)
         };
     }
 
     private async synchronizeAnalysisPlacementsForTrajectory(
         trajectoryId: string,
-        analyses: AnalysisDocument[],
+        analyses: Analysis[],
         storageClusterId: string
-    ): Promise<void> {
-        for (const analysis of analyses) {
-            const analysisId = analysis._id.toString();
+    ): Promise<void>{
+        for(const analysis of analyses){
+            const analysisId = analysis.id;
             const existingPlacement = await this.findPlacementByScope('analysis', analysisId);
             const existingPrimaryClusterId = existingPlacement?.props.primaryClusterId;
 
             await this.upsertPlacementByScope('analysis', analysisId, createStoragePlacementProps({
-                team: analysis.team.toString(),
+                team: analysis.team,
                 scopeType: 'analysis',
                 scopeId: analysisId,
                 primaryClusterId: storageClusterId,
@@ -423,7 +445,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         }
     }
 
-    private buildPlacementKey(scopeType: StoragePlacementScopeType, scopeId: string): string {
+    private buildPlacementKey(scopeType: StoragePlacementScopeType, scopeId: string): string{
         return `${scopeType}:${scopeId}`;
     }
 }

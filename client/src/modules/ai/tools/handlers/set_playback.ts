@@ -67,9 +67,15 @@ const setPlayback: ClientToolHandler<SetPlaybackInput> = {
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Playback settings unchanged', icon: 'settings' };
+            return {
+                label: 'Playback settings unchanged',
+                icon: 'settings'
+            };
         }
-        return { label: 'Updated playback settings', icon: 'settings' };
+        return {
+            label: 'Updated playback settings',
+            icon: 'settings'
+        };
     }
 };
 

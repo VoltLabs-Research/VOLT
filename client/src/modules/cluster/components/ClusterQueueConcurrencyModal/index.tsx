@@ -35,18 +35,50 @@ const MIN_CONCURRENCY = 1;
 const MIN_SCOPE_LIMIT = 0;
 
 const QUEUE_FIELDS: QueueFieldDefinition[] = [
-    { key: 'analysis', label: 'Analysis', description: 'Workflow analysis jobs' },
-    { key: 'rasterizer', label: 'Rasterizer', description: 'Trajectory preview generation' },
-    { key: 'glbPreprocessing', label: 'GLB preprocessing', description: 'Trajectory model preprocessing' },
-    { key: 'artifactUpload', label: 'Artifact upload', description: 'Analysis artifact upload jobs' },
-    { key: 'pluginWarmup', label: 'Plugin warmup', description: 'Plugin binary preparation jobs' }
+    {
+        key: 'analysis',
+        label: 'Analysis',
+        description: 'Workflow analysis jobs'
+    },
+    {
+        key: 'rasterizer',
+        label: 'Rasterizer',
+        description: 'Trajectory preview generation'
+    },
+    {
+        key: 'glbPreprocessing',
+        label: 'GLB preprocessing',
+        description: 'Trajectory model preprocessing'
+    },
+    {
+        key: 'artifactUpload',
+        label: 'Artifact upload',
+        description: 'Analysis artifact upload jobs'
+    },
+    {
+        key: 'pluginWarmup',
+        label: 'Plugin warmup',
+        description: 'Plugin binary preparation jobs'
+    }
 ];
 
 const QUEUE_SCOPE_FIELDS: QueueScopeFieldDefinition[] = [
-    { key: 'analysisProcessing', label: 'Analysis processing' },
-    { key: 'artifactUpload', label: 'Artifact upload' },
-    { key: 'trajectoryRasterization', label: 'Rasterization' },
-    { key: 'trajectoryGlbConversion', label: 'GLB preprocessing' }
+    {
+        key: 'analysisProcessing',
+        label: 'Analysis processing'
+    },
+    {
+        key: 'artifactUpload',
+        label: 'Artifact upload'
+    },
+    {
+        key: 'trajectoryRasterization',
+        label: 'Rasterization'
+    },
+    {
+        key: 'trajectoryGlbConversion',
+        label: 'GLB preprocessing'
+    }
 ];
 
 export const CLUSTER_QUEUE_CONCURRENCY_MODAL_ID = 'cluster-queue-concurrency-modal';

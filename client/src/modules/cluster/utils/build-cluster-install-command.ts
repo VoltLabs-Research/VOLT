@@ -18,9 +18,18 @@ export interface ClusterInstallPlatformOption {
 };
 
 export const CLUSTER_INSTALL_PLATFORM_OPTIONS: ReadonlyArray<ClusterInstallPlatformOption> = [
-    { id: ClusterInstallPlatform.Windows, label: 'Windows' },
-    { id: ClusterInstallPlatform.Linux, label: 'Linux' },
-    { id: ClusterInstallPlatform.MacOS, label: 'macOS' }
+    {
+        id: ClusterInstallPlatform.Windows,
+        label: 'Windows'
+    },
+    {
+        id: ClusterInstallPlatform.Linux,
+        label: 'Linux'
+    },
+    {
+        id: ClusterInstallPlatform.MacOS,
+        label: 'macOS'
+    }
 ];
 
 const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/clusterdaemon/main/scripts';

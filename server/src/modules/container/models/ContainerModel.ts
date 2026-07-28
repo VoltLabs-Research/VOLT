@@ -107,8 +107,18 @@ const ContainerSchema = new Schema<IContainer>({
     timestamps: true
 });
 
-ContainerSchema.index({ name: 'text', image: 'text' });
-ContainerSchema.index({ team: 1, folder: 1, createdAt: -1 });
-ContainerSchema.index({ team: 1, updatedAt: -1 });
+ContainerSchema.index({
+    name: 'text',
+    image: 'text'
+});
+ContainerSchema.index({
+    team: 1,
+    folder: 1,
+    createdAt: -1
+});
+ContainerSchema.index({
+    team: 1,
+    updatedAt: -1
+});
 
 export const ContainerModel = mongoose.model<IContainer>('Container', ContainerSchema);

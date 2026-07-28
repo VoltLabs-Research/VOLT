@@ -31,7 +31,11 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     const fallbackTimestep = trajectory?.frames?.[0]?.timestep;
     const atomPropertiesTimestep = currentTimestep ?? fallbackTimestep;
     const analysesQuery = useAnalysesByTrajectoryQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: !!trajectoryId && !!analysisId }
     );
     const analyses = analysesQuery.data?.data ?? trajectory?.analysis ?? [];

@@ -93,7 +93,10 @@ const useLatexAssets = ({ documentId }: UseLatexAssetsInput) => {
         if (!isConfirmed) return;
 
         await showPromise(
-            deleteAsset({ documentId, assetId: asset._id }),
+            deleteAsset({
+                documentId,
+                assetId: asset._id
+            }),
             DELETE_TOAST
         );
     }, [deleteAsset, documentId]);
@@ -102,7 +105,11 @@ const useLatexAssets = ({ documentId }: UseLatexAssetsInput) => {
         const { path } = splitWorkspacePath(asset.path);
 
         await showPromise(
-            updateAsset({ documentId, assetId: asset._id, path: `${path}${name}` }),
+            updateAsset({
+                documentId,
+                assetId: asset._id,
+                path: `${path}${name}`
+            }),
             RENAME_TOAST
         );
     }, [documentId, updateAsset]);

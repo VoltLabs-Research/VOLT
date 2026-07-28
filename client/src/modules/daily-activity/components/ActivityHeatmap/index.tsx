@@ -44,7 +44,10 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
         handleDayFocus,
         handleMouseLeave,
         handleMouseMove
-    } = useActivityHeatmap({ data, range });
+    } = useActivityHeatmap({
+        data,
+        range
+    });
 
     return (
         <Stack gap='075' height='max' className='activity-heatmap-root' role='group' aria-label='Daily activity heatmap'>

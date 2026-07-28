@@ -218,7 +218,10 @@ const mergeSlice = (
         return;
     }
 
-    const merged = { ...(currentSlice as Plain), ...patchSlice } as unknown;
+    const merged = {
+        ...(currentSlice as Plain),
+        ...patchSlice
+    } as unknown;
     (next as Record<string, unknown>)[key as string] = merged;
 
     void state;

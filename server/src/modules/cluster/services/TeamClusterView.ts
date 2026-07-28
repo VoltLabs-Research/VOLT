@@ -11,13 +11,13 @@ import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';
-import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import type {
     ClusterTransferJobCursor,
     ClusterTransferJobReason,
     ClusterTransferJobState,
     ClusterTransferJobStats
-} from '@modules/cluster/models/ClusterTransferJobModel';
+} from '@volt/contracts/modules/cluster/domain';
 import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/services/TeamClusterFactory';
 
 export interface ClusterTransferJobView {

@@ -1,8 +1,6 @@
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import TrajectoryModel, {
-    type TrajectoryDocument
-} from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import type {
     FrameMetadata,
     LineExportBaseOptions,
@@ -112,7 +110,7 @@ interface ResolveTrajectoryNativeClusterContextInput {
 }
 
 interface TrajectoryNativeClusterContext {
-    trajectory: TrajectoryDocument;
+    trajectory: Trajectory;
     storageClusterId: string;
     computeClusterId: string;
 }
@@ -120,9 +118,9 @@ interface TrajectoryNativeClusterContext {
 export const resolveTrajectoryNativeClusterContext = async (
     input: ResolveTrajectoryNativeClusterContextInput
 ): Promise<TrajectoryNativeClusterContext | null> => {
-    const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+    const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
     const storageClusterId = trajectory
-        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
         : undefined;
 
     if (!trajectory || !storageClusterId) {
@@ -130,7 +128,7 @@ export const resolveTrajectoryNativeClusterContext = async (
     }
 
     const computeClusterId = await input.teamClusterSelectionService.resolveComputeClusterId(
-        trajectory.team.toString(),
+        trajectory.team,
         undefined,
         storageClusterId
     );

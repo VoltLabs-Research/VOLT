@@ -13,7 +13,11 @@ const statusByHandler = new WeakMap<object, Map<string | symbol, number>>();
 export const Route = <I, O>(endpoint: Endpoint<I, O>): MethodDecorator =>
     (target, handlerName) => {
         const list = routes.get(target.constructor) ?? [];
-        list.push({ method: endpoint.method, path: endpoint.path, handlerName });
+        list.push({
+            method: endpoint.method,
+            path: endpoint.path,
+            handlerName
+        });
         routes.set(target.constructor, list);
     };
 

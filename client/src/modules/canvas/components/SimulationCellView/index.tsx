@@ -42,7 +42,11 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
 
     const [isEditing, setIsEditing] = useState(false);
     const [draftVectors, setDraftVectors] = useState<number[][]>([]);
-    const [draftPbc, setDraftPbc] = useState<CellPbc>({ x: true, y: true, z: true });
+    const [draftPbc, setDraftPbc] = useState<CellPbc>({
+        x: true,
+        y: true,
+        z: true
+    });
 
     const fetchedVectors = cell?.geometry?.cell_vectors;
     const fetchedPbc = cell?.geometry?.periodic_boundary_conditions;
@@ -86,8 +90,14 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
     ];
 
     const columns: { title: string; visible?: boolean; rows: [string, ReactNode, string?][] }[] = [
-        { title: 'Bounding Box', rows: boundingBoxRows },
-        { title: 'Boundary Conditions', rows: boundaryRows },
+        {
+            title: 'Bounding Box',
+            rows: boundingBoxRows
+        },
+        {
+            title: 'Boundary Conditions',
+            rows: boundaryRows
+        },
         {
             title: 'Cell Vectors',
             visible: !!vectors && vectors.length > 0,
@@ -183,7 +193,10 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                                 key={axis}
                                 checked={draftPbc[axis]}
                                 label={axis.toUpperCase()}
-                                onChange={(event) => setDraftPbc((previous) => ({ ...previous, [axis]: event.target.checked }))}
+                                onChange={(event) => setDraftPbc((previous) => ({
+                                    ...previous,
+                                    [axis]: event.target.checked
+                                }))}
                             />
                         ))}
                     </Row>

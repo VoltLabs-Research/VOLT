@@ -183,8 +183,15 @@ const TrajectoryCloneJobSchema = new Schema({
     timestamps: true
 });
 
-TrajectoryCloneJobSchema.index({ team: 1, state: 1, updatedAt: 1 });
-TrajectoryCloneJobSchema.index({ destinationTrajectoryId: 1, state: 1 });
+TrajectoryCloneJobSchema.index({
+    team: 1,
+    state: 1,
+    updatedAt: 1
+});
+TrajectoryCloneJobSchema.index({
+    destinationTrajectoryId: 1,
+    state: 1
+});
 
 const TrajectoryCloneJobModel: Model<TrajectoryCloneJobDocument> = mongoose.model<TrajectoryCloneJobDocument>(
     'TrajectoryCloneJob',

@@ -12,7 +12,10 @@ export const fetchAllPlugins = async (): Promise<Plugin[]> => {
     let hasMore = false;
 
     do {
-        const response = await pluginService.getAll({ page, limit: PAGE_SIZE });
+        const response = await pluginService.getAll({
+            page,
+            limit: PAGE_SIZE
+        });
         allPlugins.push(...response.data);
         hasMore = response.pagination.hasMore;
         page += 1;

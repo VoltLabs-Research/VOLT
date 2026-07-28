@@ -105,7 +105,10 @@ const shouldConfirm = async <T,>(actionConfig: ActionConfig<T>, item: T, selecte
         return confirm(actionConfig.confirm);
     }
 
-    const message = actionConfig.confirm({ item, selectedItems });
+    const message = actionConfig.confirm({
+        item,
+        selectedItems
+    });
     return confirm(message);
 };
 
@@ -135,11 +138,17 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
 
         if (scope === 'selection') {
             for (const currentItem of targets) {
-                await actionConfig.handler({ item: currentItem, selectedItems: targets });
+                await actionConfig.handler({
+                    item: currentItem,
+                    selectedItems: targets
+                });
             }
             return;
         }
-        await actionConfig.handler({ item: primaryItem, selectedItems: targets });
+        await actionConfig.handler({
+            item: primaryItem,
+            selectedItems: targets
+        });
     }, [actions, hasPermission]);
 
     const getMenuOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {

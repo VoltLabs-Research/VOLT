@@ -84,20 +84,53 @@ export enum PrecisionType {
 };
 
 export const RENDERER_TONE_MAPPING_OPTIONS: RenderingOption<ToneMappingMode>[] = [
-    { title: 'None', value: ToneMappingMode.None },
-    { title: 'Linear', value: ToneMappingMode.Linear },
-    { title: 'Reinhard', value: ToneMappingMode.Reinhard },
-    { title: 'Cineon', value: ToneMappingMode.Cineon },
-    { title: 'ACES Filmic', value: ToneMappingMode.ACESFilmic },
-    { title: 'AgX', value: ToneMappingMode.AgX },
-    { title: 'Neutral', value: ToneMappingMode.Neutral }
+    {
+        title: 'None',
+        value: ToneMappingMode.None
+    },
+    {
+        title: 'Linear',
+        value: ToneMappingMode.Linear
+    },
+    {
+        title: 'Reinhard',
+        value: ToneMappingMode.Reinhard
+    },
+    {
+        title: 'Cineon',
+        value: ToneMappingMode.Cineon
+    },
+    {
+        title: 'ACES Filmic',
+        value: ToneMappingMode.ACESFilmic
+    },
+    {
+        title: 'AgX',
+        value: ToneMappingMode.AgX
+    },
+    {
+        title: 'Neutral',
+        value: ToneMappingMode.Neutral
+    }
 ];
 
 export const RENDERER_SHADOW_TYPE_OPTIONS: RenderingOption<ShadowType>[] = [
-    { title: 'Basic', value: ShadowType.Basic },
-    { title: 'PCF', value: ShadowType.PCF },
-    { title: 'PCF Soft', value: ShadowType.PCFSoft },
-    { title: 'VSM', value: ShadowType.VSM }
+    {
+        title: 'Basic',
+        value: ShadowType.Basic
+    },
+    {
+        title: 'PCF',
+        value: ShadowType.PCF
+    },
+    {
+        title: 'PCF Soft',
+        value: ShadowType.PCFSoft
+    },
+    {
+        title: 'VSM',
+        value: ShadowType.VSM
+    }
 ];
 
 export const RENDERER_SUBSECTION_TITLES = {

@@ -73,14 +73,23 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
 
             if(p.state === 'error'){
                 const message = p.message ?? 'Unknown error';
-                append({ stream: 'stderr', text: message });
-                sileo.error({ title: 'Deploy failed', description: message });
+                append({
+                    stream: 'stderr',
+                    text: message
+                });
+                sileo.error({
+                    title: 'Deploy failed',
+                    description: message
+                });
             }
 
             if(p.state === 'up'){
                 window.volt.app.voltUrl()
                     .then(setVoltUrl)
-                    .catch((err) => sileo.error({ title: 'Could not open Volt', description: errMessage(err) }));
+                    .catch((err) => sileo.error({
+                        title: 'Could not open Volt',
+                        description: errMessage(err)
+                    }));
             }
         });
 
@@ -90,12 +99,21 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         });
 
         const unsubPhase = window.volt.on('deploy:phase', (p) => {
-            setPhaseState((prev) => ({ ...prev, [p.id]: { status: p.status, detail: p.detail } }));
+            setPhaseState((prev) => ({
+                ...prev,
+                [p.id]: {
+                    status: p.status,
+                    detail: p.detail
+                }
+            }));
         });
 
         const unsubLog = window.volt.on('deploy:log', (p) => {
             const text = p.line.replace(/\s+$/, '');
-            if(text) append({ stream: p.stream, text });
+            if(text) append({
+                stream: p.stream,
+                text
+            });
         });
 
         const unsubProgress = window.volt.on('source:progress', (p) => {
@@ -115,7 +133,13 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
                         : 'downloading'
                 : 'extracting';
 
-            setPhaseState((prev) => ({ ...prev, sources: { status: 'running', detail } }));
+            setPhaseState((prev) => ({
+                ...prev,
+                sources: {
+                    status: 'running',
+                    detail
+                }
+            }));
         });
 
         const unsubPreflight = window.volt.on('deploy:preflight', (p) => {
@@ -145,5 +169,17 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         setPreflight(null);
     };
 
-    return { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run, start: boot };
+    return {
+        state,
+        phases,
+        phaseState,
+        logs,
+        voltUrl,
+        preflight,
+        busy,
+        reset,
+        recheck,
+        run,
+        start: boot
+    };
 };

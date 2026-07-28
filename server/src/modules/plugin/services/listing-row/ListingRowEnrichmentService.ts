@@ -3,8 +3,9 @@ import { deriveColumns } from '@modules/plugin/services/listing-row/DaemonListin
 import type { ColumnDef } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { DaemonListingRow } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 
-import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
+import { In } from 'typeorm';
 
 interface EnrichDaemonListingRowsInput {
     rows: DaemonListingRow[];
@@ -31,7 +32,10 @@ const createColumn = ({ key, label, sortable = true }: ColumnFactoryInput): Colu
 
 const buildDynamicColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): ColumnDef[] => {
     const columns = daemonColumns?.length
-        ? daemonColumns.map((column) => createColumn({ key: column, label: column }))
+        ? daemonColumns.map((column) => createColumn({
+            key: column,
+            label: column
+        }))
         : deriveColumns(rows);
 
     return columns.filter((column) => !RESERVED_COLUMN_KEYS.has(String(column.key ?? column.label)));
@@ -52,24 +56,28 @@ const resolveAnalysisIds = (rows: DaemonListingRow[], fallbackAnalysisId?: strin
 
 const loadAnalyses = async (
     analysisIds: string[]
-): Promise<Map<string, AnalysisDocument>> => {
-    const analysisList = await AnalysisModel.find({ _id: { $in: analysisIds } }).exec();
+): Promise<Map<string, AnalysisEntity>> => {
+    const analyses = new Map<string, AnalysisEntity>();
+    if(analysisIds.length === 0){
+        return analyses;
+    }
 
-    const analyses = new Map<string, AnalysisDocument>();
-    for (const analysis of analysisList) {
-        analyses.set(analysis._id.toString(), analysis);
+    const analysisList = await AnalysisEntity.findBy({ id: In(analysisIds) });
+
+    for(const analysis of analysisList){
+        analyses.set(analysis.id, analysis);
     }
 
     return analyses;
 };
 
-const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, AnalysisDocument>): string[] => {
+const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, AnalysisEntity>): string[] => {
     const ids = new Set<string>();
 
     for (const row of rows) {
         const analysisId = row.analysis?.trim();
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory?.toString();
+        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory;
 
         if (trajectoryId) {
             ids.add(trajectoryId);
@@ -82,16 +90,26 @@ const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, An
 const loadTrajectoryNames = async (
     trajectoryIds: string[]
 ): Promise<Map<string, string>> => {
-    const trajectoryList = await TrajectoryModel.find({ _id: { $in: trajectoryIds } }).select('name').lean().exec();
-
     const trajectoryNames = new Map<string, string>();
-    for (const trajectory of trajectoryList) {
+    if(trajectoryIds.length === 0){
+        return trajectoryNames;
+    }
+
+    const trajectoryList = await TrajectoryEntity.find({
+        where: { id: In(trajectoryIds) },
+        select: {
+            id: true,
+            name: true
+        }
+    });
+
+    for(const trajectory of trajectoryList){
         const trajectoryName = trajectory.name?.trim();
-        if (!trajectoryName) {
+        if(!trajectoryName){
             continue;
         }
 
-        trajectoryNames.set(trajectory._id.toString(), trajectoryName);
+        trajectoryNames.set(trajectory.id, trajectoryName);
     }
 
     return trajectoryNames;
@@ -99,8 +117,14 @@ const loadTrajectoryNames = async (
 
 export const buildListingColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): ColumnDef[] => {
     return [
-        createColumn({ key: TRAJECTORY_COLUMN_KEY, label: 'Trajectory' }),
-        createColumn({ key: TIMESTEP_COLUMN_KEY, label: 'Timestep' }),
+        createColumn({
+            key: TRAJECTORY_COLUMN_KEY,
+            label: 'Trajectory'
+        }),
+        createColumn({
+            key: TIMESTEP_COLUMN_KEY,
+            label: 'Timestep'
+        }),
         ...buildDynamicColumns(rows, daemonColumns)
     ];
 };
@@ -141,7 +165,7 @@ export const enrichDaemonListingRows = async ({
     return rows.map((row) => {
         const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory?.toString() || '';
+        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory || '';
         const trajectoryName = trajectoryNames.get(trajectoryId) || '';
 
         return {

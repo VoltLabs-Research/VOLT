@@ -6,26 +6,41 @@ export interface FormattedScientific {
 export const formatScientific = (value: number, sigFigs = 4): FormattedScientific => {
     if(!Number.isFinite(value)){
         const text = String(value);
-        return { short: text, long: text };
+        return {
+            short: text,
+            long: text
+        };
     }
 
     if(value === 0){
-        return { short: '0', long: '0' };
+        return {
+            short: '0',
+            long: '0'
+        };
     }
 
     const abs = Math.abs(value);
     const long = String(value);
 
     if(Number.isInteger(value) && abs < 1e6){
-        return { short: long, long };
+        return {
+            short: long,
+            long
+        };
     }
 
     if(abs >= 1e6 || abs < 1e-3){
-        return { short: value.toExponential(Math.max(sigFigs - 1, 1)), long };
+        return {
+            short: value.toExponential(Math.max(sigFigs - 1, 1)),
+            long
+        };
     }
 
     const precision = Number(value.toPrecision(sigFigs));
-    return { short: String(precision), long };
+    return {
+        short: String(precision),
+        long
+    };
 };
 
 export const vectorMagnitude = (components: number[]): number => {

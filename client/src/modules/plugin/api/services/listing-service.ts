@@ -84,33 +84,24 @@ const requireExposureSelector = (params: ExposureSelectorParams, message: string
     }
 };
 
-const buildExportListingPath = ({ pluginId, trajectoryId }: ExportPluginListingInput) => {
-    let path = `/${pluginId}/listings/export`;
-
-    if (trajectoryId) {
-        path = `/${pluginId}/listings/trajectories/${trajectoryId}/export`;
-    }
-
-    return path;
-};
-
 const endpoints = {
-    getListing: get<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>('/:pluginId/listings', {
+    getListing: get<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>('/plugins/:pluginId/listings', {
         unwrap: 'raw',
         omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
         map: mapRawListingResponse
     }),
     getSubListing: get<GetSubListingInput, GetSubListingResponse>(
-        '/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
+        '/plugins/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
     ),
     getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsInput, GetAnalysisListingExportOptionsResponse>(
-        '/listings/analyses/:analysisId/export/options'
+        '/plugins/listings/analyses/:analysisId/export/options'
     ),
     exportListing: download<ExportPluginListingInput>('GET',
-        buildExportListingPath,
+        '/plugins/:pluginId/listings/export',
         {
-            query: ({ analysisId, exposureId, exposureName, format }) => ({
+            query: ({ trajectoryId, analysisId, exposureId, exposureName, format }) => ({
+                ...(trajectoryId ? { trajectoryId } : {}),
                 ...(analysisId ? { analysisId } : {}),
                 ...(exposureId ? { exposureId } : {}),
                 ...(exposureName ? { exposureName } : {}),
@@ -120,7 +111,7 @@ const endpoints = {
         }
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInput>('GET',
-        '/listings/analyses/:analysisId/export',
+        '/plugins/listings/analyses/:analysisId/export',
         {
             query: ({ format, includeConfig, selectedListingIds, selectedSubListingIds }) => ({
                 format,
@@ -147,7 +138,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/plugins',
+            basePath: '/teams',
             useRBAC: true
         }
     }

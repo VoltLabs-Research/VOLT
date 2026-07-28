@@ -23,4 +23,7 @@ export const NodeDataSchema = new Schema({
     ifStatement: IfStatementDataSchema,
     switchStatement: SwitchStatementDataSchema,
     switchCase: SwitchCaseDataSchema
-}, { _id: false, strict: false });
+}, {
+    _id: false,
+    strict: false
+});

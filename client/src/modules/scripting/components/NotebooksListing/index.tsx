@@ -66,7 +66,10 @@ const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
     title: 'Title',
     sortable: true,
     render: (_value, row) => <span className='font-weight-6 color-secondary text-truncate'>{row.title || 'Untitled Notebook'}</span>,
-    skeleton: { variant: 'text', width: 180 }
+    skeleton: {
+        variant: 'text',
+        width: 180
+    }
 };
 
 const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
@@ -74,7 +77,10 @@ const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
     title: 'Trajectory',
     sortable: false,
     render: renderTrajectoryDetails,
-    skeleton: { variant: 'text', width: 150 }
+    skeleton: {
+        variant: 'text',
+        width: 150
+    }
 };
 
 const CLUSTER_COLUMN = clusterColumn<NotebookDocument>({ width: 150 });
@@ -178,7 +184,10 @@ const NotebooksListing = () => {
     const columns = useMemo(() => resolveColumns(activeTab), [activeTab]);
     const context = useMemo<NotebooksListingContext>(() => ({ scope }), [scope]);
     const createNew = activeTab === NotebooksListingTabId.List
-        ? { buttonTitle: 'New Notebook', onCreate: handleCreate }
+        ? {
+            buttonTitle: 'New Notebook',
+            onCreate: handleCreate
+        }
         : undefined;
 
     const handleTabChange = useCallback((tabId: string) => {

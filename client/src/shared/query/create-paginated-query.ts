@@ -256,7 +256,10 @@ export const createInfiniteQuery = <TParams, TEntity>(
         >({
             ...options,
             queryKey: keyFn(params),
-            queryFn: ({ pageParam }) => fetchPage(params, { page: pageParam, limit }),
+            queryFn: ({ pageParam }) => fetchPage(params, {
+                page: pageParam,
+                limit
+            }),
             initialPageParam: 1,
             getNextPageParam: (lastPage) => lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined
         }),
@@ -372,7 +375,10 @@ export const createPaginatedQuery = <
         patchAllLists((current) => {
             const exists = current.data.some((currentEntity) => currentEntity._id === entity._id);
             const nextData = exists
-                ? current.data.map((currentEntity) => currentEntity._id === entity._id ? { ...currentEntity, ...entity } : currentEntity)
+                ? current.data.map((currentEntity) => currentEntity._id === entity._id ? {
+                    ...currentEntity,
+                    ...entity
+                } : currentEntity)
                 : [entity, ...current.data].slice(0, current.pagination.limit);
 
             return {
@@ -393,7 +399,10 @@ export const createPaginatedQuery = <
                 found = true;
                 return {
                     ...page,
-                    data: page.data.map((currentEntity) => currentEntity._id === entity._id ? { ...currentEntity, ...entity } : currentEntity)
+                    data: page.data.map((currentEntity) => currentEntity._id === entity._id ? {
+                        ...currentEntity,
+                        ...entity
+                    } : currentEntity)
                 };
             });
 

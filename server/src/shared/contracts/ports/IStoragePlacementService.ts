@@ -1,5 +1,5 @@
 
-import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
+import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
 import type {
     StoragePlacementScopeType,
     StoragePlacementState

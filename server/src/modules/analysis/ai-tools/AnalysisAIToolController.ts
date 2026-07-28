@@ -33,8 +33,15 @@ export default class AnalysisAIToolController extends AIToolController {
     async listAnalyses(input: ListAnalysesInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.getAnalysesByTeamId({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} analyses.`, data };
+        const { total, data } = await this.#service.getAnalysesByTeamId({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} analyses.`,
+            data
+        };
     }
 
     @AITool({
@@ -44,8 +51,15 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListTrajectoryAnalysesInput>()
     })
     async listTrajectoryAnalyses(input: ListTrajectoryAnalysesInput & AIToolScope) {
-        const { total, data } = await this.#service.getAnalysesByTrajectoryId({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} analyses for trajectory ${input.trajectoryId}.`, data };
+        const { total, data } = await this.#service.getAnalysesByTrajectoryId({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} analyses for trajectory ${input.trajectoryId}.`,
+            data
+        };
     }
 
     @AITool({
@@ -55,7 +69,11 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListAnalysesByConfigInput>()
     })
     async listAnalysesByConfig(input: ListAnalysesByConfigInput & AIToolScope) {
-        const { total, data } = await this.#service.getAnalysesByTrajectoryId({ ...input, page: 1, limit: 1000 });
+        const { total, data } = await this.#service.getAnalysesByTrajectoryId({
+            ...input,
+            page: 1,
+            limit: 1000
+        });
 
         const configFilter = input.configFilter ?? {};
         const configFilterKeys = Object.keys(configFilter);
@@ -87,7 +105,10 @@ export default class AnalysisAIToolController extends AIToolController {
     })
     async getAnalysis(input: AnalysisRefInput & AIToolScope) {
         const analysis = await this.#service.getAnalysisById(input);
-        return { summary: `Retrieved analysis ${input.analysisId}.`, data: analysis };
+        return {
+            summary: `Retrieved analysis ${input.analysisId}.`,
+            data: analysis
+        };
     }
 
     @AITool({
@@ -176,7 +197,10 @@ export default class AnalysisAIToolController extends AIToolController {
         const runtimeText = runtimeMs !== null ? `, ran ${(runtimeMs / 1000).toFixed(1)}s` : '';
         const summary = `${analysis.pluginDisplayName} run is ${analysis.status} (${totalFrames} frames, ${readyArtifacts}/${artifacts.length} artifacts ready, ${failedFrames.length} failed frames${runtimeText}).`;
 
-        return { summary, data };
+        return {
+            summary,
+            data
+        };
     }
 
     @AITool({
@@ -187,8 +211,14 @@ export default class AnalysisAIToolController extends AIToolController {
     })
     async compareAnalyses(input: CompareAnalysesInput & AIToolScope) {
         const [a, b] = await Promise.all([
-            this.#service.getAnalysisById({ teamId: input.teamId, analysisId: input.analysisIdA }),
-            this.#service.getAnalysisById({ teamId: input.teamId, analysisId: input.analysisIdB })
+            this.#service.getAnalysisById({
+                teamId: input.teamId,
+                analysisId: input.analysisIdA
+            }),
+            this.#service.getAnalysisById({
+                teamId: input.teamId,
+                analysisId: input.analysisIdB
+            })
         ]);
 
         const configDelta = this.#diffConfig(a.config, b.config);
@@ -256,13 +286,21 @@ export default class AnalysisAIToolController extends AIToolController {
             } else if (!hasA && hasB) {
                 added[key] = b[key];
             } else if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
-                changed[key] = { a: a[key], b: b[key] };
+                changed[key] = {
+                    a: a[key],
+                    b: b[key]
+                };
             } else {
                 unchangedKeys.push(key);
             }
         }
 
-        return { added, removed, changed, unchangedKeys };
+        return {
+            added,
+            removed,
+            changed,
+            unchangedKeys
+        };
     }
 
     #summarizeArtifacts(analysis: GetAnalysisByIdResult) {

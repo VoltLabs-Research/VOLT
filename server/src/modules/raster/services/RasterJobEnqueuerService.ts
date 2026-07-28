@@ -5,7 +5,7 @@ import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 
 interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
@@ -40,15 +40,15 @@ export class RasterJobEnqueuerService {
     async triggerRasterization(
         trajectoryId: string,
         teamId: string
-    ): Promise<RasterJobEnqueueResult> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+    ): Promise<RasterJobEnqueueResult>{
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
-        if (!trajectory || trajectory.team.toString() !== teamId) {
+        if(!trajectory || trajectory.team !== teamId){
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const storageClusterId = trajectory.storageClusterId?.toString();
-        if (!storageClusterId) {
+        const storageClusterId = trajectory.storageClusterId;
+        if(!storageClusterId){
             throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
                 'Rasterization requires a storage cluster associated with the trajectory',

@@ -39,16 +39,25 @@ const openCommandPalette: ClientToolHandler<OpenCommandPaletteInput> = {
         return {
             ok: true,
             summary: `Command palette ${isOpen ? 'opened' : 'closed'}.`,
-            data: { action, isOpen }
+            data: {
+                action,
+                isOpen
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Command palette unchanged', icon: 'command' };
+            return {
+                label: 'Command palette unchanged',
+                icon: 'command'
+            };
         }
         const isOpen = (result.data as { isOpen?: boolean } | undefined)?.isOpen;
-        return { label: isOpen ? 'Opened command palette' : 'Closed command palette', icon: 'command' };
+        return {
+            label: isOpen ? 'Opened command palette' : 'Closed command palette',
+            icon: 'command'
+        };
     }
 };
 

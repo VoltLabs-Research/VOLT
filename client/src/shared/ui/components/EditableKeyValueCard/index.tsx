@@ -79,7 +79,10 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
 
     const handleChange = (index: number, field: string, value: string | number) => {
         const updated = [...localItems];
-        updated[index] = { ...updated[index], [field]: value };
+        updated[index] = {
+            ...updated[index],
+            [field]: value
+        };
         setLocalItems(updated);
         
         if (alwaysEditing && onChange) {

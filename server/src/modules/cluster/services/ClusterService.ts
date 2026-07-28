@@ -1,11 +1,12 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel from '@modules/auth/models/UserModel';
+import User from '@modules/auth/models/User';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import Analysis from '@modules/analysis/models/Analysis';
+import { AnalysisArtifactStatus } from '@modules/analysis/contracts/domain/analysis';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { SystemStatus } from '@modules/system/services/SystemMetrics';
 import type { TrajectoryLike } from '@shared/contracts/types';
@@ -39,12 +40,16 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
-import type { HydratedDocument } from 'mongoose';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { ILike, In, Not, QueryFailedError } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 
-import TeamClusterModel, { TeamClusterDocument, toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
-import ClusterTransferJobModel, { ClusterTransferJobDocument } from '@modules/cluster/models/ClusterTransferJobModel';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
+import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import type {
+    TeamClusterProps,
     TeamClusterRole,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
@@ -52,12 +57,14 @@ import type {
 } from '@shared/contracts/types/TeamCluster';
 import {
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
+    createDefaultTeamClusterQueueScopeLimits
 } from '@modules/cluster/services/TeamClusterFactory';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
-import type { ClusterTransferJob } from '@modules/cluster/models/ClusterTransferJobModel';
-import type { ClusterTransferJobState } from '@modules/cluster/models/ClusterTransferJobModel';
-import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
+import {
+    ClusterTransferJobState as ClusterTransferJobStateColumn,
+    type ClusterTransferJob
+} from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import type { ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
+import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
 
 import type {
     TeamClusterView,
@@ -105,28 +112,26 @@ import { assertConfirmedPassword } from '@modules/cluster/services/TeamClusterCr
 
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 
-const SENSITIVE_FIELDS_SELECTION = [
-    '+enrollmentTokenHash',
-    '+services.minio.username',
-    '+services.minio.password',
-    '+services.redis.username',
-    '+services.redis.password',
-    '+services.mongodb.username',
-    '+services.mongodb.password',
-    '+services.daemon.password'
-].join(' ');
-
 const MB_PER_GB = 1024;
 const DEMO_CLUSTER_TTL_MINUTES = readNumberEnv('DEMO_CLUSTER_TTL_MINUTES', 30);
+const POSTGRES_UNIQUE_VIOLATION = '23505';
+const SQLITE_UNIQUE_VIOLATION = 'SQLITE_CONSTRAINT_UNIQUE';
 
-const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
-    'queued',
-    'freezing',
-    'copying',
-    'verifying',
-    'switching',
-    'cleaning'
+const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobStateColumn[] = [
+    ClusterTransferJobStateColumn.Queued,
+    ClusterTransferJobStateColumn.Freezing,
+    ClusterTransferJobStateColumn.Copying,
+    ClusterTransferJobStateColumn.Verifying,
+    ClusterTransferJobStateColumn.Switching,
+    ClusterTransferJobStateColumn.Cleaning
 ];
+
+const NON_ACTIVE_DEMO_STATUSES: TeamClusterStatus[] = [
+    TeamClusterStatus.Deleting,
+    TeamClusterStatus.DeleteFailed
+];
+
+const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, '\\$&');
 
 const WAITING_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.WaitingForConnection,
@@ -135,17 +140,13 @@ const WAITING_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.Disconnected
 ]);
 
-interface ActiveDemoQuery {
-    team: string;
-    isDemo: true;
-    status: { $nin: TeamClusterStatus[] };
-}
-
-const activeDemoFilter = (teamId: string): ActiveDemoQuery => ({
+const activeDemoFilter = (teamId: string): FindOptionsWhere<TeamClusterEntity> => ({
     team: teamId,
     isDemo: true,
-    status: { $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed] }
+    status: Not(In(NON_ACTIVE_DEMO_STATUSES))
 });
+
+const findActiveDemo = (teamId: string): Promise<TeamClusterEntity | null> => TeamClusterEntity.findOneBy(activeDemoFilter(teamId));
 
 interface DaemonQueueSnapshotEntry {
     name: string;
@@ -325,8 +326,8 @@ interface PreparedSceneArtifactUpsertEntry {
 
 export default class ClusterService {
     #userRepository = {
-        findById: (userId: string) => UserModel.findById(userId),
-        findByIdWithPassword: (userId: string) => UserModel.findById(userId).select('+password')
+        findById: (userId: string) => User.findOneBy({ id: userId }),
+        findByIdWithPassword: (userId: string) => User.findOneBy({ id: userId })
     };
     #passwordHasher = new BcryptPasswordHasher();
     #systemMetricsRepository = systemMetricsRepository;
@@ -335,50 +336,64 @@ export default class ClusterService {
 
         #eventBus = eventBus;
 
-    #toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
+    #toTrajectoryLike(trajectory: Trajectory): TrajectoryLike {
         return {
-            _id: doc._id.toString(),
+            _id: trajectory.id,
             props: {
-                name: doc.name,
-                team: doc.team.toString(),
-                folder: doc.folder ? doc.folder.toString() : null,
-                storageClusterId: doc.storageClusterId?.toString(),
-                createdBy: doc.createdBy.toString(),
-                status: doc.status,
-                isPublic: doc.isPublic,
-                rasterSceneViews: doc.rasterSceneViews,
-                hasPreview: doc.hasPreview,
-                stats: doc.stats,
-                updatedAt: doc.updatedAt,
-                createdAt: doc.createdAt
+                name: trajectory.name,
+                team: trajectory.team,
+                folder: trajectory.folder,
+                storageClusterId: trajectory.storageClusterId,
+                createdBy: trajectory.createdBy,
+                status: trajectory.status,
+                isPublic: trajectory.isPublic,
+                rasterSceneViews: trajectory.rasterSceneViews,
+                hasPreview: trajectory.hasPreview,
+                stats: trajectory.stats,
+                updatedAt: trajectory.updatedAt,
+                createdAt: trajectory.createdAt
             }
         };
     }
 
     async #findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
-        const doc = await TrajectoryModel.findById(trajectoryId);
-        return doc ? this.#toTrajectoryLike(doc) : null;
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
+        return trajectory ? this.#toTrajectoryLike(trajectory) : null;
     }
 
-    async #upsertSceneArtifactsByObjectName(entries: Array<{ objectName: string; data: Record<string, unknown> }>): Promise<void> {
+    async #upsertSceneArtifactsByObjectName(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
         if (!entries.length) {
             return;
         }
 
-        const operations = entries.map((entry) => ({
-            updateOne: {
-                filter: { objectName: entry.objectName },
-                update: {
-                    $set: {
-                        ...entry.data,
-                        objectName: entry.objectName
-                    }
-                },
-                upsert: true
-            }
-        }));
+        for (const entry of entries) {
+            const patch = {
+                trajectory: entry.data.trajectory,
+                storageClusterId: entry.data.storageClusterId,
+                analysis: entry.data.analysis ?? null,
+                plugin: entry.data.plugin ?? null,
+                sourceType: entry.data.sourceType,
+                timestep: entry.data.timestep,
+                params: entry.data.params,
+                displayName: entry.data.displayName,
+                status: entry.data.status,
+                storageBucket: entry.data.storageBucket,
+                ...(entry.data.metadata === undefined ? {} : { metadata: entry.data.metadata }),
+                objectName: entry.objectName
+            };
 
-        await SceneArtifactModel.bulkWrite(operations, { ordered: false });
+            try {
+                const existing = await SceneArtifact.findOneBy({ objectName: entry.objectName });
+                if (existing) {
+                    await Object.assign(existing, patch).save();
+                    continue;
+                }
+
+                await SceneArtifact.create({ ...patch }).save();
+            } catch (error: unknown) {
+                logger.warn(`[ClusterService.upsertSceneArtifactsByObjectName] Failed to upsert scene artifact objectName=${entry.objectName} error=${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
     }
 
     #lifecycleService = teamClusterLifecycleService;
@@ -398,7 +413,7 @@ export default class ClusterService {
             throw ApplicationError.notFound('TeamCluster::UserNotFound', 'User not found');
         }
 
-        const existingDemo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
+        const existingDemo = await findActiveDemo(input.teamId);
 
         const enrollmentToken = createEnrollmentToken();
         const encryptedServices = await encryptTeamClusterServices(this.#credentialService, {
@@ -420,34 +435,34 @@ export default class ClusterService {
             demoExpiresAt: null
         });
 
-        let created: HydratedDocument<TeamClusterDocument>;
+        let created: TeamClusterEntity;
         try {
-            created = await TeamClusterModel.create(teamClusterProps);
+            created = await TeamClusterEntity.create({ ...this.#toTeamClusterEntityInput(teamClusterProps) }).save();
         } catch (error: unknown) {
-            if (this.#isMongoDuplicateKeyError(error) && error.code === 11000) {
+            if (this.#isUniqueViolation(error)) {
                 throw ApplicationError.conflict('TeamCluster::AlreadyExists', 'A team cluster with this name already exists');
             }
             throw ApplicationError.internalServerError('Failed to create team cluster');
         }
 
-        logger.info(`Team cluster created teamClusterId=${created._id} teamId=${input.teamId} userId=${input.userId}`);
+        logger.info(`Team cluster created teamClusterId=${created.id} teamId=${input.teamId} userId=${input.userId}`);
 
         if (existingDemo) {
             void (async () => {
                 try {
-                    await this.#lifecycleService.markDeleting(String(existingDemo._id));
+                    await this.#lifecycleService.markDeleting(existingDemo.id);
                 } catch (error: unknown) {
-                    logger.warn(`[ClusterService.create] markDeleting on existing demo failed teamClusterId=${existingDemo._id} error=${(error as Error).message}`);
+                    logger.warn(`[ClusterService.create] markDeleting on existing demo failed teamClusterId=${existingDemo.id} error=${(error as Error).message}`);
                 }
                 try {
                     await this.#demoDeploymentService.teardownDemoStack(toTeamClusterLike(existingDemo));
-                    const refreshed = await TeamClusterModel.findById(existingDemo._id);
+                    const refreshed = await TeamClusterEntity.findOneBy({ id: existingDemo.id });
                     if (refreshed) {
                         await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(refreshed));
                     }
-                    logger.info(`[ClusterService.create] Auto-removed demo after real cluster creation teamClusterId=${existingDemo._id} teamId=${input.teamId}`);
+                    logger.info(`[ClusterService.create] Auto-removed demo after real cluster creation teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
                 } catch (error: unknown) {
-                    logger.error(error, `[ClusterService.create] Auto-teardown of demo failed teamClusterId=${existingDemo._id} teamId=${input.teamId}`);
+                    logger.error(error, `[ClusterService.create] Auto-teardown of demo failed teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
                 }
             })();
         }
@@ -459,39 +474,60 @@ export default class ClusterService {
     }
 
     async listByTeamId(input: { teamId: string; page?: number; limit?: number; search?: string }): Promise<PaginatedResult<TeamClusterView>> {
-        const filter: Record<string, unknown> = { team: input.teamId };
+        const baseWhere: FindOptionsWhere<TeamClusterEntity> = { team: input.teamId };
 
         const search = input.search?.trim();
-        if (search) {
-            filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { installedVersion: { $regex: search, $options: 'i' } },
-                { $expr: { $regexMatch: { input: { $toString: '$_id' }, regex: search, options: 'i' } } }
-            ];
-        }
+        const containsSearch = search ? ILike(`%${escapeLikePattern(search)}%`) : undefined;
+        const where: FindOptionsWhere<TeamClusterEntity> | FindOptionsWhere<TeamClusterEntity>[] = containsSearch
+            ? [
+                {
+                    ...baseWhere,
+                    name: containsSearch
+                },
+                {
+                    ...baseWhere,
+                    installedVersion: containsSearch
+                },
+                {
+                    ...baseWhere,
+                    id: containsSearch
+                }
+            ]
+            : baseWhere;
 
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: 100 });
 
-        const [docs, total] = await Promise.all([
-            TeamClusterModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).exec(),
-            TeamClusterModel.countDocuments(filter)
-        ]);
+        const [entities, total] = await TeamClusterEntity.findAndCount({
+            where,
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const clusterIds = docs.map((doc) => String(doc._id));
+        const clusterIds = entities.map((entity) => entity.id);
         const clusterIdSet = new Set(clusterIds);
         const activeTransfersByClusterId = new Map<string, ClusterTransferJobView[]>();
         const normalizedClusterIds = [...new Set(clusterIds.filter(Boolean))];
 
         if (normalizedClusterIds.length > 0) {
-            const activeTransferJobs = await ClusterTransferJobModel.find({
-                team: input.teamId,
-                state: { $in: OPEN_TRANSFER_JOB_STATES },
-                $or: [
-                    { sourceClusterId: { $in: normalizedClusterIds } },
-                    { destinationClusterId: { $in: normalizedClusterIds } }
-                ]
-            }).sort({ updatedAt: -1, createdAt: -1 }).exec();
+            const activeTransferJobs = await ClusterTransferJobEntity.find({
+                where: [
+                    {
+                        team: input.teamId,
+                        state: In(OPEN_TRANSFER_JOB_STATES),
+                        sourceClusterId: In(normalizedClusterIds)
+                    },
+                    {
+                        team: input.teamId,
+                        state: In(OPEN_TRANSFER_JOB_STATES),
+                        destinationClusterId: In(normalizedClusterIds)
+                    }
+                ],
+                order: {
+                    updatedAt: 'DESC',
+                    createdAt: 'DESC'
+                }
+            });
 
             for (const job of activeTransferJobs) {
                 const jobView = this.#presentClusterTransferJob(job);
@@ -510,21 +546,17 @@ export default class ClusterService {
             }
         }
 
-        return {
-            data: docs.map((doc) => this.#presentTeamCluster(doc, {
-                activeTransfers: activeTransfersByClusterId.get(String(doc._id)) ?? []
-            })),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        const data = entities.map((entity) => this.#presentTeamCluster(entity, {
+            activeTransfers: activeTransfersByClusterId.get(entity.id) ?? []
+        }));
+
+        return paginate([data, total], pageRequest);
     }
 
     async provisionDemo(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterView }> {
-        const existingDemo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
+        const existingDemo = await findActiveDemo(input.teamId);
         if (existingDemo) {
-            logger.info(`[ClusterService.provisionDemo] Returning existing demo teamClusterId=${existingDemo._id} teamId=${input.teamId}`);
+            logger.info(`[ClusterService.provisionDemo] Returning existing demo teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
             return { teamCluster: this.#presentTeamCluster(existingDemo) };
         }
 
@@ -533,9 +565,18 @@ export default class ClusterService {
         const now = new Date();
         const expiresAt = new Date(now.getTime() + DEMO_CLUSTER_TTL_MINUTES * 60_000);
         const encryptedServices = await encryptTeamClusterServices(this.#credentialService, {
-            minio: { username: credentials.minioUsername, password: credentials.minioPassword },
-            redis: { username: credentials.redisUsername, password: credentials.redisPassword },
-            mongodb: { username: credentials.mongodbUsername, password: credentials.mongodbPassword },
+            minio: {
+                username: credentials.minioUsername,
+                password: credentials.minioPassword
+            },
+            redis: {
+                username: credentials.redisUsername,
+                password: credentials.redisPassword
+            },
+            mongodb: {
+                username: credentials.mongodbUsername,
+                password: credentials.mongodbPassword
+            },
             daemon: { password: credentials.daemonPassword }
         });
 
@@ -550,13 +591,12 @@ export default class ClusterService {
             now
         });
 
-        let created: HydratedDocument<TeamClusterDocument>;
+        let created: TeamClusterEntity;
         try {
-            created = await TeamClusterModel.create(teamClusterProps);
+            created = await TeamClusterEntity.create({ ...this.#toTeamClusterEntityInput(teamClusterProps) }).save();
         } catch (error: unknown) {
-            const code = (error as { code?: number }).code;
-            if (code === 11000) {
-                const fallback = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
+            if (this.#isUniqueViolation(error)) {
+                const fallback = await findActiveDemo(input.teamId);
                 if (fallback) {
                     return { teamCluster: this.#presentTeamCluster(fallback) };
                 }
@@ -565,37 +605,37 @@ export default class ClusterService {
             throw ApplicationError.internalServerError('Failed to provision demo cluster');
         }
 
-        logger.info(`[ClusterService.provisionDemo] Demo cluster persisted teamClusterId=${created._id} teamId=${input.teamId} expiresAt=${expiresAt.toISOString()}`);
+        logger.info(`[ClusterService.provisionDemo] Demo cluster persisted teamClusterId=${created.id} teamId=${input.teamId} expiresAt=${expiresAt.toISOString()}`);
 
         void this.#demoDeploymentService.deployDemoStack(toTeamClusterLike(created), credentials).catch((error: unknown) => {
-            logger.error(error, `[ClusterService.provisionDemo] Demo stack deploy failed teamClusterId=${created._id} teamId=${input.teamId}`);
+            logger.error(error, `[ClusterService.provisionDemo] Demo stack deploy failed teamClusterId=${created.id} teamId=${input.teamId}`);
         });
 
         return { teamCluster: this.#presentTeamCluster(created) };
     }
 
     async deleteDemo(input: { teamId: string; userId: string }): Promise<{ teardownScheduled: boolean }> {
-        const demo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
+        const demo = await findActiveDemo(input.teamId);
         if (!demo) {
             return { teardownScheduled: false };
         }
 
         try {
-            await this.#lifecycleService.markDeleting(String(demo._id));
+            await this.#lifecycleService.markDeleting(demo.id);
         } catch (error: unknown) {
-            logger.warn(`[ClusterService.deleteDemo] markDeleting failed teamClusterId=${demo._id} error=${(error as Error).message}`);
+            logger.warn(`[ClusterService.deleteDemo] markDeleting failed teamClusterId=${demo.id} error=${(error as Error).message}`);
         }
 
-        const refreshed = await TeamClusterModel.findById(demo._id);
+        const refreshed = await TeamClusterEntity.findOneBy({ id: demo.id });
         const target = refreshed ?? demo;
 
         void (async () => {
             try {
                 await this.#demoDeploymentService.teardownDemoStack(toTeamClusterLike(target));
                 await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(target));
-                logger.info(`[ClusterService.deleteDemo] Demo deleted teamClusterId=${target._id} teamId=${input.teamId}`);
+                logger.info(`[ClusterService.deleteDemo] Demo deleted teamClusterId=${target.id} teamId=${input.teamId}`);
             } catch (error: unknown) {
-                logger.error(error, `[ClusterService.deleteDemo] Demo teardown failed teamClusterId=${target._id} teamId=${input.teamId}`);
+                logger.error(error, `[ClusterService.deleteDemo] Demo teardown failed teamClusterId=${target.id} teamId=${input.teamId}`);
             }
         })();
 
@@ -603,30 +643,46 @@ export default class ClusterService {
     }
 
     async getDemoStatus(input: { teamId: string; userId: string }): Promise<{ teamCluster: TeamClusterView | null; remainingMs: number | null; hasActiveDemo: boolean }> {
-        const demo = await TeamClusterModel.findOne(activeDemoFilter(input.teamId));
+        const demo = await findActiveDemo(input.teamId);
         if (!demo) {
-            return { teamCluster: null, remainingMs: null, hasActiveDemo: false };
+            return {
+                teamCluster: null,
+                remainingMs: null,
+                hasActiveDemo: false
+            };
         }
 
         const expiresAt = demo.demoExpiresAt;
         if (!expiresAt) {
-            return { teamCluster: this.#presentTeamCluster(demo), remainingMs: null, hasActiveDemo: true };
+            return {
+                teamCluster: this.#presentTeamCluster(demo),
+                remainingMs: null,
+                hasActiveDemo: true
+            };
         }
 
         const now = Date.now();
         const remainingMs = expiresAt.getTime() - now;
 
         if (remainingMs <= 0) {
-            void this.#scheduleExpiredDemoCleanup(String(demo._id), input.teamId);
-            return { teamCluster: this.#presentTeamCluster(demo), remainingMs: 0, hasActiveDemo: false };
+            void this.#scheduleExpiredDemoCleanup(demo.id, input.teamId);
+            return {
+                teamCluster: this.#presentTeamCluster(demo),
+                remainingMs: 0,
+                hasActiveDemo: false
+            };
         }
 
-        return { teamCluster: this.#presentTeamCluster(demo), remainingMs, hasActiveDemo: true };
+        return {
+            teamCluster: this.#presentTeamCluster(demo),
+            remainingMs,
+            hasActiveDemo: true
+        };
     }
 
     async getById(input: { teamId: string; teamClusterId: string }): Promise<{ teamCluster: TeamClusterView }> {
-        const doc = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
-        return { teamCluster: this.#presentTeamCluster(doc) };
+        const entity = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
+        return { teamCluster: this.#presentTeamCluster(entity) };
     }
 
     async getRuntimeSnapshot(input: { teamId: string; teamClusterId: string }): Promise<{
@@ -643,7 +699,7 @@ export default class ClusterService {
         if (doc.status === TeamClusterStatus.Connected) {
             try {
                 const response = await this.#teamClusterDaemonClient.command<{ accepted?: boolean; queues?: DaemonQueueSnapshotEntry[]; capturedAt?: string }>(
-                    String(doc._id),
+                    doc.id,
                     ChannelCommands.RuntimeQueuesSnapshot,
                     {},
                     { timeoutClass: 'default' }
@@ -651,7 +707,7 @@ export default class ClusterService {
                 daemonQueues = response.queues ?? [];
                 capturedAt = response.capturedAt ?? capturedAt;
             } catch (error: unknown) {
-                logger.warn(error, `[ClusterService.getRuntimeSnapshot] daemon snapshot failed teamClusterId=${doc._id}`);
+                logger.warn(error, `[ClusterService.getRuntimeSnapshot] daemon snapshot failed teamClusterId=${doc.id}`);
             }
         }
 
@@ -678,14 +734,10 @@ export default class ClusterService {
         };
         const persistedQueueScopeLimits = input.queueScopeLimits;
 
-        const updated = await TeamClusterModel.findByIdAndUpdate(
-            doc._id,
-            { $set: { queueConcurrency: persistedQueueConcurrency, queueScopeLimits: persistedQueueScopeLimits } },
-            { new: true }
-        );
-        if (!updated) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
+        const updated = await Object.assign(doc, {
+            queueConcurrency: persistedQueueConcurrency,
+            queueScopeLimits: persistedQueueScopeLimits
+        }).save();
 
         this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
 
@@ -696,21 +748,27 @@ export default class ClusterService {
                     queueScopeLimits: this.#presentQueueScopeLimits(updated.queueScopeLimits)
                 };
                 const queueConcurrencyCommandResult = await this.#teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string }>(
-                    String(updated._id),
+                    updated.id,
                     ChannelCommands.RuntimeQueueConcurrencyApply,
                     queueConcurrencyPayload,
-                    { timeoutClass: 'long-running-control-plane', retryClass: 'idempotent-command' }
+                    {
+                        timeoutClass: 'long-running-control-plane',
+                        retryClass: 'idempotent-command'
+                    }
                 );
 
                 if (!queueConcurrencyCommandResult.accepted) {
-                    logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updated._id} teamId=${input.teamId} reason=${queueConcurrencyCommandResult.reason} queueConcurrency=${queueConcurrencyPayload.queueConcurrency}`);
+                    logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} reason=${queueConcurrencyCommandResult.reason} queueConcurrency=${queueConcurrencyPayload.queueConcurrency}`);
                 }
             } catch {
-                logger.warn(`Persisted team cluster queue concurrency but failed to request live daemon apply teamClusterId=${updated._id} teamId=${input.teamId} queueConcurrency=${updated.queueConcurrency}`);
+                logger.warn(`Persisted team cluster queue concurrency but failed to request live daemon apply teamClusterId=${updated.id} teamId=${input.teamId} queueConcurrency=${updated.queueConcurrency}`);
             }
         }
 
-        return { message: 'Queue settings saved.', teamCluster: this.#presentTeamCluster(updated) };
+        return {
+            message: 'Queue settings saved.',
+            teamCluster: this.#presentTeamCluster(updated)
+        };
     }
 
     async updateRole(input: { teamId: string; userId: string; teamClusterId: string; role: TeamClusterRole }): Promise<{ message: string; teamCluster: TeamClusterView }> {
@@ -725,10 +783,7 @@ export default class ClusterService {
                 : currentRoleConfig.runtimeVersion + 1
         };
 
-        let updated = await TeamClusterModel.findByIdAndUpdate(doc._id, { $set: { roleConfig: nextRoleConfig } }, { new: true });
-        if (!updated) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
+        let updated = await Object.assign(doc, { roleConfig: nextRoleConfig }).save();
 
         this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
 
@@ -736,57 +791,65 @@ export default class ClusterService {
             try {
                 const rolePayload: TeamClusterDaemonRoleApplyPayload = { roleConfig: updated.roleConfig };
                 const liveApplyResult = await this.#teamClusterDaemonClient.commandWithSemanticResult<TeamClusterDaemonRoleApplyResult>(
-                    String(updated._id),
+                    updated.id,
                     ChannelCommands.RuntimeRoleApply,
                     rolePayload,
-                    { timeoutClass: 'long-running-control-plane', retryClass: 'idempotent-command' }
+                    {
+                        timeoutClass: 'long-running-control-plane',
+                        retryClass: 'idempotent-command'
+                    }
                 );
 
                 if (liveApplyResult.accepted) {
                     const roleResult = liveApplyResult.data;
-                    const reUpdated = await TeamClusterModel.findByIdAndUpdate(updated._id, { $set: { roleConfig: roleResult.roleConfig } }, { new: true });
-                    updated = reUpdated ?? updated;
+                    updated = await Object.assign(updated, { roleConfig: roleResult.roleConfig }).save();
                     this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
                 } else {
-                    logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updated._id} teamId=${input.teamId} role=${input.role} reason=${liveApplyResult.reason}`);
+                    logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} role=${input.role} reason=${liveApplyResult.reason}`);
                 }
             } catch {
-                logger.warn(`Persisted desired role but failed to request live daemon role apply teamClusterId=${updated._id} teamId=${input.teamId} role=${input.role}`);
+                logger.warn(`Persisted desired role but failed to request live daemon role apply teamClusterId=${updated.id} teamId=${input.teamId} role=${input.role}`);
             }
         }
 
-        return { message: 'Team cluster role saved.', teamCluster: this.#presentTeamCluster(updated) };
+        return {
+            message: 'Team cluster role saved.',
+            teamCluster: this.#presentTeamCluster(updated)
+        };
     }
 
     async listTransferJobs(input: { teamId: string; teamClusterId: string; page?: number; limit?: number; state?: ClusterTransferJobState }): Promise<PaginatedResult<ClusterTransferJobView>> {
         const teamCluster = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
 
-        const filter: Record<string, unknown> = {
-            team: input.teamId,
-            $or: [
-                { sourceClusterId: String(teamCluster._id) },
-                { destinationClusterId: String(teamCluster._id) }
-            ]
-        };
-        if (input.state) {
-            filter.state = input.state;
-        }
+        const stateFilter = input.state === undefined
+            ? {}
+            : { state: input.state as ClusterTransferJobStateColumn };
+        const where: FindOptionsWhere<ClusterTransferJobEntity>[] = [
+            {
+                team: input.teamId,
+                sourceClusterId: teamCluster.id,
+                ...stateFilter
+            },
+            {
+                team: input.teamId,
+                destinationClusterId: teamCluster.id,
+                ...stateFilter
+            }
+        ];
 
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: 100 });
 
-        const [docs, total] = await Promise.all([
-            ClusterTransferJobModel.find(filter).sort({ createdAt: -1, updatedAt: -1 }).skip((page - 1) * limit).limit(limit).exec(),
-            ClusterTransferJobModel.countDocuments(filter)
-        ]);
+        const [entities, total] = await ClusterTransferJobEntity.findAndCount({
+            where,
+            order: {
+                createdAt: 'DESC',
+                updatedAt: 'DESC'
+            },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        return {
-            data: docs.map((doc) => this.#presentClusterTransferJob(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([entities.map((entity) => this.#presentClusterTransferJob(entity)), total], pageRequest);
     }
 
     async createTransferRequest(input: { teamId: string; teamClusterId: string; destinationClusterId: string; authenticatedUserId: string }): Promise<{
@@ -798,21 +861,21 @@ export default class ClusterService {
         const sourceCluster = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
         const destinationCluster = await this.#getOwnedTeamCluster(input.destinationClusterId, input.teamId);
 
-        if (String(sourceCluster._id) === String(destinationCluster._id)) {
+        if (sourceCluster.id === destinationCluster.id) {
             throw ApplicationError.conflict('ClusterTransfer::DestinationMustDiffer', 'Destination cluster must be different from the source cluster');
         }
 
-        const sourceCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(sourceCluster.roleConfig);
+        const sourceCapabilities = sourceCluster.effectiveCapabilities;
         if (sourceCluster.status !== TeamClusterStatus.Connected || !sourceCapabilities.servesStorageReads) {
             throw ApplicationError.conflict('ClusterTransfer::SourceClusterUnavailable', 'Source cluster must be connected and able to serve authoritative storage reads');
         }
 
-        const destinationCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(destinationCluster.roleConfig);
+        const destinationCapabilities = destinationCluster.effectiveCapabilities;
         if (destinationCluster.status !== TeamClusterStatus.Connected || !destinationCapabilities.acceptsStorageWrites) {
             throw ApplicationError.conflict('ClusterTransfer::DestinationClusterUnavailable', 'Destination cluster must be connected and able to accept storage writes');
         }
 
-        const placements: StoragePlacement[] = await this.#storagePlacementService.resolveTransferPlacementsForCluster(input.teamId, String(sourceCluster._id));
+        const placements: StoragePlacement[] = await this.#storagePlacementService.resolveTransferPlacementsForCluster(input.teamId, sourceCluster.id);
         if (!placements.length) {
             throw ApplicationError.conflict('ClusterTransfer::NoPlacements', 'This cluster has no authoritative storage placements to transfer');
         }
@@ -823,7 +886,7 @@ export default class ClusterService {
                 teamId: input.teamId,
                 scopeType: placement.props.scopeType,
                 scopeId: placement.props.scopeId,
-                destinationClusterId: String(destinationCluster._id),
+                destinationClusterId: destinationCluster.id,
                 requestedBy: input.authenticatedUserId
             }));
         }
@@ -834,8 +897,8 @@ export default class ClusterService {
             message: requestedJobs.length === 1
                 ? 'Queued 1 transfer job for this cluster.'
                 : `Queued ${requestedJobs.length} transfer jobs for this cluster.`,
-            sourceClusterId: String(sourceCluster._id),
-            destinationClusterId: String(destinationCluster._id),
+            sourceClusterId: sourceCluster.id,
+            destinationClusterId: destinationCluster.id,
             requestedJobs: requestedJobs.map((job) => this.#presentClusterTransferJobEntity(job))
         };
     }
@@ -845,7 +908,14 @@ export default class ClusterService {
 
         const metrics = await this.#systemMetricsRepository.getLatestByClusterId(input.teamClusterId);
         if (!metrics) {
-            return { resourceLimits: { maxCpus: null, maxMemoryMB: null, status: null, lastUpdatedAt: null } };
+            return {
+                resourceLimits: {
+                    maxCpus: null,
+                    maxMemoryMB: null,
+                    status: null,
+                    lastUpdatedAt: null
+                }
+            };
         }
 
         return {
@@ -872,7 +942,7 @@ export default class ClusterService {
         }
 
         const services = doc.services;
-        const teamClusterId = String(doc._id);
+        const teamClusterId = doc.id;
 
         const revealedServices: TeamClusterCredentialServicesView = {
             minio: {
@@ -898,7 +968,10 @@ export default class ClusterService {
 
         logger.info(`Team cluster credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
-        return { teamClusterId: input.teamClusterId, services: revealedServices };
+        return {
+            teamClusterId: input.teamClusterId,
+            services: revealedServices
+        };
     }
 
     async createRemoteAccessSession(input: { teamId: string; teamClusterId: string; userId: string; password: string; target: TeamClusterRemoteAccessTarget }): Promise<{ session: TeamClusterRemoteAccessSessionView }> {
@@ -941,7 +1014,12 @@ export default class ClusterService {
                 path: input.path
             });
 
-            return { teamClusterId: preflight.teamClusterId, target: preflight.target, path: input.path, entries };
+            return {
+                teamClusterId: preflight.teamClusterId,
+                target: preflight.target,
+                path: input.path,
+                entries
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
                 throw error;
@@ -965,7 +1043,11 @@ export default class ClusterService {
                 path: input.path
             });
 
-            return { teamClusterId: preflight.teamClusterId, target: preflight.target, node };
+            return {
+                teamClusterId: preflight.teamClusterId,
+                target: preflight.target,
+                node
+            };
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
                 throw error;
@@ -1030,7 +1112,7 @@ export default class ClusterService {
         const enrollmentToken = createEnrollmentToken();
         const enrollmentTokenHash = hashEnrollmentToken(enrollmentToken);
 
-        await TeamClusterModel.updateOne({ _id: input.teamClusterId }, { $set: { enrollmentTokenHash } });
+        await TeamClusterEntity.update({ id: input.teamClusterId }, { enrollmentTokenHash });
 
         logger.info(`Team cluster enrollment token regenerated teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
@@ -1103,7 +1185,7 @@ export default class ClusterService {
 
         const manualUninstallRequired = this.#shouldRequireManualUninstall(doc.status, doc.installedVersion, doc.services.daemon.port);
         const manualUninstallCommand = manualUninstallRequired
-            ? buildManualTeamClusterUninstallCommand(String(doc._id), doc.installRoot)
+            ? buildManualTeamClusterUninstallCommand(doc.id, doc.installRoot)
             : undefined;
 
         await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(doc));
@@ -1374,20 +1456,16 @@ export default class ClusterService {
         }
     }
 
-    async #getOwnedTeamCluster(teamClusterId: string, teamId: string): Promise<HydratedDocument<TeamClusterDocument>> {
-        const doc = await TeamClusterModel.findById(teamClusterId);
-        if (!doc || String(doc.team) !== teamId) {
+    async #getOwnedTeamCluster(teamClusterId: string, teamId: string): Promise<TeamClusterEntity> {
+        const entity = await TeamClusterEntity.findOneBy({ id: teamClusterId });
+        if (!entity || entity.team !== teamId) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
-        return doc;
+        return entity;
     }
 
-    async #getOwnedTeamClusterWithSensitiveData(teamClusterId: string, teamId: string): Promise<HydratedDocument<TeamClusterDocument>> {
-        const doc = await TeamClusterModel.findById(teamClusterId).select(SENSITIVE_FIELDS_SELECTION);
-        if (!doc || String(doc.team) !== teamId) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
-        }
-        return doc;
+    async #getOwnedTeamClusterWithSensitiveData(teamClusterId: string, teamId: string): Promise<TeamClusterEntity> {
+        return this.#getOwnedTeamCluster(teamClusterId, teamId);
     }
 
     async #preflightRemoteExplorerAccess(input: { teamId: string; teamClusterId: string; sessionId: string; target: TeamClusterRemoteAccessTarget; userId: string }): Promise<{ teamClusterId: string; target: TeamClusterRemoteAccessTarget }> {
@@ -1404,11 +1482,42 @@ export default class ClusterService {
             throw sessionResult;
         }
 
-        return { teamClusterId: input.teamClusterId, target: input.target };
+        return {
+            teamClusterId: input.teamClusterId,
+            target: input.target
+        };
     }
 
-    #isMongoDuplicateKeyError(error: unknown): error is { code?: number } {
-        return typeof error === 'object' && error !== null && 'code' in error;
+    #isUniqueViolation(error: unknown): boolean {
+        if (!(error instanceof QueryFailedError)) {
+            return false;
+        }
+
+        const driverError = error.driverError as { code?: string | number } | undefined;
+        const code = driverError?.code ?? (error as unknown as { code?: string | number }).code;
+
+        return String(code) === POSTGRES_UNIQUE_VIOLATION
+            || String(code).startsWith(SQLITE_UNIQUE_VIOLATION);
+    }
+
+    #toTeamClusterEntityInput(props: TeamClusterProps): Partial<TeamClusterEntity> {
+        return {
+            name: props.name,
+            team: props.team,
+            createdBy: props.createdBy,
+            status: props.status,
+            enrollmentTokenHash: props.enrollmentTokenHash,
+            installedVersion: props.installedVersion,
+            installRoot: props.installRoot,
+            lastHeartbeatAt: props.lastHeartbeatAt,
+            lastDisconnectAt: props.lastDisconnectAt,
+            services: props.services,
+            queueConcurrency: props.queueConcurrency,
+            queueScopeLimits: props.queueScopeLimits,
+            roleConfig: props.roleConfig,
+            isDemo: props.isDemo,
+            demoExpiresAt: props.demoExpiresAt
+        };
     }
 
     #buildDemoPlaintextCredentials(enrollmentToken: string): DemoClusterPlaintextCredentials {
@@ -1435,7 +1544,7 @@ export default class ClusterService {
             logger.warn(`[ClusterService.getDemoStatus] markDeleting failed teamClusterId=${teamClusterId} error=${(error as Error).message}`);
         }
 
-        const teamCluster = await TeamClusterModel.findById(teamClusterId);
+        const teamCluster = await TeamClusterEntity.findOneBy({ id: teamClusterId });
         if (!teamCluster) {
             return;
         }
@@ -1494,29 +1603,29 @@ export default class ClusterService {
         return bareMatch?.[1]?.trim();
     }
 
-    #presentTeamCluster(doc: TeamClusterDocument, options: { activeTransfers?: ClusterTransferJobView[] } = {}): TeamClusterView {
-        const services = doc.services;
-        const roleConfig = doc.roleConfig;
-        const effectiveCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(roleConfig);
+    #presentTeamCluster(entity: TeamClusterEntity, options: { activeTransfers?: ClusterTransferJobView[] } = {}): TeamClusterView {
+        const services = entity.services;
+        const roleConfig = entity.roleConfig;
+        const effectiveCapabilities = entity.effectiveCapabilities;
         const activeTransfers = options.activeTransfers;
 
         return {
-            _id: String(doc._id),
-            name: doc.name,
-            team: String(doc.team),
-            createdBy: String(doc.createdBy),
-            status: doc.status,
-            installedVersion: doc.installedVersion,
-            lastHeartbeatAt: doc.lastHeartbeatAt,
-            lastDisconnectAt: doc.lastDisconnectAt,
+            _id: entity.id,
+            name: entity.name,
+            team: entity.team,
+            createdBy: entity.createdBy,
+            status: entity.status,
+            installedVersion: entity.installedVersion,
+            lastHeartbeatAt: entity.lastHeartbeatAt,
+            lastDisconnectAt: entity.lastDisconnectAt,
             services: {
                 minio: { port: services.minio.port },
                 redis: { port: services.redis.port },
                 mongodb: { port: services.mongodb.port },
                 daemon: { port: services.daemon.port }
             },
-            queueConcurrency: this.#presentQueueConcurrency(doc.queueConcurrency),
-            queueScopeLimits: this.#presentQueueScopeLimits(doc.queueScopeLimits ?? DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS),
+            queueConcurrency: this.#presentQueueConcurrency(entity.queueConcurrency),
+            queueScopeLimits: this.#presentQueueScopeLimits(entity.queueScopeLimits ?? createDefaultTeamClusterQueueScopeLimits()),
             roleConfig: {
                 desiredRole: roleConfig.desiredRole,
                 effectiveRole: roleConfig.effectiveRole,
@@ -1526,10 +1635,10 @@ export default class ClusterService {
             },
             effectiveCapabilities: { ...effectiveCapabilities },
             ...(activeTransfers ? { activeTransfers } : {}),
-            isDemo: doc.isDemo,
-            demoExpiresAt: doc.demoExpiresAt,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt
+            isDemo: entity.isDemo,
+            demoExpiresAt: entity.demoExpiresAt,
+            createdAt: entity.createdAt,
+            updatedAt: entity.updatedAt
         };
     }
 
@@ -1552,33 +1661,39 @@ export default class ClusterService {
         };
     }
 
-    #presentClusterTransferJob(doc: ClusterTransferJobDocument): ClusterTransferJobView {
+    #presentClusterTransferJob(entity: ClusterTransferJobEntity): ClusterTransferJobView {
         return {
-            _id: String(doc._id),
-            team: String(doc.team),
-            scopeType: doc.scopeType,
-            scopeId: doc.scopeId,
-            sourceClusterId: doc.sourceClusterId,
-            destinationClusterId: doc.destinationClusterId,
-            buckets: doc.buckets.map((bucketRef) => ({ bucket: bucketRef.bucket, prefix: bucketRef.prefix })),
-            state: doc.state,
-            reason: doc.reason,
-            cleanupSource: doc.cleanupSource,
-            requestedBy: doc.requestedBy,
-            cursor: { bucketIndex: doc.cursor.bucketIndex, lastObjectKey: doc.cursor.lastObjectKey },
-            stats: {
-                copiedObjects: doc.stats.copiedObjects,
-                copiedBytes: doc.stats.copiedBytes,
-                verifiedObjects: doc.stats.verifiedObjects,
-                verifiedBytes: doc.stats.verifiedBytes,
-                deletedObjects: doc.stats.deletedObjects
+            _id: entity.id,
+            team: entity.team,
+            scopeType: entity.scopeType,
+            scopeId: entity.scopeId,
+            sourceClusterId: entity.sourceClusterId,
+            destinationClusterId: entity.destinationClusterId,
+            buckets: entity.buckets.map((bucketRef) => ({
+                bucket: bucketRef.bucket,
+                prefix: bucketRef.prefix
+            })),
+            state: entity.state,
+            reason: entity.reason,
+            cleanupSource: entity.cleanupSource,
+            requestedBy: entity.requestedBy,
+            cursor: {
+                bucketIndex: entity.cursor.bucketIndex,
+                lastObjectKey: entity.cursor.lastObjectKey
             },
-            errorCode: doc.errorCode,
-            errorMessage: doc.errorMessage,
-            startedAt: doc.startedAt,
-            finishedAt: doc.finishedAt,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt
+            stats: {
+                copiedObjects: entity.stats.copiedObjects,
+                copiedBytes: entity.stats.copiedBytes,
+                verifiedObjects: entity.stats.verifiedObjects,
+                verifiedBytes: entity.stats.verifiedBytes,
+                deletedObjects: entity.stats.deletedObjects
+            },
+            errorCode: entity.errorCode,
+            errorMessage: entity.errorMessage,
+            startedAt: entity.startedAt,
+            finishedAt: entity.finishedAt,
+            createdAt: entity.createdAt,
+            updatedAt: entity.updatedAt
         };
     }
 
@@ -1590,12 +1705,18 @@ export default class ClusterService {
             scopeId: job.props.scopeId,
             sourceClusterId: job.props.sourceClusterId,
             destinationClusterId: job.props.destinationClusterId,
-            buckets: job.props.buckets.map((bucketRef) => ({ bucket: bucketRef.bucket, prefix: bucketRef.prefix })),
+            buckets: job.props.buckets.map((bucketRef) => ({
+                bucket: bucketRef.bucket,
+                prefix: bucketRef.prefix
+            })),
             state: job.props.state,
             reason: job.props.reason,
             cleanupSource: job.props.cleanupSource,
             requestedBy: job.props.requestedBy,
-            cursor: { bucketIndex: job.props.cursor.bucketIndex, lastObjectKey: job.props.cursor.lastObjectKey },
+            cursor: {
+                bucketIndex: job.props.cursor.bucketIndex,
+                lastObjectKey: job.props.cursor.lastObjectKey
+            },
             stats: { ...job.props.stats },
             errorCode: job.props.errorCode,
             errorMessage: job.props.errorMessage,
@@ -1704,7 +1825,11 @@ export default class ClusterService {
 
         await Promise.all(Array.from(groups.values()).map((group) =>
             this.#eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.SceneArtifactBatchUpserted, group)).catch((err) => {
-                logger.warn({ err, trajectoryId: group.trajectoryId, analysisId: group.analysisId },
+                logger.warn({
+                    err,
+                    trajectoryId: group.trajectoryId,
+                    analysisId: group.analysisId
+                },
                     '[ClusterService.processDaemonSceneArtifactUpsert] Failed to publish scene-artifact.upserted');
             })
         ));
@@ -1723,7 +1848,7 @@ export default class ClusterService {
         }
 
         await Promise.all(Array.from(grouped.entries()).map(async ([analysisId, group]) => {
-            const analysis = await AnalysisModel.findById(analysisId);
+            const analysis = await Analysis.findOneBy({ id: analysisId });
             if (!analysis) {
                 return;
             }
@@ -1731,28 +1856,27 @@ export default class ClusterService {
             const expectedArtifacts = this.#updateExpectedArtifacts(analysis.expectedArtifacts ?? [], group);
             const artifactStatus = expectedArtifacts.length > 0
                 && expectedArtifacts.every((artifact) => artifact.status === 'ready')
-                ? 'ready'
-                : (analysis.artifactStatus ?? 'uploading');
+                ? AnalysisArtifactStatus.Ready
+                : (analysis.artifactStatus ?? AnalysisArtifactStatus.Uploading);
 
-            const updatedAnalysis = await AnalysisModel.findByIdAndUpdate(
-                analysisId,
-                { $set: { expectedArtifacts, artifactStatus } },
-                { new: true }
-            );
-            if (!updatedAnalysis) {
-                return;
-            }
+            const updatedAnalysis = await Object.assign(analysis, {
+                expectedArtifacts,
+                artifactStatus
+            }).save();
 
             await this.#eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
                 analysisId,
                 teamId: group[0]!.teamId,
-                trajectoryId: updatedAnalysis.trajectory.toString(),
+                trajectoryId: updatedAnalysis.trajectory,
                 artifactStatus: updatedAnalysis.artifactStatus,
                 expectedArtifacts: updatedAnalysis.expectedArtifacts,
                 stages: updatedAnalysis.stages,
                 childAnalyses: updatedAnalysis.childAnalyses
             })).catch((err) => {
-                logger.warn({ err, analysisId }, '[ClusterService.processDaemonSceneArtifactUpsert] Failed to publish analysis.stage.changed after artifact upsert');
+                logger.warn({
+                    err,
+                    analysisId
+                }, '[ClusterService.processDaemonSceneArtifactUpsert] Failed to publish analysis.stage.changed after artifact upsert');
             });
         }));
     }
@@ -1821,7 +1945,7 @@ export default class ClusterService {
         );
         const analyses = await Promise.all(
             analysisIds.map(async (analysisId) => {
-                const analysis = await AnalysisModel.findById(analysisId);
+                const analysis = await Analysis.findOneBy({ id: analysisId });
                 return [analysisId, analysis] as const;
             })
         );
@@ -1853,15 +1977,15 @@ export default class ClusterService {
                     throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
                 }
 
-                if (analysis.trajectory.toString() !== trajectory._id) {
+                if (analysis.trajectory !== trajectory._id) {
                     throw ApplicationError.badRequest('TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_MISMATCH', 'Analysis does not belong to the provided trajectory');
                 }
 
-                if (analysis.team.toString() !== trajectory.props.team) {
+                if (analysis.team !== trajectory.props.team) {
                     throw ApplicationError.conflict('TEAM_CLUSTER_DAEMON_ANALYSIS_TEAM_MISMATCH', 'Analysis ownership does not match its trajectory');
                 }
 
-                const analysisStorageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() });
+                const analysisStorageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined });
                 if (!analysisStorageClusterId) {
                     throw ApplicationError.conflict('TEAM_CLUSTER_DAEMON_ANALYSIS_STORAGE_CLUSTER_REQUIRED', 'Analysis storage cluster is required before accepting scene artifacts');
                 }
@@ -1871,7 +1995,7 @@ export default class ClusterService {
                 }
 
                 if (input.sourceType === 'plugin-exposure') {
-                    const analysisComputeClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() });
+                    const analysisComputeClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined });
                     isReporterAuthorized = input.teamClusterId === analysisStorageClusterId
                         || (typeof analysisComputeClusterId === 'string' && analysisComputeClusterId === input.teamClusterId);
                 } else {
@@ -1887,12 +2011,12 @@ export default class ClusterService {
                     );
                 }
 
-                if (input.plugin && input.plugin !== analysis.plugin.toString()) {
+                if (input.plugin && input.plugin !== analysis.plugin) {
                     throw ApplicationError.badRequest('TEAM_CLUSTER_DAEMON_ANALYSIS_PLUGIN_MISMATCH', 'Payload plugin does not match persisted analysis ownership');
                 }
 
-                sanitizedAnalysisId = analysis._id.toString();
-                sanitizedPluginId = analysis.plugin.toString();
+                sanitizedAnalysisId = analysis.id;
+                sanitizedPluginId = analysis.plugin;
                 sanitizedStorageClusterId = analysisStorageClusterId;
             }
 

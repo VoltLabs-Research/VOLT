@@ -14,7 +14,7 @@ import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/Tra
 import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import trajectoryNativeDaemonService, {
@@ -178,7 +178,10 @@ export class ColorCodingService {
                     property
                 });
                 if (stats) {
-                    return { min: stats.min, max: stats.max };
+                    return {
+                        min: stats.min,
+                        max: stats.max
+                    };
                 }
             }
         }
@@ -186,7 +189,10 @@ export class ColorCodingService {
         if (min === Infinity) min = 0;
         if (max === -Infinity) max = 0;
 
-        return { min, max };
+        return {
+            min,
+            max
+        };
     }
 
     async createColoredModel(
@@ -319,9 +325,9 @@ export class ColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<TrajectoryNativeObjectStreamResponse> {
-        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
+        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
         const objectName = buildColorCodingObjectName(
             trajectoryId,

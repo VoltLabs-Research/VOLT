@@ -116,7 +116,10 @@ const useExpressionVisibilityMask = ({
             return EMPTY;
         }
         if (atomBuffer.count > CLIENT_EVAL_ATOM_LIMIT) {
-            return { ...EMPTY, autoRoute: true };
+            return {
+                ...EMPTY,
+                autoRoute: true
+            };
         }
 
         const context = buildContext(atomBuffer, currentTimestep ?? 0);

@@ -67,7 +67,10 @@ export function dateColumn<TRow = unknown>(
 
             return <span title={date.toLocaleString()}>{formatted}</span>;
         },
-        skeleton: { variant: 'text', width: options?.width ?? 100 }
+        skeleton: {
+            variant: 'text',
+            width: options?.width ?? 100
+        }
     };
 }
 
@@ -121,7 +124,10 @@ export function userColumn<TRow = unknown>(
                 </PopulatedCellPopover>
             );
         },
-        skeleton: { variant: 'text', width: options?.width ?? 180 }
+        skeleton: {
+            variant: 'text',
+            width: options?.width ?? 180
+        }
     };
 }
 
@@ -177,7 +183,10 @@ export function clusterColumn<TRow = unknown>(
                 </PopulatedCellPopover>
             );
         },
-        skeleton: { variant: 'text', width: options?.width ?? 140 }
+        skeleton: {
+            variant: 'text',
+            width: options?.width ?? 140
+        }
     };
 }
 
@@ -211,7 +220,10 @@ export function populatedNameColumn<TRow = unknown>(
                 </PopulatedCellPopover>
             );
         },
-        skeleton: { variant: 'text', width: options?.width ?? 140 }
+        skeleton: {
+            variant: 'text',
+            width: options?.width ?? 140
+        }
     };
 }
 

@@ -319,10 +319,16 @@ const AIMessageItem = memo(({
     const createApproveHandler = (approvalResponseId: string, toolCallId: string) => () => {
         if (!addToolApprovalResponse) return;
 
-        addToolApprovalResponse({ id: approvalResponseId, approved: true });
+        addToolApprovalResponse({
+            id: approvalResponseId,
+            approved: true
+        });
 
         if (approvalResponseId !== toolCallId) {
-            addToolApprovalResponse({ id: toolCallId, approved: true });
+            addToolApprovalResponse({
+                id: toolCallId,
+                approved: true
+            });
         }
     };
 
@@ -563,7 +569,10 @@ const AIConversationThread = ({
                     if (last && last.type === 'text') {
                         last.content += '\n' + part.text;
                     } else {
-                        segments.push({ type: 'text', content: part.text });
+                        segments.push({
+                            type: 'text',
+                            content: part.text
+                        });
                     }
                     continue;
                 }
@@ -573,7 +582,10 @@ const AIConversationThread = ({
                     if (last && last.type === 'reasoning') {
                         last.content += part.text;
                     } else {
-                        segments.push({ type: 'reasoning', content: part.text });
+                        segments.push({
+                            type: 'reasoning',
+                            content: part.text
+                        });
                     }
                     continue;
                 }
@@ -584,7 +596,10 @@ const AIConversationThread = ({
                         normalized.state = 'approval-responded';
                     }
                     toolInvocations.push(normalized);
-                    segments.push({ type: 'tool', invocation: normalized });
+                    segments.push({
+                        type: 'tool',
+                        invocation: normalized
+                    });
                 }
             }
 
@@ -669,7 +684,10 @@ const AIConversationThread = ({
                 }
             }
 
-            nextCache.set(key, { signature, value });
+            nextCache.set(key, {
+                signature,
+                value
+            });
             result.push(value);
         }
 

@@ -1,8 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TrajectoryFrameModel, {
-    type TrajectoryFrameLean
-} from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
+import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
+import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
@@ -11,40 +10,20 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type {
-    TrajectoryFrame,
+    TrajectoryFrame as TrajectoryFrameView,
     TrajectoryFrameSimulationCellEmbed
 } from '@shared/contracts/types/Trajectory';
-import mongoose from 'mongoose';
 
 type PreviewOutputFactory = (
     buffer: Buffer
 ) => TrajectoryPreviewResult | Promise<TrajectoryPreviewResult>;
 
-interface ReadTrajectoryPreviewInput {
+interface ReadTrajectoryPreviewInput{
     trajectoryId: string;
     storageClusterId: string;
     objectGatewayClient: ITeamClusterObjectGatewayClient;
     createOutput: PreviewOutputFactory;
 }
-
-interface SimulationCellPopulated {
-    _id: mongoose.Types.ObjectId | string;
-    boundingBox: { width: number; height: number; length: number };
-    geometry: {
-        cell_vectors: number[][];
-        cell_origin: number[];
-        periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };
-    };
-    team?: mongoose.Types.ObjectId | string;
-    trajectory?: mongoose.Types.ObjectId | string;
-    timestep: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-type TrajectoryFrameLeanWithPopulatedCell = Omit<TrajectoryFrameLean, 'simulationCell'> & {
-    simulationCell: SimulationCellPopulated | mongoose.Types.ObjectId;
-};
 
 const firstSortedPreviewKey = async (
     objectGatewayClient: ITeamClusterObjectGatewayClient,
@@ -57,8 +36,8 @@ const firstSortedPreviewKey = async (
     for await (const key of objectGatewayClient.listAll(teamClusterId, {
         bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
         prefix
-    })) {
-        if (key.endsWith('.png')) {
+    })){
+        if(key.endsWith('.png')){
             keys.push(key);
         }
     }
@@ -66,29 +45,23 @@ const firstSortedPreviewKey = async (
     return keys.sort((leftKey, rightKey) => leftKey.localeCompare(rightKey))[0] ?? null;
 };
 
-const isPopulatedSimulationCell = (value: unknown): value is SimulationCellPopulated => (
-    typeof value === 'object' && value !== null && 'boundingBox' in value && 'geometry' in value
-);
-
-const toPopulatedSimulationCell = (value: SimulationCellPopulated): TrajectoryFrameSimulationCellEmbed => ({
-    _id: value._id.toString(),
-    boundingBox: value.boundingBox,
-    geometry: value.geometry,
-    team: value.team?.toString(),
-    trajectory: value.trajectory?.toString(),
-    timestep: value.timestep,
-    createdAt: value.createdAt,
-    updatedAt: value.updatedAt
+const toSimulationCellEmbed = (cell: SimulationCell): TrajectoryFrameSimulationCellEmbed => ({
+    _id: cell.id,
+    boundingBox: cell.boundingBox as TrajectoryFrameSimulationCellEmbed['boundingBox'],
+    geometry: cell.geometry as TrajectoryFrameSimulationCellEmbed['geometry'],
+    team: cell.team,
+    trajectory: cell.trajectory,
+    timestep: cell.timestep,
+    createdAt: cell.createdAt,
+    updatedAt: cell.updatedAt
 });
 
-const mapFrameLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => ({
-    timestep: doc.timestep,
-    natoms: doc.natoms,
-    simulationCell: doc.simulationCell
-        ? (isPopulatedSimulationCell(doc.simulationCell)
-            ? toPopulatedSimulationCell(doc.simulationCell)
-            : doc.simulationCell.toString())
-        : undefined
+export const toTrajectoryFrameView = (frame: TrajectoryFrame): TrajectoryFrameView => ({
+    timestep: frame.timestep,
+    natoms: frame.natoms,
+    simulationCell: frame.simulationCellRef
+        ? toSimulationCellEmbed(frame.simulationCellRef)
+        : (frame.simulationCell ?? undefined)
 });
 
 export const readTrajectoryPreview = async (
@@ -100,7 +73,7 @@ export const readTrajectoryPreview = async (
         input.trajectoryId
     );
 
-    if (!previewKey) {
+    if(!previewKey){
         return null;
     }
 
@@ -113,18 +86,17 @@ export const readTrajectoryPreview = async (
     return input.createOutput(buffer);
 };
 
-export const getTrajectoryFrames = async (trajectoryId: string): Promise<TrajectoryFrame[]> => {
-    const docs = await TrajectoryFrameModel
-        .find({ trajectoryId: new mongoose.Types.ObjectId(trajectoryId) })
-        .sort({ timestep: 1 })
-        .populate('simulationCell')
-        .lean<TrajectoryFrameLeanWithPopulatedCell[]>()
-        .exec();
+export const getTrajectoryFrames = async (trajectoryId: string): Promise<TrajectoryFrameView[]> => {
+    const frames = await TrajectoryFrame.find({
+        where: { trajectoryId },
+        relations: { simulationCellRef: true },
+        order: { timestep: 'ASC' }
+    });
 
-    return docs.map(mapFrameLean);
+    return frames.map(toTrajectoryFrameView);
 };
 
-export class TrajectoryReader {
+export class TrajectoryReader{
     async readPage(
         teamClusterId: string | undefined,
         trajectoryId: string,
@@ -133,8 +105,8 @@ export class TrajectoryReader {
         limit: number,
         analysisId?: string,
         ownerClusterId?: string
-    ): Promise<AtomPageResult> {
-        if (!teamClusterId) {
+    ): Promise<AtomPageResult>{
+        if(!teamClusterId){
             throw ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
                 `Trajectory ${trajectoryId} must be associated with a team cluster to read atoms`
@@ -153,7 +125,7 @@ export class TrajectoryReader {
         });
     }
 
-    private getDumpObjectKey(trajectoryId: string, timestep: string | number): string {
+    private getDumpObjectKey(trajectoryId: string, timestep: string | number): string{
         return buildTrajectoryDumpObjectName(trajectoryId, timestep);
     }
 }

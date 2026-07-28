@@ -27,7 +27,12 @@ export class NotebookRuntimeTerminator {
             return true;
         } catch (error: unknown) {
             logger.warn(
-                { err: error, teamClusterId, runtimeNotebookId, containerId },
+                {
+                    err: error,
+                    teamClusterId,
+                    runtimeNotebookId,
+                    containerId
+                },
                 '[Scripting] Failed to delete notebook container on daemon'
             );
             return false;

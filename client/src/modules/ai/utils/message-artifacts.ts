@@ -27,7 +27,10 @@ export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArt
         return null;
     }
 
-    return { columns, rows };
+    return {
+        columns,
+        rows
+    };
 };
 
 export interface AIImageArtifactPayload {
@@ -83,5 +86,9 @@ export const resolveImagePayload = (source: AIMessageArtifact | unknown): AIImag
     const mediaType = typeof payload.mediaType === 'string' ? payload.mediaType : 'image/png';
     const summary = typeof payload.summary === 'string' ? payload.summary : undefined;
 
-    return { url, mediaType, summary };
+    return {
+        url,
+        mediaType,
+        summary
+    };
 };

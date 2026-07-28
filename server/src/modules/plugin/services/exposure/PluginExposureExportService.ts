@@ -7,7 +7,7 @@ import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/down
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import path from 'node:path';
 import { v4 } from 'uuid';
 
@@ -88,7 +88,7 @@ export class PluginExposureExportService {
     }
 
     private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        const trajectory = await TrajectoryEntity.findOneBy({ id: trajectoryId });
         if (!trajectory) {
             throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
@@ -96,7 +96,7 @@ export class PluginExposureExportService {
             );
         }
 
-        const storageClusterId = trajectory.storageClusterId?.toString();
+        const storageClusterId = trajectory.storageClusterId;
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',

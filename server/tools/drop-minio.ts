@@ -13,7 +13,13 @@ const dropAllBuckets = async (): Promise<void> => {
         process.exit(1);
     }
 
-    const client = new Client({ endPoint, port, useSSL, accessKey, secretKey });
+    const client = new Client({
+        endPoint,
+        port,
+        useSSL,
+        accessKey,
+        secretKey
+    });
 
     console.log('[MinIO] Fetching all buckets...');
     const buckets = await client.listBuckets();

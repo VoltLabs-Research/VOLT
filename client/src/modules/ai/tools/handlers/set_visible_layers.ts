@@ -50,16 +50,25 @@ const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {
         return {
             ok: true,
             summary: `${visible ? 'Showed' : 'Hid'} the atoms layer.`,
-            data: { layer: 'atoms', visible }
+            data: {
+                layer: 'atoms',
+                visible
+            }
         };
     },
 
     describeEffect(input, result) {
         if (!result.ok) {
-            return { label: 'Layer change failed', icon: 'layers' };
+            return {
+                label: 'Layer change failed',
+                icon: 'layers'
+            };
         }
         const visible = input.visible !== false;
-        return { label: `${visible ? 'Showed' : 'Hid'} atoms layer`, icon: 'layers' };
+        return {
+            label: `${visible ? 'Showed' : 'Hid'} atoms layer`,
+            icon: 'layers'
+        };
     }
 };
 

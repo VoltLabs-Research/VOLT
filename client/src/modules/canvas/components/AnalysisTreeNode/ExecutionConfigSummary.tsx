@@ -55,20 +55,32 @@ const MutedPlaceholder = () => <Text tone='muted'>—</Text>;
 
 const renderValue = (value: unknown): RenderedValue => {
     if (value === null || value === undefined || value === '') {
-        return { node: <MutedPlaceholder />, mono: false };
+        return {
+            node: <MutedPlaceholder />,
+            mono: false
+        };
     }
 
     if (typeof value === 'boolean') {
-        return { node: value ? 'Yes' : 'No', mono: false };
+        return {
+            node: value ? 'Yes' : 'No',
+            mono: false
+        };
     }
 
     if (typeof value === 'number') {
-        return { node: formatNumber(value), mono: true };
+        return {
+            node: formatNumber(value),
+            mono: true
+        };
     }
 
     if (typeof value === 'string') {
         if (value.length <= MAX_INLINE_STRING) {
-            return { node: value, mono: false };
+            return {
+                node: value,
+                mono: false
+            };
         }
         return {
             node: <Text truncate title={value}>{value}</Text>,
@@ -77,13 +89,19 @@ const renderValue = (value: unknown): RenderedValue => {
     }
 
     if (Array.isArray(value)) {
-        if (value.length === 0) return { node: <MutedPlaceholder />, mono: false };
+        if (value.length === 0) return {
+            node: <MutedPlaceholder />,
+            mono: false
+        };
 
         if (value.every((item) => typeof item === 'number')) {
             const numbers = value as number[];
             const full = `[${numbers.map(formatNumber).join(', ')}]`;
             if (numbers.length <= MAX_INLINE_NUMBER_ARRAY) {
-                return { node: full, mono: true };
+                return {
+                    node: full,
+                    mono: true
+                };
             }
             const preview = numbers.slice(0, MAX_INLINE_NUMBER_ARRAY).map(formatNumber).join(', ');
             return {
@@ -96,20 +114,35 @@ const renderValue = (value: unknown): RenderedValue => {
             const strings = value as string[];
             const joined = strings.join(', ');
             if (strings.length <= MAX_INLINE_STRING_ARRAY && joined.length <= MAX_INLINE_STRING) {
-                return { node: joined, mono: false };
+                return {
+                    node: joined,
+                    mono: false
+                };
             }
-            return { node: `${strings.length} items`, mono: false };
+            return {
+                node: `${strings.length} items`,
+                mono: false
+            };
         }
 
-        return { node: `${value.length} items`, mono: false };
+        return {
+            node: `${value.length} items`,
+            mono: false
+        };
     }
 
     if (isPlainObject(value)) {
         const count = Object.keys(value).length;
-        return { node: count === 0 ? <MutedPlaceholder /> : `${count} fields`, mono: false };
+        return {
+            node: count === 0 ? <MutedPlaceholder /> : `${count} fields`,
+            mono: false
+        };
     }
 
-    return { node: String(value), mono: false };
+    return {
+        node: String(value),
+        mono: false
+    };
 };
 
 interface ConfigRow {
@@ -127,9 +160,17 @@ interface ConfigColumn {
 const buildColumn = (title: string, source: Record<string, unknown>, key = title): ConfigColumn => {
     const rows = Object.entries(source).map(([key, value]) => {
         const rendered = renderValue(value);
-        return { label: humanizeKey(key), value: rendered.node, mono: rendered.mono };
+        return {
+            label: humanizeKey(key),
+            value: rendered.node,
+            mono: rendered.mono
+        };
     });
-    return { key, title, rows };
+    return {
+        key,
+        title,
+        rows
+    };
 };
 
 const buildScopeColumn = (metadata: unknown): ConfigColumn | undefined => {
@@ -147,8 +188,16 @@ const buildScopeColumn = (metadata: unknown): ConfigColumn | undefined => {
         key: 'scope',
         title: 'Scope',
         rows: [
-            { label: 'Timesteps', value: String(sorted.length), mono: true },
-            { label: 'Range', value: `${sorted[0]} - ${sorted[sorted.length - 1]}`, mono: true }
+            {
+                label: 'Timesteps',
+                value: String(sorted.length),
+                mono: true
+            },
+            {
+                label: 'Range',
+                value: `${sorted[0]} - ${sorted[sorted.length - 1]}`,
+                mono: true
+            }
         ]
     };
 };
@@ -226,25 +275,45 @@ const buildPluginExecutionColumn = (
     const rows: ConfigRow[] = [];
 
     if (execution.source) {
-        rows.push({ label: 'Source', value: execution.source, mono: false });
+        rows.push({
+            label: 'Source',
+            value: execution.source,
+            mono: false
+        });
     }
 
     const selectedTimesteps = formatTimesteps(execution.selectedTimesteps);
     if (selectedTimesteps) {
-        rows.push({ label: 'Timesteps', value: selectedTimesteps, mono: true });
+        rows.push({
+            label: 'Timesteps',
+            value: selectedTimesteps,
+            mono: true
+        });
     }
 
     if (execution.clusterId) {
-        rows.push({ label: 'Cluster', value: execution.clusterId, mono: true });
+        rows.push({
+            label: 'Cluster',
+            value: execution.clusterId,
+            mono: true
+        });
     }
 
     Object.entries(execution.config).forEach(([key, value]) => {
         const rendered = renderValue(value);
-        rows.push({ label: humanizeKey(key), value: rendered.node, mono: rendered.mono });
+        rows.push({
+            label: humanizeKey(key),
+            value: rendered.node,
+            mono: rendered.mono
+        });
     });
 
     if (rows.length === 0) {
-        rows.push({ label: 'Parameters', value: <MutedPlaceholder />, mono: false });
+        rows.push({
+            label: 'Parameters',
+            value: <MutedPlaceholder />,
+            mono: false
+        });
     }
 
     return {

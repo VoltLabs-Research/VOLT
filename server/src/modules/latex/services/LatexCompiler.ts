@@ -1,8 +1,8 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
-import LatexFileModel from '@modules/latex/models/LatexFileModel';
-import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
+import LatexDocument from '@modules/latex/models/LatexDocument';
+import LatexFile from '@modules/latex/models/LatexFile';
+import LatexAsset from '@modules/latex/models/LatexAsset';
 import { requireLatexStorageClusterId, sanitizeAssetPath } from '@modules/latex/services/LatexAssetStorage';
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
@@ -183,14 +183,20 @@ const pruneEmptyWorkDirParents = async (workDir: string, targetPath: string): Pr
 
 const deleteManagedInput = async (workDir: string, relPath: string): Promise<void> => {
     const targetPath = path.join(workDir, relPath);
-    await fs.rm(targetPath, { recursive: true, force: true }).catch(() => undefined);
+    await fs.rm(targetPath, {
+        recursive: true,
+        force: true
+    }).catch(() => undefined);
     await pruneEmptyWorkDirParents(workDir, targetPath);
 };
 
 const ensureWritableInputPath = async (targetPath: string): Promise<void> => {
     const stats = await fs.lstat(targetPath).catch(() => null);
     if (stats?.isDirectory()) {
-        await fs.rm(targetPath, { recursive: true, force: true });
+        await fs.rm(targetPath, {
+            recursive: true,
+            force: true
+        });
     }
 };
 
@@ -395,46 +401,53 @@ export const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<
         });
 
         proc.on('close', (code) => {
-            resolve({ success: code === 0, log });
+            resolve({
+                success: code === 0,
+                log
+            });
         });
 
         proc.on('error', (err) => {
-            resolve({ success: false, log: err.message });
+            resolve({
+                success: false,
+                log: err.message
+            });
         });
     });
 };
 
 const loadCompileFiles = async (documentId: string): Promise<CompileLatexFile[]> => {
-    const docs = await LatexFileModel
-        .find({ document: documentId })
-        .sort({ isEntrypoint: -1, createdAt: 1 })
-        .lean()
-        .exec();
+    const files = await LatexFile.find({
+        where: { document: documentId },
+        order: {
+            isEntrypoint: 'DESC',
+            createdAt: 'ASC'
+        }
+    });
 
-    return docs.map((doc) => ({
-        _id: String(doc._id),
-        name: doc.name,
-        path: doc.path,
-        content: doc.content,
-        isEntrypoint: doc.isEntrypoint,
-        updatedAt: doc.updatedAt
+    return files.map((file) => ({
+        _id: file.id,
+        name: file.name,
+        path: file.path,
+        content: file.content,
+        isEntrypoint: file.isEntrypoint,
+        updatedAt: file.updatedAt
     }));
 };
 
 const loadCompileAssets = async (documentId: string): Promise<CompileLatexAsset[]> => {
-    const docs = await LatexAssetModel
-        .find({ document: documentId })
-        .sort({ createdAt: -1 })
-        .lean()
-        .exec();
+    const assets = await LatexAsset.find({
+        where: { document: documentId },
+        order: { createdAt: 'DESC' }
+    });
 
-    return docs.map((doc) => ({
-        _id: String(doc._id),
-        path: doc.path,
-        originalName: doc.originalName,
-        storageKey: doc.storageKey,
-        size: doc.size,
-        updatedAt: doc.updatedAt
+    return assets.map((asset) => ({
+        _id: asset.id,
+        path: asset.path,
+        originalName: asset.originalName,
+        storageKey: asset.storageKey,
+        size: asset.size,
+        updatedAt: asset.updatedAt
     }));
 };
 
@@ -444,11 +457,14 @@ export const prepareWorkDir = async (
 ): Promise<PrepareWorkDirResult> => {
     const { teamId, documentId, workDir, haltOnError } = params;
 
-    const document = await LatexDocumentModel.findOne({ _id: documentId, team: teamId }).lean().exec();
-    if (!document) {
+    const document = await LatexDocument.findOneBy({
+        id: documentId,
+        team: teamId
+    });
+    if(!document){
         return { status: 'no-document' };
     }
-    const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
+    const storageClusterId = requireLatexStorageClusterId(document.id, document);
 
     await deps.tempFileService.ensureDir(workDir);
 

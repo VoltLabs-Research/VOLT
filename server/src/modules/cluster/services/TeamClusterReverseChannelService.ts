@@ -311,7 +311,10 @@ export class TeamClusterReverseChannelService implements ITeamClusterReverseChan
             this.rejectPendingEntry(correlationId, entry, new Error('Team cluster daemon connection was lost'));
         }
 
-        return teamClusterId && channel ? { teamClusterId, channel } : null;
+        return teamClusterId && channel ? {
+            teamClusterId,
+            channel
+        } : null;
     }
 
     isRegisteredDaemonSocket(socketId: string): boolean {
@@ -1247,7 +1250,10 @@ export class TeamClusterReverseChannelService implements ITeamClusterReverseChan
         }, TUNNEL_DRAIN_TIMEOUT_MS);
         timeout.unref();
 
-        entry.pendingWriteAcks.set(sequence, { bytes, timeout });
+        entry.pendingWriteAcks.set(sequence, {
+            bytes,
+            timeout
+        });
         entry.pendingWriteBytes += bytes;
 
         const payload: TeamClusterDaemonTunnelDataPayload = {

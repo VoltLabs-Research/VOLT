@@ -57,7 +57,10 @@ const normalizeChildForDisplay = (
     analysisStatus: ReturnType<typeof normalizeCanvasAnalysisStatus>
 ): AnalysisChildAnalysis => {
     if (analysisStatus === CanvasAnalysisStatusEnum.Completed && child.status === 'running') {
-        return { ...child, status: 'completed' };
+        return {
+            ...child,
+            status: 'completed'
+        };
     }
 
     return child;

@@ -342,7 +342,10 @@ const ConfigurationStep = ({
                         alwaysEditing
                         showCard={false}
                         onChange={(items) => onConfigChange('env', items)}
-                        createEmpty={() => ({ key: '', value: '' })}
+                        createEmpty={() => ({
+                            key: '',
+                            value: ''
+                        })}
                         emptyMessage='No environment variables added.'
                     />
                 </OptionalConfigSection>

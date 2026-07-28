@@ -18,8 +18,8 @@ import type {
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import type TeamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import {
     jobStatusKey,
@@ -373,23 +373,23 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         teamId: string;
         timesteps?: number[];
     }): Promise<string[]> {
-        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
-        if (!trajectory) {
+        const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
+        if(!trajectory){
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — trajectory not found trajectoryId=${input.trajectoryId}`);
             return [];
         }
 
-        const storageClusterId = trajectory.storageClusterId?.toString();
-        if (!storageClusterId) {
+        const storageClusterId = trajectory.storageClusterId;
+        if(!storageClusterId){
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — no storageClusterId trajectoryId=${input.trajectoryId}`);
             return [];
         }
 
-        const persistedFrames = await TrajectoryFrameModel.find({ trajectoryId: input.trajectoryId })
-            .select('timestep')
-            .lean()
-            .exec();
-        if (persistedFrames.length === 0) {
+        const persistedFrames = await TrajectoryFrame.find({
+            where: { trajectoryId: input.trajectoryId },
+            select: { timestep: true }
+        });
+        if(persistedFrames.length === 0){
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — no persisted frames trajectoryId=${input.trajectoryId}`);
             return [];
         }
@@ -446,7 +446,10 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             localJobs.push(job);
         }
 
-        return { daemonJobs, localJobs };
+        return {
+            daemonJobs,
+            localJobs
+        };
     }
 
     private groupByCluster(jobs: TeamJobSummary[]): Map<string, TeamJobSummary[]> {
@@ -471,7 +474,10 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         options: { preserveJobTombstones?: boolean } = {}
     ): Promise<{ deletedJobs: number; deletedAnalyses: number }> {
         if (jobs.length === 0) {
-            return { deletedJobs: 0, deletedAnalyses: 0 };
+            return {
+                deletedJobs: 0,
+                deletedAnalyses: 0
+            };
         }
 
         const preserveJobTombstones = options.preserveJobTombstones ?? true;
@@ -499,7 +505,10 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
         const results = await pipeline.exec();
         if (!results) {
-            return { deletedJobs: 0, deletedAnalyses: 0 };
+            return {
+                deletedJobs: 0,
+                deletedAnalyses: 0
+            };
         }
 
         let deletedJobs = 0;

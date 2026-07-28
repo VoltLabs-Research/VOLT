@@ -12,7 +12,6 @@ import type { RequestHandler, Response, NextFunction } from 'express';
 import type {
     CreateTeamInput,
     UpdateTeamInput,
-    JoinTeamByCodeInput,
     SetDefaultTeamInput
 } from '@volt/contracts/modules/team/http';
 
@@ -25,13 +24,13 @@ export default class TeamController extends Controller {
     #service = new TeamService();
 
     @Route(teamRoutes.previewJoinByCode)
-    previewJoinByCode(@CurrentUser() userId: string, @Body() body: JoinTeamByCodeInput) {
-        return this.#service.previewJoinByCode(userId, body.code);
+    previewJoinByCode(@CurrentUser() userId: string, @Param('code') code: string) {
+        return this.#service.previewJoinByCode(userId, code);
     }
 
     @Route(teamRoutes.joinByCode)
-    joinByCode(@CurrentUser() userId: string, @Body() body: JoinTeamByCodeInput) {
-        return this.#service.joinByCode(userId, body.code);
+    joinByCode(@CurrentUser() userId: string, @Param('code') code: string) {
+        return this.#service.joinByCode(userId, code);
     }
 
     @Route(teamRoutes.listUserTeams)

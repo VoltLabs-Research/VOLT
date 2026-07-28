@@ -47,7 +47,10 @@ const TeamSchema: Schema<TeamDocument> = new Schema({
     timestamps: true
 });
 
-TeamSchema.index({ name: 'text', description: 'text' });
+TeamSchema.index({
+    name: 'text',
+    description: 'text'
+});
 
 const TeamModel: Model<TeamDocument> = mongoose.model<TeamDocument>('Team', TeamSchema);
 

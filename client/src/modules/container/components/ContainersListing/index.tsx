@@ -33,7 +33,10 @@ const ContainersListing = () => {
             title: 'Image',
             sortable: true,
             render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
-            skeleton: { variant: 'text', width: 150 }
+            skeleton: {
+                variant: 'text',
+                width: 150
+            }
         },
         clusterColumn<ContainerListingRow>({ isFolder: isContainerFolderRow }),
         {
@@ -41,7 +44,10 @@ const ContainersListing = () => {
             title: 'Cores',
             sortable: true,
             render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
-            skeleton: { variant: 'text', width: 70 }
+            skeleton: {
+                variant: 'text',
+                width: 70
+            }
         },
         {
             key: 'memory',
@@ -54,7 +60,10 @@ const ContainersListing = () => {
 
                 return <Text as='span' size='md' tone='secondary'>{formatSize(Number(value) * 1024 * 1024)}</Text>;
             },
-            skeleton: { variant: 'text', width: 90 }
+            skeleton: {
+                variant: 'text',
+                width: 90
+            }
         },
         dateColumn<ContainerListingRow>('updatedAt', 'Updated At', {
             width: 110,

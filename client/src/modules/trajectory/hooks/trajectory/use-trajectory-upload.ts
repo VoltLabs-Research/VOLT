@@ -171,5 +171,8 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
         }
     }, [addUpload, createTrajectoryMutation, failUpload, folderId, removeUpload, updateUploadProgress]);
 
-    return { uploadTrajectory, isUploading };
+    return {
+        uploadTrajectory,
+        isUploading
+    };
 }

@@ -3,7 +3,8 @@ import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import { TeamClusterView, toTeamClusterView } from '@modules/cluster/services/TeamClusterView';
-import TeamClusterModel, { toTeamClusterLike, type TeamCluster, type TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
@@ -16,7 +17,8 @@ import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/clust
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';
-import type { FilterQuery } from 'mongoose';
+import { In, LessThan } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 
 export interface TeamClusterLifecycleUpdatePreconditions {
     allowedCurrentStatuses?: TeamClusterStatus[];
@@ -114,6 +116,11 @@ interface TeamClusterLifecycleUpdate {
 interface PersistLifecycleUpdateOptions {
     preconditions?: TeamClusterLifecycleUpdatePreconditions;
     logContext?: string;
+}
+
+interface PersistLifecycleUpdateOutcome {
+    applied: boolean;
+    teamCluster: TeamCluster;
 }
 
 interface TeamClusterLifecycleEventPayload {
@@ -338,14 +345,11 @@ export class TeamClusterLifecycleService {
     }
 
     async finalizeDeletingClustersByEvidence(cutoff: Date): Promise<number> {
-        const deletingClusterDocuments = await TeamClusterModel.find({
+        const deletingClusterEntities = await TeamClusterEntity.findBy({
             status: TeamClusterStatus.Deleting,
-            lastDisconnectAt: {
-                $ne: null,
-                $lt: cutoff
-            }
-        }).exec();
-        const deletingClusters = deletingClusterDocuments.map(toTeamClusterLike);
+            lastDisconnectAt: LessThan(cutoff)
+        });
+        const deletingClusters = deletingClusterEntities.map(toTeamClusterLike);
 
         return this.countTrue(deletingClusters, async (teamCluster) => {
             const currentTeamCluster = await this.requireTeamClusterById(teamCluster.id);
@@ -359,16 +363,14 @@ export class TeamClusterLifecycleService {
     }
 
     async markDeletingTimeouts(cutoff: Date): Promise<number> {
-        const timedOutClusterDocuments = await TeamClusterModel.find({
+        const timedOutClusterEntities = await TeamClusterEntity.findBy({
             status: TeamClusterStatus.Deleting,
-            updatedAt: {
-                $lt: cutoff
-            }
-        }).exec();
-        const timedOutClusters = timedOutClusterDocuments.map(toTeamClusterLike);
+            updatedAt: LessThan(cutoff)
+        });
+        const timedOutClusters = timedOutClusterEntities.map(toTeamClusterLike);
 
         return this.countTrue(timedOutClusters, async (teamCluster) => {
-            const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
+            const updateOutcome = await this.persistLifecycleUpdateOutcome(teamCluster, {
                 status: TeamClusterStatus.DeleteFailed
             }, {
                 preconditions: {
@@ -378,8 +380,8 @@ export class TeamClusterLifecycleService {
                 logContext: 'delete-timeout'
             });
 
-            if (updatedTeamCluster.props.status !== TeamClusterStatus.DeleteFailed) return false;
-            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) return false;
+            if (!updateOutcome.applied) return false;
+            if (updateOutcome.teamCluster.props.status !== TeamClusterStatus.DeleteFailed) return false;
 
             logger.warn(`Team cluster marked as delete-failed after delete timeout teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team}`);
             return true;
@@ -387,8 +389,8 @@ export class TeamClusterLifecycleService {
     }
 
     async deleteTeamCluster(teamCluster: TeamCluster): Promise<void> {
-        const deleted = await TeamClusterModel.findByIdAndDelete(teamCluster.id).exec();
-        if (!deleted) {
+        const deleted = await TeamClusterEntity.delete({ id: teamCluster.id });
+        if (!deleted.affected) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
 
@@ -400,8 +402,8 @@ export class TeamClusterLifecycleService {
     }
 
     private async findTeamClusterById(teamClusterId: string): Promise<TeamCluster | null> {
-        const document = await TeamClusterModel.findById(teamClusterId).exec();
-        return document ? toTeamClusterLike(document) : null;
+        const entity = await TeamClusterEntity.findOneBy({ id: teamClusterId });
+        return entity ? toTeamClusterLike(entity) : null;
     }
 
     private async requireTeamClusterById(teamClusterId: string): Promise<TeamCluster> {
@@ -418,50 +420,48 @@ export class TeamClusterLifecycleService {
         update: TeamClusterLifecycleUpdate,
         options: PersistLifecycleUpdateOptions = {}
     ): Promise<TeamCluster> {
+        return (await this.persistLifecycleUpdateOutcome(teamCluster, update, options)).teamCluster;
+    }
+
+    private async persistLifecycleUpdateOutcome(
+        teamCluster: TeamCluster,
+        update: TeamClusterLifecycleUpdate,
+        options: PersistLifecycleUpdateOptions = {}
+    ): Promise<PersistLifecycleUpdateOutcome> {
         if (!this.isTransitionAllowed(teamCluster.props.status, update.status)) {
             logger.info(`Ignored illegal team cluster lifecycle transition teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} fromStatus=${teamCluster.props.status} toStatus=${update.status}`);
 
-            return teamCluster;
+            return {
+                applied: false,
+                teamCluster
+            };
         }
 
-        const filter: FilterQuery<TeamClusterDocument> = {
-            _id: teamCluster.id
-        };
+        const where: FindOptionsWhere<TeamClusterEntity> = { id: teamCluster.id };
         const preconditions = options.preconditions;
 
         if (preconditions?.allowedCurrentStatuses?.length) {
-            filter.status = {
-                $in: preconditions.allowedCurrentStatuses
-            };
+            where.status = In(preconditions.allowedCurrentStatuses);
         }
 
         if (preconditions?.requireUpdatedBefore) {
-            filter.updatedAt = {
-                $lt: preconditions.requireUpdatedBefore
-            };
+            where.updatedAt = LessThan(preconditions.requireUpdatedBefore);
         }
 
-        const updatedTeamClusterDocument = await TeamClusterModel.findOneAndUpdate(
-            filter,
-            {
-                $set: {
-                    status: update.status,
-                    installedVersion: update.installedVersion ?? teamCluster.props.installedVersion,
-                    enrollmentTokenHash: update.clearEnrollmentToken ? null : teamCluster.props.enrollmentTokenHash,
-                    lastHeartbeatAt: update.lastHeartbeatAt === undefined
-                        ? teamCluster.props.lastHeartbeatAt
-                        : update.lastHeartbeatAt,
-                    lastDisconnectAt: update.lastDisconnectAt === undefined
-                        ? teamCluster.props.lastDisconnectAt
-                        : update.lastDisconnectAt,
-                    roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
-                }
-            },
-            { new: true }
-        ).exec();
-        const updatedTeamCluster = updatedTeamClusterDocument ? toTeamClusterLike(updatedTeamClusterDocument) : null;
+        const updateResult = await TeamClusterEntity.update(where, {
+            status: update.status,
+            installedVersion: update.installedVersion ?? teamCluster.props.installedVersion,
+            enrollmentTokenHash: update.clearEnrollmentToken ? null : teamCluster.props.enrollmentTokenHash,
+            lastHeartbeatAt: update.lastHeartbeatAt === undefined
+                ? teamCluster.props.lastHeartbeatAt
+                : update.lastHeartbeatAt,
+            lastDisconnectAt: update.lastDisconnectAt === undefined
+                ? teamCluster.props.lastDisconnectAt
+                : update.lastDisconnectAt,
+            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
+        });
 
-        if (!updatedTeamCluster) {
+        if (!updateResult.affected) {
             const latestTeamCluster = await this.findTeamClusterById(teamCluster.id);
             if (!latestTeamCluster) {
                 throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
@@ -469,11 +469,19 @@ export class TeamClusterLifecycleService {
 
             logger.info(`Ignored stale team cluster lifecycle update teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} attemptedFromStatus=${teamCluster.props.status} attemptedToStatus=${update.status}`);
 
-            return latestTeamCluster;
+            return {
+                applied: false,
+                teamCluster: latestTeamCluster
+            };
         }
 
+        const updatedTeamCluster = await this.requireTeamClusterById(teamCluster.id);
+
         this.emitLifecycleUpdate(updatedTeamCluster);
-        return updatedTeamCluster;
+        return {
+            applied: true,
+            teamCluster: updatedTeamCluster
+        };
     }
 
     private isTransitionAllowed(currentStatus: TeamClusterStatus, nextStatus: TeamClusterStatus): boolean {

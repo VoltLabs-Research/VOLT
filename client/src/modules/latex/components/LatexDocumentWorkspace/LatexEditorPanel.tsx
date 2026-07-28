@@ -1,4 +1,5 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import { cn } from '@/shared/utils/cn';
 import { Callout, Box, Button, IconButton, Loader, Row, Stack, Text, EmptyState } from '@voltstack/bravais';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
@@ -76,7 +77,10 @@ const useAuthedAssetUrl = (asset: LatexAsset | null): string | null => {
         let objectUrl: string | null = null;
         let cancelled = false;
 
-        latexService.getAssetContent({ documentId: asset.documentId, key })
+        latexService.getAssetContent({
+            documentId: asset.documentId,
+            key
+        })
             .then((blob) => {
                 if (cancelled) return;
                 objectUrl = URL.createObjectURL(blob);
@@ -290,7 +294,10 @@ const LatexEditorPanel = ({
             return;
         }
 
-        setDropIndicator({ targetKey: null, position: 'end' });
+        setDropIndicator({
+            targetKey: null,
+            position: 'end'
+        });
     }, [draggedTabKey]);
 
     const commitTabReorder = useCallback((targetKey: string | null, position: 'before' | 'after' | 'end'): void => {
@@ -528,13 +535,13 @@ const LatexEditorPanel = ({
                 options={tabMenuOptions}
                 size='sm'
                 trigger={(
-                    <div className={[
+                    <div className={cn(
                             'latex-editor-tab d-flex items-center',
                             tab.isActive ? 'is-active' : '',
                             draggedTabKey === tab.key ? 'is-dragging' : '',
                             isDropBefore ? 'is-drop-before' : '',
                             isDropAfter ? 'is-drop-after' : ''
-                        ].filter(Boolean).join(' ')} draggable onDragStart={(event) => handleTabDragStart(event, tab)} onDragOver={(event) => handleTabDragOver(event, tab)} onDrop={(event) => handleTabDrop(event, tab)} onDragEnd={clearTabDragState}>
+                        )} draggable onDragStart={(event) => handleTabDragStart(event, tab)} onDragOver={(event) => handleTabDragOver(event, tab)} onDrop={(event) => handleTabDrop(event, tab)} onDragEnd={clearTabDragState}>
                         <button
                             type='button'
                             id={tabId}
@@ -569,16 +576,16 @@ const LatexEditorPanel = ({
     };
 
     return (
-        <Stack flex='1' minH='0' className={[
+        <Stack flex='1' minH='0' className={cn(
                 'latex-workspace__editor-group',
                 isGroupActive ? 'is-active' : ''
-            ].filter(Boolean).join(' ')} onMouseDownCapture={() => onFocusGroup()}>
+            )} onMouseDownCapture={() => onFocusGroup()}>
             {shouldShowTabsHeader && (
                 <Row justify='between' gap='05' p='05' className='latex-editor-tabs__header'>
-                    <Row gap='05' overflow='auto' flex='1' className={[
+                    <Row gap='05' overflow='auto' flex='1' className={cn(
                             'latex-editor-tabs',
                             dropIndicator?.targetKey === null && dropIndicator?.position === 'end' ? 'is-drop-at-end' : ''
-                        ].filter(Boolean).join(' ')} role='tablist' aria-label={groupId === 'primary' ? 'Open LaTeX files in the top editor group' : 'Open LaTeX files in the bottom editor group'} onDragOver={handleTabStripDragOver} onDrop={handleTabStripDrop} onDragEnd={clearTabDragState}>
+                        )} role='tablist' aria-label={groupId === 'primary' ? 'Open LaTeX files in the top editor group' : 'Open LaTeX files in the bottom editor group'} onDragOver={handleTabStripDragOver} onDrop={handleTabStripDrop} onDragEnd={clearTabDragState}>
                         {tabItems.map(renderTab)}
                     </Row>
                     {headerActions}

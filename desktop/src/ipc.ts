@@ -47,7 +47,10 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         if(result.ok){
             await deps.appConfig.setDeployment({
                 mode: 'remote',
-                remote: { serverEndpoint: result.serverEndpoint, clientUrl: result.clientUrl }
+                remote: {
+                    serverEndpoint: result.serverEndpoint,
+                    clientUrl: result.clientUrl
+                }
             });
             await deps.appConfig.addRecentEndpoint(result.serverEndpoint).catch(() => {});
         }

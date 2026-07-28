@@ -10,9 +10,7 @@ export interface GetOrCreateChatInput {
 
 const endpoints = {
     getAll: get<EmptyParams, Chat[]>('/'),
-    getOrCreate: post<GetOrCreateChatInput, Chat>(
-        ({ teamId, participantId }) => `/teams/${teamId}/participants/${participantId}`
-    )
+    getOrCreate: post<GetOrCreateChatInput, Chat>('/direct')
 };
 
 export default createService({

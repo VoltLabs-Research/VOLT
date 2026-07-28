@@ -43,10 +43,16 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
 
     describeEffect(input, result) {
         if (!result.ok) {
-            return { label: 'Focus unchanged', icon: 'focus' };
+            return {
+                label: 'Focus unchanged',
+                icon: 'focus'
+            };
         }
         const cleared = input.modifierId === null || input.modifierId === undefined || input.modifierId === '';
-        return { label: cleared ? 'Cleared focus' : 'Focused result', icon: 'focus' };
+        return {
+            label: cleared ? 'Cleared focus' : 'Focused result',
+            icon: 'focus'
+        };
     }
 };
 

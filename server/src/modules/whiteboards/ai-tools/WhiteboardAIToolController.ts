@@ -43,8 +43,15 @@ export default class WhiteboardAIToolController extends AIToolController {
     async listWhiteboards(input: ListWhiteboardsInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.listWhiteboards(input.teamId, { page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} whiteboards.`, data };
+        const { total, data } = await this.#service.listWhiteboards(input.teamId, {
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} whiteboards.`,
+            data
+        };
     }
 
     @AITool({
@@ -55,7 +62,10 @@ export default class WhiteboardAIToolController extends AIToolController {
     })
     async getWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         const whiteboard = await this.#service.getWhiteboard(input.teamId, input.whiteboardId);
-        return { summary: `Retrieved whiteboard ${input.whiteboardId}.`, data: whiteboard };
+        return {
+            summary: `Retrieved whiteboard ${input.whiteboardId}.`,
+            data: whiteboard
+        };
     }
 
     @AITool({
@@ -72,7 +82,11 @@ export default class WhiteboardAIToolController extends AIToolController {
         try {
             scene = JSON.parse(raw) as ParsedWhiteboardScene;
         } catch {
-            scene = { revision: 0, elements: [], appState: {} };
+            scene = {
+                revision: 0,
+                elements: [],
+                appState: {}
+            };
         }
 
         const elements = Array.isArray(scene.elements) ? scene.elements : [];
@@ -107,7 +121,10 @@ export default class WhiteboardAIToolController extends AIToolController {
     })
     async moveWhiteboard(input: MoveWhiteboardInput & AIToolScope) {
         await this.#service.moveWhiteboard(input.teamId, input.whiteboardId, input.folderId);
-        return { summary: `Moved whiteboard ${input.whiteboardId}.`, data: null };
+        return {
+            summary: `Moved whiteboard ${input.whiteboardId}.`,
+            data: null
+        };
     }
 
     @AITool({
@@ -118,7 +135,10 @@ export default class WhiteboardAIToolController extends AIToolController {
     })
     async deleteWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         await this.#service.deleteWhiteboard(input.teamId, input.whiteboardId, input.userId);
-        return { summary: `Deleted whiteboard ${input.whiteboardId}.`, data: null };
+        return {
+            summary: `Deleted whiteboard ${input.whiteboardId}.`,
+            data: null
+        };
     }
 
     @AITool({
@@ -129,7 +149,10 @@ export default class WhiteboardAIToolController extends AIToolController {
     })
     async deleteWhiteboardFolder(input: DeleteWhiteboardFolderInput & AIToolScope) {
         await this.#service.deleteFolder(input.teamId, input.folderId, input.userId);
-        return { summary: `Deleted whiteboard folder ${input.folderId}.`, data: null };
+        return {
+            summary: `Deleted whiteboard folder ${input.folderId}.`,
+            data: null
+        };
     }
 
     @ClientAITool({

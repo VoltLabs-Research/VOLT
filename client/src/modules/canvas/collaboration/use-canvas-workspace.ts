@@ -104,7 +104,10 @@ const useCanvasWorkspace = ({
         joinEvent: SOCKET_CANVAS_WORKSPACE_EVENTS.VISIT,
         leaveEvent: SOCKET_CANVAS_WORKSPACE_EVENTS.LEAVE,
         roomKey: visitEnabled && trajectoryId && visitOwner ? `${trajectoryId}:${visitOwner}` : null,
-        buildJoinPayload: () => (trajectoryId && visitOwner) ? { trajectoryId, ownerId: visitOwner } : null,
+        buildJoinPayload: () => (trajectoryId && visitOwner) ? {
+            trajectoryId,
+            ownerId: visitOwner
+        } : null,
         enabled: visitEnabled,
         fireAndForget: true
     });
@@ -112,7 +115,10 @@ const useCanvasWorkspace = ({
     useEffect(() => {
         if (!lobbyEnabled) return;
         return () => {
-            usePresenceStore.setState({ lobbyUsers: [], workspaceViewers: [] });
+            usePresenceStore.setState({
+                lobbyUsers: [],
+                workspaceViewers: []
+            });
         };
     }, [lobbyEnabled, trajectoryId, currentUserId]);
 

@@ -146,7 +146,6 @@ export default class PluginController extends Controller {
     }
 
     @Route(pluginRoutes.exportPluginListingDocuments)
-    @Route(pluginRoutes.exportPluginListingDocumentsByTrajectory)
     async exportPluginListingDocuments(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as ExportPluginListingDocumentsInput;
         const output = await this.#service.exportPluginListingDocuments(input);

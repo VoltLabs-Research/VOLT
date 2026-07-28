@@ -60,12 +60,18 @@ export const CORE_TABS: TimelineTabOption[] = [
     {
         id: TimelineTab.Particles,
         label: 'Particles',
-        icon: <Atom style={{ width: 12, height: 12 }} />
+        icon: <Atom style={{
+            width: 12,
+            height: 12
+        }} />
     },
     {
         id: TimelineTab.SimulationCell,
         label: 'Simulation Cell',
-        icon: <BoxIcon style={{ width: 12, height: 12 }} />
+        icon: <BoxIcon style={{
+            width: 12,
+            height: 12
+        }} />
     },
     {
         id: TimelineTab.Timeline,

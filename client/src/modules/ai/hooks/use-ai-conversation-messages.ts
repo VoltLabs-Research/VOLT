@@ -27,7 +27,10 @@ const toUIMessage = (message: AIConversationMessage): UIMessage => {
     let fallbackParts: UIMessage['parts'] = [];
 
     if (fallbackText) {
-        fallbackParts = [{ type: 'text', text: fallbackText }];
+        fallbackParts = [{
+            type: 'text',
+            text: fallbackText
+        }];
     }
 
     return {

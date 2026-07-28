@@ -17,6 +17,9 @@ export default class AuthAIToolController extends AIToolController {
     })
     async updateProfile(input: UpdateProfileInput & AIToolScope) {
         const account = await this.#service.updateAccount(input.userId, input);
-        return { summary: `Updated profile for ${account.fullName}.`, data: account };
+        return {
+            summary: `Updated profile for ${account.fullName}.`,
+            data: account
+        };
     }
 }

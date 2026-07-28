@@ -46,14 +46,32 @@ export const containersListingResource = createFolderedListingResource({
 });
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_CONTAINER_EVENTS.CREATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: SOCKET_CONTAINER_EVENTS.UPDATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: SOCKET_CONTAINER_EVENTS.DELETED, queryKeys: [containerQuery.QUERY_KEYS.lists()] }
+    {
+        event: SOCKET_CONTAINER_EVENTS.CREATED,
+        queryKeys: [containerQuery.QUERY_KEYS.lists()]
+    },
+    {
+        event: SOCKET_CONTAINER_EVENTS.UPDATED,
+        queryKeys: [containerQuery.QUERY_KEYS.lists()]
+    },
+    {
+        event: SOCKET_CONTAINER_EVENTS.DELETED,
+        queryKeys: [containerQuery.QUERY_KEYS.lists()]
+    }
 ];
 
-const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container' });
-const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container' });
-const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container' });
+const START_CONTAINER_TOAST = createCrudToastOptions({
+    action: 'Starting',
+    subject: 'Container'
+});
+const STOP_CONTAINER_TOAST = createCrudToastOptions({
+    action: 'Stopping',
+    subject: 'Container'
+});
+const RESTART_CONTAINER_TOAST = createCrudToastOptions({
+    action: 'Restarting',
+    subject: 'Container'
+});
 
 const useContainersListing = () => {
     const navigate = useNavigate();
@@ -71,11 +89,17 @@ const useContainersListing = () => {
     const [terminalContainer, setTerminalContainer] = useState<ContainerEntity | null>(null);
 
     const controlContainer = useCallback(async (containerId: string, action: ContainerAction) => {
-        await updateContainerMutation.mutateAsync({ id: containerId, params: { action } });
+        await updateContainerMutation.mutateAsync({
+            id: containerId,
+            params: { action }
+        });
     }, [updateContainerMutation]);
 
     const moveContainerToFolder = useCallback((containerId: string, folderId: string | null) => {
-        return moveContainer({ containerId, folderId });
+        return moveContainer({
+            containerId,
+            folderId
+        });
     }, [moveContainer]);
 
     const openContainer = useCallback((container: ContainerEntity) => {

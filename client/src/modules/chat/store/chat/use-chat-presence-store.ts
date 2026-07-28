@@ -36,7 +36,10 @@ export const useChatPresenceStore = create<ChatPresenceStore>((set) => ({
     }),
 
     setUsersPresence: (presenceMap) => set((state) => ({
-        userPresence: { ...state.userPresence, ...presenceMap }
+        userPresence: {
+            ...state.userPresence,
+            ...presenceMap
+        }
     })),
 
     reset: () => set(initialState)

@@ -4,19 +4,22 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { STATIC_ROOT } from '@core/config/paths';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import TrajectoryFrameModel, { TrajectoryFrameLean } from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
-import TrajectoryUploadSessionModel from '@modules/trajectory/models/trajectory/TrajectoryUploadSessionModel';
-import SceneArtifactModel, { SceneArtifactDocument } from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import TrajectoryFrameEntity from '@modules/trajectory/models/TrajectoryFrame';
+import TrajectoryUploadSession from '@modules/trajectory/models/TrajectoryUploadSession';
+import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
+import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@shared/contracts/types/Trajectory';
-import TrajectoryCloneJobModel, { createTrajectoryCloneJobProps } from '@modules/trajectory/models/trajectory/TrajectoryCloneJobModel';
+import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
+import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
+import { createTrajectoryCloneJobStats } from '@modules/trajectory/contracts/domain/trajectory-clone-job';
+import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/domain/trajectory-upload-session';
+import type { TrajectoryUploadSessionFileProps } from '@modules/trajectory/contracts/domain/trajectory-upload-session';
 
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
-import trajectoryReader, { readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import trajectoryReader, { getTrajectoryFrames, readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
 import particleFilterService, { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import lineStyleService, { type LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
@@ -55,10 +58,9 @@ import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import type { DownloadStreamOutput } from '@shared/contracts/types';
-import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
-import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import TeamCluster from '@modules/cluster/models/TeamCluster';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
@@ -72,18 +74,29 @@ import type {
     IDaemonAnalysisCompletionService
 } from '@shared/contracts/ports';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
-import AnalysisModel, { findRuntimeTargetsByTrajectoryId, toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import {
+    buildAnalysisRelationOptions,
+    escapeLikePattern,
+    findRuntimeTargetsByTrajectoryId,
+    toAnalysisLike
+} from '@modules/analysis/services/AnalysisQueries';
+import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
+import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import PluginService from '@modules/plugin/services/PluginService';
-import { insertSimulationCells } from '@modules/simulation-cell/models/SimulationCellModel';
+import { insertSimulationCells } from '@modules/simulation-cell/services/SimulationCellService';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import TeamModel from '@modules/team/models/team/TeamModel';
-import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import Team from '@modules/team/models/Team';
+import TeamMember from '@modules/team/models/TeamMember';
+import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 
-import mongoose from 'mongoose';
-import type { PipelineStage } from 'mongoose';
+import { ILike, In, IsNull } from 'typeorm';
+import type { DeepPartial, FindOptionsOrder, FindOptionsWhere } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import sharp from 'sharp';
 import pLimit from 'p-limit';
 import { v4 } from 'uuid';
@@ -175,25 +188,6 @@ import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/Get
 import type { GetPluginExposureGLBOutput, GetPluginByIdOutput, GetPluginListingDocumentsOutput, GetSubListingOutput } from '@shared/contracts/operations';
 import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 
-type TrajectoryDoc = mongoose.Document & {
-    _id: mongoose.Types.ObjectId;
-    name: string;
-    team: mongoose.Types.ObjectId;
-    folder: string | null;
-    storageClusterId?: mongoose.Types.ObjectId;
-    createdBy: mongoose.Types.ObjectId;
-    status: TrajectoryStatus;
-    isPublic: boolean;
-    rasterSceneViews: number;
-    hasPreview?: boolean;
-    stats: { totalFiles: number; totalSize: number };
-    analysis?: string[];
-    createdAt: Date;
-    updatedAt: Date;
-    save(): Promise<unknown>;
-    toObject(): Record<string, unknown>;
-};
-
 interface TrajectoryFolderView {
     _id: string;
     title: string;
@@ -238,6 +232,11 @@ const DASHBOARD_PREVIEW_MAX_WIDTH = 960;
 const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 const ANALYSIS_STATUS_COMPLETED = 'completed';
 const ANALYSIS_EXPORT_CONCURRENCY = 8;
+const ANALYSIS_LIST_DEFAULT_LIMIT = 100;
+const ANALYSIS_LIST_MAX_LIMIT = 1000;
+const TRAJECTORY_LIST_DEFAULT_LIMIT = 20;
+const FOLDER_LIST_DEFAULT_LIMIT = 500;
+const SCENE_ARTIFACT_LIST_DEFAULT_LIMIT = 100;
 const DEFAULT_UPLOAD_CHUNK_SIZE = 64 * 1024 * 1024;
 const DEFAULT_UPLOAD_SESSION_TTL_SECONDS = 6 * 60 * 60;
 const TRAJECTORY_UPLOAD_CHUNK_SIZE = readPositiveIntegerEnv('TRAJECTORY_UPLOAD_CHUNK_SIZE', DEFAULT_UPLOAD_CHUNK_SIZE);
@@ -262,10 +261,8 @@ const readFilenameFromContentDisposition = (value: string | undefined): string |
     return bareMatch?.[1]?.trim();
 };
 
-const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const storageClusterIdOf = (doc: { storageClusterId?: mongoose.Types.ObjectId | string }): string | undefined => (
-    doc.storageClusterId ? String(doc.storageClusterId) : undefined
+const storageClusterIdOf = (trajectory: { storageClusterId?: string }): string | undefined => (
+    trajectory.storageClusterId ? String(trajectory.storageClusterId) : undefined
 );
 
 const resolveTrajectoryName = (
@@ -287,7 +284,12 @@ const buildUploadParts = (
     size: number
 ): Array<{ partNumber: number; objectKey: string; offset: number; size: number }> => {
     if (size <= TRAJECTORY_UPLOAD_CHUNK_SIZE) {
-        return [{ partNumber: 1, objectKey: finalObjectKey, offset: 0, size }];
+        return [{
+            partNumber: 1,
+            objectKey: finalObjectKey,
+            offset: 0,
+            size
+        }];
     }
 
     const parts: Array<{ partNumber: number; objectKey: string; offset: number; size: number }> = [];
@@ -321,49 +323,29 @@ const parseLineStyle = (style: string | undefined): LineStyleSpec => {
     }
 };
 
-interface SimulationCellPopulated {
-    _id: mongoose.Types.ObjectId | string;
-    boundingBox: { width: number; height: number; length: number };
-    geometry: {
-        cell_vectors: number[][];
-        cell_origin: number[];
-        periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };
-    };
-    team?: mongoose.Types.ObjectId | string;
-    trajectory?: mongoose.Types.ObjectId | string;
-    timestep: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
+const USER_SELECTION = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    email: true,
+    avatar: true
+} as const;
 
-type TrajectoryFrameLeanWithPopulatedCell = Omit<TrajectoryFrameLean, 'simulationCell'> & {
-    simulationCell: SimulationCellPopulated | mongoose.Types.ObjectId;
-};
+const CLUSTER_NAME_SELECTION = {
+    id: true,
+    name: true
+} as const;
 
-const isPopulatedSimulationCell = (value: unknown): value is SimulationCellPopulated => (
-    typeof value === 'object' && value !== null && 'boundingBox' in value && 'geometry' in value
-);
-
-const toPopulatedSimulationCell = (value: SimulationCellPopulated): TrajectoryFrameSimulationCellEmbed => ({
-    _id: value._id.toString(),
-    boundingBox: value.boundingBox,
-    geometry: value.geometry,
-    team: value.team?.toString(),
-    trajectory: value.trajectory?.toString(),
-    timestep: value.timestep,
-    createdAt: value.createdAt,
-    updatedAt: value.updatedAt
-});
-
-const mapFrameLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => ({
-    timestep: doc.timestep,
-    natoms: doc.natoms,
-    simulationCell: doc.simulationCell
-        ? (isPopulatedSimulationCell(doc.simulationCell)
-            ? toPopulatedSimulationCell(doc.simulationCell)
-            : doc.simulationCell.toString())
-        : undefined
-});
+const TRAJECTORY_LISTING_RELATIONS = {
+    relations: {
+        createdByRef: true,
+        storageClusterIdRef: true
+    },
+    select: {
+        createdByRef: USER_SELECTION,
+        storageClusterIdRef: CLUSTER_NAME_SELECTION
+    }
+} as const;
 
 export default class TrajectoryService {
     #eventBus = eventBus;
@@ -408,7 +390,11 @@ export default class TrajectoryService {
         }
 
         if (input.folderId) {
-            const folder = await CatalogFolderModel.findOne({ _id: input.folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
+            const folder = await CatalogFolder.findOneBy({
+                id: input.folderId,
+                team: teamId,
+                kind: CatalogFolderKind.Trajectory
+            });
             if (!folder) {
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Target trajectory folder not found');
             }
@@ -425,7 +411,10 @@ export default class TrajectoryService {
             storageClusterId,
             createdBy: userId,
             status: TrajectoryStatus.Processing,
-            stats: { totalFiles: 0, totalSize: 0 },
+            stats: {
+                totalFiles: 0,
+                totalSize: 0
+            },
             rasterSceneViews: 0,
             hasPreview: false,
             isPublic: true,
@@ -448,7 +437,7 @@ export default class TrajectoryService {
             };
         });
 
-        const uploadSession = await TrajectoryUploadSessionModel.create({
+        const uploadSession = await TrajectoryUploadSession.create({
             team: teamId,
             user: userId,
             ownerClusterId: storageClusterId,
@@ -457,7 +446,7 @@ export default class TrajectoryService {
             resourceId: trajectory.id,
             files: sessionFiles,
             expiresAt
-        });
+        }).save();
 
         await this.#eventBus.publish(new TrajectoryCreatedEvent({
             trajectoryId: trajectory.id,
@@ -485,7 +474,7 @@ export default class TrajectoryService {
                     resourceId: trajectory.id,
                     contentLength: part.size,
                     contentType: file.contentType || 'application/octet-stream',
-                    sessionId: String(uploadSession._id),
+                    sessionId: uploadSession.id,
                     partNumber: part.partNumber
                 }, TRAJECTORY_UPLOAD_SESSION_TTL_SECONDS);
 
@@ -502,7 +491,7 @@ export default class TrajectoryService {
         return {
             trajectory: this.#toTrajectoryOutput(trajectory) as unknown as CreateTrajectoryOutput,
             uploadSession: {
-                id: String(uploadSession._id),
+                id: uploadSession.id,
                 chunkSize: TRAJECTORY_UPLOAD_CHUNK_SIZE,
                 expiresAt: expiresAt.toISOString(),
                 files: filesOutput
@@ -511,14 +500,14 @@ export default class TrajectoryService {
     }
 
     async commitUploadSession(input: CommitTrajectoryUploadSessionInput): Promise<CommitTrajectoryUploadSessionOutput> {
-        const session = await TrajectoryUploadSessionModel.findById(input.uploadSessionId).exec();
+        const session = await TrajectoryUploadSession.findOneBy({ id: input.uploadSessionId });
         if (!session) {
             throw ApplicationError.notFound('TrajectoryUploadSession::NotFound', 'Upload session not found');
         }
 
-        const trajectoryId = session.resourceId.toString();
+        const trajectoryId = session.resourceId;
 
-        if (session.status === 'committed') {
+        if (session.status === TrajectoryUploadSessionStatus.Committed) {
             return { trajectoryId };
         }
 
@@ -540,7 +529,7 @@ export default class TrajectoryService {
             }));
 
             const result = await this.#teamClusterDaemonClient.command<TrajectoryIngestResult>(
-                session.ownerClusterId.toString(),
+                session.ownerClusterId,
                 ChannelCommands.TrajectoryIngest,
                 {
                     trajectoryId,
@@ -550,13 +539,16 @@ export default class TrajectoryService {
                 { timeoutMs: 0 }
             );
 
-            const trajectory = await TrajectoryModel.findById(trajectoryId);
+            const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
             const trajectoryName = trajectory?.name || 'Trajectory';
             const frames = await this.#buildPersistableFrames(trajectoryId, input.teamId, result.frames);
 
-            await TrajectoryModel.findByIdAndUpdate(trajectoryId, {
-                $set: { status: TrajectoryStatus.Processing, stats: result.stats }
-            }).exec();
+            if (trajectory) {
+                await Object.assign(trajectory, {
+                    status: TrajectoryStatus.Processing,
+                    stats: result.stats
+                }).save();
+            }
             await this.#replaceFrames(trajectoryId, frames);
 
             await this.#daemonAnalysisCompletionService.initializeGlbSession(trajectoryId, frames.length, input.teamId);
@@ -564,7 +556,7 @@ export default class TrajectoryService {
             await this.#daemonAnalysisCompletionService.handleQueuedJobs(
                 this.#buildQueuedGlbJobs(trajectoryId, trajectoryName, input.teamId, frames),
                 'glb',
-                session.ownerClusterId.toString()
+                session.ownerClusterId
             ).catch((projectionError) => {
                 logger.warn(
                     projectionError,
@@ -572,23 +564,26 @@ export default class TrajectoryService {
                 );
             });
 
-            await TrajectoryUploadSessionModel.findByIdAndUpdate(session._id, {
-                status: 'committed',
+            await Object.assign(session, {
+                status: TrajectoryUploadSessionStatus.Committed,
                 committedAt: new Date()
-            }).exec();
+            }).save();
 
             await this.#eventBus.publish(new TrajectoryUpdatedEvent({
                 trajectoryId,
                 teamId: input.teamId,
-                updates: { status: TrajectoryStatus.Processing, stats: result.stats },
+                updates: {
+                    status: TrajectoryStatus.Processing,
+                    stats: result.stats
+                },
                 updatedAt: new Date()
             }));
 
             return { trajectoryId };
         } catch (error) {
-            logger.error(error, `[TrajectoryService] Commit failed for uploadSessionId=${String(session._id)}`);
-            await TrajectoryUploadSessionModel.findByIdAndUpdate(session._id, { status: 'failed' }).exec().catch(() => {});
-            const trajectory = await TrajectoryModel.findById(trajectoryId).catch(() => null);
+            logger.error(error, `[TrajectoryService] Commit failed for uploadSessionId=${session.id}`);
+            await Object.assign(session, { status: TrajectoryUploadSessionStatus.Failed }).save().catch(() => {});
+            const trajectory = await Trajectory.findOneBy({ id: trajectoryId }).catch(() => null);
             await this.#deleteTrajectoryById(trajectoryId).catch((deleteError) => {
                 logger.warn(deleteError, `[TrajectoryService] Failed to delete orphaned trajectory ${trajectoryId}`);
             });
@@ -614,26 +609,26 @@ export default class TrajectoryService {
     }
 
     async cancelUploadSession(input: CancelTrajectoryUploadSessionInput): Promise<void> {
-        const session = await TrajectoryUploadSessionModel.findById(input.uploadSessionId).exec();
+        const session = await TrajectoryUploadSession.findOneBy({ id: input.uploadSessionId });
         if (!session) {
             throw ApplicationError.notFound('TrajectoryUploadSession::NotFound', 'Upload session not found');
         }
 
-        if (session.team.toString() !== input.teamId || session.user.toString() !== input.userId) {
+        if (session.team !== input.teamId || session.user !== input.userId) {
             throw ApplicationError.forbidden(
                 'TrajectoryUploadSession::Forbidden',
                 'Upload session does not belong to this user and team'
             );
         }
 
-        if (session.status === 'committed') {
+        if (session.status === TrajectoryUploadSessionStatus.Committed) {
             throw ApplicationError.conflict(
                 'TrajectoryUploadSession::AlreadyCommitted',
                 'Committed upload sessions cannot be cancelled'
             );
         }
 
-        const ownerClusterId = session.ownerClusterId.toString();
+        const ownerClusterId = session.ownerClusterId;
         await Promise.all(session.files.flatMap((file) => [
             this.#objectGatewayClient.deleteObject(ownerClusterId, session.bucket, file.finalObjectKey).catch((error) => {
                 logger.debug(error, `[TrajectoryService] Failed to delete ${file.finalObjectKey}`);
@@ -645,12 +640,12 @@ export default class TrajectoryService {
             )
         ]));
 
-        await TrajectoryUploadSessionModel.findByIdAndUpdate(session._id, { status: 'cancelled' }).exec();
-        await TrajectoryModel.findByIdAndUpdate(session.resourceId, { $set: { status: TrajectoryStatus.Failed } }).exec().catch(() => {});
+        await Object.assign(session, { status: TrajectoryUploadSessionStatus.Cancelled }).save();
+        await Trajectory.update({ id: session.resourceId }, { status: TrajectoryStatus.Failed }).catch(() => {});
     }
 
     async deleteById(input: { trajectoryId: string; teamId?: string; userId?: string }): Promise<{ success: boolean }> {
-        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+        const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
         if (!trajectory) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
@@ -663,7 +658,7 @@ export default class TrajectoryService {
 
         await this.#eventBus.publish(new TrajectoryDeletedEvent({
             trajectoryId: input.trajectoryId,
-            teamId: input.teamId ?? String(trajectory.team) ?? '',
+            teamId: input.teamId ?? trajectory.team ?? '',
             storageClusterId: storageClusterIdOf(trajectory),
             userId: input.userId ?? '',
             trajectoryName: trajectory.name,
@@ -685,83 +680,90 @@ export default class TrajectoryService {
     }
 
     async getByTeamId(input: GetTrajectoriesByTeamIdInput): Promise<GetTrajectoriesByTeamIdOutput> {
-        const { teamId, page = 1, limit = 20, search } = input;
+        const { teamId, search } = input;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: TRAJECTORY_LIST_DEFAULT_LIMIT });
 
-        const filter: Record<string, unknown> = { team: teamId };
+        const where: FindOptionsWhere<Trajectory> = { team: teamId };
         if (input.folderId === 'root') {
-            filter.folder = null;
+            where.folder = IsNull();
         } else if (input.folderId) {
-            filter.folder = input.folderId;
+            where.folder = input.folderId;
         }
         if (search) {
-            filter.name = { $regex: search, $options: 'i' };
+            where.name = ILike(`%${escapeLikePattern(search)}%`);
         }
 
-        const [docs, total] = await Promise.all([
-            TrajectoryModel.find(filter)
-                .populate([USER_POPULATE, STORAGE_CLUSTER_POPULATE])
-                .sort({ updatedAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .exec(),
-            TrajectoryModel.countDocuments(filter)
-        ]);
+        const [trajectories, total] = await Trajectory.findAndCount({
+            where,
+            ...TRAJECTORY_LISTING_RELATIONS,
+            order: { updatedAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const summaries = await this.#getFrameListingSummaries(docs.map((doc) => String(doc._id)));
+        const summaries = await this.#getFrameListingSummaries(trajectories.map((trajectory) => trajectory.id));
 
-        const data = docs.map((doc) => {
-            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryRecord;
-            const summary = summaries.get(String(doc._id));
+        const data = trajectories.map((trajectory) => {
+            const view = this.#toTrajectoryOutput(trajectory) as unknown as TrajectoryRecord;
+            const summary = summaries.get(trajectory.id);
             view.framesCount = summary?.framesCount ?? 0;
             view.atoms = summary?.atoms ?? 0;
             view.firstTimestep = summary?.firstTimestep;
             return view;
         });
 
-        return {
-            data,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([data, total], pageRequest);
     }
 
     async getById(input: { trajectoryId: string; options?: { populate?: unknown; select?: string[] } }): Promise<GetTrajectoryByIdOutput> {
-        const doc = await TrajectoryModel.findById(input.trajectoryId).populate(['team', 'analysis']).exec();
-        if (!doc) {
+        const trajectory = await Trajectory.findOne({
+            where: { id: input.trajectoryId },
+            relations: { teamRef: true }
+        });
+        if (!trajectory) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as GetTrajectoryByIdOutput;
-        (view as unknown as { frames: TrajectoryFrame[] }).frames = await this.#getFrames(String(doc._id));
+        const view = this.#toTrajectoryOutput(trajectory) as unknown as GetTrajectoryByIdOutput;
+        (view as unknown as { frames: TrajectoryFrame[] }).frames = await this.#getFrames(trajectory.id);
         return view;
     }
 
     async updateById(input: UpdateTrajectoryByIdInput): Promise<UpdateTrajectoryByIdOutput> {
         const { trajectoryId, name, isPublic } = input;
-        const doc = await TrajectoryModel.findByIdAndUpdate(
-            trajectoryId,
-            { $set: { name, isPublic } },
-            { new: true }
-        ).populate(['team', 'analysis']).exec();
+        const trajectory = await Trajectory.findOne({
+            where: { id: trajectoryId },
+            relations: { teamRef: true }
+        });
 
-        if (!doc) {
+        if (!trajectory) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        return this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as UpdateTrajectoryByIdOutput;
+        const updated = await Object.assign(trajectory, {
+            name,
+            isPublic
+        }).save();
+
+        return this.#toTrajectoryOutput(updated) as unknown as UpdateTrajectoryByIdOutput;
     }
 
     async move(input: MoveTrajectoryInput): Promise<MoveTrajectoryOutput> {
         try {
-            const trajectory = await TrajectoryModel.findOne({ _id: input.trajectoryId, team: input.teamId });
+            const trajectory = await Trajectory.findOneBy({
+                id: input.trajectoryId,
+                team: input.teamId
+            });
             if (!trajectory) {
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found');
             }
 
             if (input.folderId !== null) {
-                const folder = await CatalogFolderModel.findOne({ _id: input.folderId, team: input.teamId, kind: CatalogFolderKind.Trajectory });
+                const folder = await CatalogFolder.findOneBy({
+                    id: input.folderId,
+                    team: input.teamId,
+                    kind: CatalogFolderKind.Trajectory
+                });
                 if (!folder) {
                     throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Target Trajectory folder not found');
                 }
@@ -802,7 +804,7 @@ export default class TrajectoryService {
                     'Source trajectory does not have a storage cluster assigned'
                 );
             }
-            const sourceFrames = await this.#getFrames(String(source._id));
+            const sourceFrames = await this.#getFrames(source.id);
 
             const now = new Date();
 
@@ -824,15 +826,15 @@ export default class TrajectoryService {
 
             await this.#storagePlacement.ensurePlacement('trajectory', destinationTrajectory.id);
 
-            const job = await TrajectoryCloneJobModel.create(createTrajectoryCloneJobProps({
+            const job = await TrajectoryCloneJob.create({
                 team: input.teamId,
-                sourceTrajectoryId: String(source._id),
+                sourceTrajectoryId: source.id,
                 destinationTrajectoryId: destinationTrajectory.id,
                 sourceClusterId,
                 destinationClusterId,
                 requestedBy: input.userId,
-                stats: { totalFrames: sourceFrames.length }
-            }));
+                stats: createTrajectoryCloneJobStats({ totalFrames: sourceFrames.length })
+            }).save();
 
             await this.#cloneCoordinator.publishJobProjection(job);
 
@@ -852,7 +854,7 @@ export default class TrajectoryService {
             return {
                 trajectoryId: destinationTrajectory.id,
                 jobId: job.id,
-                sourceTrajectoryId: String(source._id),
+                sourceTrajectoryId: source.id,
                 destinationClusterId
             };
         } catch (error) {
@@ -868,7 +870,7 @@ export default class TrajectoryService {
     async getPreview(input: GetTrajectoryPreviewInput): Promise<GetTrajectoryPreviewOutput> {
         const { trajectoryId } = input;
 
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
         if (!trajectory) {
             throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found', 404);
         }
@@ -894,8 +896,8 @@ export default class TrajectoryService {
     async downloadTrajectory(input: DownloadTrajectoryInput): Promise<DownloadTrajectoryOutput> {
         const { trajectoryId, archive } = input;
 
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
-        if (!trajectory || String(trajectory.team) !== input.teamId) {
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
+        if (!trajectory || trajectory.team !== input.teamId) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
@@ -927,37 +929,42 @@ export default class TrajectoryService {
     }
 
     async #findAnalyses(options: {
-        filter: Record<string, unknown>;
-        populate?: unknown;
-        sort?: Record<string, 1 | -1>;
+        where: FindOptionsWhere<AnalysisEntity>;
+        relations?: readonly AnalysisRelationName[];
+        order?: FindOptionsOrder<AnalysisEntity>;
         page?: number;
         limit?: number;
-    }): Promise<{ data: AnalysisDocument[]; total: number; page: number; totalPages: number; limit: number }> {
-        const { filter, populate, sort, page = 1, limit = 100 } = options;
-        const skip = (page - 1) * limit;
+    }): Promise<PaginatedResult<AnalysisEntity>> {
+        const { where, relations, order } = options;
+        const pageRequest = readPageRequest(options.page, options.limit, {
+            defaultLimit: ANALYSIS_LIST_DEFAULT_LIMIT,
+            maxLimit: ANALYSIS_LIST_MAX_LIMIT
+        });
 
-        let query = AnalysisModel.find(filter).skip(skip).limit(limit) as any;
-        if (populate) query = query.populate(populate as any);
-        if (sort) query = query.sort(sort);
+        const [analyses, total] = await AnalysisEntity.findAndCount({
+            where,
+            ...buildAnalysisRelationOptions(relations),
+            ...(order === undefined ? {} : { order }),
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const [data, total] = await Promise.all([
-            query.exec() as Promise<AnalysisDocument[]>,
-            AnalysisModel.countDocuments(filter)
-        ]);
-
-        return { data, total, page, totalPages: Math.ceil(total / limit), limit };
+        return paginate([analyses, total], pageRequest);
     }
 
     async downloadTrajectoryAnalyses(input: DownloadTrajectoryAnalysesInput): Promise<DownloadTrajectoryAnalysesOutput> {
-        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
-        if (!trajectory || String(trajectory.team) !== input.teamId) {
+        const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
+        if (!trajectory || trajectory.team !== input.teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
         const analyses = await this.#findAnalyses({
-            filter: { trajectory: input.trajectoryId, team: input.teamId },
-            sort: { createdAt: -1 },
-            limit: 1000
+            where: {
+                trajectory: input.trajectoryId,
+                team: input.teamId
+            },
+            order: { createdAt: 'DESC' },
+            limit: ANALYSIS_LIST_MAX_LIMIT
         });
 
         const completedAnalyses = analyses.data.filter((analysis) => (
@@ -979,7 +986,7 @@ export default class TrajectoryService {
 
         const limit = pLimit(ANALYSIS_EXPORT_CONCURRENCY);
         const archiveEntries = (await Promise.all(completedAnalyses.map((analysis) => (
-            limit(() => this.#buildAnalysisArchiveEntry(analysis._id.toString(), input.teamId))
+            limit(() => this.#buildAnalysisArchiveEntry(analysis.id, input.teamId))
         )))).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
         if (archiveEntries.length === 0) {
@@ -1013,7 +1020,10 @@ export default class TrajectoryService {
             throw new ApplicationError(ErrorCodes.FILE_NOT_FOUND, 'Sample not found', 404);
         }
 
-        return { stream: createReadStream(filePath), filename };
+        return {
+            stream: createReadStream(filePath),
+            filename
+        };
     }
 
     async getAtoms(input: GetAtomsColumnarInput): Promise<GetAtomsColumnarOutput> {
@@ -1023,7 +1033,7 @@ export default class TrajectoryService {
             const page = Math.max(1, input.page ?? 1);
             const limitNum = Math.min(5_000_000, Math.max(1, input.limit ?? 5_000_000));
 
-            const trajectory = await TrajectoryModel.findById(trajectoryId);
+            const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
             if (!trajectory) {
                 throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
             }
@@ -1031,19 +1041,19 @@ export default class TrajectoryService {
             const ownerClusterId = storageClusterIdOf(trajectory);
             let teamClusterId: string | undefined;
             if (analysisId) {
-                const analysis = await AnalysisModel.findById(analysisId);
+                const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
                 if (!analysis) {
                     throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
                 }
-                if (analysis.trajectory.toString() !== trajectoryId) {
+                if (analysis.trajectory !== trajectoryId) {
                     throw ApplicationError.badRequest(
                         ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH,
                         'Analysis does not belong to the requested trajectory'
                     );
                 }
-                teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() }) ?? teamClusterId;
+                teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }) ?? teamClusterId;
             } else if (ownerClusterId) {
-                teamClusterId = await this.#clusterSelection.resolveComputeClusterId(String(trajectory.team), undefined, ownerClusterId);
+                teamClusterId = await this.#clusterSelection.resolveComputeClusterId(trajectory.team, undefined, ownerClusterId);
             }
 
             if (!teamClusterId) {
@@ -1073,26 +1083,29 @@ export default class TrajectoryService {
     }
 
     async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
-        const page = Number(query.page) || 1;
-        const limit = Number(query.limit) || 500;
-        const filter = { team: teamId, kind: CatalogFolderKind.Trajectory, parent: query.parentId ?? null };
-
-        const [docs, total] = await Promise.all([
-            CatalogFolderModel.find(filter).skip((page - 1) * limit).limit(limit).sort({ createdAt: -1 }).exec(),
-            CatalogFolderModel.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => this.#presentFolder(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
+        const pageRequest = readPageRequest(query.page, query.limit, { defaultLimit: FOLDER_LIST_DEFAULT_LIMIT });
+        const where: FindOptionsWhere<CatalogFolder> = {
+            team: teamId,
+            kind: CatalogFolderKind.Trajectory,
+            parent: query.parentId ?? IsNull()
         };
+
+        const [folders, total] = await CatalogFolder.findAndCount({
+            where,
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
+
+        return paginate([folders.map((folder) => this.#presentFolder(folder)), total], pageRequest);
     }
 
     async getFolder(teamId: string, folderId: string): Promise<TrajectoryFolderView> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
+        const folder = await CatalogFolder.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Trajectory
+        });
         if (!folder) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
         }
@@ -1100,19 +1113,22 @@ export default class TrajectoryService {
     }
 
     async createFolder(teamId: string, userId: string, input: { title: string; parentId?: string | null }): Promise<TrajectoryFolderView> {
-        const folder = new CatalogFolderModel({
-            team: new mongoose.Types.ObjectId(teamId),
-            createdBy: new mongoose.Types.ObjectId(userId),
+        const folder = await CatalogFolder.create({
+            team: teamId,
+            createdBy: userId,
             title: input.title,
-            parent: input.parentId ? new mongoose.Types.ObjectId(input.parentId) : null,
+            parent: input.parentId ?? null,
             kind: CatalogFolderKind.Trajectory
-        });
-        await folder.save();
+        }).save();
         return this.#presentFolder(folder);
     }
 
     async updateFolder(teamId: string, folderId: string, input: { title: string }): Promise<TrajectoryFolderView> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
+        const folder = await CatalogFolder.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Trajectory
+        });
         if (!folder) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
         }
@@ -1123,7 +1139,11 @@ export default class TrajectoryService {
 
     async deleteFolder(teamId: string, folderId: string): Promise<null> {
         try {
-            const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
+            const folder = await CatalogFolder.findOneBy({
+                id: folderId,
+                team: teamId,
+                kind: CatalogFolderKind.Trajectory
+            });
             if (!folder) {
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
             }
@@ -1143,59 +1163,45 @@ export default class TrajectoryService {
     }
 
     async listTeamSceneArtifacts(input: ListTeamSceneArtifactsInput): Promise<ListTeamSceneArtifactsOutput> {
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
-        const skip = (page - 1) * limit;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: SCENE_ARTIFACT_LIST_DEFAULT_LIMIT });
 
-        const pipeline: PipelineStage[] = [];
-        const match: Record<string, unknown> = {};
-        if (input.sourceType) match.sourceType = input.sourceType;
-        if (input.analysisId) match.analysis = new mongoose.Types.ObjectId(input.analysisId);
-        if (input.timestep !== undefined) match.timestep = input.timestep;
-        if (Object.keys(match).length > 0) {
-            pipeline.push({ $match: match });
+        const query = SceneArtifact.createQueryBuilder('artifact')
+            .innerJoinAndSelect('artifact.trajectoryRef', 'trajectory')
+            .leftJoinAndSelect('trajectory.storageClusterIdRef', 'trajectoryStorageCluster')
+            .leftJoinAndSelect('artifact.storageClusterIdRef', 'artifactStorageCluster')
+            .select([
+                'artifact',
+                'trajectory.id',
+                'trajectory.name',
+                'trajectory.storageClusterId',
+                'trajectoryStorageCluster.id',
+                'trajectoryStorageCluster.name',
+                'artifactStorageCluster.id',
+                'artifactStorageCluster.name'
+            ])
+            .where('trajectory.team = :teamId', { teamId: input.teamId });
+
+        if (input.sourceType) {
+            query.andWhere('artifact.sourceType = :sourceType', { sourceType: input.sourceType });
         }
-        pipeline.push(
-            { $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } },
-            { $unwind: '$trajectoryDoc' },
-            { $match: { 'trajectoryDoc.team': new mongoose.Types.ObjectId(input.teamId) } }
+        if (input.analysisId) {
+            query.andWhere('artifact.analysis = :analysisId', { analysisId: input.analysisId });
+        }
+        if (input.timestep !== undefined) {
+            query.andWhere('artifact.timestep = :timestep', { timestep: input.timestep });
+        }
+
+        const [artifacts, total] = await query
+            .orderBy('artifact.updatedAt', 'DESC')
+            .addOrderBy('artifact.id', 'DESC')
+            .skip(skipFor(pageRequest))
+            .take(pageRequest.limit)
+            .getManyAndCount();
+
+        return paginate(
+            [artifacts.map((artifact) => this.#toSceneArtifactOutput(artifact) as unknown as TeamSceneArtifactOutput), total],
+            pageRequest
         );
-
-        const [idRows, countRows] = await Promise.all([
-            SceneArtifactModel.aggregate<{ _id: mongoose.Types.ObjectId }>([
-                ...pipeline,
-                { $sort: { updatedAt: -1, _id: -1 } },
-                { $skip: skip },
-                { $limit: limit },
-                { $project: { _id: 1 } }
-            ]),
-            SceneArtifactModel.aggregate<{ total: number }>([...pipeline, { $count: 'total' }])
-        ]);
-
-        const ids = idRows.map((row) => row._id);
-        const total = countRows[0]?.total ?? 0;
-
-        if (!ids.length) {
-            return { data: [], total: 0, page, totalPages: 0, limit };
-        }
-
-        const docs = await SceneArtifactModel.find({ _id: { $in: ids } }).populate([
-            { path: 'trajectory', select: ['name', 'storageClusterId'], populate: STORAGE_CLUSTER_POPULATE },
-            STORAGE_CLUSTER_POPULATE
-        ]).exec();
-
-        const orderById = new Map(ids.map((id, index) => [id.toString(), index]));
-        const sortedDocs = docs.sort((left, right) => (
-            (orderById.get(left._id.toString()) ?? 0) - (orderById.get(right._id.toString()) ?? 0)
-        ));
-
-        return {
-            data: sortedDocs.map((doc) => this.#toSceneArtifactOutput(doc) as unknown as TeamSceneArtifactOutput),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
     }
 
     async getColorCodingProperties(input: GetColorCodingPropertiesInput): Promise<GetColorCodingPropertiesOutput> {
@@ -1343,7 +1349,10 @@ export default class TrajectoryService {
             );
         }
 
-        return { entityId, properties };
+        return {
+            entityId,
+            properties
+        };
     }
 
     async getOctreeMetadataStream(input: GetOctreeMetadataStreamInput): Promise<StreamableOutput> {
@@ -1357,49 +1366,57 @@ export default class TrajectoryService {
     }
 
     async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInput): Promise<ListPublicTeamTrajectoriesOutput> {
-        const { teamId, page = 1, limit = 20 } = input;
-        const team = await TeamModel.findById(teamId);
+        const { teamId } = input;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: TRAJECTORY_LIST_DEFAULT_LIMIT });
+        const team = await Team.findOneBy({ id: teamId });
         if (!team) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
 
-        const filter: Record<string, unknown> = { team: teamId, isPublic: true };
+        const where: FindOptionsWhere<Trajectory> = {
+            team: teamId,
+            isPublic: true
+        };
         const search = input.search?.trim();
         if (search) {
-            filter.name = { $regex: escapeRegex(search), $options: 'i' };
+            where.name = ILike(`%${escapeLikePattern(search)}%`);
         }
 
-        const [docs, total] = await Promise.all([
-            TrajectoryModel.find(filter)
-                .select(['name', 'team', 'status', 'isPublic', 'hasPreview', 'stats', 'createdAt', 'updatedAt'])
-                .sort({ updatedAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .exec(),
-            TrajectoryModel.countDocuments(filter)
-        ]);
+        const [trajectories, total] = await Trajectory.findAndCount({
+            where,
+            select: {
+                id: true,
+                name: true,
+                team: true,
+                status: true,
+                isPublic: true,
+                hasPreview: true,
+                stats: true,
+                createdAt: true,
+                updatedAt: true
+            },
+            order: { updatedAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const summaries = await this.#getFrameListingSummaries(docs.map((doc) => String(doc._id)));
+        const summaries = await this.#getFrameListingSummaries(trajectories.map((trajectory) => trajectory.id));
 
-        const data = docs.map((doc) => {
-            const view = this.#toTrajectoryOutput(doc as unknown as TrajectoryDoc) as unknown as TrajectoryRecord;
-            const summary = summaries.get(String(doc._id));
+        const data = trajectories.map((trajectory) => {
+            const view = this.#toTrajectoryOutput(trajectory) as unknown as TrajectoryRecord;
+            const summary = summaries.get(trajectory.id);
             view.framesCount = summary?.framesCount ?? 0;
             view.atoms = summary?.atoms ?? 0;
             view.firstTimestep = summary?.firstTimestep;
             return view;
         });
 
-        const teamDiscovery: PublicTeamDiscoveryView = { _id: String(team._id), name: team.name };
-
-        return {
-            data,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit,
-            _meta: { team: teamDiscovery }
+        const teamDiscovery: PublicTeamDiscoveryView = {
+            _id: team.id,
+            name: team.name
         };
+
+        return paginate([data, total], pageRequest, { team: teamDiscovery }) as ListPublicTeamTrajectoriesOutput;
     }
 
     async getPublicCanvasBootstrap(input: GetPublicCanvasBootstrapInput): Promise<GetPublicCanvasBootstrapOutput> {
@@ -1407,14 +1424,13 @@ export default class TrajectoryService {
 
         let hasTeamMembership = false;
         if (input.userId) {
-            const membership = await TeamMemberModel.findOne({
-                team: String(trajectory.team),
+            hasTeamMembership = await TeamMember.existsBy({
+                team: trajectory.team,
                 user: input.userId
             });
-            hasTeamMembership = membership !== null;
         }
 
-        const frames = await this.#getFrames(String(trajectory._id));
+        const frames = await this.#getFrames(trajectory.id);
 
         return {
             access: {
@@ -1457,7 +1473,7 @@ export default class TrajectoryService {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         return new RasterService().getRasterFramePNG({
             trajectoryId: input.trajectoryId,
-            teamId: String(trajectory.team),
+            teamId: trajectory.team,
             timestep: input.timestep,
             analysisId: input.analysisId,
             model: input.model
@@ -1514,27 +1530,34 @@ export default class TrajectoryService {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
         const analyses = await this.#findAnalyses({
-            filter: { trajectory: input.trajectoryId },
-            populate: [TRAJECTORY_POPULATE, { path: 'plugin' }],
+            where: { trajectory: input.trajectoryId },
+            relations: [AnalysisRelation.Trajectory, AnalysisRelation.Plugin],
             page: input.page,
             limit: input.limit,
-            sort: { createdAt: -1 }
+            order: { createdAt: 'DESC' }
         });
 
-        const data = analyses.data.map((doc) => {
-            const analysis = toAnalysisLike(doc);
+        const data = analyses.data.map((entity) => {
+            const analysis = toAnalysisLike(entity);
             const props = { ...analysis.props };
             const pluginId = extractPluginId(props.plugin);
-            return { ...props, _id: analysis._id, plugin: pluginId };
+            return {
+                ...props,
+                _id: analysis._id,
+                plugin: pluginId
+            };
         });
 
-        return { ...analyses, data } as unknown as GetAnalysesByTrajectoryIdOutput;
+        return {
+            ...analyses,
+            data
+        } as unknown as GetAnalysesByTrajectoryIdOutput;
     }
 
     async getPublicCanvasSimulationCell(input: { trajectoryId: string; timestep?: number; userId?: string }): Promise<GetSimulationCellByTrajectoryOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
         return new SimulationCellService().getByTrajectory({
-            teamId: String(trajectory.team),
+            teamId: trajectory.team,
             trajectoryId: input.trajectoryId,
             timestep: input.timestep
         });
@@ -1591,7 +1614,10 @@ export default class TrajectoryService {
     async getPublicCanvasPlugin(input: { trajectoryId: string; pluginId: string; userId?: string }): Promise<GetPluginByIdOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analyses = await this.#findAnalyses({ filter: { trajectory: input.trajectoryId }, limit: 1000 });
+        const analyses = await this.#findAnalyses({
+            where: { trajectory: input.trajectoryId },
+            limit: ANALYSIS_LIST_MAX_LIMIT
+        });
         const pluginAttached = analyses.data.some((analysis) => extractPluginId(analysis.plugin) === input.pluginId);
 
         if (!pluginAttached) {
@@ -1613,14 +1639,14 @@ export default class TrajectoryService {
         userId?: string;
     }): Promise<GetPluginListingDocumentsOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
-        const teamId = String(trajectory.team);
+        const teamId = trajectory.team;
 
         if (input.analysisId) {
-            const analysis = await AnalysisModel.findById(input.analysisId);
+            const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
             if (!analysis) {
                 throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
             }
-            if (String(analysis.trajectory) !== input.trajectoryId) {
+            if (analysis.trajectory !== input.trajectoryId) {
                 throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
             }
             if (extractPluginId(analysis.plugin) !== input.pluginId) {
@@ -1653,11 +1679,11 @@ export default class TrajectoryService {
     }): Promise<GetSubListingOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.trajectory) !== input.trajectoryId) {
+        if (analysis.trajectory !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
@@ -1666,7 +1692,7 @@ export default class TrajectoryService {
             exposureId: input.exposureId,
             timestep: input.timestep,
             subListingName: input.subListingName,
-            teamId: String(analysis.team),
+            teamId: analysis.team,
             page: input.page,
             limit: input.limit
         });
@@ -1682,16 +1708,16 @@ export default class TrajectoryService {
     }): Promise<GetPluginExposureGLBOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.trajectory) !== input.trajectoryId) {
+        if (analysis.trajectory !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
         return this.#pluginService.getPluginExposureGLB({
-            teamId: String(analysis.team),
+            teamId: analysis.team,
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
@@ -1709,16 +1735,16 @@ export default class TrajectoryService {
     }): Promise<GetAnalysisFrameLogOutput> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.trajectory) !== input.trajectoryId) {
+        if (analysis.trajectory !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
         return analysisExecutionLogService.getFrameLog({
-            teamId: String(analysis.team),
+            teamId: analysis.team,
             analysisId: input.analysisId,
             trajectoryId: input.trajectoryId,
             timestep: input.timestep,
@@ -1728,7 +1754,10 @@ export default class TrajectoryService {
 
     async getPublicCanvasRasterMetadata(input: { trajectoryId: string; userId?: string }): Promise<GetRasterMetadataOutput> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
-        return new RasterService().getRasterMetadata({ trajectoryId: input.trajectoryId, teamId: String(trajectory.team) });
+        return new RasterService().getRasterMetadata({
+            trajectoryId: input.trajectoryId,
+            teamId: trajectory.team
+        });
     }
 
     async getPublicCanvasAtoms(input: { trajectoryId: string; analysisId?: string; timestep: number; page?: number; limit?: number; userId?: string }): Promise<GetAtomsColumnarOutput> {
@@ -1742,8 +1771,8 @@ export default class TrajectoryService {
         });
     }
 
-    async #assertReadable(trajectoryId: string, userId?: string): Promise<TrajectoryDoc> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId) as unknown as TrajectoryDoc | null;
+    async #assertReadable(trajectoryId: string, userId?: string): Promise<Trajectory> {
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
         if (!trajectory) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
@@ -1757,8 +1786,11 @@ export default class TrajectoryService {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'Team membership required to access this trajectory');
         }
 
-        const membership = await TeamMemberModel.findOne({ team: String(trajectory.team), user: userId });
-        if (!membership) {
+        const isMember = await TeamMember.existsBy({
+            team: trajectory.team,
+            user: userId
+        });
+        if (!isMember) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'Team membership required to access this trajectory');
         }
 
@@ -1790,38 +1822,39 @@ export default class TrajectoryService {
         isPublic: boolean;
         updatedAt: Date;
         createdAt: Date;
-    }): Promise<TrajectoryDoc> {
+    }): Promise<Trajectory> {
         const { frames, ...rest } = data;
-        const doc = new TrajectoryModel(rest) as unknown as TrajectoryDoc;
-        await doc.save();
+        const trajectory = await Trajectory.create(rest as DeepPartial<Trajectory>).save();
 
         if (frames && frames.length > 0) {
-            await this.#replaceFrames(String(doc._id), frames);
+            await this.#replaceFrames(trajectory.id, frames);
         }
 
-        return doc;
+        return trajectory;
     }
 
     async #deleteTrajectoryById(id: string): Promise<boolean> {
-        const result = await TrajectoryModel.findByIdAndDelete(id);
-        if (result) {
-            await TrajectoryFrameModel.deleteMany({ trajectoryId: new mongoose.Types.ObjectId(id) }).exec().catch(() => undefined);
+        const trajectory = await Trajectory.findOneBy({ id });
+        if (!trajectory) {
+            return false;
         }
-        return !!result;
+
+        await trajectory.remove();
+        return true;
     }
 
-    #toTrajectoryOutput(doc: TrajectoryDoc): Record<string, unknown> {
-        return { ...doc.toObject(), _id: String(doc._id) };
+    #toTrajectoryOutput(trajectory: Trajectory): Record<string, unknown> {
+        return trajectory.toJSON();
     }
 
-    #toBootstrapTrajectory(trajectory: TrajectoryDoc, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryView {
+    #toBootstrapTrajectory(trajectory: Trajectory, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryView {
         return {
-            _id: String(trajectory._id),
+            _id: trajectory.id,
             name: trajectory.name,
             status: trajectory.status,
             isPublic: trajectory.isPublic,
-            teamId: String(trajectory.team),
-            analysisIds: trajectory.analysis ?? [],
+            teamId: trajectory.team,
+            analysisIds: [],
             frames: frames.map((frame) => ({
                 timestep: frame.timestep,
                 natoms: frame.natoms,
@@ -1834,17 +1867,26 @@ export default class TrajectoryService {
 
     async #createDashboardPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutput> {
         const resized = await sharp(buffer)
-            .resize(DASHBOARD_PREVIEW_MAX_WIDTH, DASHBOARD_PREVIEW_MAX_HEIGHT, { fit: 'inside', withoutEnlargement: true })
+            .resize(DASHBOARD_PREVIEW_MAX_WIDTH, DASHBOARD_PREVIEW_MAX_HEIGHT, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
             .png({ compressionLevel: 9 })
             .toBuffer();
 
         const etag = `"${createHash('sha256').update(resized).digest('hex')}"`;
-        return { base64: `data:image/png;base64,${resized.toString('base64')}`, etag };
+        return {
+            base64: `data:image/png;base64,${resized.toString('base64')}`,
+            etag
+        };
     }
 
     #createCanvasPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutput {
         const etag = `"${createHash('sha256').update(buffer).digest('hex')}"`;
-        return { base64: `data:image/png;base64,${buffer.toString('base64')}`, etag };
+        return {
+            base64: `data:image/png;base64,${buffer.toString('base64')}`,
+            etag
+        };
     }
 
     async #resolveDestinationStorageClusterId(teamId: string, requestedClusterId?: string): Promise<string> {
@@ -1852,20 +1894,19 @@ export default class TrajectoryService {
             return this.#clusterSelection.resolveStorageClusterId(teamId);
         }
 
-        const requestedClusterDocument = await TeamClusterModel.findById(requestedClusterId).exec();
-        const requestedCluster = requestedClusterDocument ? toTeamClusterLike(requestedClusterDocument) : null;
-        if (!requestedCluster || requestedCluster.props.team !== teamId) {
+        const requestedCluster = await TeamCluster.findOneBy({ id: requestedClusterId });
+        if (!requestedCluster || requestedCluster.team !== teamId) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found for the requested team');
         }
 
-        if (requestedCluster.props.status !== TeamClusterStatus.Connected) {
+        if (requestedCluster.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
                 'TeamCluster::StorageClusterRequired',
                 'A connected storage-capable team cluster is required for this operation'
             );
         }
 
-        const requestedCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(requestedCluster.props.roleConfig);
+        const requestedCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(requestedCluster.roleConfig);
         if (requestedCapabilities.acceptsStorageWrites) {
             return requestedCluster.id;
         }
@@ -1874,16 +1915,16 @@ export default class TrajectoryService {
     }
 
     #validateUploadSession(
-        session: { status: string; expiresAt: Date; team: mongoose.Types.ObjectId; user: mongoose.Types.ObjectId; resourceKind: string },
+        session: { status: string; expiresAt: Date; team: string; user: string; resourceKind: string },
         input: CommitTrajectoryUploadSessionInput
     ): ApplicationError | null {
-        if (session.status !== 'pending') {
+        if (session.status !== TrajectoryUploadSessionStatus.Pending) {
             return ApplicationError.conflict('TrajectoryUploadSession::NotPending', 'Upload session is not pending');
         }
         if (session.expiresAt.getTime() <= Date.now()) {
             return ApplicationError.badRequest('TrajectoryUploadSession::Expired', 'Upload session has expired');
         }
-        if (session.team.toString() !== input.teamId || session.user.toString() !== input.userId) {
+        if (session.team !== input.teamId || session.user !== input.userId) {
             return ApplicationError.forbidden('TrajectoryUploadSession::Forbidden', 'Upload session does not belong to this user and team');
         }
         if (session.resourceKind !== 'trajectory') {
@@ -1955,7 +1996,10 @@ export default class TrajectoryService {
         let exportArtifact: DownloadStreamOutput;
 
         try {
-            exportArtifact = await this.#pluginService.getPluginExposureExport({ analysisId, teamId });
+            exportArtifact = await this.#pluginService.getPluginExposureExport({
+                analysisId,
+                teamId
+            });
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 return null;
@@ -2047,11 +2091,31 @@ export default class TrajectoryService {
         }
 
         const columns: AtomColumn[] = [
-            { name: ID_PROPERTY_NAME, dtype: 'u32', buffer: new Uint8Array(idBuffer) },
-            { name: TYPE_PROPERTY_NAME, dtype: 'u32', buffer: new Uint8Array(typeBuffer) },
-            { name: 'x', dtype: 'f32', buffer: new Uint8Array(xBuffer) },
-            { name: 'y', dtype: 'f32', buffer: new Uint8Array(yBuffer) },
-            { name: 'z', dtype: 'f32', buffer: new Uint8Array(zBuffer) }
+            {
+                name: ID_PROPERTY_NAME,
+                dtype: 'u32',
+                buffer: new Uint8Array(idBuffer)
+            },
+            {
+                name: TYPE_PROPERTY_NAME,
+                dtype: 'u32',
+                buffer: new Uint8Array(typeBuffer)
+            },
+            {
+                name: 'x',
+                dtype: 'f32',
+                buffer: new Uint8Array(xBuffer)
+            },
+            {
+                name: 'y',
+                dtype: 'f32',
+                buffer: new Uint8Array(yBuffer)
+            },
+            {
+                name: 'z',
+                dtype: 'f32',
+                buffer: new Uint8Array(zBuffer)
+            }
         ];
 
         const stringColumns: AtomColumn[] = [];
@@ -2064,14 +2128,22 @@ export default class TrajectoryService {
                     offset = buffer.writeUInt32LE(bytes.byteLength, offset);
                     offset += bytes.copy(buffer, offset);
                 }
-                stringColumns.push({ name: prop, dtype: 'str', buffer });
+                stringColumns.push({
+                    name: prop,
+                    dtype: 'str',
+                    buffer
+                });
                 continue;
             }
             const buffer = new ArrayBuffer(values.length * Float32Array.BYTES_PER_ELEMENT);
             new Float32Array(buffer).set(values.map((value) => (
                 typeof value === 'number' ? value : Number(value ?? Number.NaN)
             )) as ArrayLike<number>);
-            columns.push({ name: prop, dtype: 'f32', buffer: new Uint8Array(buffer) });
+            columns.push({
+                name: prop,
+                dtype: 'f32',
+                buffer: new Uint8Array(buffer)
+            });
         }
         columns.push(...stringColumns);
 
@@ -2089,45 +2161,47 @@ export default class TrajectoryService {
         };
     }
 
-    #toSceneArtifactOutput(doc: SceneArtifactDocument): Record<string, unknown> {
-        return { ...doc.toObject(), _id: String(doc._id) };
+    #toSceneArtifactOutput(artifact: SceneArtifact): Record<string, unknown> {
+        return artifact.toJSON();
     }
 
     async #listTrajectorySceneArtifacts(input: ListTrajectorySceneArtifactsInput): Promise<PaginatedResult<unknown>> {
         const { trajectoryId, sourceType, analysisId, projection, timestep } = input;
         const parsedTimestep = timestep !== undefined ? Number(timestep) : undefined;
 
-        const filter: Record<string, unknown> = { trajectory: trajectoryId };
-        if (sourceType) filter.sourceType = sourceType;
-        if (analysisId) filter.analysis = analysisId;
-        if (parsedTimestep !== undefined) filter.timestep = parsedTimestep;
+        const where: FindOptionsWhere<SceneArtifact> = { trajectory: trajectoryId };
+        if (sourceType) where.sourceType = sourceType;
+        if (analysisId) where.analysis = analysisId;
+        if (parsedTimestep !== undefined) where.timestep = parsedTimestep;
 
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: SCENE_ARTIFACT_LIST_DEFAULT_LIMIT });
 
-        const [docs, total] = await Promise.all([
-            SceneArtifactModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).exec(),
-            SceneArtifactModel.countDocuments(filter)
-        ]);
+        const [artifacts, total] = await SceneArtifact.findAndCount({
+            where,
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const result: PaginatedResult<unknown> = {
-            data: docs.map((doc) => this.#toSceneArtifactOutput(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        const result = paginate(
+            [artifacts.map((artifact) => this.#toSceneArtifactOutput(artifact)), total],
+            pageRequest
+        );
 
         if (sourceType === 'plugin-exposure' && projection === 'renderable-exposures') {
-            const data = this.#projectRenderableExposures(docs);
-            return { ...result, total: data.length, data };
+            const data = this.#projectRenderableExposures(artifacts);
+            return {
+                ...result,
+                total: data.length,
+                data
+            };
         }
 
         return result;
     }
 
-    #projectRenderableExposures(artifacts: SceneArtifactDocument[]) {
-        const byExposureId = new Map<string, SceneArtifactDocument>();
+    #projectRenderableExposures(artifacts: SceneArtifact[]) {
+        const byExposureId = new Map<string, SceneArtifact>();
 
         for (const artifact of artifacts) {
             const exposureId = (artifact.params as { exposureId?: unknown } | undefined)?.exposureId;
@@ -2151,8 +2225,7 @@ export default class TrajectoryService {
         return Array.from(byExposureId.values())
             .filter((artifact) => {
                 const metadata = artifact.metadata as Record<string, unknown> | undefined;
-                return typeof artifact.plugin !== 'undefined'
-                    && String(artifact.plugin).length > 0
+                return Boolean(artifact.plugin)
                     && typeof metadata?.pluginId === 'string'
                     && metadata.pluginId.length > 0;
             })
@@ -2183,9 +2256,9 @@ export default class TrajectoryService {
             .filter((item): item is NonNullable<typeof item> => item !== null);
     }
 
-    #presentFolder(folder: CatalogFolderDocument): TrajectoryFolderView {
+    #presentFolder(folder: CatalogFolder): TrajectoryFolderView {
         return {
-            _id: String(folder._id),
+            _id: folder.id,
             title: folder.title,
             parent: folder.parent ? String(folder.parent) : null,
             createdAt: folder.createdAt,
@@ -2194,59 +2267,71 @@ export default class TrajectoryService {
     }
 
     async #deleteFolderTree(teamId: string, folderId: string): Promise<void> {
-        const subfolders = await CatalogFolderModel.find({ team: teamId, parent: folderId, kind: CatalogFolderKind.Trajectory });
+        const subfolders = await CatalogFolder.findBy({
+            team: teamId,
+            parent: folderId,
+            kind: CatalogFolderKind.Trajectory
+        });
         for (const subfolder of subfolders) {
-            await this.#deleteFolderTree(teamId, String(subfolder._id));
+            await this.#deleteFolderTree(teamId, subfolder.id);
         }
 
-        const trajectories = await TrajectoryModel.find({ team: teamId, folder: folderId }).select('_id').exec();
-        for (const trajectoryDoc of trajectories) {
-            await this.deleteById({ trajectoryId: String(trajectoryDoc._id), teamId });
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                folder: folderId
+            },
+            select: { id: true }
+        });
+        for (const trajectory of trajectories) {
+            await this.deleteById({
+                trajectoryId: trajectory.id,
+                teamId
+            });
         }
 
-        await CatalogFolderModel.deleteOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
+        await CatalogFolder.delete({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Trajectory
+        });
     }
 
     async #getFrames(trajectoryId: string): Promise<TrajectoryFrame[]> {
-        const docs = await TrajectoryFrameModel
-            .find({ trajectoryId: new mongoose.Types.ObjectId(trajectoryId) })
-            .sort({ timestep: 1 })
-            .populate('simulationCell')
-            .lean<TrajectoryFrameLeanWithPopulatedCell[]>()
-            .exec();
-
-        return docs.map(mapFrameLean);
+        return getTrajectoryFrames(trajectoryId);
     }
 
     async #replaceFrames(trajectoryId: string, frames: TrajectoryFrame[]): Promise<void> {
-        await TrajectoryFrameModel.deleteMany({ trajectoryId: new mongoose.Types.ObjectId(trajectoryId) }).exec();
-        await this.#insertFrames(trajectoryId, frames);
+        const dataSource = TrajectoryFrameEntity.getRepository().manager.connection;
+
+        await dataSource.transaction(async (manager) => {
+            await manager.delete(TrajectoryFrameEntity, { trajectoryId });
+
+            const rows = this.#buildFrameRows(trajectoryId, frames);
+            if (rows.length === 0) return;
+
+            await manager.createQueryBuilder()
+                .insert()
+                .into(TrajectoryFrameEntity)
+                .values(rows)
+                .orIgnore()
+                .execute();
+        });
     }
 
-    async #insertFrames(trajectoryId: string, frames: TrajectoryFrame[]): Promise<void> {
-        if (frames.length === 0) return;
-
-        const documents = frames.map((frame) => {
-            const doc: Record<string, unknown> = {
-                trajectoryId: new mongoose.Types.ObjectId(trajectoryId),
-                timestep: frame.timestep,
-                natoms: frame.natoms
-            };
-
+    #buildFrameRows(trajectoryId: string, frames: TrajectoryFrame[]): QueryDeepPartialEntity<TrajectoryFrameEntity>[] {
+        return frames.map((frame) => {
             const cellId = typeof frame.simulationCell === 'string'
                 ? frame.simulationCell
                 : frame.simulationCell?._id;
 
-            if (cellId) {
-                doc.simulationCell = new mongoose.Types.ObjectId(cellId);
-            }
-
-            return doc;
-        });
-
-        await TrajectoryFrameModel.collection.insertMany(documents, { ordered: false }).catch((error) => {
-            if ((error as { code?: number }).code === 11000) return;
-            throw error;
+            return {
+                id: generateEntityId(),
+                trajectoryId,
+                timestep: frame.timestep,
+                natoms: frame.natoms,
+                simulationCell: cellId ?? null
+            };
         });
     }
 
@@ -2256,29 +2341,39 @@ export default class TrajectoryService {
         const summaries = new Map<string, { framesCount: number; atoms: number; firstTimestep: number }>();
         if (trajectoryIds.length === 0) return summaries;
 
-        const rows = await TrajectoryFrameModel.aggregate<{
-            _id: mongoose.Types.ObjectId;
-            framesCount: number;
-            atoms: number;
-            firstTimestep: number;
-        }>([
-            { $match: { trajectoryId: { $in: trajectoryIds.map((id) => new mongoose.Types.ObjectId(id)) } } },
-            { $sort: { trajectoryId: 1, timestep: 1 } },
-            {
-                $group: {
-                    _id: '$trajectoryId',
-                    framesCount: { $sum: 1 },
-                    atoms: { $first: '$natoms' },
-                    firstTimestep: { $first: '$timestep' }
-                }
-            }
-        ]).exec();
+        const counts = await TrajectoryFrameEntity.createQueryBuilder('frame')
+            .select('frame.trajectoryId', 'trajectoryId')
+            .addSelect('COUNT(frame.id)', 'framesCount')
+            .addSelect('MIN(frame.timestep)', 'firstTimestep')
+            .where('frame.trajectoryId IN (:...trajectoryIds)', { trajectoryIds })
+            .groupBy('frame.trajectoryId')
+            .getRawMany<{ trajectoryId: string; framesCount: string | number; firstTimestep: string | number }>();
 
-        for (const row of rows) {
-            summaries.set(row._id.toString(), {
-                framesCount: row.framesCount,
-                atoms: row.atoms,
-                firstTimestep: row.firstTimestep
+        if (counts.length === 0) return summaries;
+
+        const firstFrames = await TrajectoryFrameEntity.createQueryBuilder('frame')
+            .select('frame.trajectoryId', 'trajectoryId')
+            .addSelect('frame.natoms', 'natoms')
+            .where('frame.trajectoryId IN (:...trajectoryIds)', { trajectoryIds })
+            .andWhere(
+                'frame.timestep = (SELECT MIN(earliest.timestep) FROM trajectory_frames earliest'
+                + ' WHERE earliest.trajectoryId = frame.trajectoryId)'
+            )
+            .getRawMany<{ trajectoryId: string; natoms: string | number }>();
+
+        const atomsByTrajectory = new Map<string, number>();
+        for (const row of firstFrames) {
+            const trajectoryId = String(row.trajectoryId);
+            if (atomsByTrajectory.has(trajectoryId)) continue;
+            atomsByTrajectory.set(trajectoryId, Number(row.natoms));
+        }
+
+        for (const row of counts) {
+            const trajectoryId = String(row.trajectoryId);
+            summaries.set(trajectoryId, {
+                framesCount: Number(row.framesCount),
+                atoms: atomsByTrajectory.get(trajectoryId) ?? 0,
+                firstTimestep: Number(row.firstTimestep)
             });
         }
 

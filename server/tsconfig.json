@@ -15,6 +15,7 @@
     "baseUrl": "./",
     "verbatimModuleSyntax": false,
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "plugins": [
       {
         "transform": "typia/lib/transform"
@@ -29,6 +30,9 @@
       ],
       "@shared/*": [
         "src/shared/*"
+      ],
+      "@tests/*": [
+        "tests/*"
       ],
       "@volt/contracts/*": [
         "../contracts/src/*"

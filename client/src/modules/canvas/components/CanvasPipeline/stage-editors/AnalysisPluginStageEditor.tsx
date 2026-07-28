@@ -34,7 +34,10 @@ const AnalysisPluginStageEditor = ({
 
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const frameOptions: SelectOption[] = useMemo(
-        () => availableTimesteps.map((t) => ({ value: String(t), title: `t=${t}` })),
+        () => availableTimesteps.map((t) => ({
+            value: String(t),
+            title: `t=${t}`
+        })),
         [availableTimesteps]
     );
 
@@ -49,7 +52,12 @@ const AnalysisPluginStageEditor = ({
         if (!pluginId) return;
         updateStageConfig(
             stageId,
-            { argValues: { ...argValues, [key]: value } } as Partial<AnalysisPluginStageConfig>,
+            {
+                argValues: {
+                    ...argValues,
+                    [key]: value
+                }
+            } as Partial<AnalysisPluginStageConfig>,
             trajectoryId
         );
     }, [argValues, pluginId, stageId, trajectoryId, updateStageConfig]);

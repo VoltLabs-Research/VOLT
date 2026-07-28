@@ -10,6 +10,7 @@ import { useState, useCallback } from 'react';
 import { IoChatbubblesOutline } from 'react-icons/io5';
 import { EmptyState, Box, openModal, Stack } from '@voltstack/bravais';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
+import { hasUserReactedWith } from '@/modules/chat/utils/reactions';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import type { TypingUser } from '@volt/contracts/modules/chat/domain';
@@ -37,7 +38,8 @@ interface ChatAreaProps {
     onSendFiles: (files: File[]) => Promise<unknown>;
     onEditMessage: (messageId: string, content: string) => Promise<unknown>;
     onDeleteMessage: (messageId: string) => Promise<unknown>;
-    onToggleReaction: (messageId: string, emoji: string) => Promise<unknown>;
+    onSetReaction: (messageId: string, emoji: string) => Promise<unknown>;
+    onRemoveReaction: (messageId: string, emoji: string) => Promise<unknown>;
     onInfoClick?: () => void;
 }
 
@@ -58,13 +60,17 @@ const ChatArea = ({
     onSendFiles,
     onEditMessage,
     onDeleteMessage,
-    onToggleReaction,
+    onSetReaction,
+    onRemoveReaction,
     onInfoClick
 }: ChatAreaProps) => {
     const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
 
     const handleEditClick = useCallback((message: ChatMessage) => {
-        setEditingMessage({ _id: message._id, content: message.content });
+        setEditingMessage({
+            _id: message._id,
+            content: message.content
+        });
         openModal(EDIT_MESSAGE_MODAL_ID);
     }, []);
 
@@ -89,6 +95,14 @@ const ChatArea = ({
         await onDeleteMessage(messageId);
     }, [confirm, onDeleteMessage]);
 
+    const handleToggleReaction = useCallback((message: ChatMessage, emoji: string) => {
+        if (hasUserReactedWith(message.reactions, emoji, currentUserId)) {
+            return onRemoveReaction(message._id, emoji);
+        }
+
+        return onSetReaction(message._id, emoji);
+    }, [currentUserId, onRemoveReaction, onSetReaction]);
+
     if (!chat) {
         return (
             <Box display='flex' height='max' className='flex-center chat-area chat-area-empty'>
@@ -108,12 +122,12 @@ const ChatArea = ({
             isOwn={message.sender._id === currentUserId}
             isGroupChat={chat.isGroup}
             currentUserId={currentUserId}
-            onToggleReaction={(emoji: string) => onToggleReaction(message._id, emoji)}
+            onToggleReaction={(emoji: string) => handleToggleReaction(message, emoji)}
         >
             <MessageControls
                 messageId={message._id}
                 isOwn={message.sender._id === currentUserId}
-                onReact={(emoji: string) => onToggleReaction(message._id, emoji)}
+                onReact={(emoji: string) => onSetReaction(message._id, emoji)}
                 onEdit={() => handleEditClick(message)}
                 onDelete={() => handleDeleteClick(message._id)}
             />

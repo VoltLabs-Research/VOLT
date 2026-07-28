@@ -4,7 +4,7 @@ import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';
 import crypto from 'node:crypto';
 
 interface PasswordConfirmationUserLookup {
-    findByIdWithPassword(userId: string): Promise<{ password?: string } | null>;
+    findByIdWithPassword(userId: string): Promise<{ password?: string | null } | null>;
 }
 
 interface PasswordConfirmationHasher {

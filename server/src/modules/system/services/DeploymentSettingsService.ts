@@ -1,27 +1,27 @@
-import DeploymentSettingsModel, {
-    DeploymentSettingsDocument,
-    DeploymentSettingsProps
-} from '@modules/system/models/DeploymentSettingsModel';
+import DeploymentSettingsEntity from '@modules/system/models/DeploymentSettings';
+import type { DeploymentSettingsProps } from '@modules/system/contracts/domain/deployment-settings';
+
+const SINGLETON_KEY = 'singleton';
 
 export interface DeploymentSettings {
     _id: string;
     props: DeploymentSettingsProps;
 }
 
-const toDomain = (doc: DeploymentSettingsDocument): DeploymentSettings => ({
-    _id: String(doc._id),
+const toDomain = (settings: DeploymentSettingsEntity): DeploymentSettings => ({
+    _id: settings.id,
     props: {
-        defaultTeam: doc.defaultTeam ? String(doc.defaultTeam) : null,
-        autoJoinNewMembers: doc.autoJoinNewMembers,
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt
+        defaultTeam: settings.defaultTeam,
+        autoJoinNewMembers: settings.autoJoinNewMembers,
+        createdAt: settings.createdAt,
+        updatedAt: settings.updatedAt
     }
 });
 
 export default class DeploymentSettingsService {
     async getSettings(): Promise<DeploymentSettings> {
-        const doc = await DeploymentSettingsModel.findOne({});
-        if (!doc) {
+        const settings = await DeploymentSettingsEntity.findOneBy({ key: SINGLETON_KEY });
+        if (!settings) {
             return {
                 _id: '',
                 props: {
@@ -32,22 +32,25 @@ export default class DeploymentSettingsService {
                 }
             };
         }
-        return toDomain(doc);
+
+        return toDomain(settings);
     }
 
     async setDefaultTeam(teamId: string | null, autoJoinNewMembers: boolean): Promise<DeploymentSettings> {
-        const existing = await DeploymentSettingsModel.findOne({});
+        const existing = await DeploymentSettingsEntity.findOneBy({ key: SINGLETON_KEY });
         if (existing) {
-            existing.defaultTeam = teamId as unknown as DeploymentSettingsDocument['defaultTeam'];
-            existing.autoJoinNewMembers = autoJoinNewMembers;
-            await existing.save();
-            return toDomain(existing);
+            return toDomain(await Object.assign(existing, {
+                defaultTeam: teamId,
+                autoJoinNewMembers
+            }).save());
         }
 
-        const created = await DeploymentSettingsModel.create({
+        const created = await DeploymentSettingsEntity.create({
+            key: SINGLETON_KEY,
             defaultTeam: teamId,
             autoJoinNewMembers
-        });
+        }).save();
+
         return toDomain(created);
     }
 }

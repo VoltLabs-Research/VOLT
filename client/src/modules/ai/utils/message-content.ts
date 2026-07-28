@@ -73,5 +73,8 @@ export const parseTableFromChildren = (children: ReactNode): ParsedMarkdownTable
 
     if (columns.length === 0) return null;
 
-    return { columns, rows };
+    return {
+        columns,
+        rows
+    };
 };

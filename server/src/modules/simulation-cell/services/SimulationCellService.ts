@@ -1,15 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import SimulationCellModel from '@modules/simulation-cell/models/SimulationCellModel';
-import type { SimulationCellDocument } from '@modules/simulation-cell/models/SimulationCellModel';
+import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetSimulationCellByTrajectoryInput,
     GetSimulationCellByTrajectoryOutput
 } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
-import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
+import type { SimulationCellDims, SimulationCellGeometry, SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import type { DeepPartial, FindManyOptions, FindOptionsWhere } from 'typeorm';
 
 interface ListSimulationCellsInput {
     teamId: string;
@@ -23,79 +23,101 @@ interface GetSimulationCellByIdInput {
     simulationCellId: string;
 }
 
-const toSimulationCellView = (doc: SimulationCellDocument): PersistedOutput<SimulationCellProps> => {
-    const { _id, __v, ...props } = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
-    if (props.team && !doc.populated('team')) {
-        props.team = String(props.team);
-    }
-    if (props.trajectory && !doc.populated('trajectory')) {
-        props.trajectory = String(props.trajectory);
-    }
-    return { _id: String(doc._id), ...(props as unknown as SimulationCellProps) };
-};
+const DEFAULT_LIST_LIMIT = 10;
 
-export default class SimulationCellService {
-    async list(input: ListSimulationCellsInput): Promise<PaginatedResult<PersistedOutput<SimulationCellProps>>> {
-        const page = input.page !== undefined ? Number(input.page) : 1;
-        const limit = input.limit !== undefined ? Number(input.limit) : 10;
-        const filter: Record<string, unknown> = { team: input.teamId };
+const TRAJECTORY_REFERENCE_OPTIONS = {
+    relations: { trajectoryRef: true },
+    select: {
+        trajectoryRef: {
+            id: true,
+            name: true
+        }
+    }
+} satisfies FindManyOptions<SimulationCell>;
 
-        if (input.trajectoryId) {
-            filter.trajectory = input.trajectoryId;
+const toSimulationCellView = (cell: SimulationCell): PersistedOutput<SimulationCellProps> => ({
+    _id: cell.id,
+    boundingBox: cell.boundingBox as SimulationCellDims,
+    geometry: cell.geometry as SimulationCellGeometry,
+    team: cell.team,
+    trajectory: cell.trajectoryRef
+        ? {
+            _id: cell.trajectoryRef.id,
+            name: cell.trajectoryRef.name
+        }
+        : cell.trajectory,
+    timestep: cell.timestep,
+    createdAt: cell.createdAt,
+    updatedAt: cell.updatedAt
+});
+
+const toInsertableSimulationCell = (item: Partial<SimulationCellProps>): DeepPartial<SimulationCell> => ({
+    boundingBox: item.boundingBox ?? null,
+    geometry: item.geometry ?? null,
+    team: item.team,
+    trajectory: typeof item.trajectory === 'string' ? item.trajectory : item.trajectory?._id,
+    timestep: item.timestep
+});
+
+export default class SimulationCellService{
+    async list(input: ListSimulationCellsInput): Promise<PaginatedResult<PersistedOutput<SimulationCellProps>>>{
+        const pageRequest = readPageRequest(Number(input.page), Number(input.limit), { defaultLimit: DEFAULT_LIST_LIMIT });
+        const where: FindOptionsWhere<SimulationCell> = { team: input.teamId };
+
+        if(input.trajectoryId){
+            where.trajectory = input.trajectoryId;
         }
 
-        if (input.timestep !== undefined) {
-            filter.timestep = Number(input.timestep);
+        if(input.timestep !== undefined){
+            where.timestep = Number(input.timestep);
         }
 
-        const [docs, total] = await Promise.all([
-            SimulationCellModel.find(filter)
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate(TRAJECTORY_POPULATE)
-                .exec(),
-            SimulationCellModel.countDocuments(filter)
-        ]);
+        const [cells, total] = await SimulationCell.findAndCount({
+            where,
+            ...TRAJECTORY_REFERENCE_OPTIONS,
+            take: pageRequest.limit,
+            skip: skipFor(pageRequest)
+        });
 
-        return {
-            data: docs.map((doc) => toSimulationCellView(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([cells.map(toSimulationCellView), total], pageRequest);
     }
 
-    async getByTrajectory(input: GetSimulationCellByTrajectoryInput): Promise<GetSimulationCellByTrajectoryOutput> {
-        const baseFilter: Record<string, unknown> = {
+    async getByTrajectory(input: GetSimulationCellByTrajectoryInput): Promise<GetSimulationCellByTrajectoryOutput>{
+        const baseWhere: FindOptionsWhere<SimulationCell> = {
             team: input.teamId,
             trajectory: input.trajectoryId
         };
 
-        if (input.timestep !== undefined) {
-            const exactMatch = await SimulationCellModel.findOne({ ...baseFilter, timestep: input.timestep })
-                .populate(TRAJECTORY_POPULATE)
-                .exec();
+        if(input.timestep !== undefined){
+            const exactMatch = await SimulationCell.findOne({
+                where: {
+                    ...baseWhere,
+                    timestep: input.timestep
+                },
+                ...TRAJECTORY_REFERENCE_OPTIONS
+            });
 
-            if (exactMatch) {
+            if(exactMatch){
                 return toSimulationCellView(exactMatch);
             }
         }
 
-        const fallback = await SimulationCellModel.findOne(baseFilter)
-            .sort({ timestep: -1 })
-            .populate(TRAJECTORY_POPULATE)
-            .exec();
+        const fallback = await SimulationCell.findOne({
+            where: baseWhere,
+            order: { timestep: 'DESC' },
+            ...TRAJECTORY_REFERENCE_OPTIONS
+        });
 
         return fallback ? toSimulationCellView(fallback) : null;
     }
 
-    async getById(input: GetSimulationCellByIdInput): Promise<PersistedOutput<SimulationCellProps>> {
-        const simulationCell = await SimulationCellModel.findById(input.simulationCellId)
-            .populate(TRAJECTORY_POPULATE)
-            .exec();
+    async getById(input: GetSimulationCellByIdInput): Promise<PersistedOutput<SimulationCellProps>>{
+        const simulationCell = await SimulationCell.findOne({
+            where: { id: input.simulationCellId },
+            ...TRAJECTORY_REFERENCE_OPTIONS
+        });
 
-        if (!simulationCell) {
+        if(!simulationCell){
             throw ApplicationError.notFound(
                 ErrorCodes.SIMULATION_CELL_NOT_FOUND,
                 'SimulationCell not found'
@@ -105,3 +127,14 @@ export default class SimulationCellService {
         return toSimulationCellView(simulationCell);
     }
 }
+
+export const insertSimulationCells = async (
+    items: Array<Partial<SimulationCellProps>>
+): Promise<Array<{ _id: string }>> => {
+    if(items.length === 0){
+        return [];
+    }
+
+    const inserted = await SimulationCell.save(SimulationCell.create(items.map(toInsertableSimulationCell)));
+    return inserted.map((cell) => ({ _id: cell.id }));
+};

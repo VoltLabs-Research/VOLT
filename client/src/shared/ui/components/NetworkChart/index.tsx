@@ -53,7 +53,11 @@ const CHART_COLORS: ChartColors = {
     axis: 'var(--color-text-muted)',
     legend: 'var(--color-text-primary)'
 };
-const EMPTY_DATA: NetworkDataPoint[] = [{ time: '', rx: 0, tx: 0 }];
+const EMPTY_DATA: NetworkDataPoint[] = [{
+    time: '',
+    rx: 0,
+    tx: 0
+}];
 const CHART_MARGIN = {
     top: 10,
     right: 10,
@@ -186,8 +190,16 @@ const NetworkChart = ({
     const statItems = useMemo<ChartStat[]>(() => {
         const currentTotal = stats.totalRx + stats.totalTx;
         return [
-            { label: 'Throughput', value: formatByteSize(currentTotal), emphasis: 'primary' },
-            { label: 'Peak', value: formatByteSize(peakThroughput), emphasis: 'secondary' }
+            {
+                label: 'Throughput',
+                value: formatByteSize(currentTotal),
+                emphasis: 'primary'
+            },
+            {
+                label: 'Peak',
+                value: formatByteSize(peakThroughput),
+                emphasis: 'secondary'
+            }
         ];
     }, [stats.totalRx, stats.totalTx, peakThroughput]);
 

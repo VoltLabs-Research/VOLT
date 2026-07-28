@@ -32,7 +32,10 @@ export const buildContextualTipOptions = (
         autopilot: !tip.description
             ? false
             : tip.dismissMode === 'manual'
-                ? { expand: 180, collapse: 0 }
+                ? {
+                    expand: 180,
+                    collapse: 0
+                }
                 : true,
         icon: variant === 'shortcut'
             ? <Keyboard size={14} strokeWidth={1.8} />

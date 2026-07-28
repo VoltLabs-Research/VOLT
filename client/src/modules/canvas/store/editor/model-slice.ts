@@ -49,7 +49,11 @@ const getSceneStateWithoutTimestepScopedScenes = (state: ModelState): Pick<Model
     };
 };
 
-const MODEL_DRAG_OFFSET_ZERO: ModelDragOffset = { x: 0, y: 0, z: 0 };
+const MODEL_DRAG_OFFSET_ZERO: ModelDragOffset = {
+    x: 0,
+    y: 0,
+    z: 0
+};
 
 const createInitialState = (): ModelState => ({
     activeModel: null,
@@ -121,7 +125,10 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         if (!activeModel) return;
 
         set({
-            activeModel: { ...activeModel, modelBounds }
+            activeModel: {
+                ...activeModel,
+                modelBounds
+            }
         });
     },
 
@@ -136,7 +143,10 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
     },
 
     setIsModelLoading(loading: boolean) {
-        set({ isModelLoading: loading, modelLoadProgress: loading ? 0 : get().modelLoadProgress });
+        set({
+            isModelLoading: loading,
+            modelLoadProgress: loading ? 0 : get().modelLoadProgress
+        });
     },
 
     setModelLoadingState(loadingState: ModelLoadingState) {

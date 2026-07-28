@@ -60,7 +60,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 400 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 400
+        });
     }
 
     public static unauthorized(
@@ -68,7 +71,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 401 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 401
+        });
     }
 
     public static forbidden(
@@ -76,7 +82,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 403 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 403
+        });
     }
 
     public static notFound(
@@ -84,7 +93,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 404 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 404
+        });
     }
 
     public static conflict(
@@ -92,7 +104,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 409 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 409
+        });
     }
 
     public static unprocessableEntity(
@@ -100,13 +115,19 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 422 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 422
+        });
     }
 
     public static internalServerError(
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, message, { ...options, statusCode: 500 });
+        return new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, message, {
+            ...options,
+            statusCode: 500
+        });
     }
 }

@@ -93,7 +93,11 @@ export class LODManager {
         const selected: LODCell[] = [];
         const selectedIndices: number[] = [];
         if (cells.length === 0) {
-            return { cells: selected, cellIndices: selectedIndices, atomRanges: [] };
+            return {
+                cells: selected,
+                cellIndices: selectedIndices,
+                atomRanges: []
+            };
         }
 
         const targetLevel = settings.strategy === 'manual'
@@ -137,13 +141,20 @@ export class LODManager {
             cellIndices.push(cellIndex);
         }
         if (cellIndices.length === 0) return null;
-        return { analysisId, cellIndices, priority: 'immediate' };
+        return {
+            analysisId,
+            cellIndices,
+            priority: 'immediate'
+        };
     }
 }
 
 const mergeAtomRanges = (cells: LODCell[]): Array<{ start: number; count: number }> => {
     const ranges = cells
-        .map((cell) => ({ start: cell.firstAtomIndex, count: cell.atomCount }))
+        .map((cell) => ({
+            start: cell.firstAtomIndex,
+            count: cell.atomCount
+        }))
         .filter((range) => range.count > 0)
         .sort((a, b) => a.start - b.start);
     if (ranges.length === 0) return [];

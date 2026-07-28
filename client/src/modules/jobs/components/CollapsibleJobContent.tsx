@@ -31,10 +31,22 @@ const CollapsibleJobContent = ({
                 <motion.div
                     id={id}
                     className={className}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration, ...(ease ? { ease } : {}) }}
+                    initial={{
+                        height: 0,
+                        opacity: 0
+                    }}
+                    animate={{
+                        height: 'auto',
+                        opacity: 1
+                    }}
+                    exit={{
+                        height: 0,
+                        opacity: 0
+                    }}
+                    transition={{
+                        duration,
+                        ...(ease ? { ease } : {})
+                    }}
                 >
                     {children}
                 </motion.div>

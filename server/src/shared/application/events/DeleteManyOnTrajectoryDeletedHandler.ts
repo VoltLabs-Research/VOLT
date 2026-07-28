@@ -1,7 +1,0 @@
-import { DeleteManyOnEntityDeletedHandler } from '@shared/application/events/DeleteManyOnEntityDeletedHandler';
-import type TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
-
-export abstract class DeleteManyOnTrajectoryDeletedHandler extends DeleteManyOnEntityDeletedHandler<TrajectoryDeletedEvent> {
-    protected readonly payloadKey = 'trajectoryId';
-    protected readonly filterField = 'trajectory';
-}

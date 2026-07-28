@@ -64,7 +64,10 @@ export default class AppConfig{
 
     async #update(payload: object){
         const current = await this.get();
-        const merged = { ...current, ...payload };
+        const merged = {
+            ...current,
+            ...payload
+        };
 
         await this.#write(merged);
     }

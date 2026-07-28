@@ -9,13 +9,25 @@ import type { ConditionType, ConditionHandler } from '@volt/contracts/modules/pl
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 const CONDITION_TYPE_OPTIONS = [
-    { value: 'and', title: 'AND' },
-    { value: 'or', title: 'OR' }
+    {
+        value: 'and',
+        title: 'AND'
+    },
+    {
+        value: 'or',
+        title: 'OR'
+    }
 ];
 
 const CONDITION_HANDLER_OPTIONS = [
-    { value: 'is_equal_to', title: 'Is equal to' },
-    { value: 'is_not_equal_to', title: 'Is not equal to' }
+    {
+        value: 'is_equal_to',
+        title: 'Is equal to'
+    },
+    {
+        value: 'is_not_equal_to',
+        title: 'Is not equal to'
+    }
 ];
 
 const createDefaultCondition = (): ICondition => ({

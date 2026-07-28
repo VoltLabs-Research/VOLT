@@ -1,5 +1,6 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
+import PluginEntity from '@modules/plugin/models/Plugin';
+import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 import {
     AnalysisListingExportOptionView,
@@ -15,7 +16,7 @@ import { enrichDaemonListingRows } from '@modules/plugin/services/listing-row/Li
 import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
 
 import { ExportType } from '@shared/domain/port/persistence';
 
@@ -81,8 +82,8 @@ interface ExcludedExposureSet {
     names: Set<string>;
 }
 
-interface AnalysisExportContext {
-    analysis: AnalysisDocument | null;
+interface AnalysisExportContext{
+    analysis: AnalysisEntity | null;
     teamClusterId?: string;
     excludedExposures: ExcludedExposureSet;
 }
@@ -221,8 +222,8 @@ export class AnalysisListingExportCatalogService {
             return this.emptyExcludedExposureSet();
         }
 
-        const pluginDoc = await PluginModel.findById(pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin || !Array.isArray(plugin.props.exposures)) {
             return this.emptyExcludedExposureSet();
         }
@@ -245,11 +246,11 @@ export class AnalysisListingExportCatalogService {
     }
 
     private async resolveContext(analysisId: string): Promise<AnalysisExportContext> {
-        const analysis = await AnalysisModel.findById(analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
             : undefined;
-        const excludedExposures = await this.resolveExcludedExposures(analysis?.plugin.toString());
+        const excludedExposures = await this.resolveExcludedExposures(analysis?.plugin);
 
         return {
             analysis,
@@ -272,7 +273,11 @@ export class AnalysisListingExportCatalogService {
             const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
                 teamClusterId,
                 ChannelCommands.PluginListingsList,
-                { analysisId, page, limit: pageSize }
+                {
+                    analysisId,
+                    page,
+                    limit: pageSize
+                }
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);

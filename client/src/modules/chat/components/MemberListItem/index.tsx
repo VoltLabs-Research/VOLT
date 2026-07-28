@@ -16,9 +16,18 @@ interface MemberListItemProps {
 }
 
 const ROLE_TAG_CONFIG: Record<MemberRole, { tone: TagProps['tone']; variant: TagProps['variant'] }> = {
-    owner: { tone: 'info', variant: 'solid' },
-    admin: { tone: 'brand', variant: 'solid' },
-    member: { tone: 'neutral', variant: 'soft' }
+    owner: {
+        tone: 'info',
+        variant: 'solid'
+    },
+    admin: {
+        tone: 'brand',
+        variant: 'solid'
+    },
+    member: {
+        tone: 'neutral',
+        variant: 'soft'
+    }
 };
 
 export const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {

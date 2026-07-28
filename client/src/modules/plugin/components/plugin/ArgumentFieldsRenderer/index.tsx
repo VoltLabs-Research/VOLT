@@ -164,7 +164,10 @@ const resolvePluginReferenceOptions = (
                     continue;
                 }
 
-                options.push({ value, title: property.label?.trim() || value });
+                options.push({
+                    value,
+                    title: property.label?.trim() || value
+                });
             }
         }
     }

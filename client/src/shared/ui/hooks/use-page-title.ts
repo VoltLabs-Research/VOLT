@@ -36,7 +36,10 @@ const updateTitle = (titles: TitleEntry[], id: number, title: string): void => {
     if (existingEntry) {
         existingEntry.title = title;
     } else {
-        titles.push({ id, title });
+        titles.push({
+            id,
+            title
+        });
     }
 
     syncDocumentTitle();

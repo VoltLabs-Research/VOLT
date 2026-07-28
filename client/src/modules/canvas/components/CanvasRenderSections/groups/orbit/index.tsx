@@ -13,17 +13,49 @@ const useOrbitGroup = (): RenderGroup => {
     return useMemo(() => {
         const sections = {
             general: {
-                key: 'general', title: 'Controls', enabled: true,
+                key: 'general',
+                title: 'Controls',
+                enabled: true,
                 rows: [],
                 extras: (
                     <Box className="canvas-render-grid">
                         {checkboxGrid([
-                            { key: 'enabled', label: 'Enabled', value: s.enabled, onChange: (v: boolean) => s.set({ enabled: v }) },
-                            { key: 'autoRotate', label: 'Auto Rotate', value: s.autoRotate, onChange: (v: boolean) => s.set({ autoRotate: v }) },
-                            { key: 'enableDamping', label: 'Damping', value: s.enableDamping, onChange: (v: boolean) => s.set({ enableDamping: v }) },
-                            { key: 'enableZoom', label: 'Zoom', value: s.enableZoom, onChange: (v: boolean) => s.set({ enableZoom: v }) },
-                            { key: 'enableRotate', label: 'Rotate', value: s.enableRotate, onChange: (v: boolean) => s.set({ enableRotate: v }) },
-                            { key: 'enablePan', label: 'Pan', value: s.enablePan, onChange: (v: boolean) => s.set({ enablePan: v }) }
+                            {
+                                key: 'enabled',
+                                label: 'Enabled',
+                                value: s.enabled,
+                                onChange: (v: boolean) => s.set({ enabled: v })
+                            },
+                            {
+                                key: 'autoRotate',
+                                label: 'Auto Rotate',
+                                value: s.autoRotate,
+                                onChange: (v: boolean) => s.set({ autoRotate: v })
+                            },
+                            {
+                                key: 'enableDamping',
+                                label: 'Damping',
+                                value: s.enableDamping,
+                                onChange: (v: boolean) => s.set({ enableDamping: v })
+                            },
+                            {
+                                key: 'enableZoom',
+                                label: 'Zoom',
+                                value: s.enableZoom,
+                                onChange: (v: boolean) => s.set({ enableZoom: v })
+                            },
+                            {
+                                key: 'enableRotate',
+                                label: 'Rotate',
+                                value: s.enableRotate,
+                                onChange: (v: boolean) => s.set({ enableRotate: v })
+                            },
+                            {
+                                key: 'enablePan',
+                                label: 'Pan',
+                                value: s.enablePan,
+                                onChange: (v: boolean) => s.set({ enablePan: v })
+                            }
                         ])}
                         <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
                             Reset Orbit
@@ -32,7 +64,9 @@ const useOrbitGroup = (): RenderGroup => {
                 )
             },
             speeds: {
-                key: 'speeds', title: 'Speeds', enabled: true,
+                key: 'speeds',
+                title: 'Speeds',
+                enabled: true,
                 rows: [
                     row(PRESETS.speed('Rotate Speed'), () => s.rotateSpeed, (v: number) => s.set({ rotateSpeed: v })),
                     row(PRESETS.speed('Zoom Speed'), () => s.zoomSpeed, (v: number) => s.set({ zoomSpeed: v })),
@@ -42,26 +76,55 @@ const useOrbitGroup = (): RenderGroup => {
                 ]
             },
             limits: {
-                key: 'limits', title: 'Limits', enabled: true,
+                key: 'limits',
+                title: 'Limits',
+                enabled: true,
                 rows: [
-                    row({ label: 'Min Distance', min: 0.001, max: Math.max(10, s.maxDistance), step: 0.001, decimals: 3 }, () => s.minDistance, (v: number) => s.set({ minDistance: v })),
-                    row({ label: 'Max Distance', min: Math.max(0.001, s.minDistance + 0.001), max: 100000, step: 0.1, decimals: 1 }, () => s.maxDistance, (v: number) => s.set({ maxDistance: v }))
+                    row({
+                        label: 'Min Distance',
+                        min: 0.001,
+                        max: Math.max(10, s.maxDistance),
+                        step: 0.001,
+                        decimals: 3
+                    }, () => s.minDistance, (v: number) => s.set({ minDistance: v })),
+                    row({
+                        label: 'Max Distance',
+                        min: Math.max(0.001, s.minDistance + 0.001),
+                        max: 100000,
+                        step: 0.1,
+                        decimals: 1
+                    }, () => s.maxDistance, (v: number) => s.set({ maxDistance: v }))
                 ]
             },
             target: {
-                key: 'target', title: 'Target', enabled: true,
+                key: 'target',
+                title: 'Target',
+                enabled: true,
                 rows: targetRows(() => s.target, s.setTarget)
             }
         };
 
         return {
-            id: 'orbit', title: 'Orbit Controls',
+            id: 'orbit',
+            title: 'Orbit Controls',
             icon: <MdRotateLeft size={12} />,
             subsections: [
-                { label: 'Controls', sections: [sections.general] },
-                { label: 'Speeds', sections: [sections.speeds] },
-                { label: 'Distance Limits', sections: [sections.limits] },
-                { label: 'Target', sections: [sections.target] }
+                {
+                    label: 'Controls',
+                    sections: [sections.general]
+                },
+                {
+                    label: 'Speeds',
+                    sections: [sections.speeds]
+                },
+                {
+                    label: 'Distance Limits',
+                    sections: [sections.limits]
+                },
+                {
+                    label: 'Target',
+                    sections: [sections.target]
+                }
             ]
         };
     }, [s]);

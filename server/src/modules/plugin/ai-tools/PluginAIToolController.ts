@@ -3,8 +3,8 @@ import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import { PluginStatus } from '@modules/plugin/models/plugin/PluginModel';
-import type { PluginRecord } from '@modules/plugin/models/plugin/PluginModel';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { PluginRecord } from '@modules/plugin/contracts/domain/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { ExportType } from '@shared/domain/port/persistence';
 import type {
@@ -90,7 +90,10 @@ export default class PluginAIToolController extends AIToolController {
     })
     async searchRegistryPlugins(input: SearchRegistryPluginsInput & AIToolScope) {
         const { total, items } = await this.#service.searchRegistry(input);
-        return { summary: `Found ${total} registry plugins.`, data: items };
+        return {
+            summary: `Found ${total} registry plugins.`,
+            data: items
+        };
     }
 
     @AITool({
@@ -103,8 +106,15 @@ export default class PluginAIToolController extends AIToolController {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread. The service
         // falls back to limit 100, so the schema's 50 has to be spelled out.
-        const { total, data } = await this.#service.listPlugins({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} plugins.`, data };
+        const { total, data } = await this.#service.listPlugins({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} plugins.`,
+            data
+        };
     }
 
     @AITool({
@@ -115,7 +125,10 @@ export default class PluginAIToolController extends AIToolController {
     })
     async getPluginById(input: PluginRefInput) {
         const plugin = await this.#service.getPluginById(input);
-        return { summary: `Plugin "${plugin.modifier?.name ?? plugin._id}" (${plugin.status}).`, data: plugin };
+        return {
+            summary: `Plugin "${plugin.modifier?.name ?? plugin._id}" (${plugin.status}).`,
+            data: plugin
+        };
     }
 
     @AITool({
@@ -179,7 +192,10 @@ export default class PluginAIToolController extends AIToolController {
         const summary = validation.validated
             ? 'Workflow is valid and publishable.'
             : `Workflow is invalid: ${(validation.errors ?? []).join('; ') || 'see errors.'}`;
-        return { summary, data: validation };
+        return {
+            summary,
+            data: validation
+        };
     }
 
     @AITool({
@@ -190,7 +206,10 @@ export default class PluginAIToolController extends AIToolController {
         needsApproval: true
     })
     async publishPlugin(input: PluginRefInput) {
-        const plugin = await this.#service.updatePluginById({ ...input, status: PluginStatus.PUBLISHED });
+        const plugin = await this.#service.updatePluginById({
+            ...input,
+            status: PluginStatus.PUBLISHED
+        });
 
         return {
             summary: `Published plugin "${plugin.modifier?.name ?? plugin._id}".`,
@@ -220,13 +239,20 @@ export default class PluginAIToolController extends AIToolController {
             ...input,
             // typia validates but does not transform, so each stage's documented
             // `config` default is applied here.
-            stages: input.stages.map((stage) => ({ kind: 'plugin', pluginId: stage.pluginId, config: stage.config ?? {} }))
+            stages: input.stages.map((stage) => ({
+                kind: 'plugin',
+                pluginId: stage.pluginId,
+                config: stage.config ?? {}
+            }))
         });
 
         const summary = analysisIds.length
             ? `Started a ${input.stages.length}-stage pipeline. Computed analyses (in order): ${analysisIds.join(', ')}. Track each with get_analysis.`
             : 'Every pipeline stage was served from cache; no new analysis was created.';
-        return { summary, data: { analysisIds } };
+        return {
+            summary,
+            data: { analysisIds }
+        };
     }
 
     @AITool({
@@ -237,7 +263,10 @@ export default class PluginAIToolController extends AIToolController {
     })
     async listPluginListingDocuments(input: ListPluginListingDocumentsInput & AIToolScope) {
         const { total, data } = await this.#service.getPluginListingDocuments(input);
-        return { summary: `Found ${total} listing rows.`, data };
+        return {
+            summary: `Found ${total} listing rows.`,
+            data
+        };
     }
 
     @AITool({
@@ -295,14 +324,20 @@ export default class PluginAIToolController extends AIToolController {
         const summarized = await this.#service.summarizeAnalysisResult(input);
 
         if (!summarized.hasResults) {
-            return { summary: summarized.note ?? 'No results available.', data: summarized };
+            return {
+                summary: summarized.note ?? 'No results available.',
+                data: summarized
+            };
         }
 
         const columnCount = summarized.exposures.reduce((sum, exposure) => sum + exposure.columns.length, 0);
         const summary = `Analysis "${summarized.pluginDisplayName}"${summarized.trajectoryName ? ` on trajectory "${summarized.trajectoryName}"` : ''}: `
             + `${summarized.rowCount.toLocaleString('en-US')} rows across ${summarized.exposures.length} exposure(s), ${columnCount} columns summarized.`;
 
-        return { summary, data: summarized };
+        return {
+            summary,
+            data: summarized
+        };
     }
 
     @AITool({

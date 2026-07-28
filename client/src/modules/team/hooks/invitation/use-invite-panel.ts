@@ -141,7 +141,10 @@ export default function useInvitePanel(): UseInvitePanelReturn {
         setCancelingId(invitationId);
         try {
             await runAction({
-                action: () => cancelInvitation.mutateAsync({ teamId, invitationId }),
+                action: () => cancelInvitation.mutateAsync({
+                    teamId,
+                    invitationId
+                }),
                 toast: CANCEL_INVITATION_TOAST_OPTIONS
             });
         } finally {

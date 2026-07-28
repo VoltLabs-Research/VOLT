@@ -68,7 +68,7 @@ const buildTeamSceneArtifactQuery = (
 
 const endpoints = {
     listByTrajectory: get<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
-        '/:trajectoryId/scene-artifacts', {
+        '/trajectories/:trajectoryId/scene-artifacts', {
             unwrap: 'raw',
             query: buildSceneArtifactQuery
         }
@@ -82,7 +82,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/trajectories',
+            basePath: '/teams',
             useRBAC: true
         }
     }

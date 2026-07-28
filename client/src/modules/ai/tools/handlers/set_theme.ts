@@ -43,16 +43,25 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
             summary: preference === Theme.System
                 ? `Theme set to system (currently ${effective}).`
                 : `Theme set to ${effective}.`,
-            data: { preference, effective }
+            data: {
+                preference,
+                effective
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Theme unchanged', icon: 'theme' };
+            return {
+                label: 'Theme unchanged',
+                icon: 'theme'
+            };
         }
         const data = result.data as { preference?: string; effective?: string } | undefined;
-        return { label: `Theme set to ${data?.preference ?? 'theme'}`, icon: 'theme' };
+        return {
+            label: `Theme set to ${data?.preference ?? 'theme'}`,
+            icon: 'theme'
+        };
     }
 };
 

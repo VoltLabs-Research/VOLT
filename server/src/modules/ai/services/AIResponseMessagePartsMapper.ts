@@ -1,13 +1,13 @@
-import type { AIConversationMessageParts } from '@modules/ai/models/AIMessageModel';
+import type { AIMessageParts } from '@modules/ai/contracts/domain/ai-message';
 import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface AIResponseMessagePartsMappingResult {
-    parts: AIConversationMessageParts;
+    parts: AIMessageParts;
     textContent: string;
 }
 
 const findToolPart = (
-    parts: AIConversationMessageParts,
+    parts: AIMessageParts,
     type: unknown,
     toolCallId: unknown
 ): Record<string, unknown> | undefined => {
@@ -45,10 +45,10 @@ const applyToolResult = (
 };
 
 export const mergeAssistantParts = (
-    existingParts: AIConversationMessageParts,
-    newParts: AIConversationMessageParts
-): AIConversationMessageParts => {
-    const merged: AIConversationMessageParts = existingParts.map((part) => ({ ...part }));
+    existingParts: AIMessageParts,
+    newParts: AIMessageParts
+): AIMessageParts => {
+    const merged: AIMessageParts = existingParts.map((part) => ({ ...part }));
 
     for (const newPart of newParts) {
         const newRecord = asRecord(newPart);
@@ -88,7 +88,7 @@ export const mergeAssistantParts = (
 };
 
 export const mapAssistantResponseParts = (responseMessages: unknown[]): AIResponseMessagePartsMappingResult => {
-    const parts: AIConversationMessageParts = [];
+    const parts: AIMessageParts = [];
     let textContent = '';
 
     for (const responseMsg of responseMessages) {
@@ -103,14 +103,20 @@ export const mapAssistantResponseParts = (responseMessages: unknown[]): AIRespon
             switch (partType) {
                 case 'text':
                     if (typeof part.text === 'string' && part.text.trim()) {
-                        parts.push({ type: 'text', text: part.text });
+                        parts.push({
+                            type: 'text',
+                            text: part.text
+                        });
                         textContent += (textContent ? '\n' : '') + part.text;
                     }
                     break;
 
                 case 'reasoning':
                     if (typeof part.text === 'string' && part.text.trim()) {
-                        parts.push({ type: 'reasoning', text: part.text });
+                        parts.push({
+                            type: 'reasoning',
+                            text: part.text
+                        });
                     }
                     break;
 

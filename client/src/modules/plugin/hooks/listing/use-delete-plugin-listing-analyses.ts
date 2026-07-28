@@ -28,7 +28,10 @@ const useDeletePluginListingAnalyses = () => {
 
         try {
             await Promise.all(analysisIds.map((analysisId) =>
-                runCrudMutation(deleteAnalysisMutation.mutateAsync(analysisId), { action: 'Deleting', subject: 'Analysis' })
+                runCrudMutation(deleteAnalysisMutation.mutateAsync(analysisId), {
+                    action: 'Deleting',
+                    subject: 'Analysis'
+                })
             ));
         } catch(error: unknown) {
             if (isAccessDeniedError(error)) return;

@@ -144,46 +144,110 @@ const renderLoadingShell = (): ReactNode => (
             <Stack gap='1' className='h-100'>
                 <Row gap='1' className='justify-between' style={loadingShellStyles.toolbar}>
                     <Row gap='05' flex='1'>
-                        <div style={{ ...loadingShellStyles.chip, width: '8rem' }} />
-                        <div style={{ ...loadingShellStyles.chip, width: '5rem' }} />
+                        <div style={{
+                            ...loadingShellStyles.chip,
+                            width: '8rem'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.chip,
+                            width: '5rem'
+                        }} />
                     </Row>
                     <Row gap='05'>
-                        <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
-                        <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
-                        <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
+                        <div style={{
+                            ...loadingShellStyles.chip,
+                            width: '2.5rem'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.chip,
+                            width: '2.5rem'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.chip,
+                            width: '2.5rem'
+                        }} />
                     </Row>
                 </Row>
 
                 <Box display='flex' gap='1' flex='1' style={{ flexWrap: 'wrap' }}>
                     <Stack gap='075' style={loadingShellStyles.sidebar}>
-                        <div style={{ ...loadingShellStyles.line, width: '70%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '100%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '88%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '92%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '74%' }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '70%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '100%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '88%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '92%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '74%'
+                        }} />
                     </Stack>
 
                     <Stack gap='1' className='justify-between' style={loadingShellStyles.canvas}>
                         <Box display='flex' gap='05'>
-                            <div style={{ ...loadingShellStyles.chip, width: '6rem' }} />
-                            <div style={{ ...loadingShellStyles.chip, width: '4rem' }} />
+                            <div style={{
+                                ...loadingShellStyles.chip,
+                                width: '6rem'
+                            }} />
+                            <div style={{
+                                ...loadingShellStyles.chip,
+                                width: '4rem'
+                            }} />
                         </Box>
                         <Box display='flex' className='justify-center'>
-                            <div style={{ ...loadingShellStyles.line, width: '72%', height: '1rem' }} />
+                            <div style={{
+                                ...loadingShellStyles.line,
+                                width: '72%',
+                                height: '1rem'
+                            }} />
                         </Box>
                         <Box display='flex' align='end' gap='1' className='justify-between'>
-                            <div style={{ ...loadingShellStyles.line, width: '28%', height: '9rem', borderRadius: '1rem' }} />
-                            <div style={{ ...loadingShellStyles.line, width: '38%', height: '13rem', borderRadius: '1rem' }} />
-                            <div style={{ ...loadingShellStyles.line, width: '22%', height: '7rem', borderRadius: '1rem' }} />
+                            <div style={{
+                                ...loadingShellStyles.line,
+                                width: '28%',
+                                height: '9rem',
+                                borderRadius: '1rem'
+                            }} />
+                            <div style={{
+                                ...loadingShellStyles.line,
+                                width: '38%',
+                                height: '13rem',
+                                borderRadius: '1rem'
+                            }} />
+                            <div style={{
+                                ...loadingShellStyles.line,
+                                width: '22%',
+                                height: '7rem',
+                                borderRadius: '1rem'
+                            }} />
                         </Box>
                     </Stack>
                 </Box>
 
                 <Box display='flex' className='justify-end'>
                     <Stack gap='05' style={loadingShellStyles.floatingPanel}>
-                        <div style={{ ...loadingShellStyles.line, width: '45%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '100%' }} />
-                        <div style={{ ...loadingShellStyles.line, width: '82%' }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '45%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '100%'
+                        }} />
+                        <div style={{
+                            ...loadingShellStyles.line,
+                            width: '82%'
+                        }} />
                     </Stack>
                 </Box>
             </Stack>

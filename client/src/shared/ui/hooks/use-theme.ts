@@ -137,5 +137,9 @@ export const useTheme = (): UseThemeReturn => {
         localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     };
 
-    return { theme: effectiveTheme, preference, setTheme };
+    return {
+        theme: effectiveTheme,
+        preference,
+        setTheme
+    };
 };

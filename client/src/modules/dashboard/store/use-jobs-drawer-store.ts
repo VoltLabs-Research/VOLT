@@ -18,5 +18,8 @@ interface JobsDrawerState {
 export const useJobsDrawerStore = create<JobsDrawerState>((set) => ({
     trajectoryId: null,
     trajectoryName: null,
-    setScope: ({ trajectoryId, trajectoryName = null }) => set({ trajectoryId, trajectoryName })
+    setScope: ({ trajectoryId, trajectoryName = null }) => set({
+        trajectoryId,
+        trajectoryName
+    })
 }));

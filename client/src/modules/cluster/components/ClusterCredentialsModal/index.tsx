@@ -66,10 +66,29 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
 
     const services: ClusterCredentialCard[] = credentials
         ? [
-            { label: 'MinIO', port: credentials.minio.port, username: credentials.minio.username, password: credentials.minio.password },
-            { label: 'Redis', port: credentials.redis.port, username: credentials.redis.username, password: credentials.redis.password },
-            { label: 'MongoDB', port: credentials.mongodb.port, username: credentials.mongodb.username, password: credentials.mongodb.password },
-            { label: 'Daemon', port: credentials.daemon.port, password: credentials.daemon.password }
+            {
+                label: 'MinIO',
+                port: credentials.minio.port,
+                username: credentials.minio.username,
+                password: credentials.minio.password
+            },
+            {
+                label: 'Redis',
+                port: credentials.redis.port,
+                username: credentials.redis.username,
+                password: credentials.redis.password
+            },
+            {
+                label: 'MongoDB',
+                port: credentials.mongodb.port,
+                username: credentials.mongodb.username,
+                password: credentials.mongodb.password
+            },
+            {
+                label: 'Daemon',
+                port: credentials.daemon.port,
+                password: credentials.daemon.password
+            }
         ]
         : [];
 

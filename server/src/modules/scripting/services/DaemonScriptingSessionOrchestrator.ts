@@ -3,7 +3,7 @@ import type { NotebookContainerStage } from '@volt/contracts/modules/scripting/d
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
+import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
@@ -107,9 +107,12 @@ export class DaemonScriptingSessionOrchestrator {
             request,
             { timeoutMs: 600_000 }
         );
-        await ScriptingNotebookModel.updateOne(
-            { _id: input.notebookId },
-            { $set: { runtimeNotebookId, teamCluster: teamClusterId } }
+        await ScriptingNotebook.update(
+            { id: input.notebookId },
+            {
+                runtimeNotebookId,
+                teamCluster: teamClusterId
+            }
         );
 
         const jupyter = this.requireDaemonJupyterResponse(response);
@@ -136,10 +139,10 @@ export class DaemonScriptingSessionOrchestrator {
     }
 
     async deleteSession(trajectoryId: string): Promise<void> {
-        const notebooks = await ScriptingNotebookModel.find({ trajectory: trajectoryId }).exec();
+        const notebooks = await ScriptingNotebook.findBy({ trajectory: trajectoryId });
 
         for (const notebook of notebooks) {
-            const notebookTeamClusterId = notebook.teamCluster ? String(notebook.teamCluster) : null;
+            const notebookTeamClusterId = notebook.teamCluster || null;
             if (!notebook.runtimeNotebookId || !notebookTeamClusterId) {
                 continue;
             }

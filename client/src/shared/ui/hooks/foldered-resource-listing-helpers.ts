@@ -57,9 +57,18 @@ const createFolderListParams = (folderId: string | null): FolderedFolderListQuer
 const createFolderParams = (folderId: string): FolderedFolderQueryParams => ({ folderId });
 
 export const FOLDER_RESOURCE_TOASTS = {
-    create: createCrudToastOptions({ action: 'Creating', subject: 'Folder' }),
-    rename: createCrudToastOptions({ action: 'Renaming', subject: 'Folder' }),
-    delete: createCrudToastOptions({ action: 'Deleting', subject: 'Folder' })
+    create: createCrudToastOptions({
+        action: 'Creating',
+        subject: 'Folder'
+    }),
+    rename: createCrudToastOptions({
+        action: 'Renaming',
+        subject: 'Folder'
+    }),
+    delete: createCrudToastOptions({
+        action: 'Deleting',
+        subject: 'Folder'
+    })
 };
 
 export const createFolderedResourceFetchers = <TItem, TFolder>({
@@ -153,10 +162,22 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
     };
 
     const toasts = {
-        create: createCrudToastOptions({ action: 'Creating', subject }),
-        rename: createCrudToastOptions({ action: 'Renaming', subject }),
-        delete: createCrudToastOptions({ action: 'Deleting', subject }),
-        move: createCrudToastOptions({ action: 'Moving', subject })
+        create: createCrudToastOptions({
+            action: 'Creating',
+            subject
+        }),
+        rename: createCrudToastOptions({
+            action: 'Renaming',
+            subject
+        }),
+        delete: createCrudToastOptions({
+            action: 'Deleting',
+            subject
+        }),
+        move: createCrudToastOptions({
+            action: 'Moving',
+            subject
+        })
     };
 
     const copy: FolderedListingResourceCopy = {
@@ -174,7 +195,10 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
         createFolderToast: FOLDER_RESOURCE_TOASTS.create,
         renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
         deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
-        getDeleteFolderConfirm: createFolderResourceDeleteConfirm<TFolder>({ pluralName, singularName }),
+        getDeleteFolderConfirm: createFolderResourceDeleteConfirm<TFolder>({
+            pluralName,
+            singularName
+        }),
         renameFolderModalId: modalIds.renameFolder,
         moveModalId: modalIds.move,
         moveToast: toasts.move,

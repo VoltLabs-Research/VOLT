@@ -116,6 +116,16 @@ export class PluginDisplayNameResolver {
     }
 }
 
+/**
+ * Deliberately NOT shared with the same-looking `stableStringify` in
+ * `LineStyleService`. This one feeds `computePipelineStageHash` /
+ * `computeDumpStageHash`, persisted as the indexed `Analysis.pipelineStageHash`
+ * and looked up to reuse a completed stage, so it is a cache key over stored
+ * rows. The two copies already disagree: this one uses the default `.sort()`
+ * and serializes `undefined` as `null`, the other sorts with `localeCompare`
+ * and drops those entries. Merging them invalidates every persisted stage hash
+ * and forces full pipeline re-execution.
+ */
 const stableStringify = (value: unknown): string => {
     if (value === null || typeof value !== 'object') {
         return JSON.stringify(value) ?? 'null';
@@ -160,7 +170,10 @@ export const computePipelineStageHash = (input: PipelineStageHashInput): string 
 export const computeDumpStageHash = (kind: string, config: Record<string, unknown>): string => {
     return crypto
         .createHash('sha256')
-        .update(stableStringify({ kind, config }))
+        .update(stableStringify({
+            kind,
+            config
+        }))
         .digest('hex')
         .slice(0, 24);
 };

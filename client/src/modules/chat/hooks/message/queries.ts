@@ -4,7 +4,7 @@ import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import type { ChatScopedParams } from '@/modules/chat/contracts/api-params';
-import type { DeleteMessageInput, EditMessageParams, GetChatMessagesInput, SendFileMessageInput, SendMessageInput, ToggleReactionInput } from '../../api/services/message-service';
+import type { DeleteMessageInput, EditMessageParams, GetChatMessagesInput, MessageReactionInput, SendFileMessageInput, SendMessageInput } from '../../api/services/message-service';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
 
@@ -33,13 +33,18 @@ export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInp
 export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInput>(messageService.sendFileMessage);
 export const useEditMessageMutation = createMutation<ChatMessage, EditMessageParams>(messageService.editMessage);
 export const useDeleteMessageMutation = createMutation<void, DeleteMessageInput>(messageService.deleteMessage);
-export const useToggleReactionMutation = createMutation<ChatMessage, ToggleReactionInput>(messageService.toggleReaction);
+export const useSetReactionMutation = createMutation<ChatMessage, MessageReactionInput>(messageService.setReaction);
+export const useRemoveReactionMutation = createMutation<ChatMessage, MessageReactionInput>(messageService.removeReaction);
 
 const getChatMessagesInfiniteQueryKey = (chatId: string) => KEYS.infiniteMessages({ chatId });
 
 const chatMessages = createInfiniteQuery(
     KEYS.infiniteMessages,
-    ({ chatId }, { page, limit }) => messageService.getMessages({ chatId, page, limit }),
+    ({ chatId }, { page, limit }) => messageService.getMessages({
+        chatId,
+        page,
+        limit
+    }),
     { defaultLimit: DEFAULT_MESSAGES_LIMIT }
 );
 
@@ -112,7 +117,10 @@ export const updateMessageInCache = (
                     ...page,
                     data: page.data.map((message) => {
                         if (message._id === messageId) {
-                            return { ...message, ...updates };
+                            return {
+                                ...message,
+                                ...updates
+                            };
                         }
 
                         return message;

@@ -1,4 +1,4 @@
-import { createService, paginated, request, post, patch, del } from '@/app/core/http/utils/create-service';
+import { createService, paginated, request, post, patch, put, del } from '@/app/core/http/utils/create-service';
 
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
@@ -24,9 +24,13 @@ export interface SendMessageInput extends ChatScopedParams {
     messageType: ChatMessageType;
 }
 
-export interface ToggleReactionInput extends ChatMessageScopedParams {
+export interface MessageReactionInput extends ChatMessageScopedParams {
     emoji: string;
 }
+
+const reactionPath = ({ chatId, messageId, emoji }: MessageReactionInput) => (
+    `/${chatId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`
+);
 
 const endpoints = {
     getMessages: paginated<GetChatMessagesInput, PaginatedResponse<ChatMessage>>('/:chatId/messages'),
@@ -34,20 +38,29 @@ const endpoints = {
     editMessage: patch<EditMessageParams, ChatMessage>('/:chatId/messages/:messageId'),
     deleteMessage: del<DeleteMessageInput>('/:chatId/messages/:messageId'),
     sendFileMessage: request<SendFileMessageInput, ChatMessage>('POST', '/:chatId/messages/file', {
-        body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
+        body: ({ file }) => buildFileFormData([{
+            name: 'file',
+            file
+        }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    markAsRead: patch<ChatScopedParams, void>('/:chatId/messages/read', {
+    markAsRead: patch<ChatScopedParams, void>('/:chatId/messages/read-status', {
         unwrap: 'void',
         body: () => ({})
     }),
-    toggleReaction: patch<ToggleReactionInput, ChatMessage>('/:chatId/messages/:messageId/reactions')
+    setReaction: put<MessageReactionInput, ChatMessage>(reactionPath, {
+        query: () => undefined
+    }),
+    removeReaction: del<MessageReactionInput, ChatMessage>(reactionPath, {
+        unwrap: 'data',
+        query: () => undefined
+    })
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/chat-messages'
+            basePath: '/chats'
         }
     }
 }, endpoints);

@@ -55,7 +55,10 @@ const parseNumericValue = (str: string): { value: number; isNumeric: boolean } =
     const numValue = Number(str);
     const isNumeric = !Number.isNaN(numValue);
     
-    return { value: numValue, isNumeric };
+    return {
+        value: numValue,
+        isNumeric
+    };
 };
 
 const compareNumericValues = (a: number, b: number, direction: SortDirection): number => {

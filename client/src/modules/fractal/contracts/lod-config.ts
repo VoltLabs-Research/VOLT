@@ -47,8 +47,14 @@ export interface TileFetchRequest {
 
 export const BUILT_IN_FEATURE_BUDGETS: Record<string, FeatureBudget> = {
     points: { maxGeometry: 100_000_000 },
-    vectors: { maxGeometry: 2_000_000, decimation: 10 },
-    bonds: { maxGeometry: 10_000_000, decimation: 5 },
+    vectors: {
+        maxGeometry: 2_000_000,
+        decimation: 10
+    },
+    bonds: {
+        maxGeometry: 10_000_000,
+        decimation: 5
+    },
     meshes: { maxGeometry: 1_000_000 }
 };
 

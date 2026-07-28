@@ -169,7 +169,10 @@ const useLatexDocumentSocket = ({
                 fileId,
                 update: Array.from(update)
             }).catch((error) => {
-                socketErrorReporter.report(error, { kind: 'emit', event: SOCKET_LATEX_EVENTS.FILE_UPDATE });
+                socketErrorReporter.report(error, {
+                    kind: 'emit',
+                    event: SOCKET_LATEX_EVENTS.FILE_UPDATE
+                });
             });
         });
 
@@ -181,7 +184,10 @@ const useLatexDocumentSocket = ({
         joinEvent: SOCKET_LATEX_EVENTS.OPEN,
         leaveEvent: SOCKET_LATEX_EVENTS.CLOSE,
         roomKey: isActive ? documentId ?? null : null,
-        buildJoinPayload: () => (documentId && teamId) ? { documentId, teamId } : null,
+        buildJoinPayload: () => (documentId && teamId) ? {
+            documentId,
+            teamId
+        } : null,
         buildLeavePayload: () => documentId ? { documentId } : null,
         enabled: isActive,
         fireAndForget: false
@@ -255,7 +261,11 @@ const useLatexDocumentSocket = ({
 
             return true;
         } catch (error) {
-            socketErrorReporter.report(error, { kind: 'subscribe', event: SOCKET_LATEX_EVENTS.FILE_JOIN, roomKey: fileId });
+            socketErrorReporter.report(error, {
+                kind: 'subscribe',
+                event: SOCKET_LATEX_EVENTS.FILE_JOIN,
+                roomKey: fileId
+            });
             return false;
         }
     }, [documentId, getOrCreateSession, isActive, socketService, teamId]);
@@ -291,7 +301,10 @@ const useLatexDocumentSocket = ({
         return () => {
             for (const fileId of sessions.keys()) {
                 if (socketService.isConnected() && documentId) {
-                    socketService.emitWithoutAck(SOCKET_LATEX_EVENTS.FILE_LEAVE, { documentId, fileId });
+                    socketService.emitWithoutAck(SOCKET_LATEX_EVENTS.FILE_LEAVE, {
+                        documentId,
+                        fileId
+                    });
                 }
             }
 

@@ -44,7 +44,10 @@ export default class DockerBinary{
         }
 
         const [bin, name] = process.platform === 'win32' ? ['where.exe', 'docker.exe'] : ['which', 'docker'];
-        const result = await new ProbeRunner().probe(bin, [name], { env: { PATH: this.augmentedPath() }, timeoutMs: 4_000 });
+        const result = await new ProbeRunner().probe(bin, [name], {
+            env: { PATH: this.augmentedPath() },
+            timeoutMs: 4_000
+        });
         const hit = result.stdout.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
 
         this.#resolved = result.code === 0 && hit ? hit : null;

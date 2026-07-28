@@ -28,16 +28,25 @@ const navigateTo: ClientToolHandler<NavigateToInput> = {
         return {
             ok: true,
             summary: resolved.title ? `Navigated to ${resolved.title}.` : `Navigated to ${resolved.path}.`,
-            data: { path: resolved.path, title: resolved.title }
+            data: {
+                path: resolved.path,
+                title: resolved.title
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Navigation failed', icon: 'navigate' };
+            return {
+                label: 'Navigation failed',
+                icon: 'navigate'
+            };
         }
         const title = (result.data as { title?: string } | undefined)?.title;
-        return { label: title ? `Navigated to ${title}` : 'Navigated', icon: 'navigate' };
+        return {
+            label: title ? `Navigated to ${title}` : 'Navigated',
+            icon: 'navigate'
+        };
     }
 };
 

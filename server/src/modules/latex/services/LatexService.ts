@@ -2,13 +2,10 @@ import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import tempFileService from '@shared/infrastructure/services/TempFileService';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
-import type { LatexDocumentDocument } from '@modules/latex/models/LatexDocumentModel';
-import LatexFileModel from '@modules/latex/models/LatexFileModel';
-import type { LatexFileDocument } from '@modules/latex/models/LatexFileModel';
-import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
-import type { LatexAssetDocument } from '@modules/latex/models/LatexAssetModel';
-import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
+import LatexDocumentEntity from '@modules/latex/models/LatexDocument';
+import LatexFileEntity from '@modules/latex/models/LatexFile';
+import LatexAssetEntity from '@modules/latex/models/LatexAsset';
+import CatalogFolderEntity from '@shared/infrastructure/persistence/models/CatalogFolder';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import LatexDocumentCreatedEvent from '@modules/latex/events/LatexDocumentCreatedEvent';
 import LatexDocumentDeletedEvent from '@modules/latex/events/LatexDocumentDeletedEvent';
@@ -27,7 +24,6 @@ import {
     sanitizeAssetPath
 } from '@modules/latex/services/LatexAssetStorage';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type {
     ITeamClusterObjectGatewayClient,
@@ -38,10 +34,10 @@ import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObje
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { DownloadStreamOutput } from '@shared/contracts/types';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
-import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
-import type { ITempFileService } from '@shared/domain/port/ITempFileService';
-import type { HydratedDocument } from 'mongoose';
+import { ILike, IsNull } from 'typeorm';
+import type { FindManyOptions, FindOptionsWhere } from 'typeorm';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -68,46 +64,68 @@ import type {
 const MAX_IMPORT_SIZE = 100 * 1024 * 1024;
 const MAIN_TEX_FILENAME = 'main.tex';
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
+const DEFAULT_DOCUMENT_LIMIT = 500;
+const DEFAULT_FOLDER_LIMIT = 500;
 
-type LatexDocumentDoc = HydratedDocument<LatexDocumentDocument>;
-type LatexFileDoc = HydratedDocument<LatexFileDocument>;
-type LatexAssetDoc = HydratedDocument<LatexAssetDocument>;
+interface TeamScoped{ teamId: string }
+interface DocumentScoped extends TeamScoped{ documentId: string }
 
-type CatalogFolderDoc = { _id: unknown; title: string; parent: unknown; createdAt: Date; updatedAt: Date };
+const USER_REFERENCE_SELECT = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    email: true,
+    avatar: true
+};
 
-interface TeamScoped { teamId: string }
-interface DocumentScoped extends TeamScoped { documentId: string }
+const DOCUMENT_REFERENCE_OPTIONS = {
+    relations: {
+        createdByRef: true,
+        lastEditedByRef: true
+    },
+    select: {
+        createdByRef: USER_REFERENCE_SELECT,
+        lastEditedByRef: USER_REFERENCE_SELECT
+    }
+} satisfies FindManyOptions<LatexDocumentEntity>;
 
-const toDocumentView = (doc: LatexDocumentDoc): LatexDocument => ({
-    _id: String(doc._id),
-    title: doc.title,
-    folder: doc.folder ? String(doc.folder) : null,
-    createdBy: doc.createdBy,
-    lastEditedBy: doc.lastEditedBy,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt
+const FILE_ORDER_OPTIONS = {
+    isEntrypoint: 'DESC',
+    createdAt: 'ASC'
+} satisfies FindManyOptions<LatexFileEntity>['order'];
+
+const escapeLikeInput = (value: string): string => value.replace(/[\\%_]/g, (match) => `\\${match}`);
+
+const toDocumentView = (document: LatexDocumentEntity): LatexDocument => ({
+    _id: document.id,
+    title: document.title,
+    folder: document.folder,
+    createdBy: document.createdByRef ?? document.createdBy,
+    lastEditedBy: document.lastEditedByRef ?? document.lastEditedBy,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt
 }) as unknown as LatexDocument;
 
-const toFileView = (doc: LatexFileDoc): LatexFile => ({
-    _id: String(doc._id),
-    documentId: String(doc.document),
-    name: doc.name,
-    path: doc.path,
-    content: doc.content,
-    isEntrypoint: doc.isEntrypoint,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt
+const toFileView = (file: LatexFileEntity): LatexFile => ({
+    _id: file.id,
+    documentId: file.document,
+    name: file.name,
+    path: file.path,
+    content: file.content,
+    isEntrypoint: file.isEntrypoint,
+    createdAt: file.createdAt,
+    updatedAt: file.updatedAt
 }) as unknown as LatexFile;
 
-const toFolderView = (folder: CatalogFolderDoc): LatexFolder => ({
-    _id: String(folder._id),
+const toFolderView = (folder: CatalogFolderEntity): LatexFolder => ({
+    _id: folder.id,
     title: folder.title,
-    parent: folder.parent ? String(folder.parent) : null,
+    parent: folder.parent,
     createdAt: folder.createdAt,
     updatedAt: folder.updatedAt
 }) as unknown as LatexFolder;
 
-export default class LatexService {
+export default class LatexService{
     #signedUrlService = new ClusterObjectSignedUrlService();
     #archiveService = new ClusterObjectArchiveService();
 
@@ -115,67 +133,55 @@ export default class LatexService {
 
     #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
-        #tempFileService = tempFileService;
+    #tempFileService = tempFileService;
 
-        #eventBus = eventBus;
+    #eventBus = eventBus;
 
-    async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocument>> {
-        const page = Math.max(1, Number(input.page) || 1);
-        const limit = Math.max(1, Math.min(500, Number(input.limit) || 500));
+    async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocument>>{
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: DEFAULT_DOCUMENT_LIMIT });
 
-        const filter: Record<string, unknown> = { team: input.teamId };
-        if (input.search) {
-            filter.title = { $regex: input.search, $options: 'i' };
+        const where: FindOptionsWhere<LatexDocumentEntity> = { team: input.teamId };
+        if(input.search){
+            where.title = ILike(`%${escapeLikeInput(input.search)}%`);
         }
-        if (input.folderId) {
-            filter.folder = input.folderId === 'root' ? null : input.folderId;
+        if(input.folderId){
+            where.folder = input.folderId === 'root' ? IsNull() : input.folderId;
         }
 
-        const [docs, total] = await Promise.all([
-            LatexDocumentModel.find(filter)
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .sort({ updatedAt: -1 })
-                .populate(USER_POPULATE)
-                .populate(LAST_EDITED_BY_POPULATE)
-                .exec(),
-            LatexDocumentModel.countDocuments(filter)
-        ]);
+        const [documents, total] = await LatexDocumentEntity.findAndCount({
+            where,
+            order: { updatedAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit,
+            ...DOCUMENT_REFERENCE_OPTIONS
+        });
 
-        return {
-            data: docs.map((doc) => toDocumentView(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([documents.map((document) => toDocumentView(document)), total], pageRequest);
     }
 
-    async createDocument(input: CreateLatexDocumentInput & TeamScoped & { userId: string }): Promise<LatexDocument> {
+    async createDocument(input: CreateLatexDocumentInput & TeamScoped & { userId: string }): Promise<LatexDocument>{
         const title = input.title?.trim();
-        if (!title) {
+        if(!title){
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Document title is required');
         }
 
-        if (input.folderId) {
+        if(input.folderId){
             await this.#requireFolder(input.teamId, input.folderId);
         }
 
         const storageClusterId = await this.#teamClusterSelectionService.resolveStorageClusterId(input.teamId);
 
-        const document = await LatexDocumentModel.create({
+        const document = await LatexDocumentEntity.create({
             team: input.teamId,
             title,
             storageClusterId,
             createdBy: input.userId,
             lastEditedBy: input.userId,
-            folder: input.folderId ?? null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            folder: input.folderId ?? null
+        }).save();
 
         await this.#eventBus.publish(new LatexDocumentCreatedEvent({
-            documentId: String(document._id),
+            documentId: document.id,
             teamId: input.teamId,
             userId: input.userId,
             documentTitle: document.title ?? ''
@@ -184,73 +190,73 @@ export default class LatexService {
         return toDocumentView(document);
     }
 
-    async getDocument(input: DocumentScoped): Promise<LatexDocument> {
+    async getDocument(input: DocumentScoped): Promise<LatexDocument>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
         return toDocumentView(document);
     }
 
-    async updateDocument(input: UpdateLatexDocumentInput & DocumentScoped & { userId?: string }): Promise<LatexDocument> {
-        await this.#requireDocument(input.teamId, input.documentId);
+    async updateDocument(input: UpdateLatexDocumentInput & DocumentScoped & { userId?: string }): Promise<LatexDocument>{
+        const document = await this.#requireDocument(input.teamId, input.documentId);
 
         const patch: Record<string, unknown> = {
             updatedAt: new Date(),
             ...(input.userId === undefined ? {} : { lastEditedBy: input.userId })
         };
-        if (input.title !== undefined) {
+        if(input.title !== undefined){
             patch.title = input.title.trim();
         }
 
-        const updated = await LatexDocumentModel.findByIdAndUpdate(input.documentId, { $set: patch }, { new: true });
-        if (!updated) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX document not found');
-        }
+        const updated = await Object.assign(document, patch).save();
         return toDocumentView(updated);
     }
 
-    async deleteDocument(input: DocumentScoped & { userId?: string }): Promise<void> {
+    async deleteDocument(input: DocumentScoped & { userId?: string }): Promise<void>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
 
-        await LatexDocumentModel.deleteOne({ _id: input.documentId });
+        await LatexDocumentEntity.delete({ id: input.documentId });
 
         await this.#eventBus.publish(new LatexDocumentDeletedEvent({
             documentId: input.documentId,
             teamId: input.teamId,
-            storageClusterId: document.storageClusterId,
+            storageClusterId: document.storageClusterId ?? undefined,
             userId: input.userId ?? '',
             documentTitle: document.title ?? ''
         }));
     }
 
-    async moveDocument(input: DocumentScoped & { folderId: string | null }): Promise<null> {
-        try {
-            const document = await LatexDocumentModel.findOne({ _id: input.documentId, team: input.teamId });
-            if (!document) {
+    async moveDocument(input: DocumentScoped & { folderId: string | null }): Promise<null>{
+        try{
+            const document = await LatexDocumentEntity.findOneBy({
+                id: input.documentId,
+                team: input.teamId
+            });
+            if(!document){
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX document not found');
             }
 
-            if (input.folderId !== null) {
+            if(input.folderId !== null){
                 await this.#requireFolder(input.teamId, input.folderId, 'Target LaTeX folder not found');
             }
 
-            await LatexDocumentModel.updateOne({ _id: input.documentId }, { $set: { folder: input.folderId } });
+            await LatexDocumentEntity.update({ id: input.documentId }, { folder: input.folderId });
             return null;
-        } catch (error) {
-            if (error instanceof ApplicationError) {
+        }catch(error){
+            if(error instanceof ApplicationError){
                 throw error;
             }
             throw new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to move LaTeX document', 500);
         }
     }
 
-    async importDocument(input: TeamScoped & { userId: string; file: Express.Multer.File; folderId?: string | null }): Promise<LatexDocument> {
-        if (!input.file?.buffer?.length) {
+    async importDocument(input: TeamScoped & { userId: string; file: Express.Multer.File; folderId?: string | null }): Promise<LatexDocument>{
+        if(!input.file?.buffer?.length){
             throw ApplicationError.badRequest(ErrorCodes.FILE_READ_ERROR, 'No file provided or file is empty');
         }
-        if (input.file.size > MAX_IMPORT_SIZE) {
+        if(input.file.size > MAX_IMPORT_SIZE){
             throw ApplicationError.badRequest(ErrorCodes.FILE_READ_ERROR, 'File exceeds the 100MB import size limit');
         }
 
-        if (input.folderId) {
+        if(input.folderId){
             await this.#requireFolder(input.teamId, input.folderId, 'Target LaTeX folder not found');
         }
 
@@ -261,25 +267,25 @@ export default class LatexService {
         const isPdf = ext === '.pdf' || mimetype === 'application/pdf';
         const storageClusterId = await this.#teamClusterSelectionService.resolveStorageClusterId(input.teamId);
 
-        if (isZip) {
+        if(isZip){
             return this.#importFromZip(input, storageClusterId);
         }
-        if (isPdf) {
+        if(isPdf){
             return this.#importFromPdf(input, storageClusterId);
         }
         return this.#importFromTex(input, storageClusterId);
     }
 
-    async listAssets(input: DocumentScoped): Promise<LatexAsset[]> {
+    async listAssets(input: DocumentScoped): Promise<LatexAsset[]>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        const assets = await LatexAssetModel.find({ document: input.documentId }).sort({ createdAt: -1 }).exec();
+        const assets = await this.#findAssetsByDocument(input.documentId);
         return assets.map((asset) => this.#toAssetView(input.teamId, input.documentId, asset));
     }
 
-    async getAssetContent(input: DocumentScoped & { key: string }): Promise<{ stream: Readable; contentType?: string; contentLength?: number; contentEncoding?: string }> {
+    async getAssetContent(input: DocumentScoped & { key: string }): Promise<{ stream: Readable; contentType?: string; contentLength?: number; contentEncoding?: string }>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
-        const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
+        const storageClusterId = requireLatexStorageClusterId(document.id, document);
         assertLatexAssetStorageKey(input.teamId, input.documentId, input.key);
 
         const response = await this.#objectGatewayClient.getStream(
@@ -296,35 +302,38 @@ export default class LatexService {
         };
     }
 
-    async uploadAsset(input: UploadLatexAssetInput & DocumentScoped & { userId: string }): Promise<UploadLatexAssetResult> {
+    async uploadAsset(input: UploadLatexAssetInput & DocumentScoped & { userId: string }): Promise<UploadLatexAssetResult>{
         const validFiles = (input.files ?? [])
-            .map((file, uploadIndex) => ({ file, uploadIndex }))
+            .map((file, uploadIndex) => ({
+                file,
+                uploadIndex
+            }))
             .filter(({ file }) => file && file.name && file.size >= 0);
 
-        if (validFiles.length === 0) {
+        if(validFiles.length === 0){
             throw ApplicationError.badRequest(ErrorCodes.FILE_READ_ERROR, 'No valid files provided');
         }
 
         const document = await this.#requireDocument(input.teamId, input.documentId);
-        const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
+        const storageClusterId = requireLatexStorageClusterId(document.id, document);
 
         const uploaded: LatexAssetUploadTarget[] = [];
         let failedCount = 0;
 
-        for (const { file, uploadIndex } of validFiles) {
-            if (file.size > MAX_ASSET_SIZE) {
+        for(const { file, uploadIndex } of validFiles){
+            if(file.size > MAX_ASSET_SIZE){
                 failedCount++;
                 continue;
             }
 
-            try {
+            try{
                 const ext = path.extname(file.name);
                 const storageKey = buildLatexAssetStorageKey(input.teamId, input.documentId, v4(), ext);
                 const mimetype = file.type || 'application/octet-stream';
                 const assetPath = sanitizeAssetPath(input.path ?? file.name, file.name);
                 const url = buildLatexAssetContentUrl(input.teamId, input.documentId, storageKey);
 
-                const asset = await LatexAssetModel.create({
+                const asset = await LatexAssetEntity.create({
                     team: input.teamId,
                     document: input.documentId,
                     originalName: file.name,
@@ -333,10 +342,8 @@ export default class LatexService {
                     url,
                     mimetype,
                     size: file.size,
-                    createdBy: input.userId,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                });
+                    createdBy: input.userId
+                }).save();
 
                 const signed = this.#signedUrlService.createToken({
                     kind: 'cluster-object',
@@ -347,15 +354,15 @@ export default class LatexService {
                     bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
                     objectKey: storageKey,
                     resourceKind: 'latex-asset',
-                    resourceId: String(asset._id),
+                    resourceId: asset.id,
                     contentLength: file.size,
                     contentType: mimetype
                 });
 
                 uploaded.push({
-                    _id: String(asset._id),
+                    _id: asset.id,
                     uploadIndex,
-                    documentId: String(asset.document),
+                    documentId: asset.document,
                     originalName: asset.originalName,
                     path: asset.path,
                     url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.storageKey),
@@ -365,62 +372,68 @@ export default class LatexService {
                     uploadUrl: signed.url,
                     expiresAt: signed.expiresAt
                 });
-            } catch {
+            }catch{
                 failedCount++;
             }
         }
 
-        return { uploaded, failedCount, total: validFiles.length };
+        return {
+            uploaded,
+            failedCount,
+            total: validFiles.length
+        };
     }
 
-    async deleteAsset(input: DocumentScoped & { assetId: string }): Promise<void> {
+    async deleteAsset(input: DocumentScoped & { assetId: string }): Promise<void>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
-        const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
+        const storageClusterId = requireLatexStorageClusterId(document.id, document);
 
-        const asset = await LatexAssetModel.findOne({ _id: input.assetId, document: input.documentId });
-        if (!asset) {
+        const asset = await LatexAssetEntity.findOneBy({
+            id: input.assetId,
+            document: input.documentId
+        });
+        if(!asset){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX asset not found');
         }
 
-        try {
+        try{
             await this.#objectGatewayClient.deleteObject(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, asset.storageKey);
-        } catch (error) {
-            if (!(error instanceof ApplicationError) || error.statusCode !== 404) {
+        }catch(error){
+            if(!(error instanceof ApplicationError) || error.statusCode !== 404){
                 throw error;
             }
         }
-        await LatexAssetModel.deleteOne({ _id: input.assetId });
+        await LatexAssetEntity.delete({ id: input.assetId });
     }
 
-    async updateAsset(input: DocumentScoped & { assetId: string; path: string }): Promise<LatexAsset> {
+    async updateAsset(input: DocumentScoped & { assetId: string; path: string }): Promise<LatexAsset>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        const asset = await LatexAssetModel.findOne({ _id: input.assetId, document: input.documentId });
-        if (!asset) {
+        const asset = await LatexAssetEntity.findOneBy({
+            id: input.assetId,
+            document: input.documentId
+        });
+        if(!asset){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX asset not found');
         }
 
         const safePath = sanitizeAssetPath(input.path, asset.originalName);
-        const updated = await LatexAssetModel.findByIdAndUpdate(
-            input.assetId,
-            { $set: { path: safePath, updatedAt: new Date() } },
-            { new: true }
-        );
-        if (!updated) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX asset not found');
-        }
+        const updated = await Object.assign(asset, {
+            path: safePath,
+            updatedAt: new Date()
+        }).save();
         return this.#toAssetView(input.teamId, input.documentId, updated);
     }
 
-    async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutput> {
+    async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutput>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
 
-        const files = await LatexFileModel.find({ document: input.documentId }).sort({ isEntrypoint: -1, createdAt: 1 }).exec();
+        const files = await this.#findFilesByDocument(input.documentId);
         const entrypoint = files.find((file) => file.isEntrypoint)
             ?? files.find((file) => file.name.toLowerCase().endsWith('.tex'))
             ?? null;
 
-        if (!entrypoint) {
+        if(!entrypoint){
             throw new ApplicationError(ErrorCodes.LATEX_COMPILATION_FAILED, 'No .tex file was found in this document. Add or select a .tex file to export.', 422);
         }
 
@@ -433,18 +446,18 @@ export default class LatexService {
         });
     }
 
-    async exportDocumentZip(input: DocumentScoped): Promise<DownloadStreamOutput> {
+    async exportDocumentZip(input: DocumentScoped): Promise<DownloadStreamOutput>{
         const document = await this.#requireDocument(input.teamId, input.documentId);
-        const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
+        const storageClusterId = requireLatexStorageClusterId(document.id, document);
 
         const [latexFiles, assets] = await Promise.all([
-            LatexFileModel.find({ document: input.documentId }).sort({ isEntrypoint: -1, createdAt: 1 }).exec(),
-            LatexAssetModel.find({ document: input.documentId }).sort({ createdAt: -1 }).exec()
+            this.#findFilesByDocument(input.documentId),
+            this.#findAssetsByDocument(input.documentId)
         ]);
 
         const safeName = sanitizeDownloadName(document.title, 'document');
 
-        if (latexFiles.length === 0) {
+        if(latexFiles.length === 0){
             throw new ApplicationError(ErrorCodes.LATEX_COMPILATION_FAILED, 'This document has no LaTeX files. Create main.tex before exporting.', 422);
         }
 
@@ -472,32 +485,40 @@ export default class LatexService {
         });
     }
 
-    async compileDocument(input: DocumentScoped): Promise<DownloadStreamOutput> {
+    async compileDocument(input: DocumentScoped): Promise<DownloadStreamOutput>{
         const workDir = this.#tempFileService.getDirPath(
             getDocumentCompileWorkDirSegment(input.teamId, input.documentId)
         );
 
         return withDocumentCompileLock(input.teamId, input.documentId, async () => {
             const preparation = await prepareWorkDir(
-                { teamId: input.teamId, documentId: input.documentId, workDir, haltOnError: true },
-                { objectGatewayClient: this.#objectGatewayClient, tempFileService: this.#tempFileService }
+                {
+                    teamId: input.teamId,
+                    documentId: input.documentId,
+                    workDir,
+                    haltOnError: true
+                },
+                {
+                    objectGatewayClient: this.#objectGatewayClient,
+                    tempFileService: this.#tempFileService
+                }
             );
 
-            if (preparation.status === 'no-document') {
+            if(preparation.status === 'no-document'){
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX document not found');
             }
-            if (preparation.status === 'no-files') {
+            if(preparation.status === 'no-files'){
                 throw new ApplicationError(ErrorCodes.LATEX_COMPILATION_FAILED, 'This document has no LaTeX files. Create main.tex before compiling.', 422);
             }
-            if (preparation.status === 'no-entrypoint') {
+            if(preparation.status === 'no-entrypoint'){
                 throw new ApplicationError(ErrorCodes.LATEX_COMPILATION_FAILED, 'No .tex file was found in this document. Add or select a .tex file to compile.', 422);
             }
-            if (preparation.status === 'no-compiler') {
+            if(preparation.status === 'no-compiler'){
                 throw new ApplicationError(ErrorCodes.LATEX_COMPILER_NOT_FOUND, 'No LaTeX compiler is available on this server. Install texlive (textlive-full) (latexmk, pdflatex, xelatex, or lualatex) to enable PDF compilation.', 503);
             }
 
             const result = await runCompiler(preparation.compiler, workDir);
-            if (!result.success) {
+            if(!result.success){
                 throw new ApplicationError(ErrorCodes.LATEX_COMPILATION_FAILED, result.log || 'LaTeX compilation failed with no output.', 422);
             }
 
@@ -505,23 +526,23 @@ export default class LatexService {
             const pdfName = `${entrypointBaseName}.pdf`;
             const entrypointDir = path.dirname(preparation.entrypointFilename);
             const pdfCandidates = [path.join(workDir, pdfName)];
-            if (entrypointDir !== '.') {
+            if(entrypointDir !== '.'){
                 pdfCandidates.push(path.join(workDir, entrypointDir, pdfName));
             }
 
             let pdfBuffer: Buffer | null = null;
-            for (const candidate of pdfCandidates) {
-                try {
+            for(const candidate of pdfCandidates){
+                try{
                     pdfBuffer = await fs.readFile(candidate);
                     break;
-                } catch (err) {
-                    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+                }catch(err){
+                    if((err as NodeJS.ErrnoException).code !== 'ENOENT'){
                         throw err;
                     }
                 }
             }
 
-            if (!pdfBuffer) {
+            if(!pdfBuffer){
                 throw new ApplicationError(
                     ErrorCodes.LATEX_COMPILATION_FAILED,
                     result.log
@@ -542,53 +563,51 @@ export default class LatexService {
         });
     }
 
-    async listFiles(input: DocumentScoped): Promise<LatexFile[]> {
+    async listFiles(input: DocumentScoped): Promise<LatexFile[]>{
         await this.#requireDocument(input.teamId, input.documentId);
         const files = await this.#findFilesByDocument(input.documentId);
         return files.map((file) => toFileView(file));
     }
 
-    async createFile(input: CreateLatexFileInput & DocumentScoped & { userId: string }): Promise<LatexFile> {
+    async createFile(input: CreateLatexFileInput & DocumentScoped & { userId: string }): Promise<LatexFile>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        if (input.isEntrypoint) {
+        if(input.isEntrypoint){
             await this.#clearEntrypointForDocument(input.documentId);
         }
 
-        const file = await LatexFileModel.create({
+        const file = await LatexFileEntity.create({
             document: input.documentId,
             team: input.teamId,
             name: input.name.trim(),
             path: input.path ?? '',
             content: input.content ?? '',
             isEntrypoint: input.isEntrypoint ?? false,
-            createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: input.userId
+        }).save();
 
         return toFileView(file);
     }
 
-    async updateFile(input: UpdateLatexFileInput & DocumentScoped & { fileId: string; source?: 'ai' | 'editor' }): Promise<LatexFile> {
+    async updateFile(input: UpdateLatexFileInput & DocumentScoped & { fileId: string; source?: 'ai' | 'editor' }): Promise<LatexFile>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        const existing = await LatexFileModel.findOne({ _id: input.fileId, document: input.documentId });
-        if (!existing) {
+        const existing = await LatexFileEntity.findOneBy({
+            id: input.fileId,
+            document: input.documentId
+        });
+        if(!existing){
             throw ApplicationError.notFound(ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
         }
 
         const patch: Record<string, unknown> = { updatedAt: new Date() };
-        if (input.name !== undefined) patch.name = input.name.trim();
-        if (input.path !== undefined) patch.path = input.path;
-        if (input.content !== undefined) patch.content = input.content;
+        if(input.name !== undefined) patch.name = input.name.trim();
+        if(input.path !== undefined) patch.path = input.path;
+        if(input.content !== undefined) patch.content = input.content;
 
-        const updated = await LatexFileModel.findByIdAndUpdate(input.fileId, { $set: patch }, { new: true });
-        if (!updated) {
-            throw ApplicationError.notFound(ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
-        }
+        const updated = await Object.assign(existing, patch).save();
 
-        if (input.source === 'ai' && input.content !== undefined) {
+        if(input.source === 'ai' && input.content !== undefined){
             await this.#eventBus.publish(new LatexFileContentUpdatedEvent({
                 documentId: input.documentId,
                 teamId: input.teamId,
@@ -600,144 +619,172 @@ export default class LatexService {
         return toFileView(updated);
     }
 
-    async deleteFile(input: DocumentScoped & { fileId: string }): Promise<void> {
+    async deleteFile(input: DocumentScoped & { fileId: string }): Promise<void>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        const file = await LatexFileModel.findOne({ _id: input.fileId, document: input.documentId });
-        if (!file) {
+        const file = await LatexFileEntity.findOneBy({
+            id: input.fileId,
+            document: input.documentId
+        });
+        if(!file){
             throw ApplicationError.notFound(ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
         }
 
-        if (file.isEntrypoint) {
+        if(file.isEntrypoint){
             const remainingFiles = (await this.#findFilesByDocument(input.documentId))
-                .filter((currentFile) => String(currentFile._id) !== input.fileId);
+                .filter((currentFile) => currentFile.id !== input.fileId);
 
-            if (remainingFiles.length > 0) {
+            if(remainingFiles.length > 0){
                 const nextEntrypoint = remainingFiles.find((currentFile) =>
                     currentFile.name.toLowerCase().endsWith('.tex')
                 ) ?? remainingFiles[0];
 
                 await this.#clearEntrypointForDocument(input.documentId);
-                await LatexFileModel.findByIdAndUpdate(nextEntrypoint._id, { $set: { isEntrypoint: true, updatedAt: new Date() } });
+                await Object.assign(nextEntrypoint, {
+                    isEntrypoint: true,
+                    updatedAt: new Date()
+                }).save();
             }
         }
 
-        await LatexFileModel.deleteOne({ _id: input.fileId });
+        await LatexFileEntity.delete({ id: input.fileId });
     }
 
-    async setFileEntrypoint(input: DocumentScoped & { fileId: string }): Promise<LatexFile> {
+    async setFileEntrypoint(input: DocumentScoped & { fileId: string }): Promise<LatexFile>{
         await this.#requireDocument(input.teamId, input.documentId);
 
-        const file = await LatexFileModel.findOne({ _id: input.fileId, document: input.documentId });
-        if (!file) {
+        const file = await LatexFileEntity.findOneBy({
+            id: input.fileId,
+            document: input.documentId
+        });
+        if(!file){
             throw ApplicationError.notFound(ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
         }
 
         await this.#clearEntrypointForDocument(input.documentId);
-        const updated = await LatexFileModel.findByIdAndUpdate(input.fileId, { $set: { isEntrypoint: true, updatedAt: new Date() } }, { new: true });
-        if (!updated) {
-            throw ApplicationError.notFound(ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found after update');
-        }
+        const updated = await Object.assign(file, {
+            isEntrypoint: true,
+            updatedAt: new Date()
+        }).save();
         return toFileView(updated);
     }
 
-    async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolder>> {
-        const page = Number(input.page) || 1;
-        const limit = Number(input.limit) || 500;
-        const filter = { team: input.teamId, kind: CatalogFolderKind.Latex, parent: input.parentId ?? null };
+    async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolder>>{
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: DEFAULT_FOLDER_LIMIT });
 
-        const [docs, total] = await Promise.all([
-            CatalogFolderModel.find(filter).skip((page - 1) * limit).limit(limit).sort({ createdAt: -1 }).exec(),
-            CatalogFolderModel.countDocuments(filter)
-        ]);
+        const [folders, total] = await CatalogFolderEntity.findAndCount({
+            where: {
+                team: input.teamId,
+                kind: CatalogFolderKind.Latex,
+                parent: input.parentId ?? IsNull()
+            },
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        return {
-            data: docs.map((folder) => toFolderView(folder)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([folders.map((folder) => toFolderView(folder)), total], pageRequest);
     }
 
-    async getFolder(input: TeamScoped & { folderId: string }): Promise<LatexFolder> {
+    async getFolder(input: TeamScoped & { folderId: string }): Promise<LatexFolder>{
         const folder = await this.#requireFolder(input.teamId, input.folderId);
         return toFolderView(folder);
     }
 
-    async createFolder(input: CreateLatexFolderInput & TeamScoped & { userId: string }): Promise<LatexFolder> {
-        const folder = await CatalogFolderModel.create({
+    async createFolder(input: CreateLatexFolderInput & TeamScoped & { userId: string }): Promise<LatexFolder>{
+        const folder = await CatalogFolderEntity.create({
             team: input.teamId,
             createdBy: input.userId,
             title: input.title,
             parent: input.parentId ?? null,
-            kind: CatalogFolderKind.Latex,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            kind: CatalogFolderKind.Latex
+        }).save();
         return toFolderView(folder);
     }
 
-    async updateFolder(input: UpdateLatexFolderInput & TeamScoped & { folderId: string }): Promise<LatexFolder> {
-        await this.#requireFolder(input.teamId, input.folderId);
-        const updated = await CatalogFolderModel.findByIdAndUpdate(
-            input.folderId,
-            { $set: { title: input.title, updatedAt: new Date() } },
-            { new: true }
-        );
-        if (!updated) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX folder not found');
-        }
+    async updateFolder(input: UpdateLatexFolderInput & TeamScoped & { folderId: string }): Promise<LatexFolder>{
+        const folder = await this.#requireFolder(input.teamId, input.folderId);
+        const updated = await Object.assign(folder, {
+            title: input.title,
+            updatedAt: new Date()
+        }).save();
         return toFolderView(updated);
     }
 
-    async deleteFolder(input: TeamScoped & { folderId: string }): Promise<void> {
-        try {
+    async deleteFolder(input: TeamScoped & { folderId: string }): Promise<void>{
+        try{
             await this.#requireFolder(input.teamId, input.folderId);
             await this.#deleteFolderTree(input.teamId, input.folderId);
-        } catch (error) {
-            if (error instanceof ApplicationError) {
+        }catch(error){
+            if(error instanceof ApplicationError){
                 throw error;
             }
             throw new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete LaTeX folder', 500);
         }
     }
 
-    async deleteAllDocumentsForTeam(teamId: string, userId: string): Promise<void> {
-        const documents = await LatexDocumentModel.find({ team: teamId }).select('_id').exec();
-        for (const document of documents) {
-            await this.deleteDocument({ teamId, documentId: String(document._id), userId });
+    async deleteAllDocumentsForTeam(teamId: string, userId: string): Promise<void>{
+        const documents = await LatexDocumentEntity.find({
+            where: { team: teamId },
+            select: { id: true }
+        });
+        for(const document of documents){
+            await this.deleteDocument({
+                teamId,
+                documentId: document.id,
+                userId
+            });
         }
     }
 
-    async #requireDocument(teamId: string, documentId: string): Promise<LatexDocumentDoc> {
-        const document = await LatexDocumentModel.findOne({ _id: documentId, team: teamId });
-        if (!document) {
+    async #requireDocument(teamId: string, documentId: string): Promise<LatexDocumentEntity>{
+        const document = await LatexDocumentEntity.findOneBy({
+            id: documentId,
+            team: teamId
+        });
+        if(!document){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'LaTeX document not found');
         }
         return document;
     }
 
-    async #requireFolder(teamId: string, folderId: string, message = 'LaTeX folder not found'): Promise<CatalogFolderDoc> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Latex });
-        if (!folder) {
+    async #requireFolder(teamId: string, folderId: string, message = 'LaTeX folder not found'): Promise<CatalogFolderEntity>{
+        const folder = await CatalogFolderEntity.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Latex
+        });
+        if(!folder){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, message);
         }
-        return folder as unknown as CatalogFolderDoc;
+        return folder;
     }
 
-    async #findFilesByDocument(documentId: string): Promise<LatexFileDoc[]> {
-        return LatexFileModel.find({ document: documentId }).sort({ isEntrypoint: -1, createdAt: 1 }).exec();
+    async #findFilesByDocument(documentId: string): Promise<LatexFileEntity[]>{
+        return LatexFileEntity.find({
+            where: { document: documentId },
+            order: FILE_ORDER_OPTIONS
+        });
     }
 
-    async #clearEntrypointForDocument(documentId: string): Promise<void> {
-        await LatexFileModel.updateMany({ document: documentId, isEntrypoint: true }, { $set: { isEntrypoint: false } }).exec();
+    async #findAssetsByDocument(documentId: string): Promise<LatexAssetEntity[]>{
+        return LatexAssetEntity.find({
+            where: { document: documentId },
+            order: { createdAt: 'DESC' }
+        });
     }
 
-    #toAssetView(teamId: string, documentId: string, asset: LatexAssetDoc): LatexAsset {
+    async #clearEntrypointForDocument(documentId: string): Promise<void>{
+        await LatexFileEntity.update({
+            document: documentId,
+            isEntrypoint: true
+        }, { isEntrypoint: false });
+    }
+
+    #toAssetView(teamId: string, documentId: string, asset: LatexAssetEntity): LatexAsset{
         return {
-            _id: String(asset._id),
-            documentId: String(asset.document),
+            _id: asset.id,
+            documentId: asset.document,
             originalName: asset.originalName,
             path: asset.path,
             url: buildLatexAssetContentUrl(teamId, documentId, asset.storageKey),
@@ -747,67 +794,81 @@ export default class LatexService {
         };
     }
 
-    async #deleteFolderTree(teamId: string, folderId: string): Promise<void> {
-        const subfolders = await CatalogFolderModel.find({ team: teamId, parent: folderId, kind: CatalogFolderKind.Latex });
-        for (const subfolder of subfolders) {
-            await this.#deleteFolderTree(teamId, String(subfolder._id));
+    async #deleteFolderTree(teamId: string, folderId: string): Promise<void>{
+        const subfolders = await CatalogFolderEntity.findBy({
+            team: teamId,
+            parent: folderId,
+            kind: CatalogFolderKind.Latex
+        });
+        for(const subfolder of subfolders){
+            await this.#deleteFolderTree(teamId, subfolder.id);
         }
 
-        const documents = await LatexDocumentModel.find({ team: teamId, folder: folderId }).select('_id').exec();
-        for (const document of documents) {
-            await this.deleteDocument({ teamId, documentId: String(document._id) });
+        const documents = await LatexDocumentEntity.find({
+            where: {
+                team: teamId,
+                folder: folderId
+            },
+            select: { id: true }
+        });
+        for(const document of documents){
+            await this.deleteDocument({
+                teamId,
+                documentId: document.id
+            });
         }
 
-        await CatalogFolderModel.deleteOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Latex });
+        await CatalogFolderEntity.delete({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Latex
+        });
     }
 
-    #deriveTitle(filename: string): string {
+    #deriveTitle(filename: string): string{
         const base = path.basename(filename, path.extname(filename));
         const cleaned = base.trim().replace(/[_-]+/g, ' ');
         return cleaned || 'Imported Document';
     }
 
-    async #importFromTex(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
+    async #importFromTex(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
         const content = input.file.buffer.toString('utf-8');
         const title = this.#deriveTitle(input.file.originalname);
 
-        const document = await LatexDocumentModel.create({
+        const document = await LatexDocumentEntity.create({
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
             storageClusterId,
             createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            lastEditedBy: null
+        }).save();
 
-        await LatexFileModel.create({
-            document: String(document._id),
+        await LatexFileEntity.create({
+            document: document.id,
             team: input.teamId,
             name: MAIN_TEX_FILENAME,
             path: '',
             content,
             isEntrypoint: true,
-            createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: input.userId
+        }).save();
 
         return toDocumentView(document);
     }
 
-    async #importFromZip(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
+    async #importFromZip(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
         let directory: unzipper.CentralDirectory;
-        try {
+        try{
             directory = await unzipper.Open.buffer(input.file.buffer);
-        } catch {
+        }catch{
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Invalid ZIP archive');
         }
 
         const mainTexFile = directory.files.find(
             (f) => f.path === MAIN_TEX_FILENAME || f.path.endsWith(`/${MAIN_TEX_FILENAME}`)
         );
-        if (!mainTexFile) {
+        if(!mainTexFile){
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'ZIP archive must contain a main.tex file');
         }
 
@@ -815,28 +876,25 @@ export default class LatexService {
         const content = mainTexBuffer.toString('utf-8');
         const title = this.#deriveTitle(input.file.originalname);
 
-        const document = await LatexDocumentModel.create({
+        const document = await LatexDocumentEntity.create({
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
             storageClusterId,
             createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
-        const documentId = String(document._id);
+            lastEditedBy: null
+        }).save();
+        const documentId = document.id;
 
-        await LatexFileModel.create({
+        await LatexFileEntity.create({
             document: documentId,
             team: input.teamId,
             name: MAIN_TEX_FILENAME,
             path: '',
             content,
             isEntrypoint: true,
-            createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: input.userId
+        }).save();
 
         const otherFiles = directory.files.filter((f) => {
             const filePath = f.path;
@@ -854,17 +912,15 @@ export default class LatexService {
                 const dirPart = path.dirname(texFile.path);
                 const filePath = dirPart === '.' ? '' : `${dirPart}/`;
 
-                await LatexFileModel.create({
+                await LatexFileEntity.create({
                     document: documentId,
                     team: input.teamId,
                     name: fileName,
                     path: filePath,
                     content: fileContent,
                     isEntrypoint: false,
-                    createdBy: input.userId,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                });
+                    createdBy: input.userId
+                }).save();
             })
         );
 
@@ -875,7 +931,7 @@ export default class LatexService {
         return toDocumentView(document);
     }
 
-    async #importFromPdf(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
+    async #importFromPdf(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
         const originalName = input.file.originalname ?? 'imported.pdf';
         const title = this.#deriveTitle(originalName);
         const ext = path.extname(originalName);
@@ -889,16 +945,15 @@ export default class LatexService {
             '\\end{document}'
         ].join('\n');
 
-        const document = await LatexDocumentModel.create({
+        const document = await LatexDocumentEntity.create({
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
             storageClusterId,
             createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
-        const documentId = String(document._id);
+            lastEditedBy: null
+        }).save();
+        const documentId = document.id;
         const storageKey = buildLatexAssetStorageKey(input.teamId, documentId, v4(), ext);
         const url = buildLatexAssetContentUrl(input.teamId, documentId, storageKey);
 
@@ -910,19 +965,17 @@ export default class LatexService {
             contentType: mimetype
         });
 
-        await LatexFileModel.create({
+        await LatexFileEntity.create({
             document: documentId,
             team: input.teamId,
             name: MAIN_TEX_FILENAME,
             path: '',
             content: mainTexContent,
             isEntrypoint: true,
-            createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: input.userId
+        }).save();
 
-        await LatexAssetModel.create({
+        await LatexAssetEntity.create({
             team: input.teamId,
             document: documentId,
             originalName,
@@ -931,10 +984,8 @@ export default class LatexService {
             url,
             mimetype,
             size: input.file.buffer.byteLength,
-            createdBy: input.userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: input.userId
+        }).save();
 
         return toDocumentView(document);
     }
@@ -945,7 +996,7 @@ export default class LatexService {
         storageClusterId: string,
         teamId: string,
         userId: string
-    ): Promise<void> {
+    ): Promise<void>{
         const buffer = await assetFile.buffer();
         const originalName = path.basename(assetFile.path);
         const ext = path.extname(originalName);
@@ -962,7 +1013,7 @@ export default class LatexService {
             contentType: mimetype
         });
 
-        await LatexAssetModel.create({
+        await LatexAssetEntity.create({
             team: teamId,
             document: documentId,
             originalName,
@@ -971,9 +1022,7 @@ export default class LatexService {
             url,
             mimetype,
             size: buffer.byteLength,
-            createdBy: userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+            createdBy: userId
+        }).save();
     }
 }

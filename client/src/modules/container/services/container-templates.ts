@@ -29,7 +29,10 @@ export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
         category: 'runtime',
         defaultPort: 8080,
         defaultEnv: [
-            { key: 'PASSWORD', value: 'changeme' }
+            {
+                key: 'PASSWORD',
+                value: 'changeme'
+            }
         ],
         defaultCmd: ['code-server', '--bind-addr', '0.0.0.0:8080', '--user-data-dir', '/home/coder', '/home/coder']
     },
@@ -42,9 +45,18 @@ export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
         category: 'runtime',
         defaultPort: 5678,
         defaultEnv: [
-            { key: 'N8N_HOST', value: '0.0.0.0' },
-            { key: 'N8N_PORT', value: '5678' },
-            { key: 'N8N_PROTOCOL', value: 'http' }
+            {
+                key: 'N8N_HOST',
+                value: '0.0.0.0'
+            },
+            {
+                key: 'N8N_PORT',
+                value: '5678'
+            },
+            {
+                key: 'N8N_PROTOCOL',
+                value: 'http'
+            }
         ],
         useImageCmd: true
     },
@@ -57,8 +69,14 @@ export const CONTAINER_TEMPLATES: ContainerTemplate[] = [
         category: 'runtime',
         defaultPort: 7080,
         defaultEnv: [
-            { key: 'CODER_ACCESS_URL', value: 'http://localhost:7080' },
-            { key: 'CODER_HTTP_ADDRESS', value: '0.0.0.0:7080' }
+            {
+                key: 'CODER_ACCESS_URL',
+                value: 'http://localhost:7080'
+            },
+            {
+                key: 'CODER_HTTP_ADDRESS',
+                value: '0.0.0.0:7080'
+            }
         ],
         useImageCmd: true
     }

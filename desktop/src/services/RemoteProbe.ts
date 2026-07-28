@@ -27,7 +27,10 @@ interface HealthzResponse{
 export default class RemoteProbe{
     async probe(rawEndpoint: string): Promise<RemoteProbeResult>{
         const origins = candidateOrigins(rawEndpoint);
-        if(origins.length === 0) return { ok: false, reason: 'invalid-url' };
+        if(origins.length === 0) return {
+            ok: false,
+            reason: 'invalid-url'
+        };
 
         let reachedServer = false;
 
@@ -49,10 +52,20 @@ export default class RemoteProbe{
                 continue;
             }
 
-            if(!body.clientHost) return { ok: false, reason: 'no-client-host' };
-            return { ok: true, serverEndpoint: origin, clientUrl: body.clientHost };
+            if(!body.clientHost) return {
+                ok: false,
+                reason: 'no-client-host'
+            };
+            return {
+                ok: true,
+                serverEndpoint: origin,
+                clientUrl: body.clientHost
+            };
         }
 
-        return { ok: false, reason: reachedServer ? 'not-volt' : 'unreachable' };
+        return {
+            ok: false,
+            reason: reachedServer ? 'not-volt' : 'unreachable'
+        };
     }
 };

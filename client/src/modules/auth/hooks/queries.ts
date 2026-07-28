@@ -31,9 +31,15 @@ const currentUser = createQuery(KEYS.currentUser, () => service.getMe({}));
 export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.getPasswordInfo({}));
 const oauthProviders = createQuery(KEYS.oauthProviders, () => service.getAvailableOAuthProviders({}));
 
-export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, { staleTime: Infinity, ...options });
+export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, {
+    staleTime: Infinity,
+    ...options
+});
 export const useOAuthProvidersQuery = (options?: QueryOptions<OAuthProviders>) =>
-    oauthProviders(undefined, { staleTime: Infinity, ...options });
+    oauthProviders(undefined, {
+        staleTime: Infinity,
+        ...options
+    });
 export const fetchCurrentUser = () => currentUser.fetch(undefined, { staleTime: 0 });
 export const clearCurrentUserQueryData = async () => {
     await queryClient.cancelQueries({ queryKey: KEYS.currentUser() });

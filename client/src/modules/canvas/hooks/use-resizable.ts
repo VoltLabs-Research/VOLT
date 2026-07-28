@@ -64,7 +64,10 @@ const useResizable = ({
 }: UseResizableOptions): UseResizableReturn => {
     const [size, setSize] = useState(() => readPersistedSize(storageKey, initialSize, minSize, maxSize));
     const [isDragging, setIsDragging] = useState(false);
-    const dragState = useRef({ startPos: 0, startSize: 0 });
+    const dragState = useRef({
+        startPos: 0,
+        startSize: 0
+    });
     const isHorizontal = direction === ResizeDirection.Horizontal;
 
     const clamp = (value: number) => Math.max(minSize, Math.min(maxSize, value));
@@ -90,7 +93,10 @@ const useResizable = ({
         e.preventDefault();
         e.stopPropagation();
         const pos = isHorizontal ? e.clientX : e.clientY;
-        dragState.current = { startPos: pos, startSize: size };
+        dragState.current = {
+            startPos: pos,
+            startSize: size
+        };
         setIsDragging(true);
         e.currentTarget.setPointerCapture(e.pointerId);
     }, [isHorizontal, size]);

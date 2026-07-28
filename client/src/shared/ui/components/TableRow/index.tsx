@@ -1,4 +1,5 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import { cn } from '@/shared/utils/cn';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
@@ -97,7 +98,7 @@ const TableRow = <T extends Identifiable>({
         setDroppableNodeRef(node);
     };
 
-    const rowClassName = [
+    const rowClassName = cn(
         'document-listing-table-row-container',
         'cursor-pointer',
         isSelected ? 'is-selected' : '',
@@ -105,7 +106,7 @@ const TableRow = <T extends Identifiable>({
         droppableId ? 'is-droppable' : '',
         isDragging ? 'is-dragging' : '',
         isOver ? 'is-drag-over' : ''
-    ].filter(Boolean).join(' ');
+    );
 
     const dragListeners = draggableId ? listeners : undefined;
     const dragAttributes = draggableId ? attributes : undefined;
@@ -175,7 +176,7 @@ const TableRow = <T extends Identifiable>({
                 const title = formatUnknownValue(cellValue);
                 const columnTitle = getColumnTitle(col);
 
-                const cellClassName = [
+                const cellClassName = cn(
                     'document-listing-cell',
                     'overflow-hidden',
                     'd-flex',
@@ -183,7 +184,7 @@ const TableRow = <T extends Identifiable>({
                     'font-size-2',
                     'color-secondary',
                     col.numeric ? 'is-numeric' : ''
-                ].filter(Boolean).join(' ');
+                );
                 return (
                     <div className={`${cellClassName}`} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
                         {colIdx === 0 && draggableId ? (

@@ -25,9 +25,21 @@ export default function useTeamAIIntegrationsSocketSync(teamId: string | null | 
         ];
 
         return [
-            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED, queryKeys, matches },
-            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.UPDATED, queryKeys, matches },
-            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.DELETED, queryKeys, matches }
+            {
+                event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED,
+                queryKeys,
+                matches
+            },
+            {
+                event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.UPDATED,
+                queryKeys,
+                matches
+            },
+            {
+                event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.DELETED,
+                queryKeys,
+                matches
+            }
         ];
     }, [teamId]);
 

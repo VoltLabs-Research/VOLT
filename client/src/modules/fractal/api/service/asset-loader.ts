@@ -26,7 +26,11 @@ const summarizeRenderableContent = (root: THREE.Object3D) => {
             vertices += child.geometry.getAttribute('position')?.count ?? 0;
         }
     });
-    return { points, meshes, vertices };
+    return {
+        points,
+        meshes,
+        vertices
+    };
 };
 
 const ZSTD_MAGIC = [0x28, 0xb5, 0x2f, 0xfd] as const;
@@ -150,7 +154,10 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         const cached = geometryPool.get(resourceKey);
         if (cached) {
             onProgress?.(1);
-            debugFractal('asset-loader.geometry-cache-hit', { url, resourceKey });
+            debugFractal('asset-loader.geometry-cache-hit', {
+                url,
+                resourceKey
+            });
             return this.wrapGeometry(cached);
         }
 
@@ -160,10 +167,18 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
             arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
-            debugFractal('asset-loader.fetch-complete', { url, resourceKey, bytes: arrayBuffer.byteLength });
+            debugFractal('asset-loader.fetch-complete', {
+                url,
+                resourceKey,
+                bytes: arrayBuffer.byteLength
+            });
             void geometryPool.writeToOpfs(resourceKey, arrayBuffer);
         } else {
-            debugFractal('asset-loader.opfs-hit', { url, resourceKey, bytes: arrayBuffer.byteLength });
+            debugFractal('asset-loader.opfs-hit', {
+                url,
+                resourceKey,
+                bytes: arrayBuffer.byteLength
+            });
         }
         onProgress?.(1);
 

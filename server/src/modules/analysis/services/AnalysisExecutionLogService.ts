@@ -4,7 +4,7 @@ import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import { Buffer } from 'node:buffer';
@@ -132,11 +132,11 @@ class AnalysisExecutionLogService {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
-    private async requireStorageClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
-        const storageClusterId = trajectory?.storageClusterId?.toString();
+    private async requireStorageClusterId(trajectoryId: string): Promise<string>{
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
+        const storageClusterId = trajectory?.storageClusterId;
 
-        if (!storageClusterId) {
+        if(!storageClusterId){
             throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',
                 `Trajectory ${trajectoryId} does not have a storage cluster assigned`
@@ -512,7 +512,10 @@ class AnalysisExecutionLogService {
         identity: Pick<MarkFrameRunningInput, 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'>
     ): StoredAnalysisFrameLogRecord {
         if (typeof value !== 'object' || value === null) {
-            return this.createEmptyStoredRecord({ ...identity, jobId: '' }, 'pending');
+            return this.createEmptyStoredRecord({
+                ...identity,
+                jobId: ''
+            }, 'pending');
         }
 
         const record = value as Partial<StoredAnalysisFrameLogRecord>;

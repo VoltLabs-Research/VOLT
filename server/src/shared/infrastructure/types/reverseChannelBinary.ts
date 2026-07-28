@@ -71,7 +71,11 @@ export const decodeEnvelope = (buf: Uint8Array): DecodedEnvelope => {
         payloadLen
     );
 
-    return { opId, kind, payload };
+    return {
+        opId,
+        kind,
+        payload
+    };
 };
 
 export const toUint8Array = (value: unknown): Uint8Array => {

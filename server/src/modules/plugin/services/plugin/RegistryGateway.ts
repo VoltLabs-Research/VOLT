@@ -41,7 +41,10 @@ const parsePackageName = (fullName: string): ParsedPackageName => {
         );
     }
 
-    return { username: match[1], name: match[2] };
+    return {
+        username: match[1],
+        name: match[2]
+    };
 };
 
 export default class RegistryGateway {

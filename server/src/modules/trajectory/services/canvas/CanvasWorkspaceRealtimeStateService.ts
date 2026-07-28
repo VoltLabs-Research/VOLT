@@ -74,7 +74,10 @@ export class CanvasWorkspaceRealtimeStateService {
             };
         }
 
-        const nextState = { ...baseState, ...delta };
+        const nextState = {
+            ...baseState,
+            ...delta
+        };
         const snapshot: CanvasWorkspaceSnapshot = {
             trajectoryId,
             ownerId,

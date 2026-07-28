@@ -68,18 +68,27 @@ export const PLUGIN_QUERY_KEYS = {
 
 const savePlugin = async (input: SavePluginInput): Promise<Plugin> => {
     if (input._id) {
-        return pluginService.update({ _id: input._id, workflow: input.workflow });
+        return pluginService.update({
+            _id: input._id,
+            workflow: input.workflow
+        });
     }
     return pluginService.create({ workflow: input.workflow });
 };
 
 export const buildPluginByIdQueryOptions = (params: GetPluginInput) => {
     const accessState = useCanvasAccessStore.getState();
-    const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
+    const dataAccess = buildCanvasDataAccess({
+        ...DEFAULT_CANVAS_ACCESS_STATE,
+        mode: accessState.mode
+    });
     const trajectoryId = accessState.trajectoryId ?? '';
     return {
         queryKey: withAccessMode(accessState.mode, PLUGIN_QUERY_KEYS.pluginById(params)),
-        queryFn: () => dataAccess.getPluginById({ trajectoryId, pluginId: params._id })
+        queryFn: () => dataAccess.getPluginById({
+            trajectoryId,
+            pluginId: params._id
+        })
     };
 };
 

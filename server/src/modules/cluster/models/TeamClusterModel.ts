@@ -5,6 +5,7 @@ import {
     TeamClusterStatus,
     TeamClusterEffectiveCapabilitiesProps
 } from '@shared/contracts/types/TeamCluster';
+import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
@@ -242,12 +243,28 @@ const TeamClusterSchema = new Schema({
     timestamps: true
 });
 
-TeamClusterSchema.index({ team: 1, name: 1 }, { unique: true });
-TeamClusterSchema.index({ team: 1, status: 1, createdAt: -1 });
-TeamClusterSchema.index({ status: 1, lastHeartbeatAt: 1 });
-TeamClusterSchema.index({ status: 1, updatedAt: 1 });
+TeamClusterSchema.index({
+    team: 1,
+    name: 1
+}, { unique: true });
+TeamClusterSchema.index({
+    team: 1,
+    status: 1,
+    createdAt: -1
+});
+TeamClusterSchema.index({
+    status: 1,
+    lastHeartbeatAt: 1
+});
+TeamClusterSchema.index({
+    status: 1,
+    updatedAt: 1
+});
 TeamClusterSchema.index(
-    { team: 1, isDemo: 1 },
+    {
+        team: 1,
+        isDemo: 1
+    },
     {
         unique: true,
         partialFilterExpression: {
@@ -256,7 +273,10 @@ TeamClusterSchema.index(
         }
     }
 );
-TeamClusterSchema.index({ isDemo: 1, demoExpiresAt: 1 });
+TeamClusterSchema.index({
+    isDemo: 1,
+    demoExpiresAt: 1
+});
 
 TeamClusterSchema.virtual('effectiveCapabilities').get(function (this: TeamClusterDocument) {
     return resolveEffectiveCapabilitiesFromRoleConfig(this.roleConfig);
@@ -269,23 +289,7 @@ const TEAM_CLUSTER_RELATION_KEYS = [
     'createdBy'
 ] as const;
 
-export interface TeamCluster {
-    readonly _id: string;
-    readonly id: string;
-    props: TeamClusterProps;
-    readonly effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
-}
-
-const SENSITIVE_FIELDS_SELECTION = [
-    '+enrollmentTokenHash',
-    '+services.minio.username',
-    '+services.minio.password',
-    '+services.redis.username',
-    '+services.redis.password',
-    '+services.mongodb.username',
-    '+services.mongodb.password',
-    '+services.daemon.password'
-].join(' ');
+export type { TeamCluster };
 
 export const toTeamClusterLike = (doc: TeamClusterDocument): TeamCluster => {
     const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
@@ -308,14 +312,6 @@ export const toTeamClusterLike = (doc: TeamClusterDocument): TeamCluster => {
         props: rest as unknown as TeamClusterProps,
         effectiveCapabilities: resolveEffectiveCapabilitiesFromRoleConfig(rest.roleConfig as TeamClusterProps['roleConfig'])
     };
-};
-
-export const findTeamClusterByIdWithSensitiveData = async (teamClusterId: string): Promise<TeamCluster | null> => {
-    const document = await TeamClusterModel.findById(teamClusterId)
-        .select(SENSITIVE_FIELDS_SELECTION)
-        .exec();
-
-    return document ? toTeamClusterLike(document) : null;
 };
 
 export default TeamClusterModel;

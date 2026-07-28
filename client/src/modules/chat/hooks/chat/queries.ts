@@ -28,7 +28,10 @@ const chatEntityCache = createEntityCacheResource<Chat>({
 });
 
 export const addChatToCache = (queryClient: QueryClient, chat: Chat) => {
-    chatEntityCache.upsert(chat, { client: queryClient, replaceExisting: false });
+    chatEntityCache.upsert(chat, {
+        client: queryClient,
+        replaceExisting: false
+    });
 };
 
 export const replaceChatInCache = (queryClient: QueryClient, chat: Chat) => {

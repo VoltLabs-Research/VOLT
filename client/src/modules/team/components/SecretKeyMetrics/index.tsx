@@ -95,7 +95,11 @@ export default function SecretKeyMetrics() {
     if (isLoading || (error && !metrics) || !metrics) {
         return (
             <AsyncBoundary
-                state={{ loading: isLoading, error: error && !metrics ? error : undefined, empty: !metrics }}
+                state={{
+                    loading: isLoading,
+                    error: error && !metrics ? error : undefined,
+                    empty: !metrics
+                }}
                 loading={loadingView}
                 error={errorView}
                 empty={emptyView}
@@ -159,8 +163,14 @@ export default function SecretKeyMetrics() {
                         title='Requests Over Time'
                         isLoading={false}
                         stats={[
-                            { label: 'Total', value: metrics.overview.totalRequests.toLocaleString() },
-                            { label: 'Success Rate', value: `${metrics.overview.successRate.toFixed(1)}%` }
+                            {
+                                label: 'Total',
+                                value: metrics.overview.totalRequests.toLocaleString()
+                            },
+                            {
+                                label: 'Success Rate',
+                                value: `${metrics.overview.successRate.toFixed(1)}%`
+                            }
                         ]}
                     >
                         <RequestsAreaChart
@@ -177,13 +187,21 @@ export default function SecretKeyMetrics() {
                         title='Top Endpoints'
                         isLoading={false}
                         stats={[
-                            { label: 'Endpoints', value: uniqueEndpoints }
+                            {
+                                label: 'Endpoints',
+                                value: uniqueEndpoints
+                            }
                         ]}
                     >
                         <ResponsiveContainer width='100%' height={280}>
                             <BarChart
                                 data={topEndpoints}
-                                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                margin={{
+                                    top: 10,
+                                    right: 10,
+                                    left: 0,
+                                    bottom: 0
+                                }}
                                 layout='vertical'
                             >
                                 <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />

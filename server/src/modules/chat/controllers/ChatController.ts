@@ -8,14 +8,14 @@ import { uploadToStorage } from '@modules/chat/controllers/ChatFileUploadMiddlew
 import ChatService from '@modules/chat/services/ChatService';
 import { chatRoutes } from '@volt/contracts/modules/chat/routes';
 import type {
+    GetOrCreateDirectChatInput,
     CreateGroupChatInput,
     AddUsersToGroupInput,
     RemoveUsersFromGroupInput,
     UpdateGroupInfoInput,
     UpdateGroupAdminsInput,
     SendChatMessageInput,
-    EditMessageInput,
-    ToggleMessageReactionInput
+    EditMessageInput
 } from '@volt/contracts/modules/chat/http';
 
 interface ChatFileBody {
@@ -40,11 +40,10 @@ export default class ChatController extends Controller {
     @Route(chatRoutes.getOrCreate)
     @Middleware(checkTeamMembership)
     getOrCreate(
-        @Param('teamId') teamId: string,
-        @Param('targetUserId') targetUserId: string,
-        @CurrentUser() userId: string
+        @CurrentUser() userId: string,
+        @Body() body: GetOrCreateDirectChatInput
     ) {
-        return this.#service.getOrCreateChat(userId, targetUserId, teamId);
+        return this.#service.getOrCreateChat(userId, body.participantId, body.teamId);
     }
 
     @Route(chatRoutes.createGroup)
@@ -89,6 +88,11 @@ export default class ChatController extends Controller {
         return this.#service.sendChatMessage(userId, chatId, body);
     }
 
+    @Route(chatRoutes.markMessagesAsRead)
+    async markMessagesAsRead(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
+        await this.#service.markMessagesAsRead(userId, chatId);
+    }
+
     @Route(chatRoutes.editMessage)
     editMessage(
         @Param('chatId') chatId: string,
@@ -104,19 +108,24 @@ export default class ChatController extends Controller {
         await this.#service.deleteMessage(userId, chatId, messageId);
     }
 
-    @Route(chatRoutes.markMessagesAsRead)
-    async markMessagesAsRead(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
-        await this.#service.markMessagesAsRead(userId, chatId);
-    }
-
-    @Route(chatRoutes.toggleMessageReaction)
-    toggleMessageReaction(
+    @Route(chatRoutes.setMessageReaction)
+    setMessageReaction(
         @Param('chatId') chatId: string,
         @Param('messageId') messageId: string,
-        @CurrentUser() userId: string,
-        @Body() body: ToggleMessageReactionInput
+        @Param('emoji') emoji: string,
+        @CurrentUser() userId: string
     ) {
-        return this.#service.toggleMessageReaction(userId, chatId, messageId, body.emoji);
+        return this.#service.setMessageReaction(userId, chatId, messageId, emoji);
+    }
+
+    @Route(chatRoutes.removeMessageReaction)
+    removeMessageReaction(
+        @Param('chatId') chatId: string,
+        @Param('messageId') messageId: string,
+        @Param('emoji') emoji: string,
+        @CurrentUser() userId: string
+    ) {
+        return this.#service.removeMessageReaction(userId, chatId, messageId, emoji);
     }
 
     @Route(chatRoutes.sendFileMessage)

@@ -35,7 +35,7 @@ class RedisEventBus implements IEventBus {
         }
 
         this.handlers.get(eventName)!.push(handler);
-        logger.info(`@redis-event-bus: ${handler.constructor.name} registered for ${eventName}`);
+        logger.info(`@redis-event-bus: ${handler.label ?? handler.constructor.name} registered for ${eventName}`);
 
         if (this.subscribedChannels.has(eventName)) {
             return;
@@ -83,9 +83,10 @@ class RedisEventBus implements IEventBus {
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
                 if (result.status === 'rejected') {
+                    const handler = snapshot[i];
                     logger.error(
                         result.reason,
-                        `@redis-event-bus: handler[${i}] for channel "${channel}" rejected`
+                        `@redis-event-bus: ${handler.label ?? handler.constructor.name} for channel "${channel}" rejected`
                     );
                 }
             }

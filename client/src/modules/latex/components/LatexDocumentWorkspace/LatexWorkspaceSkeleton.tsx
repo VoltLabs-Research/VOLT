@@ -17,21 +17,54 @@ interface LatexWorkspaceSkeletonProps {
 }
 
 const LOADING_FILE_PANEL_BLOCKS: LoadingPlaceholderBlock[] = [
-    { key: 'file-1', width: '72%' },
-    { key: 'file-2', width: '88%' },
-    { key: 'file-3', width: '64%' },
-    { key: 'file-4', width: '81%' }
+    {
+        key: 'file-1',
+        width: '72%'
+    },
+    {
+        key: 'file-2',
+        width: '88%'
+    },
+    {
+        key: 'file-3',
+        width: '64%'
+    },
+    {
+        key: 'file-4',
+        width: '81%'
+    }
 ];
 const LOADING_EDITOR_BLOCKS: LoadingPlaceholderBlock[] = [
-    { key: 'editor-1', width: '94%' },
-    { key: 'editor-2', width: '86%' },
-    { key: 'editor-3', width: '91%' },
-    { key: 'editor-4', width: '67%' }
+    {
+        key: 'editor-1',
+        width: '94%'
+    },
+    {
+        key: 'editor-2',
+        width: '86%'
+    },
+    {
+        key: 'editor-3',
+        width: '91%'
+    },
+    {
+        key: 'editor-4',
+        width: '67%'
+    }
 ];
 const LOADING_PREVIEW_BLOCKS: LoadingPlaceholderBlock[] = [
-    { key: 'preview-1', width: '100%' },
-    { key: 'preview-2', width: '100%' },
-    { key: 'preview-3', width: '82%' }
+    {
+        key: 'preview-1',
+        width: '100%'
+    },
+    {
+        key: 'preview-2',
+        width: '100%'
+    },
+    {
+        key: 'preview-3',
+        width: '82%'
+    }
 ];
 
 const LoadingSkeleton = ({

@@ -34,8 +34,14 @@ interface WhiteboardPatchAck {
     snapshot?: Record<string, unknown>;
 }
 
-const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
-const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
+const ackOk = <T>(data: T): SocketAck<T> => ({
+    ok: true,
+    data
+});
+const ackError = (error: string): SocketAck<never> => ({
+    ok: false,
+    error
+});
 
 export class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';

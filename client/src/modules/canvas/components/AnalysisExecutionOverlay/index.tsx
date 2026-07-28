@@ -24,10 +24,22 @@ const formatDuration = (durationMs?: number): string => {
 };
 
 const getStageIcon = (stage: Pick<AnalysisStage | AnalysisChildAnalysis, 'status' | 'cacheHit'>) => {
-    if (stage.status === 'failed') return <AlertCircle style={{ width: 11, height: 11 }} />;
-    if (stage.status === 'completed' || stage.status === 'cached') return <CheckCircle2 style={{ width: 11, height: 11 }} />;
-    if (stage.status === 'running') return <LoaderCircle style={{ width: 11, height: 11 }} />;
-    return <Circle style={{ width: 11, height: 11 }} />;
+    if (stage.status === 'failed') return <AlertCircle style={{
+        width: 11,
+        height: 11
+    }} />;
+    if (stage.status === 'completed' || stage.status === 'cached') return <CheckCircle2 style={{
+        width: 11,
+        height: 11
+    }} />;
+    if (stage.status === 'running') return <LoaderCircle style={{
+        width: 11,
+        height: 11
+    }} />;
+    return <Circle style={{
+        width: 11,
+        height: 11
+    }} />;
 };
 
 const resolveSelectedAnalysis = (
@@ -41,14 +53,21 @@ const resolveSelectedAnalysis = (
     }
 
     return analyses.find((analysis) => analysis._id === analysisId)
-        ?? findCachedAnalysisById({ analysisId, trajectoryId })
+        ?? findCachedAnalysisById({
+            analysisId,
+            trajectoryId
+        })
         ?? trajectoryAnalyses?.find((analysis) => analysis._id === analysisId);
 };
 
 const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: AnalysisExecutionOverlayProps) => {
     const trajectoryId = trajectory?._id;
     const analysesQuery = useAnalysesByTrajectoryQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: Boolean(trajectoryId && analysisId) }
     );
     const analyses = analysesQuery.data?.data ?? [];
@@ -67,7 +86,11 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             return [];
         }
 
-        return buildAnalysisExecutionRows({ analysis, trajectory, currentTimestep });
+        return buildAnalysisExecutionRows({
+            analysis,
+            trajectory,
+            currentTimestep
+        });
     }, [analysis, currentTimestep, trajectory]);
 
     if (!analysis || rows.length === 0) {

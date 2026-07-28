@@ -3,7 +3,6 @@ import type { Secret, SignOptions } from 'jsonwebtoken';
 import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
 import type {
     ClusterObjectAccessClaims,
-    ClusterObjectOperation,
     ClusterObjectSignedUrl
 } from '@shared/contracts/types/ClusterObjectGateway';
 
@@ -49,10 +48,9 @@ export default class ClusterObjectSignedUrlService implements IClusterObjectSign
         };
         const token = jwt.sign(payload, this.secret, signOptions);
         const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-        const operationPath: ClusterObjectOperation = payload.operation;
 
         return {
-            url: `/api/cluster-objects/${encodeURIComponent(payload.teamId)}/${operationPath}/${token}`,
+            url: `/api/teams/${encodeURIComponent(payload.teamId)}/cluster-objects/${token}`,
             expiresAt
         };
     }

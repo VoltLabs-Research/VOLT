@@ -1,5 +1,6 @@
 import { Box, Button } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
+import { hasUserReacted } from '@/modules/chat/utils/reactions';
 import type { ChatReaction } from '@volt/contracts/modules/chat/domain';
 import './ReactionsDisplay.css';
 
@@ -14,19 +15,6 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
     
     if (validReactions.length === 0) return null;
 
-    const hasUserReacted = (reaction: ChatReaction): boolean => {
-        if (!currentUserId) return false;
-        return reaction.users.some((user) => {
-            let userId = user;
-
-            if (typeof user !== 'string') {
-                userId = user._id;
-            }
-
-            return userId === currentUserId;
-        });
-    };
-
     return (
         <Box display='flex' wrap gap='025' className='chat-reactions-display'>
             {validReactions.map((reaction) => (
@@ -37,10 +25,10 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     shape='pill'
                     className={cn(
                         'font-size-2 chat-reaction',
-                        hasUserReacted(reaction) && 'user-reacted'
+                        hasUserReacted(reaction, currentUserId) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}
-                    aria-pressed={hasUserReacted(reaction)}
+                    aria-pressed={hasUserReacted(reaction, currentUserId)}
                     aria-label={`${reaction.emoji} reaction, ${reaction.users.length} ${reaction.users.length === 1 ? 'person' : 'people'}`}
                 >
                     {reaction.emoji} {reaction.users.length}

@@ -10,33 +10,125 @@ interface ToolPresentationConfig {
 }
 
 const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
-    navigate_to: { runningLabel: 'Navigating', doneLabel: 'Navigated', group: 'navigation' },
-    open_in_viewer: { runningLabel: 'Opening the viewer', doneLabel: 'Opened the viewer', group: 'navigation' },
-    open_panel: { runningLabel: 'Opening a panel', doneLabel: 'Opened a panel', group: 'navigation' },
-    open_command_palette: { runningLabel: 'Opening the command palette', doneLabel: 'Toggled the command palette', group: 'navigation' },
-    set_chat_surface: { runningLabel: 'Moving the assistant', doneLabel: 'Moved the assistant', group: 'navigation' },
-    set_theme: { runningLabel: 'Switching theme', doneLabel: 'Switched theme', group: 'navigation' },
-    switch_team: { runningLabel: 'Switching team', doneLabel: 'Switched team', group: 'action' },
+    navigate_to: {
+        runningLabel: 'Navigating',
+        doneLabel: 'Navigated',
+        group: 'navigation'
+    },
+    open_in_viewer: {
+        runningLabel: 'Opening the viewer',
+        doneLabel: 'Opened the viewer',
+        group: 'navigation'
+    },
+    open_panel: {
+        runningLabel: 'Opening a panel',
+        doneLabel: 'Opened a panel',
+        group: 'navigation'
+    },
+    open_command_palette: {
+        runningLabel: 'Opening the command palette',
+        doneLabel: 'Toggled the command palette',
+        group: 'navigation'
+    },
+    set_chat_surface: {
+        runningLabel: 'Moving the assistant',
+        doneLabel: 'Moved the assistant',
+        group: 'navigation'
+    },
+    set_theme: {
+        runningLabel: 'Switching theme',
+        doneLabel: 'Switched theme',
+        group: 'navigation'
+    },
+    switch_team: {
+        runningLabel: 'Switching team',
+        doneLabel: 'Switched team',
+        group: 'action'
+    },
 
-    control_playback: { runningLabel: 'Controlling playback', doneLabel: 'Updated playback', group: 'viewer' },
-    seek_frame: { runningLabel: 'Seeking', doneLabel: 'Jumped to frame', group: 'viewer' },
-    set_playback: { runningLabel: 'Adjusting playback', doneLabel: 'Adjusted playback', group: 'viewer' },
-    reset_camera: { runningLabel: 'Resetting the camera', doneLabel: 'Reset the camera', group: 'viewer' },
-    set_camera_view: { runningLabel: 'Orienting the camera', doneLabel: 'Set the camera view', group: 'viewer' },
-    focus_result: { runningLabel: 'Focusing a result', doneLabel: 'Focused a result', group: 'viewer' },
-    get_viewer_state: { runningLabel: 'Reading the viewer', doneLabel: 'Read the viewer state', group: 'viewer' },
-    set_visible_layers: { runningLabel: 'Toggling layers', doneLabel: 'Toggled layers', group: 'viewer' },
-    set_appearance: { runningLabel: 'Adjusting appearance', doneLabel: 'Adjusted appearance', group: 'viewer' },
-    set_environment: { runningLabel: 'Adjusting the environment', doneLabel: 'Adjusted the environment', group: 'viewer' },
-    reset_view_settings: { runningLabel: 'Resetting view settings', doneLabel: 'Reset view settings', group: 'viewer' },
+    control_playback: {
+        runningLabel: 'Controlling playback',
+        doneLabel: 'Updated playback',
+        group: 'viewer'
+    },
+    seek_frame: {
+        runningLabel: 'Seeking',
+        doneLabel: 'Jumped to frame',
+        group: 'viewer'
+    },
+    set_playback: {
+        runningLabel: 'Adjusting playback',
+        doneLabel: 'Adjusted playback',
+        group: 'viewer'
+    },
+    reset_camera: {
+        runningLabel: 'Resetting the camera',
+        doneLabel: 'Reset the camera',
+        group: 'viewer'
+    },
+    set_camera_view: {
+        runningLabel: 'Orienting the camera',
+        doneLabel: 'Set the camera view',
+        group: 'viewer'
+    },
+    focus_result: {
+        runningLabel: 'Focusing a result',
+        doneLabel: 'Focused a result',
+        group: 'viewer'
+    },
+    get_viewer_state: {
+        runningLabel: 'Reading the viewer',
+        doneLabel: 'Read the viewer state',
+        group: 'viewer'
+    },
+    set_visible_layers: {
+        runningLabel: 'Toggling layers',
+        doneLabel: 'Toggled layers',
+        group: 'viewer'
+    },
+    set_appearance: {
+        runningLabel: 'Adjusting appearance',
+        doneLabel: 'Adjusted appearance',
+        group: 'viewer'
+    },
+    set_environment: {
+        runningLabel: 'Adjusting the environment',
+        doneLabel: 'Adjusted the environment',
+        group: 'viewer'
+    },
+    reset_view_settings: {
+        runningLabel: 'Resetting view settings',
+        doneLabel: 'Reset view settings',
+        group: 'viewer'
+    },
 
-    render_scene_screenshot: { runningLabel: 'Rendering the scene', doneLabel: 'Rendered the scene', group: 'render' },
+    render_scene_screenshot: {
+        runningLabel: 'Rendering the scene',
+        doneLabel: 'Rendered the scene',
+        group: 'render'
+    },
 
-    global_search: { runningLabel: 'Searching', doneLabel: 'Searched', group: 'data' },
-    compare_analyses: { runningLabel: 'Comparing analyses', doneLabel: 'Compared analyses', group: 'data' },
-    summarize_analysis_run: { runningLabel: 'Summarizing the run', doneLabel: 'Summarized the run', group: 'data' },
+    global_search: {
+        runningLabel: 'Searching',
+        doneLabel: 'Searched',
+        group: 'data'
+    },
+    compare_analyses: {
+        runningLabel: 'Comparing analyses',
+        doneLabel: 'Compared analyses',
+        group: 'data'
+    },
+    summarize_analysis_run: {
+        runningLabel: 'Summarizing the run',
+        doneLabel: 'Summarized the run',
+        group: 'data'
+    },
 
-    execute_pipeline: { runningLabel: 'Running the pipeline', doneLabel: 'Ran the pipeline', group: 'action' }
+    execute_pipeline: {
+        runningLabel: 'Running the pipeline',
+        doneLabel: 'Ran the pipeline',
+        group: 'action'
+    }
 };
 
 const humanizeToolName = (toolName: string): string => {
@@ -68,19 +160,34 @@ export const presentToolCall = (
     if (phase === 'done') {
         const summary = extractResultSummary(result);
         if (summary) {
-            return { label: summary, group };
+            return {
+                label: summary,
+                group
+            };
         }
-        return { label: config ? config.doneLabel : `Used ${humanizeToolName(toolName)}`, group };
+        return {
+            label: config ? config.doneLabel : `Used ${humanizeToolName(toolName)}`,
+            group
+        };
     }
 
     if (phase === 'failed') {
         const summary = extractResultSummary(result);
-        return { label: summary ?? `${humanizeToolName(toolName)} failed`, group };
+        return {
+            label: summary ?? `${humanizeToolName(toolName)} failed`,
+            group
+        };
     }
 
     if (phase === 'requested') {
-        return { label: `Wants to ${config ? config.runningLabel.toLowerCase() : humanizeToolName(toolName).toLowerCase()}`, group };
+        return {
+            label: `Wants to ${config ? config.runningLabel.toLowerCase() : humanizeToolName(toolName).toLowerCase()}`,
+            group
+        };
     }
 
-    return { label: config ? `${config.runningLabel}…` : `Using ${humanizeToolName(toolName)}…`, group };
+    return {
+        label: config ? `${config.runningLabel}…` : `Using ${humanizeToolName(toolName)}…`,
+        group
+    };
 };

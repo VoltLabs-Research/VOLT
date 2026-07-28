@@ -12,6 +12,7 @@ import {
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
+import { cn } from '@/shared/utils/cn';
 import { Box } from '@voltstack/bravais';
 import { ChevronRight, Download, Upload } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
@@ -55,10 +56,10 @@ const DroppableSimulationBreadcrumb = ({ item, isCurrent, onOpen }: DroppableSim
         id: getTrajectoryListingFolderDroppableId(item.folderId)
     });
 
-    const className = [
+    const className = cn(
         'trajectory-breadcrumb-drop-target',
         isOver ? 'is-drag-over' : ''
-    ].filter(Boolean).join(' ');
+    );
 
     if (isCurrent) {
         return (

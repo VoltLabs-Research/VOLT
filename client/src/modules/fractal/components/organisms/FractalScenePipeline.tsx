@@ -119,7 +119,10 @@ const FractalScenePipeline = ({
                 </GizmoHelper>
             )}
             {gridEnabled && (
-                <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} darkTheme={darkTheme} />
+                <CanvasGrid settings={{
+                    ...config.grid,
+                    enabled: gridEnabled
+                }} darkTheme={darkTheme} />
             )}
             <PipelineSlicePlaneHelpers modelWorldBounds={modelWorldBounds} />
             <Bvh firstHitOnly>

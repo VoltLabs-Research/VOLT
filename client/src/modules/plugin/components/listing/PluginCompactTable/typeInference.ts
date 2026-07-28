@@ -100,5 +100,8 @@ export const inferColumnType = (values: unknown[]): InferredColumnType => {
         if(kind === 'mixed') break;
     }
 
-    return { kind, meta };
+    return {
+        kind,
+        meta
+    };
 };

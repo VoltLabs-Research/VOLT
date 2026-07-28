@@ -15,7 +15,7 @@ export const createConversationStreamTransport = ({
         throw new Error('teamId and conversationId are required to create a stream transport');
     }
 
-    const api = buildBackendUrl(`/api/ai/conversations/${teamId}/${conversationId}/messages/stream`);
+    const api = buildBackendUrl(`/api/teams/${teamId}/ai-conversations/${conversationId}/messages`);
 
     return new DefaultChatTransport({
         api,

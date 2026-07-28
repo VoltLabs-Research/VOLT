@@ -40,8 +40,14 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
 };
 
 const SECTION_TABS: ReadonlyArray<{ id: NodeEditorSection; label: string }> = [
-    { id: 'details', label: 'Details' },
-    { id: 'connectors', label: 'Connectors' }
+    {
+        id: 'details',
+        label: 'Details'
+    },
+    {
+        id: 'connectors',
+        label: 'Connectors'
+    }
 ];
 
 const NodeEditor = ({ node }: NodeEditorProps) => {

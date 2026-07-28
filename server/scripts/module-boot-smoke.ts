@@ -65,7 +65,10 @@ function runCase(testCase: SmokeCase): { ok: boolean; reasons: string[] } {
         
         enabled = resolveEnabledModules();
     } catch (error) {
-        return { ok: false, reasons: [`resolveEnabledModules threw: ${(error as Error).message}`] };
+        return {
+            ok: false,
+            reasons: [`resolveEnabledModules threw: ${(error as Error).message}`]
+        };
     }
 
     
@@ -89,7 +92,10 @@ function runCase(testCase: SmokeCase): { ok: boolean; reasons: string[] } {
         }
     }
 
-    return { ok: reasons.length === 0, reasons };
+    return {
+        ok: reasons.length === 0,
+        reasons
+    };
 }
 
 function main(): void {

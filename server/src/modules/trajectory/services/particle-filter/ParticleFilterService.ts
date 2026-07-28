@@ -15,7 +15,7 @@ import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/Tra
 import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import trajectoryNativeDaemonService, {
@@ -244,9 +244,9 @@ export class ParticleFilterService {
         analysisId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
+        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
 
         if (!trajectory || !storageClusterId) {
@@ -254,7 +254,7 @@ export class ParticleFilterService {
         }
 
         const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.team.toString(),
+            trajectory.team,
             undefined,
             storageClusterId
         );
@@ -365,9 +365,9 @@ export class ParticleFilterService {
         action?: string,
         analysisId?: string
     ): Promise<TrajectoryNativeObjectStreamResponse> {
-        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
+        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
         const actionPart = action || 'delete';
         const objectName = this.buildObjectName(

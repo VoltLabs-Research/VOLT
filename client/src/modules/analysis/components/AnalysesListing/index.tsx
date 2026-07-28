@@ -73,24 +73,38 @@ const BASE_COLUMNS: ColumnConfig<Analysis>[] = [
         title: 'Trajectory',
         sortable: true,
         render: renderTrajectoryName,
-        skeleton: { variant: 'text', width: 140 }
+        skeleton: {
+            variant: 'text',
+            width: 140
+        }
     },
     {
         key: 'pluginDisplayName',
         title: 'Plugin',
         sortable: true,
         render: renderPluginName,
-        skeleton: { variant: 'text', width: 110 }
+        skeleton: {
+            variant: 'text',
+            width: 110
+        }
     },
     {
         key: 'status',
         title: 'Status',
         sortable: true,
         render: (value) => <StatusBadge status={String(value)} />,
-        skeleton: { variant: 'rounded', width: 90, height: 24 }
+        skeleton: {
+            variant: 'rounded',
+            width: 90,
+            height: 24
+        }
     },
     userColumn<Analysis>('createdBy', 'Created By'),
-    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' })
+    dateColumn<Analysis>('finishedAt', 'Finished At', {
+        sortable: false,
+        withTitle: true,
+        fallback: '-'
+    })
 ];
 
 const AnalysesListing = () => {
@@ -126,7 +140,11 @@ const AnalysesListing = () => {
                     </Button>
                 );
             },
-            skeleton: { variant: 'rounded', width: 110, height: 28 }
+            skeleton: {
+                variant: 'rounded',
+                width: 110,
+                height: 28
+            }
         }
     ], [pluginsById, navigate]);
 
@@ -179,10 +197,22 @@ const AnalysesListing = () => {
             emptyButtonText='Open trajectories'
             onEmptyButtonClick={() => navigate('/dashboard/trajectories/list')}
             socketInvalidation={[
-                { event: SOCKET_ANALYSIS_EVENTS.CREATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
-                { event: SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
-                { event: SOCKET_TEAM_EVENTS.JOB_UPDATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
-                { event: SOCKET_ANALYSIS_EVENTS.DELETED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] }
+                {
+                    event: SOCKET_ANALYSIS_EVENTS.CREATED,
+                    queryKeys: [analysisQuery.QUERY_KEYS.lists()]
+                },
+                {
+                    event: SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED,
+                    queryKeys: [analysisQuery.QUERY_KEYS.lists()]
+                },
+                {
+                    event: SOCKET_TEAM_EVENTS.JOB_UPDATED,
+                    queryKeys: [analysisQuery.QUERY_KEYS.lists()]
+                },
+                {
+                    event: SOCKET_ANALYSIS_EVENTS.DELETED,
+                    queryKeys: [analysisQuery.QUERY_KEYS.lists()]
+                }
             ]}
         />
     );

@@ -21,7 +21,10 @@ export const useCanvasCanCollaborate = () => useCanvasAccessStore((state) => sta
 
 export const useCanvasDataAccess = (): CanvasDataAccess => {
     const mode = useCanvasAccessMode();
-    return useMemo(() => buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }), [mode]);
+    return useMemo(() => buildCanvasDataAccess({
+        ...DEFAULT_CANVAS_ACCESS_STATE,
+        mode
+    }), [mode]);
 };
 
 export const withAccessMode = <TKey extends readonly unknown[]>(
@@ -32,7 +35,10 @@ export const withAccessMode = <TKey extends readonly unknown[]>(
 };
 
 export const currentCanvasDataAccess = (): CanvasDataAccess =>
-    buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: useCanvasAccessStore.getState().mode });
+    buildCanvasDataAccess({
+        ...DEFAULT_CANVAS_ACCESS_STATE,
+        mode: useCanvasAccessStore.getState().mode
+    });
 
 export const currentAccessKey = <TKey extends readonly unknown[]>(key: TKey) =>
     withAccessMode(useCanvasAccessStore.getState().mode, key);

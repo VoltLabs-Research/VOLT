@@ -22,7 +22,10 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     };
 
     return (
-        <Row gap='1-5' cursor='pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
+        <Row gap='1-5' cursor='pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? {
+            opacity: 0.4,
+            pointerEvents: 'none'
+        } : undefined}>
             <div>
                 <DynamicIcon iconName={config.icon} />
             </div>

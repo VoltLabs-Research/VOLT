@@ -53,7 +53,10 @@ export const latexListingResource = createFolderedListingResource({
 });
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_LATEX_DOCUMENT_EVENTS.DELETED, queryKeys: [latexDocumentsQueryKey()] }
+    {
+        event: SOCKET_LATEX_DOCUMENT_EVENTS.DELETED,
+        queryKeys: [latexDocumentsQueryKey()]
+    }
 ];
 
 const filterFoldersBySearch = (folders: LatexFolder[], search: string): LatexFolder[] => {
@@ -87,12 +90,18 @@ const useLatexDocumentsListing = () => {
     } = useRenameEntityModal({
         modalId: RENAME_LATEX_DOCUMENT_MODAL_ID,
         updateEntity: updateDocument,
-        getUpdateParams: (document: LatexDocument, title) => ({ documentId: document._id, title }),
+        getUpdateParams: (document: LatexDocument, title) => ({
+            documentId: document._id,
+            title
+        }),
         renameToast: latexListingResource.toasts.rename
     });
 
     const moveDocumentToFolder = useCallback((documentId: string, folderId: string | null) => {
-        return moveDocument({ documentId, folderId });
+        return moveDocument({
+            documentId,
+            folderId
+        });
     }, [moveDocument]);
 
     const openDocument = useCallback((document: LatexDocument) => {

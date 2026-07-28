@@ -15,14 +15,29 @@ interface LineStyleStageEditorProps {
 }
 
 const COLOR_MODE_OPTIONS = [
-    { value: 'category', title: 'Category' },
-    { value: 'uniform', title: 'Uniform color' },
-    { value: 'gradient', title: 'Gradient' }
+    {
+        value: 'category',
+        title: 'Category'
+    },
+    {
+        value: 'uniform',
+        title: 'Uniform color'
+    },
+    {
+        value: 'gradient',
+        title: 'Gradient'
+    }
 ];
 
 const FILTER_OPERATOR_OPTIONS = [
-    { value: 'gte', title: '>=' },
-    { value: 'lte', title: '<=' }
+    {
+        value: 'gte',
+        title: '>='
+    },
+    {
+        value: 'lte',
+        title: '<='
+    }
 ];
 
 const isColorMode = (value: string): value is LineColorMode =>
@@ -89,7 +104,11 @@ const LineStyleStageEditor = ({
         isInspecting,
         inspectedEntity,
         inspectError
-    } = useLineStyle({ trajectoryId, analysisId, currentTimestep });
+    } = useLineStyle({
+        trajectoryId,
+        analysisId,
+        currentTimestep
+    });
 
     if (!hasLineSource) {
         return (
@@ -103,9 +122,18 @@ const LineStyleStageEditor = ({
         );
     }
 
-    const stringPropertyOptions = stringProperties.map((property) => ({ value: property.name, title: property.label }));
-    const numberPropertyOptions = numberProperties.map((property) => ({ value: property.name, title: property.label }));
-    const gradientOptions = COLORMAP_NAMES.map((name) => ({ value: name, title: name }));
+    const stringPropertyOptions = stringProperties.map((property) => ({
+        value: property.name,
+        title: property.label
+    }));
+    const numberPropertyOptions = numberProperties.map((property) => ({
+        value: property.name,
+        title: property.label
+    }));
+    const gradientOptions = COLORMAP_NAMES.map((name) => ({
+        value: name,
+        title: name
+    }));
 
     return (
         <Stack gap='05'>

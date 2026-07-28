@@ -74,5 +74,8 @@ export const buildDocumentSubListingColumnSnapshot = <TRow extends Record<string
         };
     });
 
-    return { columns: mapped, inferredTypes };
+    return {
+        columns: mapped,
+        inferredTypes
+    };
 };

@@ -248,7 +248,12 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         const cellOrigin = cellOverride?.cellOrigin ?? fetched?.cell_origin;
         const pbc = cellOverride?.pbc ?? fetched?.periodic_boundary_conditions;
         if (!cellVectors) return undefined;
-        return { cellVectors, cellOrigin, pbc, showPbcImages };
+        return {
+            cellVectors,
+            cellOrigin,
+            pbc,
+            showPbcImages
+        };
     }, [simulationCell, cellOverride, showPbcImages]);
 
     const {

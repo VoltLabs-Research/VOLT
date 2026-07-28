@@ -1,5 +1,5 @@
 import { AI_PROVIDERS, AI_PROVIDER_DESCRIPTIONS, AI_PROVIDER_NAMES } from '@shared/contracts/types/AIProviders';
-import { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import type { TeamAIProvider } from '@modules/team/contracts/domain/team-ai-integration';
 
 export interface TeamAIProviderMetadata {
     id: TeamAIProvider;

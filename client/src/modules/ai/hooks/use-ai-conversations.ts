@@ -20,7 +20,11 @@ const useAIConversations = (
     const navigateOnConversationChange = options.navigateOnConversationChange ?? true;
 
     const conversationsResult = conversationQuery.useListQuery(
-        { page: 1, limit: 100, includeArchived: false },
+        {
+            page: 1,
+            limit: 100,
+            includeArchived: false
+        },
         { enabled: Boolean(teamId) }
     );
 

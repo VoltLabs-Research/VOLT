@@ -3,7 +3,16 @@ import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterO
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
+import Whiteboard from '@modules/whiteboards/models/Whiteboard';
+
+export type WhiteboardRealtimeObjectGateway = Pick<
+    ITeamClusterObjectGatewayClient,
+    'exists' | 'getBuffer' | 'putBuffer'
+>;
+
+export interface WhiteboardRealtimeStateServiceDependencies{
+    objectGatewayClient?: WhiteboardRealtimeObjectGateway;
+}
 
 export type WhiteboardElement = Record<string, unknown>;
 export type WhiteboardAppState = Record<string, unknown>;
@@ -168,8 +177,13 @@ export class WhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
-    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
-    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+    #objectGatewayClientCache?: WhiteboardRealtimeObjectGateway;
+
+    constructor(dependencies: WhiteboardRealtimeStateServiceDependencies = {}){
+        this.#objectGatewayClientCache = dependencies.objectGatewayClient;
+    }
+
+    private get objectGatewayClient(): WhiteboardRealtimeObjectGateway {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
@@ -342,7 +356,7 @@ export class WhiteboardRealtimeStateService {
     }
 
     private async loadRoom(whiteboardId: string): Promise<WhiteboardRoomState | null> {
-        const whiteboard = await WhiteboardModel.findById(whiteboardId).exec();
+        const whiteboard = await Whiteboard.findOneBy({ id: whiteboardId });
         if (!whiteboard) {
             return null;
         }
@@ -350,14 +364,14 @@ export class WhiteboardRealtimeStateService {
         if (!whiteboard.payloadKey) {
             throw ApplicationError.conflict(
                 'Whiteboard::PayloadKeyRequired',
-                `Whiteboard ${String(whiteboard._id)} does not have a payload key assigned`
+                `Whiteboard ${whiteboard.id} does not have a payload key assigned`
             );
         }
         const storageClusterId = whiteboard.storageClusterId?.trim();
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'Whiteboard::StorageClusterRequired',
-                `Whiteboard ${String(whiteboard._id)} does not have a storage cluster assigned`
+                `Whiteboard ${whiteboard.id} does not have a storage cluster assigned`
             );
         }
 
@@ -380,7 +394,7 @@ export class WhiteboardRealtimeStateService {
         const elements = normalizeElements(storedScene.elements);
         const room: WhiteboardRoomState = {
             whiteboardId,
-            teamId: String(whiteboard.team),
+            teamId: whiteboard.team,
             storageClusterId,
             payloadKey,
             revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
@@ -390,7 +404,7 @@ export class WhiteboardRealtimeStateService {
             appState: normalizeAppState(storedScene.appState),
             snapshotCache: null,
             persistTimer: null,
-            lastEditedBy: whiteboard.lastEditedBy ? String(whiteboard.lastEditedBy) : null,
+            lastEditedBy: whiteboard.lastEditedBy ?? null,
             lastPersistedRevision: typeof storedScene.revision === 'number' ? storedScene.revision : 0
         };
 
@@ -432,10 +446,7 @@ export class WhiteboardRealtimeStateService {
         room.lastPersistedRevision = room.revision;
 
         if (room.lastEditedBy) {
-            await WhiteboardModel.updateOne(
-                { _id: room.whiteboardId },
-                { $set: { lastEditedBy: room.lastEditedBy } }
-            );
+            await Whiteboard.update({ id: room.whiteboardId }, { lastEditedBy: room.lastEditedBy });
         }
     }
 

@@ -116,7 +116,10 @@ const DashboardBottomBar = () => {
                 online += 1;
             }
         }
-        return { online, total: members.length };
+        return {
+            online,
+            total: members.length
+        };
     }, [members, onlineUserIds, hasPresenceSnapshot]);
 
     const showClusters = clusterMetrics !== null;

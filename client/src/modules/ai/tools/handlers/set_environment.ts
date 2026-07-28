@@ -68,9 +68,15 @@ const setEnvironment: ClientToolHandler<SetEnvironmentInput> = {
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Environment change failed', icon: 'globe' };
+            return {
+                label: 'Environment change failed',
+                icon: 'globe'
+            };
         }
-        return { label: 'Adjusted environment', icon: 'globe' };
+        return {
+            label: 'Adjusted environment',
+            icon: 'globe'
+        };
     }
 };
 

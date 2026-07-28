@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
-import { ContainerModel } from '@modules/container/models/ContainerModel';
+import Container from '@modules/container/models/Container';
 import daemonContainerRuntimeService, { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
@@ -136,25 +136,25 @@ export class ContainerTerminalSocketModule extends BaseSocketModule {
         this.pendingAttachTokens.set(conn.id, attachToken);
 
         try {
-            const container = await ContainerModel.findById(payload.containerId);
-            if (!container) {
+            const container = await Container.findOneBy({ id: payload.containerId });
+            if(!container){
                 this.emitTerminalError(conn.id, 'CONTAINER_NOT_FOUND', 'Container not found');
                 return;
             }
 
             const userTeams = new Set(conn.user?.teams ?? []);
-            const containerTeamId = container.team ? String(container.team) : undefined;
-            if (!containerTeamId || !userTeams.has(containerTeamId)) {
+            const containerTeamId = container.team ?? undefined;
+            if(!containerTeamId || !userTeams.has(containerTeamId)){
                 this.emitTerminalError(conn.id, ErrorCodes.TEAM_ACCESS_DENIED, 'You do not have access to this container');
                 return;
             }
 
-            if (!container.teamCluster) {
+            if(!container.teamCluster){
                 this.emitTerminalError(conn.id, 'NO_CLUSTER', 'Container is not assigned to a cluster');
                 return;
             }
 
-            const teamClusterId = String(container.teamCluster);
+            const teamClusterId = container.teamCluster;
             const containerKey = this.buildContainerKey(teamClusterId, container.containerId);
             const session = await this.getOrCreateSharedSession(containerKey, teamClusterId, container.containerId);
 
@@ -455,7 +455,10 @@ export class ContainerTerminalSocketModule extends BaseSocketModule {
             return null;
         }
 
-        return { rows, cols };
+        return {
+            rows,
+            cols
+        };
     }
 }
 

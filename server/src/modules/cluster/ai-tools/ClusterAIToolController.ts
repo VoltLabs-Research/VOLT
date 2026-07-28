@@ -29,8 +29,15 @@ export default class ClusterAIToolController extends AIToolController {
     async listClusters(input: ListClustersInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.listByTeamId({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} clusters.`, data };
+        const { total, data } = await this.#service.listByTeamId({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} clusters.`,
+            data
+        };
     }
 
     @AITool({
@@ -41,7 +48,10 @@ export default class ClusterAIToolController extends AIToolController {
     })
     async getCluster(input: ClusterRefInput & AIToolScope) {
         const { teamCluster } = await this.#service.getById(input);
-        return { summary: `Cluster "${teamCluster.name}" is ${teamCluster.status}.`, data: teamCluster };
+        return {
+            summary: `Cluster "${teamCluster.name}" is ${teamCluster.status}.`,
+            data: teamCluster
+        };
     }
 
     @AITool({
@@ -110,8 +120,15 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ListClusterTransferJobsInput>()
     })
     async listClusterTransferJobs(input: ListClusterTransferJobsInput & AIToolScope) {
-        const { total, data } = await this.#service.listTransferJobs({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} transfer jobs.`, data };
+        const { total, data } = await this.#service.listTransferJobs({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} transfer jobs.`,
+            data
+        };
     }
 
     @AITool({
@@ -171,7 +188,10 @@ export default class ClusterAIToolController extends AIToolController {
     })
     async regenerateClusterToken(input: ClusterRefInput & AIToolScope) {
         const { enrollmentToken } = await this.#service.regenerateEnrollmentToken(input);
-        return { summary: 'Cluster enrollment token regenerated.', data: { enrollmentToken } };
+        return {
+            summary: 'Cluster enrollment token regenerated.',
+            data: { enrollmentToken }
+        };
     }
 
     @AITool({
@@ -190,10 +210,25 @@ export default class ClusterAIToolController extends AIToolController {
                 teamClusterId,
                 credentialKeys: ['minio.username', 'minio.password', 'redis.username', 'redis.password', 'mongodb.username', 'mongodb.password', 'daemon.password'],
                 services: {
-                    minio: { port: services.minio.port, username: MASKED, password: MASKED },
-                    redis: { port: services.redis.port, username: MASKED, password: MASKED },
-                    mongodb: { port: services.mongodb.port, username: MASKED, password: MASKED },
-                    daemon: { port: services.daemon.port, password: MASKED }
+                    minio: {
+                        port: services.minio.port,
+                        username: MASKED,
+                        password: MASKED
+                    },
+                    redis: {
+                        port: services.redis.port,
+                        username: MASKED,
+                        password: MASKED
+                    },
+                    mongodb: {
+                        port: services.mongodb.port,
+                        username: MASKED,
+                        password: MASKED
+                    },
+                    daemon: {
+                        port: services.daemon.port,
+                        password: MASKED
+                    }
                 }
             }
         };
@@ -209,7 +244,10 @@ export default class ClusterAIToolController extends AIToolController {
     async manageDemoCluster(input: ManageDemoClusterInput & AIToolScope) {
         if (input.action === 'provision') {
             const result = await this.#service.provisionDemo(input);
-            return { summary: `Demo cluster "${result.teamCluster.name}" provisioned.`, data: result };
+            return {
+                summary: `Demo cluster "${result.teamCluster.name}" provisioned.`,
+                data: result
+            };
         }
 
         if (input.action === 'delete') {

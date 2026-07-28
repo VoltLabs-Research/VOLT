@@ -33,7 +33,10 @@ const ExposureSettingsWidget = () => {
         }
         const [source, sceneType] = settingsKey.split(':');
         if (!source || !sceneType) return null;
-        return { source, sceneType };
+        return {
+            source,
+            sceneType
+        };
     }, [settingsKey]);
 
     const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';
@@ -42,7 +45,12 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <Surface variant='glass' style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }} className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}>
+        <Surface variant='glass' style={{
+            bottom: '1rem',
+            right: '1rem',
+            top: 'auto',
+            left: 'auto'
+        }} className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}>
             <Stack gap='05'>
                 <FormFieldRHF
                     fieldKey="sceneOpacity"
@@ -50,7 +58,12 @@ const ExposureSettingsWidget = () => {
                     fieldType="input"
                     fieldValue={opacity}
                     onFieldChange={(_, value) => setSceneOpacity(sceneKey, Number(value))}
-                    inputProps={{ type: 'range', min: 0, max: 1, step: 0.01 }}
+                    inputProps={{
+                        type: 'range',
+                        min: 0,
+                        max: 1,
+                        step: 0.01
+                    }}
                 />
             </Stack>
         </Surface>

@@ -13,7 +13,9 @@ const useGridGroup = (): RenderGroup => {
     return useMemo(() => {
         const sections = {
             general: {
-                key: 'general', title: 'General', enabled: true,
+                key: 'general',
+                title: 'General',
+                enabled: true,
                 rows: [
                     row(PRESETS.cellSize, () => s.cellSize, (v: number) => s.setGrid({ cellSize: v })),
                     row(PRESETS.sectionSize, () => s.sectionSize, (v: number) => s.setGrid({ sectionSize: v })),
@@ -30,7 +32,9 @@ const useGridGroup = (): RenderGroup => {
                 )
             },
             appearance: {
-                key: 'appearance', title: 'Colors', enabled: true,
+                key: 'appearance',
+                title: 'Colors',
+                enabled: true,
                 rows: [],
                 extras: (
                     <Box className="canvas-render-grid">
@@ -40,7 +44,9 @@ const useGridGroup = (): RenderGroup => {
                 )
             },
             transform: {
-                key: 'transform', title: 'Transform', enabled: true,
+                key: 'transform',
+                title: 'Transform',
+                enabled: true,
                 rows: [
                     ...gridPosRows(() => s.position, (position: [number, number, number]) => s.setGrid({ position })),
                     ...gridRotRows(() => s.rotation, (rotation: [number, number, number]) => s.setGrid({ rotation }))
@@ -49,12 +55,22 @@ const useGridGroup = (): RenderGroup => {
         };
 
         return {
-            id: 'grid', title: 'Grid',
+            id: 'grid',
+            title: 'Grid',
             icon: <IoGridOutline size={12} />,
             subsections: [
-                { label: 'Settings', sections: [sections.general] },
-                { label: 'Colors', sections: [sections.appearance] },
-                { label: 'Transform', sections: [sections.transform] }
+                {
+                    label: 'Settings',
+                    sections: [sections.general]
+                },
+                {
+                    label: 'Colors',
+                    sections: [sections.appearance]
+                },
+                {
+                    label: 'Transform',
+                    sections: [sections.transform]
+                }
             ]
         };
     }, [s]);

@@ -156,10 +156,17 @@ const useAnalysisFrameLog = ({
         leaveEvent: SOCKET_ANALYSIS_EVENTS.LOG_UNSUBSCRIBE,
         roomKey: liveRoomKey,
         buildJoinPayload: () => (analysisId && timestep !== undefined)
-            ? { analysisId, timestep, afterCursor: cursorRef.current ?? undefined }
+            ? {
+                analysisId,
+                timestep,
+                afterCursor: cursorRef.current ?? undefined
+            }
             : null,
         buildLeavePayload: () => (analysisId && timestep !== undefined)
-            ? { analysisId, timestep }
+            ? {
+                analysisId,
+                timestep
+            }
             : null,
         enabled: liveSubscribeEnabled,
         fireAndForget: true

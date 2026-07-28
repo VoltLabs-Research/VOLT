@@ -64,7 +64,11 @@ export type StageConfig =
 
 export const DEFAULT_SLICE_PLANE_STAGE_CONFIG: SlicePlaneStageConfig = {
     distance: 0,
-    normal: { x: 1, y: 0, z: 0 },
+    normal: {
+        x: 1,
+        y: 0,
+        z: 0
+    },
     reverseOrientation: false,
     visualizePlane: false
 };
@@ -126,7 +130,13 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                     set((state) => ({
                         byTrajectory: {
                             ...state.byTrajectory,
-                            [target]: [...(state.byTrajectory[target] ?? EMPTY_STAGES), { id, type, config, enabled: true, executed: false }]
+                            [target]: [...(state.byTrajectory[target] ?? EMPTY_STAGES), {
+                                id,
+                                type,
+                                config,
+                                enabled: true,
+                                executed: false
+                            }]
                         }
                     }));
                     return id;
@@ -153,7 +163,10 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                     const [item] = next.splice(fromIndex, 1);
                     next.splice(newIndex, 0, item);
                     set((state) => ({
-                        byTrajectory: { ...state.byTrajectory, [target]: next }
+                        byTrajectory: {
+                            ...state.byTrajectory,
+                            [target]: next
+                        }
                     }));
                 },
 
@@ -164,7 +177,13 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                         byTrajectory: {
                             ...state.byTrajectory,
                             [target]: (state.byTrajectory[target] ?? EMPTY_STAGES).map((stage) =>
-                                stage.id === id ? { ...stage, config: { ...stage.config, ...config } } : stage
+                                stage.id === id ? {
+                                    ...stage,
+                                    config: {
+                                        ...stage.config,
+                                        ...config
+                                    }
+                                } : stage
                             )
                         }
                     }));
@@ -177,7 +196,10 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                         byTrajectory: {
                             ...state.byTrajectory,
                             [target]: (state.byTrajectory[target] ?? EMPTY_STAGES).map((stage) =>
-                                stage.id === id ? { ...stage, enabled: !stage.enabled } : stage
+                                stage.id === id ? {
+                                    ...stage,
+                                    enabled: !stage.enabled
+                                } : stage
                             )
                         }
                     }));
@@ -191,7 +213,10 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                         byTrajectory: {
                             ...state.byTrajectory,
                             [target]: (state.byTrajectory[target] ?? EMPTY_STAGES).map((stage) =>
-                                idSet.has(stage.id) ? { ...stage, executed: true } : stage
+                                idSet.has(stage.id) ? {
+                                    ...stage,
+                                    executed: true
+                                } : stage
                             )
                         }
                     }));
@@ -201,7 +226,10 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                     const target = resolveTrajectoryId(trajectoryId);
                     if (!target) return;
                     set((state) => ({
-                        byTrajectory: { ...state.byTrajectory, [target]: [] }
+                        byTrajectory: {
+                            ...state.byTrajectory,
+                            [target]: []
+                        }
                     }));
                 }
             };
@@ -251,7 +279,10 @@ export interface SliceStageEntry {
 export const collectEnabledSliceStages = (stages: PipelineStage[]): SliceStageEntry[] =>
     stages
         .filter((stage) => stage.type === 'slice-plane' && stage.enabled)
-        .map((stage) => ({ id: stage.id, config: stage.config as SlicePlaneStageConfig }));
+        .map((stage) => ({
+            id: stage.id,
+            config: stage.config as SlicePlaneStageConfig
+        }));
 
 export const useActiveTrajectoryStages = (): PipelineStage[] =>
     useCanvasPipelineStore((state) =>

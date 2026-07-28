@@ -1,4 +1,4 @@
-import { createService, get, paginated, post, patch, del } from '@/app/core/http/utils/create-service';
+import { createService, get, paginated, post, del } from '@/app/core/http/utils/create-service';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
@@ -37,8 +37,8 @@ export type RevokeSecretKeyInput = DeleteSecretKeyInput;
 const endpoints = {
     listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
     create: post<CreateSecretKeyParams, CreateSecretKeyResponse>('/:teamId/secret-keys'),
-    revokeById: patch<RevokeSecretKeyInput, void>(
-        '/:teamId/secret-keys/:secretKeyId', { unwrap: 'void' }
+    revokeById: post<RevokeSecretKeyInput, void>(
+        '/:teamId/secret-keys/:secretKeyId/revocations', { unwrap: 'void' }
     ),
     deleteById: del<DeleteSecretKeyInput>('/:teamId/secret-keys/:secretKeyId'),
     getTeamMetrics: get<GetSecretKeyTeamMetricsInput, TeamUsageMetrics>(

@@ -23,9 +23,18 @@ const formatDimension = (value: number): string => {
 const getPeriodicBoundaryAxes = (cell: SimulationCell): PeriodicAxisStatus[] => {
     const pbc = cell.geometry.periodic_boundary_conditions;
     return [
-        { axis: 'X', enabled: pbc.x },
-        { axis: 'Y', enabled: pbc.y },
-        { axis: 'Z', enabled: pbc.z }
+        {
+            axis: 'X',
+            enabled: pbc.x
+        },
+        {
+            axis: 'Y',
+            enabled: pbc.y
+        },
+        {
+            axis: 'Z',
+            enabled: pbc.z
+        }
     ];
 };
 
@@ -58,41 +67,59 @@ const COLUMNS: ColumnConfig<SimulationCell>[] = [
                 <span>{row.trajectory.name}</span>
             </PopulatedCellPopover>
         ),
-        skeleton: { variant: 'text', width: 120 }
+        skeleton: {
+            variant: 'text',
+            width: 120
+        }
     },
     {
         key: 'timestep',
         title: 'Timestep',
         sortable: true,
         render: (value) => Number(value).toLocaleString(),
-        skeleton: { variant: 'text', width: 80 }
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
     {
         key: 'boundingBox.width',
         title: `Width (${LENGTH_UNIT})`,
         sortable: true,
         render: (_, row) => formatDimension(row.boundingBox.width),
-        skeleton: { variant: 'text', width: 80 }
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
     {
         key: 'boundingBox.height',
         title: `Height (${LENGTH_UNIT})`,
         sortable: true,
         render: (_, row) => formatDimension(row.boundingBox.height),
-        skeleton: { variant: 'text', width: 80 }
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
     {
         key: 'boundingBox.length',
         title: `Length (${LENGTH_UNIT})`,
         sortable: true,
         render: (_, row) => formatDimension(row.boundingBox.length),
-        skeleton: { variant: 'text', width: 80 }
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
     {
         key: 'geometry.periodic_boundary_conditions',
         title: 'Boundary Conditions',
         render: renderPeriodicBoundary,
-        skeleton: { variant: 'text', width: 180 }
+        skeleton: {
+            variant: 'text',
+            width: 180
+        }
     },
     dateColumn<SimulationCell>('createdAt', 'Created At', { sortable: false })
 ];

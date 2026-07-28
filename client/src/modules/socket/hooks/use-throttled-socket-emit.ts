@@ -53,7 +53,10 @@ const useThrottledSocketEmit = <TPayload>(
             }
 
             socketService.emit(eventRef.current, payload).catch((error) => {
-                socketErrorReporter.report(error, { kind: 'emit', event: eventRef.current });
+                socketErrorReporter.report(error, {
+                    kind: 'emit',
+                    event: eventRef.current
+                });
             });
         };
 

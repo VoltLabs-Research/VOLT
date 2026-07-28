@@ -47,7 +47,10 @@ export const useTrajectoryCloneFlowStore = create<TrajectoryCloneFlowState>((set
             return {
                 entries: {
                     ...state.entries,
-                    [destinationTrajectoryId]: { ...current, ...patch }
+                    [destinationTrajectoryId]: {
+                        ...current,
+                        ...patch
+                    }
                 }
             };
         });
@@ -61,7 +64,10 @@ export const useTrajectoryCloneFlowStore = create<TrajectoryCloneFlowState>((set
             return {
                 entries: {
                     ...state.entries,
-                    [destinationTrajectoryId]: { ...current, toastId }
+                    [destinationTrajectoryId]: {
+                        ...current,
+                        toastId
+                    }
                 }
             };
         });
@@ -80,7 +86,10 @@ export const useTrajectoryCloneFlowStore = create<TrajectoryCloneFlowState>((set
             return {
                 entries: {
                     ...state.entries,
-                    [destinationTrajectoryId]: { ...entry, pendingIntent: undefined }
+                    [destinationTrajectoryId]: {
+                        ...entry,
+                        pendingIntent: undefined
+                    }
                 }
             };
         });

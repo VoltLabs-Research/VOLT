@@ -21,7 +21,10 @@ const useImportLatexDocument = (folderId?: string | null) => {
         input.value = '';
 
         await showPromise(
-            importDocument({ file, folderId }),
+            importDocument({
+                file,
+                folderId
+            }),
             IMPORT_TOAST
         );
     }, [folderId, importDocument]);

@@ -35,7 +35,10 @@ const useEntrypointBinaryActions = (
     }, [form, nodeId, updateNodeData]);
 
     const setAccessDeniedError = useCallback((error: unknown, fallbackMessage: string) => {
-        const userError = reportError(error, { surface: ErrorSurface.Toast, fallbackTitle: fallbackMessage });
+        const userError = reportError(error, {
+            surface: ErrorSurface.Toast,
+            fallbackTitle: fallbackMessage
+        });
         setUploadError(userError.title || fallbackMessage);
     }, []);
 

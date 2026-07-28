@@ -8,7 +8,10 @@ const CanvasEmptyState = () => {
     const addNode = usePluginBuilderStore((state) => state.addNode);
 
     const handleAddModifier = useCallback(() => {
-        addNode(NodeType.MODIFIER, { x: 250, y: 250 });
+        addNode(NodeType.MODIFIER, {
+            x: 250,
+            y: 250
+        });
     }, [addNode]);
 
     return (

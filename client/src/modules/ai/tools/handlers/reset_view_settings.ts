@@ -26,7 +26,11 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
 
         if (action === 'reset_all') {
             useEditorStore.getState().resetAll();
-            return { ok: true, summary: 'Reset all viewer settings to defaults.', data: { action } };
+            return {
+                ok: true,
+                summary: 'Reset all viewer settings to defaults.',
+                data: { action }
+            };
         }
 
         const temporal = useEditorStore.temporal.getState();
@@ -41,7 +45,11 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
                 };
             }
             temporal.undo();
-            return { ok: true, summary: 'Undid the last viewer change.', data: { action } };
+            return {
+                ok: true,
+                summary: 'Undid the last viewer change.',
+                data: { action }
+            };
         }
 
         if (temporal.futureStates.length === 0) {
@@ -53,20 +61,30 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
             };
         }
         temporal.redo();
-        return { ok: true, summary: 'Redid the last undone viewer change.', data: { action } };
+        return {
+            ok: true,
+            summary: 'Redid the last undone viewer change.',
+            data: { action }
+        };
     },
 
     describeEffect(input, result) {
         const action = input.action ?? 'reset';
         if (!result.ok) {
-            return { label: `View ${action} failed`, icon: 'rotate' };
+            return {
+                label: `View ${action} failed`,
+                icon: 'rotate'
+            };
         }
         const labels: Record<string, string> = {
             undo: 'Undid view change',
             redo: 'Redid view change',
             reset_all: 'Reset view settings'
         };
-        return { label: labels[action] ?? 'Adjusted view', icon: 'rotate' };
+        return {
+            label: labels[action] ?? 'Adjusted view',
+            icon: 'rotate'
+        };
     }
 };
 

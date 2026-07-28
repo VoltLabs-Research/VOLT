@@ -57,7 +57,12 @@ export const useLODStreaming = ({
             return;
         }
         let cancelled = false;
-        fetchOctreeMetadata({ trajectoryId, analysisId, exposureId, timestep: timestep! })
+        fetchOctreeMetadata({
+            trajectoryId,
+            analysisId,
+            exposureId,
+            timestep: timestep!
+        })
             .then((metadata) => {
                 if (cancelled) return;
                 setOctree(metadata);

@@ -141,7 +141,10 @@ export const resolveConfiguredRouteTitle = (pathname: string): string | null => 
     let resolvedEntry: RouteTitleMatch | null = null;
 
     for (const entry of routeTitleEntries) {
-        if (!matchPath({ path: entry.path, end: true }, pathname)) {
+        if (!matchPath({
+            path: entry.path,
+            end: true
+        }, pathname)) {
             continue;
         }
 

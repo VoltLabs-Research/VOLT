@@ -25,16 +25,16 @@ export interface RetryFailedJobsResponse {
 }
 
 const endpoints = {
-    removeRunningJobs: del<RemoveRunningJobsParams, RemoveRunningJobsResponse>('/:trajectoryId/running', {
+    removeRunningJobs: del<RemoveRunningJobsParams, RemoveRunningJobsResponse>('/jobs', {
         unwrap: 'data'
     }),
-    retryFailedJobs: post<RetryFailedJobsParams, RetryFailedJobsResponse>('/:trajectoryId/failed/retries')
+    retryFailedJobs: post<RetryFailedJobsParams, RetryFailedJobsResponse>('/jobs/retries')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/jobs',
+            basePath: '/teams',
             useRBAC: true
         }
     }

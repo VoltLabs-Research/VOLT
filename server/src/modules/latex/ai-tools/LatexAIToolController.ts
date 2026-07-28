@@ -38,8 +38,15 @@ export default class LatexAIToolController extends AIToolController {
     async listLatexDocuments(input: ListLatexDocumentsInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.listDocuments({ page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} LaTeX documents.`, data };
+        const { total, data } = await this.#service.listDocuments({
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} LaTeX documents.`,
+            data
+        };
     }
 
     @AITool({
@@ -50,7 +57,10 @@ export default class LatexAIToolController extends AIToolController {
     })
     async getLatexDocument(input: LatexDocumentRefInput & AIToolScope) {
         const document = await this.#service.getDocument(input);
-        return { summary: `Retrieved LaTeX document "${document.title}".`, data: document };
+        return {
+            summary: `Retrieved LaTeX document "${document.title}".`,
+            data: document
+        };
     }
 
     @AITool({
@@ -111,7 +121,10 @@ export default class LatexAIToolController extends AIToolController {
     })
     async listLatexFiles(input: LatexDocumentRefInput & AIToolScope) {
         const files = await this.#service.listFiles(input);
-        return { summary: `Found ${files.length} LaTeX files.`, data: files };
+        return {
+            summary: `Found ${files.length} LaTeX files.`,
+            data: files
+        };
     }
 
     @AITool({
@@ -139,7 +152,10 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateLatexFileInput>()
     })
     async updateLatexFile(input: UpdateLatexFileInput & AIToolScope): Promise<LatexFile> {
-        return this.#service.updateFile({ ...input, source: 'ai' });
+        return this.#service.updateFile({
+            ...input,
+            source: 'ai'
+        });
     }
 
     @AITool({
@@ -171,7 +187,10 @@ export default class LatexAIToolController extends AIToolController {
     async manageLatexAssets(input: ManageLatexAssetsInput & AIToolScope) {
         if (input.action === 'list') {
             const assets = await this.#service.listAssets(input);
-            return { summary: `Found ${assets.length} LaTeX assets.`, data: assets };
+            return {
+                summary: `Found ${assets.length} LaTeX assets.`,
+                data: assets
+            };
         }
 
         const format = input.format ?? 'zip';

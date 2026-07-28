@@ -11,7 +11,10 @@ interface FrameComboboxProps {
 
 const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) => {
     const selectOptions: SelectOption[] = useMemo(
-        () => options.map((n) => ({ value: String(n), title: String(n) })),
+        () => options.map((n) => ({
+            value: String(n),
+            title: String(n)
+        })),
         [options]
     );
 

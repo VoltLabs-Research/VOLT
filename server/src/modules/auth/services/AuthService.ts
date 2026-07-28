@@ -1,17 +1,23 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel, { UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
-import type { OAuthProvider, UserDocument } from '@modules/auth/models/UserModel';
+import User from '@modules/auth/models/User';
+import {
+    UserRole,
+    normalizeEmail,
+    normalizeName,
+    splitFullName
+} from '@modules/auth/contracts/domain/user';
+import type { OAuthProvider } from '@modules/auth/contracts/domain/user';
 import AuthSessionService from '@modules/auth/services/AuthSessionService';
 import AvatarService from '@modules/auth/services/AvatarService';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import UserCreatedEvent from '@modules/auth/events/UserCreatedEvent';
 import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
 import { getConfiguredOAuthProviders } from '@modules/auth/services/oauth/config';
-import SessionModel, { SessionActivityType } from '@modules/session/models/SessionModel';
+import Session from '@modules/session/models/Session';
+import { SessionActivityType } from '@volt/contracts/modules/session/domain';
 import DefaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import logger from '@shared/infrastructure/logger';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
 import type {
@@ -25,14 +31,14 @@ import crypto from 'node:crypto';
 const PASSWORD_MIN_LENGTH = 8;
 
 const validatePassword = (password: unknown): ApplicationError | null => {
-    if (typeof password !== 'string' || password.length === 0) {
+    if(typeof password !== 'string' || password.length === 0){
         return ApplicationError.badRequest(
             ErrorCodes.AUTH_PASSWORD_REQUIRED,
             'Password is required'
         );
     }
 
-    if ([...password].length < PASSWORD_MIN_LENGTH) {
+    if([...password].length < PASSWORD_MIN_LENGTH){
         return ApplicationError.badRequest(
             ErrorCodes.AUTH_PASSWORD_TOO_SHORT,
             `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
@@ -42,12 +48,12 @@ const validatePassword = (password: unknown): ApplicationError | null => {
     return null;
 };
 
-interface RequestContext {
+interface RequestContext{
     ip: string;
     userAgent: string;
 }
 
-export interface OAuthLoginInput extends RequestContext {
+export interface OAuthLoginInput extends RequestContext{
     email: string;
     firstName?: string;
     lastName?: string;
@@ -58,91 +64,95 @@ export interface OAuthLoginInput extends RequestContext {
 
 type WireUser = Record<string, unknown>;
 
-interface AuthSessionResult {
+interface AuthSessionResult{
     token: string;
     user: WireUser;
 }
 
-export default class AuthService {
+export default class AuthService{
     private static readonly LOCAL_USER_EMAIL = 'local@volt.local';
 
     #passwordHasher = new BcryptPasswordHasher();
     #authSessionService = new AuthSessionService();
     #avatarService = new AvatarService();
-
-        #eventBus = eventBus;
-
+    #eventBus = eventBus;
     #defaultTeamEnroller = new DefaultTeamEnroller();
 
-    async signIn(input: SignInInput, context: RequestContext): Promise<AuthSessionResult> {
-        const user = await UserModel.findOne({ email: input.email.toLowerCase() }).select('+password');
-        if (!user) {
+    async signIn(input: SignInInput, context: RequestContext): Promise<AuthSessionResult>{
+        const user = await User.findOneBy({ email: normalizeEmail(input.email) });
+        if(!user){
             await this.#createFailedLogin(null, context.userAgent, context.ip);
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
         }
 
         const isPasswordValid = await this.#passwordHasher.compare(input.password, user.password ?? '');
-        if (!isPasswordValid) {
-            await this.#createFailedLogin(String(user._id), context.userAgent, context.ip);
+        if(!isPasswordValid){
+            await this.#createFailedLogin(user.id, context.userAgent, context.ip);
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
         }
 
-        await this.#updateLastLogin(String(user._id));
+        await this.#updateLastLogin(user.id);
 
         const token = await this.#authSessionService.createSessionWithToken({
-            userId: String(user._id),
+            userId: user.id,
             ip: context.ip,
             userAgent: context.userAgent,
             activityType: SessionActivityType.Login
         });
 
-        return { token, user: this.#presentUser(user) };
+        return {
+            token,
+            user: this.#presentUser(user)
+        };
     }
 
-    async localSignIn(context: RequestContext): Promise<AuthSessionResult> {
-        if (process.env.DEPLOYMENT_MODE !== 'local') {
+    async localSignIn(context: RequestContext): Promise<AuthSessionResult>{
+        if(process.env.DEPLOYMENT_MODE !== 'local'){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Not found');
         }
 
-        const user = await UserModel.findOne({ email: AuthService.LOCAL_USER_EMAIL.toLowerCase() });
-        if (!user) {
+        const user = await User.findOneBy({ email: normalizeEmail(AuthService.LOCAL_USER_EMAIL) });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Local user is not provisioned yet');
         }
 
         const token = await this.#authSessionService.createSessionWithToken({
-            userId: String(user._id),
+            userId: user.id,
             ip: context.ip,
             userAgent: context.userAgent,
             activityType: SessionActivityType.Login
         });
 
-        return { token, user: this.#presentUser(user) };
+        return {
+            token,
+            user: this.#presentUser(user)
+        };
     }
 
-    async signUp(input: SignUpInput, context: RequestContext): Promise<AuthSessionResult> {
-        if (typeof input.email !== 'string' || input.email.trim().length === 0) {
+    async signUp(input: SignUpInput, context: RequestContext): Promise<AuthSessionResult>{
+        if(typeof input.email !== 'string' || input.email.trim().length === 0){
             throw ApplicationError.badRequest(ErrorCodes.AUTH_EMAIL_REQUIRED, 'Email is required');
         }
 
-        if (typeof input.firstName !== 'string' || input.firstName.trim().length === 0
-            || typeof input.lastName !== 'string') {
+        if(typeof input.firstName !== 'string' || input.firstName.trim().length === 0
+            || typeof input.lastName !== 'string'){
             throw ApplicationError.badRequest(ErrorCodes.AUTH_NAME_REQUIRED, 'First and last name are required');
         }
 
         const passwordError = validatePassword(input.password);
-        if (passwordError) {
+        if(passwordError){
             throw passwordError;
         }
 
         const email = normalizeEmail(input.email);
 
-        if (await this.#emailExists(email)) {
+        if(await this.#emailExists(email)){
             throw ApplicationError.conflict(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Email already registered');
         }
 
         const hashedPassword = await this.#passwordHasher.hash(input.password);
 
-        const newUser = await UserModel.create({
+        const newUser = await User.create({
             email,
             firstName: normalizeName(input.firstName),
             lastName: normalizeName(input.lastName),
@@ -150,48 +160,50 @@ export default class AuthService {
             role: UserRole.User,
             teams: [],
             analyses: []
-        });
+        }).save();
 
-        const avatar = await this.#avatarService.generateAndUploadDefaultAvatar(String(newUser._id), newUser.email);
-        newUser.avatar = avatar;
-        await newUser.save();
+        const avatar = await this.#avatarService.generateAndUploadDefaultAvatar(newUser.id, newUser.email);
+        await Object.assign(newUser, { avatar }).save();
 
-        try {
-            await this.#defaultTeamEnroller.enrollIfConfigured(String(newUser._id));
-        } catch (err) {
+        try{
+            await this.#defaultTeamEnroller.enrollIfConfigured(newUser.id);
+        }catch(err){
             logger.error(err, '[SignUp] default-team enrollment failed');
         }
 
         await this.#eventBus.publish(new UserCreatedEvent({
-            id: String(newUser._id),
+            id: newUser.id,
             firstName: newUser.firstName
         }));
 
         const token = await this.#authSessionService.createSessionWithToken({
-            userId: String(newUser._id),
+            userId: newUser.id,
             ip: context.ip,
             userAgent: context.userAgent,
             activityType: SessionActivityType.Login
         });
 
-        return { token, user: this.#presentUser(newUser) };
+        return {
+            token,
+            user: this.#presentUser(newUser)
+        };
     }
 
-    async checkEmail(email: string): Promise<{ exists: boolean }> {
+    async checkEmail(email: string): Promise<{ exists: boolean }>{
         return { exists: await this.#emailExists(email) };
     }
 
-    async getMyAccount(userId: string): Promise<WireUser & { fullName: string }> {
-        const user = await UserModel.findById(userId);
-        if (!user) {
+    async getMyAccount(userId: string): Promise<WireUser & { fullName: string }>{
+        const user = await User.findOneBy({ id: userId });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'User not found');
         }
         return this.#presentAccount(user);
     }
 
-    async getPasswordInfo(userId: string): Promise<{ hasPassword: boolean; lastChanged?: string }> {
-        const user = await UserModel.findById(userId).select('+password');
-        if (!user) {
+    async getPasswordInfo(userId: string): Promise<{ hasPassword: boolean; lastChanged?: string }>{
+        const user = await User.findOneBy({ id: userId });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'User not found');
         }
         return {
@@ -200,8 +212,8 @@ export default class AuthService {
         };
     }
 
-    getGuestIdentity(seed: string): { firstName: string; lastName: string; avatar: string } {
-        if (typeof seed !== 'string' || seed.length === 0) {
+    getGuestIdentity(seed: string): { firstName: string; lastName: string; avatar: string }{
+        if(typeof seed !== 'string' || seed.length === 0){
             throw ApplicationError.badRequest(
                 ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED,
                 'A seed query parameter is required'
@@ -213,22 +225,26 @@ export default class AuthService {
         const avatar = `data:image/svg+xml;base64,${buffer.toString('base64')}`;
         const shortHash = hash.substring(0, 4).toUpperCase();
 
-        return { avatar, firstName: 'Guest', lastName: shortHash };
+        return {
+            avatar,
+            firstName: 'Guest',
+            lastName: shortHash
+        };
     }
 
-    async updatePassword(userId: string, input: UpdatePasswordInput, context: RequestContext): Promise<AuthSessionResult> {
+    async updatePassword(userId: string, input: UpdatePasswordInput, context: RequestContext): Promise<AuthSessionResult>{
         const passwordError = validatePassword(input.password);
-        if (passwordError) {
+        if(passwordError){
             throw passwordError;
         }
 
-        const user = await UserModel.findById(userId).select('+password');
-        if (!user) {
+        const user = await User.findOneBy({ id: userId });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'User not found');
         }
 
-        if (user.password) {
-            if (!input.passwordCurrent) {
+        if(user.password){
+            if(!input.passwordCurrent){
                 throw ApplicationError.badRequest(
                     ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT,
                     'Current password is required'
@@ -236,7 +252,7 @@ export default class AuthService {
             }
 
             const isCurrentPasswordValid = await this.#passwordHasher.compare(input.passwordCurrent, user.password);
-            if (!isCurrentPasswordValid) {
+            if(!isCurrentPasswordValid){
                 throw ApplicationError.badRequest(
                     ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT,
                     'Current password is incorrect'
@@ -245,7 +261,7 @@ export default class AuthService {
         }
 
         const hashedPassword = await this.#passwordHasher.hash(input.password);
-        await UserModel.findByIdAndUpdate(userId, {
+        await User.update({ id: userId }, {
             password: hashedPassword,
             passwordChangedAt: new Date(Date.now() - 1000)
         });
@@ -259,29 +275,32 @@ export default class AuthService {
             activityType: SessionActivityType.PasswordUpdate
         });
 
-        const updatedUser = await UserModel.findById(userId);
-        if (!updatedUser) {
+        const updatedUser = await User.findOneBy({ id: userId });
+        if(!updatedUser){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'User not found after update');
         }
 
-        return { token, user: this.#presentUser(updatedUser) };
+        return {
+            token,
+            user: this.#presentUser(updatedUser)
+        };
     }
 
-    async deleteAccount(userId: string): Promise<{ success: boolean }> {
-        const user = await UserModel.findById(userId);
-        if (!user) {
+    async deleteAccount(userId: string): Promise<{ success: boolean }>{
+        const user = await User.findOneBy({ id: userId });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'User not found');
         }
 
-        const { deletedCount } = await UserModel.deleteOne({ _id: userId });
-        if (deletedCount > 0) {
+        const { affected } = await User.delete({ id: userId });
+        if((affected ?? 0) > 0){
             await this.#eventBus.publish(new UserDeletedEvent({ userId }));
         }
 
         return { success: true };
     }
 
-    getOAuthProviders(): { providers: OAuthProvider[] } {
+    getOAuthProviders(): { providers: OAuthProvider[] }{
         return { providers: getConfiguredOAuthProviders() };
     }
 
@@ -289,112 +308,117 @@ export default class AuthService {
         userId: string,
         input: UpdateAccountInput,
         file?: Express.Multer.File
-    ): Promise<WireUser & { fullName: string }> {
-        const user = await UserModel.findById(userId);
-        if (!user) {
+    ): Promise<WireUser & { fullName: string }>{
+        const user = await User.findOneBy({ id: userId });
+        if(!user){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'User not found');
         }
 
         let normalizedEmail: string | undefined;
-        if (input.email) {
+        if(input.email){
             normalizedEmail = normalizeEmail(input.email);
         }
 
-        if (normalizedEmail && normalizedEmail !== user.email) {
-            if (await this.#emailExists(normalizedEmail)) {
+        if(normalizedEmail && normalizedEmail !== user.email){
+            if(await this.#emailExists(normalizedEmail)){
                 throw ApplicationError.conflict(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Email already registered');
             }
         }
 
-        const updateData: Record<string, unknown> = {};
-        if (input.firstName) {
+        const updateData: Partial<User> = {};
+        if(input.firstName){
             updateData.firstName = normalizeName(input.firstName);
         }
-        if (input.lastName) {
+        if(input.lastName){
             updateData.lastName = normalizeName(input.lastName);
         }
-        if (input.fullName) {
+        if(input.fullName){
             const normalizedFullName = splitFullName(input.fullName);
             updateData.firstName = normalizedFullName.firstName;
             updateData.lastName = normalizedFullName.lastName ?? user.lastName;
         }
-        if (normalizedEmail) {
+        if(normalizedEmail){
             updateData.email = normalizedEmail;
         }
-        if (file?.buffer) {
+        if(file?.buffer){
             updateData.avatar = await this.#avatarService.uploadCustomAvatar(userId, file.buffer);
         }
 
-        const updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
-        if (!updatedUser) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'User not found afer update');
-        }
+        const updatedUser = await Object.assign(user, updateData).save();
 
         return this.#presentAccount(updatedUser);
     }
 
-    async oauthLogin(input: OAuthLoginInput): Promise<AuthSessionResult> {
-        let user = await UserModel.findOne({ oauthProvider: input.oauthProvider, oauthId: input.oauthId });
+    async oauthLogin(input: OAuthLoginInput): Promise<AuthSessionResult>{
+        let user = await User.findOneBy({
+            oauthProvider: input.oauthProvider,
+            oauthId: input.oauthId
+        });
 
-        if (!user) {
-            const existingByEmail = await UserModel.findOne({ email: input.email.toLowerCase() });
+        if(!user){
+            const existingByEmail = await User.findOneBy({ email: normalizeEmail(input.email) });
 
-            if (existingByEmail) {
-                await UserModel.updateOne({ _id: existingByEmail._id }, {
+            if(existingByEmail){
+                await User.update({ id: existingByEmail.id }, {
                     oauthProvider: input.oauthProvider,
                     oauthId: input.oauthId,
                     avatar: input.avatar || existingByEmail.avatar
                 });
                 user = existingByEmail;
-            } else {
+            }else{
                 const randomName = generateRandomName(input.oauthId);
-                user = await UserModel.create({
-                    email: input.email,
-                    firstName: input.firstName ?? randomName.firstName,
-                    lastName: input.lastName ?? randomName.lastName,
+                user = await User.create({
+                    email: normalizeEmail(input.email),
+                    firstName: normalizeName(input.firstName ?? randomName.firstName),
+                    lastName: normalizeName(input.lastName ?? randomName.lastName),
                     oauthProvider: input.oauthProvider,
                     oauthId: input.oauthId,
                     teams: [],
                     analyses: []
-                });
+                }).save();
 
                 await this.#eventBus.publish(new UserCreatedEvent({
-                    id: String(user._id),
+                    id: user.id,
                     firstName: user.firstName
                 }));
 
-                try {
-                    await this.#defaultTeamEnroller.enrollIfConfigured(String(user._id));
-                } catch (err) {
+                try{
+                    await this.#defaultTeamEnroller.enrollIfConfigured(user.id);
+                }catch(err){
                     logger.error(err, '[OAuthLogin] default-team enrollment failed');
                 }
             }
         }
 
-        await this.#updateLastLogin(String(user._id));
+        await this.#updateLastLogin(user.id);
 
         const token = await this.#authSessionService.createSessionWithToken({
-            userId: String(user._id),
+            userId: user.id,
             ip: input.ip,
             userAgent: input.userAgent,
             activityType: SessionActivityType.OAuthLogin
         });
 
-        return { user: this.#presentUser(user), token };
+        return {
+            user: this.#presentUser(user),
+            token
+        };
     }
 
-    async #emailExists(email: string): Promise<boolean> {
-        const existing = await UserModel.exists({ email: email.toLowerCase() });
-        return !!existing;
+    async #emailExists(email: string): Promise<boolean>{
+        return User.existsBy({ email: normalizeEmail(email) });
     }
 
-    async #updateLastLogin(userId: string): Promise<void> {
+    async #updateLastLogin(userId: string): Promise<void>{
         const now = new Date();
-        await UserModel.findByIdAndUpdate(userId, { lastLoginAt: now, lastSeenAt: now });
+        await User.update({ id: userId }, {
+            lastLoginAt: now,
+            lastSeenAt: now
+        });
     }
 
-    async #createFailedLogin(userId: string | null, userAgent: string, ip: string): Promise<void> {
-        await SessionModel.create({
+    async #createFailedLogin(userId: string | null, userAgent: string, ip: string): Promise<void>{
+        await Session.create({
             user: userId,
             token: null,
             userAgent,
@@ -403,24 +427,20 @@ export default class AuthService {
             lastActivity: new Date(),
             action: SessionActivityType.FailedLogin,
             success: false
-        });
+        }).save();
     }
 
-    #presentUser(doc: UserDocument): WireUser {
-        const view = doc.toObject() as Record<string, unknown>;
-        delete view.password;
-        delete view.__v;
-        view._id = String(doc._id);
-        view.teams = (doc.teams ?? []).map((team) => String(team));
-        view.analyses = (doc.analyses ?? []).map((analysis) => String(analysis));
+    #presentUser(user: User): WireUser{
+        const view = user.toJSON();
+        view.teams = user.teams ?? [];
+        view.analyses = user.analyses ?? [];
         return view;
     }
 
-    #presentAccount(doc: UserDocument): WireUser & { fullName: string } {
-        const user = this.#presentUser(doc);
+    #presentAccount(user: User): WireUser & { fullName: string }{
         return {
-            ...user,
-            fullName: `${doc.firstName} ${doc.lastName}`.trim()
+            ...this.#presentUser(user),
+            fullName: `${user.firstName} ${user.lastName}`.trim()
         };
     }
 }

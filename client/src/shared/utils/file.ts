@@ -96,7 +96,10 @@ export const processFileSystemEntry = async (
                     ? currentEntry.fullPath.slice(1)
                     : currentEntry.fullPath;
 
-                files.push({ file, path: relativePath });
+                files.push({
+                    file,
+                    path: relativePath
+                });
 
                 if (!folderName) {
                     folderName = extractFolderName(currentEntry.fullPath);
@@ -119,5 +122,8 @@ export const processFileSystemEntry = async (
     };
 
     await processEntry(entry);
-    return { files, folderName };
+    return {
+        files,
+        folderName
+    };
 };

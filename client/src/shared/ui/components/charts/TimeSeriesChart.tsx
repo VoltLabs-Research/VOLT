@@ -33,7 +33,10 @@ const TimeSeriesChart = ({ frames, values, label, onBrush }: TimeSeriesChartProp
     const [brushCurrent, setBrushCurrent] = useState<number | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
 
-    const data: ChartPoint[] = frames.map((f, i) => ({ frame: f, value: values[i] ?? 0 }));
+    const data: ChartPoint[] = frames.map((f, i) => ({
+        frame: f,
+        value: values[i] ?? 0
+    }));
 
     const handleMouseDown = useCallback((e: { activeLabel?: string | number }) => {
         if (e?.activeLabel === undefined) return;
@@ -57,7 +60,10 @@ const TimeSeriesChart = ({ frames, values, label, onBrush }: TimeSeriesChartProp
         const start = Math.min(brushStart, brushCurrent);
         const end = Math.max(brushStart, brushCurrent);
         if (start !== end && onBrush) {
-            onBrush({ frameStart: start, frameEnd: end });
+            onBrush({
+                frameStart: start,
+                frameEnd: end
+            });
         }
         setBrushStart(null);
         setBrushCurrent(null);
@@ -85,17 +91,28 @@ const TimeSeriesChart = ({ frames, values, label, onBrush }: TimeSeriesChartProp
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
-                    margin={{ top: 4, right: 8, bottom: 4, left: 8 }}
+                    margin={{
+                        top: 4,
+                        right: 8,
+                        bottom: 4,
+                        left: 8
+                    }}
                 >
                     <CartesianGrid strokeDasharray='3 3' stroke='rgba(255,255,255,0.06)' />
                     <XAxis
                         dataKey='frame'
-                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                        tick={{
+                            fontSize: 10,
+                            fill: 'rgba(255,255,255,0.4)'
+                        }}
                         tickLine={false}
                         axisLine={false}
                     />
                     <YAxis
-                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                        tick={{
+                            fontSize: 10,
+                            fill: 'rgba(255,255,255,0.4)'
+                        }}
                         tickLine={false}
                         axisLine={false}
                         width={40}
@@ -115,7 +132,10 @@ const TimeSeriesChart = ({ frames, values, label, onBrush }: TimeSeriesChartProp
                         stroke='#3b82f6'
                         strokeWidth={1.5}
                         dot={false}
-                        activeDot={{ r: 3, fill: '#3b82f6' }}
+                        activeDot={{
+                            r: 3,
+                            fill: '#3b82f6'
+                        }}
                     />
                     {selectionStart !== null && selectionEnd !== null && (
                         <ReferenceArea
@@ -128,7 +148,11 @@ const TimeSeriesChart = ({ frames, values, label, onBrush }: TimeSeriesChartProp
                 </LineChart>
             </ResponsiveContainer>
             {onBrush && (
-                <Text size='xs' tone='muted' style={{ opacity: 0.5, display: 'block', marginTop: 2 }}>
+                <Text size='xs' tone='muted' style={{
+                    opacity: 0.5,
+                    display: 'block',
+                    marginTop: 2
+                }}>
                     Drag to select frame range
                 </Text>
             )}

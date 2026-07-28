@@ -121,7 +121,10 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
                         <Skeleton variant='text' width={80} height={20} />
                         <Skeleton variant='text' width={40} height={20} />
                     </Row>
-                    <Skeleton variant='rectangular' width='100%' height={8} style={{ borderRadius: 4, marginTop: 8 }} />
+                    <Skeleton variant='rectangular' width='100%' height={8} style={{
+                        borderRadius: 4,
+                        marginTop: 8
+                    }} />
                 </Box>
             ))}
         </Stack>

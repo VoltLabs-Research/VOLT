@@ -69,7 +69,10 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
     }, [resetConversationState]);
 
     return (
-        <Stack id='latex-ai-panel' className='latex-ai-panel' style={{ width, height }}>
+        <Stack id='latex-ai-panel' className='latex-ai-panel' style={{
+            width,
+            height
+        }}>
             <Row justify='between' className='latex-ai-panel__header'>
                 <Row gap='025' flex='1' minW='0'>
                     <Tooltip content='New conversation' placement='top'>

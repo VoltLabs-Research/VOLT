@@ -54,17 +54,17 @@ type UpdateConversationInput = ConversationPathParams & UpdateAIConversationPara
 type ListMessagesInput = ConversationPathParams & ListAIConversationMessagesParams;
 
 const endpoints = {
-    listConversations: paginated<ListAIConversationsParams | undefined, PaginatedResponse<AIConversation>>('/'),
-    createConversation: post<CreateAIConversationParams | undefined, CreateAIConversationResult>('/'),
-    updateConversation: patch<UpdateConversationInput, AIConversation>('/:conversationId'),
-    deleteConversation: del<ConversationPathParams>('/:conversationId'),
-    listMessages: paginated<ListMessagesInput, PaginatedResponse<AIConversationMessage>>('/:conversationId/messages')
+    listConversations: paginated<ListAIConversationsParams | undefined, PaginatedResponse<AIConversation>>('/ai-conversations'),
+    createConversation: post<CreateAIConversationParams | undefined, CreateAIConversationResult>('/ai-conversations'),
+    updateConversation: patch<UpdateConversationInput, AIConversation>('/ai-conversations/:conversationId'),
+    deleteConversation: del<ConversationPathParams>('/ai-conversations/:conversationId'),
+    listMessages: paginated<ListMessagesInput, PaginatedResponse<AIConversationMessage>>('/ai-conversations/:conversationId/messages')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/ai/conversations',
+            basePath: '/teams',
             useRBAC: true
         }
     }

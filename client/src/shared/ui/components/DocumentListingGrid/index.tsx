@@ -3,6 +3,7 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import { buildItemMapByGeneratedId } from '@/shared/ui/components/DocumentListing/dnd-maps';
+import { cn } from '@/shared/utils/cn';
 import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingGrid.css';
 import { CSS } from '@dnd-kit/utilities';
@@ -97,13 +98,13 @@ const DocumentListingGridItem = <T extends { _id: string },>({
         zIndex: isDragging ? 20 : undefined
     };
 
-    const itemClassName = [
+    const itemClassName = cn(
         'document-listing-grid-item',
         draggableId ? 'is-draggable' : '',
         droppableId ? 'is-droppable' : '',
         isDragging ? 'is-dragging' : '',
         isOver ? 'is-drag-over' : ''
-    ].filter(Boolean).join(' ');
+    );
 
     const content = (
         <div

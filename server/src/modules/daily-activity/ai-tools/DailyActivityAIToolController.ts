@@ -22,7 +22,10 @@ export default class DailyActivityAIToolController extends AIToolController {
         });
         return {
             summary: `Found ${records.length} activity record(s) over the last ${range} day(s).`,
-            data: { range, records }
+            data: {
+                range,
+                records
+            }
         };
     }
 }

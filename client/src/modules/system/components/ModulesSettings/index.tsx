@@ -50,7 +50,11 @@ const ModulesSettings = () => {
             }
 
             seen.add(moduleKey);
-            entries.push({ moduleKey, label: item.label, item });
+            entries.push({
+                moduleKey,
+                label: item.label,
+                item
+            });
         }
 
         return entries.sort((left, right) => left.label.localeCompare(right.label));

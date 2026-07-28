@@ -3,7 +3,7 @@ import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { TeamClusterObjectGatewayStreamResponse } from '@shared/contracts/types';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Readable } from 'node:stream';
@@ -22,9 +22,9 @@ export class TrajectoryDumpStorageService {
     }
 
     private async requireStorageClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
 
         if (!storageClusterId) {

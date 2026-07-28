@@ -5,8 +5,6 @@ import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import TeamService from '@modules/team/services/TeamService';
 import TeamMemberService from '@modules/team/services/TeamMemberService';
 import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
-import { isPopulatedTeamMemberUser } from '@modules/team/models/team-member/TeamMemberModel';
-import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
 import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
 
 export default class TeamAIToolController extends AIToolController {
@@ -27,8 +25,8 @@ export default class TeamAIToolController extends AIToolController {
         const { models } = await this.#aiIntegrations.listModels(input.teamId);
 
         const onlineCount = members.filter((member) => {
-            const user = (member as { user?: TeamMemberProps['user'] }).user;
-            return user !== undefined && isPopulatedTeamMemberUser(user) && user.isOnline === true;
+            const user = member.user;
+            return typeof user === 'object' && user !== null && (user as { isOnline?: boolean }).isOnline === true;
         }).length;
 
         const enabledIntegrations = integrations.filter((integration) => integration.isEnabled);

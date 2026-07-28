@@ -1,20 +1,20 @@
-import { get, post, patch, del } from '../../shared/routing';
+import { get, post, put, patch, del } from '../../shared/routing';
 import type {
+    GetOrCreateDirectChatInput,
     CreateGroupChatInput,
     AddUsersToGroupInput,
     RemoveUsersFromGroupInput,
     UpdateGroupInfoInput,
     UpdateGroupAdminsInput,
     SendChatMessageInput,
-    EditMessageInput,
-    ToggleMessageReactionInput
+    EditMessageInput
 } from './http';
 import type { Chat, ChatMessage } from './domain';
 
 export const chatRoutes = {
     
     listUserChats: get<Chat[]>('/api/chats'),
-    getOrCreate: post<never, Chat>('/api/chats/teams/:teamId/participants/:targetUserId'),
+    getOrCreate: post<GetOrCreateDirectChatInput, Chat>('/api/chats/direct'),
     createGroup: post<CreateGroupChatInput, Chat>('/api/chats/groups'),
     addUsersToGroup: post<AddUsersToGroupInput, Chat>('/api/chats/:chatId/users'),
     removeUsersFromGroup: del<Chat>('/api/chats/:chatId/users'),
@@ -23,11 +23,12 @@ export const chatRoutes = {
     leaveGroup: del('/api/chats/:chatId/participants/self'),
 
     
-    listMessages: get<ChatMessage>('/api/chat-messages/:chatId/messages'),
-    sendMessage: post<SendChatMessageInput, ChatMessage>('/api/chat-messages/:chatId/messages'),
-    editMessage: patch<EditMessageInput, ChatMessage>('/api/chat-messages/:chatId/messages/:messageId'),
-    deleteMessage: del('/api/chat-messages/:chatId/messages/:messageId'),
-    markMessagesAsRead: patch<never, void>('/api/chat-messages/:chatId/messages/read'),
-    toggleMessageReaction: patch<ToggleMessageReactionInput, ChatMessage>('/api/chat-messages/:chatId/messages/:messageId/reactions'),
-    sendFileMessage: post<never, ChatMessage>('/api/chat-messages/:chatId/messages/file')
+    listMessages: get<ChatMessage>('/api/chats/:chatId/messages'),
+    sendMessage: post<SendChatMessageInput, ChatMessage>('/api/chats/:chatId/messages'),
+    markMessagesAsRead: patch<never, void>('/api/chats/:chatId/messages/read-status'),
+    editMessage: patch<EditMessageInput, ChatMessage>('/api/chats/:chatId/messages/:messageId'),
+    deleteMessage: del('/api/chats/:chatId/messages/:messageId'),
+    setMessageReaction: put<never, ChatMessage>('/api/chats/:chatId/messages/:messageId/reactions/:emoji'),
+    removeMessageReaction: del<ChatMessage>('/api/chats/:chatId/messages/:messageId/reactions/:emoji'),
+    sendFileMessage: post<never, ChatMessage>('/api/chats/:chatId/messages/file')
 } as const;

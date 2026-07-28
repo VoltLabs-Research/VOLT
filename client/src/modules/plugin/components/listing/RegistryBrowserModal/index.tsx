@@ -5,6 +5,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Package } from 'lucide-react';
+import semver from 'semver';
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/domain/registry';
 
 export const REGISTRY_BROWSER_MODAL_ID = 'plugin-registry-browser-modal';
@@ -21,15 +22,15 @@ const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 const isNewerVersion = (latest: string, installed: string): boolean => {
-    const segments = (version: string): number[] =>
-        version.split('-')[0].split('.').map((part) => Number.parseInt(part, 10) || 0);
-    const left = segments(latest);
-    const right = segments(installed);
-    for (let index = 0; index < Math.max(left.length, right.length); index++) {
-        const diff = (left[index] ?? 0) - (right[index] ?? 0);
-        if (diff !== 0) return diff > 0;
-    }
-    return false;
+    // `semver.gt` is coerced because registry and installed versions are not
+    // guaranteed to be strict semver; a hand-rolled compare used to strip the
+    // prerelease tag, so a plugin on `1.0.0-beta` was never offered `1.0.0`.
+    const left = semver.coerce(latest, { includePrerelease: true }) ?? semver.coerce(latest);
+    const right = semver.coerce(installed, { includePrerelease: true }) ?? semver.coerce(installed);
+
+    if (!left || !right) return false;
+
+    return semver.gt(left, right);
 };
 
 interface RegistryResultCardProps {
@@ -85,13 +86,20 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
     }, [search]);
 
     const { data, isFetching } = useRegistrySearchQuery(
-        { q: debouncedSearch, page: 1, limit: 30 },
+        {
+            q: debouncedSearch,
+            page: 1,
+            limit: 30
+        },
         { enabled: isOpen }
     );
 
     const items = data?.items ?? [];
 
-    const installedQuery = usePluginsCatalogQuery({ page: 1, limit: 200 }, { enabled: isOpen });
+    const installedQuery = usePluginsCatalogQuery({
+        page: 1,
+        limit: 200
+    }, { enabled: isOpen });
     const installedVersionByKey = useMemo(() => {
         const map = new Map<string, string>();
         for (const plugin of installedQuery.data?.data ?? []) {

@@ -1,4 +1,6 @@
-import { PluginStatus, findPluginsByIds, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import { findPluginsByIds } from '@modules/plugin/services/plugin/PluginQueries';
+import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import {
     ArgumentType,
     WorkflowNodeType,

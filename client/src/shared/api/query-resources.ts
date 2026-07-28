@@ -58,7 +58,10 @@ export const createEntityCacheResource = <TEntity extends { _id: string }>(confi
                     return current;
                 }
 
-                return current.map((entity) => entity._id === id ? { ...entity, ...updates } : entity);
+                return current.map((entity) => entity._id === id ? {
+                    ...entity,
+                    ...updates
+                } : entity);
             });
             activeQueryClient.setQueryData<TEntity | undefined>(config.detailKey(id), (current) => {
                 if (!current) {

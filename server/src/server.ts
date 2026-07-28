@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import './core/config/env';
 import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
@@ -5,6 +6,7 @@ import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import type { Duplex } from 'node:stream';
 import { loadAllModules } from './core/bootstrap/load-modules';
+import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
 import { isModuleEnabled } from './core/bootstrap/module-state';
 import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
@@ -29,6 +31,7 @@ import pluginDebugSocketModule from './modules/plugin/socket/PluginDebugSocketMo
 import teamClusterSocketModule from './modules/cluster/socket/TeamClusterSocketModule';
 import analysisLogSocketModule from './modules/analysis/socket/AnalysisLogSocketModule';
 import { flushPendingSubscriptions } from './shared/infrastructure/events/event-registry';
+import mountEventGroups from './core/bootstrap/mount-event-groups';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
@@ -95,6 +98,8 @@ const shutdown = async () => {
             shutdownTasks.push(activeContainerPortRelayLifecycle.stop());
             activeContainerPortRelayLifecycle = null;
         }
+
+        shutdownTasks.push(disconnectDatabase());
 
         const shutdownResults = await Promise.allSettled(shutdownTasks);
 
@@ -169,9 +174,10 @@ const startServer = async () => {
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
         try {
-            const [redisResult, mongoResult, minioResult] = await Promise.allSettled([
+            const [redisResult, mongoResult, postgresResult, minioResult] = await Promise.allSettled([
                 initializeRedis(),
                 mongoConnector(),
+                connectDatabase(),
                 initializeMinio()
             ]);
 
@@ -187,6 +193,11 @@ const startServer = async () => {
                 failures.push('MongoDB');
             }
 
+            if (postgresResult.status === 'rejected') {
+                logger.error(`@server: Postgres init failed: ${postgresResult.reason}`);
+                failures.push('Postgres');
+            }
+
             if (minioResult.status === 'rejected') {
                 logger.error(`@server: MinIO init failed: ${minioResult.reason}`);
                 failures.push('MinIO');
@@ -197,6 +208,7 @@ const startServer = async () => {
                 process.exit(1);
             }
 
+            mountEventGroups();
             await flushPendingSubscriptions();
 
             activeSocketGateway = socketGateway;

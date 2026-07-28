@@ -11,7 +11,7 @@ export interface GetOctreeMetadataInput {
 
 const endpoints = {
     get: get<GetOctreeMetadataInput, OctreeMetadata>(
-        ({ trajectoryId, analysisId, exposureId }) => `/${trajectoryId}/${analysisId}/${exposureId}/octree-metadata`,
+        ({ trajectoryId, analysisId, exposureId }) => `/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/octree-metadata`,
         {
             query: ({ timestep }) => ({ timestep })
         }
@@ -21,7 +21,7 @@ const endpoints = {
 const octreeMetadataService = createService({
     clients: {
         default: {
-            basePath: '/lod',
+            basePath: '/teams',
             useRBAC: true
         }
     }

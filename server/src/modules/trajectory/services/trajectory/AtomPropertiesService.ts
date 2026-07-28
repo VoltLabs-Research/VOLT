@@ -6,10 +6,12 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
+import PluginEntity from '@modules/plugin/models/Plugin';
+import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 
 export interface FilterExpression {
     property: string;
@@ -128,11 +130,11 @@ export class AtomPropertiesService {
         analysisId: string,
         timestep: string
     ): Promise<AnalysisAllAtomsResult | null> {
-        const analysisDoc = await AnalysisModel.findById(analysisId);
-        if (!analysisDoc) {
+        const analysisEntity = await AnalysisEntity.findOneBy({ id: analysisId });
+        if (!analysisEntity) {
             return null;
         }
-        const analysis = toAnalysisLike(analysisDoc);
+        const analysis = toAnalysisLike(analysisEntity);
         const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         return this.daemonClient.command<AnalysisAllAtomsResult | null>(
@@ -291,15 +293,18 @@ export class AtomPropertiesService {
     }
 
     private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: PluginLike }> {
-        const analysisDoc = await AnalysisModel.findById(analysisId);
-        if (!analysisDoc) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
-        const analysis = toAnalysisLike(analysisDoc);
+        const analysisEntity = await AnalysisEntity.findOneBy({ id: analysisId });
+        if (!analysisEntity) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+        const analysis = toAnalysisLike(analysisEntity);
 
-        const pluginDoc = await PluginModel.findById(analysis.props.plugin);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: analysis.props.plugin });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
-        return { analysis, plugin };
+        return {
+            analysis,
+            plugin
+        };
     }
 
     private getExposureNodes(plugin: PluginLike) {
@@ -407,7 +412,10 @@ export class AtomPropertiesService {
             ownerClusterId
         );
 
-        return propertyNames.map((name) => ({ name, type: 'number' }));
+        return propertyNames.map((name) => ({
+            name,
+            type: 'number'
+        }));
     }
 }
 

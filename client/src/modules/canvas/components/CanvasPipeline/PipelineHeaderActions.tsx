@@ -128,7 +128,10 @@ const PipelineHeaderActions = ({
                                 label={modifier.name}
                                 size='sm'
                                 onClick={() => {
-                                    handleAdd('analysis-plugin', { pluginId: modifier.pluginId, argValues: {} });
+                                    handleAdd('analysis-plugin', {
+                                        pluginId: modifier.pluginId,
+                                        argValues: {}
+                                    });
                                     close();
                                 }}
                             />

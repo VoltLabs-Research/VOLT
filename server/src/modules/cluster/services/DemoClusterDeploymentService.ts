@@ -1,4 +1,4 @@
-import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import Docker from 'dockerode';
@@ -309,7 +309,10 @@ export class DemoClusterDeploymentService {
     private async removeContainer(name: string): Promise<void> {
         try {
             const container = this.docker.getContainer(name);
-            await container.remove({ force: true, v: true });
+            await container.remove({
+                force: true,
+                v: true
+            });
         } catch (error: unknown) {
             const status = (error as { statusCode?: number }).statusCode;
             if (status === 404) {

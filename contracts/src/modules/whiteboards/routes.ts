@@ -18,23 +18,23 @@ import type {
 } from './domain';
 
 export const whiteboardRoutes = {
-    create: post<CreateWhiteboardInput, CreateWhiteboardResponse>('/api/whiteboards/:teamId'),
-    list: get<Whiteboard>('/api/whiteboards/:teamId'),
+    create: post<CreateWhiteboardInput, CreateWhiteboardResponse>('/api/teams/:teamId/whiteboards'),
+    list: get<Whiteboard>('/api/teams/:teamId/whiteboards'),
 
-    listFolders: get<WhiteboardFolder>('/api/whiteboards/:teamId/folders'),
-    getFolder: get<WhiteboardFolder>('/api/whiteboards/:teamId/folders/:folderId'),
-    createFolder: post<CreateWhiteboardFolderInput, WhiteboardFolder>('/api/whiteboards/:teamId/folders'),
-    updateFolder: patch<UpdateWhiteboardFolderInput, WhiteboardFolder>('/api/whiteboards/:teamId/folders/:folderId'),
-    removeFolder: del('/api/whiteboards/:teamId/folders/:folderId'),
+    listFolders: get<WhiteboardFolder>('/api/teams/:teamId/whiteboard-folders'),
+    getFolder: get<WhiteboardFolder>('/api/teams/:teamId/whiteboard-folders/:folderId'),
+    createFolder: post<CreateWhiteboardFolderInput, WhiteboardFolder>('/api/teams/:teamId/whiteboard-folders'),
+    updateFolder: patch<UpdateWhiteboardFolderInput, WhiteboardFolder>('/api/teams/:teamId/whiteboard-folders/:folderId'),
+    removeFolder: del('/api/teams/:teamId/whiteboard-folders/:folderId'),
 
-    get: get<GetWhiteboardResponse>('/api/whiteboards/:teamId/:whiteboardId'),
-    update: patch<UpdateWhiteboardInput, UpdateWhiteboardResponse>('/api/whiteboards/:teamId/:whiteboardId'),
-    remove: del('/api/whiteboards/:teamId/:whiteboardId'),
-    move: patch<MoveWhiteboardInput, null>('/api/whiteboards/:teamId/:whiteboardId/folder'),
+    get: get<GetWhiteboardResponse>('/api/teams/:teamId/whiteboards/:whiteboardId'),
+    update: patch<UpdateWhiteboardInput, UpdateWhiteboardResponse>('/api/teams/:teamId/whiteboards/:whiteboardId'),
+    remove: del('/api/teams/:teamId/whiteboards/:whiteboardId'),
+    move: patch<MoveWhiteboardInput, null>('/api/teams/:teamId/whiteboards/:whiteboardId/folder'),
 
-    getState: get<unknown>('/api/whiteboards/:teamId/:whiteboardId/state'),
-    saveState: patch<SaveWhiteboardStateInput, null>('/api/whiteboards/:teamId/:whiteboardId/state'),
+    getState: get<unknown>('/api/teams/:teamId/whiteboards/:whiteboardId/state'),
+    saveState: patch<SaveWhiteboardStateInput, null>('/api/teams/:teamId/whiteboards/:whiteboardId/state'),
 
-    uploadAsset: post<UploadWhiteboardAssetInput, UploadWhiteboardAssetResponse>('/api/whiteboards/:teamId/:whiteboardId/assets'),
-    getAsset: get<unknown>('/api/whiteboards/:teamId/:whiteboardId/assets/:assetId')
+    uploadAsset: post<UploadWhiteboardAssetInput, UploadWhiteboardAssetResponse>('/api/teams/:teamId/whiteboards/:whiteboardId/assets'),
+    getAsset: get<unknown>('/api/teams/:teamId/whiteboards/:whiteboardId/assets/:assetId')
 } as const;

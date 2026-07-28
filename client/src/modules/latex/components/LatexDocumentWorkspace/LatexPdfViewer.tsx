@@ -1,3 +1,4 @@
+import { cn } from '@/shared/utils/cn';
 import { Button, Loader, Row, Stack, Text } from '@voltstack/bravais';
 import { AlertCircle, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -97,7 +98,10 @@ const LatexPdfViewer = ({
         setPdfError(null);
         setPageCounts((current) => current[url] === loadedPages
             ? current
-            : { ...current, [url]: loadedPages });
+            : {
+                ...current,
+                [url]: loadedPages
+            });
     }, []);
 
     const handleLayerLoadError = useCallback((url: string, nextError: Error): void => {
@@ -282,11 +286,11 @@ const LatexPdfViewer = ({
                         const isVisible = isCommitted || url === readyUrl;
                         const isOnTop = !isCommitted && url === readyUrl;
                         const pages = pageCounts[url] ?? 0;
-                        const className = [
+                        const className = cn(
                             'latex-pdf-document',
                             isVisible ? '' : 'latex-pdf-document--hidden',
                             isOnTop ? 'latex-pdf-document--top' : ''
-                        ].filter(Boolean).join(' ');
+                        );
 
                         return (
                             <Document

@@ -29,7 +29,10 @@ export default class ProcessRunner{
         return new Promise<void>((resolve, reject) => {
             const child = spawn(bin, args, {
                 cwd: options.cwd,
-                env: options.env ? { ...process.env, ...options.env } : process.env,
+                env: options.env ? {
+                    ...process.env,
+                    ...options.env
+                } : process.env,
                 shell: false
             });
 

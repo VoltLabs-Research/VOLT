@@ -29,7 +29,10 @@ const resetCamera: ClientToolHandler<ResetCameraInput> = {
     },
 
     describeEffect() {
-        return { label: 'Reset the camera', icon: 'camera' };
+        return {
+            label: 'Reset the camera',
+            icon: 'camera'
+        };
     }
 };
 

@@ -52,7 +52,11 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
                     socketService.emitWithoutAck(joinEvent, payload);
                 } catch (error) {
                     isJoined = false;
-                    socketErrorReporter.report(error, { kind: 'subscribe', event: joinEvent, roomKey });
+                    socketErrorReporter.report(error, {
+                        kind: 'subscribe',
+                        event: joinEvent,
+                        roomKey
+                    });
                 }
                 return;
             }
@@ -60,7 +64,11 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
             socketService.emit(joinEvent, payload).catch((error) => {
                 if (cancelled) return;
                 isJoined = false;
-                socketErrorReporter.report(error, { kind: 'subscribe', event: joinEvent, roomKey });
+                socketErrorReporter.report(error, {
+                    kind: 'subscribe',
+                    event: joinEvent,
+                    roomKey
+                });
             });
         };
 

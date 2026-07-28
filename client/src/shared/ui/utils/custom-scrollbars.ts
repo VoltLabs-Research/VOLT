@@ -55,7 +55,10 @@ const getAxisState = (element: HTMLElement, axis: ScrollAxis): ScrollbarAxisStat
     const overflow = axis === 'vertical' ? computedStyle.overflowY : computedStyle.overflowX;
 
     if (!isOverflowScrollable(overflow)) {
-        return { isScrollable: false, maxScroll: 0 };
+        return {
+            isScrollable: false,
+            maxScroll: 0
+        };
     }
 
     const maxScroll = axis === 'vertical'

@@ -20,9 +20,21 @@ interface PanelPosition {
 }
 
 const panelVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 8 },
-    visible: { opacity: 1, scale: 1, y: 0 },
-    exit: { opacity: 0, scale: 0.97, y: 4 }
+    hidden: {
+        opacity: 0,
+        scale: 0.95,
+        y: 8
+    },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.97,
+        y: 4
+    }
 };
 
 const FloatingNodePanel = () => {
@@ -63,7 +75,11 @@ const FloatingNodePanel = () => {
             ? containerWidth - nodeRightEdge - PANEL_WIDTH
             : PANEL_MARGIN;
 
-        return { top: clampedTop, right, maxHeight };
+        return {
+            top: clampedTop,
+            right,
+            maxHeight
+        };
     }, [flowToScreenPosition]);
 
     const liveSelectedNode = selectedNode
@@ -94,12 +110,19 @@ const FloatingNodePanel = () => {
                 <motion.div
                     ref={panelRef}
                     className='floating-node-panel p-absolute overflow-hidden glass-bg d-flex column'
-                    style={{ top: position.top, right: position.right, maxHeight: position.maxHeight }}
+                    style={{
+                        top: position.top,
+                        right: position.right,
+                        maxHeight: position.maxHeight
+                    }}
                     variants={panelVariants}
                     initial='hidden'
                     animate='visible'
                     exit='exit'
-                    transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                    transition={{
+                        duration: 0.18,
+                        ease: [0.32, 0.72, 0, 1]
+                    }}
                     key={liveSelectedNode.id}
                     onClick={(event) => event.stopPropagation()}
                 >

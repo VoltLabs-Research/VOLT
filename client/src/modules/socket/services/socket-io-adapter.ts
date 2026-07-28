@@ -97,7 +97,10 @@ class SocketIOAdapter implements ISocketService {
             };
         }
 
-        const subscription: EventSubscription = { event, callback };
+        const subscription: EventSubscription = {
+            event,
+            callback
+        };
         this.subscriptions.push(subscription);
 
         if (this.socket) {

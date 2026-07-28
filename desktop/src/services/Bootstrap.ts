@@ -52,11 +52,17 @@ export default class Bootstrap{
         if(existing){
             try{
                 const authToken = await this.#signIn(existing.email, existing.password);
-                const next: BootstrapState = { ...existing, authToken };
+                const next: BootstrapState = {
+                    ...existing,
+                    authToken
+                };
                 await this.props.appConfig.setBootstrap(next);
                 return next;
             }catch(err){
-                bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] re-signIn failed (${(err as Error).message}); running full bootstrap` });
+                bus.emit('deploy:log', {
+                    stream: 'stdout',
+                    line: `[bootstrap] re-signIn failed (${(err as Error).message}); running full bootstrap`
+                });
                 await this.props.appConfig.clearBootstrap();
             }
         }
@@ -76,13 +82,22 @@ export default class Bootstrap{
         let auth: AuthResponse;
         let reused = false;
         try{
-            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating user ${email}` });
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: `[bootstrap] creating user ${email}`
+            });
             auth = await this.#signUp(email, password, firstName, rest.join(' '));
         }catch(err){
             if(err instanceof HttpError && err.status === 409){
-                bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] user ${email} exists; signing in` });
+                bus.emit('deploy:log', {
+                    stream: 'stdout',
+                    line: `[bootstrap] user ${email} exists; signing in`
+                });
                 const token = await this.#signIn(email, password);
-                auth = { token, user: await this.#me(token) };
+                auth = {
+                    token,
+                    user: await this.#me(token)
+                };
                 reused = true;
             }else{
                 throw err;
@@ -95,7 +110,10 @@ export default class Bootstrap{
             : await this.#createTeam(auth.token, teamName);
 
         if(acc?.autoJoinNewUsers){
-            bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] enabling auto-join for new users' });
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: '[bootstrap] enabling auto-join for new users'
+            });
             await this.#setDefaultTeamForNewUsers(auth.token, team._id);
         }
 
@@ -104,7 +122,10 @@ export default class Bootstrap{
             ? await this.#findOrCreateCluster(auth.token, team._id, clusterName)
             : await this.#createCluster(auth.token, team._id, clusterName);
 
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] revealing daemon credentials' });
+        bus.emit('deploy:log', {
+            stream: 'stdout',
+            line: '[bootstrap] revealing daemon credentials'
+        });
         const daemonPassword = await this.#revealDaemonPassword(auth.token, team._id, cluster.teamCluster._id, password);
 
         const state: BootstrapState = {
@@ -130,10 +151,16 @@ export default class Bootstrap{
         const teams = await this.#getJson<TeamResponse[]>('/api/teams', token);
         const existing = teams?.find((team) => team?._id);
         if(existing){
-            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] reusing team ${existing._id}` });
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: `[bootstrap] reusing team ${existing._id}`
+            });
             return existing;
         }
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating team' });
+        bus.emit('deploy:log', {
+            stream: 'stdout',
+            line: '[bootstrap] creating team'
+        });
         return this.#createTeam(token, name);
     }
 
@@ -141,10 +168,16 @@ export default class Bootstrap{
         const clusters = await this.#getJson<Array<{ _id: string }>>(`/api/teams/${teamId}/clusters`, token);
         const existing = clusters?.find((cluster) => cluster?._id);
         if(existing){
-            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] reusing cluster ${existing._id}` });
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: `[bootstrap] reusing cluster ${existing._id}`
+            });
             return { teamCluster: existing };
         }
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating cluster' });
+        bus.emit('deploy:log', {
+            stream: 'stdout',
+            line: '[bootstrap] creating cluster'
+        });
         return this.#createCluster(token, teamId, name);
     }
 
@@ -158,12 +191,18 @@ export default class Bootstrap{
     }
 
     async #signIn(email: string, password: string): Promise<string>{
-        const data = await this.#postJson<AuthResponse>('/api/auth/sessions', { email, password });
+        const data = await this.#postJson<AuthResponse>('/api/auth/sessions', {
+            email,
+            password
+        });
         return data.token;
     }
 
     async #createTeam(token: string, name: string): Promise<TeamResponse>{
-        return this.#postJson<TeamResponse>('/api/teams', { name, description: '' }, token);
+        return this.#postJson<TeamResponse>('/api/teams', {
+            name,
+            description: ''
+        }, token);
     }
 
     async #setDefaultTeamForNewUsers(token: string, teamId: string): Promise<void>{
@@ -176,7 +215,7 @@ export default class Bootstrap{
 
     async #revealDaemonPassword(token: string, teamId: string, teamClusterId: string, password: string): Promise<string>{
         const data = await this.#postJson<{ services: { daemon: { password: string } } }>(
-            `/api/teams/${teamId}/clusters/${teamClusterId}/credentials/reveal`,
+            `/api/teams/${teamId}/clusters/${teamClusterId}/credential-reveals`,
             { password },
             token
         );

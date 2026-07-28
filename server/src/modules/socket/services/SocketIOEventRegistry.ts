@@ -40,7 +40,10 @@ export default class SocketIOEventRegistry {
                 }
             } catch(error) {
                 if(typeof ack === 'function'){
-                    ack({ ok: false, error: error instanceof Error ? error.message : 'Internal error' });
+                    ack({
+                        ok: false,
+                        error: error instanceof Error ? error.message : 'Internal error'
+                    });
                 }
             }
         });

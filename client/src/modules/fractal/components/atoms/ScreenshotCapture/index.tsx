@@ -180,7 +180,10 @@ const scalePointCloudMaterials = (
             return;
         }
 
-        snapshot.push({ material, pointScale });
+        snapshot.push({
+            material,
+            pointScale
+        });
         material.uniforms.pointScale.value = pointScale * scale;
     });
 
@@ -208,10 +211,16 @@ const ScreenshotCapture = ({
     const { gl, scene, camera, invalidate, setDpr, setSize, size } = useThree();
     const pendingRef = useRef<PendingCapture | null>(null);
     const toastIdRef = useRef<string | null>(null);
-    const sizeRef = useRef({ width: size.width, height: size.height });
+    const sizeRef = useRef({
+        width: size.width,
+        height: size.height
+    });
 
     useEffect(() => {
-        sizeRef.current = { width: size.width, height: size.height };
+        sizeRef.current = {
+            width: size.width,
+            height: size.height
+        };
     }, [size.height, size.width]);
 
     const dismissToast = useCallback(() => {
@@ -306,7 +315,10 @@ const ScreenshotCapture = ({
         } catch {
             dismissToast();
             onStatusChange?.('Screenshot failed. Could not capture the viewport.');
-            sileo.error({ title: 'Screenshot failed', description: 'Could not capture the viewport.' });
+            sileo.error({
+                title: 'Screenshot failed',
+                description: 'Could not capture the viewport.'
+            });
         } finally {
             restorePointCloudMaterials(pending.pointCloudScaleSnapshot);
             restoreSnapshot(pending.snapshot);

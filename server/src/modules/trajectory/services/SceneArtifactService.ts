@@ -1,8 +1,8 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
-import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Analysis from '@modules/analysis/models/Analysis';
+import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import type { TrajectoryDumpStorageService } from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import {
@@ -10,11 +10,14 @@ import {
     resolveTrajectoryStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import type {
     SceneArtifactParams,
     SceneArtifactSourceType,
     SceneArtifactStatus
 } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/domain/scene-artifact';
 
 interface RecordSceneArtifactInput {
     objectName: string;
@@ -50,6 +53,21 @@ export interface SceneArtifactExecutionContext {
     storageClusterId: string;
 }
 
+const RECORDED_COLUMNS = [
+    'trajectory',
+    'storageClusterId',
+    'analysis',
+    'plugin',
+    'sourceType',
+    'timestep',
+    'storageBucket',
+    'params',
+    'displayName',
+    'status',
+    'metadata',
+    'updatedAt'
+];
+
 export const recordSceneArtifact = async (input: RecordSceneArtifactInput): Promise<void> => {
     const {
         objectName,
@@ -66,45 +84,41 @@ export const recordSceneArtifact = async (input: RecordSceneArtifactInput): Prom
         storageBucket = TEAM_CLUSTER_BUCKETS.MODELS
     } = input;
 
-    await SceneArtifactModel.findOneAndUpdate(
-        { objectName },
-        {
-            $set: {
-                trajectory,
-                storageClusterId,
-                analysis,
-                plugin,
-                sourceType,
-                timestep,
-                objectName,
-                storageBucket,
-                params,
-                displayName,
-                status,
-                metadata
-            }
-        },
-        {
-            upsert: true,
-            new: true,
-            setDefaultsOnInsert: true
-        }
-    ).exec();
+    await SceneArtifact.createQueryBuilder()
+        .insert()
+        .values({
+            id: generateEntityId(),
+            objectName,
+            trajectory,
+            storageClusterId,
+            analysis: analysis ?? null,
+            plugin: plugin ?? null,
+            sourceType,
+            timestep,
+            storageBucket,
+            params: params as QueryDeepPartialEntity<SceneArtifactParams>,
+            displayName,
+            status,
+            metadata: (metadata ?? {}) as QueryDeepPartialEntity<SceneArtifactMetadata>,
+            updatedAt: new Date()
+        })
+        .orUpdate(RECORDED_COLUMNS, ['objectName'])
+        .execute();
 };
 
 export const resolveSceneArtifactStorageCluster = async (
     input: ResolveSceneArtifactStorageClusterInput
 ): Promise<string | undefined> => {
     if (input.analysisId) {
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await Analysis.findOneBy({ id: input.analysisId });
         if (analysis) {
-            return resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() });
+            return resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined });
         }
     }
 
-    const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+    const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
     return trajectory
-        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
         : undefined;
 };
 
@@ -121,13 +135,13 @@ export const resolveSceneArtifactExecutionContext = async ({
         analysisId
     });
 
-    const trajectory = await TrajectoryModel.findById(trajectoryId);
+    const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
     if (!trajectory || !storageClusterId) {
         throw buildClusterRequiredError();
     }
 
     const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(
-        trajectory.team.toString(),
+        trajectory.team,
         undefined,
         storageClusterId
     );
@@ -139,5 +153,8 @@ export const resolveSceneArtifactExecutionContext = async ({
         );
     }
 
-    return { computeClusterId, storageClusterId };
+    return {
+        computeClusterId,
+        storageClusterId
+    };
 };

@@ -207,7 +207,10 @@ const usePluginExecution = ({
             clearExecStateLater(modId);
             return true;
         } catch {
-            sileo.error({ title: `${pluginName} failed to start`, description: 'Please try again.' });
+            sileo.error({
+                title: `${pluginName} failed to start`,
+                description: 'Please try again.'
+            });
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
             return false;
@@ -225,7 +228,10 @@ const usePluginExecution = ({
         setAnalysisId
     ]);
 
-    return { execStates, handleExecutePlugin };
+    return {
+        execStates,
+        handleExecutePlugin
+    };
 };
 
 export default usePluginExecution;

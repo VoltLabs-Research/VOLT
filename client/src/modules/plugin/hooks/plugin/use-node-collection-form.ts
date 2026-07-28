@@ -32,7 +32,10 @@ const useNodeCollectionForm = <T extends object>(
 
     const updateItem = useCallback((index: number, field: keyof T, value: unknown) => {
         const updatedItems = items.map((item, i) =>
-            i === index ? { ...item, [field]: value } : item
+            i === index ? {
+                ...item,
+                [field]: value
+            } : item
         );
         updateItems(updatedItems);
     }, [items, updateItems]);

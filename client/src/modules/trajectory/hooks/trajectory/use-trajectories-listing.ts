@@ -49,9 +49,18 @@ export const trajectoriesListingResource = createFolderedListingResource({
 });
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
-    { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
-    { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] }
+    {
+        event: SOCKET_TRAJECTORY_EVENTS.CREATED,
+        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+    },
+    {
+        event: SOCKET_TRAJECTORY_EVENTS.UPDATED,
+        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+    },
+    {
+        event: SOCKET_TRAJECTORY_EVENTS.DELETED,
+        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+    }
 ];
 
 const buildDeleteTrajectoryMenuOption = (
@@ -83,7 +92,10 @@ const useTrajectoriesListing = () => {
     const { downloadTrajectory } = useDownloadTrajectory();
 
     const moveTrajectoryToFolder = useCallback((trajectoryId: string, folderId: string | null) => {
-        return moveTrajectory({ trajectoryId, folderId });
+        return moveTrajectory({
+            trajectoryId,
+            folderId
+        });
     }, [moveTrajectory]);
 
     const openTrajectory = useCallback((trajectory: Trajectory) => {

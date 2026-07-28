@@ -37,6 +37,7 @@ export interface UpdateTrajectoryFolderInput{
 }
 
 export interface CreateColoredModelInput{
+    analysisId?: string;
     timestep: string;
     exposureId?: string;
     property: string;
@@ -57,6 +58,7 @@ export interface ParticleFilterConditionInput{
 }
 
 export interface ApplyParticleFilterActionInput{
+    analysisId?: string;
     timestep: string;
     action: 'delete' | 'highlight';
     combinator: ParticleFilterCombinator;

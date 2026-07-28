@@ -72,8 +72,16 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
             title='Disk Operations'
             isLoading={!metrics}
             stats={[
-                { label: 'Throughput', value: `${currentThroughput.toFixed(1)} MB/s`, emphasis: 'primary' },
-                { label: 'Peak', value: `${peakThroughput.toFixed(1)} MB/s`, emphasis: 'secondary' }
+                {
+                    label: 'Throughput',
+                    value: `${currentThroughput.toFixed(1)} MB/s`,
+                    emphasis: 'primary'
+                },
+                {
+                    label: 'Peak',
+                    value: `${peakThroughput.toFixed(1)} MB/s`,
+                    emphasis: 'secondary'
+                }
             ]}
             statsLoading={!metrics}
         >
@@ -104,7 +112,10 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
                     />
                     <Tooltip content={renderTooltip} />
                     <Legend
-                        wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
+                        wrapperStyle={{
+                            fontSize: '12px',
+                            paddingTop: '20px'
+                        }}
                         iconType='circle'
                     />
                     <Area

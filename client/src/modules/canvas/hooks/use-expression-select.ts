@@ -23,7 +23,13 @@ const useExpressionSelect = (
     );
 
     if (!isValid || !evaluatedColumn) {
-        return { matchCount: null, visibilityMask: null, isValid, error, autoRoute };
+        return {
+            matchCount: null,
+            visibilityMask: null,
+            isValid,
+            error,
+            autoRoute
+        };
     }
 
     const mask = new Uint8Array(evaluatedColumn.length);
@@ -34,7 +40,12 @@ const useExpressionSelect = (
         matchCount += v;
     }
 
-    return { matchCount, visibilityMask: mask, isValid: true, autoRoute: false };
+    return {
+        matchCount,
+        visibilityMask: mask,
+        isValid: true,
+        autoRoute: false
+    };
 };
 
 export default useExpressionSelect;

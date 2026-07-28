@@ -179,7 +179,10 @@ export default function SimulationCardFooter({
     }, [isNavigable, navigate, trajectoryId]);
 
     const handleOpenComputeJobs = useCallback(() => {
-        setJobsScope({ trajectoryId, trajectoryName: name });
+        setJobsScope({
+            trajectoryId,
+            trajectoryName: name
+        });
         openModal(DASHBOARD_DRAWER_IDS.jobs);
     }, [setJobsScope, trajectoryId, name]);
 

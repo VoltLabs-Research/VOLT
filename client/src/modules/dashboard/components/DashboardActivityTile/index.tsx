@@ -50,7 +50,12 @@ const buildActivityTileSummary = (activityData: DailyActivity[]): ActivityTileSu
         trendPercent = 100;
     }
 
-    return { todayActions, series, labels, trendPercent };
+    return {
+        todayActions,
+        series,
+        labels,
+        trendPercent
+    };
 };
 
 const DashboardActivityTile = () => {

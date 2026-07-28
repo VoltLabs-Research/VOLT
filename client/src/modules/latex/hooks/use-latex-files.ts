@@ -53,7 +53,12 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     ): Promise<LatexFile | null> => {
         if (!name.trim()) return null;
 
-        return await createFile({ documentId, name: name.trim(), path, content });
+        return await createFile({
+            documentId,
+            name: name.trim(),
+            path,
+            content
+        });
     }, [createFile, documentId]);
 
     const handleCreateFile = useCallback(async (
@@ -75,21 +80,31 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
 
     const handleDeleteFile = useCallback(async (fileId: string): Promise<void> => {
         await showPromise(
-            deleteFile({ documentId, fileId }),
+            deleteFile({
+                documentId,
+                fileId
+            }),
             DELETE_FILE_TOAST
         );
     }, [deleteFile, documentId]);
 
     const handleSetEntrypoint = useCallback(async (fileId: string): Promise<void> => {
         await showPromise(
-            setEntrypoint({ documentId, fileId }),
+            setEntrypoint({
+                documentId,
+                fileId
+            }),
             SET_ENTRYPOINT_TOAST
         );
     }, [setEntrypoint, documentId]);
 
     const handleRenameFile = useCallback(async (fileId: string, name: string): Promise<void> => {
         await showPromise(
-            updateFile({ documentId, fileId, name }),
+            updateFile({
+                documentId,
+                fileId,
+                name
+            }),
             RENAME_FILE_TOAST
         );
     }, [documentId, updateFile]);

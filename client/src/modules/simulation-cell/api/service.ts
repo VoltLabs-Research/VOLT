@@ -15,9 +15,10 @@ export interface GetSimulationCellsParams {
 }
 
 const endpoints = {
-    getAll: paginated<GetSimulationCellsParams | undefined, PaginatedResponse<SimulationCell>>('/'),
+    getAll: paginated<GetSimulationCellsParams | undefined, PaginatedResponse<SimulationCell>>('/simulation-cells'),
     getByTrajectory: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
-        '/trajectories/:trajectoryId', {
+        '/trajectories/:trajectoryId/simulation-cell', {
+            client: 'trajectoryScoped',
             query: ({ timestep }) => timestep === undefined ? undefined : { timestep }
         }
     )
@@ -26,7 +27,11 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/simulation-cells',
+            basePath: '/teams',
+            useRBAC: true
+        },
+        trajectoryScoped: {
+            basePath: '/teams',
             useRBAC: true
         }
     }

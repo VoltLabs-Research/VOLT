@@ -97,7 +97,10 @@ const CanvasPluginSearch = () => {
     const handleSelect = (index: number) => {
         const modifier = results[index];
         if (!modifier) return;
-        addStage('analysis-plugin', { pluginId: modifier.pluginId, argValues: {} });
+        addStage('analysis-plugin', {
+            pluginId: modifier.pluginId,
+            argValues: {}
+        });
         setQuery('');
         setIsOpen(false);
         setActiveIndex(-1);

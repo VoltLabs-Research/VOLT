@@ -43,7 +43,10 @@ const useSaveWorkflow = () => {
             return plugin;
         } catch (error) {
             if (isAccessDeniedError(error)) {
-                const userError = reportError(error, { surface: ErrorSurface.Toast, fallbackTitle: 'You do not have permission to save this workflow' });
+                const userError = reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'You do not have permission to save this workflow'
+                });
                 setSaveError(userError.title || 'You do not have permission to save this workflow');
                 return null;
             }

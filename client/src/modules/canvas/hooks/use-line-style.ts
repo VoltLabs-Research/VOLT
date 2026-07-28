@@ -130,12 +130,18 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
     const source = useMemo(() => {
         const styledScene = activeScenes.find(isLineStyleScene);
         if (styledScene) {
-            return { analysisId: styledScene.analysisId, exposureId: styledScene.exposureId };
+            return {
+                analysisId: styledScene.analysisId,
+                exposureId: styledScene.exposureId
+            };
         }
 
         const pluginScene = activeScenes.find(isLineSource);
         if (pluginScene) {
-            return { analysisId: pluginScene.analysisId, exposureId: pluginScene.exposureId };
+            return {
+                analysisId: pluginScene.analysisId,
+                exposureId: pluginScene.exposureId
+            };
         }
 
         return null;
@@ -227,7 +233,11 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
     }, [source, categoryProperty, trajectoryId, currentTimestep]);
 
     const uniqueValuesResult = uniqueValuesQuery(
-        uniqueValuesParams ?? { trajectoryId: '', timestep: 0, property: '' },
+        uniqueValuesParams ?? {
+            trajectoryId: '',
+            timestep: 0,
+            property: ''
+        },
         {
             enabled: Boolean(uniqueValuesParams),
             retry: false,
@@ -242,16 +252,25 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
         return sorted.map((value) => {
             const explicit = resolveExplicitColor(exportOptions?.propertyColors, value);
             if (explicit) {
-                return { value, swatch: rgbaToHex(explicit) };
+                return {
+                    value,
+                    swatch: rgbaToHex(explicit)
+                };
             }
             const swatch = goldenRatioColor(fallbackIndex);
             fallbackIndex += 1;
-            return { value, swatch };
+            return {
+                value,
+                swatch
+            };
         });
     }, [uniqueValuesResult.data, exportOptions]);
 
     const toggleCategory = useCallback((value: string) => {
-        setHiddenCategories((current) => ({ ...current, [value]: !current[value] }));
+        setHiddenCategories((current) => ({
+            ...current,
+            [value]: !current[value]
+        }));
     }, []);
 
     const statsParams = useMemo(() => {
@@ -269,7 +288,12 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
     }, [source, gradientProperty, trajectoryId, currentTimestep]);
 
     const statsQuery = colorCodingStatsQuery(
-        statsParams ?? { trajectoryId: '', timestep: 0, property: '', type: 'modifier' },
+        statsParams ?? {
+            trajectoryId: '',
+            timestep: 0,
+            property: '',
+            type: 'modifier'
+        },
         { enabled: colorMode === 'gradient' && Boolean(statsParams) }
     );
 
@@ -296,7 +320,10 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
     const updateFilterRow = useCallback((rowId: string, patch: Partial<Omit<LineStyleFilterRow, 'id'>>) => {
         setFilterRows((current) => current.map((row) => {
             if (row.id !== rowId) return row;
-            return { ...row, ...patch };
+            return {
+                ...row,
+                ...patch
+            };
         }));
     }, []);
 
@@ -340,7 +367,11 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
             if (!row.property || row.valueInput.trim() === '' || !Number.isFinite(value)) {
                 return [];
             }
-            return [{ property: row.property, operator: row.operator, value }];
+            return [{
+                property: row.property,
+                operator: row.operator,
+                value
+            }];
         });
         if (filters.length > 0) {
             style.filters = filters;

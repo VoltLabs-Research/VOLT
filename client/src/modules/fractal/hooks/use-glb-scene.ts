@@ -55,7 +55,12 @@ export default function useGlbScene(
     useEffect(() => {
         const engineParams = extractEngineParams(paramsRef.current);
         engineRef.current = createFractalEngine(
-            { scene, camera, gl, invalidate },
+            {
+                scene,
+                camera,
+                gl,
+                invalidate
+            },
             engineParams,
             {
                 onModelLoaded: (bounds) => {

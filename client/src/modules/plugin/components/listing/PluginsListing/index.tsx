@@ -29,8 +29,14 @@ interface PluginListingRow extends BaseEntity {
 }
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_PLUGIN_EVENTS.CREATED, queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] },
-    { event: SOCKET_PLUGIN_EVENTS.DELETED, queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] }
+    {
+        event: SOCKET_PLUGIN_EVENTS.CREATED,
+        queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()]
+    },
+    {
+        event: SOCKET_PLUGIN_EVENTS.DELETED,
+        queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()]
+    }
 ];
 
 const CLONE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
@@ -116,7 +122,10 @@ const PluginsListing = () => {
             [PluginStatus.DISABLED]: 'Plugin disabled'
         };
         await runAction({
-            action: () => updatePluginMutation.mutateAsync({ _id: plugin._id, status: newStatus }),
+            action: () => updatePluginMutation.mutateAsync({
+                _id: plugin._id,
+                status: newStatus
+            }),
             toast: createPromiseToastOptions({
                 loading: `${statusLabels[newStatus]}...`,
                 success: successLabels[newStatus],
@@ -282,14 +291,20 @@ const PluginsListing = () => {
                     </Text>
                 );
             },
-            skeleton: { variant: 'text', width: 160 }
+            skeleton: {
+                variant: 'text',
+                width: 160
+            }
         },
         {
             key: 'modifier.version',
             title: 'Version',
             sortable: true,
             render: (_, row) => (row as PluginListingRow).modifier?.version,
-            skeleton: { variant: 'text', width: 70 }
+            skeleton: {
+                variant: 'text',
+                width: 70
+            }
         },
         statusColumn<Plugin>('status', 'Status', {
             sortable: true,
@@ -303,7 +318,10 @@ const PluginsListing = () => {
                     {((row as PluginListingRow).exposures ?? []).length}
                 </Text>
             ),
-            skeleton: { variant: 'text', width: 60 }
+            skeleton: {
+                variant: 'text',
+                width: 60
+            }
         },
         dateColumn<Plugin>('createdAt', 'Created', { width: 100 })
     ], [navigate]);

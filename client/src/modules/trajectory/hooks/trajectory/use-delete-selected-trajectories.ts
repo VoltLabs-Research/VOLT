@@ -23,7 +23,10 @@ export default function useDeleteSelectedTrajectories() {
 
         await runCrudMutation(
             Promise.all(selectedIds.map((id) => deleteTrajectoryMutation.mutateAsync(id))).then(clearSelection),
-            { action: 'Deleting', subject: `${selectedIds.length} trajectories` }
+            {
+                action: 'Deleting',
+                subject: `${selectedIds.length} trajectories`
+            }
         );
     }, [clearSelection, deleteTrajectoryMutation, selectedIds]);
 

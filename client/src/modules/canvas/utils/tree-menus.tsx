@@ -55,8 +55,17 @@ interface AddRemoveOption {
 
 export const buildAddRemoveOption = ({ isActive, onAdd, onRemove }: AddRemoveOption): MenuOption => {
     return isActive
-        ? { label: 'Remove from scene', icon: Minus, destructive: true, onClick: onRemove }
-        : { label: 'Add to scene', icon: Plus, onClick: onAdd };
+        ? {
+            label: 'Remove from scene',
+            icon: Minus,
+            destructive: true,
+            onClick: onRemove
+        }
+        : {
+            label: 'Add to scene',
+            icon: Plus,
+            onClick: onAdd
+        };
 };
 
 export const transparencyOption = (submenuContent: React.ReactNode): MenuOption => ({

@@ -29,7 +29,7 @@ interface SearchQueryParams extends Record<string, unknown> {
 export const MIN_SEARCH_QUERY_LENGTH = 2;
 
 const endpoints = {
-    getMetrics: get<EmptyParams, DashboardMetrics>('/metrics', {
+    getMetrics: get<EmptyParams, DashboardMetrics>('/trajectory-metrics', {
         client: 'metrics'
     }),
     search: custom<GlobalSearchInput, GlobalSearchResponse>(
@@ -52,11 +52,11 @@ const endpoints = {
 export default createService({
     clients: {
         dashboard: {
-            basePath: '/dashboard',
+            basePath: '/teams',
             useRBAC: true
         },
         metrics: {
-            basePath: '/trajectories',
+            basePath: '/teams',
             useRBAC: true
         }
     }

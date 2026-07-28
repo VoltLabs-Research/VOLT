@@ -1,19 +1,18 @@
+import { formatSize } from '@voltstack/bravais';
+
+const BYTES_PER_KB = 1024;
+
 interface NetworkSpeedFormatted {
     value: string;
     unit: string;
 }
 
 export const formatNetworkSpeedWithUnit = (kbs: number): NetworkSpeedFormatted => {
-    if(kbs < 1){
-        return { value: (kbs * 1024).toFixed(0), unit: 'B/s' };
-    }
-    if(kbs < 1024){
-        return { value: kbs.toFixed(1), unit: 'KB/s' };
-    }
-    if(kbs < 1024 * 1024){
-        return { value: (kbs / 1024).toFixed(2), unit: 'MB/s' };
-    }
-    return { value: (kbs / (1024 * 1024)).toFixed(2), unit: 'GB/s' };
+    const [value, unit] = formatSize(kbs * BYTES_PER_KB).split(' ');
+    return {
+        value,
+        unit: `${unit}/s`
+    };
 };
 
 export const formatNetworkSpeed = (kbs: number): string => {

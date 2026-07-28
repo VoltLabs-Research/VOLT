@@ -83,7 +83,10 @@ export class RasterStorageService {
         prefix: string,
         teamClusterId: string
     ): AsyncIterable<string> {
-        yield* this.objectGatewayClient.listAll(teamClusterId, { bucket, prefix });
+        yield* this.objectGatewayClient.listAll(teamClusterId, {
+            bucket,
+            prefix
+        });
     }
 
     private async getRemoteRasterFramePNG(

@@ -55,19 +55,17 @@ interface DeleteAnalysisParams {
 };
 
 const endpoints = {
-    getAll: paginated<GetAnalysesParams, PaginatedResponse<Analysis>>('/'),
-    getByTrajectoryId: paginated<GetAnalysesByTrajectoryParams, PaginatedResponse<Analysis>>(
-        '/trajectory/:trajectoryId'
-    ),
-    delete: del<DeleteAnalysisParams>('/:analysisId'),
-    retryFailedFrames: post<RetryFailedFramesParams, RetryFailedFramesResponse>('/:analysisId/failed-frames/retries'),
-    getFrameLog: get<GetAnalysisFrameLogParams, GetAnalysisFrameLogResponse>('/:analysisId/logs/:timestep')
+    getAll: paginated<GetAnalysesParams, PaginatedResponse<Analysis>>('/analyses'),
+    getByTrajectoryId: paginated<GetAnalysesByTrajectoryParams, PaginatedResponse<Analysis>>('/analyses'),
+    delete: del<DeleteAnalysisParams>('/analyses/:analysisId'),
+    retryFailedFrames: post<RetryFailedFramesParams, RetryFailedFramesResponse>('/analyses/:analysisId/failed-frames/retries'),
+    getFrameLog: get<GetAnalysisFrameLogParams, GetAnalysisFrameLogResponse>('/analyses/:analysisId/logs/:timestep')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/analyses',
+            basePath: '/teams',
             useRBAC: true
         }
     }

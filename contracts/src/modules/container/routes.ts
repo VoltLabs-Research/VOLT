@@ -20,24 +20,24 @@ import type {
 } from './domain';
 
 export const containerRoutes = {
-    create: post<CreateContainerInput, CreateContainerResponse>('/api/containers/:teamId'),
-    list: get<Container>('/api/containers/:teamId'),
+    create: post<CreateContainerInput, CreateContainerResponse>('/api/teams/:teamId/containers'),
+    list: get<Container>('/api/teams/:teamId/containers'),
 
-    listFolders: get<ContainerFolder>('/api/containers/:teamId/folders'),
-    getFolder: get<ContainerFolder>('/api/containers/:teamId/folders/:folderId'),
-    createFolder: post<CreateContainerFolderInput, ContainerFolder>('/api/containers/:teamId/folders'),
-    updateFolder: patch<UpdateContainerFolderInput, ContainerFolder>('/api/containers/:teamId/folders/:folderId'),
-    removeFolder: del('/api/containers/:teamId/folders/:folderId'),
+    listFolders: get<ContainerFolder>('/api/teams/:teamId/container-folders'),
+    getFolder: get<ContainerFolder>('/api/teams/:teamId/container-folders/:folderId'),
+    createFolder: post<CreateContainerFolderInput, ContainerFolder>('/api/teams/:teamId/container-folders'),
+    updateFolder: patch<UpdateContainerFolderInput, ContainerFolder>('/api/teams/:teamId/container-folders/:folderId'),
+    removeFolder: del('/api/teams/:teamId/container-folders/:folderId'),
 
-    get: get<GetContainerResponse>('/api/containers/:teamId/:containerId'),
-    update: patch<UpdateContainerInput, UpdateContainerResponse>('/api/containers/:teamId/:containerId'),
-    remove: del('/api/containers/:teamId/:containerId'),
+    get: get<GetContainerResponse>('/api/teams/:teamId/containers/:containerId'),
+    update: patch<UpdateContainerInput, UpdateContainerResponse>('/api/teams/:teamId/containers/:containerId'),
+    remove: del('/api/teams/:teamId/containers/:containerId'),
 
-    createPortAccessUrl: post<never, CreateContainerPortAccessUrlResponse>('/api/containers/:teamId/:containerId/ports/:privatePort/access-url'),
-    move: patch<MoveContainerInput, null>('/api/containers/:teamId/:containerId/folder'),
+    createPortAccessUrl: post<never, CreateContainerPortAccessUrlResponse>('/api/teams/:teamId/containers/:containerId/ports/:privatePort/access-url'),
+    move: patch<MoveContainerInput, null>('/api/teams/:teamId/containers/:containerId/folder'),
 
-    getFiles: get<GetContainerFilesResponse>('/api/containers/:teamId/:containerId/files'),
-    getProcesses: get<GetContainerProcessesResponse>('/api/containers/:teamId/:containerId/processes'),
-    getStats: get<GetContainerStatsResponse>('/api/containers/:teamId/:containerId/stats'),
-    readFile: get<ReadContainerFileResponse>('/api/containers/:teamId/:containerId/files/content')
+    getFiles: get<GetContainerFilesResponse>('/api/teams/:teamId/containers/:containerId/files'),
+    getProcesses: get<GetContainerProcessesResponse>('/api/teams/:teamId/containers/:containerId/processes'),
+    getStats: get<GetContainerStatsResponse>('/api/teams/:teamId/containers/:containerId/stats'),
+    readFile: get<ReadContainerFileResponse>('/api/teams/:teamId/containers/:containerId/files/content')
 } as const;

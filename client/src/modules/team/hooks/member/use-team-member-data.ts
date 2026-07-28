@@ -20,7 +20,10 @@ export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMember
         };
     }, [teamId, limit]);
 
-    const membersQuery = useAllTeamMembersQuery(queryParams ?? { teamId: '', limit }, {
+    const membersQuery = useAllTeamMembersQuery(queryParams ?? {
+        teamId: '',
+        limit
+    }, {
         enabled: !!queryParams
     });
     const queryState = useTeamQueryState(membersQuery, 'Failed to load team members');

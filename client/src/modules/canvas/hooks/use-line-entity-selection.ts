@@ -24,7 +24,10 @@ export const useLineEntityRowSelection = (exposureId: string | null | undefined)
     const onRowClick = useCallback((row: ListingRow) => {
         const entityId = Number(row.id);
         if (!exposureId || !Number.isFinite(entityId)) return;
-        toggleLineEntitySelection({ exposureId, entityId });
+        toggleLineEntitySelection({
+            exposureId,
+            entityId
+        });
     }, [exposureId, toggleLineEntitySelection]);
 
     const isRowSelected = useCallback((row: ListingRow) => (
@@ -64,7 +67,10 @@ export const useLineEntityPick = (
             ));
             if (!entity) return;
 
-            toggleLineEntitySelection({ exposureId: source.exposureId, entityId: entity.id });
+            toggleLineEntitySelection({
+                exposureId: source.exposureId,
+                entityId: entity.id
+            });
         } catch (pickError: unknown) {
             reportError(pickError, {
                 surface: ErrorSurface.Silent,
@@ -104,7 +110,12 @@ export const useLineEntityHighlight = (
     }, [trajectoryId, currentTimestep, source]);
 
     const rangesResult = lineModelRangesQuery(
-        rangesParams ?? { trajectoryId: '', analysisId: '', exposureId: '', timestep: 0 },
+        rangesParams ?? {
+            trajectoryId: '',
+            analysisId: '',
+            exposureId: '',
+            timestep: 0
+        },
         {
             enabled: Boolean(rangesParams),
             retry: false,

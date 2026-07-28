@@ -186,63 +186,54 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.colorCodingProperties)
-    @Route(trajectoryRoutes.colorCodingPropertiesByAnalysis)
     async colorCodingGetProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getColorCodingProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.colorCodingStats)
-    @Route(trajectoryRoutes.colorCodingStatsByAnalysis)
     async colorCodingGetStats(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getColorCodingStats(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.colorCodingModel)
-    @Route(trajectoryRoutes.colorCodingModelByAnalysis)
     async colorCodingGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getColoredModelStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.colorCodingCreate)
-    @Route(trajectoryRoutes.colorCodingCreateByAnalysis)
     async colorCodingCreate(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.createColoredModel(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterProperties)
-    @Route(trajectoryRoutes.particleFilterPropertiesByAnalysis)
     async particleFilterGetProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getParticleFilterProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterPreview)
-    @Route(trajectoryRoutes.particleFilterPreviewByAnalysis)
     async particleFilterPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.previewParticleFilter(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterUniqueValues)
-    @Route(trajectoryRoutes.particleFilterUniqueValuesByAnalysis)
     async particleFilterGetUniqueValues(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getParticleFilterUniqueValues(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterModel)
-    @Route(trajectoryRoutes.particleFilterModelByAnalysis)
     async particleFilterGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getFilteredModelStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.particleFilterApply)
-    @Route(trajectoryRoutes.particleFilterApplyByAnalysis)
     async particleFilterApplyAction(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.applyParticleFilterAction(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);

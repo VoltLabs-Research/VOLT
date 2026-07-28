@@ -122,7 +122,11 @@ const Sidebar = ({
             data-position={position}
             initial={false}
             animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
-            transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
+            transition={prefersReducedMotion ? { duration: 0 } : {
+                type: 'spring',
+                stiffness: 300,
+                damping: 30
+            }}
         >
             <div className='editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
                 <div id={`${sidebarId}-content`} className='editor-sidebar-top-container'>

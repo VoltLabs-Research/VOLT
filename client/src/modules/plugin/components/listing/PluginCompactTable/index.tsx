@@ -1,9 +1,10 @@
 import { Box, Skeleton } from '@voltstack/bravais';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { List } from 'react-window';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import { cn } from '@/shared/utils/cn';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { formatUnknownValue } from '@voltstack/bravais';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
@@ -81,11 +82,11 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
         }
         : undefined;
 
-    const rowClassName = [
+    const rowClassName = cn(
         'plugin-compact-table-row',
         isClickable ? 'plugin-compact-table-row--interactive' : null,
         isSelected ? 'plugin-compact-table-row--selected' : null
-    ].filter(Boolean).join(' ');
+    );
 
     const content = (
         <div
@@ -261,7 +262,10 @@ const CompactTableFrame = ({
         ref={containerRef}
         style={compactTableFrameStyle}
     >
-        <div style={{ ...compactTableInnerStyle, minWidth: `${effectiveWidth}px` }}>
+        <div style={{
+            ...compactTableInnerStyle,
+            minWidth: `${effectiveWidth}px`
+        }}>
             {children}
         </div>
         {isFetchingMore && (
@@ -275,30 +279,50 @@ const CompactTableFrame = ({
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
     return (
         <div className='plugin-exposure-table-compact w-full h-full overflow-hidden'>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                height: '100%'
+            }}>
                 <Box position='sticky' className='plugin-compact-table-header'>
                     {Array.from({ length: 4 }).map((_, index) => (
                         <div
                             key={`skeleton-header-${index}`}
                             className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
-                            style={{ minWidth: '140px', flex: '1 1 140px' }}
+                            style={{
+                                minWidth: '140px',
+                                flex: '1 1 140px'
+                            }}
                         >
                             <Skeleton variant='text' width='70%' height={18} animation='wave' />
                         </div>
                     ))}
                 </Box>
-                <div className='plugin-compact-table-list-container' style={{ flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' }}>
+                <div className='plugin-compact-table-list-container' style={{
+                    flex: 1,
+                    minHeight: 0,
+                    height: '100%',
+                    overflow: 'hidden'
+                }}>
                     {Array.from({ length: 8 }).map((_, rowIndex) => (
                         <div
                             key={`skeleton-row-${rowIndex}`}
                             className='plugin-compact-table-row'
-                            style={{ height: rowHeight, width: '100%' }}
+                            style={{
+                                height: rowHeight,
+                                width: '100%'
+                            }}
                         >
                             {Array.from({ length: 4 }).map((__, cellIndex) => (
                                 <div
                                     key={`skeleton-cell-${rowIndex}-${cellIndex}`}
                                     className='plugin-compact-table-cell overflow-hidden font-size-1'
-                                    style={{ minWidth: '140px', flex: '1 1 140px' }}
+                                    style={{
+                                        minWidth: '140px',
+                                        flex: '1 1 140px'
+                                    }}
                                 >
                                     <Skeleton variant='text' width={`${55 + ((rowIndex + cellIndex) % 3) * 15}%`} height={16} animation='wave' />
                                 </div>
@@ -310,6 +334,10 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
         </div>
     );
 };
+
+// Only seeds `react-window`'s first (and SSR) paint: its own ResizeObserver reports
+// the real viewport height as soon as the list is laid out.
+const DEFAULT_VISIBLE_ROWS = 24;
 
 const PluginCompactTable = ({
     columns,
@@ -324,12 +352,8 @@ const PluginCompactTable = ({
     onRowClick,
     selectedRowId
 }: PluginCompactTableProps) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const listContainerRef = useRef<HTMLDivElement>(null);
-    const animationFrameRef = useRef<number | null>(null);
-    const [height, setHeight] = useState(0);
+    const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
-    const [isMeasured, setIsMeasured] = useState(false);
     const lastScrollOffset = useRef(0);
     const isMobile = useMedia('(max-width: 768px)');
     const columnWidthScale = isMobile ? MOBILE_COLUMN_WIDTH_SCALE : 1;
@@ -350,70 +374,30 @@ const PluginCompactTable = ({
 
     const minimumColumnsWidth = columns.reduce((sum, col) => sum + getResolvedColumnWidth(col, columnWidthScale), 0);
     const effectiveWidth = Math.max(minimumColumnsWidth, containerWidth);
-    const fallbackHeight = useMemo(() => {
-        const visibleRows = Math.min(Math.max(data.length, 1), 6);
-        return Math.max(rowHeight * visibleRows, rowHeight * 4);
-    }, [data.length, rowHeight]);
-    const resolvedHeight = height > 0 ? height : fallbackHeight;
+    const defaultListHeight = rowHeight * Math.min(Math.max(data.length, 1), DEFAULT_VISIBLE_ROWS);
 
-    const updateMeasurements = useCallback(() => {
-        const containerRect = containerRef.current?.getBoundingClientRect();
-        const listRect = listContainerRef.current?.getBoundingClientRect();
-
-        if (containerRect?.width && containerRect.width > 0) {
-            setContainerWidth(containerRect.width);
-        }
-
-        if (listRect?.height && listRect.height > 0) {
-            setHeight(Math.floor(listRect.height));
-            setIsMeasured(true);
-            return;
-        }
-
-        setIsMeasured(false);
-    }, []);
-
-    const scheduleMeasurement = useCallback(() => {
-        if (animationFrameRef.current !== null) {
-            cancelAnimationFrame(animationFrameRef.current);
-        }
-
-        animationFrameRef.current = requestAnimationFrame(() => {
-            animationFrameRef.current = requestAnimationFrame(() => {
-                updateMeasurements();
-            });
-        });
-    }, [updateMeasurements]);
-
+    // `react-window` measures its own height, but it cannot supply this width: the list
+    // lives *inside* the horizontal scroll box, so its own width is already
+    // `effectiveWidth`. Reading the frame instead keeps `effectiveWidth` from latching
+    // onto the content width and never shrinking back.
     useEffect(() => {
-        if (!containerRef.current && !listContainerRef.current) return;
+        if(!containerElement) return;
 
-        const observer = new ResizeObserver((entries) => {
-            if (!entries.length) return;
-            scheduleMeasurement();
-        });
+        const measureWidth = () => {
+            const { width } = containerElement.getBoundingClientRect();
+            if(width > 0){
+                setContainerWidth(width);
+            }
+        };
 
-        if (containerRef.current) {
-            observer.observe(containerRef.current);
-        }
-
-        if (listContainerRef.current) {
-            observer.observe(listContainerRef.current);
-        }
-
-        scheduleMeasurement();
+        const observer = new ResizeObserver(measureWidth);
+        observer.observe(containerElement);
+        measureWidth();
 
         return () => {
             observer.disconnect();
-            if (animationFrameRef.current !== null) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
         };
-    }, [scheduleMeasurement]);
-
-    useLayoutEffect(() => {
-        scheduleMeasurement();
-    }, [scheduleMeasurement, columns.length, data.length]);
+    }, [containerElement]);
 
     const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
         if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
@@ -422,14 +406,14 @@ const PluginCompactTable = ({
         const scrollOffset = target.scrollTop;
 
         const totalHeight = data.length * rowHeight;
-        const scrollThreshold = totalHeight - resolvedHeight - 200;
+        const scrollThreshold = totalHeight - target.clientHeight - 200;
 
         if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold) {
             onLoadMore();
         }
 
         lastScrollOffset.current = scrollOffset;
-    }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore, rowHeight, resolvedHeight]);
+    }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore, rowHeight]);
 
     if (isLoading && data.length === 0) {
         return <CompactTableSkeleton rowHeight={rowHeight} />;
@@ -456,67 +440,24 @@ const PluginCompactTable = ({
         );
     }
 
-    if (!isMeasured && data.length > 0) {
-        return (
-            <CompactTableFrame
-                containerRef={containerRef}
-                effectiveWidth={effectiveWidth}
-                isFetchingMore={isFetchingMore}
-            >
-                <CompactTableHeader columns={columns} columnWidthScale={columnWidthScale} />
-                <div
-                    ref={listContainerRef}
-                    className='plugin-compact-table-list-container y-auto'
-                    onScroll={handleScroll}
-                    style={{
-                        flex: 1,
-                        height: '100%',
-                        minHeight: `${fallbackHeight}px`,
-                        overflowY: 'auto',
-                        overflowX: 'hidden'
-                    }}
-                >
-                    {data.map((row, index) => {
-                        const rowId = resolveRowIdentifier(row, index);
-                        return (
-                            <TableRow
-                                key={String(row.id ?? row._id ?? `${index}`)}
-                                index={index}
-                                data={data}
-                                columns={columns}
-                                getMenuOptions={getMenuOptions}
-                                rowId={rowId}
-                                inferredColumnTypes={inferredColumnTypes}
-                                onRowClick={onRowClick}
-                                isSelected={Boolean(selectedRowId && rowId === selectedRowId)}
-                                columnWidthScale={columnWidthScale}
-                                style={{
-                                    position: 'relative',
-                                    height: rowHeight,
-                                    width: '100%'
-                                }}
-                            />
-                        );
-                    })}
-                </div>
-            </CompactTableFrame>
-        );
-    }
-
     return (
         <CompactTableFrame
-            containerRef={containerRef}
+            containerRef={setContainerElement}
             effectiveWidth={effectiveWidth}
             isFetchingMore={isFetchingMore}
         >
             <CompactTableHeader columns={columns} columnWidthScale={columnWidthScale} />
             <div
-                ref={listContainerRef}
                 className='plugin-compact-table-list-container'
-                style={{ flex: 1, minHeight: 0, height: '100%' }}
+                style={{
+                    flex: 1,
+                    minHeight: 0,
+                    height: '100%'
+                }}
             >
                 <List<VirtualizedRowExtraProps>
                     onScroll={handleScroll}
+                    defaultHeight={defaultListHeight}
                     rowCount={data.length}
                     rowHeight={rowHeight}
                     rowComponent={VirtualizedRow}
@@ -529,7 +470,11 @@ const PluginCompactTable = ({
                         selectedRowId: selectedRowId ?? null,
                         columnWidthScale
                     }}
-                    style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
+                    style={{
+                        height: '100%',
+                        width: '100%',
+                        overflowX: 'hidden'
+                    }}
                 />
             </div>
         </CompactTableFrame>

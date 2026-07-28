@@ -24,9 +24,18 @@ import type { RoleEditorPayload } from '../RoleEditorModal';
 const TEAM_ROLES_QUERY_KEY = ['team-roles'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_TEAM_ROLE_EVENTS.CREATED, queryKeys: [TEAM_ROLES_QUERY_KEY] },
-    { event: SOCKET_TEAM_ROLE_EVENTS.DELETED, queryKeys: [TEAM_ROLES_QUERY_KEY] },
-    { event: SOCKET_TEAM_ROLE_EVENTS.UPDATED, queryKeys: [TEAM_ROLES_QUERY_KEY] }
+    {
+        event: SOCKET_TEAM_ROLE_EVENTS.CREATED,
+        queryKeys: [TEAM_ROLES_QUERY_KEY]
+    },
+    {
+        event: SOCKET_TEAM_ROLE_EVENTS.DELETED,
+        queryKeys: [TEAM_ROLES_QUERY_KEY]
+    },
+    {
+        event: SOCKET_TEAM_ROLE_EVENTS.UPDATED,
+        queryKeys: [TEAM_ROLES_QUERY_KEY]
+    }
 ];
 
 const createRoleToastOptions = createPromiseToastOptions({
@@ -121,8 +130,15 @@ export default function ManageRolesTemplate() {
         try {
             await runAction({
                 action: () => editingRole
-                    ? updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data })
-                    : createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
+                    ? updateRoleMutation.mutateAsync({
+                        teamId: selectedTeam._id,
+                        roleId: editingRole._id,
+                        ...data
+                    })
+                    : createRoleMutation.mutateAsync({
+                        teamId: selectedTeam._id,
+                        ...data
+                    }),
                 toast: editingRole ? updateRoleToastOptions : createRoleToastOptions,
                 afterSuccess: () => {
                     setEditingRole(null);
@@ -153,7 +169,10 @@ export default function ManageRolesTemplate() {
         for (const role of eligibleRoles) {
             try {
                 await runAction({
-                    action: () => deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
+                    action: () => deleteRoleMutation.mutateAsync({
+                        teamId: selectedTeam._id,
+                        roleId: role._id
+                    }),
                     toast: getDeleteRoleToastOptions(role.name)
                 });
             } catch {

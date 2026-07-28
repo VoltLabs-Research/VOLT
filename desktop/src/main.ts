@@ -28,12 +28,23 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     if(process.platform === 'darwin'){
-        return { vibrancy: 'under-window', visualEffectState: 'active', roundedCorners: true, backgroundColor: '#00000000' };
+        return {
+            vibrancy: 'under-window',
+            visualEffectState: 'active',
+            roundedCorners: true,
+            backgroundColor: '#00000000'
+        };
     }
     if(process.platform === 'win32'){
-        return { backgroundMaterial: 'acrylic', backgroundColor: '#00000000' };
+        return {
+            backgroundMaterial: 'acrylic',
+            backgroundColor: '#00000000'
+        };
     }
-    return { transparent: true, backgroundColor: '#00000000' };
+    return {
+        transparent: true,
+        backgroundColor: '#00000000'
+    };
 };
 
 const loadShell = (win: BrowserWindow, hash?: string): void => {
@@ -54,7 +65,11 @@ const visibleBounds = (bounds: WindowBounds | null): WindowBounds | null => {
             && bounds.y! < area.y + area.height
             && bounds.y! + bounds.height > area.y;
     });
-    return onScreen ? bounds : { width: bounds.width, height: bounds.height, maximized: bounds.maximized };
+    return onScreen ? bounds : {
+        width: bounds.width,
+        height: bounds.height,
+        maximized: bounds.maximized
+    };
 };
 
 const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
@@ -155,7 +170,13 @@ app.whenReady().then(async () => {
         persistBounds();
     });
 
-    registerIpc(win, { deploy, appConfig, docker, remote, loadShell: (hash?: string) => loadShell(win, hash) });
+    registerIpc(win, {
+        deploy,
+        appConfig,
+        docker,
+        remote,
+        loadShell: (hash?: string) => loadShell(win, hash)
+    });
 
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

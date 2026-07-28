@@ -63,7 +63,10 @@ const ColorCodingStageEditor = ({
     const isCategorical = propertyType === 'string';
 
     const gradientOptions = useMemo(
-        () => COLORMAP_NAMES.map((name) => ({ value: name, title: name })),
+        () => COLORMAP_NAMES.map((name) => ({
+            value: name,
+            title: name
+        })),
         []
     );
 
@@ -116,7 +119,13 @@ const ColorCodingStageEditor = ({
                     trajectoryId,
                     analysisId,
                     timestep: currentTimestep,
-                    payload: { property, startValue, endValue, gradient, ...(exposureId ? { exposureId } : {}) }
+                    payload: {
+                        property,
+                        startValue,
+                        endValue,
+                        gradient,
+                        ...(exposureId ? { exposureId } : {})
+                    }
                 }),
                 colorCodingToast
             );
@@ -133,7 +142,11 @@ const ColorCodingStageEditor = ({
             });
 
             window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
-                detail: { trajectoryId, source: 'color-coding', timestep: currentTimestep }
+                detail: {
+                    trajectoryId,
+                    source: 'color-coding',
+                    timestep: currentTimestep
+                }
             }));
 
             patch({
@@ -141,7 +154,10 @@ const ColorCodingStageEditor = ({
                 propertyValue,
                 propertyType,
                 exposureId,
-                manualRange: { min: startValue, max: endValue },
+                manualRange: {
+                    min: startValue,
+                    max: endValue
+                },
                 lastBakedKey: `${property}:${startValue}-${endValue}:${gradient}`,
                 runStatus: 'success'
             });

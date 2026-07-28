@@ -90,11 +90,27 @@ const SCENE_ICON_COLOR = 'var(--accent-blue)';
 const READY_ARTIFACT_HIGHLIGHT_MS = 1400;
 
 const getArtifactIcon = (artifact: AnalysisExpectedArtifact) => {
-    if (artifact.status === 'failed') return <AlertCircle style={{ width: 12, height: 12 }} />;
-    if (artifact.status === 'ready') return <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />;
-    if (artifact.status === 'uploading') return <UploadCloud style={{ width: 12, height: 12 }} />;
-    if (artifact.status === 'generating') return <LoaderCircle style={{ width: 12, height: 12 }} />;
-    return <Clock3 style={{ width: 12, height: 12 }} />;
+    if (artifact.status === 'failed') return <AlertCircle style={{
+        width: 12,
+        height: 12
+    }} />;
+    if (artifact.status === 'ready') return <Atom style={{
+        width: 12,
+        height: 12,
+        color: SCENE_ICON_COLOR
+    }} />;
+    if (artifact.status === 'uploading') return <UploadCloud style={{
+        width: 12,
+        height: 12
+    }} />;
+    if (artifact.status === 'generating') return <LoaderCircle style={{
+        width: 12,
+        height: 12
+    }} />;
+    return <Clock3 style={{
+        width: 12,
+        height: 12
+    }} />;
 };
 
 const buildArtifactRows = (
@@ -313,17 +329,38 @@ const AnalysisTreeNode = ({
         }
 
         if (isSelectedAnalysis) {
-            onSelectScene({ sceneType: 'trajectory', source: 'default' as const });
+            onSelectScene({
+                sceneType: 'trajectory',
+                source: 'default' as const
+            });
         } else {
             onToggle(analysis._id);
-            onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
+            onSelectScene({
+                sceneType: 'trajectory',
+                source: 'default' as const
+            }, analysis);
         }
     };
 
     const analysisMenuOptions: MenuOption[] = [
-        { label: isSelectedAnalysis ? 'Deselect' : 'Select', icon: MousePointerClick, onClick: handleSelectAnalysis, disabled: isAnalysisInProgress },
-        { label: 'Download', icon: Download, onClick: () => onDownloadAnalysis(analysis._id), disabled: !canDownloadAnalysis },
-        { label: 'Delete', icon: Trash2, onClick: () => onDeleteAnalysis(analysis._id), destructive: true }
+        {
+            label: isSelectedAnalysis ? 'Deselect' : 'Select',
+            icon: MousePointerClick,
+            onClick: handleSelectAnalysis,
+            disabled: isAnalysisInProgress
+        },
+        {
+            label: 'Download',
+            icon: Download,
+            onClick: () => onDownloadAnalysis(analysis._id),
+            disabled: !canDownloadAnalysis
+        },
+        {
+            label: 'Delete',
+            icon: Trash2,
+            onClick: () => onDeleteAnalysis(analysis._id),
+            destructive: true
+        }
     ];
 
     const nameClassName = [
@@ -359,8 +396,14 @@ const AnalysisTreeNode = ({
                 aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
                 {isExpanded
-                    ? <ChevronDown style={{ width: 13, height: 13 }} />
-                    : <ChevronRight style={{ width: 13, height: 13 }} />
+                    ? <ChevronDown style={{
+                        width: 13,
+                        height: 13
+                    }} />
+                    : <ChevronRight style={{
+                        width: 13,
+                        height: 13
+                    }} />
                 }
             </Button>
         </div>
@@ -402,7 +445,10 @@ const AnalysisTreeNode = ({
                             key={key}
                             indent='lg'
                             disabled
-                            icon={<span className={`canvas-tree-artifact-icon canvas-tree-artifact-icon--${artifact?.status ?? 'pending'}`} title={artifact?.status ?? 'pending'}>{artifact ? getArtifactIcon(artifact) : <Clock3 style={{ width: 12, height: 12 }} />}</span>}
+                            icon={<span className={`canvas-tree-artifact-icon canvas-tree-artifact-icon--${artifact?.status ?? 'pending'}`} title={artifact?.status ?? 'pending'}>{artifact ? getArtifactIcon(artifact) : <Clock3 style={{
+                                width: 12,
+                                height: 12
+                            }} />}</span>}
                             label={(
                                 <span className={artifactNameClassName}>
                                     <span className="truncate">{artifact?.name ?? key}</span>
@@ -458,7 +504,11 @@ const AnalysisTreeNode = ({
                     <CanvasTreeRow
                         indent='lg'
                         isActive={isActive}
-                        icon={<Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />}
+                        icon={<Atom style={{
+                            width: 12,
+                            height: 12,
+                            color: SCENE_ICON_COLOR
+                        }} />}
                         label={(
                             <span className={artifactNameClassName}>
                                 <span className="truncate">{exposure.name}</span>

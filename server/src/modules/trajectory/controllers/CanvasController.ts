@@ -78,7 +78,6 @@ export default class CanvasController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.canvasRasterFrame)
-    @Route(trajectoryRoutes.canvasRasterFrameModel)
     async canvasRasterFrame(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getPublicCanvasRasterFrame(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
@@ -111,49 +110,42 @@ export default class CanvasController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.canvasColorCodingProperties)
-    @Route(trajectoryRoutes.canvasColorCodingPropertiesByAnalysis)
     async canvasColorCodingProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getPublicCanvasColorCodingProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasColorCodingStats)
-    @Route(trajectoryRoutes.canvasColorCodingStatsByAnalysis)
     async canvasColorCodingStats(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getPublicCanvasColorCodingStats(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasColorCodingModel)
-    @Route(trajectoryRoutes.canvasColorCodingModelByAnalysis)
     async canvasColorCodingModel(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getPublicCanvasColoredModelStream(this.params(req, this.withOptionalUserId));
         await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterProperties)
-    @Route(trajectoryRoutes.canvasParticleFilterPropertiesByAnalysis)
     async canvasParticleFilterProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getPublicCanvasParticleFilterProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterUniqueValues)
-    @Route(trajectoryRoutes.canvasParticleFilterUniqueValuesByAnalysis)
     async canvasParticleFilterUniqueValues(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getPublicCanvasParticleFilterUniqueValues(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterPreview)
-    @Route(trajectoryRoutes.canvasParticleFilterPreviewByAnalysis)
     async canvasParticleFilterPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const value = await this.service.getPublicCanvasParticleFilterPreview(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterModel)
-    @Route(trajectoryRoutes.canvasParticleFilterModelByAnalysis)
     async canvasParticleFilterModel(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const output = await this.service.getPublicCanvasFilteredModelStream(this.params(req, this.withOptionalUserId));
         await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));

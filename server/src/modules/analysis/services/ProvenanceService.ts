@@ -1,9 +1,12 @@
 import logger from '@shared/infrastructure/logger';
-import AnalysisProvenanceModel from '@modules/analysis/models/AnalysisProvenanceModel';
-import type { AnalysisProvenance } from '@modules/analysis/models/AnalysisProvenanceModel';
+import AnalysisProvenanceEntity from '@modules/analysis/models/AnalysisProvenance';
+import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import crypto from 'node:crypto';
 
-export interface RecordProvenanceInput {
+const QUERY_DEFAULT_LIMIT = 50;
+
+export interface RecordProvenanceInput{
     pluginName: string;
     pluginVersion: string;
     parameters: Record<string, unknown>;
@@ -19,27 +22,38 @@ export interface RecordProvenanceInput {
     outputArtifactIds: string[];
 }
 
-export interface ProvenanceReproduction {
+export interface ProvenanceReproduction{
     command: string;
     provenanceId: string;
 }
 
-export class ProvenanceNotFoundError extends Error {
-    constructor() {
+export interface QueryProvenanceFilters{
+    pluginName?: string;
+    pluginVersion?: string;
+    trajectoryId?: string;
+    executedBy?: string;
+    fromDate?: Date;
+    toDate?: Date;
+    limit?: number;
+    skip?: number;
+}
+
+export class ProvenanceNotFoundError extends Error{
+    constructor(){
         super('Provenance record not found');
         this.name = 'ProvenanceNotFoundError';
     }
 }
 
-export class ProvenanceService {
-    static computeHash(data: Buffer | string): string {
+export class ProvenanceService{
+    static computeHash(data: Buffer | string): string{
         return crypto.createHash('sha256').update(data).digest('hex');
     }
 
-    async recordAnalysisExecution(input: RecordProvenanceInput): Promise<AnalysisProvenance> {
+    async recordAnalysisExecution(input: RecordProvenanceInput): Promise<AnalysisProvenanceEntity>{
         const reproductionCommand = `voltcli analyze --plugin ${input.pluginName}@${input.pluginVersion} --provenance-replay`;
 
-        const doc = await AnalysisProvenanceModel.create({
+        const provenance = await AnalysisProvenanceEntity.create({
             pluginName: input.pluginName,
             pluginVersion: input.pluginVersion,
             parameters: input.parameters,
@@ -49,68 +63,65 @@ export class ProvenanceService {
                 frameIndex: input.frameIndex,
                 trajectoryId: input.trajectoryId
             },
+            trajectoryId: input.trajectoryId,
             coreToolkitVersion: input.coreToolkitVersion,
-            rngSeed: input.rngSeed,
+            rngSeed: input.rngSeed ?? null,
             executedAt: input.executedAt,
             executedBy: input.executedBy,
             executionTimeMs: input.executionTimeMs,
             outputArtifactIds: input.outputArtifactIds,
             reproductionCommand
-        });
+        }).save();
 
         logger.info(
-            { provenanceId: doc._id, plugin: input.pluginName, version: input.pluginVersion },
+            {
+                provenanceId: provenance.id,
+                plugin: input.pluginName,
+                version: input.pluginVersion
+            },
             'Analysis provenance recorded'
         );
 
-        return doc.toObject() as unknown as AnalysisProvenance;
+        return provenance;
     }
 
-    async getProvenance(id: string): Promise<AnalysisProvenance | null> {
-        const doc = await AnalysisProvenanceModel.findById(id).lean();
-        return doc as unknown as AnalysisProvenance | null;
+    async getProvenance(id: string): Promise<AnalysisProvenanceEntity | null>{
+        return AnalysisProvenanceEntity.findOneBy({ id });
     }
 
-    async getRequired(id: string): Promise<AnalysisProvenance> {
+    async getRequired(id: string): Promise<AnalysisProvenanceEntity>{
         const record = await this.getProvenance(id);
-        if (!record) throw new ProvenanceNotFoundError();
+        if(!record) throw new ProvenanceNotFoundError();
         return record;
     }
 
-    async getReproduction(id: string): Promise<ProvenanceReproduction> {
+    async getReproduction(id: string): Promise<ProvenanceReproduction>{
         const record = await this.getRequired(id);
-        return { command: record.reproductionCommand, provenanceId: id };
+        return {
+            command: record.reproductionCommand,
+            provenanceId: id
+        };
     }
 
-    async queryProvenance(filters: {
-        pluginName?: string;
-        pluginVersion?: string;
-        trajectoryId?: string;
-        executedBy?: string;
-        fromDate?: Date;
-        toDate?: Date;
-        limit?: number;
-        skip?: number;
-    }): Promise<AnalysisProvenance[]> {
-        const query: Record<string, unknown> = {};
-        if (filters.pluginName) query.pluginName = filters.pluginName;
-        if (filters.pluginVersion) query.pluginVersion = filters.pluginVersion;
-        if (filters.trajectoryId) query['inputFrameMetadata.trajectoryId'] = filters.trajectoryId;
-        if (filters.executedBy) query.executedBy = filters.executedBy;
-        if (filters.fromDate || filters.toDate) {
-            const dateRange: Record<string, Date> = {};
-            if (filters.fromDate) dateRange.$gte = filters.fromDate;
-            if (filters.toDate) dateRange.$lte = filters.toDate;
-            query.executedAt = dateRange;
+    async queryProvenance(filters: QueryProvenanceFilters): Promise<AnalysisProvenanceEntity[]>{
+        const where: FindOptionsWhere<AnalysisProvenanceEntity> = {};
+        if(filters.pluginName) where.pluginName = filters.pluginName;
+        if(filters.pluginVersion) where.pluginVersion = filters.pluginVersion;
+        if(filters.trajectoryId) where.trajectoryId = filters.trajectoryId;
+        if(filters.executedBy) where.executedBy = filters.executedBy;
+        if(filters.fromDate && filters.toDate){
+            where.executedAt = Between(filters.fromDate, filters.toDate);
+        }else if(filters.fromDate){
+            where.executedAt = MoreThanOrEqual(filters.fromDate);
+        }else if(filters.toDate){
+            where.executedAt = LessThanOrEqual(filters.toDate);
         }
 
-        const docs = await AnalysisProvenanceModel
-            .find(query)
-            .sort({ executedAt: -1 })
-            .skip(filters.skip ?? 0)
-            .limit(filters.limit ?? 50)
-            .lean();
-
-        return docs as unknown as AnalysisProvenance[];
+        return AnalysisProvenanceEntity.find({
+            where,
+            order: { executedAt: 'DESC' },
+            skip: filters.skip ?? 0,
+            take: filters.limit ?? QUERY_DEFAULT_LIMIT
+        });
     }
 }

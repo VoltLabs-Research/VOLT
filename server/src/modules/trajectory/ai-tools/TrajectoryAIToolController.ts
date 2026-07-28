@@ -27,7 +27,10 @@ export default class TrajectoryAIToolController extends AIToolController {
     })
     async listTrajectories(input: ListTrajectoriesInput & AIToolScope) {
         const { total, data } = await this.#service.getByTeamId(input);
-        return { summary: `Found ${total} trajectories.`, data };
+        return {
+            summary: `Found ${total} trajectories.`,
+            data
+        };
     }
 
     @AITool({
@@ -38,7 +41,10 @@ export default class TrajectoryAIToolController extends AIToolController {
     })
     async listPublicTrajectories(input: ListPublicTrajectoriesInput & AIToolScope) {
         const { total, data } = await this.#service.listPublicTeamTrajectories(input);
-        return { summary: `Found ${total} public trajectories.`, data };
+        return {
+            summary: `Found ${total} public trajectories.`,
+            data
+        };
     }
 
     @AITool({
@@ -49,7 +55,10 @@ export default class TrajectoryAIToolController extends AIToolController {
     })
     async listSampleSimulations() {
         const samples = await this.#service.listSamples();
-        return { summary: `Found ${samples.length} sample simulations.`, data: samples };
+        return {
+            summary: `Found ${samples.length} sample simulations.`,
+            data: samples
+        };
     }
 
     @AITool({
@@ -60,7 +69,10 @@ export default class TrajectoryAIToolController extends AIToolController {
     })
     async getTrajectory(input: GetTrajectoryInput) {
         const trajectory = await this.#service.getById(input);
-        return { summary: `Trajectory "${trajectory.name}" (${trajectory.status}).`, data: trajectory };
+        return {
+            summary: `Trajectory "${trajectory.name}" (${trajectory.status}).`,
+            data: trajectory
+        };
     }
 
     @AITool({
@@ -71,7 +83,10 @@ export default class TrajectoryAIToolController extends AIToolController {
     })
     async getTeamMetrics(input: GetTrajectoryTeamMetricsInput & AIToolScope) {
         const metrics = await this.#service.getTeamMetrics(input);
-        return { summary: 'Retrieved team trajectory metrics.', data: metrics };
+        return {
+            summary: 'Retrieved team trajectory metrics.',
+            data: metrics
+        };
     }
 
     @AITool({

@@ -28,5 +28,8 @@ export const resolveBondLineSettings = (
     const radius = metadata?.radius && metadata.radius > 0 ? metadata.radius : DEFAULT_BOND_RADIUS;
     const baseLineWidth = radius * 2;
     const lineWidth = widthOverride && widthOverride > 0 ? widthOverride : baseLineWidth;
-    return { baseLineWidth, lineWidth };
+    return {
+        baseLineWidth,
+        lineWidth
+    };
 };

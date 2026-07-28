@@ -6,7 +6,8 @@ import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import {
     toTeamClusterQueueConcurrencyView,
     toTeamClusterQueueScopeLimitsView
@@ -294,8 +295,8 @@ export class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async findTeamClusterById(teamClusterId: string): Promise<TeamCluster | null> {
-        const document = await TeamClusterModel.findById(teamClusterId).exec();
-        return document ? toTeamClusterLike(document) : null;
+        const entity = await TeamClusterEntity.findOneBy({ id: teamClusterId });
+        return entity ? toTeamClusterLike(entity) : null;
     }
 
     private registerDaemonStreamConsumers(): void {

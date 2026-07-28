@@ -130,7 +130,10 @@ const DashboardLayout = () => {
                 title: 'Page not found',
                 description: 'The page you are looking for does not exist. You have been redirected to the dashboard.'
             });
-            navigate(location.pathname, { replace: true, state: {} });
+            navigate(location.pathname, {
+                replace: true,
+                state: {}
+            });
         }
     }, [location.state, location.pathname, navigate]);
 
@@ -193,7 +196,10 @@ const DashboardLayout = () => {
                                 key={getOutletTransitionKey(location.pathname)}
                                 initial={prefersReducedMotion ? false : { opacity: 0 }}
                                 animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                                transition={prefersReducedMotion ? { duration: 0 } : {
+                                    duration: 0.22,
+                                    ease: [0.32, 0.72, 0, 1]
+                                }}
                                 style={{ height: '100%' }}
                             >
                                 <Outlet context={outletContext} />

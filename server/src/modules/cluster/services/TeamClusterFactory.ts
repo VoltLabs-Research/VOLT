@@ -8,15 +8,15 @@ import {
 } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
 
-export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
+export const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
     analysis: 8,
     rasterizer: 8,
     glbPreprocessing: 16,
     artifactUpload: 16,
     pluginWarmup: 4
-};
+});
 
-export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {
+export const createDefaultTeamClusterQueueScopeLimits = (): TeamClusterQueueScopeLimitsProps => ({
     analysisProcessing: {
         maxRunningPerTrajectory: 0
     },
@@ -29,7 +29,11 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimit
     trajectoryGlbConversion: {
         maxRunningPerTrajectory: 0
     }
-};
+});
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = createDefaultTeamClusterQueueConcurrency();
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = createDefaultTeamClusterQueueScopeLimits();
 
 export const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
 
@@ -147,8 +151,8 @@ export const buildTeamClusterProps = (params: {
         lastHeartbeatAt: null,
         lastDisconnectAt: null,
         services: params.services,
-        queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-        queueScopeLimits: DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+        queueConcurrency: createDefaultTeamClusterQueueConcurrency(),
+        queueScopeLimits: createDefaultTeamClusterQueueScopeLimits(),
         roleConfig: createDefaultTeamClusterRoleConfig(),
         isDemo: params.isDemo,
         demoExpiresAt: params.demoExpiresAt,

@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
+import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import {
     buildJupyterProxyBasePath,
@@ -17,7 +17,7 @@ import {
     TeamClusterServiceExposureAccessMode
 } from '@shared/contracts/types';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
-import TeamMemberModel, { getTeamMemberRolePermissions } from '@modules/team/models/team-member/TeamMemberModel';
+import TeamMember from '@modules/team/models/TeamMember';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
@@ -49,11 +49,6 @@ interface AuthorizedProxyContext {
 interface NotebookRuntimeTarget {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
-}
-
-interface TeamMemberRolePopulate {
-    path: 'role';
-    select: ['permissions'];
 }
 
 interface ProxyTarget {
@@ -333,28 +328,28 @@ export class ScriptingJupyterProxyService {
         userId: string,
         action: Action
     ): Promise<AuthorizedProxyContext> {
-        const member = await TeamMemberModel.findOne({
-            user: userId,
-            team: teamId
-        }).populate({
-            path: 'role',
-            select: ['permissions']
-        } satisfies TeamMemberRolePopulate);
+        const member = await TeamMember.findOne({
+            where: {
+                user: userId,
+                team: teamId
+            },
+            relations: { roleRef: true }
+        });
 
         if (!member) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN);
         }
 
-        const permissions = getTeamMemberRolePermissions(member.role);
+        const permissions = member.roleRef?.permissions ?? [];
         const permission = `${Resource.SCRIPTING}:${action}`;
         if (!permissions.includes('*') && !permissions.includes(permission)) {
             throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, `Missing permission: ${permission}`);
         }
 
-        const notebook = await ScriptingNotebookModel.findOne({
+        const notebook = await ScriptingNotebook.findOneBy({
             team: teamId,
             runtimeNotebookId
-        }).exec();
+        });
 
         if (!notebook || !notebook.teamCluster || !notebook.runtimeNotebookId) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Notebook runtime not found');
@@ -363,7 +358,7 @@ export class ScriptingJupyterProxyService {
         return {
             teamId,
             runtimeNotebookId,
-            teamClusterId: String(notebook.teamCluster),
+            teamClusterId: notebook.teamCluster,
             userId
         };
     }

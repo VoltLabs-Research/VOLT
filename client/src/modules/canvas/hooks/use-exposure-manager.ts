@@ -23,7 +23,10 @@ export interface ExposureEntry {
     error?: unknown;
 }
 
-export const DEFAULT_ENTRY: ExposureEntry = { state: 'idle', exposures: [] };
+export const DEFAULT_ENTRY: ExposureEntry = {
+    state: 'idle',
+    exposures: []
+};
 
 interface UseExposureManagerProps {
     trajectoryId?: string;
@@ -81,7 +84,10 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         }
     }, [analysisIdArray, queryResults, checkAccessDeniedError]);
 
-    const { statusMap } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
+    const { statusMap } = useAnalysisStatus({
+        trajectoryId,
+        enabled: !!trajectoryId
+    });
     const prevStatusesRef = useRef<Map<string, string>>(new Map());
 
     useEffect(() => {
@@ -114,9 +120,16 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
             const result = queryResults[i];
 
             if (result.isLoading || result.isFetching) {
-                map.set(analysisId, { state: 'loading', exposures: [] });
+                map.set(analysisId, {
+                    state: 'loading',
+                    exposures: []
+                });
             } else if (result.isError) {
-                map.set(analysisId, { state: 'error', exposures: [], error: result.error });
+                map.set(analysisId, {
+                    state: 'error',
+                    exposures: [],
+                    error: result.error
+                });
             } else if (result.isSuccess) {
                 const exposures = ((result.data as { data?: RenderableExposurePayload[] } | undefined)?.data ?? []);
                 map.set(analysisId, {

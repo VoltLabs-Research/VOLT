@@ -133,7 +133,10 @@ export default function SecretKeyUsage() {
                     {[...Array(4)].map((_, i) => (
                         <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
                             <Skeleton variant='text' width={100} height={16} />
-                            <Skeleton variant='rectangular' width={80} height={40} style={{ borderRadius: 4, marginTop: '0.5rem' }} />
+                            <Skeleton variant='rectangular' width={80} height={40} style={{
+                                borderRadius: 4,
+                                marginTop: '0.5rem'
+                            }} />
                         </Box>
                     ))}
                 </Box>
@@ -165,7 +168,11 @@ export default function SecretKeyUsage() {
     if (isLoading || (error && !usage) || !usage) {
         return (
             <AsyncBoundary
-                state={{ loading: isLoading, error: error && !usage ? error : undefined, empty: !usage }}
+                state={{
+                    loading: isLoading,
+                    error: error && !usage ? error : undefined,
+                    empty: !usage
+                }}
                 loading={loadingView}
                 error={errorView}
                 empty={emptyView}
@@ -232,8 +239,14 @@ export default function SecretKeyUsage() {
                         title='Hourly Requests'
                         isLoading={false}
                         stats={[
-                            { label: '24h', value: usage.stats.requests24h.toLocaleString() },
-                            { label: 'Peak Hour', value: usage.stats.peakHour }
+                            {
+                                label: '24h',
+                                value: usage.stats.requests24h.toLocaleString()
+                            },
+                            {
+                                label: 'Peak Hour',
+                                value: usage.stats.peakHour
+                            }
                         ]}
                     >
                         <RequestsAreaChart
@@ -251,11 +264,19 @@ export default function SecretKeyUsage() {
                         title='Top Endpoints'
                         isLoading={false}
                         stats={[
-                            { label: 'Endpoints', value: usage.endpoints.length }
+                            {
+                                label: 'Endpoints',
+                                value: usage.endpoints.length
+                            }
                         ]}
                     >
                         <ResponsiveContainer width='100%' height={250}>
-                            <BarChart data={endpointData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout='vertical'>
+                            <BarChart data={endpointData} margin={{
+                                top: 10,
+                                right: 10,
+                                left: 0,
+                                bottom: 0
+                            }} layout='vertical'>
                                 <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
                                 <XAxis
                                     type='number'
@@ -287,7 +308,10 @@ export default function SecretKeyUsage() {
                         title='Status Codes'
                         isLoading={false}
                         stats={[
-                            { label: 'Codes', value: usage.statusDistribution.length }
+                            {
+                                label: 'Codes',
+                                value: usage.statusDistribution.length
+                            }
                         ]}
                     >
                         <ResponsiveContainer width='100%' height={250}>
@@ -320,7 +344,10 @@ export default function SecretKeyUsage() {
                         title='Recent Requests'
                         isLoading={false}
                         stats={[
-                            { label: 'Shown', value: Math.min(usage.recentRequests.length, 20) }
+                            {
+                                label: 'Shown',
+                                value: Math.min(usage.recentRequests.length, 20)
+                            }
                         ]}
                     >
                         <div className='x-auto' style={{ maxHeight: 250 }}>

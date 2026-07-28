@@ -12,13 +12,11 @@ import type {
 } from './domain';
 
 export const scriptingRoutes = {
-    listNotebooks: get<ScriptingNotebook>('/api/scripting/:teamId/notebooks'),
-    createNotebook: post<CreateScriptingNotebookInput, ScriptingNotebook>('/api/scripting/:teamId/notebooks'),
-    updateNotebook: patch<UpdateScriptingNotebookInput, ScriptingNotebook>('/api/scripting/:teamId/notebooks/:notebookId'),
-    listNotebooksByTrajectory: get<ScriptingNotebook>('/api/scripting/:teamId/:trajectoryId/notebooks'),
-    getSessionStatus: get<GetScriptingSessionStatusResponse>('/api/scripting/:teamId/sessions/:notebookId/status'),
-    deleteSession: del<DeleteScriptingSessionResponse>('/api/scripting/:teamId/sessions/:notebookId'),
-    createJupyterSession: post<CreateScriptingJupyterSessionInput, CreateScriptingJupyterSessionResponse>('/api/scripting/:teamId/sessions'),
-    createJupyterSessionByTrajectory: post<CreateScriptingJupyterSessionInput, CreateScriptingJupyterSessionResponse>('/api/scripting/:teamId/:trajectoryId/sessions'),
-    removeNotebook: del('/api/scripting/:teamId/notebooks/:notebookId')
+    listNotebooks: get<ScriptingNotebook>('/api/teams/:teamId/notebooks'),
+    createNotebook: post<CreateScriptingNotebookInput, ScriptingNotebook>('/api/teams/:teamId/notebooks'),
+    updateNotebook: patch<UpdateScriptingNotebookInput, ScriptingNotebook>('/api/teams/:teamId/notebooks/:notebookId'),
+    getSessionStatus: get<GetScriptingSessionStatusResponse>('/api/teams/:teamId/notebook-sessions/:notebookId/status'),
+    deleteSession: del<DeleteScriptingSessionResponse>('/api/teams/:teamId/notebook-sessions/:notebookId'),
+    createJupyterSession: post<CreateScriptingJupyterSessionInput, CreateScriptingJupyterSessionResponse>('/api/teams/:teamId/notebook-sessions'),
+    removeNotebook: del('/api/teams/:teamId/notebooks/:notebookId')
 } as const;

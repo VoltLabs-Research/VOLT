@@ -32,7 +32,10 @@ export const normalizeEndpoint = (raw: string): string | null => {
 export const probeEndpointHealth = async (rawEndpoint: string): Promise<EndpointHealthResult> => {
     const origin = normalizeEndpoint(rawEndpoint);
     if (!origin) {
-        return { ok: false, reason: EndpointHealthFailure.Invalid };
+        return {
+            ok: false,
+            reason: EndpointHealthFailure.Invalid
+        };
     }
 
     const controller = new AbortController();
@@ -46,21 +49,36 @@ export const probeEndpointHealth = async (rawEndpoint: string): Promise<Endpoint
         });
 
         if (!response.ok) {
-            return { ok: false, reason: EndpointHealthFailure.NotVolt };
+            return {
+                ok: false,
+                reason: EndpointHealthFailure.NotVolt
+            };
         }
 
         const payload = await response.json().catch(() => null);
         if (!payload || payload.status !== 'ok') {
-            return { ok: false, reason: EndpointHealthFailure.NotVolt };
+            return {
+                ok: false,
+                reason: EndpointHealthFailure.NotVolt
+            };
         }
 
-        return { ok: true, origin };
+        return {
+            ok: true,
+            origin
+        };
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-            return { ok: false, reason: EndpointHealthFailure.Timeout };
+            return {
+                ok: false,
+                reason: EndpointHealthFailure.Timeout
+            };
         }
 
-        return { ok: false, reason: EndpointHealthFailure.Unreachable };
+        return {
+            ok: false,
+            reason: EndpointHealthFailure.Unreachable
+        };
     } finally {
         window.clearTimeout(timeoutId);
     }

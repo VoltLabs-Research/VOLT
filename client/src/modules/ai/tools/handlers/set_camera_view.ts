@@ -18,13 +18,34 @@ interface CameraViewPose {
 }
 
 const VIEWS: Record<CameraView, CameraViewPose> = {
-    front: { position: [0, -VIEW_DISTANCE, 0], up: [0, 0, 1] },
-    back: { position: [0, VIEW_DISTANCE, 0], up: [0, 0, 1] },
-    right: { position: [VIEW_DISTANCE, 0, 0], up: [0, 0, 1] },
-    left: { position: [-VIEW_DISTANCE, 0, 0], up: [0, 0, 1] },
-    top: { position: [0, 0, VIEW_DISTANCE], up: [0, 1, 0] },
-    bottom: { position: [0, 0, -VIEW_DISTANCE], up: [0, 1, 0] },
-    isometric: { position: [ISO, ISO, ISO], up: [0, 0, 1] }
+    front: {
+        position: [0, -VIEW_DISTANCE, 0],
+        up: [0, 0, 1]
+    },
+    back: {
+        position: [0, VIEW_DISTANCE, 0],
+        up: [0, 0, 1]
+    },
+    right: {
+        position: [VIEW_DISTANCE, 0, 0],
+        up: [0, 0, 1]
+    },
+    left: {
+        position: [-VIEW_DISTANCE, 0, 0],
+        up: [0, 0, 1]
+    },
+    top: {
+        position: [0, 0, VIEW_DISTANCE],
+        up: [0, 1, 0]
+    },
+    bottom: {
+        position: [0, 0, -VIEW_DISTANCE],
+        up: [0, 1, 0]
+    },
+    isometric: {
+        position: [ISO, ISO, ISO],
+        up: [0, 0, 1]
+    }
 };
 
 const isCameraView = (value: unknown): value is CameraView =>
@@ -58,15 +79,25 @@ const setCameraView: ClientToolHandler<SetCameraViewInput> = {
         return {
             ok: true,
             summary: `Set the camera to the ${view} view.`,
-            data: { view, position, up }
+            data: {
+                view,
+                position,
+                up
+            }
         };
     },
 
     describeEffect(input, result) {
         if (!result.ok) {
-            return { label: 'Camera view unchanged', icon: 'camera' };
+            return {
+                label: 'Camera view unchanged',
+                icon: 'camera'
+            };
         }
-        return { label: `Set ${input.view ?? ''} view`.trim(), icon: 'camera' };
+        return {
+            label: `Set ${input.view ?? ''} view`.trim(),
+            icon: 'camera'
+        };
     }
 };
 

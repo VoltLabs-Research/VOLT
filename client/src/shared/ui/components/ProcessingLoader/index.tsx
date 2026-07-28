@@ -33,7 +33,10 @@ const ProcessingLoader = ({
                 <Text as='p' tone='secondary' className='processing-loader-text overflow-hidden' title={message}>{message}</Text>
                 {showProgress && completionRate > 0 && (
                     <div className='w-max overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
-                        <div className='processing-loader-progress-fill h-max' style={{ width: `${progressPercentage}%`, transition: prefersReducedMotion ? 'none' : undefined }} />
+                        <div className='processing-loader-progress-fill h-max' style={{
+                            width: `${progressPercentage}%`,
+                            transition: prefersReducedMotion ? 'none' : undefined
+                        }} />
                     </div>
                 )}
             </Stack>

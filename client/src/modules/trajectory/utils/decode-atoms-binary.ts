@@ -71,7 +71,11 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsResponse => {
             throw new Error(`Unknown atom column dtype id: ${dtypeId}`);
         }
 
-        headers[i] = { name, dtype, byteLen };
+        headers[i] = {
+            name,
+            dtype,
+            byteLen
+        };
     }
 
     const headerPadLen = view.getUint32(offset, true);

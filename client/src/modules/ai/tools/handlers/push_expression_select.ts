@@ -34,7 +34,10 @@ const pushExpressionSelect: ClientToolHandler<PushExpressionSelectInput> = {
             };
         }
 
-        const stageId = useCanvasPipelineStore.getState().addStage('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG, expression: formula });
+        const stageId = useCanvasPipelineStore.getState().addStage('expression-select', {
+            ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG,
+            expression: formula
+        });
         if (!stageId) {
             return {
                 ok: false,
@@ -51,8 +54,14 @@ const pushExpressionSelect: ClientToolHandler<PushExpressionSelectInput> = {
     },
 
     describeEffect(input, result) {
-        if (!result.ok) return { label: 'Expression select unavailable', icon: 'filter' };
-        return { label: `Expression: ${input.formula}`, icon: 'filter' };
+        if (!result.ok) return {
+            label: 'Expression select unavailable',
+            icon: 'filter'
+        };
+        return {
+            label: `Expression: ${input.formula}`,
+            icon: 'filter'
+        };
     }
 };
 

@@ -18,9 +18,18 @@ interface TitlebarProps{
 const HOMEPAGE = 'https://github.com/voltlabs-research/volt';
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
-    { value: 'system', label: 'System' },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' }
+    {
+        value: 'system',
+        label: 'System'
+    },
+    {
+        value: 'light',
+        label: 'Light'
+    },
+    {
+        value: 'dark',
+        label: 'Dark'
+    }
 ];
 
 const Titlebar = ({

@@ -11,7 +11,7 @@ import type {
     UpdateAIConversationInput,
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
-import type { AIConversationMessage } from '@modules/ai/models/AIMessageModel';
+import type { AIConversationMessage } from '@modules/ai/contracts/domain/ai-message';
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import express from 'express';
 import type { Response } from 'express';
@@ -112,6 +112,10 @@ export default class AiController extends Controller {
         @Param('conversationId') conversationId: string,
         @CurrentUser() userId: string
     ) {
-        await this.#service.deleteConversation({ teamId, userId, conversationId });
+        await this.#service.deleteConversation({
+            teamId,
+            userId,
+            conversationId
+        });
     }
 }

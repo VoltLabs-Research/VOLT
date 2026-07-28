@@ -48,7 +48,12 @@ const PREVIEW_MAX = 600;
 const AI_MIN = 100;
 const AI_MAX = 600;
 const EDITOR_GROUP_MIN = 180;
-const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX, ai: 300, editorTop: 260 };
+const DEFAULT_WIDTHS: PanelWidths = {
+    files: 220,
+    preview: PREVIEW_MAX,
+    ai: 300,
+    editorTop: 260
+};
 
 const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
 
@@ -164,7 +169,10 @@ const LatexDocumentWorkspace = () => {
         : null;
 
     usePageTitle(latexDocument?.title ?? 'LaTeX Workspace');
-    useDashboardWorkspaceChrome({ collapseSidebar: true, hideHeader: true });
+    useDashboardWorkspaceChrome({
+        collapseSidebar: true,
+        hideHeader: true
+    });
 
     useEffect(() => {
         setHasEnteredWorkspace(false);
@@ -228,21 +236,33 @@ const LatexDocumentWorkspace = () => {
         if (state.panel === 'files') {
             const delta = e.clientX - state.startX;
             const w = Math.min(FILES_MAX, Math.max(FILES_MIN, state.startDimension + delta));
-            setPanelWidths((prev) => ({ ...prev, files: w }));
+            setPanelWidths((prev) => ({
+                ...prev,
+                files: w
+            }));
         } else if (state.panel === 'preview') {
             const delta = e.clientX - state.startX;
             const w = Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, state.startDimension - delta));
-            setPanelWidths((prev) => ({ ...prev, preview: w }));
+            setPanelWidths((prev) => ({
+                ...prev,
+                preview: w
+            }));
         } else if (state.panel === 'ai') {
             const delta = e.clientY - state.startY;
             const h = Math.min(AI_MAX, Math.max(AI_MIN, state.startDimension - delta));
-            setPanelWidths((prev) => ({ ...prev, ai: h }));
+            setPanelWidths((prev) => ({
+                ...prev,
+                ai: h
+            }));
         } else if (state.panel === 'editor') {
             const hostHeight = editorStackRef.current?.getBoundingClientRect().height ?? 0;
             const maxHeight = Math.max(EDITOR_GROUP_MIN, hostHeight - EDITOR_GROUP_MIN - 8);
             const delta = e.clientY - state.startY;
             const h = Math.min(maxHeight, Math.max(EDITOR_GROUP_MIN, state.startDimension + delta));
-            setPanelWidths((prev) => ({ ...prev, editorTop: h }));
+            setPanelWidths((prev) => ({
+                ...prev,
+                editorTop: h
+            }));
         }
     }, []);
 
@@ -280,7 +300,10 @@ const LatexDocumentWorkspace = () => {
                 const nextEditorTop = Math.min(maxHeight, Math.max(EDITOR_GROUP_MIN, prev.editorTop));
                 return nextEditorTop === prev.editorTop
                     ? prev
-                    : { ...prev, editorTop: nextEditorTop };
+                    : {
+                        ...prev,
+                        editorTop: nextEditorTop
+                    };
             });
         };
 
@@ -431,7 +454,10 @@ const LatexDocumentWorkspace = () => {
         }
 
         event.preventDefault();
-        handleKeyboardResize({ panel, key: event.key });
+        handleKeyboardResize({
+            panel,
+            key: event.key
+        });
     }, [handleKeyboardResize]);
 
     if (isLoading) {
@@ -600,7 +626,10 @@ const LatexDocumentWorkspace = () => {
                             onChange={(event) => {
                                 handleOnboardingFolderSelection(event);
                             }}
-                            {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                            {...({
+                                webkitdirectory: '',
+                                directory: ''
+                            } as Record<string, string>)}
                         />
 
                         <Stack align='center' gap='1' className='latex-workspace__empty-shell'>
@@ -687,7 +716,10 @@ const LatexDocumentWorkspace = () => {
 
                         <Stack flex='1' minW='0' className='latex-workspace__main-content'>
                             <Stack ref={editorStackRef} flex='1' minH='0' className='latex-workspace__editor-stack'>
-                                <Stack minH='0' className='latex-workspace__editor-group-shell' style={isEditorSplit ? { height: panelWidths.editorTop, flex: '0 0 auto' } : { flex: '1 1 0%' }}>
+                                <Stack minH='0' className='latex-workspace__editor-group-shell' style={isEditorSplit ? {
+                                    height: panelWidths.editorTop,
+                                    flex: '0 0 auto'
+                                } : { flex: '1 1 0%' }}>
                                     <LatexEditorPanel
                                         groupId='primary'
                                         isGroupActive={activeEditorGroupId === 'primary'}

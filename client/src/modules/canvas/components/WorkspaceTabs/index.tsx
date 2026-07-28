@@ -15,9 +15,20 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-    { id: CanvasWorkspace.Scene, label: 'Scene' },
-    { id: CanvasWorkspace.Raster, label: 'Raster', auxOnly: true },
-    { id: CanvasWorkspace.Scripting, label: 'Scripting', auxOnly: true }
+    {
+        id: CanvasWorkspace.Scene,
+        label: 'Scene'
+    },
+    {
+        id: CanvasWorkspace.Raster,
+        label: 'Raster',
+        auxOnly: true
+    },
+    {
+        id: CanvasWorkspace.Scripting,
+        label: 'Scripting',
+        auxOnly: true
+    }
 ];
 
 const WorkspaceTabs = ({ disableAuxWorkspaces = false, showScriptingWorkspace = true }: WorkspaceTabsProps) => {

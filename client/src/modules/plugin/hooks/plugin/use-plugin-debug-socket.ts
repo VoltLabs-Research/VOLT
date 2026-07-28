@@ -152,7 +152,10 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         }
 
         usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack, event.nestedTrace);
-        sileo.error({ title: 'Node execution failed', description: event.error });
+        sileo.error({
+            title: 'Node execution failed',
+            description: event.error
+        });
     }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeLogChunkEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_LOG_CHUNK, (event) => {
@@ -177,7 +180,10 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         }
 
         usePluginDebugStore.getState().onSessionError(event.error);
-        sileo.error({ title: 'Debug session failed', description: event.error });
+        sileo.error({
+            title: 'Debug session failed',
+            description: event.error
+        });
     }, { enabled: subscribe });
 
     useEffect(() => {

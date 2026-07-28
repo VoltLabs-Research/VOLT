@@ -93,7 +93,10 @@ const scrollRightPanelToTop = (): (() => void) | undefined => {
         ].filter((target): target is HTMLElement => Boolean(target));
 
         targets.forEach((target) => {
-            target.scrollTo({ top: 0, behavior: 'smooth' });
+            target.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
     });
 
@@ -146,7 +149,11 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     useEffect(() => { activeSceneRef.current = activeScene; }, [activeScene]);
 
     const analysesQuery = useAnalysesByTrajectoryQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: !!trajectoryId }
     );
 
@@ -576,7 +583,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             return;
         }
 
-        setActiveScene({ sceneType: 'trajectory', source: 'default' });
+        setActiveScene({
+            sceneType: 'trajectory',
+            source: 'default'
+        });
     }, [analysisConfigId, getEntry, pluginsById, selectedAnalysis, selectedAnalysisPluginId, setActiveScene]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
@@ -660,7 +670,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         
         if (previousTimestep === currentTimestep) return;
-        setActiveScene({ sceneType: 'trajectory', source: 'default' });
+        setActiveScene({
+            sceneType: 'trajectory',
+            source: 'default'
+        });
         setAnalysisId(undefined, { replace: true });
     }, [currentTimestep, analysisConfigId, selectedAnalysis, trajectoryTimesteps, setActiveScene, setAnalysisId, setCurrentTimestep]);
 

@@ -34,7 +34,10 @@ export const findUnsatisfiedPrerequisites = (
     for (const stage of stages) {
         const missing = stage.requires.filter((group) => !group.some((key) => seen.has(key)));
         if (missing.length > 0) {
-            unsatisfied.push({ pluginName: stage.pluginName, missing });
+            unsatisfied.push({
+                pluginName: stage.pluginName,
+                missing
+            });
         }
         seen.add(stage.pluginKey);
     }

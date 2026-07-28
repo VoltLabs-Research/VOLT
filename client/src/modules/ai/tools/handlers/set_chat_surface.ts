@@ -15,16 +15,28 @@ const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
         if (surface === 'page') {
             store.closeWidget();
             ctx.navigate('/dashboard/ai');
-            return { ok: true, summary: 'Opened the full AI page.', data: { surface } };
+            return {
+                ok: true,
+                summary: 'Opened the full AI page.',
+                data: { surface }
+            };
         }
 
         if (surface === 'hidden') {
             store.closeWidget();
-            return { ok: true, summary: 'Hid the chat widget.', data: { surface } };
+            return {
+                ok: true,
+                summary: 'Hid the chat widget.',
+                data: { surface }
+            };
         }
 
         store.openWidget();
-        return { ok: true, summary: 'Opened the chat widget.', data: { surface } };
+        return {
+            ok: true,
+            summary: 'Opened the chat widget.',
+            data: { surface }
+        };
     },
 
     describeEffect(input) {
@@ -34,7 +46,10 @@ const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
             : surface === 'hidden'
                 ? 'Hid the chat widget'
                 : 'Opened the chat widget';
-        return { label, icon: 'chat' };
+        return {
+            label,
+            icon: 'chat'
+        };
     }
 };
 

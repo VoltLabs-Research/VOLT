@@ -22,10 +22,22 @@ const EXPORT_TYPE_SELECT_OPTIONS = EXPORT_TYPE_OPTIONS.map(opt => ({
 }));
 
 const CHART_TYPE_OPTIONS = [
-    { value: 'line', title: 'Line Chart' },
-    { value: 'bar', title: 'Bar Chart' },
-    { value: 'scatter', title: 'Scatter Plot' },
-    { value: 'area', title: 'Area Chart' }
+    {
+        value: 'line',
+        title: 'Line Chart'
+    },
+    {
+        value: 'bar',
+        title: 'Bar Chart'
+    },
+    {
+        value: 'scatter',
+        title: 'Scatter Plot'
+    },
+    {
+        value: 'area',
+        title: 'Area Chart'
+    }
 ];
 
 const useExportEditorForm = createNodeEditorForm<ExportEditorFormValues, 'export'>({
@@ -59,8 +71,16 @@ const ExportEditor = ({ node }: EditorProps) => {
     const updateChartOption = useCallback((key: string, value: unknown) => {
         const currentValues = form.getValues();
         const currentOptions = currentValues.options ?? {};
-        const newOptions = { ...currentOptions, [key]: value };
-        updateNodeData(node.id, { export: { ...currentValues, options: newOptions } as IExportData });
+        const newOptions = {
+            ...currentOptions,
+            [key]: value
+        };
+        updateNodeData(node.id, {
+            export: {
+                ...currentValues,
+                options: newOptions
+            } as IExportData
+        });
         form.setValue('options', newOptions, { shouldDirty: true });
     }, [form, node.id, updateNodeData]);
 
@@ -75,7 +95,12 @@ const ExportEditor = ({ node }: EditorProps) => {
         try {
             const parsed = JSON.parse(value);
             const currentValues = form.getValues();
-            updateNodeData(node.id, { export: { ...currentValues, options: parsed } as IExportData });
+            updateNodeData(node.id, {
+                export: {
+                    ...currentValues,
+                    options: parsed
+                } as IExportData
+            });
             form.setValue('options', parsed, { shouldDirty: true });
         } catch {
             // Invalid JSON, don't update store

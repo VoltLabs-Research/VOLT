@@ -20,7 +20,10 @@ export default function useUpdateTrajectory() {
 
     const updateTrajectory = useCallback(async (_id: string, data: UpdateTrajectoryPayload) => {
         try {
-            await mutation.mutateAsync({ id: _id, params: data });
+            await mutation.mutateAsync({
+                id: _id,
+                params: data
+            });
             sileo.success({ title: 'Trajectory updated' });
         } catch (error: unknown) {
             reportError(error, {

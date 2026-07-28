@@ -79,7 +79,10 @@ const readRememberedJupyterUrl = (input: { trajectoryId: string; notebookId?: st
 
 const useScriptingWorkspace = ({ trajectoryId, notebookId, onNotebookIdChange }: UseScriptingWorkspaceInput) => {
     const teamId = useSelectedTeamId();
-    const [jupyterUrl, setJupyterUrl] = useState<string | null>(() => readRememberedJupyterUrl({ trajectoryId, notebookId }));
+    const [jupyterUrl, setJupyterUrl] = useState<string | null>(() => readRememberedJupyterUrl({
+        trajectoryId,
+        notebookId
+    }));
     const [jupyterError, setJupyterError] = useState<string | null>(null);
     const [isWaitingForJupyter, setIsWaitingForJupyter] = useState(false);
     const [containerStage, setContainerStage] = useState<NotebookContainerStage | null>(null);

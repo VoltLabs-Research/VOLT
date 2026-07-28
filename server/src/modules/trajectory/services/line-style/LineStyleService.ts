@@ -10,11 +10,12 @@ import {
 } from '@modules/trajectory/services/SceneArtifactService';
 import { stripTrailingZstdExtension } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
+import PluginEntity from '@modules/plugin/models/Plugin';
+import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
-import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { createHash } from 'node:crypto';
@@ -55,6 +56,15 @@ const buildClusterRequiredError = (): ApplicationError => {
     );
 };
 
+/**
+ * Deliberately NOT shared with the same-looking `stableStringify` in
+ * `WorkflowProjection`. This one feeds `hashLineStyle`, and that digest is
+ * embedded in the MinIO object name of every styled GLB, so it is a storage
+ * key. The two copies already disagree: this one sorts keys with `localeCompare`
+ * and drops `undefined` entries, the other uses the default `.sort()` and
+ * serializes them as `null`. Merging them rewrites one hash family and orphans
+ * every artifact already baked under the old keys.
+ */
 const stableStringify = (value: unknown): string => {
     if (Array.isArray(value)) {
         return `[${value.map(stableStringify).join(',')}]`;
@@ -192,13 +202,13 @@ export class LineStyleService {
         analysisId: string,
         exposureId: string
     ): Promise<LineExportBaseOptions | undefined> {
-        const analysis = await AnalysisModel.findById(String(analysisId));
+        const analysis = await AnalysisEntity.findOneBy({ id: String(analysisId) });
         if (!analysis) {
             return undefined;
         }
 
-        const pluginDoc = await PluginModel.findById(analysis.plugin.toString());
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: analysis.plugin });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         const exposures = Array.isArray(plugin?.props.exposures) ? plugin.props.exposures : [];
         const exposure = exposures.find((candidate: { _id?: unknown }) => (
             typeof candidate === 'object'
@@ -215,13 +225,13 @@ export class LineStyleService {
         timestep: string | number,
         exposureId: string
     ): Promise<string> {
-        const artifact = await SceneArtifactModel.findOne({
-            trajectory: String(trajectoryId),
-            analysis: String(analysisId),
-            sourceType: SceneArtifactSourceType.PluginExposure,
-            timestep: Number(timestep),
-            params: { exposureId: String(exposureId) }
-        });
+        const artifact = await SceneArtifact.createQueryBuilder('artifact')
+            .where('artifact.trajectory = :trajectory', { trajectory: String(trajectoryId) })
+            .andWhere('artifact.analysis = :analysis', { analysis: String(analysisId) })
+            .andWhere('artifact.sourceType = :sourceType', { sourceType: SceneArtifactSourceType.PluginExposure })
+            .andWhere('artifact.timestep = :timestep', { timestep: Number(timestep) })
+            .andWhere('artifact.params = :params', { params: JSON.stringify({ exposureId: String(exposureId) }) })
+            .getOne();
 
         if (!artifact) {
             throw ApplicationError.notFound(
@@ -234,9 +244,9 @@ export class LineStyleService {
     }
 
     private async streamModelObject(trajectoryId: string, objectName: string): Promise<LineStyleStreamResponse> {
-        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
+        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
 
         if (!storageClusterId) {

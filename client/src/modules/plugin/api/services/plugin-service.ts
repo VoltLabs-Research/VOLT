@@ -118,20 +118,20 @@ export interface NodeTypesSchemaResponse {
 }
 
 const endpoints = {
-    getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>('/'),
-    getById: get<GetPluginInput, Plugin>('/:_id'),
-    create: post<CreatePluginInput, Plugin>('/', {
+    getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>('/plugins'),
+    getById: get<GetPluginInput, Plugin>('/plugins/:_id'),
+    create: post<CreatePluginInput, Plugin>('/plugins', {
         unwrap: { field: 'plugin' }
     }),
-    update: patch<UpdatePluginParams, Plugin>('/:_id'),
-    clone: post<ClonePluginInput, Plugin>('/:pluginId/clones', {
+    update: patch<UpdatePluginParams, Plugin>('/plugins/:_id'),
+    clone: post<ClonePluginInput, Plugin>('/plugins/:pluginId/clones', {
         unwrap: { field: 'plugin' }
     }),
-    delete: del<DeletePluginInput>('/:_id'),
+    delete: del<DeletePluginInput>('/plugins/:_id'),
     uploadBinary: custom<UploadBinaryParams, UploadBinaryResponse>(async ({ getClient }, params) => {
         const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
             'PATCH',
-            `/${params.pluginId}/binary`,
+            `/plugins/${params.pluginId}/binary`,
             {
                 body: {
                     fileName: params.file.name,
@@ -159,7 +159,7 @@ const endpoints = {
 
         const commitResponse = await getClient().request<UploadBinaryCommitApiResponse>(
             'POST',
-            `/${params.pluginId}/binary/commit`,
+            `/plugins/${params.pluginId}/binary/commits`,
             {
                 body: {
                     objectPath: target.objectPath,
@@ -171,32 +171,35 @@ const endpoints = {
 
         return commitResponse.data;
     }),
-    deleteBinary: del<DeleteBinaryInput>('/:pluginId/binary'),
-    exportPlugin: download<ExportPluginInput>('GET', '/:_id/export'),
-    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', '/listings/analyses/:analysisId/export'),
-    importPlugin: request<ImportPluginInput, Plugin>('POST', '/import', {
-        body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
+    deleteBinary: del<DeleteBinaryInput>('/plugins/:pluginId/binary'),
+    exportPlugin: download<ExportPluginInput>('GET', '/plugins/:_id/export'),
+    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', '/plugins/listings/analyses/:analysisId/export'),
+    importPlugin: request<ImportPluginInput, Plugin>('POST', '/plugins/imports', {
+        body: ({ file }) => buildFileFormData([{
+            name: 'file',
+            file
+        }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    searchRegistry: get<SearchRegistryInput, SearchRegistryResponse>('/registry/search', {
+    searchRegistry: get<SearchRegistryInput, SearchRegistryResponse>('/plugins/registry/search', {
         query: ({ q, page, limit }) => ({
             ...(q?.trim() ? { q: q.trim() } : {}),
             ...(page ? { page } : {}),
             ...(limit ? { limit } : {})
         })
     }),
-    installRegistryPlugin: post<InstallRegistryPluginInput, Plugin>('/registry/install'),
-    executePipeline: post<ExecutePipelineParams, ExecutePipelineResponse>('/trajectories/:trajectoryId/pipeline-executions'),
+    installRegistryPlugin: post<InstallRegistryPluginInput, Plugin>('/plugins/registry/installations'),
+    executePipeline: post<ExecutePipelineParams, ExecutePipelineResponse>('/plugins/trajectories/:trajectoryId/pipeline-executions'),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),
-    getNodeTypesSchema: get<void, NodeTypesSchemaResponse>('/node-types/schema')
+    getNodeTypesSchema: get<void, NodeTypesSchemaResponse>('/plugins/node-types/schema')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/plugins',
+            basePath: '/teams',
             useRBAC: true
         },
         teamClusters: {

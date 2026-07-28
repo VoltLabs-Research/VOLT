@@ -176,7 +176,10 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             }
 
             if (!xtermRef.current || !isReadyRef.current) {
-                pendingOperationsRef.current.push({ type: 'write', data });
+                pendingOperationsRef.current.push({
+                    type: 'write',
+                    data
+                });
                 return;
             }
 

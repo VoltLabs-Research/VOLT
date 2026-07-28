@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
+import Analysis from '@modules/analysis/models/Analysis';
 import analysisExecutionLogService, {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
@@ -12,40 +12,40 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 
-interface SubscribePayload {
+interface SubscribePayload{
     analysisId: string;
     timestep: number;
     afterCursor?: string;
 }
 
-interface UnsubscribePayload {
+interface UnsubscribePayload{
     analysisId: string;
     timestep: number;
 }
 
-export class AnalysisLogSocketModule extends BaseSocketModule {
+export class AnalysisLogSocketModule extends BaseSocketModule{
     public readonly name = 'AnalysisLogSocketModule';
 
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
 
-    constructor() {
+    constructor(){
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
-    onConnection(connection: ISocketConnection): void {
-        if (!connection.user) {
+    onConnection(connection: ISocketConnection): void{
+        if(!connection.user){
             return;
         }
 
         this.on<SubscribePayload>(connection.id, ANALYSIS_LOG_SOCKET_EVENTS.SUBSCRIBE, async (conn, payload) => {
             const currentTeamId = this.teamSubscriptionCoordinator.getCurrentTeamId(conn);
-            if (!currentTeamId) {
+            if(!currentTeamId){
                 this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_ID_REQUIRED, 'No team selected');
                 return;
             }
 
-            const analysis = await AnalysisModel.findById(payload.analysisId);
-            if (!analysis || analysis.team.toString() !== currentTeamId) {
+            const analysis = await Analysis.findOneBy({ id: payload.analysisId });
+            if(!analysis || analysis.team !== currentTeamId){
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -57,19 +57,19 @@ export class AnalysisLogSocketModule extends BaseSocketModule {
             const room = getAnalysisLogRoom(payload.analysisId, payload.timestep);
             await this.joinRoom(conn.id, room);
 
-            if (!payload.afterCursor) {
+            if(!payload.afterCursor){
                 return;
             }
 
             const replay = await analysisExecutionLogService.getFrameLog({
                 analysisId: payload.analysisId,
                 teamId: currentTeamId,
-                trajectoryId: analysis.trajectory.toString(),
+                trajectoryId: analysis.trajectory,
                 timestep: payload.timestep,
                 afterCursor: payload.afterCursor
             });
 
-            if (replay.segments.length === 0 && !replay.sealed) {
+            if(replay.segments.length === 0 && !replay.sealed){
                 return;
             }
 

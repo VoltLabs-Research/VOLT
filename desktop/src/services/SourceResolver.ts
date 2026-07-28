@@ -32,7 +32,10 @@ export default class SourceResolver{
     constructor(private readonly props: SourceResolverProps){}
 
     #updaterFor(repo: Repository){
-        return new SoftwareUpdater({ repoId: repo.getId(), downloadDir: this.props.downloadDir });
+        return new SoftwareUpdater({
+            repoId: repo.getId(),
+            downloadDir: this.props.downloadDir
+        });
     }
 
     async #devSources(): Promise<Record<string, string> | null>{
@@ -48,7 +51,11 @@ export default class SourceResolver{
         const dev = await this.#devSources();
         if(dev){
             assertDevPaths(dev.VOLT_SOURCE_DIR, dev.CLUSTER_DAEMON_SOURCE_DIR);
-            return { env: dev, changed: true, commit: async () => {} };
+            return {
+                env: dev,
+                changed: true,
+                commit: async () => {}
+            };
         }
 
         const env: Record<string, string> = {};
@@ -75,22 +82,37 @@ export default class SourceResolver{
             }
         };
 
-        return { env, changed, commit };
+        return {
+            env,
+            changed,
+            commit
+        };
     }
 
     
     async checkForUpdates(): Promise<{ devMode: boolean; repos: RepoUpdateStatus[] }>{
         const dev = await this.#devSources();
-        if(dev) return { devMode: true, repos: [] };
+        if(dev) return {
+            devMode: true,
+            repos: []
+        };
 
         const repos: RepoUpdateStatus[] = [];
         for(const { repo } of this.props.repos){
             const repoId = repo.getId();
             const latest = await repo.fetchLatestRelease();
             const installed = await this.props.appConfig.getInstalledReleaseTag(repoId);
-            repos.push({ repoId, installed, latest: latest.tag, changed: latest.tag !== installed });
+            repos.push({
+                repoId,
+                installed,
+                latest: latest.tag,
+                changed: latest.tag !== installed
+            });
         }
-        return { devMode: false, repos };
+        return {
+            devMode: false,
+            repos
+        };
     }
 
     async resolveExisting(): Promise<Record<string, string>>{

@@ -18,20 +18,104 @@ type ValueRowDef = RowDef & {
 };
 
 export const PRESETS = {
-    intensity: (max = 10): RowDef => ({ label: 'Intensity', min: 0, max, step: 0.01, decimals: 2 }),
-    distance: { label: 'Distance', min: 0, max: 5000, step: 0.1, decimals: 1 } satisfies RowDef,
-    decay: { label: 'Decay', min: 0, max: 4, step: 0.1, decimals: 2 } satisfies RowDef,
-    angle: { label: 'Angle', min: 0, max: Math.PI / 2, step: 0.01, decimals: 2 } satisfies RowDef,
-    penumbra: { label: 'Penumbra', min: 0, max: 1, step: 0.01, decimals: 2 } satisfies RowDef,
-    width: { label: 'Width', min: 0.1, max: 1000, step: 0.1, decimals: 1 } satisfies RowDef,
-    height: { label: 'Height', min: 0.1, max: 1000, step: 0.1, decimals: 1 } satisfies RowDef,
-    speed: (label: string, max = 10): RowDef => ({ label, min: 0, max, step: 0.1, decimals: 1 }),
-    factor: (label: string): RowDef => ({ label, min: 0, max: 1, step: 0.01, decimals: 2 }),
-    cellSize: { label: 'Cell Size', min: 0.1, max: 100, step: 0.1, decimals: 1 } satisfies RowDef,
-    sectionSize: { label: 'Section Size', min: 0.1, max: 500, step: 0.1, decimals: 1 } satisfies RowDef,
-    thickness: (label: string): RowDef => ({ label, min: 0.1, max: 10, step: 0.1, decimals: 1 }),
-    fadeDistance: { label: 'Fade Distance', min: 1, max: 1000, step: 1, decimals: 0 } satisfies RowDef,
-    fadeStrength: { label: 'Fade Strength', min: 0, max: 1, step: 0.01, decimals: 2 } satisfies RowDef
+    intensity: (max = 10): RowDef => ({
+        label: 'Intensity',
+        min: 0,
+        max,
+        step: 0.01,
+        decimals: 2
+    }),
+    distance: {
+        label: 'Distance',
+        min: 0,
+        max: 5000,
+        step: 0.1,
+        decimals: 1
+    } satisfies RowDef,
+    decay: {
+        label: 'Decay',
+        min: 0,
+        max: 4,
+        step: 0.1,
+        decimals: 2
+    } satisfies RowDef,
+    angle: {
+        label: 'Angle',
+        min: 0,
+        max: Math.PI / 2,
+        step: 0.01,
+        decimals: 2
+    } satisfies RowDef,
+    penumbra: {
+        label: 'Penumbra',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        decimals: 2
+    } satisfies RowDef,
+    width: {
+        label: 'Width',
+        min: 0.1,
+        max: 1000,
+        step: 0.1,
+        decimals: 1
+    } satisfies RowDef,
+    height: {
+        label: 'Height',
+        min: 0.1,
+        max: 1000,
+        step: 0.1,
+        decimals: 1
+    } satisfies RowDef,
+    speed: (label: string, max = 10): RowDef => ({
+        label,
+        min: 0,
+        max,
+        step: 0.1,
+        decimals: 1
+    }),
+    factor: (label: string): RowDef => ({
+        label,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        decimals: 2
+    }),
+    cellSize: {
+        label: 'Cell Size',
+        min: 0.1,
+        max: 100,
+        step: 0.1,
+        decimals: 1
+    } satisfies RowDef,
+    sectionSize: {
+        label: 'Section Size',
+        min: 0.1,
+        max: 500,
+        step: 0.1,
+        decimals: 1
+    } satisfies RowDef,
+    thickness: (label: string): RowDef => ({
+        label,
+        min: 0.1,
+        max: 10,
+        step: 0.1,
+        decimals: 1
+    }),
+    fadeDistance: {
+        label: 'Fade Distance',
+        min: 1,
+        max: 1000,
+        step: 1,
+        decimals: 0
+    } satisfies RowDef,
+    fadeStrength: {
+        label: 'Fade Strength',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        decimals: 2
+    } satisfies RowDef
 };
 
 export const row = (
@@ -62,7 +146,13 @@ export const valueRow = (def: ValueRowDef) => ({
 
 export const positionRows = (get: () => number[], setAt: (index: number, value: number) => void) => (
     ['X', 'Y', 'Z'].map((axis, index) => row(
-        { label: `Pos ${axis}`, min: -1000, max: 1000, step: 0.1, decimals: 2 },
+        {
+            label: `Pos ${axis}`,
+            min: -1000,
+            max: 1000,
+            step: 0.1,
+            decimals: 2
+        },
         () => get()[index],
         (value) => setAt(index, value)
     ))
@@ -85,7 +175,13 @@ export const vec3Rows = (
 
 export const targetRows = (get: () => number[], set: (value: [number, number, number]) => void) => (
     ['X', 'Y', 'Z'].map((axis, index) => row(
-        { label: `Target ${axis}`, min: -1000, max: 1000, step: 0.1, decimals: 2 },
+        {
+            label: `Target ${axis}`,
+            min: -1000,
+            max: 1000,
+            step: 0.1,
+            decimals: 2
+        },
         () => get()[index],
         (value) => {
             const next = [...get()] as [number, number, number];
@@ -100,7 +196,12 @@ export const gridPosRows = (get: () => number[], set: (value: [number, number, n
         const next = [...get()] as [number, number, number];
         next[index] = value;
         set(next);
-    }, { min: -1000, max: 1000, step: 0.1, decimals: 2 })
+    }, {
+        min: -1000,
+        max: 1000,
+        step: 0.1,
+        decimals: 2
+    })
 );
 
 export const gridRotRows = (get: () => number[], set: (value: [number, number, number]) => void) => (
@@ -108,7 +209,12 @@ export const gridRotRows = (get: () => number[], set: (value: [number, number, n
         const next = [...get()] as [number, number, number];
         next[index] = value;
         set(next);
-    }, { min: -Math.PI, max: Math.PI, step: 0.01, decimals: 2 })
+    }, {
+        min: -Math.PI,
+        max: Math.PI,
+        step: 0.01,
+        decimals: 2
+    })
 );
 
 export const checkbox = (

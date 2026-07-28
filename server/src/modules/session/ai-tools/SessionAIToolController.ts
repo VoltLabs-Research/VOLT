@@ -19,16 +19,25 @@ export default class SessionAIToolController extends AIToolController {
         switch (input.action) {
             case 'list': {
                 const value = await this.#service.getActiveSessions(input.userId);
-                return { summary: `Found ${value.length} active session(s).`, data: value };
+                return {
+                    summary: `Found ${value.length} active session(s).`,
+                    data: value
+                };
             }
             case 'revoke': {
                 if (!input.sessionId) throw new Error('sessionId is required to revoke a session.');
                 await this.#service.revokeSession(input.sessionId, input.userId);
-                return { summary: `Revoked session ${input.sessionId}.`, data: { sessionId: input.sessionId } };
+                return {
+                    summary: `Revoked session ${input.sessionId}.`,
+                    data: { sessionId: input.sessionId }
+                };
             }
             case 'revoke_others': {
                 const { revokedCount } = await this.#service.revokeAllSessions(input.userId, '');
-                return { summary: `Revoked ${revokedCount} other active session(s).`, data: { revokedCount } };
+                return {
+                    summary: `Revoked ${revokedCount} other active session(s).`,
+                    data: { revokedCount }
+                };
             }
         }
     }

@@ -38,7 +38,10 @@ module.exports = {
                 'Only src/core/bootstrap/** may reference concrete modules; it is the '
                 + 'composition root that mounts them.',
             severity: 'error',
-            from: { path: '^src/core/', pathNot: '^src/core/bootstrap/' },
+            from: {
+                path: '^src/core/',
+                pathNot: '^src/core/bootstrap/'
+            },
             to: { path: '^src/modules/' }
         },
         {
@@ -67,7 +70,10 @@ module.exports = {
         {
             name: 'not-to-dev-dep',
             severity: 'error',
-            from: { path: '^src/', pathNot: '\\.(test|spec)\\.ts$' },
+            from: {
+                path: '^src/',
+                pathNot: '\\.(test|spec)\\.ts$'
+            },
             to: { dependencyTypes: ['npm-dev'] }
         }
     ],

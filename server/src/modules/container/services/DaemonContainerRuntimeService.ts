@@ -102,11 +102,17 @@ export class DaemonContainerRuntimeService {
     }
 
     async getFiles(teamClusterId: string, containerId: string, path: string): Promise<ContainerFileEntry[]> {
-        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, ChannelCommands.ContainerFilesList, { containerId, path });
+        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, ChannelCommands.ContainerFilesList, {
+            containerId,
+            path
+        });
     }
 
     async readFile(teamClusterId: string, containerId: string, path: string): Promise<string> {
-        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, ChannelCommands.ContainerFileRead, { containerId, path });
+        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, ChannelCommands.ContainerFileRead, {
+            containerId,
+            path
+        });
 
         return response.contents;
     }
@@ -149,7 +155,10 @@ export class DaemonContainerRuntimeService {
         const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(
             teamClusterId,
             ChannelCommands.ContainerUpdate,
-            { containerId, action }
+            {
+                containerId,
+                action
+            }
         );
         this.clearContainerCache(teamClusterId, containerId);
         return container;

@@ -18,10 +18,26 @@ interface ContainerDetailsTabOption extends SegmentedTabOption<ContainerDetailsT
 }
 
 const TABS: ReadonlyArray<ContainerDetailsTabOption> = [
-    { id: 'overview', label: 'Overview', path: '' },
-    { id: 'processes', label: 'Processes', path: 'processes' },
-    { id: 'terminal', label: 'Terminal', path: 'terminal' },
-    { id: 'storage', label: 'Files', path: 'storage' }
+    {
+        id: 'overview',
+        label: 'Overview',
+        path: ''
+    },
+    {
+        id: 'processes',
+        label: 'Processes',
+        path: 'processes'
+    },
+    {
+        id: 'terminal',
+        label: 'Terminal',
+        path: 'terminal'
+    },
+    {
+        id: 'storage',
+        label: 'Files',
+        path: 'storage'
+    }
 ] as const;
 
 const resolveActiveTab = (pathname: string, basePath: string): ContainerDetailsTabId => {

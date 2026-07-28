@@ -37,7 +37,10 @@ const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
                 'latex-workspace__file-row latex-workspace__tree-row d-flex items-center content-between gap-05',
                 selected && 'is-selected',
                 className
-            )} role='treeitem' tabIndex={0} aria-label={resolvedAriaLabel} aria-level={treeItemLevel} aria-expanded={expanded} aria-selected={selected} style={{ ...style, paddingLeft: `${0.75 + indent / 16}rem` }} {...props}>
+            )} role='treeitem' tabIndex={0} aria-label={resolvedAriaLabel} aria-level={treeItemLevel} aria-expanded={expanded} aria-selected={selected} style={{
+                ...style,
+                paddingLeft: `${0.75 + indent / 16}rem`
+            }} {...props}>
             <Row gap='05' flex='1' minW='0'>
                 {depth > 0 && <span className='latex-workspace__tree-indent-line' aria-hidden='true' />}
                 <Row as='span' shrink='0' className='color-muted'>{icon}</Row>

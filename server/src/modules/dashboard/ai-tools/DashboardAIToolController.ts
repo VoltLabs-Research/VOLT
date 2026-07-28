@@ -82,8 +82,8 @@ export default class DashboardAIToolController extends AIToolController {
         });
 
         const teamItems = teams.map((team) => ({
-            ...team,
-            id: team._id,
+            ...team.toJSON(),
+            id: team.id,
             name: team.name,
             deepLink: '/dashboard/my-team'
         }));

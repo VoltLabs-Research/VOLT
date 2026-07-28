@@ -41,8 +41,17 @@ const CatalogFolderSchema = new Schema<CatalogFolderDocument>({
     timestamps: true
 });
 
-CatalogFolderSchema.index({ team: 1, kind: 1, parent: 1, createdAt: -1 });
-CatalogFolderSchema.index({ team: 1, kind: 1, title: 1 });
+CatalogFolderSchema.index({
+    team: 1,
+    kind: 1,
+    parent: 1,
+    createdAt: -1
+});
+CatalogFolderSchema.index({
+    team: 1,
+    kind: 1,
+    title: 1
+});
 
 const CatalogFolderModel: Model<CatalogFolderDocument> = mongoose.models.CatalogFolder
     || mongoose.model<CatalogFolderDocument>('CatalogFolder', CatalogFolderSchema);

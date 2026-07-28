@@ -18,29 +18,80 @@ export interface ScreenshotSize {
 }
 
 export const SCREENSHOT_RESOLUTION_PRESETS: Record<Exclude<ScreenshotResolutionPreset, 'viewport' | 'custom'>, ScreenshotSize> = {
-    hd: { width: 1280, height: 720 },
-    'full-hd': { width: 1920, height: 1080 },
-    '4k': { width: 3840, height: 2160 }
+    hd: {
+        width: 1280,
+        height: 720
+    },
+    'full-hd': {
+        width: 1920,
+        height: 1080
+    },
+    '4k': {
+        width: 3840,
+        height: 2160
+    }
 };
 
 export const SCREENSHOT_RESOLUTION_OPTIONS = [
-    { value: 'viewport', title: 'Viewport' },
-    { value: 'hd', title: 'HD · 1280 × 720' },
-    { value: 'full-hd', title: 'Full HD · 1920 × 1080' },
-    { value: '4k', title: '4K · 3840 × 2160' },
-    { value: 'custom', title: 'Custom' }
+    {
+        value: 'viewport',
+        title: 'Viewport'
+    },
+    {
+        value: 'hd',
+        title: 'HD · 1280 × 720'
+    },
+    {
+        value: 'full-hd',
+        title: 'Full HD · 1920 × 1080'
+    },
+    {
+        value: '4k',
+        title: '4K · 3840 × 2160'
+    },
+    {
+        value: 'custom',
+        title: 'Custom'
+    }
 ] as const;
 
 export const SCREENSHOT_ANGLE_OPTIONS = [
-    { value: 'current', title: 'Current view' },
-    { value: 'front', title: 'Front' },
-    { value: 'back', title: 'Back' },
-    { value: 'left', title: 'Left' },
-    { value: 'right', title: 'Right' },
-    { value: 'top', title: 'Top' },
-    { value: 'bottom', title: 'Bottom' },
-    { value: 'isometric', title: 'Isometric' },
-    { value: 'ground-isometric', title: 'Ground isometric' }
+    {
+        value: 'current',
+        title: 'Current view'
+    },
+    {
+        value: 'front',
+        title: 'Front'
+    },
+    {
+        value: 'back',
+        title: 'Back'
+    },
+    {
+        value: 'left',
+        title: 'Left'
+    },
+    {
+        value: 'right',
+        title: 'Right'
+    },
+    {
+        value: 'top',
+        title: 'Top'
+    },
+    {
+        value: 'bottom',
+        title: 'Bottom'
+    },
+    {
+        value: 'isometric',
+        title: 'Isometric'
+    },
+    {
+        value: 'ground-isometric',
+        title: 'Ground isometric'
+    }
 ] as const;
 
 export const DEFAULT_SCREENSHOT_SETTINGS: ScreenshotSettings = {

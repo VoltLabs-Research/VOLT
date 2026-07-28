@@ -25,7 +25,10 @@ export const useCellDisplayStore = create<CellDisplayStore>((set, get) => ({
 
     setCellOverride: (trajectoryId, cell) =>
         set((state) => ({
-            cellOverrides: { ...state.cellOverrides, [trajectoryId]: cell }
+            cellOverrides: {
+                ...state.cellOverrides,
+                [trajectoryId]: cell
+            }
         })),
 
     clearCellOverride: (trajectoryId) =>

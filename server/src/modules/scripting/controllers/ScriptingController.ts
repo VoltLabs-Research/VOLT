@@ -22,15 +22,13 @@ export default class ScriptingController extends Controller {
     #service = new ScriptingService();
 
     @Route(scriptingRoutes.listNotebooks)
-    @Route(scriptingRoutes.listNotebooksByTrajectory)
     listNotebooks(
         @Param('teamId') teamId: string,
-        @Param('trajectoryId') trajectoryId: string | undefined,
         @Query() query: Record<string, string>
     ) {
         return this.#service.listNotebooks({
             teamId,
-            trajectoryId,
+            trajectoryId: query.trajectoryId,
             scope: query.scope as ScriptingNotebookScope | undefined,
             page: query.page !== undefined ? Number(query.page) : undefined,
             limit: query.limit !== undefined ? Number(query.limit) : undefined
@@ -69,7 +67,10 @@ export default class ScriptingController extends Controller {
 
     @Route(scriptingRoutes.removeNotebook)
     async removeNotebook(@Param('teamId') teamId: string, @Param('notebookId') notebookId: string) {
-        await this.#service.deleteNotebook({ teamId, notebookId });
+        await this.#service.deleteNotebook({
+            teamId,
+            notebookId
+        });
     }
 
     @Route(scriptingRoutes.getSessionStatus)
@@ -80,7 +81,11 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.getSessionStatus({ teamId, notebookId, userId });
+        const value = await this.#service.getSessionStatus({
+            teamId,
+            notebookId,
+            userId
+        });
         const { accessGrant, ...response } = value;
 
         if (accessGrant) {
@@ -104,7 +109,10 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.deleteSession({ teamId, notebookId });
+        const value = await this.#service.deleteSession({
+            teamId,
+            notebookId
+        });
         const { runtimeNotebookId, ...response } = value;
 
         if (runtimeNotebookId && teamId) {
@@ -115,10 +123,8 @@ export default class ScriptingController extends Controller {
     }
 
     @Route(scriptingRoutes.createJupyterSession)
-    @Route(scriptingRoutes.createJupyterSessionByTrajectory)
     async createJupyterSession(
         @Param('teamId') teamId: string,
-        @Param('trajectoryId') trajectoryIdParam: string | undefined,
         @CurrentUser() userId: string,
         @Body() body: CreateScriptingJupyterSessionInput,
         @Req() req: AuthenticatedRequest,
@@ -128,7 +134,7 @@ export default class ScriptingController extends Controller {
             teamId,
             userId,
             notebookId: body.notebookId,
-            trajectoryId: body.trajectoryId ?? trajectoryIdParam,
+            trajectoryId: body.trajectoryId,
             teamClusterId: body.teamClusterId
         });
 

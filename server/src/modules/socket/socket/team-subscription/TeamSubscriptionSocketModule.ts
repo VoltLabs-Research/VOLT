@@ -1,5 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel from '@modules/auth/models/UserModel';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
@@ -10,7 +9,8 @@ import type {
 } from '@modules/socket/socket/ISocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
-import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import TeamMember from '@modules/team/models/TeamMember';
+import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -18,8 +18,14 @@ interface SocketAck<T = unknown> {
     error?: string;
 }
 
-const ackOk = <T>(data?: T): SocketAck<T> => ({ ok: true, data });
-const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
+const ackOk = <T>(data?: T): SocketAck<T> => ({
+    ok: true,
+    data
+});
+const ackError = (error: string): SocketAck<never> => ({
+    ok: false,
+    error
+});
 
 class TeamSubscriptionSocketModule extends BaseSocketModule {
     public readonly name = 'TeamSubscriptionSocketModule';
@@ -40,10 +46,10 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return ackError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
             }
 
-            const isMember = Boolean(await TeamMemberModel.exists({
+            const isMember = await TeamMember.existsBy({
                 user: currentUserId,
                 team: payload.teamId
-            }));
+            });
 
             if (!isMember) {
                 this.emitErrorToSocket(
@@ -94,9 +100,7 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
             return;
         }
 
-        await UserModel.findByIdAndUpdate(userId, {
-            $addToSet: { teams: teamId }
-        });
+        await addTeamToUser(userId, teamId);
 
         const nextTeams = this.mergeTeamId(connection.user?.teams, teamId);
         const auth = connection.data.auth;

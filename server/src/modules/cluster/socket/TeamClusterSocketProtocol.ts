@@ -1,4 +1,4 @@
-import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';

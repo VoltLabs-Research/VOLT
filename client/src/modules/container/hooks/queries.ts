@@ -50,7 +50,10 @@ export const containerQuery = createPaginatedQuery<Container, GetContainersParam
     service: {
         list: service.getAll,
         create: service.create,
-        update: (id, params) => service.update({ containerId: id, ...params }),
+        update: (id, params) => service.update({
+            containerId: id,
+            ...params
+        }),
         delete: (id) => service.delete({ containerId: id })
     }
 });
@@ -94,7 +97,10 @@ export const useContainerProcessesQuery = createQuery(KEYS.processes, (container
 export const useClusterResourceLimitsQuery = createQuery<{ teamId: string; teamClusterId: string }, ClusterResourceLimits>(
     KEYS.resourceLimits,
     async ({ teamId, teamClusterId }) => {
-        const result = await teamClusterService.getResourceLimits({ teamId, teamClusterId });
+        const result = await teamClusterService.getResourceLimits({
+            teamId,
+            teamClusterId
+        });
         return result.resourceLimits;
     }
 );

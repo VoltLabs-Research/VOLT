@@ -98,14 +98,27 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
     };
 
     return (
-        <div className="canvas-results-chart" style={{ width: '100%', minWidth: 260 }}>
+        <div className="canvas-results-chart" style={{
+            width: '100%',
+            minWidth: 260
+        }}>
             <ResponsiveContainer width="100%" height={130}>
                 {chartType === 'bar' ? (
                     <BarChart {...commonProps}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-soft)" />
-                        <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} />
-                        <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} width={36} />
-                        <Tooltip contentStyle={{ fontSize: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border-soft)' }} />
+                        <XAxis dataKey={xKey} tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} />
+                        <YAxis tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} width={36} />
+                        <Tooltip contentStyle={{
+                            fontSize: 10,
+                            background: 'var(--color-surface-2)',
+                            border: '1px solid var(--color-border-soft)'
+                        }} />
                         {yKeys.map((k, i) => (
                             <Bar key={k} dataKey={k} fill={colors[i % colors.length]} />
                         ))}
@@ -116,17 +129,37 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
                 ) : chartType === 'scatter' && yKeys.length >= 1 ? (
                     <ScatterChart {...commonProps}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-soft)" />
-                        <XAxis dataKey={xKey} name={xKey} tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} />
-                        <YAxis dataKey={yKeys[0]} name={yKeys[0]} tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} width={36} />
-                        <Tooltip contentStyle={{ fontSize: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border-soft)' }} />
+                        <XAxis dataKey={xKey} name={xKey} tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} />
+                        <YAxis dataKey={yKeys[0]} name={yKeys[0]} tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} width={36} />
+                        <Tooltip contentStyle={{
+                            fontSize: 10,
+                            background: 'var(--color-surface-2)',
+                            border: '1px solid var(--color-border-soft)'
+                        }} />
                         <Scatter data={chartData} fill={CHART_COLOR} />
                     </ScatterChart>
                 ) : (
                     <LineChart {...commonProps}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-soft)" />
-                        <XAxis dataKey={xKey} tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} />
-                        <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} width={36} />
-                        <Tooltip contentStyle={{ fontSize: 10, background: 'var(--color-surface-2)', border: '1px solid var(--color-border-soft)' }} />
+                        <XAxis dataKey={xKey} tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} />
+                        <YAxis tick={{
+                            fontSize: 9,
+                            fill: 'var(--color-text-muted)'
+                        }} width={36} />
+                        <Tooltip contentStyle={{
+                            fontSize: 10,
+                            background: 'var(--color-surface-2)',
+                            border: '1px solid var(--color-border-soft)'
+                        }} />
                         {yKeys.map((k, i) => (
                             <Line key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} dot={false} strokeWidth={1.5} />
                         ))}

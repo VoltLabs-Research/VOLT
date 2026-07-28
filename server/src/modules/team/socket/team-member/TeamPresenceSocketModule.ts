@@ -1,6 +1,6 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel from '@modules/auth/models/UserModel';
+import User from '@modules/auth/models/User';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
@@ -110,7 +110,11 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
     private async updateUserActivity(teamId: string, userId: string, minutes: number): Promise<void> {
         try {
             await this.eventBus.publish(
-                new GenericDomainEvent(DOMAIN_EVENTS.UserActivityRecorded, { teamId, userId, minutes })
+                new GenericDomainEvent(DOMAIN_EVENTS.UserActivityRecorded, {
+                    teamId,
+                    userId,
+                    minutes
+                })
             );
         } catch (error) {
             logger.error(error, `[TeamPresenceSocketModule] Failed to update activity for user ${userId}`);
@@ -152,7 +156,7 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
                 });
 
                 if (session.userWentOfflineCompletely) {
-                    await UserModel.findByIdAndUpdate(session.userId, { lastSeenAt: session.endedAt });
+                    await User.update({ id: session.userId }, { lastSeenAt: session.endedAt });
                 }
             }
         }

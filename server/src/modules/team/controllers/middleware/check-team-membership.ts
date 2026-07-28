@@ -1,10 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoles } from '@core/constants/system-roles';
-import {
-    getTeamMemberRolePermissions,
-    isPopulatedTeamMemberRole
-} from '@modules/team/models/team-member/TeamMemberModel';
-import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import TeamMember from '@modules/team/models/TeamMember';
+import type TeamRole from '@modules/team/models/TeamRole';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
@@ -15,21 +12,22 @@ import {
 } from '@shared/infrastructure/http/request-context';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { NextFunction, Response } from 'express';
 
-const getRequestTeamPermissions = (role: Parameters<typeof getTeamMemberRolePermissions>[0]): string[] => {
-    if (!isPopulatedTeamMemberRole(role)) {
+const getRequestTeamPermissions = (role?: TeamRole | null): string[] => {
+    if(!role){
         return [];
     }
 
-    if (!role.isSystem || !role.name) {
-        return getTeamMemberRolePermissions(role);
+    if(!role.isSystem || !role.name){
+        return role.permissions ?? [];
     }
 
     const canonicalSystemRole = Object.values(SystemRoles).find((systemRole) => systemRole.name === role.name);
 
-    if (!canonicalSystemRole) {
-        return getTeamMemberRolePermissions(role);
+    if(!canonicalSystemRole){
+        return role.permissions ?? [];
     }
 
     return canonicalSystemRole.permissions;
@@ -64,11 +62,23 @@ const canReuseTeamMembershipContext = (
     return requestTeamContext.userId === userId;
 };
 
-export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const startedAt = Date.now();
-    const teamId = Array.isArray(req.params.teamId)
+const readRequestTeamId = (req: AuthenticatedRequest): string | undefined => {
+    const fromPath = Array.isArray(req.params.teamId)
         ? req.params.teamId[0]
         : req.params.teamId;
+
+    if (fromPath) {
+        return fromPath;
+    }
+
+    const body = asRecord(req.body);
+
+    return typeof body?.teamId === 'string' ? body.teamId : undefined;
+};
+
+export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    const teamId = readRequestTeamId(req);
     const userId = req.userId;
 
     logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);
@@ -125,12 +135,12 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    const member = await TeamMemberModel.findOne({
-        user: userId,
-        team: teamId
-    }).populate({
-        path: 'role',
-        select: ['name', 'permissions', 'isSystem']
+    const member = await TeamMember.findOne({
+        where: {
+            user: userId,
+            team: teamId
+        },
+        relations: { roleRef: true }
     });
 
     if (!member) {
@@ -142,7 +152,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    req.teamPermissions = getRequestTeamPermissions(member.role);
+    req.teamPermissions = getRequestTeamPermissions(member.roleRef);
 
     const teamContext: HttpRequestTeamContext = {
         teamId,

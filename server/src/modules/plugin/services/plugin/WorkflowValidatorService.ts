@@ -1,4 +1,5 @@
-import { PluginStatus, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
     ArgumentType,
@@ -144,7 +145,10 @@ export class WorkflowValidatorService {
 
         if (!workflow || !workflow.nodes || !Array.isArray(workflow.nodes)) {
             errors.push('Workflow must have a nodes array');
-            return { isValid: false, errors };
+            return {
+                isValid: false,
+                errors
+            };
         }
 
         const pluginReferences = workflow.nodes
@@ -341,7 +345,11 @@ export class WorkflowValidatorService {
             }
         }
 
-        return { nodeMap, parentsByTarget, childrenBySource };
+        return {
+            nodeMap,
+            parentsByTarget,
+            childrenBySource
+        };
     }
 
     private validateRuntimeEdgeTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {

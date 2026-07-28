@@ -16,7 +16,10 @@ export default class JobsAIToolController extends AIToolController {
     })
     async retryTeamFailedJobs(input: TrajectoryRefInput & AIToolScope) {
         const value = await this.#service.retryFailedJobs(input);
-        return { summary: `Retried ${value.retriedFrames} frames across ${value.affectedClusters} clusters.`, data: value };
+        return {
+            summary: `Retried ${value.retriedFrames} frames across ${value.affectedClusters} clusters.`,
+            data: value
+        };
     }
 
     @AITool({
@@ -27,6 +30,9 @@ export default class JobsAIToolController extends AIToolController {
     })
     async removeTeamRunningJobs(input: TrajectoryRefInput & AIToolScope) {
         const value = await this.#service.removeRunningJobs(input);
-        return { summary: `Removed ${value.deletedJobs} jobs across ${value.affectedClusters} clusters.`, data: value };
+        return {
+            summary: `Removed ${value.deletedJobs} jobs across ${value.affectedClusters} clusters.`,
+            data: value
+        };
     }
 }

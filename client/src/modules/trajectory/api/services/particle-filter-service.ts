@@ -78,6 +78,7 @@ export const buildPreviewQuery = (input: PreviewFilterInput) => {
     if (input.conditions && input.conditions.length > 0) {
         return {
             timestep: input.timestep,
+            analysisId: input.analysisId,
             combinator: input.combinator,
             conditions: JSON.stringify(input.conditions)
         };
@@ -85,6 +86,7 @@ export const buildPreviewQuery = (input: PreviewFilterInput) => {
 
     return {
         timestep: input.timestep,
+        analysisId: input.analysisId,
         property: input.property,
         operator: input.operator,
         value: input.value,
@@ -96,6 +98,7 @@ const buildApplyFilterBody = (input: ApplyFilterInput) => {
     if (input.conditions && input.conditions.length > 0) {
         return {
             timestep: String(input.timestep),
+            analysisId: input.analysisId,
             action: input.action,
             combinator: input.combinator,
             conditions: input.conditions
@@ -104,6 +107,7 @@ const buildApplyFilterBody = (input: ApplyFilterInput) => {
 
     return {
         timestep: String(input.timestep),
+        analysisId: input.analysisId,
         action: input.action,
         property: input.property,
         operator: input.operator,
@@ -114,40 +118,35 @@ const buildApplyFilterBody = (input: ApplyFilterInput) => {
 
 const endpoints = {
     getProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/properties/${analysisId}`
-            : `/${trajectoryId}/properties`,
-        { query: ({ timestep }) => ({ timestep }) }
+        '/trajectories/:trajectoryId/particle-filters/properties',
+        {
+            query: ({ timestep, analysisId }) => ({
+                timestep,
+                analysisId
+            })
+        }
     ),
     preview: get<PreviewFilterInput, PreviewFilterResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/previews/${analysisId}`
-            : `/${trajectoryId}/previews`,
+        '/trajectories/:trajectoryId/particle-filters/previews',
         {
-            omit: ['trajectoryId', 'analysisId'],
             query: buildPreviewQuery
         }
     ),
     applyAction: post<ApplyFilterInput, ApplyFilterResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/${analysisId}`
-            : `/${trajectoryId}`,
+        '/trajectories/:trajectoryId/particle-filters',
         {
             body: buildApplyFilterBody
         }
     ),
     getUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/unique-values/${analysisId}`
-            : `/${trajectoryId}/unique-values`,
-        { omit: ['trajectoryId', 'analysisId'] }
+        '/trajectories/:trajectoryId/particle-filters/unique-values'
     )
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/particle-filters',
+            basePath: '/teams',
             useRBAC: true
         }
     }

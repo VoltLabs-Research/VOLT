@@ -33,8 +33,14 @@ interface CanvasPipelineProps {
 type OrderedViewStageType = 'slice-plane' | 'expression-select';
 
 const VIEW_STAGE_META: Record<OrderedViewStageType, { label: string; icon: ReactNode }> = {
-    'slice-plane': { label: 'Slice Plane', icon: <Scissors size={13} aria-hidden='true' /> },
-    'expression-select': { label: 'Expression Select', icon: <Filter size={13} aria-hidden='true' /> }
+    'slice-plane': {
+        label: 'Slice Plane',
+        icon: <Scissors size={13} aria-hidden='true' />
+    },
+    'expression-select': {
+        label: 'Expression Select',
+        icon: <Filter size={13} aria-hidden='true' />
+    }
 };
 
 const stageIcon = (stage: PipelineStage): ReactNode => {
@@ -85,7 +91,10 @@ const CanvasPipeline = ({
     })();
     const isForeignTrajectory = Boolean(selectedTeamId && trajectoryTeamId && trajectoryTeamId !== selectedTeamId);
 
-    useCloneIntentRunner({ trajectoryId, isForeignTrajectory });
+    useCloneIntentRunner({
+        trajectoryId,
+        isForeignTrajectory
+    });
 
     const allStages = useStages(trajectoryId);
     const stages = allStages.filter((stage) =>

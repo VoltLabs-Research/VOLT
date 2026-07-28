@@ -68,7 +68,11 @@ function useDocumentListingPagination<T extends { _id: string }, TContext = Reco
     } = useInfiniteQuery<PaginatedResponse<T>, Error, InfiniteData<PaginatedResponse<T>, number>, QueryKey, number>({
         queryKey: effectiveQueryKey,
         queryFn: ({ pageParam }) => {
-            const params = { page: pageParam, limit, search } as PaginationParams & TContext;
+            const params = {
+                page: pageParam,
+                limit,
+                search
+            } as PaginationParams & TContext;
             if (search.trim().length === 0) {
                 delete (params as Record<string, unknown>).search;
             }

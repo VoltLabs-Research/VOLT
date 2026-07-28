@@ -6,8 +6,7 @@ import type {
 } from './domain';
 
 export const rasterRoutes = {
-    triggerRasterization: post<never, TriggerRasterizationResponse>('/api/rasters/:teamId/:trajectoryId/jobs'),
-    getRasterMetadata: get<GetRasterMetadataResponse>('/api/rasters/:teamId/:trajectoryId/metadata'),
-    getRasterFramePNG: get<RasterFramePNGResponse>('/api/rasters/:teamId/:trajectoryId/frames/:timestep'),
-    getRasterFrameAnalysisPNG: get<RasterFramePNGResponse>('/api/rasters/:teamId/:trajectoryId/frames/:timestep/:analysisId/:model')
+    triggerRasterization: post<never, TriggerRasterizationResponse>('/api/teams/:teamId/trajectories/:trajectoryId/rasters/jobs'),
+    getRasterMetadata: get<GetRasterMetadataResponse>('/api/teams/:teamId/trajectories/:trajectoryId/rasters/metadata'),
+    getRasterFramePNG: get<RasterFramePNGResponse>('/api/teams/:teamId/trajectories/:trajectoryId/rasters/frames/:timestep')
 } as const;

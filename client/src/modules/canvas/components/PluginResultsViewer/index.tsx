@@ -24,7 +24,12 @@ const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
         ? artifact.metadata.exposureName
         : artifact.displayName;
     const listingQuery = usePluginListingQuery(
-        { pluginId, analysisId, trajectoryId, exposureName },
+        {
+            pluginId,
+            analysisId,
+            trajectoryId,
+            exposureName
+        },
         { enabled: Boolean(pluginId && analysisId && exposureName) }
     );
     const rows = listingQuery.data?.data ?? [];
@@ -48,7 +53,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
         activeExposureName, activeExposureId, isAtomsTab, activeChartArtifact,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
-    } = usePluginResults({ pluginId, analysisId });
+    } = usePluginResults({
+        pluginId,
+        analysisId
+    });
     const resolvedTeamId = teamId ?? undefined;
     const lineRowSelection = useLineEntityRowSelection(activeExposureId);
 

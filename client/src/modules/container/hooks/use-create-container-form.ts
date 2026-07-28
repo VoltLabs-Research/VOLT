@@ -279,7 +279,10 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
 
         const validationError = getCustomImageValidationError(trimmedImage);
         if (validationError) {
-            sileo.error({ title: 'Invalid image reference', description: validationError });
+            sileo.error({
+                title: 'Invalid image reference',
+                description: validationError
+            });
             return;
         }
 

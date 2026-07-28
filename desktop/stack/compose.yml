@@ -12,6 +12,19 @@ services:
       retries: 20
     volumes: [volt-mongodb-data:/data/db]
 
+  volt-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-volt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS:-volt}
+      POSTGRES_DB: ${POSTGRES_DB:-volt}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      retries: 20
+    volumes: [volt-postgres-data:/var/lib/postgresql/data]
+
   volt-redis:
     image: redis:7.4.2-alpine
     restart: unless-stopped
@@ -56,14 +69,16 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
       MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
       MONGO_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017?authSource=admin
+      DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/${POSTGRES_DB:-volt}
       SERVER_PORT: 8000
       SERVER_HOST: 0.0.0.0
       SECRET_KEY: ${SECRET_KEY:-volt-local-secret}
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
     depends_on:
-      volt-mongodb: { condition: service_healthy }
-      volt-redis:   { condition: service_healthy }
-      volt-minio:   { condition: service_started }
+      volt-mongodb:  { condition: service_healthy }
+      volt-postgres: { condition: service_healthy }
+      volt-redis:    { condition: service_healthy }
+      volt-minio:    { condition: service_started }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${VOLT_SOURCE_DIR}/server:/app
@@ -232,6 +247,7 @@ services:
 
 volumes:
   volt-mongodb-data:
+  volt-postgres-data:
   volt-redis-data:
   volt-minio-data:
   cluster-mongodb-data:

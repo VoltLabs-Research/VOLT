@@ -65,11 +65,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
             return;
         }
 
-        set({ isLoading: true, hasToken: true });
+        set({
+            isLoading: true,
+            hasToken: true
+        });
 
         try{
             await fetchCurrentUser();
-            set({ isInitialized: true, isLoading: false, hasToken: true });
+            set({
+                isInitialized: true,
+                isLoading: false,
+                hasToken: true
+            });
         }catch{
             
             
@@ -80,7 +87,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
                 updateSocketAuthToken(localToken);
                 try{
                     await fetchCurrentUser();
-                    set({ isInitialized: true, isLoading: false, hasToken: true });
+                    set({
+                        isInitialized: true,
+                        isLoading: false,
+                        hasToken: true
+                    });
                     return;
                 }catch{
                     tokenStorage.removeToken();

@@ -77,21 +77,34 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
             };
         }
 
-        const result = snapshot.draw({ mode, elements });
+        const result = snapshot.draw({
+            mode,
+            elements
+        });
 
         return {
             ok: true,
             summary: `Drew ${result.drawn} element${result.drawn === 1 ? '' : 's'} on the whiteboard.`,
-            data: { whiteboardId, mode, drawn: result.drawn }
+            data: {
+                whiteboardId,
+                mode,
+                drawn: result.drawn
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Could not draw on whiteboard', icon: 'whiteboard' };
+            return {
+                label: 'Could not draw on whiteboard',
+                icon: 'whiteboard'
+            };
         }
         const drawn = (result.data as { drawn?: number } | undefined)?.drawn ?? 0;
-        return { label: `Drew ${drawn} element${drawn === 1 ? '' : 's'} on the whiteboard`, icon: 'whiteboard' };
+        return {
+            label: `Drew ${drawn} element${drawn === 1 ? '' : 's'} on the whiteboard`,
+            icon: 'whiteboard'
+        };
     }
 };
 

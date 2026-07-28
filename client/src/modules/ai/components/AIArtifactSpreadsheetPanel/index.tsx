@@ -67,7 +67,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     const table = resolveTabularPayload(artifact);
 
     const [edits, setEdits] = useState<Record<string, string>>({});
-    const [activeCell, setActiveCell] = useState<CellAddress>({ row: 0, col: 0 });
+    const [activeCell, setActiveCell] = useState<CellAddress>({
+        row: 0,
+        col: 0
+    });
     const [editingCell, setEditingCell] = useState<CellAddress | null>(null);
     const [editBuffer, setEditBuffer] = useState('');
     const [copyFeedback, setCopyFeedback] = useState(false);
@@ -120,7 +123,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         const columnName = columns[editingCell.col] ?? `Column ${editingCell.col + 1}`;
 
         if (editBuffer !== original) {
-            setEdits((prev) => ({ ...prev, [key]: editBuffer }));
+            setEdits((prev) => ({
+                ...prev,
+                [key]: editBuffer
+            }));
             updateStatusMessage(`Updated row ${editingCell.row + 1}, ${columnName}.`);
         } else {
             setEdits((prev) => {
@@ -143,8 +149,14 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         const value = getCellValue(row, col);
         const columnName = columns[col] ?? `Column ${col + 1}`;
 
-        setActiveCell({ row, col });
-        setEditingCell({ row, col });
+        setActiveCell({
+            row,
+            col
+        });
+        setEditingCell({
+            row,
+            col
+        });
         setEditBuffer(value);
         updateStatusMessage(`Editing row ${row + 1}, ${columnName}.`);
     }, [columns, editingCell, commitEdit, getCellValue, updateStatusMessage]);
@@ -168,7 +180,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         const nextRow = Math.max(0, Math.min(rows.length - 1, activeCell.row + rowDelta));
         const nextCol = Math.max(0, Math.min(columns.length - 1, activeCell.col + colDelta));
 
-        setActiveCell({ row: nextRow, col: nextCol });
+        setActiveCell({
+            row: nextRow,
+            col: nextCol
+        });
     }, [activeCell.col, activeCell.row, columns.length, rows.length]);
 
     const moveToCell = useCallback((rowDelta: number, colDelta: number) => {
@@ -177,7 +192,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         const nextCol = Math.max(0, Math.min(columns.length - 1, editingCell.col + colDelta));
         commitEdit();
         const value = getCellValue(nextRow, nextCol);
-        setEditingCell({ row: nextRow, col: nextCol });
+        setEditingCell({
+            row: nextRow,
+            col: nextCol
+        });
         setEditBuffer(value);
     }, [editingCell, rows.length, columns.length, commitEdit, getCellValue]);
 
@@ -247,7 +265,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-            const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as Uint8Array;
+            const buffer = XLSX.write(workbook, {
+                bookType: 'xlsx',
+                type: 'array'
+            }) as Uint8Array;
             const blob = new Blob([buffer], {
                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
@@ -339,7 +360,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const handleCellClick = (rowIndex: number, colIndex: number) => {
-        setActiveCell({ row: rowIndex, col: colIndex });
+        setActiveCell({
+            row: rowIndex,
+            col: colIndex
+        });
     };
 
     const handleCellKeyDown = (event: KeyboardEvent<HTMLTableCellElement>, rowIndex: number, colIndex: number) => {

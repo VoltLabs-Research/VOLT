@@ -42,17 +42,26 @@ const openPanel: ClientToolHandler<OpenPanelInput> = {
         return {
             ok: true,
             summary: `Opened ${parts.join(' and ')}.`,
-            data: { sidebarOption: sidebarOption || undefined, modifier: modifier || undefined }
+            data: {
+                sidebarOption: sidebarOption || undefined,
+                modifier: modifier || undefined
+            }
         };
     },
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Could not open panel', icon: 'panel' };
+            return {
+                label: 'Could not open panel',
+                icon: 'panel'
+            };
         }
         const data = result.data as { sidebarOption?: string; modifier?: string } | undefined;
         const target = data?.sidebarOption ?? data?.modifier ?? 'panel';
-        return { label: `Opened ${target}`, icon: 'panel' };
+        return {
+            label: `Opened ${target}`,
+            icon: 'panel'
+        };
     }
 };
 

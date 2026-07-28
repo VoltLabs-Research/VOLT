@@ -43,7 +43,10 @@ const useGroupActions = () => {
 
     const addUsersToGroup = useCallback(async (chatId: string, userIds: string[]) => {
         return runAction({
-            action: () => addUsersToGroupMutationResult.mutateAsync({ chatId, userIds }),
+            action: () => addUsersToGroupMutationResult.mutateAsync({
+                chatId,
+                userIds
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Adding members...',
                 success: 'Members added to group',
@@ -57,7 +60,10 @@ const useGroupActions = () => {
 
     const removeUsersFromGroup = useCallback(async (chatId: string, userIds: string[]) => {
         return runAction({
-            action: () => removeUsersFromGroupMutationResult.mutateAsync({ chatId, userIds }),
+            action: () => removeUsersFromGroupMutationResult.mutateAsync({
+                chatId,
+                userIds
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Removing members...',
                 success: 'Members removed from group',
@@ -71,7 +77,10 @@ const useGroupActions = () => {
 
     const updateGroupInfo = useCallback(async (chatId: string, changes: UpdateGroupInfoInput) => {
         return runAction({
-            action: () => updateGroupInfoMutationResult.mutateAsync({ chatId, ...changes }),
+            action: () => updateGroupInfoMutationResult.mutateAsync({
+                chatId,
+                ...changes
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Updating group...',
                 success: 'Group updated',
@@ -85,7 +94,10 @@ const useGroupActions = () => {
 
     const updateGroupAdmins = useCallback(async (chatId: string, changes: UpdateGroupAdminsInput) => {
         return runAction({
-            action: () => updateGroupAdminsMutationResult.mutateAsync({ chatId, ...changes }),
+            action: () => updateGroupAdminsMutationResult.mutateAsync({
+                chatId,
+                ...changes
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Updating admins...',
                 success: 'Group admins updated',

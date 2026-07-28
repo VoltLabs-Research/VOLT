@@ -1,7 +1,6 @@
-import TeamMemberModel, { isPopulatedTeamMemberRole } from '@modules/team/models/team-member/TeamMemberModel';
+import TeamMember from '@modules/team/models/TeamMember';
 import SecretKeyService from '@modules/team/services/SecretKeyService';
-import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
-import type { ScriptingNotebookDocument } from '@modules/scripting/models/ScriptingNotebookModel';
+import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
@@ -10,27 +9,30 @@ import logger from '@shared/infrastructure/logger';
 export class NotebookCredentialService {
     readonly #secretKeys = new SecretKeyService();
 
-    async resolveSecretKey(notebook: ScriptingNotebookDocument, userId: string): Promise<string> {
+    async resolveSecretKey(notebook: ScriptingNotebook, userId: string): Promise<string> {
         if (notebook.secretKeyId && notebook.secretKeyEncrypted) {
             return decrypt(notebook.secretKeyEncrypted);
         }
 
-        const teamId = String(notebook.team);
+        const teamId = notebook.team;
         const roleId = await this.resolveLauncherRoleId(teamId, userId);
 
         const { secretKeyId, secretKey } = await this.#secretKeys.create(teamId, userId, {
             roleId,
-            name: `notebook:${String(notebook._id)}`
+            name: `notebook:${notebook.id}`
         });
-        await ScriptingNotebookModel.updateOne(
-            { _id: notebook._id },
-            { $set: { secretKeyId, secretKeyEncrypted: await encrypt(secretKey) } }
+        await ScriptingNotebook.update(
+            { id: notebook.id },
+            {
+                secretKeyId,
+                secretKeyEncrypted: await encrypt(secretKey)
+            }
         );
 
         return secretKey;
     }
 
-    async revokeSecretKey(notebook: ScriptingNotebookDocument): Promise<void> {
+    async revokeSecretKey(notebook: ScriptingNotebook): Promise<void> {
         const secretKeyId = notebook.secretKeyId;
         if (!secretKeyId) {
             return;
@@ -38,22 +40,27 @@ export class NotebookCredentialService {
 
         try {
             await this.#secretKeys.deleteById(
-                String(notebook.team),
+                notebook.team,
                 secretKeyId,
-                String(notebook.createdBy)
+                notebook.createdBy
             );
         } catch (err) {
             logger.warn(
-                { secretKeyId, notebookId: String(notebook._id), err },
+                {
+                    secretKeyId,
+                    notebookId: notebook.id,
+                    err
+                },
                 '[Scripting] Failed to revoke notebook secret key'
             );
         }
     }
 
     private async resolveLauncherRoleId(teamId: string, userId: string): Promise<string> {
-        const member = await TeamMemberModel.findOne(
-            { user: userId, team: teamId }
-        ).populate({ path: 'role', select: ['name', 'permissions'] });
+        const member = await TeamMember.findOneBy({
+            user: userId,
+            team: teamId
+        });
 
         if (!member) {
             throw ApplicationError.notFound(
@@ -62,8 +69,7 @@ export class NotebookCredentialService {
             );
         }
 
-        const { role } = member;
-        return isPopulatedTeamMemberRole(role) ? role._id : String(role);
+        return member.role;
     }
 }
 

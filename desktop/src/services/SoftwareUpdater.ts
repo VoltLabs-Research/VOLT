@@ -53,7 +53,10 @@ export default class SoftwareUpdater{
         
         
         
-        await rm(outputDir, { recursive: true, force: true });
+        await rm(outputDir, {
+            recursive: true,
+            force: true
+        });
         await mkdir(outputDir, { recursive: true }).catch(() => {});
 
         await extractZip(zipPath, {
@@ -70,11 +73,17 @@ export default class SoftwareUpdater{
 
         await this.#download(release, downloadPath);
 
-        bus.emit('source:progress', { repoId: this.props.repoId, phase: 'extract' });
+        bus.emit('source:progress', {
+            repoId: this.props.repoId,
+            phase: 'extract'
+        });
         await this.#extract(downloadPath, extractPath);
 
         await unlink(downloadPath);
-        bus.emit('source:progress', { repoId: this.props.repoId, phase: 'done' });
+        bus.emit('source:progress', {
+            repoId: this.props.repoId,
+            phase: 'done'
+        });
 
         return this.resolveExtractedPath();
     }

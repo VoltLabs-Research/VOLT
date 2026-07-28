@@ -42,19 +42,22 @@ export interface GetLineModelRangesResponse {
 
 const endpoints = {
     apply: post<ApplyLineStyleInput, ApplyLineStyleResponse>(
-        ({ trajectoryId, analysisId, exposureId }) => `/${trajectoryId}/${analysisId}/${exposureId}`,
+        ({ trajectoryId, analysisId, exposureId }) => `/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/line-style`,
         {
-            body: ({ timestep, style }) => ({ timestep: String(timestep), style })
+            body: ({ timestep, style }) => ({
+                timestep: String(timestep),
+                style
+            })
         }
     ),
     getEntityProperties: get<GetLineEntityPropertiesInput, GetLineEntityPropertiesResponse>(
-        ({ trajectoryId, analysisId, exposureId, entityId }) => `/${trajectoryId}/${analysisId}/${exposureId}/entities/${entityId}`,
+        ({ trajectoryId, analysisId, exposureId, entityId }) => `/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/line-style/entities/${entityId}`,
         {
             query: ({ timestep }) => ({ timestep })
         }
     ),
     getRanges: get<GetLineModelRangesInput, GetLineModelRangesResponse>(
-        ({ trajectoryId, analysisId, exposureId }) => `/${trajectoryId}/${analysisId}/${exposureId}/ranges`,
+        ({ trajectoryId, analysisId, exposureId }) => `/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/line-style/ranges`,
         {
             query: ({ timestep, style }) => ({
                 timestep,
@@ -67,7 +70,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/line-styles',
+            basePath: '/teams',
             useRBAC: true
         }
     }

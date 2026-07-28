@@ -80,7 +80,11 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
 
     const columns: PluginTableColumnConfig[] = useMemo(() => {
         const base: PluginTableColumnConfig[] = [
-            { key: 'id', title: 'ID', width: 80 },
+            {
+                key: 'id',
+                title: 'ID',
+                width: 80
+            },
             {
                 key: 'type',
                 title: 'Type',
@@ -102,9 +106,24 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
                     );
                 }
             },
-            { key: 'x', title: 'X', width: 100, render: (value: unknown) => formatAtomValue(value, 3) },
-            { key: 'y', title: 'Y', width: 100, render: (value: unknown) => formatAtomValue(value, 3) },
-            { key: 'z', title: 'Z', width: 100, render: (value: unknown) => formatAtomValue(value, 3) }
+            {
+                key: 'x',
+                title: 'X',
+                width: 100,
+                render: (value: unknown) => formatAtomValue(value, 3)
+            },
+            {
+                key: 'y',
+                title: 'Y',
+                width: 100,
+                render: (value: unknown) => formatAtomValue(value, 3)
+            },
+            {
+                key: 'z',
+                title: 'Z',
+                width: 100,
+                render: (value: unknown) => formatAtomValue(value, 3)
+            }
         ];
 
         const extra = properties

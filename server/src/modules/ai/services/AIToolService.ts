@@ -46,7 +46,10 @@ const controllers: AIToolController[] = [
 
 class AIToolService {
     createToolsForContext(teamId: string, userId: string): ToolSet {
-        const scope: AIToolScope = { teamId, userId };
+        const scope: AIToolScope = {
+            teamId,
+            userId
+        };
         const tools: ToolSet = {};
 
         for (const controller of controllers) {

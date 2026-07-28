@@ -1,34 +1,39 @@
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
+import Analysis from '@modules/analysis/models/Analysis';
 
-interface GroupedCountResult {
-    _id: string;
-    count: number;
+const COUNT_KEY = 'analysesCount';
+
+interface GroupedCountRow{
+    createdBy: string;
+    count: string | number;
 }
 
-class AnalysisMemberContentCounter implements IMemberContentCounter {
-    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const results = await AnalysisModel.aggregate<GroupedCountResult>([
-            {
-                $match: {
-                    team: teamId,
-                    createdBy: { $in: userIds }
-                }
-            },
-            {
-                $group: {
-                    _id: '$createdBy',
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
-
+class AnalysisMemberContentCounter implements IMemberContentCounter{
+    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult>{
         const counts = new Map<string, number>();
-        for (const row of results) {
-            counts.set(row._id.toString(), row.count);
+        if(userIds.length === 0){
+            return {
+                key: COUNT_KEY,
+                counts
+            };
         }
 
-        return { key: 'analysesCount', counts };
+        const rows = await Analysis.createQueryBuilder('analysis')
+            .select('analysis.createdBy', 'createdBy')
+            .addSelect('COUNT(analysis.id)', 'count')
+            .where('analysis.team = :teamId', { teamId })
+            .andWhere('analysis.createdBy IN (:...userIds)', { userIds })
+            .groupBy('analysis.createdBy')
+            .getRawMany<GroupedCountRow>();
+
+        for(const row of rows){
+            counts.set(String(row.createdBy), Number(row.count));
+        }
+
+        return {
+            key: COUNT_KEY,
+            counts
+        };
     }
 }
 

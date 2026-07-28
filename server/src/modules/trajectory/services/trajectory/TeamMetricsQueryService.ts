@@ -7,8 +7,9 @@ export interface TeamMetricsSnapshot {
     };
 }
 
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import { In } from 'typeorm';
+import Analysis from '@modules/analysis/models/Analysis';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 
 const MAX_QUERY_LIMIT = 10000;
 const ROLLING_WEEKS = 12;
@@ -86,7 +87,10 @@ export class TeamMetricsQueryService {
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {
         const window = createTimeWindow();
 
-        const trajectories = await TrajectoryModel.find({ team: teamId }).limit(MAX_QUERY_LIMIT).exec();
+        const trajectories = await Trajectory.find({
+            where: { team: teamId },
+            take: MAX_QUERY_LIMIT
+        });
 
         const trajectoryBuckets = createBuckets();
         for (const trajectory of trajectories) {
@@ -95,9 +99,12 @@ export class TeamMetricsQueryService {
             }
         }
 
-        const trajectoryIds = trajectories.map((trajectory) => trajectory._id.toString());
+        const trajectoryIds = trajectories.map((trajectory) => trajectory.id);
         const analyses = trajectoryIds.length > 0
-            ? await AnalysisModel.find({ trajectory: { $in: trajectoryIds } }).limit(MAX_QUERY_LIMIT).exec()
+            ? await Analysis.find({
+                where: { trajectory: In(trajectoryIds) },
+                take: MAX_QUERY_LIMIT
+            })
             : [];
 
         const analysisBuckets = createBuckets();

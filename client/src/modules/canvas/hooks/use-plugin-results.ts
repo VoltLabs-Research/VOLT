@@ -93,7 +93,11 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
             exposureName: exposure.name
         }));
         if (hasAtomProperties) {
-            result.push({ key: 'atoms', label: 'Atoms', type: 'atoms' });
+            result.push({
+                key: 'atoms',
+                label: 'Atoms',
+                type: 'atoms'
+            });
         }
         chartArtifacts.forEach((artifact) => {
             result.push({
@@ -131,7 +135,10 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         try {
             await showPromise(
                 (async () => {
-                    const blob = await exportResultsMutation.mutateAsync({ pluginId, analysisId });
+                    const blob = await exportResultsMutation.mutateAsync({
+                        pluginId,
+                        analysisId
+                    });
                     triggerBrowserDownload(blob, `${pluginId}_analysis_${analysisId}.zip`);
                     return blob;
                 })(),

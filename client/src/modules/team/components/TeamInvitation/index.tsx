@@ -76,7 +76,10 @@ export default function TeamInvitationTemplate() {
 
         try {
             await runAction({
-                action: () => acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+                action: () => acceptMutation.mutateAsync({
+                    invitationId,
+                    teamId: invitation.team._id
+                }),
                 toast: ACCEPT_INVITATION_TOAST_OPTIONS,
                 afterSuccess: async () => {
                     setSelectedTeamId(invitation.team._id);
@@ -98,7 +101,10 @@ export default function TeamInvitationTemplate() {
 
         try {
             await runAction({
-                action: () => rejectMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
+                action: () => rejectMutation.mutateAsync({
+                    invitationId,
+                    teamId: invitation.team._id
+                }),
                 toast: REJECT_INVITATION_TOAST_OPTIONS,
                 afterSuccess: () => {
                     setError(null);

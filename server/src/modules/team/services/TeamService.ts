@@ -3,23 +3,18 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
 import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
-import UserModel from '@modules/auth/models/UserModel';
-import TeamModel from '@modules/team/models/team/TeamModel';
-import type { TeamProps } from '@modules/team/models/team/TeamModel';
-import TeamMemberModel, {
-    getTeamMemberRolePermissions,
-    isPopulatedTeamMemberRole
-} from '@modules/team/models/team-member/TeamMemberModel';
-import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
-import TeamRoleModel, { buildTeamRoleCreatePayload } from '@modules/team/models/team-role/TeamRoleModel';
+import Team from '@modules/team/models/Team';
+import TeamMember from '@modules/team/models/TeamMember';
+import TeamRole from '@modules/team/models/TeamRole';
+import { buildTeamRoleCreatePayload } from '@modules/team/contracts/domain/team-role';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
+import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import TeamCreatedEvent from '@modules/team/events/team/TeamCreatedEvent';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import DeploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { In } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import type {
     CreateTeamInput,
     UpdateTeamInput
@@ -31,7 +26,7 @@ const MANAGE_INVITE_CODES_MESSAGE = 'You do not have permission to manage invite
 
 const generateCode = (): string => {
     let code = '';
-    for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+    for(let i = 0; i < INVITE_CODE_LENGTH; i++){
         code += INVITE_CODE_CHARS[Math.floor(Math.random() * INVITE_CODE_CHARS.length)];
     }
     return code;
@@ -39,98 +34,109 @@ const generateCode = (): string => {
 
 const normalizeInviteCode = (code: string): string => code.trim().toUpperCase();
 
-interface PopulatedTeamOwner {
-    firstName?: string;
-    lastName?: string;
-}
-
-export default class TeamService {
+export default class TeamService{
     #membership = new TeamMembershipService();
-    #users = { addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }) };
     #deploymentSettings = new DeploymentSettingsService();
     #eventBus = eventBus;
 
-    async create(userId: string, input: CreateTeamInput): Promise<PersistedOutput<TeamProps>> {
+    async create(userId: string, input: CreateTeamInput): Promise<Team>{
         const { name, description } = input;
-        const team = await TeamModel.create({ name, description, owner: userId });
-
         const ownerRoleDefinition = SystemRoles[SystemRoleNames.OWNER];
-        const ownerRole = await TeamRoleModel.create(buildTeamRoleCreatePayload({
-            teamId: String(team._id),
-            name: ownerRoleDefinition.name,
-            permissions: ownerRoleDefinition.permissions,
-            isSystem: ownerRoleDefinition.isSystem
-        }));
-
         const additionalSystemRoles = [
             SystemRoles[SystemRoleNames.ADMIN],
             SystemRoles[SystemRoleNames.MEMBER],
             SystemRoles[SystemRoleNames.VIEWER]
         ];
 
-        for (const roleDefinition of additionalSystemRoles) {
-            await TeamRoleModel.create(buildTeamRoleCreatePayload({
-                teamId: String(team._id),
-                name: roleDefinition.name,
-                permissions: roleDefinition.permissions,
-                isSystem: roleDefinition.isSystem
+        const team = await Team.getRepository().manager.transaction(async (manager): Promise<Team> => {
+            const createdTeam = await manager.save(manager.create(Team, {
+                name,
+                description,
+                owner: userId
             }));
-        }
 
-        await TeamMemberModel.create({
-            user: userId,
-            team: team._id,
-            role: ownerRole._id,
-            createdAt: new Date(),
-            joinedAt: new Date(),
-            updatedAt: new Date()
+            const ownerRole = await manager.save(manager.create(TeamRole, buildTeamRoleCreatePayload({
+                teamId: createdTeam.id,
+                name: ownerRoleDefinition.name,
+                permissions: ownerRoleDefinition.permissions,
+                isSystem: ownerRoleDefinition.isSystem
+            })));
+
+            for(const roleDefinition of additionalSystemRoles){
+                await manager.save(manager.create(TeamRole, buildTeamRoleCreatePayload({
+                    teamId: createdTeam.id,
+                    name: roleDefinition.name,
+                    permissions: roleDefinition.permissions,
+                    isSystem: roleDefinition.isSystem
+                })));
+            }
+
+            await manager.save(manager.create(TeamMember, {
+                user: userId,
+                team: createdTeam.id,
+                role: ownerRole.id,
+                joinedAt: new Date()
+            }));
+
+            await addTeamToUser(userId, createdTeam.id, manager);
+
+            return createdTeam;
         });
 
-        await this.#users.addTeamToUser(userId, String(team._id));
+        await this.#eventBus.publish(new TeamCreatedEvent({
+            ownerId: userId,
+            teamId: team.id
+        }));
 
-        await this.#eventBus.publish(new TeamCreatedEvent({ ownerId: userId, teamId: String(team._id) }));
-
-        return toPersistedOutput<TeamProps>(team);
+        return team;
     }
 
-    async listUserTeams(userId: string): Promise<PersistedOutput<TeamProps>[]> {
-        const memberTeamIds = await TeamMemberModel.find({ user: userId }).distinct('team');
+    async listUserTeams(userId: string): Promise<Team[]>{
+        const memberships = await TeamMember.findBy({ user: userId });
+        const memberTeamIds = [...new Set(memberships.map((membership) => membership.team))];
 
-        const docs = await TeamModel.find({
-            $or: [
-                { _id: { $in: memberTeamIds } },
+        const where: FindOptionsWhere<Team>[] = memberTeamIds.length === 0
+            ? [{ owner: userId }]
+            : [
+                { id: In(memberTeamIds) },
                 { owner: userId }
-            ]
-        }).populate('owner');
+            ];
 
-        return docs.map((doc) => toPersistedOutput<TeamProps>(doc, ['owner']));
+        return Team.find({
+            where,
+            relations: { ownerRef: true }
+        });
     }
 
-    async getById(teamId: string): Promise<PersistedOutput<TeamProps>> {
-        const team = await TeamModel.findById(teamId);
-        if (!team) {
+    async getById(teamId: string): Promise<Team>{
+        const team = await Team.findOneBy({ id: teamId });
+        if(!team){
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
-        return toPersistedOutput<TeamProps>(team);
+        return team;
     }
 
-    async updateById(teamId: string, data: UpdateTeamInput): Promise<PersistedOutput<TeamProps>> {
-        const team = await TeamModel.findByIdAndUpdate(teamId, { $set: data }, { new: true });
-        if (!team) {
+    async updateById(teamId: string, data: UpdateTeamInput): Promise<Team>{
+        const team = await Team.findOneBy({ id: teamId });
+        if(!team){
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
-        return toPersistedOutput<TeamProps>(team);
+        return Object.assign(team, data).save();
     }
 
-    async deleteById(teamId: string, userId: string): Promise<void> {
-        const deleted = await TeamModel.findByIdAndDelete(teamId);
-        if (!deleted) {
+    async deleteById(teamId: string, userId: string): Promise<void>{
+        const team = await Team.findOneBy({ id: teamId });
+        if(!team){
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
-        await this.#eventBus.publish(new TeamDeletedEvent({ teamId, userId }));
+        await team.remove();
+        await this.#eventBus.publish(new TeamDeletedEvent({
+            teamId,
+            userId
+        }));
     }
 
-    async setDefaultForNewUsers(teamId: string, enabled: boolean): Promise<{ defaultTeam: string | null; autoJoinNewMembers: boolean }> {
+    async setDefaultForNewUsers(teamId: string, enabled: boolean): Promise<{ defaultTeam: string | null; autoJoinNewMembers: boolean }>{
         const settings = await this.#deploymentSettings.setDefaultTeam(enabled ? teamId : null, enabled);
         return {
             defaultTeam: settings.props.defaultTeam,
@@ -138,79 +144,99 @@ export default class TeamService {
         };
     }
 
-    async checkInvitePermission(teamId: string, userId: string): Promise<{ canInvite: boolean }> {
-        const member = await TeamMemberModel.findOne({ team: teamId, user: userId }).populate('role');
-        if (!member) {
+    async checkInvitePermission(teamId: string, userId: string): Promise<{ canInvite: boolean }>{
+        const member = await TeamMember.findOne({
+            where: {
+                team: teamId,
+                user: userId
+            },
+            relations: { roleRef: true }
+        });
+        if(!member){
             return { canInvite: false };
         }
-        const permissions = getTeamMemberRolePermissions(member.role);
+        const permissions = member.roleRef?.permissions ?? [];
         const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
         return { canInvite: permissions.includes('*') || permissions.includes(requiredPermission) };
     }
 
-    async generateInviteCode(teamId: string, userId: string): Promise<PersistedOutput<TeamProps>> {
+    async generateInviteCode(teamId: string, userId: string): Promise<Team>{
         await this.#assertCanManageInviteCodes(teamId, userId);
 
-        const team = await TeamModel.findById(teamId);
-        if (!team) {
+        const team = await Team.findOneBy({ id: teamId });
+        if(!team){
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
 
         let code = generateCode();
-        let existing = await TeamModel.findOne({ inviteCode: code });
-        while (existing) {
+        let existing = await Team.findOneBy({ inviteCode: code });
+        while(existing){
             code = generateCode();
-            existing = await TeamModel.findOne({ inviteCode: code });
+            existing = await Team.findOneBy({ inviteCode: code });
         }
 
-        const updated = await TeamModel.findByIdAndUpdate(teamId, { inviteCode: code }, { new: true });
-        if (!updated) {
-            throw ApplicationError.internalServerError('Failed to update team');
-        }
-        return toPersistedOutput<TeamProps>(updated);
+        return Object.assign(team, { inviteCode: code }).save();
     }
 
-    async deleteInviteCode(teamId: string, userId: string): Promise<{ message: string }> {
+    async deleteInviteCode(teamId: string, userId: string): Promise<{ message: string }>{
         await this.#assertCanManageInviteCodes(teamId, userId);
-        await TeamModel.findByIdAndUpdate(teamId, { $unset: { inviteCode: '' } });
+        const team = await Team.findOneBy({ id: teamId });
+        if(team){
+            await Object.assign(team, { inviteCode: null }).save();
+        }
         return { message: 'Invite code deleted successfully' };
     }
 
-    async getMyPermissions(teamId: string, userId: string): Promise<{ permissions: string[] }> {
-        const member = await TeamMemberModel.findOne({ team: teamId, user: userId }).populate('role');
-        if (!member) {
+    async getMyPermissions(teamId: string, userId: string): Promise<{ permissions: string[] }>{
+        const member = await TeamMember.findOne({
+            where: {
+                team: teamId,
+                user: userId
+            },
+            relations: { roleRef: true }
+        });
+        if(!member){
             return { permissions: [] };
         }
-        const rolePermissions = this.#resolveRolePermissions(member.role);
+        const rolePermissions = this.#resolveRolePermissions(member.roleRef);
         return { permissions: Array.from(new Set(rolePermissions)) };
     }
 
-    async leave(teamId: string, userId: string): Promise<void> {
-        const team = await TeamModel.findById(teamId);
-        if (!team) {
+    async leave(teamId: string, userId: string): Promise<void>{
+        const team = await Team.findOneBy({ id: teamId });
+        if(!team){
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
-        const member = await TeamMemberModel.findOne({ user: userId, team: teamId });
-        if (!member) {
+        const member = await TeamMember.findOneBy({
+            user: userId,
+            team: teamId
+        });
+        if(!member){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_USER_NOT_MEMBER, 'You are not a member of this team');
         }
-        await this.#membership.removeMemberFromTeam(String(member._id), teamId);
+        await this.#membership.removeMemberFromTeam(member.id, teamId);
     }
 
-    async joinByCode(userId: string, code: string): Promise<{ message: string; teamId: string }> {
-        const team = await TeamModel.findOne({ inviteCode: normalizeInviteCode(code) });
-        if (!team) {
+    async joinByCode(userId: string, code: string): Promise<{ message: string; teamId: string }>{
+        const team = await Team.findOneBy({ inviteCode: normalizeInviteCode(code) });
+        if(!team){
             throw this.#invalidInviteCodeError();
         }
 
-        const existing = await TeamMemberModel.findOne({ team: team._id, user: userId });
-        if (existing) {
+        const existing = await TeamMember.findOneBy({
+            team: team.id,
+            user: userId
+        });
+        if(existing){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITE_CODE_ALREADY_MEMBER, 'You are already a member of this team');
         }
 
-        await this.#membership.addMemberToTeam(userId, String(team._id), SystemRoleNames.OWNER);
+        await this.#membership.addMemberToTeam(userId, team.id, SystemRoleNames.OWNER);
 
-        return { message: 'Successfully joined team', teamId: String(team._id) };
+        return {
+            message: 'Successfully joined team',
+            teamId: team.id
+        };
     }
 
     async previewJoinByCode(userId: string, code: string): Promise<{
@@ -219,48 +245,58 @@ export default class TeamService {
         teamName: string;
         ownerName: string;
         isAlreadyMember: boolean;
-    }> {
-        const team = await TeamModel.findOne({ inviteCode: normalizeInviteCode(code) }).populate('owner');
-        if (!team) {
+    }>{
+        const team = await Team.findOne({
+            where: { inviteCode: normalizeInviteCode(code) },
+            relations: { ownerRef: true }
+        });
+        if(!team){
             throw this.#invalidInviteCodeError();
         }
 
-        const existingMember = await TeamMemberModel.findOne({ team: team._id, user: userId });
-        const owner = team.owner as unknown as string | (PopulatedTeamOwner & { _id?: unknown });
-        const ownerDetails = typeof owner === 'string' ? null : owner;
-        const ownerFirstName = ownerDetails?.firstName?.trim() ?? '';
-        const ownerLastName = ownerDetails?.lastName?.trim() ?? '';
+        const existingMember = await TeamMember.findOneBy({
+            team: team.id,
+            user: userId
+        });
+        const ownerFirstName = team.ownerRef?.firstName?.trim() ?? '';
+        const ownerLastName = team.ownerRef?.lastName?.trim() ?? '';
         const ownerName = `${ownerFirstName} ${ownerLastName}`.trim() || 'Team owner';
 
         return {
             message: 'Invite preview loaded',
-            teamId: String(team._id),
+            teamId: team.id,
             teamName: team.name,
             ownerName,
             isAlreadyMember: Boolean(existingMember)
         };
     }
 
-    #invalidInviteCodeError(): ApplicationError {
+    #invalidInviteCodeError(): ApplicationError{
         return ApplicationError.notFound(ErrorCodes.TEAM_INVITE_CODE_NOT_FOUND, 'Invalid invite code');
     }
 
-    async #assertCanManageInviteCodes(teamId: string, userId: string): Promise<void> {
-        const member = await TeamMemberModel.findOne({ team: teamId, user: userId }).populate('role');
-        if (!member) {
+    async #assertCanManageInviteCodes(teamId: string, userId: string): Promise<void>{
+        const member = await TeamMember.findOne({
+            where: {
+                team: teamId,
+                user: userId
+            },
+            relations: { roleRef: true }
+        });
+        if(!member){
             throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, MANAGE_INVITE_CODES_MESSAGE);
         }
-        const permissions = getTeamMemberRolePermissions(member.role);
+        const permissions = member.roleRef?.permissions ?? [];
         const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
         const canManage = permissions.includes('*') || permissions.includes(requiredPermission);
-        if (!canManage) {
+        if(!canManage){
             throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, MANAGE_INVITE_CODES_MESSAGE);
         }
     }
 
-    #resolveRolePermissions(memberRole: TeamMemberProps['role']): string[] {
-        if (isPopulatedTeamMemberRole(memberRole) && memberRole.isSystem && memberRole.name) {
-            switch (memberRole.name) {
+    #resolveRolePermissions(memberRole?: TeamRole): string[]{
+        if(memberRole?.isSystem && memberRole.name){
+            switch(memberRole.name){
                 case SystemRoleNames.OWNER:
                     return SystemRoles[SystemRoleNames.OWNER].permissions;
                 case SystemRoleNames.ADMIN:
@@ -273,6 +309,6 @@ export default class TeamService {
                     break;
             }
         }
-        return getTeamMemberRolePermissions(memberRole);
+        return memberRole?.permissions ?? [];
     }
 }

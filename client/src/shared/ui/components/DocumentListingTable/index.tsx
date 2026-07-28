@@ -3,6 +3,7 @@ import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/Do
 import { buildItemMapByGeneratedId } from '@/shared/ui/components/DocumentListing/dnd-maps';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import TableRow from '@/shared/ui/components/TableRow';
+import { cn } from '@/shared/utils/cn';
 import { Skeleton } from '@voltstack/bravais';
 import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingTable.css';
@@ -298,10 +299,13 @@ const DocumentListingTable = <T extends Identifiable>({
     return (
         <div className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <div className='document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}>
+                <div className='document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{
+                    minWidth: `${minContentWidth}px`,
+                    gap: `${resolvedGap}px`
+                }}>
                     {columns.map((col, colIdx) => {
                         const isSorted = getAriaSort(col) !== 'none';
-                        const cellClassName = [
+                        const cellClassName = cn(
                             'document-listing-cell',
                             'header-cell',
                             'overflow-hidden',
@@ -310,7 +314,7 @@ const DocumentListingTable = <T extends Identifiable>({
                             'color-secondary',
                             isSorted ? 'is-sorted' : '',
                             col.numeric ? 'is-numeric' : ''
-                        ].filter(Boolean).join(' ');
+                        );
                         return (
                             <div className={cellClassName} key={`header-${getColumnTitle(col)}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
                                 {col.sortable ? (
@@ -347,9 +351,15 @@ const DocumentListingTable = <T extends Identifiable>({
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
                     <div key={`fetching-${i}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
                         {columns.map((col, colIdx) => (
-                            <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? { flex: 1, minWidth: 0 }}>
+                            <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? {
+                                flex: 1,
+                                minWidth: 0
+                            }}>
                                 <span className='document-listing-cell-value'>
-                                    <Skeleton {...(col.skeleton ?? { variant: 'text', width: 100 })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
+                                    <Skeleton {...(col.skeleton ?? {
+                                        variant: 'text',
+                                        width: 100
+                                    })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
                                 </span>
                             </div>
                         ))}
@@ -391,9 +401,15 @@ const DocumentListingTable = <T extends Identifiable>({
                             {Array.from({ length: 20 }).map((_, index) => (
                                 <div key={`loading-skeleton-${index}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
                                     {columns.map((col, colIdx) => (
-                                        <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? { flex: 1, minWidth: 0 }}>
+                                        <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? {
+                                            flex: 1,
+                                            minWidth: 0
+                                        }}>
                                             <span className='document-listing-cell-value'>
-                                                <Skeleton {...(col.skeleton ?? { variant: 'text', width: 100 })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
+                                                <Skeleton {...(col.skeleton ?? {
+                                                    variant: 'text',
+                                                    width: 100
+                                                })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
                                             </span>
                                         </div>
                                     ))}

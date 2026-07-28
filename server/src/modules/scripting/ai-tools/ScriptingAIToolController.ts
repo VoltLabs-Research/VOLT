@@ -32,7 +32,10 @@ export default class ScriptingAIToolController extends AIToolController {
     })
     async listScriptingNotebooks(input: ListScriptingNotebooksInput & AIToolScope) {
         const { total, data } = await this.#service.listNotebooks(input);
-        return { summary: `Found ${total} scripting notebooks.`, data };
+        return {
+            summary: `Found ${total} scripting notebooks.`,
+            data
+        };
     }
 
     @AITool({
@@ -63,7 +66,10 @@ export default class ScriptingAIToolController extends AIToolController {
     })
     async startScriptingJupyterSession(input: StartScriptingJupyterSessionInput & AIToolScope) {
         const session = await this.#service.createJupyterSession(input);
-        return { summary: `Jupyter session started for notebook ${session.notebookId}.`, data: session };
+        return {
+            summary: `Jupyter session started for notebook ${session.notebookId}.`,
+            data: session
+        };
     }
 
     @AITool({
@@ -74,7 +80,10 @@ export default class ScriptingAIToolController extends AIToolController {
     })
     async getScriptingSessionStatus(input: NotebookRefInput & AIToolScope) {
         const session = await this.#service.getSessionStatus(input);
-        return { summary: `Session ${session.jupyter.ready ? 'ready' : 'not ready'} for notebook ${session.notebookId}.`, data: session };
+        return {
+            summary: `Session ${session.jupyter.ready ? 'ready' : 'not ready'} for notebook ${session.notebookId}.`,
+            data: session
+        };
     }
 
     @AITool({
@@ -85,6 +94,9 @@ export default class ScriptingAIToolController extends AIToolController {
     })
     async stopScriptingSession(input: NotebookRefInput & AIToolScope) {
         const session = await this.#service.deleteSession(input);
-        return { summary: `Session ${session.deleted ? 'stopped' : 'not running'} for notebook ${session.notebookId}.`, data: session };
+        return {
+            summary: `Session ${session.deleted ? 'stopped' : 'not running'} for notebook ${session.notebookId}.`,
+            data: session
+        };
     }
 }

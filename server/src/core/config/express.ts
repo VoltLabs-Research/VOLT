@@ -62,7 +62,10 @@ const corsBaseOptions = {
     optionsSuccessStatus: 200
 };
 
-const corsMiddleware = cors({ ...corsBaseOptions, origin: true });
+const corsMiddleware = cors({
+    ...corsBaseOptions,
+    origin: true
+});
 
 const isBinaryLikeResponse = (res: Response): boolean => {
     const contentDisposition = String(res.getHeader('Content-Disposition') || '').toLowerCase();
@@ -124,13 +127,23 @@ app.use(corsMiddleware);
 app.use(compression({
     filter: shouldCompressResponse
 }));
-app.use(express.json({ limit: '1mb', verify: captureRawBody }));
-app.use(express.urlencoded({ extended: true, limit: '1mb', verify: captureRawBody }));
+app.use(express.json({
+    limit: '1mb',
+    verify: captureRawBody
+}));
+app.use(express.urlencoded({
+    extended: true,
+    limit: '1mb',
+    verify: captureRawBody
+}));
 app.head('/healthz', (_req: Request, res: Response) => {
     res.status(204).end();
 });
 app.get('/healthz', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', clientHost: resolvePublicClientHost() });
+    res.status(200).json({
+        status: 'ok',
+        clientHost: resolvePublicClientHost()
+    });
 });
 app.use(express.static('static'));
 

@@ -8,10 +8,10 @@ export type CloneTrajectoryOutput = CloneTrajectoryResponse;
 export default createService({
     clients: {
         default: {
-            basePath: '/trajectories',
+            basePath: '/teams',
             useRBAC: true
         }
     }
 }, {
-    clone: post<CloneTrajectoryInput, CloneTrajectoryOutput>('/clones')
+    clone: post<CloneTrajectoryInput, CloneTrajectoryOutput>('/trajectories/clones')
 });

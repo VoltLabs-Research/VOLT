@@ -43,7 +43,10 @@ const getViewerState: ClientToolHandler = {
     },
 
     describeEffect() {
-        return { label: 'Read viewer state', icon: 'eye' };
+        return {
+            label: 'Read viewer state',
+            icon: 'eye'
+        };
     }
 };
 

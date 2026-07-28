@@ -72,30 +72,62 @@ const resolveSelectedAnalysisStatusValue = (
     }
 
     if (analysis.artifactStatus === 'generating') {
-        return { label: 'Generating artifacts', tone: 'running', title: analysis.pluginDisplayName };
+        return {
+            label: 'Generating artifacts',
+            tone: 'running',
+            title: analysis.pluginDisplayName
+        };
     }
     if (analysis.artifactStatus === 'uploading') {
-        return { label: 'Uploading artifacts', tone: 'running', title: analysis.pluginDisplayName };
+        return {
+            label: 'Uploading artifacts',
+            tone: 'running',
+            title: analysis.pluginDisplayName
+        };
     }
     if (analysis.artifactStatus === 'ready') {
-        return { label: 'Artifacts ready', tone: 'ready', title: analysis.pluginDisplayName };
+        return {
+            label: 'Artifacts ready',
+            tone: 'ready',
+            title: analysis.pluginDisplayName
+        };
     }
     if (analysis.artifactStatus === 'failed') {
-        return { label: 'Artifacts failed', tone: 'failed', title: analysis.pluginDisplayName };
+        return {
+            label: 'Artifacts failed',
+            tone: 'failed',
+            title: analysis.pluginDisplayName
+        };
     }
 
     const status = normalizeCanvasAnalysisStatus(analysis.status);
     if (status === 'running') {
-        return { label: 'Running', tone: 'running', title: analysis.pluginDisplayName };
+        return {
+            label: 'Running',
+            tone: 'running',
+            title: analysis.pluginDisplayName
+        };
     }
     if (status === 'pending') {
-        return { label: 'Queued', tone: 'queued', title: analysis.pluginDisplayName };
+        return {
+            label: 'Queued',
+            tone: 'queued',
+            title: analysis.pluginDisplayName
+        };
     }
     if (status === 'completed') {
-        return { label: 'Completed', tone: 'ready', title: analysis.pluginDisplayName };
+        return {
+            label: 'Completed',
+            tone: 'ready',
+            title: analysis.pluginDisplayName
+        };
     }
     if (status === 'failed') {
-        return { label: 'Failed', tone: 'failed', title: analysis.pluginDisplayName };
+        return {
+            label: 'Failed',
+            tone: 'failed',
+            title: analysis.pluginDisplayName
+        };
     }
 
     return null;
@@ -114,7 +146,11 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
     const activitySummary = useAnalysisActivitySummary(trajectory ?? undefined);
     const trajectoryId = trajectory?._id;
     const analysesQuery = useAnalysesByTrajectoryQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: !!trajectoryId && !!analysisId }
     );
     const selectedAnalysis = useMemo(() => {
@@ -193,15 +229,35 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
     const size = trajectory?.stats?.totalSize !== undefined ? formatSize(trajectory.stats.totalSize) : '—';
 
     const left: StatusItem[] = [
-        { key: 'atoms', label: 'Atoms', value: atoms },
-        { key: 'frames', label: 'Frames', value: frames },
-        { key: 'size', label: 'Size', value: size },
+        {
+            key: 'atoms',
+            label: 'Atoms',
+            value: atoms
+        },
+        {
+            key: 'frames',
+            label: 'Frames',
+            value: frames
+        },
+        {
+            key: 'size',
+            label: 'Size',
+            value: size
+        },
         activityItem
     ];
 
     const right: StatusItem[] = [
-        { key: 'timestep', label: 'Timestep', value: currentTimestep ?? '—' },
-        { key: 'team', label: '', value: teamName }
+        {
+            key: 'timestep',
+            label: 'Timestep',
+            value: currentTimestep ?? '—'
+        },
+        {
+            key: 'team',
+            label: '',
+            value: teamName
+        }
     ];
 
     return (

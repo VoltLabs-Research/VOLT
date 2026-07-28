@@ -24,7 +24,10 @@ const buildUpdateMeBody = (data: UpdateMeInput): UpdateAccountInput | FormData =
     if (!isUpdateAvatarInput(data)) {
         return data;
     }
-    return buildFileFormData([{ name: 'avatar', file: data.avatar }]);
+    return buildFileFormData([{
+        name: 'avatar',
+        file: data.avatar
+    }]);
 };
 
 const buildUpdateMeHeaders = (data: UpdateMeInput) => {

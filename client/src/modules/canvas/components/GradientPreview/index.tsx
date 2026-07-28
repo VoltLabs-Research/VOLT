@@ -23,7 +23,10 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         const x = e.clientX - rect.left;
         const ratio = Math.max(0, Math.min(1, x / rect.width));
         const value = startValue + ratio * (endValue - startValue);
-        return { value: formatValue(value), x };
+        return {
+            value: formatValue(value),
+            x
+        };
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {

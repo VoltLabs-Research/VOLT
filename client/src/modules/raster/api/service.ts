@@ -13,7 +13,7 @@ export interface TriggerRasterizationParams {
 }
 
 const endpoints = {
-    triggerRasterization: post<TriggerRasterizationParams, TriggerRasterizationResponse>('/:trajectoryId/jobs', {
+    triggerRasterization: post<TriggerRasterizationParams, TriggerRasterizationResponse>('/trajectories/:trajectoryId/rasters/jobs', {
         client: 'scoped',
         omit: ['teamId'],
         body: ({ config }) => {
@@ -24,17 +24,17 @@ const endpoints = {
             return { config };
         }
     }),
-    getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/metadata')
+    getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/trajectories/:trajectoryId/rasters/metadata')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/rasters',
+            basePath: '/teams',
             useRBAC: true
         },
         scoped: {
-            basePath: '/rasters',
+            basePath: '/teams',
             useRBAC: true,
             getTeamId: (params: TriggerRasterizationParams) => params.teamId
         }

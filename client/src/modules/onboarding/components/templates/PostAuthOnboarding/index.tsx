@@ -58,7 +58,10 @@ const PostAuthOnboarding = () => {
     }
 
     if (!isLoading && (!selectedTeamId || teamClustersQuery.isSuccess)) {
-        const step = resolveOnboardingStep({ hasTeam, hasConnectedCluster });
+        const step = resolveOnboardingStep({
+            hasTeam,
+            hasConnectedCluster
+        });
 
         if (step === OnboardingStep.Done) {
             return <Navigate to={next} replace />;

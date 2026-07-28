@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { isPopulatedSecretKeyRole } from '@shared/contracts/types/SecretKey';
-import SecretKeyModel, { getSecretKeyCreatedById, getSecretKeyRoleId } from '@modules/team/models/secret-key/SecretKeyModel';
+import SecretKey from '@modules/team/models/SecretKey';
 import { logSecretKeyUsageRequest } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
 import {
     HttpRequestAuthType,
@@ -11,9 +10,9 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import crypto from 'node:crypto';
 
-import UserModel from '@modules/auth/models/UserModel';
+import User from '@modules/auth/models/User';
 import JwtTokenService from '@modules/auth/services/JwtTokenService';
-import SessionModel from '@modules/session/models/SessionModel';
+import Session from '@modules/session/models/Session';
 import { AuthenticationType, type AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { NextFunction, Response } from 'express';
 
@@ -50,12 +49,12 @@ const authenticateWithSecretKey = async (
 ): Promise<boolean> => {
     const startTime = Date.now();
     const keyHash = crypto.createHash('sha256').update(token).digest('hex');
-    const secretKey = await SecretKeyModel.findOne({
-        keyHash,
-        isActive: true
-    }).populate({
-        path: 'role',
-        select: ['name', 'permissions']
+    const secretKey = await SecretKey.findOne({
+        where: {
+            keyHash,
+            isActive: true
+        },
+        relations: { roleRef: true }
     });
 
     if (!secretKey) {
@@ -63,23 +62,21 @@ const authenticateWithSecretKey = async (
         return false;
     }
 
-    const role = isPopulatedSecretKeyRole(secretKey.role)
-        ? secretKey.role
-        : undefined;
-    const createdById = getSecretKeyCreatedById(secretKey);
-    const secretKeyId = String(secretKey._id);
+    const role = secretKey.roleRef;
+    const createdById = secretKey.createdBy;
+    const secretKeyId = secretKey.id;
 
     req.authType = AuthenticationType.SecretKey;
     req.token = token;
     req.secretKeyId = secretKeyId;
-    req.secretKeyTeamId = String(secretKey.team);
-    req.secretKeyRoleId = role?._id?.toString?.() || getSecretKeyRoleId(secretKey);
+    req.secretKeyTeamId = secretKey.team;
+    req.secretKeyRoleId = role?.id || secretKey.role;
     req.teamPermissions = Array.isArray(role?.permissions)
         ? role.permissions
         : [];
     req.userId = createdById;
 
-    await SecretKeyModel.updateOne({ _id: secretKeyId }, { lastUsedAt: new Date() });
+    await SecretKey.update({ id: secretKeyId }, { lastUsedAt: new Date() });
 
     const authContext: HttpRequestAuthContext = {
         authType: HttpRequestAuthType.SecretKey,
@@ -95,7 +92,7 @@ const authenticateWithSecretKey = async (
         const userAgentHeader = req.headers['user-agent'];
         logSecretKeyUsageRequest({
             secretKey: secretKeyId,
-            team: String(secretKey.team),
+            team: secretKey.team,
             method: req.method,
             path: req.route?.path || req.originalUrl || req.path,
             statusCode: res.statusCode,
@@ -123,7 +120,7 @@ const authenticateWithUserToken = async (
         return false;
     }
 
-    const user = await UserModel.findById(decoded.id);
+    const user = await User.findOneBy({ id: decoded.id });
     if (!user) {
         BaseResponse.error(res, ErrorCodes.USER_NOT_FOUND, 401, ErrorCodes.USER_NOT_FOUND);
         return false;
@@ -134,7 +131,10 @@ const authenticateWithUserToken = async (
         return false;
     }
 
-    const session = await SessionModel.findOne({ token, isActive: true });
+    const session = await Session.findOneBy({
+        token,
+        isActive: true
+    });
     if (!session) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         return false;

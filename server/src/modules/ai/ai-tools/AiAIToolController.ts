@@ -40,7 +40,11 @@ export default class AiAIToolController extends AIToolController {
     })
     async listConversations(input: ListConversationsInput & AIToolScope) {
         const { total, data } = await this.#service.listConversations(input);
-        return { summary: `Found ${total} conversations.`, data, total };
+        return {
+            summary: `Found ${total} conversations.`,
+            data,
+            total
+        };
     }
 
     @AITool({

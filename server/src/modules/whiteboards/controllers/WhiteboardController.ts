@@ -100,7 +100,10 @@ export default class WhiteboardController extends Controller {
     @Route(whiteboardRoutes.getState)
     async getWhiteboardState(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @Res() res: Response): Promise<void> {
         const output = await this.#service.getWhiteboardState(teamId, whiteboardId);
-        this.#pipeStream(res, output.stream, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+        this.#pipeStream(res, output.stream, {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+        });
     }
 
     @Route(whiteboardRoutes.saveState)

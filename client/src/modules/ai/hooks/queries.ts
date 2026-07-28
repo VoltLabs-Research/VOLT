@@ -33,7 +33,10 @@ export const conversationQuery = createPaginatedQuery<
     service: {
         list: service.listConversations,
         create: (params) => service.createConversation(params).then((result) => result.conversation),
-        update: (id, params) => service.updateConversation({ conversationId: id, ...params }),
+        update: (id, params) => service.updateConversation({
+            conversationId: id,
+            ...params
+        }),
         delete: async (id) => {
             await service.deleteConversation({ conversationId: id });
         }
@@ -44,7 +47,10 @@ export const invalidateConversationsQueries = (): Promise<void> => conversationQ
 
 export const messagesQuery = createQuery(
     MESSAGE_KEYS.messages,
-    ({ conversationId, params }: ConversationMessagesQueryParams) => service.listMessages({ conversationId, ...params })
+    ({ conversationId, params }: ConversationMessagesQueryParams) => service.listMessages({
+        conversationId,
+        ...params
+    })
 );
 
 export const buildConversationMessagesQueryParams = (

@@ -141,9 +141,15 @@ const ObjectsPanel = ({
         onDeleteAnalysis,
         onRetryLoadExposures,
         sceneCollectionTotalAnalyses
-    } = useCanvasSidebarState({ trajectory, trajectoryId: trajectory?._id });
+    } = useCanvasSidebarState({
+        trajectory,
+        trajectoryId: trajectory?._id
+    });
 
-    const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
+    const { statusMap } = useAnalysisStatus({
+        trajectoryId: trajectory?._id,
+        enabled: !!trajectory?._id
+    });
     const { toneByAnalysisId } = useAnalysisActivityTone(statusMap);
 
     const {
@@ -215,7 +221,10 @@ const ObjectsPanel = ({
             return;
         }
 
-        onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, section.analysis);
+        onSelectScene({
+            sceneType: 'trajectory',
+            source: 'default' as const
+        }, section.analysis);
     }, [activeScene, expandedSections, getFirstTourSection, onRetryLoadExposures, onSelectScene, toggleSection]);
 
     useEffect(() => {
@@ -254,7 +263,11 @@ const ObjectsPanel = ({
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
         if (!onUpdateRasterContainerSelection) return;
         const model = scene.source === 'plugin' ? scene.exposureId : undefined;
-        onUpdateRasterContainerSelection(activeRasterContainerId, { scene, label, model });
+        onUpdateRasterContainerSelection(activeRasterContainerId, {
+            scene,
+            label,
+            model
+        });
     }, [activeRasterContainerId, onUpdateRasterContainerSelection]);
 
     const sharedSceneCollectionProps: Partial<ComponentProps<typeof SceneCollection>> = useMemo(() => ({
@@ -304,7 +317,11 @@ const ObjectsPanel = ({
             <RightCollapsible
                 key={selection.id}
                 title={selection.title}
-                icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                icon={<Layers style={{
+                    width: 13,
+                    height: 13,
+                    color: PANEL_ICON_COLOR
+                }} />}
                 expanded={isActive}
                 onExpandedChange={(next) => { if (next) onSetActiveRasterContainer?.(selection.id); }}
                 extraClassName={isActive ? 'canvas-raster-container-panel--active' : ''}
@@ -378,7 +395,11 @@ const ObjectsPanel = ({
             <CanvasTreeRow
                 indent='lg'
                 isActive={isActive}
-                icon={<Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />}
+                icon={<Icon style={{
+                    width: TREE_MODIFIER_ICON_SIZE,
+                    height: TREE_MODIFIER_ICON_SIZE,
+                    color: TREE_MODIFIER_ICON_COLOR
+                }} />}
                 label={artifactLabel}
                 onClick={() => {
                     if (!scene) return;
@@ -442,7 +463,11 @@ const ObjectsPanel = ({
             if (list) list.push(artifact);
             else lineIndex.set(artifact.timestep, [artifact]);
         });
-        return { colorIndex, particleIndex, lineIndex };
+        return {
+            colorIndex,
+            particleIndex,
+            lineIndex
+        };
     }, [colorCodingArtifacts, particleFilterArtifacts, lineStyleArtifacts]);
 
     const renderArtifactTreeSection = useCallback((params: {
@@ -490,7 +515,10 @@ const ObjectsPanel = ({
                                 aria-expanded={isExpanded}
                                 aria-controls={isExpanded ? `${groupId}-children` : undefined}
                             >
-                                <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
+                                <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{
+                                    width: 13,
+                                    height: 13
+                                }} />
                                 <span className="canvas-tree-item__text">{timestep}</span>
                                 <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
                             </Button>
@@ -523,7 +551,11 @@ const ObjectsPanel = ({
     const pipelineSection = !isRasterWorkspace ? (
         <RightCollapsible
             title="Pipeline"
-            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+            icon={<Layers style={{
+                width: 13,
+                height: 13,
+                color: PANEL_ICON_COLOR
+            }} />}
             expanded
             collapsible={false}
             headerAction={(
@@ -561,7 +593,11 @@ const ObjectsPanel = ({
                     {hasAnalyses && (
                         <RightCollapsible
                             title="Visual Elements"
-                            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            icon={<Layers style={{
+                                width: 13,
+                                height: 13,
+                                color: PANEL_ICON_COLOR
+                            }} />}
                             expanded={sceneCollectionOpen}
                             onExpandedChange={setSceneCollectionOpen}
                             collapsible={compactSectionCount > 1}
@@ -583,7 +619,11 @@ const ObjectsPanel = ({
                     {hasColorCodingArtifacts && (
                         <RightCollapsible
                             title="Color Coding"
-                            icon={<Palette style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            icon={<Palette style={{
+                                width: 13,
+                                height: 13,
+                                color: PANEL_ICON_COLOR
+                            }} />}
                             expanded={colorCodingOpen}
                             onExpandedChange={setColorCodingOpen}
                         >
@@ -604,7 +644,11 @@ const ObjectsPanel = ({
                     {hasParticleFilterArtifacts && (
                         <RightCollapsible
                             title="Particle Filter"
-                            icon={<Filter style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            icon={<Filter style={{
+                                width: 13,
+                                height: 13,
+                                color: PANEL_ICON_COLOR
+                            }} />}
                             expanded={particleFilterOpen}
                             onExpandedChange={setParticleFilterOpen}
                         >
@@ -625,7 +669,11 @@ const ObjectsPanel = ({
                     {hasLineStyleArtifacts && (
                         <RightCollapsible
                             title="Line Styles"
-                            icon={<Spline style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            icon={<Spline style={{
+                                width: 13,
+                                height: 13,
+                                color: PANEL_ICON_COLOR
+                            }} />}
                             expanded={lineStyleOpen}
                             onExpandedChange={setLineStyleOpen}
                         >
@@ -652,7 +700,11 @@ const ObjectsPanel = ({
             <div className="canvas-objects-panel__top">
                 <RightCollapsible
                     title="Visual Elements"
-                    icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                    icon={<Layers style={{
+                        width: 13,
+                        height: 13,
+                        color: PANEL_ICON_COLOR
+                    }} />}
                     expanded={sceneCollectionOpen}
                     onExpandedChange={setSceneCollectionOpen}
                     tourId="canvas-analyses-section"
@@ -679,7 +731,11 @@ const ObjectsPanel = ({
             <div className="canvas-objects-panel__bottom">
                 <RightCollapsible
                     title="Color Coding"
-                    icon={<Palette style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                    icon={<Palette style={{
+                        width: 13,
+                        height: 13,
+                        color: PANEL_ICON_COLOR
+                    }} />}
                     expanded={colorCodingOpen}
                     onExpandedChange={setColorCodingOpen}
                 >
@@ -698,7 +754,11 @@ const ObjectsPanel = ({
 
                 <RightCollapsible
                     title="Particle Filter"
-                    icon={<Filter style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                    icon={<Filter style={{
+                        width: 13,
+                        height: 13,
+                        color: PANEL_ICON_COLOR
+                    }} />}
                     expanded={particleFilterOpen}
                     onExpandedChange={setParticleFilterOpen}
                 >
@@ -717,7 +777,11 @@ const ObjectsPanel = ({
 
                 <RightCollapsible
                     title="Line Styles"
-                    icon={<Spline style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                    icon={<Spline style={{
+                        width: 13,
+                        height: 13,
+                        color: PANEL_ICON_COLOR
+                    }} />}
                     expanded={lineStyleOpen}
                     onExpandedChange={setLineStyleOpen}
                 >

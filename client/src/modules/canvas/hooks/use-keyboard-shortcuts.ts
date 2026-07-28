@@ -53,7 +53,10 @@ const useKeyboardShortcuts = ({
 
         actionsRef.current = {
             'play-pause': () => {
-                useEditorStore.getState().togglePlay({ trajectoryId, timesteps: availableTimesteps });
+                useEditorStore.getState().togglePlay({
+                    trajectoryId,
+                    timesteps: availableTimesteps
+                });
             },
 
             'timestep-prev': () => {
@@ -254,7 +257,10 @@ const useKeyboardShortcuts = ({
                         window.clearTimeout(lastTriggeredTimeoutRef.current);
                     }
 
-                    setLastTriggered({ id, description: shortcut.description });
+                    setLastTriggered({
+                        id,
+                        description: shortcut.description
+                    });
                     lastTriggeredTimeoutRef.current = window.setTimeout(() => {
                         setLastTriggered(null);
                         lastTriggeredTimeoutRef.current = null;

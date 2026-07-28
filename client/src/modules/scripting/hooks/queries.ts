@@ -7,7 +7,6 @@ import {
 } from '@/shared/query';
 import type {
     CreateScriptingNotebookParams,
-    CreateScriptingNotebookSessionParams,
     CreateScriptingSessionParams,
     DeleteScriptingNotebookParams,
     ListScriptingNotebooksParams,
@@ -43,8 +42,4 @@ export const useUpdateScriptingNotebookMutation = createInvalidatingMutation<Scr
 
 export const useCreateScriptingSessionMutation = createMutation<ScriptingSession, CreateScriptingSessionParams>(
     service.createSession
-);
-
-export const useCreateScriptingNotebookSessionMutation = createMutation<ScriptingSession, CreateScriptingNotebookSessionParams>(
-    service.createNotebookSession
 );

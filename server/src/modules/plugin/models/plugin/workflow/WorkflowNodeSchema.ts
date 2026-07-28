@@ -22,4 +22,7 @@ export const WorkflowNodeSchema = new Schema({
         type: NodeDataSchema,
         default: {}
     }
-}, { _id: false, strict: false });
+}, {
+    _id: false,
+    strict: false
+});

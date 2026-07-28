@@ -11,12 +11,19 @@ export const upsertEntityInList = <T extends Identifiable>(
 ): PaginatedResponse<T> => {
     const exists = page.data.some((e) => e._id === entity._id);
     const data = exists
-        ? page.data.map((e) => (e._id === entity._id ? { ...e, ...entity } : e))
+        ? page.data.map((e) => (e._id === entity._id ? {
+            ...e,
+            ...entity
+        } : e))
         : [entity, ...page.data].slice(0, page.pagination.limit);
     const pagination: PaginationMeta = exists
         ? page.pagination
         : adjustPagination(page.pagination, 1);
-    return { ...page, data, pagination };
+    return {
+        ...page,
+        data,
+        pagination
+    };
 };
 
 export const removeEntityFromList = <T extends Identifiable>(

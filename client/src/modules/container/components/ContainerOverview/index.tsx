@@ -20,6 +20,8 @@ const HISTORY_POINTS = 60;
 
 const METRIC_COLOR = 'var(--color-text-muted)';
 
+const BYTES_PER_MB = 1024 * 1024;
+
 interface MetricPoint {
     v: number;
 }
@@ -31,18 +33,17 @@ interface ContainerOverviewProps {
     onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
 }
 
-const formatMb = (value: number): string => {
-    if (value >= 1024) {
-        return `${(value / 1024).toFixed(1)} GB`;
-    }
-    return `${value.toFixed(0)} MB`;
-};
-
 const computePeakAvg = (values: number[]) => {
-    if (!values.length) return { peak: 0, avg: 0 };
+    if (!values.length) return {
+        peak: 0,
+        avg: 0
+    };
     const peak = Math.max(...values);
     const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-    return { peak, avg };
+    return {
+        peak,
+        avg
+    };
 };
 
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
@@ -74,7 +75,10 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
             const deltaTx = Math.max(0, stats.network.tx - prev.tx);
             networkBuffer.pushPoint({ v: deltaRx + deltaTx });
         }
-        prevNetworkRef.current = { rx: stats.network.rx, tx: stats.network.tx };
+        prevNetworkRef.current = {
+            rx: stats.network.rx,
+            tx: stats.network.tx
+        };
     }, [stats.network, networkBuffer]);
 
     const cpuValues = useMemo(() => cpuBuffer.history.map((p) => p.v), [cpuBuffer.history]);
@@ -85,7 +89,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
     const memoryDerived = useMemo(() => computePeakAvg(memoryValues), [memoryValues]);
 
     const cpuValue = stats.cpu ? `${stats.cpu.usage.toFixed(1)}%` : '—';
-    const memoryValue = stats.memory ? formatMb(stats.memory.used) : '—';
+    const memoryValue = stats.memory ? formatSize(stats.memory.used * BYTES_PER_MB) : '—';
     const networkValue = stats.network ? formatSize(stats.network.rx + stats.network.tx) : '—';
 
     const inspectorRows: InspectorRow[] = [
@@ -100,7 +104,11 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
             copyValue: container.containerId
         },
         ...(container.internalIp
-            ? [{ label: 'Internal IP', value: container.internalIp, copyValue: container.internalIp }]
+            ? [{
+                label: 'Internal IP',
+                value: container.internalIp,
+                copyValue: container.internalIp
+            }]
             : []),
         {
             label: 'CPU limit',
@@ -108,16 +116,25 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
         },
         {
             label: 'Memory limit',
-            value: formatMb(container.memory)
+            value: formatSize(container.memory * BYTES_PER_MB)
         },
-        ...(container.network ? [{ label: 'Network', value: container.network }] : []),
-        ...(container.volume ? [{ label: 'Volume', value: container.volume }] : []),
+        ...(container.network ? [{
+            label: 'Network',
+            value: container.network
+        }] : []),
+        ...(container.volume ? [{
+            label: 'Volume',
+            value: container.volume
+        }] : []),
         {
             label: 'Created',
             value: format(new Date(container.createdAt), 'PP · p')
         },
         ...(isRunning
-            ? [{ label: 'Uptime', value: formatDistanceStrict(new Date(container.createdAt), new Date()) }]
+            ? [{
+                label: 'Uptime',
+                value: formatDistanceStrict(new Date(container.createdAt), new Date())
+            }]
             : [])
     ];
 
@@ -142,21 +159,33 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
-                        { label: 'Peak', value: `${cpuDerived.peak.toFixed(1)}%` },
-                        { label: 'Avg', value: `${cpuDerived.avg.toFixed(1)}%` }
+                        {
+                            label: 'Peak',
+                            value: `${cpuDerived.peak.toFixed(1)}%`
+                        },
+                        {
+                            label: 'Avg',
+                            value: `${cpuDerived.avg.toFixed(1)}%`
+                        }
                     ]}
                 />
 
                 <ContainerMetricTile
                     label='Memory'
                     value={memoryValue}
-                    badge={stats.memory ? `of ${formatMb(stats.memory.total)}` : undefined}
+                    badge={stats.memory ? `of ${formatSize(stats.memory.total * BYTES_PER_MB)}` : undefined}
                     history={memoryValues}
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
-                        { label: 'Peak', value: formatMb(memoryDerived.peak) },
-                        { label: 'Avg', value: formatMb(memoryDerived.avg) }
+                        {
+                            label: 'Peak',
+                            value: formatSize(memoryDerived.peak * BYTES_PER_MB)
+                        },
+                        {
+                            label: 'Avg',
+                            value: formatSize(memoryDerived.avg * BYTES_PER_MB)
+                        }
                     ]}
                 />
 
@@ -167,8 +196,14 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
-                        { label: 'Rx', value: stats.network ? formatSize(stats.network.rx) : '0 B' },
-                        { label: 'Tx', value: stats.network ? formatSize(stats.network.tx) : '0 B' }
+                        {
+                            label: 'Rx',
+                            value: stats.network ? formatSize(stats.network.rx) : '0 B'
+                        },
+                        {
+                            label: 'Tx',
+                            value: stats.network ? formatSize(stats.network.tx) : '0 B'
+                        }
                     ]}
                 />
             </Box>
@@ -184,12 +219,21 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         titleClassName='container-overview-section-title'
                         items={envItems}
                         fields={[
-                            { key: 'key', placeholder: 'Key' },
-                            { key: 'value', placeholder: 'Value' }
+                            {
+                                key: 'key',
+                                placeholder: 'Key'
+                            },
+                            {
+                                key: 'value',
+                                placeholder: 'Value'
+                            }
                         ]}
                         emptyMessage='No environment variables'
                         onSave={onUpdateEnv}
-                        createEmpty={() => ({ key: '', value: '' })}
+                        createEmpty={() => ({
+                            key: '',
+                            value: ''
+                        })}
                         showCard={false}
                         className='d-flex column'
                         renderItem={(item, i) => (
@@ -204,8 +248,16 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         titleClassName='container-overview-section-title'
                         items={portItems}
                         fields={[
-                            { key: 'private', placeholder: 'Container Port', type: 'number' },
-                            { key: 'public', placeholder: 'Host Port', type: 'number' }
+                            {
+                                key: 'private',
+                                placeholder: 'Container Port',
+                                type: 'number'
+                            },
+                            {
+                                key: 'public',
+                                placeholder: 'Host Port',
+                                type: 'number'
+                            }
                         ]}
                         emptyMessage='No ports exposed'
                         onSave={onUpdatePorts}

@@ -11,7 +11,10 @@ interface PendingSubscription {
 const pendingSubscriptions: PendingSubscription[] = [];
 
 export const subscribeHandler = (eventName: string, handler: IEventHandler<IDomainEvent>): void => {
-    pendingSubscriptions.push({ eventName, handler });
+    pendingSubscriptions.push({
+        eventName,
+        handler
+    });
 };
 
 export const flushPendingSubscriptions = async (): Promise<void> => {

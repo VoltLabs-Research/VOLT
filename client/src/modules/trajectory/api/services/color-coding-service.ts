@@ -43,23 +43,25 @@ export interface ColorCodingStats {
 
 const endpoints = {
     getProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/properties/${analysisId}`
-            : `/${trajectoryId}/properties`,
-        { query: ({ timestep }) => ({ timestep }) }
+        '/trajectories/:trajectoryId/color-codings/properties',
+        {
+            query: ({ timestep, analysisId }) => ({
+                timestep,
+                analysisId
+            })
+        }
     ),
     getStats: get<GetColorCodingStatsInput, ColorCodingStats>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/stats/${analysisId}`
-            : `/${trajectoryId}/stats`,
-        { omit: ['trajectoryId', 'analysisId'] }
+        '/trajectories/:trajectoryId/color-codings/stats'
     ),
     apply: post<ApplyColorCodingInput, void>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/${analysisId}`
-            : `/${trajectoryId}`,
+        '/trajectories/:trajectoryId/color-codings',
         {
-            body: ({ timestep, payload }) => ({ ...payload, timestep: String(timestep) }),
+            body: ({ timestep, payload, analysisId }) => ({
+                ...payload,
+                timestep: String(timestep),
+                ...(analysisId ? { analysisId } : {})
+            }),
             unwrap: 'void'
         }
     )
@@ -68,7 +70,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/color-codings',
+            basePath: '/teams',
             useRBAC: true
         }
     }

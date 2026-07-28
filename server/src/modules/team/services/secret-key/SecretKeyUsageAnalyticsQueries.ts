@@ -1,245 +1,210 @@
-import SecretKeyUsageLogModel, { SecretKeyUsageLogProps } from '@modules/team/models/secret-key/SecretKeyUsageLogModel';
-import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/services/secret-key/SecretKeyUsageAnalytics';
-import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetrics';
-import mongoose from 'mongoose';
-import type { PipelineStage } from 'mongoose';
+import SecretKeyUsageLog from '@modules/team/models/SecretKeyUsageLog';
+import type { SecretKeyUsageLogProps } from '@modules/team/contracts/domain/secret-key-usage-log';
+import type {
+    KeyUsageAnalytics,
+    TeamUsageAnalytics,
+    TeamUsageOverviewAnalytics
+} from '@modules/team/services/secret-key/SecretKeyUsageAnalytics';
+import type { SecretKeyEndpointStat } from '@modules/team/services/secret-key/SecretKeyUsageMetrics';
+import type { SelectQueryBuilder } from 'typeorm';
 
-interface TeamMetricsOverviewRow {
-    totalRequests: number;
-    successRequests: number;
-    avgResponseTime: number;
-};
+const SUCCESS_REQUESTS = 'SUM(CASE WHEN log.statusCode >= 200 AND log.statusCode < 300 THEN 1 ELSE 0 END)';
+const TOTAL_REQUESTS = 'COUNT(log.id)';
+const AVG_RESPONSE_TIME = 'AVG(log.responseTime)';
+const RECENT_REQUESTS_LIMIT = 50;
+const TOP_ENDPOINTS_LIMIT = 10;
+const UNZONED_TIMESTAMP = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
 
-interface TeamMetricsPerKeyRow {
-    _id: mongoose.Types.ObjectId;
-    totalRequests: number;
-    successRequests: number;
-    avgResponseTime: number;
-    lastRequestAt: Date | null;
-};
+interface AggregatedOverviewRow{
+    totalRequests: number | string | null;
+    successRequests: number | string | null;
+    avgResponseTime: number | string | null;
+}
 
-interface TeamMetricsDailyRow {
-    _id: {
-        date: string;
-        secretKey: mongoose.Types.ObjectId;
-    };
-    count: number;
-};
+interface AggregatedCountRow{
+    totalRequests: number | string | null;
+}
 
-interface KeyMetricsOverviewRow extends TeamMetricsOverviewRow {
-    requests24h: number;
-    requests7d: number;
-};
+interface AggregatedPerKeyRow{
+    secretKeyId: string;
+    totalRequests: number | string | null;
+    successRequests: number | string | null;
+    avgResponseTime: number | string | null;
+    lastRequestAt: Date | string | null;
+}
 
-interface CountByLabelRow {
-    _id: string;
-    count: number;
-};
+interface AggregatedTeamDailyRow{
+    date: string;
+    secretKeyId: string;
+    count: number | string | null;
+}
 
-interface PeakHourRow {
-    _id: number;
-    count: number;
-};
+interface AggregatedLabelRow{
+    label: string;
+    count: number | string | null;
+}
 
-interface StatusDistributionRow {
-    code: number;
-    count: number;
-};
-
-interface RecentRequestRow {
+interface AggregatedEndpointRow{
     method: string;
     path: string;
-    statusCode: number;
-    responseTime: number;
-    ip: string;
-    createdAt: Date;
+    count: number | string | null;
+    avgResponseTime: number | string | null;
+    successRequests: number | string | null;
+}
+
+interface AggregatedStatusRow{
+    code: number | string | null;
+    count: number | string | null;
+}
+
+interface AggregatedPeakHourRow{
+    hour: string | number | null;
+    count: number | string | null;
+}
+
+const isPostgres = (): boolean => (
+    SecretKeyUsageLog.getRepository().manager.connection.options.type === 'postgres'
+);
+
+const utcDateExpression = (): string => (
+    isPostgres() ? 'to_char(log.createdAt, \'YYYY-MM-DD\')' : 'substr(log.createdAt, 1, 10)'
+);
+
+const utcHourExpression = (): string => (
+    isPostgres() ? 'to_char(log.createdAt, \'HH24\')' : 'substr(log.createdAt, 12, 2)'
+);
+
+const toNumber = (value: number | string | null | undefined): number => Number(value ?? 0);
+
+const toDate = (value: Date | string | null | undefined): Date | null => {
+    if(value === null || value === undefined) return null;
+    if(value instanceof Date) return value;
+    const text = String(value);
+    return new Date(UNZONED_TIMESTAMP.test(text) ? `${text.replace(' ', 'T')}Z` : text);
 };
 
-interface TeamMetricsAggregateResult {
-    overview: TeamMetricsOverviewRow[];
-    perKey: TeamMetricsPerKeyRow[];
-    daily: TeamMetricsDailyRow[];
-    topEndpoints: TeamUsageMetrics['topEndpoints'];
+const roundToTenth = (value: number): number => Math.round(value * 10) / 10;
+
+const successRateOf = (successRequests: number, count: number): number => (
+    count === 0 ? 0 : roundToTenth((successRequests / count) * 100)
+);
+
+const scopedQuery = (scope: 'team' | 'secretKey', scopeId: string, since: Date): SelectQueryBuilder<SecretKeyUsageLog> => (
+    SecretKeyUsageLog.createQueryBuilder('log')
+        .where(`log.${scope} = :scopeId`, { scopeId })
+        .andWhere('log.createdAt >= :since', { since })
+);
+
+const readOverview = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<TeamUsageOverviewAnalytics> => {
+    const row = await query
+        .select(TOTAL_REQUESTS, 'totalRequests')
+        .addSelect(SUCCESS_REQUESTS, 'successRequests')
+        .addSelect(AVG_RESPONSE_TIME, 'avgResponseTime')
+        .getRawOne<AggregatedOverviewRow>();
+
+    return {
+        totalRequests: toNumber(row?.totalRequests),
+        successRequests: toNumber(row?.successRequests),
+        avgResponseTime: toNumber(row?.avgResponseTime)
+    };
 };
 
-interface KeyMetricsAggregateResult {
-    overview: KeyMetricsOverviewRow[];
-    hourly: CountByLabelRow[];
-    daily: CountByLabelRow[];
-    endpoints: KeyUsageMetrics['endpoints'];
-    statusDistribution: StatusDistributionRow[];
-    peakHour: PeakHourRow[];
+const readRequestCount = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<number> => {
+    const row = await query
+        .select(TOTAL_REQUESTS, 'totalRequests')
+        .getRawOne<AggregatedCountRow>();
+
+    return toNumber(row?.totalRequests);
 };
 
-interface MatchCreatedAtSinceStage {
-    $match: {
-        team?: mongoose.Types.ObjectId;
-        secretKey?: mongoose.Types.ObjectId;
-        createdAt: {
-            $gte: Date;
+const readEndpoints = async (
+    query: SelectQueryBuilder<SecretKeyUsageLog>,
+    limit?: number
+): Promise<SecretKeyEndpointStat[]> => {
+    const scopedEndpoints = query
+        .select('log.method', 'method')
+        .addSelect('log.path', 'path')
+        .addSelect(TOTAL_REQUESTS, 'count')
+        .addSelect(AVG_RESPONSE_TIME, 'avgResponseTime')
+        .addSelect(SUCCESS_REQUESTS, 'successRequests')
+        .groupBy('log.method')
+        .addGroupBy('log.path')
+        .orderBy(TOTAL_REQUESTS, 'DESC');
+
+    if(limit !== undefined) scopedEndpoints.limit(limit);
+
+    const rows = await scopedEndpoints.getRawMany<AggregatedEndpointRow>();
+
+    return rows.map((row) => {
+        const count = toNumber(row.count);
+
+        return {
+            method: row.method,
+            path: row.path,
+            count,
+            avgResponseTime: Math.round(toNumber(row.avgResponseTime)),
+            successRate: successRateOf(toNumber(row.successRequests), count)
         };
-    };
-};
-
-interface AggregateOverviewDefault {
-    totalRequests: number;
-    successRequests: number;
-    avgResponseTime: number;
-};
-
-interface KeyOverviewDefault extends AggregateOverviewDefault {
-    requests24h: number;
-    requests7d: number;
-};
-
-const createTeamSinceMatchStage = (teamObjectId: mongoose.Types.ObjectId, since: Date): MatchCreatedAtSinceStage => {
-    return {
-        $match: {
-            team: teamObjectId,
-            createdAt: {
-                $gte: since
-            }
-        }
-    };
-};
-
-const createSecretKeySinceMatchStage = (keyObjectId: mongoose.Types.ObjectId, since: Date): MatchCreatedAtSinceStage => {
-    return {
-        $match: {
-            secretKey: keyObjectId,
-            createdAt: {
-                $gte: since
-            }
-        }
-    };
-};
-
-const createDefaultAggregateOverview = (): AggregateOverviewDefault => {
-    return {
-        totalRequests: 0,
-        successRequests: 0,
-        avgResponseTime: 0
-    };
-};
-
-const createDefaultKeyOverview = (): KeyOverviewDefault => {
-    return {
-        totalRequests: 0,
-        successRequests: 0,
-        avgResponseTime: 0,
-        requests24h: 0,
-        requests7d: 0
-    };
-};
-
-const IS_SUCCESS_STATUS = { $and: [{ $gte: ['$statusCode', 200] }, { $lt: ['$statusCode', 300] }] };
-
-const COUNT_SUCCESS = { $sum: { $cond: [IS_SUCCESS_STATUS, 1, 0] } };
-
-type FacetStage = PipelineStage.Group | PipelineStage.Sort | PipelineStage.Limit | PipelineStage.Project;
-
-const endpointPipelineStages = (limit?: number): FacetStage[] => {
-    const stages: FacetStage[] = [
-        {
-            $group: {
-                _id: { method: '$method', path: '$path' },
-                count: { $sum: 1 },
-                avgResponseTime: { $avg: '$responseTime' },
-                successCount: COUNT_SUCCESS
-            }
-        },
-        { $sort: { count: -1 } }
-    ];
-    if (limit !== undefined) {
-        stages.push({ $limit: limit });
-    }
-    stages.push({
-        $project: {
-            _id: 0,
-            method: '$_id.method',
-            path: '$_id.path',
-            count: 1,
-            avgResponseTime: { $round: ['$avgResponseTime', 0] },
-            successRate: {
-                $round: [{ $multiply: [{ $divide: ['$successCount', '$count'] }, 100] }, 1]
-            }
-        }
     });
-    return stages;
+};
+
+const readDailyLabels = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<AggregatedLabelRow[]> => {
+    const dateExpression = utcDateExpression();
+
+    return query
+        .select(dateExpression, 'label')
+        .addSelect(TOTAL_REQUESTS, 'count')
+        .groupBy(dateExpression)
+        .orderBy(dateExpression, 'ASC')
+        .getRawMany<AggregatedLabelRow>();
 };
 
 export const logSecretKeyUsageRequest = async (data: Omit<SecretKeyUsageLogProps, 'createdAt'>): Promise<void> => {
-    await SecretKeyUsageLogModel.create({
-        ...data,
-        createdAt: new Date()
-    });
+    await SecretKeyUsageLog.create({ ...data }).save();
 };
 
 export const getTeamUsageAnalytics = async (teamId: string, days: number): Promise<TeamUsageAnalytics> => {
     const since = new Date();
     since.setDate(since.getDate() - days);
-    const teamObjectId = new mongoose.Types.ObjectId(teamId);
+    const dateExpression = utcDateExpression();
 
-    const [result] = await SecretKeyUsageLogModel.aggregate<TeamMetricsAggregateResult>([
-        createTeamSinceMatchStage(teamObjectId, since),
-        {
-            $facet: {
-                overview: [
-                    {
-                        $group: {
-                            _id: null,
-                            totalRequests: { $sum: 1 },
-                            successRequests: COUNT_SUCCESS,
-                            avgResponseTime: { $avg: '$responseTime' }
-                        }
-                    }
-                ],
-                perKey: [
-                    {
-                        $group: {
-                            _id: '$secretKey',
-                            totalRequests: { $sum: 1 },
-                            successRequests: COUNT_SUCCESS,
-                            avgResponseTime: { $avg: '$responseTime' },
-                            lastRequestAt: { $max: '$createdAt' }
-                        }
-                    },
-                    { $sort: { totalRequests: -1 } }
-                ],
-                daily: [
-                    {
-                        $group: {
-                            _id: {
-                                date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                                secretKey: '$secretKey'
-                            },
-                            count: { $sum: 1 }
-                        }
-                    },
-                    { $sort: { '_id.date': 1 } }
-                ],
-                topEndpoints: endpointPipelineStages(10)
-            }
-        }
+    const [overview, perKeyRows, dailyRows, topEndpoints] = await Promise.all([
+        readOverview(scopedQuery('team', teamId, since)),
+        scopedQuery('team', teamId, since)
+            .select('log.secretKey', 'secretKeyId')
+            .addSelect(TOTAL_REQUESTS, 'totalRequests')
+            .addSelect(SUCCESS_REQUESTS, 'successRequests')
+            .addSelect(AVG_RESPONSE_TIME, 'avgResponseTime')
+            .addSelect('MAX(log.createdAt)', 'lastRequestAt')
+            .groupBy('log.secretKey')
+            .orderBy(TOTAL_REQUESTS, 'DESC')
+            .getRawMany<AggregatedPerKeyRow>(),
+        scopedQuery('team', teamId, since)
+            .select(dateExpression, 'date')
+            .addSelect('log.secretKey', 'secretKeyId')
+            .addSelect(TOTAL_REQUESTS, 'count')
+            .groupBy(dateExpression)
+            .addGroupBy('log.secretKey')
+            .orderBy(dateExpression, 'ASC')
+            .getRawMany<AggregatedTeamDailyRow>(),
+        readEndpoints(scopedQuery('team', teamId, since), TOP_ENDPOINTS_LIMIT)
     ]);
-
-    const overview = result.overview[0] || createDefaultAggregateOverview();
 
     return {
         overview,
-        perKey: result.perKey.map((pk) => ({
-            secretKeyId: pk._id.toString(),
-            totalRequests: pk.totalRequests,
-            successRequests: pk.successRequests,
-            avgResponseTime: pk.avgResponseTime || 0,
-            lastRequestAt: pk.lastRequestAt || null
+        perKey: perKeyRows.map((row) => ({
+            secretKeyId: row.secretKeyId,
+            totalRequests: toNumber(row.totalRequests),
+            successRequests: toNumber(row.successRequests),
+            avgResponseTime: toNumber(row.avgResponseTime),
+            lastRequestAt: toDate(row.lastRequestAt)
         })),
-        daily: result.daily.map((row) => ({
-            date: row._id.date,
-            secretKeyId: row._id.secretKey.toString(),
-            count: row.count
+        daily: dailyRows.map((row) => ({
+            date: row.date,
+            secretKeyId: row.secretKeyId,
+            count: toNumber(row.count)
         })),
-        topEndpoints: result.topEndpoints
+        topEndpoints
     };
 };
 
@@ -249,102 +214,81 @@ export const getKeyUsageAnalytics = async (secretKeyId: string, days: number): P
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const keyObjectId = new mongoose.Types.ObjectId(secretKeyId);
+    const hourExpression = utcHourExpression();
 
-    const [result] = await SecretKeyUsageLogModel.aggregate<KeyMetricsAggregateResult>([
-        createSecretKeySinceMatchStage(keyObjectId, since),
-        {
-            $facet: {
-                overview: [
-                    {
-                        $group: {
-                            _id: null,
-                            totalRequests: { $sum: 1 },
-                            successRequests: COUNT_SUCCESS,
-                            avgResponseTime: { $avg: '$responseTime' },
-                            requests24h: {
-                                $sum: { $cond: [{ $gte: ['$createdAt', last24h] }, 1, 0] }
-                            },
-                            requests7d: {
-                                $sum: { $cond: [{ $gte: ['$createdAt', last7d] }, 1, 0] }
-                            }
-                        }
-                    }
-                ],
-                hourly: [
-                    { $match: { createdAt: { $gte: last24h } } },
-                    {
-                        $group: {
-                            _id: { $dateToString: { format: '%H:00', date: '$createdAt' } },
-                            count: { $sum: 1 }
-                        }
-                    },
-                    { $sort: { _id: 1 } }
-                ],
-                daily: [
-                    {
-                        $group: {
-                            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                            count: { $sum: 1 }
-                        }
-                    },
-                    { $sort: { _id: 1 } }
-                ],
-                endpoints: endpointPipelineStages(),
-                statusDistribution: [
-                    {
-                        $group: {
-                            _id: '$statusCode',
-                            count: { $sum: 1 }
-                        }
-                    },
-                    { $sort: { _id: 1 } },
-                    { $project: { _id: 0, code: '$_id', count: 1 } }
-                ],
-                peakHour: [
-                    { $match: { createdAt: { $gte: last24h } } },
-                    {
-                        $group: {
-                            _id: { $hour: '$createdAt' },
-                            count: { $sum: 1 }
-                        }
-                    },
-                    { $sort: { count: -1 } },
-                    { $limit: 1 }
-                ]
-            }
-        }
+    const [
+        overview,
+        requests24h,
+        requests7d,
+        hourlyRows,
+        dailyRows,
+        endpoints,
+        statusRows,
+        peakHourRow,
+        recentRows
+    ] = await Promise.all([
+        readOverview(scopedQuery('secretKey', secretKeyId, since)),
+        readRequestCount(scopedQuery('secretKey', secretKeyId, since).andWhere('log.createdAt >= :last24h', { last24h })),
+        readRequestCount(scopedQuery('secretKey', secretKeyId, since).andWhere('log.createdAt >= :last7d', { last7d })),
+        scopedQuery('secretKey', secretKeyId, since)
+            .andWhere('log.createdAt >= :last24h', { last24h })
+            .select(hourExpression, 'label')
+            .addSelect(TOTAL_REQUESTS, 'count')
+            .groupBy(hourExpression)
+            .orderBy(hourExpression, 'ASC')
+            .getRawMany<AggregatedLabelRow>(),
+        readDailyLabels(scopedQuery('secretKey', secretKeyId, since)),
+        readEndpoints(scopedQuery('secretKey', secretKeyId, since)),
+        scopedQuery('secretKey', secretKeyId, since)
+            .select('log.statusCode', 'code')
+            .addSelect(TOTAL_REQUESTS, 'count')
+            .groupBy('log.statusCode')
+            .orderBy('log.statusCode', 'ASC')
+            .getRawMany<AggregatedStatusRow>(),
+        scopedQuery('secretKey', secretKeyId, since)
+            .andWhere('log.createdAt >= :last24h', { last24h })
+            .select(hourExpression, 'hour')
+            .addSelect(TOTAL_REQUESTS, 'count')
+            .groupBy(hourExpression)
+            .orderBy(TOTAL_REQUESTS, 'DESC')
+            .limit(1)
+            .getRawOne<AggregatedPeakHourRow>(),
+        SecretKeyUsageLog.find({
+            where: { secretKey: secretKeyId },
+            order: { createdAt: 'DESC' },
+            take: RECENT_REQUESTS_LIMIT
+        })
     ]);
 
-    const overview = result.overview[0] || createDefaultKeyOverview();
-
-    const recentDocs = await SecretKeyUsageLogModel
-        .find({ secretKey: keyObjectId })
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .select('method path statusCode responseTime ip createdAt')
-        .lean<RecentRequestRow[]>();
-
     return {
-        overview,
-        hourly: result.hourly.map((hour) => ({
-            label: hour._id,
-            count: hour.count
+        overview: {
+            ...overview,
+            requests24h,
+            requests7d
+        },
+        hourly: hourlyRows.map((row) => ({
+            label: `${row.label}:00`,
+            count: toNumber(row.count)
         })),
-        daily: result.daily.map((day) => ({
-            label: day._id,
-            count: day.count
+        daily: dailyRows.map((row) => ({
+            label: row.label,
+            count: toNumber(row.count)
         })),
-        endpoints: result.endpoints,
-        statusDistribution: result.statusDistribution,
-        peakHour: result.peakHour[0]?._id ?? null,
-        recentRequests: recentDocs.map((doc) => ({
-            method: doc.method,
-            path: doc.path,
-            statusCode: doc.statusCode,
-            responseTime: doc.responseTime,
-            ip: doc.ip,
-            createdAt: doc.createdAt
+        endpoints,
+        statusDistribution: statusRows.map((row) => ({
+            code: toNumber(row.code),
+            count: toNumber(row.count)
+        })),
+        peakHour: peakHourRow?.hour === null || peakHourRow?.hour === undefined
+            ? null
+            : Number(peakHourRow.hour),
+        recentRequests: recentRows.map((row) => ({
+            method: row.method,
+            path: row.path,
+            statusCode: row.statusCode,
+            responseTime: row.responseTime,
+            ip: row.ip,
+            createdAt: row.createdAt
         }))
     };
 };

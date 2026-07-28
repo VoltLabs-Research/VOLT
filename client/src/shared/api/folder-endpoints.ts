@@ -32,14 +32,17 @@ export const createFolderCrudEndpoints = <
     TUpdateParams extends FolderUpdateParams,
     TDeleteParams,
     TFolder
->() => ({
-    listFolders: paginated<TListParams, PaginatedResponse<TFolder>>('/folders'),
-    getFolder: get<TGetParams, TFolder>('/folders/:folderId'),
-    createFolder: post<TCreateParams, TFolder>('/folders', {
-        body: ({ title, parentId }) => ({ title, parentId })
+>(collectionPath: string) => ({
+    listFolders: paginated<TListParams, PaginatedResponse<TFolder>>(collectionPath),
+    getFolder: get<TGetParams, TFolder>(`${collectionPath}/:folderId`),
+    createFolder: post<TCreateParams, TFolder>(collectionPath, {
+        body: ({ title, parentId }) => ({
+            title,
+            parentId
+        })
     }),
-    updateFolder: patch<TUpdateParams, TFolder>('/folders/:folderId', {
+    updateFolder: patch<TUpdateParams, TFolder>(`${collectionPath}/:folderId`, {
         body: ({ title }) => ({ title })
     }),
-    deleteFolder: del<TDeleteParams>('/folders/:folderId')
+    deleteFolder: del<TDeleteParams>(`${collectionPath}/:folderId`)
 });

@@ -1,5 +1,5 @@
-import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
-import TeamClusterModel from '@modules/cluster/models/TeamClusterModel';
+import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type {
     TeamClusterInstallManifestView,
     TeamClusterInstallManifestFileView,
@@ -129,31 +129,29 @@ export class TeamClusterInstallManifestService {
         installRoot: string,
         ports: TeamClusterInstallManifestPortsView
     ): Promise<void> {
-        const updatedTeamCluster = await TeamClusterModel.findByIdAndUpdate(teamCluster.id, {
-            $set: {
-                installRoot,
-                services: {
-                    minio: {
-                        ...teamCluster.props.services.minio,
-                        port: ports.minio
-                    },
-                    redis: {
-                        ...teamCluster.props.services.redis,
-                        port: ports.redis
-                    },
-                    mongodb: {
-                        ...teamCluster.props.services.mongodb,
-                        port: ports.mongodb
-                    },
-                    daemon: {
-                        ...teamCluster.props.services.daemon,
-                        port: ports.daemon
-                    }
+        const updateResult = await TeamClusterEntity.update({ id: teamCluster.id }, {
+            installRoot,
+            services: {
+                minio: {
+                    ...teamCluster.props.services.minio,
+                    port: ports.minio
+                },
+                redis: {
+                    ...teamCluster.props.services.redis,
+                    port: ports.redis
+                },
+                mongodb: {
+                    ...teamCluster.props.services.mongodb,
+                    port: ports.mongodb
+                },
+                daemon: {
+                    ...teamCluster.props.services.daemon,
+                    port: ports.daemon
                 }
             }
-        }, { new: true }).exec();
+        });
 
-        if (!updatedTeamCluster) {
+        if (!updateResult.affected) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
     }

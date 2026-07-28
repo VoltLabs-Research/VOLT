@@ -14,5 +14,8 @@ const KEYS = buildKeys<DailyActivityQueryKeys>('daily-activity');
 
 export const dailyActivityQuery = createQuery<DailyActivityQueryParams, Awaited<ReturnType<typeof service.getDailyActivity>>>(
     KEYS.activity,
-    ({ range, scope }) => service.getDailyActivity({ range, scope })
+    ({ range, scope }) => service.getDailyActivity({
+        range,
+        scope
+    })
 );

@@ -100,11 +100,8 @@ interface ListCanvasAnalysesParams {
 interface GetCanvasRasterFrameParams {
     trajectoryId: string;
     timestep: number;
-}
-
-interface GetCanvasAnalysisRasterFrameParams extends GetCanvasRasterFrameParams {
-    analysisId: string;
-    model: string;
+    analysisId?: string;
+    model?: string;
 }
 
 interface GetCanvasDumpParams {
@@ -146,8 +143,7 @@ const endpoints = {
             ...(limit !== undefined ? { limit } : {})
         })
     }),
-    getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
-    getAnalysisRasterFrame: download<GetCanvasAnalysisRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model'),
+    getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/raster'),
     getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
     getSimulationCell: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
@@ -165,45 +161,32 @@ const endpoints = {
         }
     ),
     getColorCodingProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/color-coding/properties/${analysisId}`
-            : `/${trajectoryId}/color-coding/properties`,
+        '/:trajectoryId/color-codings/properties',
         {
-            omit: ['trajectoryId', 'analysisId'],
-            query: ({ timestep }) => ({ timestep })
+            query: ({ timestep, analysisId }) => ({
+                timestep,
+                analysisId
+            })
         }
     ),
     getColorCodingStats: get<GetColorCodingStatsInput, ColorCodingStats>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/color-coding/stats/${analysisId}`
-            : `/${trajectoryId}/color-coding/stats`,
-        {
-            omit: ['trajectoryId', 'analysisId']
-        }
+        '/:trajectoryId/color-codings/stats'
     ),
     getParticleFilterProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/particle-filter/properties/${analysisId}`
-            : `/${trajectoryId}/particle-filter/properties`,
+        '/:trajectoryId/particle-filters/properties',
         {
-            omit: ['trajectoryId', 'analysisId'],
-            query: ({ timestep }) => ({ timestep })
+            query: ({ timestep, analysisId }) => ({
+                timestep,
+                analysisId
+            })
         }
     ),
     getParticleFilterUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/particle-filter/unique-values/${analysisId}`
-            : `/${trajectoryId}/particle-filter/unique-values`,
-        {
-            omit: ['trajectoryId', 'analysisId']
-        }
+        '/:trajectoryId/particle-filters/unique-values'
     ),
     getParticleFilterPreview: get<PreviewFilterInput, PreviewFilterResponse>(
-        ({ trajectoryId, analysisId }) => analysisId
-            ? `/${trajectoryId}/particle-filter/preview/${analysisId}`
-            : `/${trajectoryId}/particle-filter/preview`,
+        '/:trajectoryId/particle-filters/preview',
         {
-            omit: ['trajectoryId', 'analysisId'],
             query: buildPreviewQuery
         }
     ),
@@ -239,7 +222,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/canvas',
+            basePath: '/public/trajectories',
             useRBAC: false
         }
     }

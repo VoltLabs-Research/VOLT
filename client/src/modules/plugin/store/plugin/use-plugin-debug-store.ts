@@ -161,7 +161,10 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
             inspectedNodeId: nodeId,
             nodeStates: {
                 ...state.nodeStates,
-                [nodeId]: { ...state.nodeStates[nodeId], status: DebugNodeStatus.Running }
+                [nodeId]: {
+                    ...state.nodeStates[nodeId],
+                    status: DebugNodeStatus.Running
+                }
             }
         };
     }),
@@ -245,7 +248,10 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
     setInspectedNode: (nodeId) => set({ inspectedNodeId: nodeId }),
 
     setDebugConfigField: (key, value) => set((state) => ({
-        debugConfig: { ...state.debugConfig, [key]: value }
+        debugConfig: {
+            ...state.debugConfig,
+            [key]: value
+        }
     })),
 
     setDebugConfig: (config) => set({ debugConfig: config }),

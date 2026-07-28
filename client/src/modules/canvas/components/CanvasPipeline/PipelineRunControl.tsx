@@ -45,7 +45,11 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
     if (stage.type === 'analysis-plugin') {
         const config = stage.config as AnalysisPluginStageConfig;
         if (!config.pluginId) return null;
-        return { kind, pluginId: config.pluginId, config: config.argValues ?? {} };
+        return {
+            kind,
+            pluginId: config.pluginId,
+            config: config.argValues ?? {}
+        };
     }
 
     if (stage.type === 'expression-select') {
@@ -55,10 +59,16 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
         if (!expression || config.action !== 'delete') return null;
         
         
-        return { kind, config: { expression: `!(${expression})` } };
+        return {
+            kind,
+            config: { expression: `!(${expression})` }
+        };
     }
 
-    return { kind, config: stage.config as unknown as Record<string, unknown> };
+    return {
+        kind,
+        config: stage.config as unknown as Record<string, unknown>
+    };
 };
 
 const PipelineRunControl = ({
@@ -78,7 +88,11 @@ const PipelineRunControl = ({
     );
 
     const { data: teamClustersResponse } = usePluginTeamClustersQuery(
-        { teamId: selectedTeamId ?? '', page: 1, limit: 100 },
+        {
+            teamId: selectedTeamId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: !!selectedTeamId }
     );
     const { executionTeamClusters, teamClusterOptions, hasTeamClusterOptions } =
@@ -130,7 +144,10 @@ const PipelineRunControl = ({
             .filter((payload): payload is PipelineStageInput => payload !== null);
 
         if (stagePayloads.length === 0) {
-            sileo.warning({ title: 'Nothing to run', description: 'Enable at least one pipeline stage.' });
+            sileo.warning({
+                title: 'Nothing to run',
+                description: 'Enable at least one pipeline stage.'
+            });
             return;
         }
 
@@ -198,7 +215,10 @@ const PipelineRunControl = ({
             });
             onClose();
         } catch {
-            sileo.error({ title: 'Failed to run pipeline', description: 'Please try again.' });
+            sileo.error({
+                title: 'Failed to run pipeline',
+                description: 'Please try again.'
+            });
         }
     }, [
         trajectoryId, enabledOrderedStages, executePipelineMutation, resolvedClusterId,

@@ -1,12 +1,12 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import PluginModel, {
-    PluginStatus,
-    toPluginLike,
+import PluginEntity from '@modules/plugin/models/Plugin';
+import {
     mapPluginToRecord,
-    type Plugin,
-    type PluginRecord
-} from '@modules/plugin/models/plugin/PluginModel';
+    toPluginLike
+} from '@modules/plugin/services/plugin/PluginQueries';
+import type { PluginRecord } from '@modules/plugin/contracts/domain/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
     ArgumentType,
@@ -75,21 +75,27 @@ import type {
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
 } from '@shared/contracts/ports';
-import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
+import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/domain/analysis';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
+import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { IsNull, Not } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { ExportType } from '@shared/domain/port/persistence';
-import type { Analysis, AnalysisExpectedArtifact, SceneArtifactProps } from '@shared/contracts/types';
+import type { Analysis, AnalysisExpectedArtifact } from '@shared/contracts/types';
 import { SceneArtifactSourceType } from '@shared/contracts/types';
+import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureGLBInput, GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
@@ -275,6 +281,8 @@ export type GetPluginExposureChartOutput = DownloadStreamOutput;
 
 const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 
+const LIST_PLUGINS_DEFAULT_LIMIT = 100;
+
 const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.Modifier]: ['pluginId', 'trajectory', 'analysis'],
     [WorkflowNodeType.Arguments]: ['as_str', 'as_array', 'selectedTimesteps'],
@@ -349,6 +357,14 @@ const isChartArtifact = (metadata: Record<string, unknown> | undefined, objectNa
         );
 };
 
+const matchesExposureParams = (params: SceneArtifactParams | null | undefined, exposureId: string): boolean => {
+    const entries = Object.entries(params ?? {}).filter(([, value]) => value !== undefined);
+
+    return entries.length === 1
+        && entries[0][0] === 'exposureId'
+        && entries[0][1] === exposureId;
+};
+
 const DAEMON_PAGE_SIZE = 200;
 
 const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData => {
@@ -409,7 +425,13 @@ const EMPTY_PLUGIN_LISTING_DOCUMENTS_RESULT: GetPluginListingDocumentsOutput = {
     page: 1,
     totalPages: 0,
     limit: 0,
-    _meta: { pluginId: '', exposureName: '', exposureId: '', columns: [], subListingNames: [] }
+    _meta: {
+        pluginId: '',
+        exposureName: '',
+        exposureId: '',
+        columns: [],
+        subListingNames: []
+    }
 };
 
 function* serializeListingRows(
@@ -534,8 +556,8 @@ export default class PluginService {
     }
 
     async exportPlugin(input: ExportPluginInput): Promise<ExportPluginOutput> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
 
         if (!plugin) {
             throw ApplicationError.notFound(
@@ -594,7 +616,10 @@ export default class PluginService {
                 version: tarball.version,
                 platform: REGISTRY_INSTALL_PLATFORM
             },
-            { timeoutClass: 'long-running-control-plane', retryClass: 'idempotent-command' }
+            {
+                timeoutClass: 'long-running-control-plane',
+                retryClass: 'idempotent-command'
+            }
         );
 
         const { plugin } = await this.#pluginStorageService.createFromRegistry(
@@ -613,28 +638,21 @@ export default class PluginService {
     }
 
     async listPlugins(input: ListPluginsInput): Promise<ListPluginsOutput> {
-        const filter: Record<string, unknown> = {
+        const where: FindOptionsWhere<PluginEntity> = {
             team: input.teamId,
             ...(input.status ? { status: input.status as PluginStatus } : {})
         };
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
-        const skip = (page - 1) * limit;
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: LIST_PLUGINS_DEFAULT_LIMIT });
 
-        const [docs, total] = await Promise.all([
-            PluginModel.find(filter).skip(skip).limit(limit).exec(),
-            PluginModel.countDocuments(filter)
-        ]);
+        const [plugins, total] = await PluginEntity.findAndCount({
+            where,
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const data = docs.map((doc) => mapPluginToRecord(toPluginLike(doc)));
+        const data = plugins.map((plugin) => mapPluginToRecord(toPluginLike(plugin)));
 
-        return {
-            data,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([data, total], pageRequest);
     }
 
     async createPlugin(input: CreatePluginInput): Promise<{ plugin: PluginRecord }> {
@@ -649,7 +667,7 @@ export default class PluginService {
         const workflow = new Workflow('', input.workflow);
         const projection = WorkflowProjectionService.project(workflow, '');
 
-        const pluginDoc = await PluginModel.create({
+        const pluginEntity = await PluginEntity.create({
             workflow: workflow.props,
             team: input.teamId,
             status: PluginStatus.DRAFT,
@@ -657,8 +675,8 @@ export default class PluginService {
             exposures: projection.exposures,
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
-        });
-        const plugin = toPluginLike(pluginDoc);
+        }).save();
+        const plugin = toPluginLike(pluginEntity);
 
         await this.#eventBus.publish(new PluginCreatedEvent({
             pluginId: plugin._id,
@@ -684,8 +702,8 @@ export default class PluginService {
     }
 
     async downloadBinary(input: DownloadPluginBinaryInput): Promise<DownloadPluginBinaryOutput> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -771,8 +789,8 @@ export default class PluginService {
     }
 
     async clonePlugin(input: ClonePluginInput): Promise<{ plugin: PluginRecord }> {
-        const originalDoc = await PluginModel.findById(input.pluginId);
-        const original = originalDoc ? toPluginLike(originalDoc) : null;
+        const originalEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const original = originalEntity ? toPluginLike(originalEntity) : null;
         if (!original) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -802,7 +820,7 @@ export default class PluginService {
         const workflow = new Workflow('', clonedWorkflowProps);
         const projection = WorkflowProjectionService.project(workflow, '');
 
-        const pluginDoc = await PluginModel.create({
+        const pluginEntity = await PluginEntity.create({
             workflow: workflow.props,
             team: input.teamId,
             status: PluginStatus.DRAFT,
@@ -810,8 +828,8 @@ export default class PluginService {
             exposures: projection.exposures,
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
-        });
-        const plugin = toPluginLike(pluginDoc);
+        }).save();
+        const plugin = toPluginLike(pluginEntity);
 
         await this.#eventBus.publish(new PluginCreatedEvent({
             pluginId: plugin._id,
@@ -824,8 +842,8 @@ export default class PluginService {
     }
 
     async getPluginById(input: GetPluginByIdInput): Promise<PluginRecord> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -837,8 +855,8 @@ export default class PluginService {
     }
 
     async updatePluginById(input: UpdatePluginByIdInput): Promise<PluginRecord> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -846,7 +864,7 @@ export default class PluginService {
             );
         }
 
-        const update: Record<string, unknown> = {};
+        const update: Partial<PluginEntity> = {};
         if (input.status) update.status = input.status;
 
         if (input.workflow) {
@@ -900,8 +918,10 @@ export default class PluginService {
             }
         }
 
-        const updatedDoc = await PluginModel.findByIdAndUpdate(input.pluginId, { $set: update }, { new: true }).exec();
-        const updatedPlugin = updatedDoc ? toPluginLike(updatedDoc) : null;
+        const currentEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const updatedPlugin = currentEntity
+            ? toPluginLike(await Object.assign(currentEntity, update).save())
+            : null;
 
         if (!updatedPlugin) {
             throw ApplicationError.notFound(
@@ -926,7 +946,10 @@ export default class PluginService {
                 entrypointScript: entrypoint?.entrypointScript,
                 binaryHash: entrypoint?.binaryHash
             })).catch((error: unknown) => {
-                logger.warn({ err: error, pluginId: updatedPlugin.id }, '@plugin-service: failed to publish PluginPublishedEvent');
+                logger.warn({
+                    err: error,
+                    pluginId: updatedPlugin.id
+                }, '@plugin-service: failed to publish PluginPublishedEvent');
             });
         }
 
@@ -934,22 +957,16 @@ export default class PluginService {
     }
 
     async deletePluginById(input: DeletePluginByIdInput): Promise<null> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
-        if (!plugin) {
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
+        if (!plugin || !pluginEntity) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
             );
         }
 
-        const deletedDoc = await PluginModel.findByIdAndDelete(input.pluginId).exec();
-        if (!deletedDoc) {
-            throw ApplicationError.notFound(
-                ErrorCodes.PLUGIN_NOT_FOUND,
-                'Plugin not found'
-            );
-        }
+        await pluginEntity.remove();
 
         await this.#eventBus.publish(new PluginDeletedEvent({
             pluginId: plugin.id,
@@ -961,8 +978,8 @@ export default class PluginService {
     }
 
     async describePluginArguments(input: DescribePluginArgumentsInput): Promise<DescribePluginArgumentsOutput> {
-        const pluginDoc = await PluginModel.findById(input.pluginId);
-        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
+        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -1000,7 +1017,10 @@ export default class PluginService {
             described.step = definition.step;
         }
         if (definition.options?.length) {
-            described.options = definition.options.map((option) => ({ key: option.key, label: option.label }));
+            described.options = definition.options.map((option) => ({
+                key: option.key,
+                label: option.label
+            }));
         }
         if (definition.multipleSelection) {
             described.multipleSelection = true;
@@ -1052,7 +1072,7 @@ export default class PluginService {
             );
         }
 
-        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+        const trajectory = await TrajectoryEntity.findOneBy({ id: input.trajectoryId });
         if (!trajectory) {
             throw ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
@@ -1060,7 +1080,7 @@ export default class PluginService {
             );
         }
 
-        const storageClusterId = trajectory.storageClusterId?.toString();
+        const storageClusterId = trajectory.storageClusterId;
         const computeClusterId = await this.#teamClusterSelectionService.resolveComputeClusterId(
             input.teamId,
             input.teamClusterId,
@@ -1096,7 +1116,10 @@ export default class PluginService {
             for (const stage of input.stages) {
                 if (stage.kind !== 'plugin') {
                     upstreamStageHashes.push(computeDumpStageHash(stage.kind, stage.config));
-                    stageExecutions.push({ kind: stage.kind, config: stage.config });
+                    stageExecutions.push({
+                        kind: stage.kind,
+                        config: stage.config
+                    });
                     continue;
                 }
 
@@ -1135,14 +1158,15 @@ export default class PluginService {
             });
         } catch (error: unknown) {
             await Promise.all(createdAnalyses.map((analysis) =>
-                AnalysisModel.findByIdAndUpdate(analysis._id, {
-                    $set: {
-                        status: 'failed',
-                        finishedAt: new Date()
-                    }
+                AnalysisEntity.update(analysis._id, {
+                    status: AnalysisStatus.Failed,
+                    finishedAt: new Date()
                 }).catch((updateError: unknown) => {
                     logger.warn(
-                        { analysisId: analysis._id, err: updateError },
+                        {
+                            analysisId: analysis._id,
+                            err: updateError
+                        },
                         '@plugin-service: failed to mark analysis failed after dispatch error'
                     );
                 })
@@ -1168,14 +1192,18 @@ export default class PluginService {
         createdAnalysis?: Analysis;
         error?: ApplicationError;
     }> {
-        const fail = (error: ApplicationError) => ({ stageHash: '', execution: { kind: 'plugin' as const }, error });
+        const fail = (error: ApplicationError) => ({
+            stageHash: '',
+            execution: { kind: 'plugin' as const },
+            error
+        });
 
         if (!stage.pluginId) {
             return fail(ApplicationError.badRequest(ErrorCodes.PLUGIN_NOT_FOUND, 'Pipeline plugin stage is missing a pluginId'));
         }
 
-        const stagePluginDoc = await PluginModel.findById(stage.pluginId);
-        const plugin = stagePluginDoc ? toPluginLike(stagePluginDoc) : null;
+        const stagePluginEntity = await PluginEntity.findOneBy({ id: stage.pluginId });
+        const plugin = stagePluginEntity ? toPluginLike(stagePluginEntity) : null;
         if (!plugin) {
             return fail(ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, `Plugin ${stage.pluginId} not found`));
         }
@@ -1214,9 +1242,9 @@ export default class PluginService {
             config: sanitizedConfig
         });
 
-        const cached = await AnalysisModel.findOne({
+        const cached = await AnalysisEntity.findOneBy({
             pipelineStageHash: stageHash,
-            status: 'completed',
+            status: AnalysisStatus.Completed,
             trajectory: input.trajectoryId
         });
         if (cached) {
@@ -1225,7 +1253,7 @@ export default class PluginService {
                 execution: {
                     kind: 'plugin',
                     cacheHit: true,
-                    cacheSourceAnalysisId: cached._id.toString(),
+                    cacheSourceAnalysisId: cached.id,
                     sharedExposureIds
                 }
             };
@@ -1273,24 +1301,27 @@ export default class PluginService {
             await this.#storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
         }
 
-        const analysisDoc = await AnalysisModel.create({
+        const analysisEntity = await AnalysisEntity.create({
             plugin: plugin._id,
             pluginDisplayName,
             computeClusterId,
             storageClusterId,
-            config: { ...sanitizedConfig, [ANALYSIS_EXECUTION_METADATA_KEY]: { selectedTimesteps } },
+            config: {
+                ...sanitizedConfig,
+                [ANALYSIS_EXECUTION_METADATA_KEY]: { selectedTimesteps }
+            },
             pipelineStageHash: stageHash,
             team: input.teamId,
             trajectory: input.trajectoryId,
             createdBy: input.userId,
             startedAt: new Date(),
-            artifactStatus: 'pending',
+            artifactStatus: AnalysisArtifactStatus.Pending,
             expectedArtifacts: resolveExpectedArtifacts(plugin._id, plugin),
             stages: [],
             childAnalyses: []
-        });
-        await this.#storagePlacementService.ensurePlacement('analysis', analysisDoc._id.toString());
-        const analysis = toAnalysisLike(analysisDoc);
+        }).save();
+        await this.#storagePlacementService.ensurePlacement('analysis', analysisEntity.id);
+        const analysis = toAnalysisLike(analysisEntity);
 
         const execution: RoutePluginExecutionInput = {
             teamClusterId: computeClusterId,
@@ -1311,13 +1342,17 @@ export default class PluginService {
 
         return {
             stageHash,
-            execution: { kind: 'plugin', execution, sharedExposureIds },
+            execution: {
+                kind: 'plugin',
+                execution,
+                sharedExposureIds
+            },
             createdAnalysis: analysis
         };
     }
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {
-        const analysis = await AnalysisModel.findById(String(input.analysisId));
+        const analysis = await AnalysisEntity.findOneBy({ id: String(input.analysisId) });
 
         if (!analysis) {
             throw ApplicationError.notFound(
@@ -1333,17 +1368,15 @@ export default class PluginService {
             );
         }
 
-        const artifactFilter: Partial<SceneArtifactProps> = {
+        const artifactCandidates = await SceneArtifactEntity.findBy({
             trajectory: String(input.trajectoryId),
             analysis: String(input.analysisId),
             sourceType: SceneArtifactSourceType.PluginExposure,
-            timestep: Number(input.timestep),
-            params: {
-                exposureId: String(input.exposureId)
-            }
-        };
+            timestep: Number(input.timestep)
+        });
 
-        const artifact = await SceneArtifactModel.findOne(artifactFilter);
+        const artifact = artifactCandidates.find((candidate) =>
+            matchesExposureParams(candidate.params, String(input.exposureId)));
 
         if (!artifact) {
             throw ApplicationError.notFound(
@@ -1353,7 +1386,7 @@ export default class PluginService {
         }
 
         const objectName = artifact.objectName;
-        const teamClusterId = artifact.storageClusterId?.toString();
+        const teamClusterId = artifact.storageClusterId;
         if (!teamClusterId) {
             throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
@@ -1409,7 +1442,7 @@ export default class PluginService {
     }
 
     async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<GetPluginExposureChartOutput> {
-        const artifact = await SceneArtifactModel.findById(String(input.artifactId));
+        const artifact = await SceneArtifactEntity.findOneBy({ id: String(input.artifactId) });
         if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
             throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
@@ -1417,7 +1450,7 @@ export default class PluginService {
             );
         }
 
-        const trajectory = await TrajectoryModel.findById(String(artifact.trajectory));
+        const trajectory = await TrajectoryEntity.findOneBy({ id: String(artifact.trajectory) });
         if (!trajectory || String(trajectory.team) !== String(input.teamId)) {
             throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
@@ -1433,7 +1466,7 @@ export default class PluginService {
             );
         }
 
-        const teamClusterId = artifact.storageClusterId?.toString();
+        const teamClusterId = artifact.storageClusterId;
         if (!teamClusterId) {
             throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
@@ -1471,7 +1504,7 @@ export default class PluginService {
     }
 
     async getPluginExposureExport(input: GetPluginExposureExportInput): Promise<GetPluginExposureExportOutput> {
-        const analysis = await AnalysisModel.findById(String(input.analysisId));
+        const analysis = await AnalysisEntity.findOneBy({ id: String(input.analysisId) });
 
         if (!analysis) {
             throw ApplicationError.notFound(
@@ -1488,8 +1521,8 @@ export default class PluginService {
         }
 
         const pluginId = String(analysis.plugin);
-        const exposureExportPluginDoc = await PluginModel.findById(pluginId);
-        const plugin = exposureExportPluginDoc ? toPluginLike(exposureExportPluginDoc) : null;
+        const exposureExportPluginEntity = await PluginEntity.findOneBy({ id: pluginId });
+        const plugin = exposureExportPluginEntity ? toPluginLike(exposureExportPluginEntity) : null;
         let pluginName = pluginId;
 
         if (plugin?.props?.modifier?.name) {
@@ -1506,9 +1539,9 @@ export default class PluginService {
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInput): Promise<GetListingRowsByAnalysisIdOutput> {
         const { page, limit } = resolveListingPagination(input);
 
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
             : undefined;
         if (!teamClusterId) {
             return EMPTY_LISTING_ROWS_RESULT;
@@ -1553,9 +1586,9 @@ export default class PluginService {
     async getSubListing(input: GetSubListingInput): Promise<GetSubListingOutput> {
         const { page, limit } = resolveListingPagination(input);
 
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
             : undefined;
         if (!teamClusterId) {
             return emptySubListingResult(input.subListingName);
@@ -1700,37 +1733,43 @@ export default class PluginService {
         input: { pluginId: string; teamId: string; analysisId?: string; trajectoryId?: string }
     ): Promise<{ teamClusterId: string; analysisId: string } | null> {
         if (input.analysisId) {
-            const analysis = await AnalysisModel.findById(input.analysisId);
+            const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
             const teamClusterId = analysis
-                ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
+                ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
                 : undefined;
             if (!teamClusterId) {
                 return null;
             }
 
-            return { teamClusterId, analysisId: input.analysisId };
+            return {
+                teamClusterId,
+                analysisId: input.analysisId
+            };
         }
 
-        const filter: Record<string, unknown> = {
+        const where: FindOptionsWhere<AnalysisEntity> = {
             plugin: input.pluginId,
-            computeClusterId: { $exists: true, $ne: null }
+            computeClusterId: Not(IsNull())
         };
-        if (input.trajectoryId) filter.trajectory = input.trajectoryId;
-        if (input.teamId) filter.team = input.teamId;
+        if (input.trajectoryId) where.trajectory = input.trajectoryId;
+        if (input.teamId) where.team = input.teamId;
 
-        const analysis = await AnalysisModel.findOne(filter);
+        const analysis = await AnalysisEntity.findOneBy(where);
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
             : undefined;
         if (analysis && teamClusterId) {
-            return { teamClusterId, analysisId: analysis._id.toString() };
+            return {
+                teamClusterId,
+                analysisId: analysis.id
+            };
         }
 
         return null;
     }
 
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput): Promise<SummarizeAnalysisResultOutput> {
-        const analysis = await AnalysisModel.findById(input.analysisId);
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         if (!analysis) {
             throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
@@ -1739,8 +1778,8 @@ export default class PluginService {
         }
 
         const status = analysis.status || 'pending';
-        const pluginDisplayName = analysis.pluginDisplayName || analysis.plugin.toString();
-        const teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() });
+        const pluginDisplayName = analysis.pluginDisplayName || analysis.plugin;
+        const teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined });
 
         if (!teamClusterId) {
             return this.#summarizeEmptyResult(input.analysisId, pluginDisplayName, status,
@@ -1755,7 +1794,7 @@ export default class PluginService {
         });
 
         const trajectoryName = enriched.find((row) => row.trajectoryName)?.trajectoryName
-            || (await this.#summarizeResolveTrajectoryName(analysis.trajectory.toString()));
+            || (await this.#summarizeResolveTrajectoryName(analysis.trajectory));
 
         const filtered = input.exposureId
             ? enriched.filter((row) => row.exposureId === input.exposureId)
@@ -1815,7 +1854,7 @@ export default class PluginService {
             return '';
         }
 
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        const trajectory = await TrajectoryEntity.findOneBy({ id: trajectoryId });
         return trajectory?.name?.trim() || '';
     }
 
@@ -1838,7 +1877,11 @@ export default class PluginService {
             const daemonResult = await this.#daemonClient.command<DaemonPaginatedResult>(
                 teamClusterId,
                 ChannelCommands.PluginListingsList,
-                { analysisId, page, limit: DAEMON_PAGE_SIZE }
+                {
+                    analysisId,
+                    page,
+                    limit: DAEMON_PAGE_SIZE
+                }
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);
@@ -1858,7 +1901,11 @@ export default class PluginService {
             page += 1;
         } while (page <= totalPages);
 
-        return { rows, truncated, maxRows };
+        return {
+            rows,
+            truncated,
+            maxRows
+        };
     }
 
     #summarizeExposures(rows: DaemonListingRow[]): SummarizedExposure[] {
@@ -1951,7 +1998,10 @@ export default class PluginService {
         const topValues = Array.from(frequencies.entries())
             .sort(([, leftCount], [, rightCount]) => rightCount - leftCount)
             .slice(0, TOP_VALUES_LIMIT)
-            .map(([value, count]) => ({ value, count }));
+            .map(([value, count]) => ({
+                value,
+                count
+            }));
 
         return {
             kind: 'categorical',

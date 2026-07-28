@@ -3,7 +3,7 @@ import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemon
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
-import type { Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
@@ -57,7 +57,7 @@ import type {
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import TeamCluster from '@modules/cluster/models/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -321,7 +321,10 @@ export class PluginExecutionRouter {
                 return JSON.parse(cached) as EncodedDispatchSection;
             }
         } catch (error: unknown) {
-            logger.warn({ err: error, cacheKey }, '@plugin-execution-router: dispatch section cache read failed');
+            logger.warn({
+                err: error,
+                cacheKey
+            }, '@plugin-execution-router: dispatch section cache read failed');
         }
 
         const existing = this.inflightEncodes.get(cacheKey);
@@ -332,7 +335,10 @@ export class PluginExecutionRouter {
             try {
                 await this.redis.setex(cacheKey, DISPATCH_SECTION_CACHE_TTL_SECONDS, JSON.stringify(encoded));
             } catch (error: unknown) {
-                logger.warn({ err: error, cacheKey }, '@plugin-execution-router: dispatch section cache write failed');
+                logger.warn({
+                    err: error,
+                    cacheKey
+                }, '@plugin-execution-router: dispatch section cache write failed');
             }
             return encoded;
         })().finally(() => {
@@ -383,10 +389,7 @@ export class PluginExecutionRouter {
             return currentOwnerClusterId;
         }
 
-        const teamClusterDocuments = await TeamClusterModel.find({
-            team: plugin.props.team
-        }).exec();
-        const teamClusters = teamClusterDocuments.map(toTeamClusterLike);
+        const teamClusters = await TeamCluster.findBy({ team: plugin.props.team });
 
         for (const candidateCluster of teamClusters) {
             if (candidateCluster.id === currentOwnerClusterId) {
@@ -434,7 +437,11 @@ export class PluginExecutionRouter {
             }
 
             logger.warn(
-                { err: error, ownerClusterId, objectKey },
+                {
+                    err: error,
+                    ownerClusterId,
+                    objectKey
+                },
                 '@plugin-execution-router: failed to inspect plugin binary while resolving owner'
             );
             return false;
@@ -447,7 +454,10 @@ export class PluginExecutionRouter {
 
         for (const stage of input.stages) {
             if (stage.kind !== 'plugin') {
-                stageDispatches.push({ kind: stage.kind, config: stage.config });
+                stageDispatches.push({
+                    kind: stage.kind,
+                    config: stage.config
+                });
                 continue;
             }
 
@@ -520,7 +530,10 @@ export class PluginExecutionRouter {
 
             if (stageJobs.length > 0) {
                 await this.daemonAnalysisCompletionService.handleJobsQueued(
-                    stageJobs.map((job) => ({ ...job, trajectoryName: input.trajectoryName })),
+                    stageJobs.map((job) => ({
+                        ...job,
+                        trajectoryName: input.trajectoryName
+                    })),
                     input.teamId,
                     input.teamClusterId
                 ).catch((error) => {
@@ -583,7 +596,10 @@ export class PluginExecutionRouter {
             timestep: input.timestep
         };
 
-        return { dispatchPayload, syncTasks };
+        return {
+            dispatchPayload,
+            syncTasks
+        };
     }
 
     private async syncPluginBinaryIfNeeded(
@@ -614,7 +630,10 @@ export class PluginExecutionRouter {
                 return;
             }
         } catch (error: unknown) {
-            logger.warn({ err: error, syncKey }, '@plugin-execution-router: plugin sync cache read failed');
+            logger.warn({
+                err: error,
+                syncKey
+            }, '@plugin-execution-router: plugin sync cache read failed');
         }
 
         const existingSync = this.inflightPluginSyncs.get(syncKey);
@@ -645,7 +664,10 @@ export class PluginExecutionRouter {
             try {
                 await this.redis.setex(redisKey, PLUGIN_SYNC_CACHE_TTL_SECONDS, '1');
             } catch (error: unknown) {
-                logger.warn({ err: error, syncKey }, '@plugin-execution-router: plugin sync cache write failed');
+                logger.warn({
+                    err: error,
+                    syncKey
+                }, '@plugin-execution-router: plugin sync cache write failed');
             }
         })().finally(() => {
             this.inflightPluginSyncs.delete(syncKey);

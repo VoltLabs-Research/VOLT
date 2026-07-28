@@ -88,12 +88,21 @@ const getPointCloudDetailRatio = (detailLevel: PointCloudDetailLevel, pointCount
 
 const getPointCloudStyleUniforms = (settings: PointCloudSceneSettings) => {
     if (!settings.overridesEnabled) {
-        return { edgeSoftness: 0, lightingMix: 1 };
+        return {
+            edgeSoftness: 0,
+            lightingMix: 1
+        };
     }
     if (settings.style === PointCloudStyleMode.Flat) {
-        return { edgeSoftness: 0, lightingMix: 0 };
+        return {
+            edgeSoftness: 0,
+            lightingMix: 0
+        };
     }
-    return { edgeSoftness: 0.18, lightingMix: 1 };
+    return {
+        edgeSoftness: 0.18,
+        lightingMix: 1
+    };
 };
 
 const summarizeBounds = (bounds: BoundsInfo | null) => {
@@ -169,7 +178,10 @@ export class FractalEngine {
     private lastLineHighlightEntityId: number | null | undefined = undefined;
     private lastLineHighlightRanges: LineEntityRange[] | null | undefined = undefined;
     private mortonPermutation: Uint32Array | null = null;
-    private traversalCache: TraversalCache = { pointClouds: [], meshes: [] };
+    private traversalCache: TraversalCache = {
+        pointClouds: [],
+        meshes: []
+    };
 
     private mortonWorker: Worker | null = null;
     private currentSortRequestId = 0;
@@ -245,13 +257,21 @@ export class FractalEngine {
             sceneKey: this.params.sceneKey,
             clippingPlanes: this.params.sliceClippingPlanes.length
         });
-        this.callbacks.onLoadingState?.({ isLoading: true, progress: 0, error: null });
+        this.callbacks.onLoadingState?.({
+            isLoading: true,
+            progress: 0,
+            error: null
+        });
 
         try {
             const loadedModel = await this.assetLoader.load(url, (progress) => {
                 const pct = Math.round(progress * 100);
                 this.state.loadProgress = pct;
-                this.callbacks.onLoadingState?.({ isLoading: true, progress: pct, error: null });
+                this.callbacks.onLoadingState?.({
+                    isLoading: true,
+                    progress: pct,
+                    error: null
+                });
             }, currentAbortController.signal, resourceKey);
 
             if (this.isDisposed || currentLoadGeneration !== this.loadGeneration) {
@@ -261,7 +281,10 @@ export class FractalEngine {
             }
 
             if (!this.hasRenderableData(loadedModel)) {
-                warnFractal('engine.load-empty', { url, sceneKey: this.params.sceneKey });
+                warnFractal('engine.load-empty', {
+                    url,
+                    sceneKey: this.params.sceneKey
+                });
                 this.params.onEmptyData?.();
             }
 
@@ -327,10 +350,18 @@ export class FractalEngine {
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
-            this.callbacks.onLoadingState?.({ isLoading: false, progress: 100, error: null });
+            this.callbacks.onLoadingState?.({
+                isLoading: false,
+                progress: 100,
+                error: null
+            });
         } catch (error: unknown) {
             if (isAbortLikeError(error)) {
-                this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: null });
+                this.callbacks.onLoadingState?.({
+                    isLoading: false,
+                    progress: 0,
+                    error: null
+                });
                 return;
             }
             this.consecutiveLoadFailures += 1;
@@ -344,7 +375,11 @@ export class FractalEngine {
                 attempts: this.consecutiveLoadFailures,
                 message
             });
-            this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: message });
+            this.callbacks.onLoadingState?.({
+                isLoading: false,
+                progress: 0,
+                error: message
+            });
         } finally {
             if (this.loadAbortController === currentAbortController) {
                 this.loadAbortController = null;
@@ -868,7 +903,11 @@ export class FractalEngine {
             cancelAnimationFrame(this.lineUpdateRafHandle);
             this.lineUpdateRafHandle = null;
         }
-        this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: null });
+        this.callbacks.onLoadingState?.({
+            isLoading: false,
+            progress: 0,
+            error: null
+        });
         this.callbacks.onModelAvailable?.(null);
         this.disposeModel();
         this.materialPipeline.dispose();
@@ -1018,7 +1057,10 @@ export class FractalEngine {
         if (!this.state.model) {
             this.state.mesh = null;
             this.state.bounds = null;
-            this.traversalCache = { pointClouds: [], meshes: [] };
+            this.traversalCache = {
+                pointClouds: [],
+                meshes: []
+            };
             return;
         }
         this.state.model.removeFromParent();
@@ -1026,11 +1068,17 @@ export class FractalEngine {
         this.state.model = null;
         this.state.mesh = null;
         this.state.bounds = null;
-        this.traversalCache = { pointClouds: [], meshes: [] };
+        this.traversalCache = {
+            pointClouds: [],
+            meshes: []
+        };
     }
 
     private buildTraversalCache(root: THREE.Object3D): TraversalCache {
-        const traversalCache: TraversalCache = { pointClouds: [], meshes: [] };
+        const traversalCache: TraversalCache = {
+            pointClouds: [],
+            meshes: []
+        };
         root.traverse((child) => {
             if (child instanceof THREE.Points) {
                 traversalCache.pointClouds.push(child);

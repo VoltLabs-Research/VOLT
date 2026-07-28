@@ -17,11 +17,10 @@ import type {
     AIMessageToolCall,
     AIMessageToolResult,
     AIMessageToolStep
-} from '@modules/ai/models/AIMessageModel';
+} from '@modules/ai/contracts/domain/ai-message';
 import type AIToolServiceType from '@modules/ai/services/AIToolService';
-import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
-import TeamAIIntegrationModel from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
-import type { TeamAIIntegrationDocument } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import type { TeamAIProvider } from '@modules/team/contracts/domain/team-ai-integration';
+import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
 import { decrypt } from '@shared/infrastructure/utilities/crypto';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
@@ -88,18 +87,54 @@ Be concise and factual. Format responses in markdown when helpful.`;
 const MAX_TOOL_STEPS = 12;
 
 const PROVIDER_BUILDERS: Record<AIProvider, (modelId: string) => ProviderBuilder> = {
-    [AIProvider.OpenAI]: (modelId) => ({ apiKey, baseUrl }) => createOpenAI({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Anthropic]: (modelId) => ({ apiKey, baseUrl }) => createAnthropic({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Google]: (modelId) => ({ apiKey, baseUrl }) => createGoogleGenerativeAI({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Groq]: (modelId) => ({ apiKey, baseUrl }) => createGroq({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.XAI]: (modelId) => ({ apiKey, baseUrl }) => createXai({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Mistral]: (modelId) => ({ apiKey, baseUrl }) => createMistral({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Cohere]: (modelId) => ({ apiKey, baseUrl }) => createCohere({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.DeepSeek]: (modelId) => ({ apiKey, baseUrl }) => createDeepSeek({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.DeepInfra]: (modelId) => ({ apiKey, baseUrl }) => createDeepInfra({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Cerebras]: (modelId) => ({ apiKey, baseUrl }) => createCerebras({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.TogetherAI]: (modelId) => ({ apiKey, baseUrl }) => createTogetherAI({ apiKey, baseURL: baseUrl })(modelId),
-    [AIProvider.Fireworks]: (modelId) => ({ apiKey, baseUrl }) => createFireworks({ apiKey, baseURL: baseUrl })(modelId),
+    [AIProvider.OpenAI]: (modelId) => ({ apiKey, baseUrl }) => createOpenAI({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Anthropic]: (modelId) => ({ apiKey, baseUrl }) => createAnthropic({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Google]: (modelId) => ({ apiKey, baseUrl }) => createGoogleGenerativeAI({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Groq]: (modelId) => ({ apiKey, baseUrl }) => createGroq({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.XAI]: (modelId) => ({ apiKey, baseUrl }) => createXai({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Mistral]: (modelId) => ({ apiKey, baseUrl }) => createMistral({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Cohere]: (modelId) => ({ apiKey, baseUrl }) => createCohere({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.DeepSeek]: (modelId) => ({ apiKey, baseUrl }) => createDeepSeek({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.DeepInfra]: (modelId) => ({ apiKey, baseUrl }) => createDeepInfra({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Cerebras]: (modelId) => ({ apiKey, baseUrl }) => createCerebras({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.TogetherAI]: (modelId) => ({ apiKey, baseUrl }) => createTogetherAI({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
+    [AIProvider.Fireworks]: (modelId) => ({ apiKey, baseUrl }) => createFireworks({
+        apiKey,
+        baseURL: baseUrl
+    })(modelId),
     [AIProvider.Ollama]: (modelId) => ({ baseUrl }) => createOllama({ baseURL: baseUrl })(modelId)
 };
 
@@ -224,10 +259,13 @@ class AISDKChatTransport {
         requestedProvider?: string,
         requestedModel?: string
     ): Promise<ProviderConfig> {
-        const integrations = await TeamAIIntegrationModel.find({ team: teamId, isEnabled: true })
-            .select('+encryptedApiKey')
-            .sort({ createdAt: -1 })
-            .exec();
+        const integrations = await TeamAIIntegration.find({
+            where: {
+                team: teamId,
+                isEnabled: true
+            },
+            order: { createdAt: 'DESC' }
+        });
 
         if (!integrations.length) {
             throw ApplicationError.badRequest(
@@ -256,7 +294,7 @@ class AISDKChatTransport {
     }
 
     private async toProviderConfig(
-        integration: TeamAIIntegrationDocument,
+        integration: TeamAIIntegration,
         requestedModel?: string
     ): Promise<ProviderConfig> {
         const apiKey = integration.encryptedApiKey
@@ -270,7 +308,12 @@ class AISDKChatTransport {
             );
         }
 
-        return { provider: integration.provider, model, apiKey, metadata: integration.metadata };
+        return {
+            provider: integration.provider,
+            model,
+            apiKey,
+            metadata: integration.metadata
+        };
     }
 
     private buildModel(provider: AIProvider, model: string, apiKey: string, metadata?: Record<string, unknown>): LanguageModel {
@@ -287,7 +330,10 @@ class AISDKChatTransport {
             baseUrl = metadata.baseUrl;
         }
 
-        return builder(model)({ apiKey, baseUrl });
+        return builder(model)({
+            apiKey,
+            baseUrl
+        });
     }
 }
 

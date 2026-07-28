@@ -6,6 +6,7 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { formatDuration } from '@voltstack/bravais';
+import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -54,31 +55,15 @@ const ACTIVITY_LOOKBACK_DAYS = 7;
 const ACTIVITY_REFRESH_INTERVAL_MS = 10_000;
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DASHBOARD_ACTIVITY_TABS: Array<{ id: DashboardActivityTabId; label: string }> = [
-    { id: 'activity', label: 'Activity' },
-    { id: 'in-app-activity', label: 'In-app Activity' }
+    {
+        id: 'activity',
+        label: 'Activity'
+    },
+    {
+        id: 'in-app-activity',
+        label: 'In-app Activity'
+    }
 ];
-
-const formatRelativeTime = (iso: string): string => {
-    const now = Date.now();
-    const then = new Date(iso).getTime();
-    const diffMs = now - then;
-    const diffMin = Math.floor(diffMs / 60_000);
-
-    if (diffMin < 1) return 'just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay === 1) return 'yesterday';
-    if (diffDay < 7) return `${diffDay}d ago`;
-
-    return new Date(iso).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-    });
-};
 
 const getUserName = (user: string | DailyActivityUserSummary): string => {
     if (typeof user === 'string') {
@@ -231,7 +216,11 @@ const ActivityDrawer = () => {
     const loadingState: ReactNode = activeTab === 'in-app-activity'
         ? <Box display='flex' className='dashboard-activity-chart-surface flex-center' />
         : (
-            <Timeline className='dashboard-activity-list' style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <Timeline className='dashboard-activity-list' style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto'
+            }}>
                 {Array.from({ length: 10 }, (_, index) => (
                     <TimelineItem
                         key={index}
@@ -281,12 +270,19 @@ const ActivityDrawer = () => {
         }
 
         return (
-            <Timeline className='dashboard-activity-list' style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <Timeline className='dashboard-activity-list' style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto'
+            }}>
                 {timelineEntries.map((entry, index) => (
                     <TimelineItem
                         key={`${entry.timestamp}-${index}`}
                         connector={index < timelineEntries.length - 1}
-                        icon={<span style={{ color: ACTIVITY_ACCENT[entry.type], display: 'inline-flex' }}>{ACTIVITY_ICON[entry.type]}</span>}
+                        icon={<span style={{
+                            color: ACTIVITY_ACCENT[entry.type],
+                            display: 'inline-flex'
+                        }}>{ACTIVITY_ICON[entry.type]}</span>}
                     >
                         <Text size='md' tone='primary'>
                             <Text as='strong' weight='medium' style={{ textTransform: 'capitalize' }}>
@@ -296,7 +292,7 @@ const ActivityDrawer = () => {
                             <Text tone='secondary'>{entry.description}</Text>
                         </Text>
                         <Text size='sm' tone='muted'>
-                            {formatRelativeTime(entry.timestamp)}
+                            {formatCompactRelativeTime(entry.timestamp)}
                         </Text>
                     </TimelineItem>
                 ))}
@@ -332,7 +328,10 @@ const ActivityDrawer = () => {
                             />
                             <PolarAngleAxis
                                 dataKey='day'
-                                tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
+                                tick={{
+                                    fill: 'var(--color-text-muted)',
+                                    fontSize: 11
+                                }}
                             />
                             <Tooltip content={renderTooltip} />
                             <Legend verticalAlign='bottom' height={32} wrapperStyle={{ fontSize: '12px' }} />
@@ -395,7 +394,11 @@ const ActivityDrawer = () => {
                 </Box>
 
                 <AsyncBoundary
-                    state={{ loading: isLoading, error: error || undefined, accessDenied }}
+                    state={{
+                        loading: isLoading,
+                        error: error || undefined,
+                        accessDenied
+                    }}
                     loading={loadingState}
                     error={renderError}
                     accessDenied={accessDeniedState}

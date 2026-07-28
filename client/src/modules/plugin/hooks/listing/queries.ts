@@ -58,11 +58,17 @@ export const LISTING_QUERY_KEYS = {
 
 const buildPluginListingQueryOptions = (params: GetPluginListingInput) => {
     const accessState = useCanvasAccessStore.getState();
-    const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
+    const dataAccess = buildCanvasDataAccess({
+        ...DEFAULT_CANVAS_ACCESS_STATE,
+        mode: accessState.mode
+    });
     const trajectoryId = params.trajectoryId ?? accessState.trajectoryId ?? '';
     return {
         queryKey: withAccessMode(accessState.mode, LISTING_QUERY_KEYS.listingDetail(params)),
-        queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId })
+        queryFn: () => dataAccess.getPluginListing({
+            ...params,
+            trajectoryId
+        })
     };
 };
 
@@ -82,7 +88,10 @@ export const usePluginListingQuery = (
     return useQuery<GetPluginListingResponse, Error, GetPluginListingResponse, QueryKey>({
         ...options,
         queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
-        queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId })
+        queryFn: () => dataAccess.getPluginListing({
+            ...params,
+            trajectoryId
+        })
     });
 };
 

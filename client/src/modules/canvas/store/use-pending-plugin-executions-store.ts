@@ -37,7 +37,10 @@ export const usePendingPluginExecutionsStore = create<PendingPluginExecutionsSta
             return {
                 entries: {
                     ...state.entries,
-                    [analysisId]: { ...current, ...patch }
+                    [analysisId]: {
+                        ...current,
+                        ...patch
+                    }
                 }
             };
         });

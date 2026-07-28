@@ -34,7 +34,11 @@ export const createTooltipRenderer = (
         return (
             <ChartTooltip
                 title={typeof title === 'function' ? title(firstPayload) : String(firstPayload[title])}
-                items={[{ label, value: firstValue, ...(color ? { color } : {}) }]}
+                items={[{
+                    label,
+                    value: firstValue,
+                    ...(color ? { color } : {})
+                }]}
             />
         );
     };

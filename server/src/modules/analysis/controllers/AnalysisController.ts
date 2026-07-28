@@ -14,30 +14,26 @@ export default class AnalysisController extends Controller {
     @Route(analysisRoutes.listByTeamId)
     listByTeamId(
         @Param('teamId') teamId: string,
+        @Query('trajectoryId') trajectoryId?: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('search') search?: string
     ) {
+        const pageNumber = page !== undefined ? Number(page) : undefined;
+        const pageLimit = limit !== undefined ? Number(limit) : undefined;
+        if (trajectoryId !== undefined) {
+            return this.#service.getAnalysesByTrajectoryId({
+                teamId,
+                trajectoryId,
+                page: pageNumber,
+                limit: pageLimit
+            });
+        }
         return this.#service.getAnalysesByTeamId({
             teamId,
-            page: page !== undefined ? Number(page) : undefined,
-            limit: limit !== undefined ? Number(limit) : undefined,
+            page: pageNumber,
+            limit: pageLimit,
             search
-        });
-    }
-
-    @Route(analysisRoutes.listByTrajectoryId)
-    listByTrajectoryId(
-        @Param('teamId') teamId: string,
-        @Param('trajectoryId') trajectoryId: string,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string
-    ) {
-        return this.#service.getAnalysesByTrajectoryId({
-            teamId,
-            trajectoryId,
-            page: page !== undefined ? Number(page) : undefined,
-            limit: limit !== undefined ? Number(limit) : undefined
         });
     }
 
@@ -62,12 +58,19 @@ export default class AnalysisController extends Controller {
         @Param('analysisId') analysisId: string,
         @CurrentUser() userId: string
     ) {
-        return this.#service.retryFailedFrames({ teamId, analysisId, userId });
+        return this.#service.retryFailedFrames({
+            teamId,
+            analysisId,
+            userId
+        });
     }
 
     @Route(analysisRoutes.getById)
     getById(@Param('teamId') teamId: string, @Param('analysisId') analysisId: string) {
-        return this.#service.getAnalysisById({ teamId, analysisId });
+        return this.#service.getAnalysisById({
+            teamId,
+            analysisId
+        });
     }
 
     @Route(analysisRoutes.remove)
@@ -77,6 +80,10 @@ export default class AnalysisController extends Controller {
         @Param('analysisId') analysisId: string,
         @CurrentUser() userId: string
     ) {
-        await this.#service.deleteAnalysisById({ teamId, analysisId, userId });
+        await this.#service.deleteAnalysisById({
+            teamId,
+            analysisId,
+            userId
+        });
     }
 }

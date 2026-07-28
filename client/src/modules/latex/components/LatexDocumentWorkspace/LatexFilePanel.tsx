@@ -247,7 +247,10 @@ const LatexFilePanel = ({
 
             const file = item.getAsFile();
             return file
-                ? [{ file, path: file.name }]
+                ? [{
+                    file,
+                    path: file.name
+                }]
                 : [];
         }));
 
@@ -599,7 +602,10 @@ const LatexFilePanel = ({
                 className='d-none'
                 aria-label='Upload a folder to the LaTeX workspace'
                 onChange={onUploadFolders}
-                {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                {...({
+                    webkitdirectory: '',
+                    directory: ''
+                } as Record<string, string>)}
             />
 
             <span className='latex-workspace__sr-only' aria-live='polite' aria-atomic='true'>

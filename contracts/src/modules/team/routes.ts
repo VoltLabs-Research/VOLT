@@ -2,7 +2,6 @@ import { get, post, patch, put, del } from '../../shared/routing';
 import type {
     CreateTeamInput,
     UpdateTeamInput,
-    JoinTeamByCodeInput,
     SetDefaultTeamInput,
     UpdateTeamMemberInput,
     CreateTeamRoleInput,
@@ -39,8 +38,8 @@ import type {
 
 export const teamRoutes = {
     
-    previewJoinByCode: post<JoinTeamByCodeInput, PreviewJoinTeamResponse>('/api/teams/join/preview'),
-    joinByCode: post<JoinTeamByCodeInput, JoinTeamResponse>('/api/teams/join'),
+    previewJoinByCode: get<PreviewJoinTeamResponse>('/api/teams/invite-codes/:code'),
+    joinByCode: post<never, JoinTeamResponse>('/api/teams/invite-codes/:code/memberships'),
     listUserTeams: get<Team>('/api/teams'),
     create: post<CreateTeamInput, Team>('/api/teams'),
 
@@ -50,8 +49,8 @@ export const teamRoutes = {
     remove: del('/api/teams/:teamId'),
     setDefaultForNewUsers: put<SetDefaultTeamInput, SetDefaultTeamResponse>('/api/teams/:teamId/default-membership'),
     checkInvitePermission: get<CheckInvitePermissionResponse>('/api/teams/:teamId/invite-permission'),
-    generateInviteCode: post<never, Team>('/api/teams/:teamId/invite-code'),
-    deleteInviteCode: del<DeleteInviteCodeResponse>('/api/teams/:teamId/invite-code'),
+    generateInviteCode: post<never, Team>('/api/teams/:teamId/invite-codes'),
+    deleteInviteCode: del<DeleteInviteCodeResponse>('/api/teams/:teamId/invite-codes'),
 
     
     getMyPermissions: get<GetMyTeamPermissionsResponse>('/api/teams/:teamId/self/permissions'),
@@ -94,7 +93,7 @@ export const secretKeyRoutes = {
     keyUsage: get<KeyUsageMetrics>('/api/teams/:teamId/secret-keys/:secretKeyId/usage'),
     list: get<SecretKey>('/api/teams/:teamId/secret-keys'),
     create: post<CreateSecretKeyInput, CreateSecretKeyResponse>('/api/teams/:teamId/secret-keys'),
-    revokeById: patch<never, RevokeSecretKeyResponse>('/api/teams/:teamId/secret-keys/:secretKeyId'),
+    revokeById: post<never, RevokeSecretKeyResponse>('/api/teams/:teamId/secret-keys/:secretKeyId/revocations'),
     deleteById: del('/api/teams/:teamId/secret-keys/:secretKeyId')
 } as const;
 

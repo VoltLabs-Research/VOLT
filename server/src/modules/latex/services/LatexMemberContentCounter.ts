@@ -1,24 +1,30 @@
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
-import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
+import LatexDocument from '@modules/latex/models/LatexDocument';
 
-interface GroupedCountRow {
-    _id: unknown;
-    count: number;
+interface GroupedCountRow{
+    createdBy: string;
+    count: number | string;
 }
 
-class LatexMemberContentCounter implements IMemberContentCounter {
-    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const rows = await LatexDocumentModel.aggregate<GroupedCountRow>([
-            { $match: { team: teamId, createdBy: { $in: userIds } } },
-            { $group: { _id: '$createdBy', count: { $sum: 1 } } }
-        ]);
+class LatexMemberContentCounter implements IMemberContentCounter{
+    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult>{
+        const rows = await LatexDocument.createQueryBuilder('document')
+            .select('document.createdBy', 'createdBy')
+            .addSelect('COUNT(document.id)', 'count')
+            .where('document.team = :teamId', { teamId })
+            .andWhere('document.createdBy IN (:...userIds)', { userIds })
+            .groupBy('document.createdBy')
+            .getRawMany<GroupedCountRow>();
 
         const counts = new Map<string, number>();
-        for (const row of rows) {
-            counts.set(String(row._id), row.count);
+        for(const row of rows){
+            counts.set(String(row.createdBy), Number(row.count));
         }
 
-        return { key: 'latexCount', counts };
+        return {
+            key: 'latexCount',
+            counts
+        };
     }
 }
 

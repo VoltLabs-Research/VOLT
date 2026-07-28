@@ -111,7 +111,10 @@ const ArgumentOptionsEditor = ({
     const handleKeyChange = useCallback((index: number, rawKey: string) => {
         const nextOptions = options.map((option, optionIndex) => {
             if (optionIndex !== index) return option;
-            return { ...option, key: rawKey };
+            return {
+                ...option,
+                key: rawKey
+            };
         });
         onOptionsChange(nextOptions);
     }, [options, onOptionsChange]);
@@ -119,13 +122,19 @@ const ArgumentOptionsEditor = ({
     const handleLabelChange = useCallback((index: number, rawLabel: string) => {
         const nextOptions = options.map((option, optionIndex) => {
             if (optionIndex !== index) return option;
-            return { ...option, label: rawLabel };
+            return {
+                ...option,
+                label: rawLabel
+            };
         });
         onOptionsChange(nextOptions);
     }, [options, onOptionsChange]);
 
     const handleAddOption = useCallback(() => {
-        onOptionsChange([...options, { key: '', label: '' }]);
+        onOptionsChange([...options, {
+            key: '',
+            label: ''
+        }]);
     }, [options, onOptionsChange]);
 
     const handleRemoveOption = useCallback((index: number) => {

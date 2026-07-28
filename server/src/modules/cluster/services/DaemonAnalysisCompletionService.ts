@@ -16,8 +16,9 @@ import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
-import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus } from '@modules/analysis/contracts/domain/analysis';
+import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -49,7 +50,10 @@ const SESSION_TTL_SECONDS = 86400;
 const JOB_STATUS_PUBLISH_BATCH_SIZE = 50;
 
 const swallow = (message: string, context: Record<string, unknown>) =>
-    (err: unknown) => logger.warn({ ...context, err }, `[DaemonAnalysisCompletion] ${message}`);
+    (err: unknown) => logger.warn({
+        ...context,
+        err
+    }, `[DaemonAnalysisCompletion] ${message}`);
 
 const DECREMENT_DRAIN_SCRIPT = `
 local ttl = tonumber(ARGV[1])
@@ -221,43 +225,84 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         private readonly eventBus = eventBus;
     private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;
 
-    private async findAnalysisById(analysisId: string): Promise<Analysis | null> {
-        const doc = await AnalysisModel.findById(analysisId);
-        return doc ? toAnalysisLike(doc) : null;
-    }
-
-    private async updateAnalysisById(analysisId: string, data: Record<string, unknown>): Promise<Analysis | null> {
-        const doc = await AnalysisModel.findByIdAndUpdate(analysisId, { $set: data }, { new: true });
-        return doc ? toAnalysisLike(doc) : null;
-    }
-
-    private toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
+    private toAnalysisLike(entity: AnalysisEntity): Analysis {
         return {
-            _id: doc._id.toString(),
+            _id: entity.id,
             props: {
-                name: doc.name,
-                team: doc.team.toString(),
-                folder: doc.folder ? doc.folder.toString() : null,
-                storageClusterId: doc.storageClusterId?.toString(),
-                createdBy: doc.createdBy.toString(),
-                status: doc.status,
-                isPublic: doc.isPublic,
-                rasterSceneViews: doc.rasterSceneViews,
-                hasPreview: doc.hasPreview,
-                stats: doc.stats,
-                updatedAt: doc.updatedAt,
-                createdAt: doc.createdAt
+                plugin: entity.plugin,
+                pluginDisplayName: entity.pluginDisplayName,
+                computeClusterId: entity.computeClusterId ?? undefined,
+                storageClusterId: entity.storageClusterId ?? undefined,
+                config: entity.config,
+                trajectory: entity.trajectory,
+                createdBy: entity.createdBy,
+                pipelineStageHash: entity.pipelineStageHash ?? undefined,
+                totalFrames: entity.totalFrames,
+                startedAt: entity.startedAt ?? undefined,
+                finishedAt: entity.finishedAt ?? undefined,
+                team: entity.team,
+                status: entity.status,
+                artifactStatus: entity.artifactStatus,
+                expectedArtifacts: entity.expectedArtifacts,
+                stages: entity.stages,
+                childAnalyses: entity.childAnalyses,
+                createdAt: entity.createdAt,
+                updatedAt: entity.updatedAt
+            }
+        };
+    }
+
+    private async findAnalysisById(analysisId: string): Promise<Analysis | null> {
+        const entity = await AnalysisEntity.findOneBy({ id: analysisId });
+        return entity ? this.toAnalysisLike(entity) : null;
+    }
+
+    private async updateAnalysisById(analysisId: string, data: Partial<Analysis['props']>): Promise<Analysis | null> {
+        const entity = await AnalysisEntity.findOneBy({ id: analysisId });
+        if (!entity) {
+            return null;
+        }
+
+        const patch: Partial<AnalysisEntity> = {};
+        if (data.status !== undefined) patch.status = data.status as AnalysisStatus;
+        if (data.artifactStatus !== undefined) patch.artifactStatus = data.artifactStatus as AnalysisArtifactStatusColumn;
+        if (data.expectedArtifacts !== undefined) patch.expectedArtifacts = data.expectedArtifacts;
+        if (data.stages !== undefined) patch.stages = data.stages;
+        if (data.childAnalyses !== undefined) patch.childAnalyses = data.childAnalyses;
+        if (data.totalFrames !== undefined) patch.totalFrames = data.totalFrames;
+        if (data.startedAt !== undefined) patch.startedAt = data.startedAt;
+        if (data.finishedAt !== undefined) patch.finishedAt = data.finishedAt;
+
+        return this.toAnalysisLike(await Object.assign(entity, patch).save());
+    }
+
+    private toTrajectoryLike(entity: TrajectoryEntity): TrajectoryLike {
+        return {
+            _id: entity.id,
+            props: {
+                name: entity.name,
+                team: entity.team,
+                folder: entity.folder,
+                storageClusterId: entity.storageClusterId,
+                createdBy: entity.createdBy,
+                status: entity.status,
+                isPublic: entity.isPublic,
+                rasterSceneViews: entity.rasterSceneViews,
+                hasPreview: entity.hasPreview,
+                stats: entity.stats,
+                updatedAt: entity.updatedAt,
+                createdAt: entity.createdAt
             }
         };
     }
 
     private async findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
-        const doc = await TrajectoryModel.findById(trajectoryId);
-        return doc ? this.toTrajectoryLike(doc) : null;
+        const entity = await TrajectoryEntity.findOneBy({ id: trajectoryId });
+        return entity ? this.toTrajectoryLike(entity) : null;
     }
 
     private async updateTrajectoryById(trajectoryId: string, data: Partial<{ hasPreview: boolean; status: TrajectoryStatus }>): Promise<void> {
-        await TrajectoryModel.findByIdAndUpdate(trajectoryId, { $set: data }).exec();
+        await TrajectoryEntity.update({ id: trajectoryId }, data);
     }
 
     async initializeSession(analysisId: string, totalJobs: number, teamId: string, trajectoryId?: string): Promise<void> {
@@ -399,7 +444,11 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
                 jobId,
                 timestep: trajectoryContext.timestep,
                 status: success ? 'completed' : 'failed'
-            }).catch(swallow('Failed to seal frame log', { analysisId, jobId, timestep: trajectoryContext.timestep }));
+            }).catch(swallow('Failed to seal frame log', {
+                analysisId,
+                jobId,
+                timestep: trajectoryContext.timestep
+            }));
         }
 
         if (!success) {
@@ -431,7 +480,11 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
                 trajectoryId: trajectoryContext.trajectoryId,
                 jobId,
                 timestep: trajectoryContext.timestep
-            }).catch(swallow('Failed to initialize frame log state', { analysisId, jobId, timestep: trajectoryContext.timestep }));
+            }).catch(swallow('Failed to initialize frame log state', {
+                analysisId,
+                jobId,
+                timestep: trajectoryContext.timestep
+            }));
         }
 
         await this.publishJobStatusChanged({
@@ -516,7 +569,10 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
                     updatedAt: new Date()
                 }));
             } catch (error: unknown) {
-                logger.warn({ err: error, trajectoryId: resolved.trajectory._id }, '[DaemonAnalysisCompletion] failed to persist hasPreview after raster completion');
+                logger.warn({
+                    err: error,
+                    trajectoryId: resolved.trajectory._id
+                }, '[DaemonAnalysisCompletion] failed to persist hasPreview after raster completion');
             }
         }
     }
@@ -635,7 +691,10 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             expectedArtifacts: extras.expectedArtifacts,
             stages: extras.stages,
             childAnalyses: extras.childAnalyses
-        })).catch(swallow('Failed to publish analysis.status.changed', { analysisId, status }));
+        })).catch(swallow('Failed to publish analysis.status.changed', {
+            analysisId,
+            status
+        }));
     }
 
     private async publishAnalysisStageChanged(
@@ -1112,7 +1171,10 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         );
 
         if (!Array.isArray(result) || result.length !== 2) {
-            return { drained: false, failedJobs: 0 };
+            return {
+                drained: false,
+                failedJobs: 0
+            };
         }
 
         return {
@@ -1158,7 +1220,10 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         }
 
         const analysis = (await this.updateAnalysisById(analysisId, analysisUpdates)
-            .catch(swallow('Failed to finalize analysis status', { analysisId, status }))) ?? currentAnalysis;
+            .catch(swallow('Failed to finalize analysis status', {
+                analysisId,
+                status
+            }))) ?? currentAnalysis;
 
         await this.publishAnalysisStatus(analysisId, teamId, status, {
             trajectoryId: analysis?.props.trajectory,

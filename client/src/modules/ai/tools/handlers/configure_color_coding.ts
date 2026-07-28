@@ -22,7 +22,10 @@ const configureColorCoding: ClientToolHandler<ConfigureColorCodingInput> = {
     run(input): ClientToolResult {
         const gradient = resolveGradient(input.colorMap);
         const manualRange = typeof input.min === 'number' && typeof input.max === 'number'
-            ? { min: input.min, max: input.max }
+            ? {
+                min: input.min,
+                max: input.max
+            }
             : undefined;
 
         const stageId = useCanvasPipelineStore.getState().addStage('color-coding', {
@@ -46,8 +49,14 @@ const configureColorCoding: ClientToolHandler<ConfigureColorCodingInput> = {
     },
 
     describeEffect(input, result) {
-        if (!result.ok) return { label: 'Color coding unavailable', icon: 'palette' };
-        return { label: `Color coded by ${input.property}`, icon: 'palette' };
+        if (!result.ok) return {
+            label: 'Color coding unavailable',
+            icon: 'palette'
+        };
+        return {
+            label: `Color coded by ${input.property}`,
+            icon: 'palette'
+        };
     }
 };
 

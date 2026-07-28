@@ -20,7 +20,10 @@ export default function useTeamRoleData({ teamId, limit = 100 }: UseTeamRoleData
         };
     }, [teamId, limit]);
 
-    const rolesQuery = useAllTeamRolesQuery(queryParams ?? { teamId: '', limit }, {
+    const rolesQuery = useAllTeamRolesQuery(queryParams ?? {
+        teamId: '',
+        limit
+    }, {
         enabled: !!queryParams
     });
     const queryState = useTeamQueryState(rolesQuery, 'Failed to load team roles');

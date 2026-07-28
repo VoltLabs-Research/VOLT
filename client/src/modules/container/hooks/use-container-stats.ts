@@ -42,10 +42,16 @@ const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): 
 
             if(systemDelta > 0 && cpuDelta >= 0){
                 const cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
-                setCpu({ usage: Math.min(100, cpuPercent), cores: onlineCpus });
+                setCpu({
+                    usage: Math.min(100, cpuPercent),
+                    cores: onlineCpus
+                });
             }
         }
-        prevCpuRef.current = { total: cpuTotal, system: systemTotal };
+        prevCpuRef.current = {
+            total: cpuTotal,
+            system: systemTotal
+        };
 
         setMemory({
             used: statsResponse.memoryMB.used,
@@ -53,7 +59,10 @@ const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): 
             free: statsResponse.memoryMB.free
         });
 
-        setNetwork({ rx: statsResponse.networkTotals.rxBytes, tx: statsResponse.networkTotals.txBytes });
+        setNetwork({
+            rx: statsResponse.networkTotals.rxBytes,
+            tx: statsResponse.networkTotals.txBytes
+        });
     }, [statsResponse]);
 
     return {

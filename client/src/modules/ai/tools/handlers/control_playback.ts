@@ -25,7 +25,14 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
 
         if (action === 'play') {
             if (store.isPlaying) {
-                return { ok: true, summary: 'Playback is already running.', data: { action, isPlaying: true } };
+                return {
+                    ok: true,
+                    summary: 'Playback is already running.',
+                    data: {
+                        action,
+                        isPlaying: true
+                    }
+                };
             }
 
             const { trajectoryId, timesteps } = bridge;
@@ -39,8 +46,18 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
             }
 
             ctx.markViewerActing();
-            store.togglePlay({ trajectoryId, timesteps });
-            return { ok: true, summary: 'Started trajectory playback.', data: { action, isPlaying: true } };
+            store.togglePlay({
+                trajectoryId,
+                timesteps
+            });
+            return {
+                ok: true,
+                summary: 'Started trajectory playback.',
+                data: {
+                    action,
+                    isPlaying: true
+                }
+            };
         }
 
         ctx.markViewerActing();
@@ -48,18 +65,33 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
         return {
             ok: true,
             summary: action === 'pause' ? 'Paused trajectory playback.' : 'Stopped trajectory playback.',
-            data: { action, isPlaying: false }
+            data: {
+                action,
+                isPlaying: false
+            }
         };
     },
 
     describeEffect(input, result) {
         if (!result.ok) {
-            return { label: 'Playback control failed', icon: 'play' };
+            return {
+                label: 'Playback control failed',
+                icon: 'play'
+            };
         }
         const action = input.action;
-        if (action === 'play') return { label: 'Started playback', icon: 'play' };
-        if (action === 'pause') return { label: 'Paused playback', icon: 'pause' };
-        return { label: 'Stopped playback', icon: 'stop' };
+        if (action === 'play') return {
+            label: 'Started playback',
+            icon: 'play'
+        };
+        if (action === 'pause') return {
+            label: 'Paused playback',
+            icon: 'pause'
+        };
+        return {
+            label: 'Stopped playback',
+            icon: 'stop'
+        };
     }
 };
 

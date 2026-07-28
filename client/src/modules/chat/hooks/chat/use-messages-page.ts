@@ -221,7 +221,8 @@ const useMessagesPage = (chatId?: string) => {
         isSendingFile: messageActions.isSendingFile,
         editMessage: messageActions.editMessage,
         deleteMessage: messageActions.deleteMessage,
-        toggleReaction: messageActions.toggleReaction,
+        setReaction: messageActions.setReaction,
+        removeReaction: messageActions.removeReaction,
         addUsersToGroup: groupActions.addUsersToGroup,
         leaveGroup: groupActions.leaveGroup
     };

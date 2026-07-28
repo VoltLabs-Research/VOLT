@@ -23,8 +23,6 @@ export interface ResolvedGlbResource {
     resourceKey: string | null;
 }
 
-const DEFAULT_ANALYSIS_ID = 'default';
-
 const isPropertyCondition = (condition: ParticleFilterSceneCondition) => {
     return typeof condition?.property === 'string'
         && typeof condition?.operator === 'string'
@@ -42,10 +40,10 @@ const buildPluginUrl = (
     if (!analysisId || !exposureId) return null;
 
     if (mode === 'public') {
-        return buildBackendUrl(`/api/canvas/${trajectoryId}/exposures/${analysisId}/${exposureId}/${timestep}/glb`);
+        return buildBackendUrl(`/api/public/trajectories/${trajectoryId}/exposures/${analysisId}/${exposureId}/${timestep}/glb`);
     }
 
-    return buildBackendUrl(`/api/plugins/${teamId}/exposures/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
+    return buildBackendUrl(`/api/teams/${teamId}/plugins/exposures/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/glb`);
 };
 
 const buildColorCodingUrl = (
@@ -56,7 +54,6 @@ const buildColorCodingUrl = (
     timestep: number
 ): string => {
     const { property, startValue, endValue, gradient, analysisId, exposureId } = scene;
-    const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
     const params = new URLSearchParams({
         property,
         startValue: String(startValue),
@@ -65,12 +62,13 @@ const buildColorCodingUrl = (
         timestep: String(timestep)
     });
     if (exposureId) params.set('exposureId', exposureId);
+    if (analysisId) params.set('analysisId', analysisId);
 
     if (mode === 'public') {
-        return buildBackendUrl(`/api/canvas/${trajectoryId}/color-coding/model/${effectiveAnalysisId}?${params.toString()}`);
+        return buildBackendUrl(`/api/public/trajectories/${trajectoryId}/color-codings/model?${params.toString()}`);
     }
 
-    return buildBackendUrl(`/api/color-codings/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildBackendUrl(`/api/teams/${teamId}/trajectories/${trajectoryId}/color-codings/model?${params.toString()}`);
 };
 
 const buildParticleFilterUrl = (
@@ -92,7 +90,6 @@ const buildParticleFilterUrl = (
     } = scene;
     if (!action) return null;
 
-    const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
     const params = new URLSearchParams({
         timestep: String(timestep),
         action
@@ -118,11 +115,13 @@ const buildParticleFilterUrl = (
         }
     }
 
+    if (analysisId) params.set('analysisId', analysisId);
+
     if (mode === 'public') {
-        return buildBackendUrl(`/api/canvas/${trajectoryId}/particle-filter/model/${effectiveAnalysisId}?${params.toString()}`);
+        return buildBackendUrl(`/api/public/trajectories/${trajectoryId}/particle-filters/model?${params.toString()}`);
     }
 
-    return buildBackendUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildBackendUrl(`/api/teams/${teamId}/trajectories/${trajectoryId}/particle-filters/model?${params.toString()}`);
 };
 
 const buildLineStyleUrl = (
@@ -144,7 +143,7 @@ const buildLineStyleUrl = (
         style: JSON.stringify(style ?? {})
     });
 
-    return buildBackendUrl(`/api/line-styles/${teamId}/${trajectoryId}/${analysisId}/${exposureId}?${params.toString()}`);
+    return buildBackendUrl(`/api/teams/${teamId}/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/line-style/model?${params.toString()}`);
 };
 
 export const resolveGlbResource = ({
@@ -191,10 +190,12 @@ export const resolveGlbResource = ({
                 resourceKey: url
             };
         }
-        default:
+        default: {
+            const query = analysisId ? `?${new URLSearchParams({ analysisId }).toString()}` : '';
             return {
-                url: buildBackendUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`),
+                url: buildBackendUrl(`/api/public/trajectories/${trajectoryId}/frames/${currentTimestep}/glb${query}`),
                 resourceKey: `trajectory:${trajectoryId}:${currentTimestep}`
             };
+        }
     }
 };

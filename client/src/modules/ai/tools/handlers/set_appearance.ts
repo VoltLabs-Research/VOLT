@@ -67,9 +67,15 @@ const setAppearance: ClientToolHandler<SetAppearanceInput> = {
 
     describeEffect(_input, result) {
         if (!result.ok) {
-            return { label: 'Appearance change failed', icon: 'sliders' };
+            return {
+                label: 'Appearance change failed',
+                icon: 'sliders'
+            };
         }
-        return { label: 'Adjusted appearance', icon: 'sliders' };
+        return {
+            label: 'Adjusted appearance',
+            icon: 'sliders'
+        };
     }
 };
 

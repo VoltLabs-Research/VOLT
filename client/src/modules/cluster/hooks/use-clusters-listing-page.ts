@@ -87,7 +87,10 @@ const useClustersListingPage = () => {
         const limit = params.limit ?? 20;
 
         if (!selectedTeamId) {
-            return createEmptyPaginatedResponse<ServerRow>({ page, limit });
+            return createEmptyPaginatedResponse<ServerRow>({
+                page,
+                limit
+            });
         }
 
         const query: ListTeamClustersParams = {

@@ -37,11 +37,17 @@ export const useCanvasBridgeStore = create<CanvasBridgeState>((set, get) => ({
     aiActingUntil: 0,
 
     register(registration) {
-        set({ ...registration, mounted: true });
+        set({
+            ...registration,
+            mounted: true
+        });
     },
 
     unregister() {
-        set({ ...EMPTY, mounted: false });
+        set({
+            ...EMPTY,
+            mounted: false
+        });
     },
 
     markActing(durationMs = AI_ACTING_WINDOW_MS) {

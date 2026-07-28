@@ -31,21 +31,39 @@ export const PluginSchema = new Schema({
     },
     exposures: {
         type: [{
-            _id: { type: String, required: true },
+            _id: {
+                type: String,
+                required: true
+            },
             id: { type: String },
-            name: { type: String, required: true },
-            results: { type: String, required: true },
+            name: {
+                type: String,
+                required: true
+            },
+            results: {
+                type: String,
+                required: true
+            },
             icon: { type: String },
-            hasListing: { type: Boolean, default: true },
+            hasListing: {
+                type: Boolean,
+                default: true
+            },
             properties: {
                 type: [{
-                    key: { type: String, required: true },
+                    key: {
+                        type: String,
+                        required: true
+                    },
                     label: { type: String },
                     type: { type: String }
                 }],
                 default: []
             },
-            export: { type: ExportDataSchema, default: null }
+            export: {
+                type: ExportDataSchema,
+                default: null
+            }
         }],
         default: []
     },
@@ -55,12 +73,24 @@ export const PluginSchema = new Schema({
     },
     listingExposures: {
         type: {
-            pluginName: { type: String, required: true },
-            pluginId: { type: String, required: true },
+            pluginName: {
+                type: String,
+                required: true
+            },
+            pluginId: {
+                type: String,
+                required: true
+            },
             exposures: {
                 type: [{
-                    exposureId: { type: String, required: true },
-                    name: { type: String, required: true }
+                    exposureId: {
+                        type: String,
+                        required: true
+                    },
+                    name: {
+                        type: String,
+                        required: true
+                    }
                 }],
                 default: []
             }

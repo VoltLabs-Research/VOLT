@@ -1,7 +1,0 @@
-import { DeleteManyOnEntityDeletedHandler } from '@shared/application/events/DeleteManyOnEntityDeletedHandler';
-import type UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
-
-export abstract class DeleteManyOnUserDeletedHandler extends DeleteManyOnEntityDeletedHandler<UserDeletedEvent> {
-    protected readonly payloadKey = 'userId';
-    protected readonly filterField: string = 'user';
-}

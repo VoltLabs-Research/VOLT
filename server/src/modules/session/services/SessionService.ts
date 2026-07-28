@@ -1,6 +1,6 @@
+import { Not } from 'typeorm';
 import { ErrorCodes } from '@core/constants/error-codes';
-import SessionModel from '@modules/session/models/SessionModel';
-import type { SessionDocument } from '@modules/session/models/SessionModel';
+import Session from '@modules/session/models/Session';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 interface ParsedUserAgent{
@@ -46,70 +46,78 @@ const parseUserAgent = (userAgent: string): ParsedUserAgent => {
     else if (userAgent.includes('Linux')) os = 'Linux';
     else if (userAgent.includes('CrOS')) os = 'ChromeOS';
 
-    return { browser, os, isMobile: MOBILE_PATTERN.test(userAgent) };
+    return {
+        browser,
+        os,
+        isMobile: MOBILE_PATTERN.test(userAgent)
+    };
 };
 
 export default class SessionService{
     async getActiveSessions(userId: string, currentToken?: string): Promise<SessionView[]>{
-        const docs = await SessionModel
-            .find({ user: userId, isActive: true })
-            .sort({ lastActivity: -1 });
-        return docs.map((doc) => this.#toView(doc, currentToken));
+        const sessions = await Session.find({
+            where: {
+                user: userId,
+                isActive: true
+            },
+            order: { lastActivity: 'DESC' }
+        });
+        return sessions.map((session) => this.#toView(session, currentToken));
     }
 
     async getLoginActivity(userId: string, limit = 20): Promise<{ activities: SessionView[] }>{
-        const docs = await SessionModel
-            .find({ user: userId })
-            .sort({ createdAt: -1 })
-            .limit(limit);
-        return { activities: docs.map((doc) => this.#toView(doc)) };
+        const sessions = await Session.find({
+            where: { user: userId },
+            order: { createdAt: 'DESC' },
+            take: limit
+        });
+        return { activities: sessions.map((session) => this.#toView(session)) };
     }
 
     async revokeSession(sessionId: string, userId: string): Promise<void>{
-        const session = await SessionModel.findById(sessionId);
+        const session = await Session.findOneBy({ id: sessionId });
         if(!session){
             throw ApplicationError.notFound(ErrorCodes.SESSION_NOT_FOUND, 'Session not found');
         }
 
-        if(session.user?.toString() !== userId){
+        if(session.user !== userId){
             throw ApplicationError.forbidden(
                 ErrorCodes.SESSION_REVOKE_FAILED,
                 'You do not have permission to revoke this session'
             );
         }
 
-        session.isActive = false;
-        await session.save();
+        await Object.assign(session, { isActive: false }).save();
     }
 
     async revokeAllSessions(userId: string, currentToken: string): Promise<{ revokedCount: number }>{
-        const result = await SessionModel.updateMany(
+        const result = await Session.update(
             {
                 user: userId,
-                token: { $ne: currentToken },
+                token: Not(currentToken),
                 isActive: true
             },
             { isActive: false }
         );
 
-        return { revokedCount: result.modifiedCount };
+        return { revokedCount: result.affected ?? 0 };
     }
 
-    #toView(doc: SessionDocument, currentToken?: string): SessionView{
-        const ua = parseUserAgent(doc.userAgent ?? '');
+    #toView(entity: Session, currentToken?: string): SessionView{
+        const ua = parseUserAgent(entity.userAgent ?? '');
         return {
-            _id: String(doc._id),
-            user: doc.user ? String(doc.user) : null,
+            _id: entity.id,
+            user: entity.user,
             token: null,
-            userAgent: doc.userAgent,
-            ip: doc.ip,
-            isActive: doc.isActive,
-            lastActivity: doc.lastActivity,
-            action: doc.action,
-            success: doc.success,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            isCurrent: Boolean(currentToken && doc.token === currentToken),
+            userAgent: entity.userAgent,
+            ip: entity.ip,
+            isActive: entity.isActive,
+            lastActivity: entity.lastActivity,
+            action: entity.action,
+            success: entity.success,
+            createdAt: entity.createdAt,
+            updatedAt: entity.updatedAt,
+            isCurrent: Boolean(currentToken && entity.token === currentToken),
             browser: ua.browser,
             os: ua.os,
             isMobile: ua.isMobile

@@ -93,7 +93,21 @@ export const computeBoundingBox = (positions: Float32Array): BoundingBox => {
         if (z > maxZ) maxZ = z;
     }
     if (minX === Infinity) {
-        return { minX: 0, minY: 0, minZ: 0, maxX: 0, maxY: 0, maxZ: 0 };
+        return {
+            minX: 0,
+            minY: 0,
+            minZ: 0,
+            maxX: 0,
+            maxY: 0,
+            maxZ: 0
+        };
     }
-    return { minX, minY, minZ, maxX, maxY, maxZ };
+    return {
+        minX,
+        minY,
+        minZ,
+        maxX,
+        maxY,
+        maxZ
+    };
 };

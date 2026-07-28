@@ -60,8 +60,14 @@ export enum CameraType {
 };
 
 export const CAMERA_TYPE_OPTIONS: CameraOption<CameraType>[] = [
-    { title: 'Perspective', value: CameraType.Perspective },
-    { title: 'Orthographic', value: CameraType.Orthographic }
+    {
+        title: 'Perspective',
+        value: CameraType.Perspective
+    },
+    {
+        title: 'Orthographic',
+        value: CameraType.Orthographic
+    }
 ];
 
 export const CAMERA_SUBSECTION_TITLES = {

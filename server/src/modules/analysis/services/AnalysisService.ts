@@ -1,7 +1,15 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
-import AnalysisModel, { findByTeamAndSearch, toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
+import AnalysisEntity from '@modules/analysis/models/Analysis';
+import {
+    buildAnalysisRelationOptions,
+    escapeLikePattern,
+    findByTeamAndSearch,
+    toAnalysisLike
+} from '@modules/analysis/services/AnalysisQueries';
+import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
+import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
@@ -12,9 +20,11 @@ import {
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import { ILike } from 'typeorm';
+import type { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type {
     GetAnalysesByTeamIdItemView,
     GetAnalysesByTrajectoryIdOutput
@@ -24,130 +34,130 @@ import type {
     GetAnalysisFrameLogOutput
 } from '@shared/contracts/operations/GetAnalysisFrameLog';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
-import {
-    COMPUTE_CLUSTER_POPULATE,
-    STORAGE_CLUSTER_POPULATE,
-    TRAJECTORY_POPULATE,
-    USER_POPULATE
-} from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 
-export interface GetAnalysesByTeamIdInput {
+const LIST_DEFAULT_LIMIT = 100;
+
+const NEWEST_FIRST: FindOptionsOrder<AnalysisEntity> = { createdAt: 'DESC' };
+
+const LIST_RELATIONS: readonly AnalysisRelationName[] = [
+    AnalysisRelation.Trajectory,
+    AnalysisRelation.Plugin,
+    AnalysisRelation.ComputeCluster,
+    AnalysisRelation.StorageCluster,
+    AnalysisRelation.CreatedBy
+];
+
+const TRAJECTORY_LIST_RELATIONS: readonly AnalysisRelationName[] = [
+    AnalysisRelation.Trajectory,
+    AnalysisRelation.Plugin
+];
+
+export interface GetAnalysesByTeamIdInput{
     teamId: string;
     page?: number;
     limit?: number;
     search?: string;
 }
 
-export interface GetAnalysesByTrajectoryIdInput {
+export interface GetAnalysesByTrajectoryIdInput{
     trajectoryId: string;
     teamId?: string;
     page?: number;
     limit?: number;
 }
 
-export interface RetryFailedFramesInput {
+export interface RetryFailedFramesInput{
     analysisId: string;
     teamId: string;
     userId: string;
 }
 
-export interface RetryFailedFramesResult {
+export interface RetryFailedFramesResult{
     message: string;
     retriedFrames: number;
     totalFrames: number;
     failedTimesteps?: number[];
 }
 
-export interface GetAnalysisByIdInput {
+export interface GetAnalysisByIdInput{
     teamId?: string;
     analysisId: string;
 }
 
 export type GetAnalysisByIdResult = AnalysisProps & { _id: string };
 
-export interface DeleteAnalysisByIdInput {
+export interface DeleteAnalysisByIdInput{
     teamId?: string;
     analysisId: string;
     userId?: string;
 }
 
-interface FindAllAnalysesOptions {
-    filter: Record<string, unknown>;
-    populate?: unknown;
-    sort?: Record<string, 1 | -1>;
+interface FindAllAnalysesOptions{
+    where: FindOptionsWhere<AnalysisEntity>;
+    relations?: readonly AnalysisRelationName[];
+    order?: FindOptionsOrder<AnalysisEntity>;
     page?: number;
     limit?: number;
 }
 
-export default class AnalysisService {
+export default class AnalysisService{
     #executionLogService = analysisExecutionLogService;
     #teamJobMaintenanceService: ITeamJobMaintenanceService = teamJobMaintenanceService;
     #teamJobsService = new TeamJobsService();
 
     #eventBus = eventBus;
 
-    async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]> {
+    async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]>{
         const normalizedSearch = search.trim();
-        if (!normalizedSearch) {
+        if(!normalizedSearch){
             return [];
         }
 
-        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-        const docs = await TrajectoryModel.find({ team: teamId, name: regex }).select('_id').lean().exec();
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                name: ILike(`%${escapeLikePattern(normalizedSearch)}%`)
+            },
+            select: { id: true }
+        });
 
-        return docs.map((doc) => doc._id.toString());
+        return trajectories.map((trajectory) => trajectory.id);
     }
 
-    async #findAllAnalyses(options: FindAllAnalysesOptions): Promise<PaginatedResult<Analysis>> {
-        const { filter, populate, sort, page = 1, limit = 100 } = options;
-        const skip = (page - 1) * limit;
+    async #findAllAnalyses(options: FindAllAnalysesOptions): Promise<PaginatedResult<Analysis>>{
+        const { where, relations, order } = options;
+        const pageRequest = readPageRequest(options.page, options.limit, { defaultLimit: LIST_DEFAULT_LIMIT });
 
-        let query = AnalysisModel.find(filter).skip(skip).limit(limit) as any;
-        if (populate) query = query.populate(populate as any);
-        if (sort) query = query.sort(sort);
+        const [analyses, total] = await AnalysisEntity.findAndCount({
+            where,
+            ...buildAnalysisRelationOptions(relations),
+            ...(order === undefined ? {} : { order }),
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const [docs, total] = await Promise.all([
-            query.exec() as Promise<AnalysisDocument[]>,
-            AnalysisModel.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => toAnalysisLike(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([analyses.map((analysis) => toAnalysisLike(analysis)), total], pageRequest);
     }
 
-    async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemView>> {
+    async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemView>>{
         const { teamId } = input;
         const normalizedSearch = input.search?.trim();
         const hasSearch = Boolean(normalizedSearch);
-        const filter: Record<string, unknown> = { team: teamId };
-        const sort = { createdAt: -1 } as const;
-
-        const populate = [
-            TRAJECTORY_POPULATE,
-            { path: 'plugin' },
-            COMPUTE_CLUSTER_POPULATE,
-            STORAGE_CLUSTER_POPULATE,
-            USER_POPULATE
-        ];
+        const where: FindOptionsWhere<AnalysisEntity> = { team: teamId };
 
         const results = hasSearch
             ? await findByTeamAndSearch({
                 teamId,
                 search: normalizedSearch!,
                 trajectoryIds: await this.#searchTrajectoryIdsByTeamAndName(teamId, normalizedSearch!),
-                populate,
+                relations: LIST_RELATIONS,
                 limit: input.limit,
                 page: input.page
             })
             : await this.#findAllAnalyses({
-                filter,
-                populate,
-                sort,
+                where,
+                relations: LIST_RELATIONS,
+                order: NEWEST_FIRST,
                 limit: input.limit,
                 page: input.page
             });
@@ -176,23 +186,19 @@ export default class AnalysisService {
         } as unknown as PaginatedResult<GetAnalysesByTeamIdItemView>;
     }
 
-    async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInput): Promise<GetAnalysesByTrajectoryIdOutput> {
-        const filter: Record<string, unknown> = { trajectory: input.trajectoryId };
-        const sort = { createdAt: -1 } as const;
+    async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInput): Promise<GetAnalysesByTrajectoryIdOutput>{
+        const where: FindOptionsWhere<AnalysisEntity> = { trajectory: input.trajectoryId };
 
-        if (input.teamId) {
-            filter.team = input.teamId;
+        if(input.teamId){
+            where.team = input.teamId;
         }
 
         const analyses = await this.#findAllAnalyses({
-            filter,
-            populate: [
-                TRAJECTORY_POPULATE,
-                { path: 'plugin' }
-            ],
+            where,
+            relations: TRAJECTORY_LIST_RELATIONS,
             page: input.page,
             limit: input.limit,
-            sort
+            order: NEWEST_FIRST
         });
 
         const data = analyses.data.map((analysis) => {
@@ -210,27 +216,27 @@ export default class AnalysisService {
         } as unknown as GetAnalysesByTrajectoryIdOutput;
     }
 
-    async getAnalysisFrameLog(input: GetAnalysisFrameLogInput): Promise<GetAnalysisFrameLogOutput> {
-        const analysis = await AnalysisModel.findById(input.analysisId);
+    async getAnalysisFrameLog(input: GetAnalysisFrameLogInput): Promise<GetAnalysisFrameLogOutput>{
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
 
-        if (!analysis) {
+        if(!analysis){
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        if (analysis.team.toString() !== input.teamId) {
+        if(analysis.team !== input.teamId){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
         }
 
         return this.#executionLogService.getFrameLog({
             analysisId: input.analysisId,
             teamId: input.teamId,
-            trajectoryId: analysis.trajectory.toString(),
+            trajectoryId: analysis.trajectory,
             timestep: input.timestep,
             afterCursor: input.afterCursor
         });
     }
 
-    async retryFailedFrames(input: RetryFailedFramesInput): Promise<RetryFailedFramesResult> {
+    async retryFailedFrames(input: RetryFailedFramesInput): Promise<RetryFailedFramesResult>{
         const { analysisId, teamId } = input;
 
         const teamJobs = await this.#teamJobsService.getFlatTeamJobs(teamId);
@@ -239,35 +245,35 @@ export default class AnalysisService {
         let totalFrames = 0;
         let failedFrames = 0;
 
-        for (const job of teamJobs) {
-            if (job.analysisId !== analysisId) {
+        for(const job of teamJobs){
+            if(job.analysisId !== analysisId){
                 continue;
             }
 
             totalFrames += 1;
-            if (job.status !== 'failed') {
+            if(job.status !== 'failed'){
                 continue;
             }
 
             failedFrames += 1;
             failedJobIds.push(job.jobId);
             const timestep = job.timestep;
-            if (typeof timestep === 'number') {
+            if(typeof timestep === 'number'){
                 failedTimesteps.push(timestep);
             }
         }
 
-        if (totalFrames === 0) {
-            const analysis = await AnalysisModel.findById(analysisId);
-            if (!analysis) {
+        if(totalFrames === 0){
+            const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
+            if(!analysis){
                 throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
             }
-            if (analysis.team.toString() !== teamId) {
+            if(analysis.team !== teamId){
                 throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
             }
         }
 
-        if (failedFrames === 0) {
+        if(failedFrames === 0){
             return {
                 message: 'No failed frames found for this analysis',
                 retriedFrames: 0,
@@ -288,14 +294,14 @@ export default class AnalysisService {
         };
     }
 
-    async getAnalysisById(input: GetAnalysisByIdInput): Promise<GetAnalysisByIdResult> {
-        const analysis = await AnalysisModel.findById(input.analysisId);
+    async getAnalysisById(input: GetAnalysisByIdInput): Promise<GetAnalysisByIdResult>{
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
 
-        if (!analysis) {
+        if(!analysis){
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        if (input.teamId && analysis.team.toString() !== input.teamId) {
+        if(input.teamId && analysis.team !== input.teamId){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
         }
 
@@ -308,31 +314,31 @@ export default class AnalysisService {
         };
     }
 
-    async deleteAnalysisById(input: DeleteAnalysisByIdInput): Promise<{ success: boolean }> {
-        const analysis = await AnalysisModel.findById(input.analysisId);
+    async deleteAnalysisById(input: DeleteAnalysisByIdInput): Promise<{ success: boolean }>{
+        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
 
-        if (!analysis) {
+        if(!analysis){
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        if (input.teamId && analysis.team.toString() !== input.teamId) {
+        if(input.teamId && analysis.team !== input.teamId){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
         }
 
-        const deleted = await AnalysisModel.findByIdAndDelete(input.analysisId);
+        const deleted = await AnalysisEntity.delete({ id: input.analysisId });
 
-        if (!deleted) {
+        if(deleted.affected === 0){
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
         await this.#eventBus.publish(new AnalysisDeletedEvent({
             analysisId: input.analysisId,
-            trajectoryId: analysis.trajectory?.toString() ?? '',
-            pluginId: analysis.plugin?.toString() ?? '',
-            teamId: analysis.team?.toString() ?? '',
-            teamClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() }),
-            storageClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() }),
-            computeClusterId: resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() }),
+            trajectoryId: analysis.trajectory ?? '',
+            pluginId: analysis.plugin ?? '',
+            teamId: analysis.team ?? '',
+            teamClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined }),
+            storageClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined }),
+            computeClusterId: resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }),
             userId: input.userId ?? '',
             pluginDisplayName: analysis.pluginDisplayName
         }));

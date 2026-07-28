@@ -77,11 +77,17 @@ export const useWhiteboardEditorHandleStore = create<WhiteboardEditorHandleState
     mounted: false,
 
     register(registration) {
-        set({ ...registration, mounted: true });
+        set({
+            ...registration,
+            mounted: true
+        });
     },
 
     unregister() {
-        set({ ...EMPTY, mounted: false });
+        set({
+            ...EMPTY,
+            mounted: false
+        });
     },
 
     getSnapshot() {

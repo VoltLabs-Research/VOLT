@@ -26,7 +26,10 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     });
 
     const { data: filesResponse, isLoading, error: filesError, refetch: refetchFiles, isFetching } = useContainerFilesQuery(
-        { containerId, path: remoteExplorer.path },
+        {
+            containerId,
+            path: remoteExplorer.path
+        },
         { enabled: !!containerId }
     );
     const files = filesResponse?.files ?? [];
@@ -49,7 +52,10 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const filePath = viewingFile ? explorer.joinPath(viewingFile) : '';
 
     const { data: fileContentResponse, error: fileContentError } = useContainerFileContentQuery(
-        { containerId, path: filePath },
+        {
+            containerId,
+            path: filePath
+        },
         { enabled: !!containerId && !!viewingFile && !!filePath }
     );
     const fileContent = fileContentResponse?.content;

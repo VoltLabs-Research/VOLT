@@ -122,7 +122,10 @@ export const createFolderedTitleColumn = <TRow,>({
         title,
         sortable: true,
         render,
-        skeleton: { variant: 'text', width: skeletonWidth }
+        skeleton: {
+            variant: 'text',
+            width: skeletonWidth
+        }
     };
 };
 

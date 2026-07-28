@@ -1,4 +1,5 @@
 import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { cn } from '@/shared/utils/cn';
 import './AutoScrollList.css';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
@@ -29,10 +30,6 @@ interface ScrollSnapshot {
     scrollTop: number;
     wasNearBottom: boolean;
 }
-
-const joinClasses = (...classes: Array<string | undefined | false>) => (
-    classes.filter(Boolean).join(' ')
-);
 
 const AutoScrollList = <T,>({
     items,
@@ -99,7 +96,10 @@ const AutoScrollList = <T,>({
             behavior = 'smooth';
         }
 
-        container.scrollTo({ top: container.scrollHeight, behavior });
+        container.scrollTo({
+            top: container.scrollHeight,
+            behavior
+        });
     }, [prefersReducedMotion]);
 
     useLayoutEffect(() => {
@@ -158,11 +158,11 @@ const AutoScrollList = <T,>({
         }
     };
 
-    const listClassName = joinClasses('auto-scroll-list d-flex column gap-05 flex-1 y-auto', className);
+    const listClassName = cn('auto-scroll-list d-flex column gap-05 flex-1 y-auto', className);
 
     if (isLoading && items.length === 0) {
         return (
-            <div className={joinClasses(listClassName, loadingClassName)} role='status' aria-live='polite' aria-atomic='true'>
+            <div className={cn(listClassName, loadingClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderLoading}
             </div>
         );
@@ -170,7 +170,7 @@ const AutoScrollList = <T,>({
 
     if (items.length === 0) {
         return (
-            <div className={joinClasses('d-flex flex-center flex-1', className, emptyClassName)} role='status' aria-live='polite' aria-atomic='true'>
+            <div className={cn('d-flex flex-center flex-1', className, emptyClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderEmpty}
             </div>
         );

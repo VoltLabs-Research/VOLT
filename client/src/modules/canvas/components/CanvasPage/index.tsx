@@ -160,7 +160,11 @@ const CanvasPage = () => {
         enabled: Boolean(trajectoryId) && !trajectoryLoading && !isNarrowViewport
     });
 
-    useKeyboardShortcuts({ trajectoryId, availableTimesteps, currentTimestep });
+    useKeyboardShortcuts({
+        trajectoryId,
+        availableTimesteps,
+        currentTimestep
+    });
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
@@ -241,7 +245,10 @@ const CanvasPage = () => {
         downloadTrajectoryAnalyses,
         isDownloading: isDownloadingTrajectoryAnalyses
     } = useDownloadTrajectoryAnalyses();
-    const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
+    const { statusMap } = useAnalysisStatus({
+        trajectoryId: trajectory?._id,
+        enabled: !!trajectory?._id
+    });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
     const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
@@ -859,7 +866,11 @@ const CanvasPage = () => {
                             style={!isNarrowViewport ? { '--canvas-timeline-size': `${timelinePanel.size}px` } as React.CSSProperties : undefined}
                         >
                             {!isNarrowViewport && (
-                                <Box position='absolute' className="canvas-resize-rail canvas-resize-rail--bottom" style={{ top: 0, left: 0, right: 0 }}>
+                                <Box position='absolute' className="canvas-resize-rail canvas-resize-rail--bottom" style={{
+                                    top: 0,
+                                    left: 0,
+                                    right: 0
+                                }}>
                                     <ResizeHandle
                                         direction={ResizeDirection.Vertical}
                                         isDragging={timelinePanel.isDragging}
@@ -965,7 +976,11 @@ const CanvasPage = () => {
                         <Box
                             position='absolute'
                             className="canvas-resize-rail canvas-resize-rail--right"
-                            style={{ top: 0, bottom: 0, right: rightPanel.size }}
+                            style={{
+                                top: 0,
+                                bottom: 0,
+                                right: rightPanel.size
+                            }}
                         >
                             <ResizeHandle
                                 direction={ResizeDirection.Horizontal}

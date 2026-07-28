@@ -61,7 +61,10 @@ const COLUMNS: Column<ProcessInfo>[] = [
         header: 'Threads',
         cellClassName: 'container-processes-numeric'
     },
-    { key: 'User', header: 'User' },
+    {
+        key: 'User',
+        header: 'User'
+    },
     {
         key: 'MemB',
         header: 'Memory',

@@ -73,7 +73,11 @@ const computeSpawnPosition = (
         }
     }
     const spawn = rightmost.clone().addScaledVector(right, SPAWN_STEP);
-    return { x: spawn.x, y: spawn.y, z: spawn.z };
+    return {
+        x: spawn.x,
+        y: spawn.y,
+        z: spawn.z
+    };
 };
 
 const TimestepViewer = ({
@@ -91,7 +95,11 @@ const TimestepViewer = ({
     onModelBoundsChanged,
     onLoadingStateChanged,
     rotation = {},
-    position = { x: 0, y: 0, z: 0 },
+    position = {
+        x: 0,
+        y: 0,
+        z: 0
+    },
     scale = 1,
     autoFit = true,
     autoFitKeyOverride,
@@ -124,11 +132,19 @@ const TimestepViewer = ({
         const isFirst = scenesToRender.length <= 1;
         let spawn: OptionalPosition;
         if (isFirst) {
-            spawn = { x: position.x ?? 0, y: position.y ?? 0, z: position.z ?? 0 };
+            spawn = {
+                x: position.x ?? 0,
+                y: position.y ?? 0,
+                z: position.z ?? 0
+            };
         } else {
             const existing = Array.from(scenePositionsRef.current.values());
             spawn = existing.length === 0
-                ? { x: position.x ?? 0, y: position.y ?? 0, z: position.z ?? 0 }
+                ? {
+                    x: position.x ?? 0,
+                    y: position.y ?? 0,
+                    z: position.z ?? 0
+                }
                 : computeSpawnPosition(camera, existing);
         }
         scenePositionsRef.current.set(sceneKey, spawn);

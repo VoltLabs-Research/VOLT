@@ -98,7 +98,13 @@ const App = () => {
         if(result.ok){
             setPaused(false);
             setMode('remote');
-            setDeployment({ mode: 'remote', remote: { serverEndpoint: result.serverEndpoint, clientUrl: result.clientUrl } });
+            setDeployment({
+                mode: 'remote',
+                remote: {
+                    serverEndpoint: result.serverEndpoint,
+                    clientUrl: result.clientUrl
+                }
+            });
             openClient();
         }
         return result;

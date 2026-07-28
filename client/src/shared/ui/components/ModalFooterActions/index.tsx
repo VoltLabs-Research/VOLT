@@ -35,8 +35,14 @@ const renderAction = (
 const ModalFooterActions = ({ primary, secondary }: ModalFooterActionsProps) => {
     return (
         <>
-            {renderAction(secondary, { variant: 'ghost', intent: 'neutral' })}
-            {renderAction(primary, { variant: 'solid', intent: 'brand' })}
+            {renderAction(secondary, {
+                variant: 'ghost',
+                intent: 'neutral'
+            })}
+            {renderAction(primary, {
+                variant: 'solid',
+                intent: 'brand'
+            })}
         </>
     );
 };

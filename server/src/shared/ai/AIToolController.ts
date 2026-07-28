@@ -60,8 +60,14 @@ export default abstract class AIToolController {
             const result = definition.validate(value);
 
             return result.success
-                ? { success: true, value: result.data }
-                : { success: false, error: new Error(messageOf(result.errors)) };
+                ? {
+                    success: true,
+                    value: result.data
+                }
+                : {
+                    success: false,
+                    error: new Error(messageOf(result.errors))
+                };
         };
 
         return jsonSchema(definition.parameters as Parameters<typeof jsonSchema>[0], { validate });
@@ -76,6 +82,9 @@ export default abstract class AIToolController {
 
         // Scope is spread last so a model can never override teamId/userId by
         // declaring them as tool inputs.
-        return async (params: unknown) => handler.call(this, { ...(params as Record<string, unknown>), ...scope });
+        return async (params: unknown) => handler.call(this, {
+            ...(params as Record<string, unknown>),
+            ...scope
+        });
     }
 }

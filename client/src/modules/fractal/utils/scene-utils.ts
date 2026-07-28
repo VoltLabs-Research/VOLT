@@ -16,7 +16,10 @@ export const getSceneKey = (sceneConfig: SceneKeyConfig) => {
     return `${sceneConfig.source}-${sceneConfig.sceneType}`;
 };
 
-export const DEFAULT_SCENE: SceneObjectType = { sceneType: 'trajectory', source: 'default' };
+export const DEFAULT_SCENE: SceneObjectType = {
+    sceneType: 'trajectory',
+    source: 'default'
+};
 
 export const isChartScene = (scene: SceneObjectType) => {
     if (scene?.source !== 'plugin') return false;
@@ -38,10 +41,19 @@ export interface LineSceneSource {
 
 export const resolveLineSceneSource = (scene: SceneObjectType): LineSceneSource | null => {
     if (scene.source === 'plugin' && scene.sceneRenderMetadata?.exporter === Exporter.LINE) {
-        return { scene, analysisId: scene.analysisId, exposureId: scene.exposureId };
+        return {
+            scene,
+            analysisId: scene.analysisId,
+            exposureId: scene.exposureId
+        };
     }
     if (scene.source === 'line-style') {
-        return { scene, analysisId: scene.analysisId, exposureId: scene.exposureId, style: scene.style };
+        return {
+            scene,
+            analysisId: scene.analysisId,
+            exposureId: scene.exposureId,
+            style: scene.style
+        };
     }
     return null;
 };

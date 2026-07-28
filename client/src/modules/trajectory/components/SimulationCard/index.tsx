@@ -84,7 +84,12 @@ export default function SimulationCard({
         : `Open trajectory ${trajectory.name}`;
     const canvasPath = `/canvas/${trajectory._id}`;
     const canvasNavigationOptions = discoverTeamId
-        ? { state: { entry: 'discover-team', teamId: discoverTeamId } }
+        ? {
+            state: {
+                entry: 'discover-team',
+                teamId: discoverTeamId
+            }
+        }
         : undefined;
 
     const containerClass = cn(

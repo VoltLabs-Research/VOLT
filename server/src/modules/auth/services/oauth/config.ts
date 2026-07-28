@@ -1,4 +1,4 @@
-import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { OAuthProvider } from '@modules/auth/contracts/domain/user';
 import AuthService from '@modules/auth/services/AuthService';
 import GithubStrategyWrapper from '@modules/auth/services/oauth/strategies/GitHubStrategy';
 import GoogleStrategyWrapper from '@modules/auth/services/oauth/strategies/GoogleStrategy';

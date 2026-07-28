@@ -54,7 +54,10 @@ export const markNotificationsInfiniteCacheAsRead = () => {
         ...current,
         pages: current.pages.map((page) => ({
             ...page,
-            data: page.data.map((notification) => ({ ...notification, read: true }))
+            data: page.data.map((notification) => ({
+                ...notification,
+                read: true
+            }))
         })),
         pageParams: current.pageParams
     }));

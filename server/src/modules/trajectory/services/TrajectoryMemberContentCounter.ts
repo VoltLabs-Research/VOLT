@@ -1,35 +1,39 @@
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+const COUNT_KEY = 'trajectoriesCount';
 
-interface GroupedCountResult {
-    _id: { toString(): string };
-    count: number;
+interface GroupedCountRow{
+    createdBy: string;
+    count: string | number;
 }
 
-class TrajectoryMemberContentCounter implements IMemberContentCounter {
-    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const results = await TrajectoryModel.aggregate<GroupedCountResult>([
-            {
-                $match: {
-                    team: teamId,
-                    createdBy: { $in: userIds }
-                }
-            },
-            {
-                $group: {
-                    _id: '$createdBy',
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
-
+class TrajectoryMemberContentCounter implements IMemberContentCounter{
+    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult>{
         const counts = new Map<string, number>();
-        for (const row of results) {
-            counts.set(row._id.toString(), row.count);
+        if(userIds.length === 0){
+            return {
+                key: COUNT_KEY,
+                counts
+            };
         }
 
-        return { key: 'trajectoriesCount', counts };
+        const rows = await Trajectory.createQueryBuilder('trajectory')
+            .select('trajectory.createdBy', 'createdBy')
+            .addSelect('COUNT(trajectory.id)', 'count')
+            .where('trajectory.team = :teamId', { teamId })
+            .andWhere('trajectory.createdBy IN (:...userIds)', { userIds })
+            .groupBy('trajectory.createdBy')
+            .getRawMany<GroupedCountRow>();
+
+        for(const row of rows){
+            counts.set(String(row.createdBy), Number(row.count));
+        }
+
+        return {
+            key: COUNT_KEY,
+            counts
+        };
     }
 }
 

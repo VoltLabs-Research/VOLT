@@ -1,119 +1,117 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
-import TeamRoleModel, {
+import TeamMember from '@modules/team/models/TeamMember';
+import TeamRole from '@modules/team/models/TeamRole';
+import {
     buildTeamRoleCreatePayload,
     buildTeamRoleUpdatePayload,
     canRenameTeamRoleTo
-} from '@modules/team/models/team-role/TeamRoleModel';
-import type { TeamRoleProps } from '@modules/team/models/team-role/TeamRoleModel';
-import { toPersistedOutput } from '@modules/team/services/toPersistedOutput';
+} from '@modules/team/contracts/domain/team-role';
 import TeamRoleCreatedEvent from '@modules/team/events/team-role/TeamRoleCreatedEvent';
 import TeamRoleUpdatedEvent from '@modules/team/events/team-role/TeamRoleUpdatedEvent';
 import TeamRoleDeletedEvent from '@modules/team/events/team-role/TeamRoleDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
-export default class TeamRoleService {
+const DEFAULT_ROLE_LIMIT = 10;
+
+export default class TeamRoleService{
     #eventBus = eventBus;
 
-    async listByTeamId(teamId: string, page = 1, limit = 10): Promise<PaginatedResult<PersistedOutput<TeamRoleProps>>> {
-        const filter = { team: teamId };
-        const skip = (page - 1) * limit;
+    async listByTeamId(teamId: string, page = 1, limit = DEFAULT_ROLE_LIMIT): Promise<PaginatedResult<TeamRole>>{
+        const pageRequest = readPageRequest(page, limit, { defaultLimit: DEFAULT_ROLE_LIMIT });
 
-        const [docs, total] = await Promise.all([
-            TeamRoleModel.find(filter).skip(skip).limit(limit),
-            TeamRoleModel.countDocuments(filter)
-        ]);
+        const [roles, total] = await TeamRole.findAndCount({
+            where: { team: teamId },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        return {
-            data: docs.map((role) => toPersistedOutput<TeamRoleProps>(role)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([roles, total], pageRequest);
     }
 
-    async getById(roleId: string): Promise<PersistedOutput<TeamRoleProps>> {
-        const role = await TeamRoleModel.findById(roleId);
-        if (!role) {
+    async getById(roleId: string): Promise<TeamRole>{
+        const role = await TeamRole.findOneBy({ id: roleId });
+        if(!role){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'TeamRole not found');
         }
-        return toPersistedOutput(role);
+        return role;
     }
 
-    async create(teamId: string, userId: string, input: CreateTeamRoleInput): Promise<PersistedOutput<TeamRoleProps>> {
-        const newRole = await TeamRoleModel.create(buildTeamRoleCreatePayload({
+    async create(teamId: string, userId: string, input: CreateTeamRoleInput): Promise<TeamRole>{
+        const newRole = await TeamRole.create(buildTeamRoleCreatePayload({
             teamId,
             name: input.name,
             permissions: input.permissions ?? [],
             isSystem: input.isSystem ?? false
-        }));
+        })).save();
 
         await this.#eventBus.publish(new TeamRoleCreatedEvent({
-            teamRoleId: String(newRole._id),
-            teamId: String(newRole.team),
+            teamRoleId: newRole.id,
+            teamId: newRole.team,
             name: newRole.name,
             userId
         }));
 
-        return toPersistedOutput(newRole);
+        return newRole;
     }
 
-    async updateById(roleId: string, input: UpdateTeamRoleInput): Promise<PersistedOutput<TeamRoleProps>> {
-        const currentRole = await TeamRoleModel.findById(roleId);
-        if (!currentRole) {
+    async updateById(roleId: string, input: UpdateTeamRoleInput): Promise<TeamRole>{
+        const currentRole = await TeamRole.findOneBy({ id: roleId });
+        if(!currentRole){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
 
-        if (!canRenameTeamRoleTo(currentRole, input.name)) {
+        if(!canRenameTeamRoleTo(currentRole, input.name)){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ROLE_IS_SYSTEM, 'Cannot rename system roles');
         }
 
-        const updateData = buildTeamRoleUpdatePayload(currentRole, { name: input.name, permissions: input.permissions });
-        const teamRole = await TeamRoleModel.findByIdAndUpdate(roleId, { $set: updateData }, { new: true });
-        if (!teamRole) {
-            throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Failed to update team role');
-        }
+        const updateData = buildTeamRoleUpdatePayload(currentRole, {
+            name: input.name,
+            permissions: input.permissions
+        });
+        const teamRole = await Object.assign(currentRole, updateData).save();
 
         await this.#eventBus.publish(new TeamRoleUpdatedEvent({
-            teamRoleId: String(teamRole._id),
-            teamId: String(teamRole.team),
+            teamRoleId: teamRole.id,
+            teamId: teamRole.team,
             name: teamRole.name,
-            permissions: teamRole.permissions
+            permissions: teamRole.permissions ?? []
         }));
 
-        return toPersistedOutput(teamRole);
+        return teamRole;
     }
 
-    async deleteById(teamId: string, roleId: string, userId: string): Promise<{ success: boolean }> {
-        if (!userId) {
+    async deleteById(teamId: string, roleId: string, userId: string): Promise<{ success: boolean }>{
+        if(!userId){
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'Authentication required');
         }
 
-        const roleToDelete = await TeamRoleModel.findById(roleId);
-        if (!roleToDelete) {
+        const roleToDelete = await TeamRole.findOneBy({ id: roleId });
+        if(!roleToDelete){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
-        if (roleToDelete.isSystem) {
+        if(roleToDelete.isSystem){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ROLE_IS_SYSTEM, 'Cannot delete system roles');
         }
 
-        const memberRole = await TeamRoleModel.findOne({ team: teamId, name: 'Member', isSystem: true });
-        if (!memberRole) {
+        const memberRole = await TeamRole.findOneBy({
+            team: teamId,
+            name: 'Member',
+            isSystem: true
+        });
+        if(!memberRole){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Member role not found');
         }
 
-        await TeamMemberModel.updateMany({ team: teamId, role: roleId }, { $set: { role: memberRole._id } });
+        await TeamMember.update({
+            team: teamId,
+            role: roleId
+        }, { role: memberRole.id });
 
-        const result = await TeamRoleModel.findByIdAndDelete(roleId);
-        if (!result) {
-            throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Failed to delete team role');
-        }
+        await roleToDelete.remove();
 
         await this.#eventBus.publish(new TeamRoleDeletedEvent({
             teamRoleId: roleId,

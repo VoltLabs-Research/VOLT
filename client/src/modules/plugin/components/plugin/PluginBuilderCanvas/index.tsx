@@ -51,7 +51,10 @@ const useCanvasThemeColors = () => {
                 }
             }
         });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
         return () => observer.disconnect();
     }, []);
 
@@ -134,7 +137,10 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
                 snapGrid={[16, 16]}
                 defaultEdgeOptions={{
                     animated: true,
-                    style: { stroke: themeColors.edgeStroke, strokeWidth: 2 }
+                    style: {
+                        stroke: themeColors.edgeStroke,
+                        strokeWidth: 2
+                    }
                 }}
             >
                 <Background bgColor={themeColors.canvasBg} color={themeColors.gridColor} gap={16} size={0.8} />

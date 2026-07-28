@@ -14,13 +14,36 @@ interface StatusCountsProps {
 
 type StatusCountKey = 'queued' | 'running' | 'completed' | 'failed';
 
-const ICON_STYLE = { width: 10, height: 10 };
+const ICON_STYLE = {
+    width: 10,
+    height: 10
+};
 
 const BADGES: { key: string; variant: 'warning' | 'active' | 'success' | 'danger'; Icon: ComponentType<{ style: React.CSSProperties }>; countKey: StatusCountKey }[] = [
-    { key: 'queued', variant: 'warning', Icon: Clock, countKey: 'queued' },
-    { key: 'running', variant: 'active', Icon: Play, countKey: 'running' },
-    { key: 'completed', variant: 'success', Icon: Check, countKey: 'completed' },
-    { key: 'failed', variant: 'danger', Icon: X, countKey: 'failed' }
+    {
+        key: 'queued',
+        variant: 'warning',
+        Icon: Clock,
+        countKey: 'queued'
+    },
+    {
+        key: 'running',
+        variant: 'active',
+        Icon: Play,
+        countKey: 'running'
+    },
+    {
+        key: 'completed',
+        variant: 'success',
+        Icon: Check,
+        countKey: 'completed'
+    },
+    {
+        key: 'failed',
+        variant: 'danger',
+        Icon: X,
+        countKey: 'failed'
+    }
 ];
 
 const StatusCounts = ({ hideZero = false, ...counts }: StatusCountsProps) => (

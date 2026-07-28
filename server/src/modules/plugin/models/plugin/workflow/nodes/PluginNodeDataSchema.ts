@@ -35,4 +35,7 @@ export const PluginNodeDataSchema = new Schema({
         type: Schema.Types.Mixed,
         default: {}
     }
-}, { _id: false, strict: false });
+}, {
+    _id: false,
+    strict: false
+});

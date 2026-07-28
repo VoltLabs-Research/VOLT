@@ -1,21 +1,39 @@
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
-import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
-import mongoose from 'mongoose';
+import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 
-class WhiteboardMemberContentCounter implements IMemberContentCounter {
-    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
-        const results = await WhiteboardModel.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
-            { $match: { team: new mongoose.Types.ObjectId(teamId), createdBy: { $in: userObjectIds } } },
-            { $group: { _id: '$createdBy', count: { $sum: 1 } } }
-        ]);
+const COUNT_KEY = 'whiteboardsCount';
 
+interface WhiteboardCountRow{
+    createdBy: string;
+    total: string | number;
+}
+
+class WhiteboardMemberContentCounter implements IMemberContentCounter{
+    async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult>{
         const counts = new Map<string, number>();
-        for (const row of results) {
-            counts.set(String(row._id), row.count);
+        if(userIds.length === 0){
+            return {
+                key: COUNT_KEY,
+                counts
+            };
         }
 
-        return { key: 'whiteboardsCount', counts };
+        const rows = await Whiteboard.createQueryBuilder('w')
+            .select('w.createdBy', 'createdBy')
+            .addSelect('COUNT(w.id)', 'total')
+            .where('w.team = :teamId', { teamId })
+            .andWhere('w.createdBy IN (:...userIds)', { userIds })
+            .groupBy('w.createdBy')
+            .getRawMany<WhiteboardCountRow>();
+
+        for(const row of rows){
+            counts.set(String(row.createdBy), Number(row.total));
+        }
+
+        return {
+            key: COUNT_KEY,
+            counts
+        };
     }
 }
 

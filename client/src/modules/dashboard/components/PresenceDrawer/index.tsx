@@ -35,13 +35,22 @@ const PresenceDrawer = () => {
             if (!user._id) continue;
 
             if (resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot)) {
-                online.push({ user, memberId: member._id });
+                online.push({
+                    user,
+                    memberId: member._id
+                });
             } else {
-                offline.push({ user, memberId: member._id });
+                offline.push({
+                    user,
+                    memberId: member._id
+                });
             }
         }
 
-        return { onlineMembers: online, offlineMembers: offline };
+        return {
+            onlineMembers: online,
+            offlineMembers: offline
+        };
     }, [members, onlineUserIds, hasPresenceSnapshot]);
 
     const totalCount = members.length;

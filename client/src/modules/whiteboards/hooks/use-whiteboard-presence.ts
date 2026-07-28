@@ -87,7 +87,10 @@ const useWhiteboardPresence = ({ whiteboardId, enabled = true }: UseWhiteboardPr
         };
     }, [whiteboardId, enabled]);
 
-    return { users, announcement };
+    return {
+        users,
+        announcement
+    };
 };
 
 export default useWhiteboardPresence;

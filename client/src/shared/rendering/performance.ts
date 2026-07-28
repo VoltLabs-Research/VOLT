@@ -96,9 +96,18 @@ export const PERFORMANCE_PRESET_ORDER: PerformancePreset[] = [
 ];
 
 export const POWER_PREFERENCE_OPTIONS: PowerPreferenceOption[] = [
-    { title: 'Default', value: PowerPreference.Default },
-    { title: 'High Performance', value: PowerPreference.HighPerformance },
-    { title: 'Low Power', value: PowerPreference.LowPower }
+    {
+        title: 'Default',
+        value: PowerPreference.Default
+    },
+    {
+        title: 'High Performance',
+        value: PowerPreference.HighPerformance
+    },
+    {
+        title: 'Low Power',
+        value: PowerPreference.LowPower
+    }
 ];
 
 export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDefinition> = {

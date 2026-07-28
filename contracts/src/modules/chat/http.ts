@@ -2,6 +2,11 @@
 
 import type { ChatMessageType, ChatMessageMetadata } from './domain';
 
+export interface GetOrCreateDirectChatInput{
+    teamId: string;
+    participantId: string;
+}
+
 export interface CreateGroupChatInput{
     
     teamId: string;
@@ -38,8 +43,4 @@ export interface SendChatMessageInput{
 
 export interface EditMessageInput{
     content: string;
-}
-
-export interface ToggleMessageReactionInput{
-    emoji: string;
 }

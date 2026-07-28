@@ -1,12 +1,13 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import WhiteboardModel, { requireWhiteboardStorageClusterId } from '@modules/whiteboards/models/WhiteboardModel';
-import type { WhiteboardDocument, WhiteboardLastEditedBy } from '@modules/whiteboards/models/WhiteboardModel';
+import Whiteboard from '@modules/whiteboards/models/Whiteboard';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/contracts/domain/whiteboard';
+import type { WhiteboardLastEditedBy } from '@modules/whiteboards/contracts/domain/whiteboard';
 import WhiteboardCreatedEvent from '@modules/whiteboards/events/WhiteboardCreatedEvent';
 import WhiteboardDeletedEvent from '@modules/whiteboards/events/WhiteboardDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type {
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
@@ -15,17 +16,36 @@ import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObje
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
-import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
+import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
-import { LAST_EDITED_BY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { IsNull } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import { Readable } from 'node:stream';
 import { v4 as uuidv4 } from 'uuid';
-import mongoose from 'mongoose';
 
-const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appState: {} }));
-const EMPTY_SCENE_JSON = JSON.stringify({ revision: 0, elements: [], appState: {} });
+const EMPTY_STATE = Buffer.from(JSON.stringify({
+    revision: 0,
+    elements: [],
+    appState: {}
+}));
+const EMPTY_SCENE_JSON = JSON.stringify({
+    revision: 0,
+    elements: [],
+    appState: {}
+});
 
-interface WhiteboardFolderView {
+const DEFAULT_LIST_LIMIT = 500;
+
+const LAST_EDITED_BY_SELECTION = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    email: true,
+    avatar: true
+} as const;
+
+interface WhiteboardFolderView{
     _id: string;
     title: string;
     parent: string | null;
@@ -33,7 +53,7 @@ interface WhiteboardFolderView {
     updatedAt: Date;
 }
 
-interface WhiteboardListItemView {
+interface WhiteboardListItemView{
     _id: string;
     title: string;
     folder: string | null;
@@ -44,54 +64,76 @@ interface WhiteboardListItemView {
     updatedAt: Date;
 }
 
-const presentLastEditedBy = (value: unknown): WhiteboardLastEditedBy => {
-    if (value === null || value === undefined) {
-        return null;
-    }
-    if (typeof value === 'object' && '_id' in (value as Record<string, unknown>)) {
-        const user = value as Record<string, unknown>;
+type WhiteboardObjectGateway = Pick<
+    ITeamClusterObjectGatewayClient,
+    'putBuffer' | 'exists' | 'getStream' | 'deleteByPrefix'
+>;
+
+type WhiteboardClusterSelection = Pick<ITeamClusterSelectionService, 'resolveStorageClusterId'>;
+
+type WhiteboardEventPublisher = Pick<IEventBus, 'publish'>;
+
+export interface WhiteboardServiceDependencies{
+    objectGatewayClient?: WhiteboardObjectGateway;
+    clusterSelection?: WhiteboardClusterSelection;
+    eventBus?: WhiteboardEventPublisher;
+}
+
+const presentLastEditedBy = (whiteboard: Whiteboard): WhiteboardLastEditedBy => {
+    const user = whiteboard.lastEditedByRef;
+    if(user){
         return {
-            _id: String(user._id),
+            _id: user.id,
             firstName: typeof user.firstName === 'string' ? user.firstName : undefined,
             lastName: typeof user.lastName === 'string' ? user.lastName : undefined,
             email: typeof user.email === 'string' ? user.email : undefined,
             avatar: typeof user.avatar === 'string' ? user.avatar : undefined
         };
     }
-    return String(value);
+
+    return whiteboard.lastEditedBy ?? null;
 };
 
-export default class WhiteboardService {
+export default class WhiteboardService{
     #signedUrlService = new ClusterObjectSignedUrlService();
 
-    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
+    #objectGatewayClient: WhiteboardObjectGateway;
 
-    #clusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
+    #clusterSelection: WhiteboardClusterSelection;
 
-        #eventBus = eventBus;
+    #eventBus: WhiteboardEventPublisher | null;
 
-    async createWhiteboard(teamId: string, userId: string, input: { title: string; folderId?: string | null }) {
-        if (input.folderId) {
-            const folder = await CatalogFolderModel.findOne({ _id: input.folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
-            if (!folder) {
+    constructor(dependencies: WhiteboardServiceDependencies = {}){
+        this.#objectGatewayClient = dependencies.objectGatewayClient ?? objectGatewayClient;
+        this.#clusterSelection = dependencies.clusterSelection ?? teamClusterSelectionService;
+        this.#eventBus = dependencies.eventBus ?? null;
+    }
+
+    async createWhiteboard(teamId: string, userId: string, input: { title: string; folderId?: string | null }){
+        if(input.folderId){
+            const folder = await CatalogFolder.findOneBy({
+                id: input.folderId,
+                team: teamId,
+                kind: CatalogFolderKind.Whiteboard
+            });
+            if(!folder){
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Target whiteboard folder not found');
             }
         }
 
         const storageClusterId = await this.#clusterSelection.resolveStorageClusterId(teamId);
 
-        const whiteboard = new WhiteboardModel({
-            team: new mongoose.Types.ObjectId(teamId),
-            createdBy: new mongoose.Types.ObjectId(userId),
-            lastEditedBy: new mongoose.Types.ObjectId(userId),
+        const whiteboard = await Whiteboard.create({
+            team: teamId,
+            createdBy: userId,
+            lastEditedBy: userId,
             title: input.title,
-            folder: input.folderId ? new mongoose.Types.ObjectId(input.folderId) : null,
+            folder: input.folderId || null,
             storageClusterId,
             payloadKey: ''
-        });
-        await whiteboard.save();
+        }).save();
 
-        const payloadKey = `${teamId}/${String(whiteboard._id)}/state.json`;
+        const payloadKey = `${teamId}/${whiteboard.id}/state.json`;
 
         await this.#objectGatewayClient.putBuffer(storageClusterId, {
             bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
@@ -101,104 +143,86 @@ export default class WhiteboardService {
             contentType: 'application/json'
         });
 
-        whiteboard.payloadKey = payloadKey;
-        await whiteboard.save();
+        await Object.assign(whiteboard, { payloadKey }).save();
 
-        await this.#eventBus.publish(new WhiteboardCreatedEvent({
-            whiteboardId: String(whiteboard._id),
+        await this.#publish(new WhiteboardCreatedEvent({
+            whiteboardId: whiteboard.id,
             teamId,
             userId,
             whiteboardTitle: whiteboard.title ?? ''
         }));
 
         return {
-            _id: String(whiteboard._id),
+            _id: whiteboard.id,
             title: whiteboard.title,
-            folder: whiteboard.folder ? String(whiteboard.folder) : null,
+            folder: whiteboard.folder,
             payloadKey,
             createdAt: whiteboard.createdAt,
             updatedAt: whiteboard.updatedAt
         };
     }
 
-    async listWhiteboards(teamId: string, query: { folderId?: string; page?: number; limit?: number }): Promise<PaginatedResult<WhiteboardListItemView>> {
-        const page = Math.max(1, query.page ?? 1);
-        const limit = Math.max(1, Math.min(500, query.limit ?? 500));
+    async listWhiteboards(teamId: string, query: { folderId?: string; page?: number; limit?: number }): Promise<PaginatedResult<WhiteboardListItemView>>{
+        const pageRequest = readPageRequest(query.page, query.limit, { defaultLimit: DEFAULT_LIST_LIMIT });
+        const where: FindOptionsWhere<Whiteboard> = { team: teamId };
 
-        let folderId: string | null | 'all';
-        if (!query.folderId) {
-            folderId = 'all';
-        } else if (query.folderId === 'root') {
-            folderId = null;
-        } else {
-            folderId = query.folderId;
+        if(query.folderId){
+            where.folder = query.folderId === 'root' ? IsNull() : query.folderId;
         }
 
-        const filter: Record<string, unknown> = { team: teamId };
-        if (folderId !== 'all') {
-            filter.folder = folderId;
-        }
+        const [whiteboards, total] = await Whiteboard.findAndCount({
+            where,
+            relations: { lastEditedByRef: true },
+            select: { lastEditedByRef: LAST_EDITED_BY_SELECTION },
+            order: { updatedAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const [docs, total] = await Promise.all([
-            WhiteboardModel.find(filter)
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .sort({ updatedAt: -1 })
-                .populate(LAST_EDITED_BY_POPULATE)
-                .exec(),
-            WhiteboardModel.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => this.#presentListItem(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([whiteboards.map((whiteboard) => this.#presentListItem(whiteboard)), total], pageRequest);
     }
 
-    async getWhiteboard(teamId: string, whiteboardId: string) {
+    async getWhiteboard(teamId: string, whiteboardId: string){
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
         return {
-            _id: String(whiteboard._id),
+            _id: whiteboard.id,
             title: whiteboard.title,
             payloadKey: whiteboard.payloadKey,
-            thumbnailKey: whiteboard.thumbnailKey,
-            lastEditedBy: presentLastEditedBy(whiteboard.lastEditedBy),
+            thumbnailKey: whiteboard.thumbnailKey ?? undefined,
+            lastEditedBy: presentLastEditedBy(whiteboard),
             createdAt: whiteboard.createdAt,
             updatedAt: whiteboard.updatedAt
         };
     }
 
-    async updateWhiteboard(teamId: string, whiteboardId: string, userId: string, input: { title?: string }) {
+    async updateWhiteboard(teamId: string, whiteboardId: string, userId: string, input: { title?: string }){
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
-        if (input.title !== undefined) {
+        if(input.title !== undefined){
             whiteboard.title = input.title;
         }
-        whiteboard.lastEditedBy = new mongoose.Types.ObjectId(userId);
+        whiteboard.lastEditedBy = userId;
         await whiteboard.save();
 
         return {
-            _id: String(whiteboard._id),
+            _id: whiteboard.id,
             title: whiteboard.title,
             updatedAt: whiteboard.updatedAt
         };
     }
 
-    async deleteWhiteboard(teamId: string, whiteboardId: string, userId: string): Promise<null> {
+    async deleteWhiteboard(teamId: string, whiteboardId: string, userId: string): Promise<null>{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
-        await WhiteboardModel.deleteOne({ _id: whiteboardId });
+        await Whiteboard.delete({ id: whiteboardId });
 
         const prefix = `${teamId}/${whiteboardId}/`;
-        const storageClusterId = requireWhiteboardStorageClusterId(String(whiteboard._id), whiteboard.storageClusterId);
-        try {
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
+        try{
             await this.#objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, prefix);
-        } catch {
+        }catch{
         }
 
-        await this.#eventBus.publish(new WhiteboardDeletedEvent({
+        await this.#publish(new WhiteboardDeletedEvent({
             whiteboardId,
             teamId,
             userId,
@@ -208,36 +232,43 @@ export default class WhiteboardService {
         return null;
     }
 
-    async moveWhiteboard(teamId: string, whiteboardId: string, folderId: string | null): Promise<null> {
-        const whiteboard = await WhiteboardModel.findOne({ _id: whiteboardId, team: teamId });
-        if (!whiteboard) {
+    async moveWhiteboard(teamId: string, whiteboardId: string, folderId: string | null): Promise<null>{
+        const whiteboard = await Whiteboard.findOneBy({
+            id: whiteboardId,
+            team: teamId
+        });
+        if(!whiteboard){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
         }
 
-        if (folderId !== null) {
-            const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
-            if (!folder) {
+        if(folderId !== null){
+            const folder = await CatalogFolder.findOneBy({
+                id: folderId,
+                team: teamId,
+                kind: CatalogFolderKind.Whiteboard
+            });
+            if(!folder){
                 throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Target Whiteboard folder not found');
             }
         }
 
-        whiteboard.folder = folderId ? new mongoose.Types.ObjectId(folderId) : null;
+        whiteboard.folder = folderId || null;
         await whiteboard.save();
         return null;
     }
 
-    async getWhiteboardState(teamId: string, whiteboardId: string): Promise<{ stream: Readable }> {
+    async getWhiteboardState(teamId: string, whiteboardId: string): Promise<{ stream: Readable }>{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
-        if (!whiteboard.payloadKey) {
-            throw ApplicationError.conflict('Whiteboard::PayloadKeyRequired', `Whiteboard ${String(whiteboard._id)} does not have a payload key assigned`);
+        if(!whiteboard.payloadKey){
+            throw ApplicationError.conflict('Whiteboard::PayloadKeyRequired', `Whiteboard ${whiteboard.id} does not have a payload key assigned`);
         }
 
-        const storageClusterId = requireWhiteboardStorageClusterId(String(whiteboard._id), whiteboard.storageClusterId);
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
         const key = whiteboard.payloadKey;
         const stateExists = await this.#objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, key);
 
-        if (!stateExists) {
+        if(!stateExists){
             return { stream: Readable.from(Buffer.from(EMPTY_SCENE_JSON)) };
         }
 
@@ -245,15 +276,15 @@ export default class WhiteboardService {
         return { stream: response.stream };
     }
 
-    async saveWhiteboardState(teamId: string, whiteboardId: string, userId: string, stateBuffer: Buffer): Promise<null> {
+    async saveWhiteboardState(teamId: string, whiteboardId: string, userId: string, stateBuffer: Buffer): Promise<null>{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
-        if (!whiteboard.payloadKey) {
-            throw ApplicationError.conflict('Whiteboard::PayloadKeyRequired', `Whiteboard ${String(whiteboard._id)} does not have a payload key assigned`);
+        if(!whiteboard.payloadKey){
+            throw ApplicationError.conflict('Whiteboard::PayloadKeyRequired', `Whiteboard ${whiteboard.id} does not have a payload key assigned`);
         }
 
         const key = whiteboard.payloadKey;
-        const storageClusterId = requireWhiteboardStorageClusterId(String(whiteboard._id), whiteboard.storageClusterId);
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
 
         await this.#objectGatewayClient.putBuffer(storageClusterId, {
             bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
@@ -263,17 +294,17 @@ export default class WhiteboardService {
             contentType: 'application/json'
         });
 
-        whiteboard.lastEditedBy = new mongoose.Types.ObjectId(userId);
+        whiteboard.lastEditedBy = userId;
         await whiteboard.save();
         return null;
     }
 
-    async uploadWhiteboardAsset(teamId: string, whiteboardId: string, userId: string, input: { fileName: string; size: number; type?: string }) {
+    async uploadWhiteboardAsset(teamId: string, whiteboardId: string, userId: string, input: { fileName: string; size: number; type?: string }){
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
         const assetId = uuidv4();
         const objectKey = `${teamId}/${whiteboardId}/assets/${assetId}`;
-        const storageClusterId = requireWhiteboardStorageClusterId(String(whiteboard._id), whiteboard.storageClusterId);
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
         const signed = this.#signedUrlService.createToken({
             kind: 'cluster-object',
             operation: 'write',
@@ -295,11 +326,11 @@ export default class WhiteboardService {
         };
     }
 
-    async getWhiteboardAsset(teamId: string, whiteboardId: string, assetId: string): Promise<{ stream: Readable; mimetype?: string }> {
+    async getWhiteboardAsset(teamId: string, whiteboardId: string, assetId: string): Promise<{ stream: Readable; mimetype?: string }>{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
         const objectKey = `${teamId}/${whiteboardId}/assets/${assetId}`;
-        const storageClusterId = requireWhiteboardStorageClusterId(String(whiteboard._id), whiteboard.storageClusterId);
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
         const response = await this.#objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, objectKey);
 
         return {
@@ -308,48 +339,52 @@ export default class WhiteboardService {
         };
     }
 
-    async listFolders(teamId: string, query: { parentId?: string | null; page?: number; limit?: number }): Promise<PaginatedResult<WhiteboardFolderView>> {
-        const page = Number(query.page) || 1;
-        const limit = Number(query.limit) || 500;
-        const filter = { team: teamId, kind: CatalogFolderKind.Whiteboard, parent: query.parentId ?? null };
+    async listFolders(teamId: string, query: { parentId?: string | null; page?: number; limit?: number }): Promise<PaginatedResult<WhiteboardFolderView>>{
+        const pageRequest = readPageRequest(query.page, query.limit, { defaultLimit: DEFAULT_LIST_LIMIT });
+        const [folders, total] = await CatalogFolder.findAndCount({
+            where: {
+                team: teamId,
+                kind: CatalogFolderKind.Whiteboard,
+                parent: query.parentId ?? IsNull()
+            },
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const [docs, total] = await Promise.all([
-            CatalogFolderModel.find(filter).skip((page - 1) * limit).limit(limit).sort({ createdAt: -1 }).exec(),
-            CatalogFolderModel.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => this.#presentFolder(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([folders.map((folder) => this.#presentFolder(folder)), total], pageRequest);
     }
 
-    async getFolder(teamId: string, folderId: string): Promise<WhiteboardFolderView> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
-        if (!folder) {
+    async getFolder(teamId: string, folderId: string): Promise<WhiteboardFolderView>{
+        const folder = await CatalogFolder.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Whiteboard
+        });
+        if(!folder){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard folder not found');
         }
         return this.#presentFolder(folder);
     }
 
-    async createFolder(teamId: string, userId: string, input: { title: string; parentId?: string | null }): Promise<WhiteboardFolderView> {
-        const folder = new CatalogFolderModel({
-            team: new mongoose.Types.ObjectId(teamId),
-            createdBy: new mongoose.Types.ObjectId(userId),
+    async createFolder(teamId: string, userId: string, input: { title: string; parentId?: string | null }): Promise<WhiteboardFolderView>{
+        const folder = await CatalogFolder.create({
+            team: teamId,
+            createdBy: userId,
             title: input.title,
-            parent: input.parentId ? new mongoose.Types.ObjectId(input.parentId) : null,
+            parent: input.parentId || null,
             kind: CatalogFolderKind.Whiteboard
-        });
-        await folder.save();
+        }).save();
         return this.#presentFolder(folder);
     }
 
-    async updateFolder(teamId: string, folderId: string, input: { title: string }): Promise<WhiteboardFolderView> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
-        if (!folder) {
+    async updateFolder(teamId: string, folderId: string, input: { title: string }): Promise<WhiteboardFolderView>{
+        const folder = await CatalogFolder.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Whiteboard
+        });
+        if(!folder){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard folder not found');
         }
         folder.title = input.title;
@@ -357,9 +392,13 @@ export default class WhiteboardService {
         return this.#presentFolder(folder);
     }
 
-    async deleteFolder(teamId: string, folderId: string, userId: string): Promise<null> {
-        const folder = await CatalogFolderModel.findOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
-        if (!folder) {
+    async deleteFolder(teamId: string, folderId: string, userId: string): Promise<null>{
+        const folder = await CatalogFolder.findOneBy({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Whiteboard
+        });
+        if(!folder){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard folder not found');
         }
 
@@ -367,46 +406,68 @@ export default class WhiteboardService {
         return null;
     }
 
-    async #getOwned(teamId: string, whiteboardId: string): Promise<WhiteboardDocument> {
-        const whiteboard = await WhiteboardModel.findOne({ _id: whiteboardId, team: teamId }).exec();
-        if (!whiteboard) {
+    async #publish(event: IDomainEvent): Promise<void>{
+        this.#eventBus ??= (await import('@shared/infrastructure/events/RedisEventBus')).default;
+        await this.#eventBus.publish(event);
+    }
+
+    async #getOwned(teamId: string, whiteboardId: string): Promise<Whiteboard>{
+        const whiteboard = await Whiteboard.findOneBy({
+            id: whiteboardId,
+            team: teamId
+        });
+        if(!whiteboard){
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
         }
         return whiteboard;
     }
 
-    async #deleteFolderTree(teamId: string, folderId: string, userId: string): Promise<void> {
-        const subfolders = await CatalogFolderModel.find({ team: teamId, parent: folderId, kind: CatalogFolderKind.Whiteboard });
-        for (const subfolder of subfolders) {
-            await this.#deleteFolderTree(teamId, String(subfolder._id), userId);
+    async #deleteFolderTree(teamId: string, folderId: string, userId: string): Promise<void>{
+        const subfolders = await CatalogFolder.findBy({
+            team: teamId,
+            parent: folderId,
+            kind: CatalogFolderKind.Whiteboard
+        });
+        for(const subfolder of subfolders){
+            await this.#deleteFolderTree(teamId, subfolder.id, userId);
         }
 
-        const whiteboards = await WhiteboardModel.find({ team: teamId, folder: folderId }).select('_id').exec();
-        for (const doc of whiteboards) {
-            await this.deleteWhiteboard(teamId, String(doc._id), userId);
+        const whiteboards = await Whiteboard.find({
+            where: {
+                team: teamId,
+                folder: folderId
+            },
+            select: { id: true }
+        });
+        for(const whiteboard of whiteboards){
+            await this.deleteWhiteboard(teamId, whiteboard.id, userId);
         }
 
-        await CatalogFolderModel.deleteOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Whiteboard });
+        await CatalogFolder.delete({
+            id: folderId,
+            team: teamId,
+            kind: CatalogFolderKind.Whiteboard
+        });
     }
 
-    #presentListItem(doc: WhiteboardDocument): WhiteboardListItemView {
+    #presentListItem(whiteboard: Whiteboard): WhiteboardListItemView{
         return {
-            _id: String(doc._id),
-            title: doc.title,
-            folder: doc.folder ? String(doc.folder) : null,
-            payloadKey: doc.payloadKey,
-            thumbnailKey: doc.thumbnailKey,
-            lastEditedBy: presentLastEditedBy(doc.lastEditedBy),
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt
+            _id: whiteboard.id,
+            title: whiteboard.title,
+            folder: whiteboard.folder,
+            payloadKey: whiteboard.payloadKey,
+            thumbnailKey: whiteboard.thumbnailKey ?? undefined,
+            lastEditedBy: presentLastEditedBy(whiteboard),
+            createdAt: whiteboard.createdAt,
+            updatedAt: whiteboard.updatedAt
         };
     }
 
-    #presentFolder(folder: { _id: unknown; title: string; parent: unknown; createdAt: Date; updatedAt: Date }): WhiteboardFolderView {
+    #presentFolder(folder: CatalogFolder): WhiteboardFolderView{
         return {
-            _id: String(folder._id),
+            _id: folder.id,
             title: folder.title,
-            parent: folder.parent ? String(folder.parent) : null,
+            parent: folder.parent,
             createdAt: folder.createdAt,
             updatedAt: folder.updatedAt
         };

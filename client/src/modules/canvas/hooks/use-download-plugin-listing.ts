@@ -6,8 +6,16 @@ import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 
-const DOWNLOAD_LISTING_TOAST = createCrudToastOptions({ action: 'Downloading', subject: 'listing', success: 'Listing downloaded successfully' });
-const DOWNLOAD_ANALYSIS_LISTINGS_TOAST = createCrudToastOptions({ action: 'Downloading', subject: 'analysis listings', success: 'Analysis listings downloaded successfully' });
+const DOWNLOAD_LISTING_TOAST = createCrudToastOptions({
+    action: 'Downloading',
+    subject: 'listing',
+    success: 'Listing downloaded successfully'
+});
+const DOWNLOAD_ANALYSIS_LISTINGS_TOAST = createCrudToastOptions({
+    action: 'Downloading',
+    subject: 'analysis listings',
+    success: 'Analysis listings downloaded successfully'
+});
 
 export interface DownloadPluginListingParams {
     pluginId: string;
@@ -112,7 +120,11 @@ const useDownloadPluginListing = () => {
         }
     }, [getExtensionFromBlob, exportListingByAnalysisMutation]);
 
-    return { isDownloading, downloadListing, downloadAnalysisListings };
+    return {
+        isDownloading,
+        downloadListing,
+        downloadAnalysisListings
+    };
 };
 
 export default useDownloadPluginListing;

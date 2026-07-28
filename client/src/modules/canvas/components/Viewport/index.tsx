@@ -67,8 +67,16 @@ const resolveTrajectoryTeamId = (trajectory: CanvasTrajectory | null | undefined
 
 const TIMESTEP_VIEWER_DEFAULTS = {
     scale: 1,
-    rotation: { x: 0, y: 0, z: 0 },
-    position: { x: 0, y: 0, z: 0 }
+    rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+    },
+    position: {
+        x: 0,
+        y: 0,
+        z: 0
+    }
 } as const;
 
 const Viewport = ({

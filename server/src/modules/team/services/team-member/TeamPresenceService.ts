@@ -65,7 +65,10 @@ export default class TeamPresenceService {
         }
 
         teamPresence.set(userId, presence);
-        this.sessionsByConnection.set(connectionId, { teamId, userId });
+        this.sessionsByConnection.set(connectionId, {
+            teamId,
+            userId
+        });
         this.getOrCreateUserConnections(userId).add(connectionId);
 
         return {

@@ -9,7 +9,12 @@ const dropRedis = async (): Promise<void> => {
 
     console.log(`[Redis] Connecting to ${host}:${port} (db: ${db})...`);
 
-    const redis = new Redis({ host, port, password, db });
+    const redis = new Redis({
+        host,
+        port,
+        password,
+        db
+    });
 
     redis.on('error', (err) => {
         console.error('[Redis] Connection error:', err);

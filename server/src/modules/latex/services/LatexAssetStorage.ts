@@ -1,4 +1,4 @@
-import type { LatexDocumentProps } from '@modules/latex/models/LatexDocumentModel';
+import type { LatexDocumentStorageScope } from '@modules/latex/contracts/domain/latex-document';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import path from 'node:path';
 
@@ -8,7 +8,7 @@ export const buildLatexAssetStoragePrefix = (teamId: string, documentId: string)
 
 export const requireLatexStorageClusterId = (
     documentId: string,
-    document: Pick<LatexDocumentProps, 'storageClusterId'>
+    document: LatexDocumentStorageScope
 ): string => {
     if (document.storageClusterId && document.storageClusterId.trim().length > 0) {
         return document.storageClusterId;
@@ -52,7 +52,7 @@ export const buildLatexAssetContentUrl = (
     const encodedTeamId = encodeURIComponent(teamId);
     const encodedDocumentId = encodeURIComponent(documentId);
     const encodedKey = encodeURIComponent(storageKey);
-    return `/api/latex/${encodedTeamId}/documents/${encodedDocumentId}/assets/content?key=${encodedKey}`;
+    return `/api/teams/${encodedTeamId}/latex-documents/${encodedDocumentId}/assets/content?key=${encodedKey}`;
 };
 
 export const sanitizeAssetPath = (assetPath: string, originalName: string): string => {

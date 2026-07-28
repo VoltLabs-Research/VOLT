@@ -1,32 +1,33 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
-import { ContainerModel } from '@modules/container/models/ContainerModel';
+import Container from '@modules/container/models/Container';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { readRelayHostValue, readRelayPortRangeValue } from '@shared/infrastructure/utilities/relay-network';
-import mongoose from 'mongoose';
+import { Not } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
 import net from 'node:net';
 
 const DEFAULT_PUBLIC_PORT_START = 24000;
 const DEFAULT_PUBLIC_PORT_END = 24999;
 const DEFAULT_BIND_HOST = '0.0.0.0';
 
-interface ReservePortMappingsOptions {
+interface ReservePortMappingsOptions{
     excludeContainerId?: string;
 }
 
-interface ReservedPortMappings {
+interface ReservedPortMappings{
     ports: ContainerPortMapping[];
     reservedPublicPorts: number[];
 }
 
-export class ContainerPublicPortAllocator {
+export class ContainerPublicPortAllocator{
     private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_BIND_HOST);
     private readonly reservedPorts = new Set<number>();
 
-    constructor() {
-        if (this.portEnd < this.portStart) {
+    constructor(){
+        if(this.portEnd < this.portStart){
             throw new Error('TEAM_CLUSTER_APP_PROXY_PORT_END must be greater than or equal to TEAM_CLUSTER_APP_PROXY_PORT_START');
         }
     }
@@ -34,8 +35,8 @@ export class ContainerPublicPortAllocator {
     async reservePortMappings(
         ports: ContainerPortMapping[] | undefined,
         options: ReservePortMappingsOptions = {}
-    ): Promise<ReservedPortMappings> {
-        if (!ports?.length) {
+    ): Promise<ReservedPortMappings>{
+        if(!ports?.length){
             return {
                 ports: [],
                 reservedPublicPorts: []
@@ -46,10 +47,10 @@ export class ContainerPublicPortAllocator {
 
         const reservedPublicPorts: number[] = [];
 
-        try {
+        try{
             const resolvedPorts: ContainerPortMapping[] = [];
 
-            for (const port of ports) {
+            for(const port of ports){
                 const publicPort = await this.reservePublicPort(port.public, options);
                 reservedPublicPorts.push(publicPort);
                 resolvedPorts.push({
@@ -62,54 +63,53 @@ export class ContainerPublicPortAllocator {
                 ports: resolvedPorts,
                 reservedPublicPorts
             };
-        } catch (error) {
+        }catch(error){
             this.releaseReservations(reservedPublicPorts);
             throw error;
         }
     }
 
-    commitReservations(publicPorts: number[]): void {
+    commitReservations(publicPorts: number[]): void{
         publicPorts.forEach((port) => {
             this.reservedPorts.delete(port);
         });
     }
 
-    releaseReservations(publicPorts: number[]): void {
+    releaseReservations(publicPorts: number[]): void{
         publicPorts.forEach((port) => {
             this.reservedPorts.delete(port);
         });
     }
 
-    isInPublicRange(port: number): boolean {
+    isInPublicRange(port: number): boolean{
         return Number.isInteger(port) && port >= this.portStart && port <= this.portEnd;
     }
 
-    private async isPublicPortAssigned(publicPort: number, excludeContainerId?: string): Promise<boolean> {
-        const filter: Record<string, unknown> = {
-            'ports.public': publicPort
-        };
+    private async isPublicPortAssigned(publicPort: number, excludeContainerId?: string): Promise<boolean>{
+        const where: FindOptionsWhere<Container> = excludeContainerId
+            ? { id: Not(excludeContainerId) }
+            : {};
 
-        if (excludeContainerId) {
-            filter._id = {
-                $ne: new mongoose.Types.ObjectId(excludeContainerId)
-            };
-        }
+        const containers = await Container.find({
+            where,
+            select: { ports: true }
+        });
 
-        return Boolean(await ContainerModel.exists(filter));
+        return containers.some((container) => container.ports.some((port) => port.public === publicPort));
     }
 
     private async reservePublicPort(
         requestedPublicPort: number | undefined,
         options: ReservePortMappingsOptions
-    ): Promise<number> {
-        if (typeof requestedPublicPort === 'number') {
+    ): Promise<number>{
+        if(typeof requestedPublicPort === 'number'){
             await this.assertPublicPortAvailable(requestedPublicPort, options);
             this.reservedPorts.add(requestedPublicPort);
             return requestedPublicPort;
         }
 
-        for (let publicPort = this.portStart; publicPort <= this.portEnd; publicPort += 1) {
-            if (await this.canReservePublicPort(publicPort, options)) {
+        for(let publicPort = this.portStart; publicPort <= this.portEnd; publicPort += 1){
+            if(await this.canReservePublicPort(publicPort, options)){
                 this.reservedPorts.add(publicPort);
                 return publicPort;
             }
@@ -124,15 +124,15 @@ export class ContainerPublicPortAllocator {
     private async assertPublicPortAvailable(
         publicPort: number,
         options: ReservePortMappingsOptions
-    ): Promise<void> {
-        if (!this.isInPublicRange(publicPort)) {
+    ): Promise<void>{
+        if(!this.isInPublicRange(publicPort)){
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
                 `Public port ${publicPort} is outside the allowed range ${this.portStart}-${this.portEnd}`
             );
         }
 
-        if (!await this.canReservePublicPort(publicPort, options)) {
+        if(!await this.canReservePublicPort(publicPort, options)){
             throw ApplicationError.conflict(
                 'Container::PublicPortUnavailable',
                 `Public port ${publicPort} is already in use`
@@ -143,20 +143,20 @@ export class ContainerPublicPortAllocator {
     private async canReservePublicPort(
         publicPort: number,
         options: ReservePortMappingsOptions
-    ): Promise<boolean> {
-        if (this.reservedPorts.has(publicPort)) {
+    ): Promise<boolean>{
+        if(this.reservedPorts.has(publicPort)){
             return false;
         }
 
         const assigned = await this.isPublicPortAssigned(publicPort, options.excludeContainerId);
-        if (assigned) {
+        if(assigned){
             return false;
         }
 
         return this.isLocalPortAvailable(publicPort);
     }
 
-    private async isLocalPortAvailable(publicPort: number): Promise<boolean> {
+    private async isLocalPortAvailable(publicPort: number): Promise<boolean>{
         return new Promise<boolean>((resolve) => {
             const server = net.createServer();
             server.unref();
@@ -167,11 +167,11 @@ export class ContainerPublicPortAllocator {
         });
     }
 
-    private assertUniquePrivatePorts(ports: ContainerPortMapping[]): void {
+    private assertUniquePrivatePorts(ports: ContainerPortMapping[]): void{
         const privatePorts = new Set<number>();
 
-        for (const port of ports) {
-            if (privatePorts.has(port.private)) {
+        for(const port of ports){
+            if(privatePorts.has(port.private)){
                 throw ApplicationError.badRequest(
                     ErrorCodes.VALIDATION_INVALID_INPUT,
                     `Container port ${port.private} is declared more than once`

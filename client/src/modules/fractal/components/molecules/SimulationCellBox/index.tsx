@@ -57,7 +57,11 @@ const _cameraForward = new THREE.Vector3();
 type DragAxisLock = 'x' | 'y' | 'z';
 const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 
-const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;
+const ZERO_OFFSET = {
+    x: 0,
+    y: 0,
+    z: 0
+} as const;
 const DOUBLE_TAP_MAX_DELAY_MS = 320;
 const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
 const TOUCH_DRAG_ARM_TIMEOUT_MS = 800;
@@ -283,7 +287,10 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             return buildCellWireframeGeometry(
                 cellGeometry.cellVectors!,
                 cellGeometry.cellOrigin,
-                { pbc: cellGeometry.pbc, showPbcImages: cellGeometry.showPbcImages }
+                {
+                    pbc: cellGeometry.pbc,
+                    showPbcImages: cellGeometry.showPbcImages
+                }
             );
         }
 

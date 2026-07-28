@@ -17,15 +17,33 @@ import {
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const DETAIL_LEVEL_OPTIONS: SelectOption[] = [
-    { title: 'Auto', value: 'auto' },
-    { title: 'Performance', value: 'performance' },
-    { title: 'Balanced', value: 'balanced' },
-    { title: 'Quality', value: 'quality' }
+    {
+        title: 'Auto',
+        value: 'auto'
+    },
+    {
+        title: 'Performance',
+        value: 'performance'
+    },
+    {
+        title: 'Balanced',
+        value: 'balanced'
+    },
+    {
+        title: 'Quality',
+        value: 'quality'
+    }
 ];
 
 const STYLE_OPTIONS: SelectOption[] = [
-    { title: 'Flat', value: 'flat' },
-    { title: 'Softened', value: 'softened' }
+    {
+        title: 'Flat',
+        value: 'flat'
+    },
+    {
+        title: 'Softened',
+        value: 'softened'
+    }
 ];
 
 const usePointCloudGroup = (): RenderGroup => {

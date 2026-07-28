@@ -25,7 +25,11 @@ const useCloneIntentRunner = ({ trajectoryId, isForeignTrajectory }: UseCloneInt
             teamClusterId: intent.targetClusterId,
             selectedTimesteps: intent.selectedTimesteps,
             timestep: intent.timestep,
-            stages: [{ kind: 'plugin', pluginId: intent.pluginId, config: intent.config }]
+            stages: [{
+                kind: 'plugin',
+                pluginId: intent.pluginId,
+                config: intent.config
+            }]
         })
             .catch(() => undefined)
             .finally(() => { removeEntry(trajectoryId); });

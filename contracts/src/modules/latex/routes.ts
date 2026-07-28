@@ -1,4 +1,4 @@
-import { get, post, patch, del } from '../../shared/routing';
+import { get, post, patch, put, del } from '../../shared/routing';
 import type {
     CreateLatexDocumentInput,
     UpdateLatexDocumentInput,
@@ -20,38 +20,33 @@ import type {
 } from './domain';
 
 export const latexRoutes = {
-    
-    listDocuments: get<LatexDocument>('/api/latex/:teamId/documents'),
-    createDocument: post<CreateLatexDocumentInput, LatexDocument>('/api/latex/:teamId/documents'),
-    importDocument: post<never, LatexDocument>('/api/latex/:teamId/import'),
-    getDocument: get<LatexDocument>('/api/latex/:teamId/documents/:documentId'),
-    deleteDocument: del('/api/latex/:teamId/documents/:documentId'),
-    updateDocument: patch<UpdateLatexDocumentInput, LatexDocument>('/api/latex/:teamId/documents/:documentId'),
-    moveDocument: patch<MoveLatexDocumentInput, null>('/api/latex/:teamId/documents/:documentId/folder'),
+    listDocuments: get<LatexDocument>('/api/teams/:teamId/latex-documents'),
+    createDocument: post<CreateLatexDocumentInput, LatexDocument>('/api/teams/:teamId/latex-documents'),
+    importDocument: post<never, LatexDocument>('/api/teams/:teamId/latex-document-imports'),
+    getDocument: get<LatexDocument>('/api/teams/:teamId/latex-documents/:documentId'),
+    deleteDocument: del('/api/teams/:teamId/latex-documents/:documentId'),
+    updateDocument: patch<UpdateLatexDocumentInput, LatexDocument>('/api/teams/:teamId/latex-documents/:documentId'),
+    moveDocument: patch<MoveLatexDocumentInput, null>('/api/teams/:teamId/latex-documents/:documentId/folder'),
 
-    
-    listAssets: get<LatexAsset[]>('/api/latex/:teamId/documents/:documentId/assets'),
-    getAssetContent: get<LatexDownloadResponse>('/api/latex/:teamId/documents/:documentId/assets/content'),
-    uploadAsset: post<UploadLatexAssetInput, UploadLatexAssetResult>('/api/latex/:teamId/documents/:documentId/assets'),
-    deleteAsset: del('/api/latex/:teamId/documents/:documentId/assets/:assetId'),
-    updateAsset: patch<UpdateLatexAssetInput, LatexAsset>('/api/latex/:teamId/documents/:documentId/assets/:assetId'),
+    listAssets: get<LatexAsset[]>('/api/teams/:teamId/latex-documents/:documentId/assets'),
+    getAssetContent: get<LatexDownloadResponse>('/api/teams/:teamId/latex-documents/:documentId/assets/content'),
+    uploadAsset: post<UploadLatexAssetInput, UploadLatexAssetResult>('/api/teams/:teamId/latex-documents/:documentId/assets'),
+    deleteAsset: del('/api/teams/:teamId/latex-documents/:documentId/assets/:assetId'),
+    updateAsset: patch<UpdateLatexAssetInput, LatexAsset>('/api/teams/:teamId/latex-documents/:documentId/assets/:assetId'),
 
-    
-    exportDocumentTex: get<LatexDownloadResponse>('/api/latex/:teamId/documents/:documentId/export/tex'),
-    exportDocumentZip: get<LatexDownloadResponse>('/api/latex/:teamId/documents/:documentId/export/zip'),
-    compileDocument: post<never, LatexDownloadResponse>('/api/latex/:teamId/documents/:documentId/compile'),
+    exportDocumentTex: get<LatexDownloadResponse>('/api/teams/:teamId/latex-documents/:documentId/export/tex'),
+    exportDocumentZip: get<LatexDownloadResponse>('/api/teams/:teamId/latex-documents/:documentId/export/zip'),
+    compileDocument: post<never, LatexDownloadResponse>('/api/teams/:teamId/latex-documents/:documentId/compilations'),
 
-    
-    listFiles: get<LatexFile[]>('/api/latex/:teamId/documents/:documentId/files'),
-    createFile: post<CreateLatexFileInput, LatexFile>('/api/latex/:teamId/documents/:documentId/files'),
-    updateFile: patch<UpdateLatexFileInput, LatexFile>('/api/latex/:teamId/documents/:documentId/files/:fileId'),
-    deleteFile: del('/api/latex/:teamId/documents/:documentId/files/:fileId'),
-    setFileEntrypoint: post<never, LatexFile>('/api/latex/:teamId/documents/:documentId/files/:fileId/entrypoint'),
+    listFiles: get<LatexFile[]>('/api/teams/:teamId/latex-documents/:documentId/files'),
+    createFile: post<CreateLatexFileInput, LatexFile>('/api/teams/:teamId/latex-documents/:documentId/files'),
+    updateFile: patch<UpdateLatexFileInput, LatexFile>('/api/teams/:teamId/latex-documents/:documentId/files/:fileId'),
+    deleteFile: del('/api/teams/:teamId/latex-documents/:documentId/files/:fileId'),
+    setFileEntrypoint: put<never, LatexFile>('/api/teams/:teamId/latex-documents/:documentId/files/:fileId/entrypoint'),
 
-    
-    listFolders: get<LatexFolder>('/api/latex/:teamId/folders'),
-    getFolder: get<LatexFolder>('/api/latex/:teamId/folders/:folderId'),
-    createFolder: post<CreateLatexFolderInput, LatexFolder>('/api/latex/:teamId/folders'),
-    updateFolder: patch<UpdateLatexFolderInput, LatexFolder>('/api/latex/:teamId/folders/:folderId'),
-    removeFolder: del('/api/latex/:teamId/folders/:folderId')
+    listFolders: get<LatexFolder>('/api/teams/:teamId/latex-folders'),
+    getFolder: get<LatexFolder>('/api/teams/:teamId/latex-folders/:folderId'),
+    createFolder: post<CreateLatexFolderInput, LatexFolder>('/api/teams/:teamId/latex-folders'),
+    updateFolder: patch<UpdateLatexFolderInput, LatexFolder>('/api/teams/:teamId/latex-folders/:folderId'),
+    removeFolder: del('/api/teams/:teamId/latex-folders/:folderId')
 } as const;

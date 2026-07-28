@@ -5,7 +5,7 @@ import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/htt
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import AuthService from '@modules/auth/services/AuthService';
-import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { OAuthProvider } from '@modules/auth/contracts/domain/user';
 import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/controllers/oauth-route-helpers';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import type {
@@ -59,20 +59,29 @@ export default class AuthController extends Controller {
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
     signIn(@Body() body: SignInInput, @Ip() ip: string, @UserAgent() userAgent: string) {
-        return this.#service.signIn(body, { ip, userAgent });
+        return this.#service.signIn(body, {
+            ip,
+            userAgent
+        });
     }
 
     @Route(authRoutes.localSignIn)
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
     localSignIn(@Ip() ip: string, @UserAgent() userAgent: string) {
-        return this.#service.localSignIn({ ip, userAgent });
+        return this.#service.localSignIn({
+            ip,
+            userAgent
+        });
     }
 
     @Route(authRoutes.signUp)
     @Status(201)
     signUp(@Body() body: SignUpInput, @Ip() ip: string, @UserAgent() userAgent: string) {
-        return this.#service.signUp(body, { ip, userAgent });
+        return this.#service.signUp(body, {
+            ip,
+            userAgent
+        });
     }
 
     @Route(authRoutes.checkEmail)
@@ -105,7 +114,10 @@ export default class AuthController extends Controller {
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ) {
-        return this.#service.updatePassword(userId, body, { ip, userAgent });
+        return this.#service.updatePassword(userId, body, {
+            ip,
+            userAgent
+        });
     }
 
     @Route(authRoutes.getMyAccount)

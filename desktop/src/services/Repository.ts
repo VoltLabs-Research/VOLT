@@ -25,7 +25,10 @@ export default class Repository{
         try{
             const { data } = await this.#octokit.request(
                 'GET /repos/{owner}/{repo}/releases/latest',
-                { owner: this.props.owner, repo: this.props.repo }
+                {
+                    owner: this.props.owner,
+                    repo: this.props.repo
+                }
             );
 
             if(!data.zipball_url || !data.tag_name) throw new Error('Invalid HTTP response');

@@ -37,8 +37,14 @@ interface UsersPresencePayload {
     userIds: string[];
 }
 
-const ackOk = <T>(data?: T): SocketAck<T> => ({ ok: true, data });
-const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
+const ackOk = <T>(data?: T): SocketAck<T> => ({
+    ok: true,
+    data
+});
+const ackError = (error: string): SocketAck<never> => ({
+    ok: false,
+    error
+});
 
 export class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';

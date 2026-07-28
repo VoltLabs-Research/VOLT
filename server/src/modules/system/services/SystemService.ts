@@ -24,6 +24,9 @@ export default class SystemService{
 
     getConfig(): SystemConfig{
         const enabledModules = [...getEnabledModules()].sort();
-        return { mode: DEPLOYMENT_MODE, enabledModules };
+        return {
+            mode: DEPLOYMENT_MODE,
+            enabledModules
+        };
     }
 }

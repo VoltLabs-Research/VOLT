@@ -35,7 +35,11 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
     const config = stage?.config as SlicePlaneStageConfig | undefined;
     const distance = config?.distance ?? 0;
     const normal = useMemo(
-        () => config?.normal ?? { x: 1, y: 0, z: 0 },
+        () => config?.normal ?? {
+            x: 1,
+            y: 0,
+            z: 0
+        },
         [config?.normal]
     );
     const reverseOrientation = config?.reverseOrientation ?? false;
@@ -53,7 +57,11 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
     }, [distance]);
 
     useEffect(() => {
-        setNormalInputs({ x: String(normal.x), y: String(normal.y), z: String(normal.z) });
+        setNormalInputs({
+            x: String(normal.x),
+            y: String(normal.y),
+            z: String(normal.z)
+        });
     }, [normal.x, normal.y, normal.z]);
 
     const patch = useCallback((next: Partial<SlicePlaneStageConfig>) => {
@@ -70,9 +78,17 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
     const handleNormalChange = useCallback((axis: SlicePlaneNormalAxis) => {
         return (_fieldKey: string, value: string | number | boolean) => {
             const nextValue = String(value);
-            setNormalInputs((current) => ({ ...current, [axis]: nextValue }));
+            setNormalInputs((current) => ({
+                ...current,
+                [axis]: nextValue
+            }));
             if (!isFiniteNumericInput(nextValue)) return;
-            patch({ normal: { ...normal, [axis]: Number(nextValue) } });
+            patch({
+                normal: {
+                    ...normal,
+                    [axis]: Number(nextValue)
+                }
+            });
         };
     }, [normal, patch]);
 

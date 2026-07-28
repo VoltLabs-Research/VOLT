@@ -115,7 +115,10 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     useKeyboardShortcut('Escape', handleEscape, { preventDefault: false });
     useKeyboardShortcut('Delete', handleDeleteSelected, { preventDefault: false });
     useKeyboardShortcut('z', handleUndo, { ctrl: true });
-    useKeyboardShortcut('z', handleRedo, { ctrl: true, shift: true });
+    useKeyboardShortcut('z', handleRedo, {
+        ctrl: true,
+        shift: true
+    });
 
     const workflowFingerprint = useMemo(() => {
         return JSON.stringify(getWorkflow());
@@ -142,7 +145,10 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
 
     const handleAddNode = useCallback((nodeType: NodeType) => {
         const offset = nodes.length * 20;
-        addNode(nodeType, { x: 150 + offset, y: 150 + offset });
+        addNode(nodeType, {
+            x: 150 + offset,
+            y: 150 + offset
+        });
         setShortcutsTipTrigger((current) => current + 1);
     }, [addNode, nodes.length]);
 

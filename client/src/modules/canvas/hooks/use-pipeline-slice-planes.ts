@@ -34,7 +34,10 @@ export const toSlicePlaneConfig = (
         visualizePlane: config.visualizePlane
     };
     if (bounds && isStageConfigPristine(config)) {
-        return { ...base, distance: getSlicePlaneCenterDistance(base, bounds) };
+        return {
+            ...base,
+            distance: getSlicePlaneCenterDistance(base, bounds)
+        };
     }
     return base;
 };

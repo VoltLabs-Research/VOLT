@@ -38,7 +38,13 @@ const useRendererGroup = (): RenderGroup => {
             title: RENDERER_SUBSECTION_TITLES.toneMapping,
             enabled: true,
             rows: [
-                row({ label: 'Exposure', min: 0, max: 10, step: 0.1, decimals: 1 }, () => runtime.toneMappingExposure, (value: number) => {
+                row({
+                    label: 'Exposure',
+                    min: 0,
+                    max: 10,
+                    step: 0.1,
+                    decimals: 1
+                }, () => runtime.toneMappingExposure, (value: number) => {
                     setRuntime({ toneMappingExposure: value });
                 })
             ],
@@ -75,12 +81,18 @@ const useRendererGroup = (): RenderGroup => {
             title: 'Renderer',
             icon: <MdTune size={12} />,
             subsections: [
-                { label: RENDERER_SUBSECTION_TITLES.toneMapping, sections: [toneSection] },
+                {
+                    label: RENDERER_SUBSECTION_TITLES.toneMapping,
+                    sections: [toneSection]
+                },
                 {
                     label: RENDERER_SUBSECTION_TITLES.shadows,
                     sections: [shadowSection],
                     ...(isPointCloudScene
-                        ? { disabled: true, disabledReason: 'Not compatible with point cloud scenes' }
+                        ? {
+                            disabled: true,
+                            disabledReason: 'Not compatible with point cloud scenes'
+                        }
                         : {})
                 }
             ]

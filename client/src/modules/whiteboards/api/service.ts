@@ -76,29 +76,32 @@ const folderEndpoints = createFolderCrudEndpoints<
     FolderUpdateParams,
     FolderDeleteParams,
     WhiteboardFolder
->();
+>('/whiteboard-folders');
 
 const endpoints = {
-    listWhiteboards: paginated<ListWhiteboardsParams, PaginatedResponse<Whiteboard>>('/'),
-    createWhiteboard: post<CreateWhiteboardParams, Whiteboard>('/', {
-        body: ({ title, folderId }) => ({ title, folderId })
+    listWhiteboards: paginated<ListWhiteboardsParams, PaginatedResponse<Whiteboard>>('/whiteboards'),
+    createWhiteboard: post<CreateWhiteboardParams, Whiteboard>('/whiteboards', {
+        body: ({ title, folderId }) => ({
+            title,
+            folderId
+        })
     }),
-    getWhiteboard: get<WhiteboardIdParams, Whiteboard>('/:whiteboardId'),
-    updateWhiteboard: patch<UpdateWhiteboardParams, Whiteboard>('/:whiteboardId', {
+    getWhiteboard: get<WhiteboardIdParams, Whiteboard>('/whiteboards/:whiteboardId'),
+    updateWhiteboard: patch<UpdateWhiteboardParams, Whiteboard>('/whiteboards/:whiteboardId', {
         body: ({ title }) => ({ title })
     }),
-    deleteWhiteboard: del<DeleteWhiteboardParams>('/:whiteboardId'),
-    moveWhiteboard: patch<MoveWhiteboardParams, Whiteboard>('/:whiteboardId/folder', {
+    deleteWhiteboard: del<DeleteWhiteboardParams>('/whiteboards/:whiteboardId'),
+    moveWhiteboard: patch<MoveWhiteboardParams, Whiteboard>('/whiteboards/:whiteboardId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getWhiteboardState: get<WhiteboardIdParams, unknown>('/:whiteboardId/state', { unwrap: 'raw' }),
-    saveWhiteboardState: patch<SaveStateParams, void>('/:whiteboardId/state', {
+    getWhiteboardState: get<WhiteboardIdParams, unknown>('/whiteboards/:whiteboardId/state', { unwrap: 'raw' }),
+    saveWhiteboardState: patch<SaveStateParams, void>('/whiteboards/:whiteboardId/state', {
         body: ({ state }) => state as Record<string, unknown>
     }),
     uploadWhiteboardAsset: custom<UploadAssetParams, UploadAssetResult>(async ({ getClient }, params) => {
         const response = await getClient().request<CreateAssetUploadApiResponse>(
             'POST',
-            `/${params.whiteboardId}/assets`,
+            `/whiteboards/${params.whiteboardId}/assets`,
             {
                 body: {
                     fileName: params.file.name,
@@ -121,7 +124,7 @@ const endpoints = {
 
         return { assetId: result.assetId };
     }),
-    getWhiteboardAsset: download<GetAssetParams>('GET', '/:whiteboardId/assets/:assetId'),
+    getWhiteboardAsset: download<GetAssetParams>('GET', '/whiteboards/:whiteboardId/assets/:assetId'),
     listWhiteboardFolders: folderEndpoints.listFolders,
     getWhiteboardFolder: folderEndpoints.getFolder,
     createWhiteboardFolder: folderEndpoints.createFolder,
@@ -132,7 +135,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/whiteboards',
+            basePath: '/teams',
             useRBAC: true
         }
     }

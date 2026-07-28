@@ -39,7 +39,10 @@ const TrajectoryFrameSchema: Schema<TrajectoryFrameDocument> = new Schema({
 });
 
 TrajectoryFrameSchema.index(
-    { trajectoryId: 1, timestep: 1 },
+    {
+        trajectoryId: 1,
+        timestep: 1
+    },
     { unique: true }
 );
 

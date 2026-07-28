@@ -39,23 +39,74 @@ interface CreateCrudToastOptionsInput {
 }
 
 const ACTION_FORMS: Record<CrudAction, { past: string; base: string }> = {
-    Creating:    { past: 'created',    base: 'create' },
-    Updating:    { past: 'updated',    base: 'update' },
-    Deleting:    { past: 'deleted',    base: 'delete' },
-    Renaming:    { past: 'renamed',    base: 'rename' },
-    Moving:      { past: 'moved',      base: 'move' },
-    Saving:      { past: 'saved',      base: 'save' },
-    Downloading: { past: 'downloaded', base: 'download' },
-    Uploading:   { past: 'uploaded',   base: 'upload' },
-    Starting:    { past: 'started',    base: 'start' },
-    Stopping:    { past: 'stopped',    base: 'stop' },
-    Restarting:  { past: 'restarted',  base: 'restart' },
-    Archiving:   { past: 'archived',   base: 'archive' },
-    Restoring:   { past: 'restored',   base: 'restore' },
-    Revoking:    { past: 'revoked',    base: 'revoke' },
-    Sharing:     { past: 'shared',     base: 'share' },
-    Publishing:  { past: 'published',  base: 'publish' },
-    Copying:     { past: 'copied',     base: 'copy' }
+    Creating:    {
+        past: 'created',
+        base: 'create'
+    },
+    Updating:    {
+        past: 'updated',
+        base: 'update'
+    },
+    Deleting:    {
+        past: 'deleted',
+        base: 'delete'
+    },
+    Renaming:    {
+        past: 'renamed',
+        base: 'rename'
+    },
+    Moving:      {
+        past: 'moved',
+        base: 'move'
+    },
+    Saving:      {
+        past: 'saved',
+        base: 'save'
+    },
+    Downloading: {
+        past: 'downloaded',
+        base: 'download'
+    },
+    Uploading:   {
+        past: 'uploaded',
+        base: 'upload'
+    },
+    Starting:    {
+        past: 'started',
+        base: 'start'
+    },
+    Stopping:    {
+        past: 'stopped',
+        base: 'stop'
+    },
+    Restarting:  {
+        past: 'restarted',
+        base: 'restart'
+    },
+    Archiving:   {
+        past: 'archived',
+        base: 'archive'
+    },
+    Restoring:   {
+        past: 'restored',
+        base: 'restore'
+    },
+    Revoking:    {
+        past: 'revoked',
+        base: 'revoke'
+    },
+    Sharing:     {
+        past: 'shared',
+        base: 'share'
+    },
+    Publishing:  {
+        past: 'published',
+        base: 'publish'
+    },
+    Copying:     {
+        past: 'copied',
+        base: 'copy'
+    }
 };
 
 export const createPromiseToastOptions = ({

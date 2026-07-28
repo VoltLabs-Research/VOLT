@@ -24,15 +24,30 @@ import { useNavigate } from 'react-router-dom';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_SECRET_KEY_EVENTS.CREATED, queryKeys: [SECRET_KEYS_QUERY_KEY] },
-    { event: SOCKET_SECRET_KEY_EVENTS.DELETED, queryKeys: [SECRET_KEYS_QUERY_KEY] }
+    {
+        event: SOCKET_SECRET_KEY_EVENTS.CREATED,
+        queryKeys: [SECRET_KEYS_QUERY_KEY]
+    },
+    {
+        event: SOCKET_SECRET_KEY_EVENTS.DELETED,
+        queryKeys: [SECRET_KEYS_QUERY_KEY]
+    }
 ];
 
 type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;
 
-const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 120 };
-const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 80 };
-const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = { variant: 'text', width: 100 };
+const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
+    variant: 'text',
+    width: 120
+};
+const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
+    variant: 'text',
+    width: 80
+};
+const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
+    variant: 'text',
+    width: 100
+};
 const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOptions({
     loading: `Deleting "${key.name}"...`,
     success: `Secret key "${key.name}" deleted`,
@@ -114,7 +129,10 @@ export default function SecretKeysListing() {
                 icon: RiShieldKeyholeLine,
                 handler: async ({ item: key }) => {
                     if (!selectedTeam?._id) return;
-                    await revokeSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, secretKeyId: key._id });
+                    await revokeSecretKeyMutation.mutateAsync({
+                        teamId: selectedTeam._id,
+                        secretKeyId: key._id
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1
@@ -129,7 +147,10 @@ export default function SecretKeysListing() {
                     await runAction({
                         action: () => {
                             if (!selectedTeam?._id) return Promise.resolve();
-                            return deleteSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, secretKeyId: key._id });
+                            return deleteSecretKeyMutation.mutateAsync({
+                                teamId: selectedTeam._id,
+                                secretKeyId: key._id
+                            });
                         },
                         toast: getDeleteSecretKeyToastOptions(key)
                     });

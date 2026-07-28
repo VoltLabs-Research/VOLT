@@ -5,7 +5,7 @@ import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import { sortData, type SortConfig } from '@/shared/utils/sort';
 import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
 import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
-import { Button, Heading, Popover, Row, SegmentedTabs, Skeleton, Stack, Text, PopoverMenu } from '@voltstack/bravais';
+import { Button, Heading, Popover, Row, SegmentedTabs, Skeleton, Stack, Text, PopoverMenu, VisuallyHidden } from '@voltstack/bravais';
 import AsyncMenuItemWrapper from '@/shared/ui/components/AsyncMenuItemWrapper';
 import DocumentListingGrid from '@/shared/ui/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/ui/components/DocumentListingTable';
@@ -22,7 +22,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import React from 'react';
-import type { CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -82,18 +81,6 @@ const DEFAULT_TABS: DocumentListingTab[] = [
         label: 'List'
     }
 ];
-
-const VISUALLY_HIDDEN_STYLES: CSSProperties = {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    border: 0
-};
 
 const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string): string => {
     if (preferredTabId && tabs.some((tab) => tab.id === preferredTabId)) {
@@ -261,7 +248,10 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         enabled
     });
     const invalidationRules = useMemo<SocketInvalidationRule[]>(
-        () => (socketInvalidation ?? []).map(({ event, queryKeys }) => ({ event, queryKeys })),
+        () => (socketInvalidation ?? []).map(({ event, queryKeys }) => ({
+            event,
+            queryKeys
+        })),
         [socketInvalidation]
     );
 
@@ -459,9 +449,18 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         return (
             <div ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
                 <motion.div
-                    initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
-                    animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                    transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                    initial={prefersReducedMotion ? false : {
+                        opacity: 0,
+                        y: 15
+                    }}
+                    animate={prefersReducedMotion ? undefined : {
+                        opacity: 1,
+                        y: 0
+                    }}
+                    transition={prefersReducedMotion ? { duration: 0 } : {
+                        duration: 0.4,
+                        ease: [0.32, 0.72, 0, 1]
+                    }}
                     style={{ height: '100%' }}
                 >
                     <DocumentListingTable
@@ -494,9 +493,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     return (
         <Stack height='max' gap='1' className='document-listing-container color-secondary'>
-            <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+            <VisuallyHidden aria-live='polite' aria-atomic='true'>
                 {sortAnnouncement}
-            </span>
+            </VisuallyHidden>
             {!hideHeader && (
                 <Stack gap='3'>
                     <Stack gap='1-5' p='2' className='document-listing-header-top-container'>

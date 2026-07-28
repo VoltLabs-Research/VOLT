@@ -64,7 +64,10 @@ const Timeline = ({
     const [activeTab, setActiveTab] = useState('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
-    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
+    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({
+        trajectory,
+        analysisId
+    });
     const { toneByTimestep, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id);
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
@@ -201,7 +204,10 @@ const Timeline = ({
     const ticks = useMemo(() => {
         if (rangedTimesteps.length === 0) {
             const tickCount = 50;
-            return Array.from({ length: tickCount }, (_, i) => ({ frame: i, major: i % 10 === 0 }));
+            return Array.from({ length: tickCount }, (_, i) => ({
+                frame: i,
+                major: i % 10 === 0
+            }));
         }
         return rangedTimesteps.map((frame) => ({
             frame,

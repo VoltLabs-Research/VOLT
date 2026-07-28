@@ -1,5 +1,8 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import PluginEntity from '@modules/plugin/models/Plugin';
+import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
+import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import {
@@ -20,7 +23,7 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 
 interface DebugStartPayload {
@@ -171,8 +174,8 @@ export class PluginDebugSocketModule extends BaseSocketModule {
 
                 const teamClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(teamId);
 
-                const pluginDoc = await PluginModel.findById(payload.pluginId);
-                const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
+                const pluginEntity = await PluginEntity.findOneBy({ id: payload.pluginId });
+                const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
                 if (!plugin) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Plugin not found'
@@ -198,14 +201,14 @@ export class PluginDebugSocketModule extends BaseSocketModule {
                     : [];
                 const sanitizedConfig = sanitizeVisibleArgumentConfig(runtimeArguments, payload.config ?? {});
 
-                const trajectory = await TrajectoryModel.findById(payload.trajectoryId);
+                const trajectory = await TrajectoryEntity.findOneBy({ id: payload.trajectoryId });
                 if (!trajectory) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Trajectory not found'
                     });
                     return;
                 }
-                const storageClusterId = trajectory.storageClusterId?.toString();
+                const storageClusterId = trajectory.storageClusterId;
                 if (!storageClusterId) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Trajectory does not have a storage cluster assigned'

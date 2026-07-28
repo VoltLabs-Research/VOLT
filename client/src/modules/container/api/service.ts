@@ -91,11 +91,11 @@ const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(({ 
 ));
 
 const endpoints = {
-    getAll: paginated<GetContainersParams, PaginatedResponse<Container>>('/'),
-    getById: get<ContainerRouteParams, Container>('/:containerId', {
+    getAll: paginated<GetContainersParams, PaginatedResponse<Container>>('/containers'),
+    getById: get<ContainerRouteParams, Container>('/containers/:containerId', {
         unwrap: { field: 'container' }
     }),
-    create: post<CreateContainerParams, Container>('/', {
+    create: post<CreateContainerParams, Container>('/containers', {
         client: 'scoped',
         omit: ['teamId'],
         body: ({ teamClusterId, folderId, operationId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd }) => ({
@@ -114,7 +114,7 @@ const endpoints = {
         }),
         unwrap: { field: 'container' }
     }),
-    update: patch<UpdateContainerParams, Container>('/:containerId', {
+    update: patch<UpdateContainerParams, Container>('/containers/:containerId', {
         body: ({ action, env, ports }) => ({
             action,
             env,
@@ -122,14 +122,14 @@ const endpoints = {
         }),
         unwrap: { field: 'container' }
     }),
-    delete: del<ContainerRouteParams>('/:containerId'),
-    move: patch<MoveContainerParams, void>('/:containerId/folder', {
+    delete: del<ContainerRouteParams>('/containers/:containerId'),
+    move: patch<MoveContainerParams, void>('/containers/:containerId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getFiles: get<GetContainerFilesInput, GetContainerFilesResponse>('/:containerId/files', {
+    getFiles: get<GetContainerFilesInput, GetContainerFilesResponse>('/containers/:containerId/files', {
         query: ({ path }) => path ? { path } : undefined
     }),
-    readFile: get<ReadContainerFileInput, ReadContainerFileResponse>('/:containerId/files/content', {
+    readFile: get<ReadContainerFileInput, ReadContainerFileResponse>('/containers/:containerId/files/content', {
         query: ({ path }) => ({ path })
     }),
     ...createFolderCrudEndpoints<
@@ -139,26 +139,26 @@ const endpoints = {
         FolderUpdateParams,
         FolderDeleteParams,
         ContainerFolder
-    >(),
-    createPortAccessUrl: post<CreateContainerPortAccessUrlParams, ContainerPortAccessUrl>('/:containerId/ports/:privatePort/access-url', {
+    >('/container-folders'),
+    createPortAccessUrl: post<CreateContainerPortAccessUrlParams, ContainerPortAccessUrl>('/containers/:containerId/ports/:privatePort/access-url', {
         client: 'scoped',
         omit: ['teamId'],
         body: () => ({})
     }),
-    getProcesses: get<ContainerRouteParams, string[][]>('/:containerId/processes', {
+    getProcesses: get<ContainerRouteParams, string[][]>('/containers/:containerId/processes', {
         unwrap: { field: 'processes' }
     }),
-    getStats: get<ContainerRouteParams, ContainerStatsResponse>('/:containerId/stats')
+    getStats: get<ContainerRouteParams, ContainerStatsResponse>('/containers/:containerId/stats')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/containers',
+            basePath: '/teams',
             useRBAC: true
         },
         scoped: {
-            basePath: '/containers',
+            basePath: '/teams',
             useRBAC: true,
             getTeamId: (params: CreateContainerParams) => params.teamId
         }

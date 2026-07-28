@@ -15,11 +15,20 @@ export default class Stack{
 
     #runCompose(args: string[], profiles: string[] = []){
         const profileArgs = profiles.flatMap((p) => ['--profile', p]);
-        const env = this.props.augmentedPath ? { ...this.props.env, PATH: this.props.augmentedPath } : this.props.env;
+        const env = this.props.augmentedPath ? {
+            ...this.props.env,
+            PATH: this.props.augmentedPath
+        } : this.props.env;
         return this.#runner.run(this.props.dockerPath ?? 'docker', ['compose', '-f', this.props.composeFile, ...profileArgs, ...args], {
             env,
-            onStdout: (line) => bus.emit('deploy:log', { stream: 'stdout', line }),
-            onStderr: (line) => bus.emit('deploy:log', { stream: 'stderr', line })
+            onStdout: (line) => bus.emit('deploy:log', {
+                stream: 'stdout',
+                line
+            }),
+            onStderr: (line) => bus.emit('deploy:log', {
+                stream: 'stderr',
+                line
+            })
         });
     }
 

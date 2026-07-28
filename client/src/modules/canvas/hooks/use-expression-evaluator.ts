@@ -47,11 +47,17 @@ const useExpressionEvaluator = (
 ): UseExpressionEvaluatorResult => {
     return useMemo(() => {
         if (!formula.trim() || !atomBuffer) {
-            return { isValid: false, autoRoute: false };
+            return {
+                isValid: false,
+                autoRoute: false
+            };
         }
 
         if (atomBuffer.count > CLIENT_EVAL_ATOM_LIMIT) {
-            return { isValid: true, autoRoute: true };
+            return {
+                isValid: true,
+                autoRoute: true
+            };
         }
 
         let ast;
@@ -59,7 +65,11 @@ const useExpressionEvaluator = (
             ast = parse(formula);
         } catch (e) {
             const msg = e instanceof ExpressionError ? e.message : String(e);
-            return { isValid: false, error: msg, autoRoute: false };
+            return {
+                isValid: false,
+                error: msg,
+                autoRoute: false
+            };
         }
 
         const context = buildContext(atomBuffer, frameIndex, cellVolume);
@@ -71,10 +81,18 @@ const useExpressionEvaluator = (
             }
         } catch (e) {
             const msg = e instanceof ExpressionError ? e.message : String(e);
-            return { isValid: false, error: msg, autoRoute: false };
+            return {
+                isValid: false,
+                error: msg,
+                autoRoute: false
+            };
         }
 
-        return { isValid: true, evaluatedColumn: result, autoRoute: false };
+        return {
+            isValid: true,
+            evaluatedColumn: result,
+            autoRoute: false
+        };
     }, [formula, atomBuffer, frameIndex, cellVolume]);
 };
 

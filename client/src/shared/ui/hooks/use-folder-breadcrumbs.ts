@@ -29,7 +29,10 @@ interface UseFolderBreadcrumbsReturn<TFolder extends FolderBreadcrumbEntity> {
 };
 
 const buildRootBreadcrumb = (rootLabel: string): FolderBreadcrumbItem[] => {
-    return [{ id: null, title: rootLabel }];
+    return [{
+        id: null,
+        title: rootLabel
+    }];
 };
 
 const isInvalidFolderError = (error: unknown): boolean => {

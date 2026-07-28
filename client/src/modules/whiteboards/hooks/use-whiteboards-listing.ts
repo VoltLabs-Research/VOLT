@@ -48,7 +48,10 @@ export const whiteboardsListingResource = createFolderedListingResource({
 });
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_WHITEBOARD_EVENTS.DELETED, queryKeys: [whiteboardsQueryKey()] }
+    {
+        event: SOCKET_WHITEBOARD_EVENTS.DELETED,
+        queryKeys: [whiteboardsQueryKey()]
+    }
 ];
 
 const useWhiteboardsListing = () => {
@@ -72,12 +75,18 @@ const useWhiteboardsListing = () => {
     } = useRenameEntityModal({
         modalId: RENAME_WHITEBOARD_MODAL_ID,
         updateEntity: updateWhiteboard,
-        getUpdateParams: (whiteboard: Whiteboard, title) => ({ whiteboardId: whiteboard._id, title }),
+        getUpdateParams: (whiteboard: Whiteboard, title) => ({
+            whiteboardId: whiteboard._id,
+            title
+        }),
         renameToast: whiteboardsListingResource.toasts.rename
     });
 
     const moveWhiteboardToFolder = useCallback((whiteboardId: string, folderId: string | null) => {
-        return moveWhiteboard({ whiteboardId, folderId });
+        return moveWhiteboard({
+            whiteboardId,
+            folderId
+        });
     }, [moveWhiteboard]);
 
     const openWhiteboard = useCallback((whiteboard: Whiteboard) => {

@@ -1,4 +1,4 @@
-import { createService, custom, paginated, get, post, patch, del, download, request } from '@/app/core/http/utils/create-service';
+import { createService, custom, paginated, get, post, patch, put, del, download, request } from '@/app/core/http/utils/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import {
@@ -140,29 +140,32 @@ interface UploadLatexAssetApiResponse {
 
 const endpoints = {
     listDocuments: paginated<ListLatexDocumentsParams, PaginatedResponse<LatexDocument>>(
-        '/documents'
+        '/latex-documents'
     ),
-    createDocument: post<CreateLatexDocumentParams, LatexDocument>('/documents', {
-        body: ({ title, folderId }) => ({ title, folderId })
+    createDocument: post<CreateLatexDocumentParams, LatexDocument>('/latex-documents', {
+        body: ({ title, folderId }) => ({
+            title,
+            folderId
+        })
     }),
-    getDocument: get<GetLatexDocumentParams, LatexDocument>('/documents/:documentId'),
-    deleteDocument: del<DeleteLatexDocumentParams>('/documents/:documentId'),
-    updateDocument: patch<UpdateLatexDocumentParams, LatexDocument>('/documents/:documentId', {
+    getDocument: get<GetLatexDocumentParams, LatexDocument>('/latex-documents/:documentId'),
+    deleteDocument: del<DeleteLatexDocumentParams>('/latex-documents/:documentId'),
+    updateDocument: patch<UpdateLatexDocumentParams, LatexDocument>('/latex-documents/:documentId', {
         body: ({ title }) => ({ title })
     }),
-    moveDocument: patch<MoveLatexDocumentParams, LatexDocument>('/documents/:documentId/folder', {
+    moveDocument: patch<MoveLatexDocumentParams, LatexDocument>('/latex-documents/:documentId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    listAssets: get<ListLatexAssetsParams, LatexAsset[]>('/documents/:documentId/assets'),
+    listAssets: get<ListLatexAssetsParams, LatexAsset[]>('/latex-documents/:documentId/assets'),
     getAssetContent: download<GetLatexAssetContentParams>(
         'GET',
-        '/documents/:documentId/assets/content',
+        '/latex-documents/:documentId/assets/content',
         { query: ({ key }) => ({ key }) }
     ),
     uploadAsset: custom<UploadLatexAssetParams, UploadLatexAssetsResult>(async ({ getClient }, params) => {
         const response = await getClient().request<UploadLatexAssetApiResponse>(
             'POST',
-            `/documents/${params.documentId}/assets`,
+            `/latex-documents/${params.documentId}/assets`,
             {
                 body: {
                     ...(params.path ? { path: params.path } : {}),
@@ -201,23 +204,26 @@ const endpoints = {
             total: response.data.total
         };
     }),
-    deleteAsset: del<DeleteLatexAssetParams>('/documents/:documentId/assets/:assetId'),
+    deleteAsset: del<DeleteLatexAssetParams>('/latex-documents/:documentId/assets/:assetId'),
     updateAsset: patch<UpdateLatexAssetParams, LatexAsset>(
-        '/documents/:documentId/assets/:assetId',
+        '/latex-documents/:documentId/assets/:assetId',
         { body: ({ path }) => ({ path }) }
     ),
-    exportDocumentTex: download<ExportLatexDocumentParams>('GET', '/documents/:documentId/export/tex'),
-    exportDocumentZip: download<ExportLatexDocumentParams>('GET', '/documents/:documentId/export/zip'),
-    importDocument: request<ImportLatexDocumentParams, ImportLatexDocumentResult>('POST', '/import', {
+    exportDocumentTex: download<ExportLatexDocumentParams>('GET', '/latex-documents/:documentId/export/tex'),
+    exportDocumentZip: download<ExportLatexDocumentParams>('GET', '/latex-documents/:documentId/export/zip'),
+    importDocument: request<ImportLatexDocumentParams, ImportLatexDocumentResult>('POST', '/latex-document-imports', {
         body: ({ file, folderId }) => buildFileFormData(
-            [{ name: 'file', file }],
+            [{
+                name: 'file',
+                file
+            }],
             folderId ? { folderId } : undefined
         ),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    compileDocument: download<CompileLatexDocumentParams>('POST', '/documents/:documentId/compile'),
-    listFiles: get<ListLatexFilesParams, LatexFile[]>('/documents/:documentId/files'),
-    createFile: post<CreateLatexFileParams, LatexFile>('/documents/:documentId/files', {
+    compileDocument: download<CompileLatexDocumentParams>('POST', '/latex-documents/:documentId/compilations'),
+    listFiles: get<ListLatexFilesParams, LatexFile[]>('/latex-documents/:documentId/files'),
+    createFile: post<CreateLatexFileParams, LatexFile>('/latex-documents/:documentId/files', {
         body: ({ name, path, content, isEntrypoint }) => ({
             name,
             path,
@@ -225,12 +231,16 @@ const endpoints = {
             isEntrypoint
         })
     }),
-    updateFile: patch<UpdateLatexFileParams, LatexFile>('/documents/:documentId/files/:fileId', {
-        body: ({ name, path, content }) => ({ name, path, content })
+    updateFile: patch<UpdateLatexFileParams, LatexFile>('/latex-documents/:documentId/files/:fileId', {
+        body: ({ name, path, content }) => ({
+            name,
+            path,
+            content
+        })
     }),
-    deleteFile: del<DeleteLatexFileParams>('/documents/:documentId/files/:fileId'),
-    setFileEntrypoint: post<SetLatexFileEntrypointParams, LatexFile>(
-        '/documents/:documentId/files/:fileId/entrypoint',
+    deleteFile: del<DeleteLatexFileParams>('/latex-documents/:documentId/files/:fileId'),
+    setFileEntrypoint: put<SetLatexFileEntrypointParams, LatexFile>(
+        '/latex-documents/:documentId/files/:fileId/entrypoint',
         { body: () => ({}) }
     ),
     ...createFolderCrudEndpoints<
@@ -240,13 +250,13 @@ const endpoints = {
         FolderUpdateParams,
         FolderDeleteParams,
         LatexFolder
-    >()
+    >('/latex-folders')
 };
 
 const service = createService({
     clients: {
         default: {
-            basePath: '/latex',
+            basePath: '/teams',
             useRBAC: true
         }
     }

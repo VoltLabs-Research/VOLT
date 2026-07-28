@@ -38,7 +38,11 @@ const COMPOSE_URL = 'https://docs.docker.com/compose/install/';
 const isLinux = (platform: NodeJS.Platform) => platform === 'linux';
 
 const COPY: Record<PreflightReason, (platform: NodeJS.Platform) => Copy> = {
-    'ok': () => ({ message: 'Docker is ready', remediation: '', cta: '' }),
+    'ok': () => ({
+        message: 'Docker is ready',
+        remediation: '',
+        cta: ''
+    }),
     'cli-missing': (platform) => ({
         message: 'Docker isn\'t installed',
         remediation: isLinux(platform)
@@ -118,31 +122,65 @@ export default class DockerPreflight{
             serverVersion = version.Version;
         }catch(err){
             const code = (err as NodeJS.ErrnoException).code;
-            if(code === 'EACCES') return this.#result('permission-denied', { platform, cliPath });
-            if(code === 'ETIMEDOUT') return this.#result('daemon-starting', { platform, cliPath });
-            if(code === 'ENOENT' || code === 'ECONNREFUSED') return this.#result('daemon-down', { platform, cliPath });
+            if(code === 'EACCES') return this.#result('permission-denied', {
+                platform,
+                cliPath
+            });
+            if(code === 'ETIMEDOUT') return this.#result('daemon-starting', {
+                platform,
+                cliPath
+            });
+            if(code === 'ENOENT' || code === 'ECONNREFUSED') return this.#result('daemon-down', {
+                platform,
+                cliPath
+            });
             return this.#classifyViaCli(cliPath, platform);
         }
 
         const compose = await new ProbeRunner().probe(cliPath, ['compose', 'version', '--short'], {
             env: { PATH: this.#binary.augmentedPath() }
         });
-        if(compose.code !== 0) return this.#result('compose-missing', { platform, cliPath, serverVersion });
+        if(compose.code !== 0) return this.#result('compose-missing', {
+            platform,
+            cliPath,
+            serverVersion
+        });
 
-        return this.#result('ok', { platform, cliPath, serverVersion, composeVersion: compose.stdout.trim() });
+        return this.#result('ok', {
+            platform,
+            cliPath,
+            serverVersion,
+            composeVersion: compose.stdout.trim()
+        });
     }
 
     async #classifyViaCli(cliPath: string, platform: NodeJS.Platform): Promise<PreflightResult>{
         const info = await new ProbeRunner().probe(cliPath, ['info'], { env: { PATH: this.#binary.augmentedPath() } });
-        if(info.errno === 'ETIMEDOUT') return this.#result('daemon-starting', { platform, cliPath });
-        if(info.code === 0) return this.#result('unknown', { platform, cliPath });
+        if(info.errno === 'ETIMEDOUT') return this.#result('daemon-starting', {
+            platform,
+            cliPath
+        });
+        if(info.code === 0) return this.#result('unknown', {
+            platform,
+            cliPath
+        });
 
         const text = `${info.stderr}\n${info.stdout}`.toLowerCase();
-        if(/permission denied/.test(text)) return this.#result('permission-denied', { platform, cliPath });
+        if(/permission denied/.test(text)) return this.#result('permission-denied', {
+            platform,
+            cliPath
+        });
         if(/cannot connect to the docker daemon|is the docker daemon running|no such file or directory|connection refused|the system cannot find the file specified/.test(text)){
-            return this.#result('daemon-down', { platform, cliPath });
+            return this.#result('daemon-down', {
+                platform,
+                cliPath
+            });
         }
-        return this.#result('unknown', { platform, cliPath, detail: info.stderr.trim() });
+        return this.#result('unknown', {
+            platform,
+            cliPath,
+            detail: info.stderr.trim()
+        });
     }
 
     #result(reason: PreflightReason, extra: {

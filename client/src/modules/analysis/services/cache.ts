@@ -151,7 +151,10 @@ export const upsertAnalysisCaches = (analysis: Analysis): void => {
         if (exists) {
             queryClient.setQueryData<PaginatedResponse<Analysis>>(queryKey, {
                 ...page,
-                data: page.data.map((a) => a._id === analysis._id ? { ...a, ...analysis } : a)
+                data: page.data.map((a) => a._id === analysis._id ? {
+                    ...a,
+                    ...analysis
+                } : a)
             });
             return;
         }
@@ -182,7 +185,10 @@ export const upsertAnalysisFromSocketPayload = (data: Record<string, unknown>, t
         plugin: data.pluginId,
         pluginDisplayName: data.pluginDisplayName,
         config: data.config,
-        trajectory: { _id: trajectoryId, name: trajectoryName },
+        trajectory: {
+            _id: trajectoryId,
+            name: trajectoryName
+        },
         totalFrames: data.totalFrames,
         status: data.status,
         artifactStatus: data.artifactStatus,

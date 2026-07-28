@@ -46,7 +46,10 @@ export const splitWorkspacePath = (value: string): { path: string; name: string 
     const name = parts.pop() ?? '';
     const path = parts.length > 0 ? `${parts.join('/')}/` : '';
 
-    return { path, name };
+    return {
+        path,
+        name
+    };
 };
 
 export const getWorkspaceFileExtension = (name: string): string => {

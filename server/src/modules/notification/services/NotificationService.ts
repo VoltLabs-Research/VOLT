@@ -1,6 +1,8 @@
-import NotificationModel from '@modules/notification/models/NotificationModel';
-import type { NotificationDocument } from '@modules/notification/models/NotificationModel';
+import Notification from '@modules/notification/models/Notification';
+import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
+
+const DEFAULT_LIMIT = 100;
 
 interface NotificationView{
     _id: string;
@@ -28,49 +30,46 @@ interface CreateNotificationInput{
 
 export default class NotificationService{
     async getMyNotifications(input: GetMyNotificationsInput): Promise<PaginatedResult<NotificationView>>{
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 100;
-        const filter = { recipient: input.userId };
+        const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: DEFAULT_LIMIT });
+        const [notifications, total] = await Notification.findAndCount({
+            where: { recipient: input.userId },
+            order: { createdAt: 'DESC' },
+            skip: skipFor(pageRequest),
+            take: pageRequest.limit
+        });
 
-        const [docs, total] = await Promise.all([
-            NotificationModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).exec(),
-            NotificationModel.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => this.#toView(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
+        return paginate([notifications.map((notification) => this.#toView(notification)), total], pageRequest);
     }
 
     async markAllAsRead(userId: string): Promise<void>{
-        await NotificationModel.updateMany({ recipient: userId, read: false }, { read: true });
+        await Notification.update({
+            recipient: userId,
+            read: false
+        }, { read: true });
     }
 
     async create(input: CreateNotificationInput): Promise<NotificationView>{
-        const notification = await NotificationModel.create({
+        const notification = await Notification.create({
             recipient: input.recipient,
             title: input.title,
             content: input.content,
-            link: input.link,
+            link: input.link ?? null,
             read: false
-        });
+        }).save();
+
         return this.#toView(notification);
     }
 
-    #toView(doc: NotificationDocument): NotificationView{
+    #toView(notification: Notification): NotificationView{
         return {
-            _id: String(doc._id),
-            recipient: String(doc.recipient),
-            title: doc.title,
-            content: doc.content,
-            read: doc.read,
-            link: doc.link,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt
+            _id: notification.id,
+            recipient: notification.recipient,
+            title: notification.title,
+            content: notification.content,
+            read: notification.read,
+            link: notification.link ?? undefined,
+            createdAt: notification.createdAt,
+            updatedAt: notification.updatedAt
         };
     }
 }

@@ -1,9 +1,11 @@
-import type { DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
+import { MoreThanOrEqual } from 'typeorm';
+import type { FindOptionsWhere } from 'typeorm';
+import type { ActivityType, DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
 export type { DailyActivityUserSummary };
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DailyActivityModel, { ActivityType } from '@modules/daily-activity/models/DailyActivityModel';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import DailyActivity from '@modules/daily-activity/models/DailyActivity';
+import type User from '@modules/auth/models/User';
 import logger from '@shared/infrastructure/logger';
 
 export interface DailyActivityRecordView {
@@ -28,59 +30,69 @@ export interface GetTeamActivitySummaryResult {
     records: DailyActivityRecordView[];
 }
 
-const toActivityUser = (user: unknown): DailyActivityRecordView['user'] => {
-    if (!isRecord(user)) {
+const startOfToday = (): Date => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
+const toActivityUser = (user: User | null | undefined): DailyActivityRecordView['user'] => {
+    if(!user){
         return String(user);
     }
 
     return {
-        _id: String(user._id),
+        _id: user.id,
         firstName: typeof user.firstName === 'string' ? user.firstName : '',
         lastName: typeof user.lastName === 'string' ? user.lastName : '',
         avatar: typeof user.avatar === 'string' ? user.avatar : undefined
     };
 };
 
-export default class DailyActivityService {
-    async getTeamActivitySummary(input: GetTeamActivitySummaryInput): Promise<GetTeamActivitySummaryResult> {
+export default class DailyActivityService{
+    async getTeamActivitySummary(input: GetTeamActivitySummaryInput): Promise<GetTeamActivitySummaryResult>{
         const range = input.range !== undefined && Number.isFinite(input.range) && input.range > 0
             ? Math.floor(input.range)
             : 7;
 
-        try {
+        try{
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - range);
             startDate.setHours(0, 0, 0, 0);
 
-            const statsQuery = {
+            const statsQuery: FindOptionsWhere<DailyActivity> = {
                 team: input.teamId,
                 ...(input.userId ? { user: input.userId } : {}),
-                date: { $gte: startDate }
+                date: MoreThanOrEqual(startDate)
             };
 
-            const activities = await DailyActivityModel.find(statsQuery)
-                .select('date user minutesOnline activity team')
-                .populate('user', 'firstName lastName avatar')
-                .sort({ date: 1 });
+            const activities = await DailyActivity.find({
+                where: statsQuery,
+                relations: { userRef: true },
+                order: { date: 'ASC' }
+            });
 
             const records: DailyActivityRecordView[] = activities.map((activity) => ({
-                _id: String(activity._id),
-                team: String(activity.team),
-                user: toActivityUser(activity.user),
+                _id: activity.id,
+                team: activity.team,
+                user: toActivityUser(activity.userRef),
                 date: activity.date,
                 activity: (activity.activity ?? []).map((entry) => ({
                     type: entry.type,
                     description: entry.description,
-                    createdAt: entry.createdAt
+                    createdAt: new Date(entry.createdAt)
                 })),
                 minutesOnline: activity.minutesOnline
             }));
 
-            return { range, records };
-        } catch (error: unknown) {
+            return {
+                range,
+                records
+            };
+        }catch(error: unknown){
             logger.error(error, 'Failed to read team activity summary');
 
-            if (error instanceof ApplicationError) {
+            if(error instanceof ApplicationError){
                 throw error;
             }
 
@@ -92,36 +104,61 @@ export default class DailyActivityService {
         }
     }
 
-    async recordActivity(teamId: string, userId: string, type: ActivityType, description: string): Promise<void> {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        await DailyActivityModel.updateOne(
-            { team: teamId, user: userId, date: startOfDay },
-            {
-                $push: { activity: { type, description, createdAt: new Date() } },
-                $setOnInsert: { minutesOnline: 0 }
-            },
-            { upsert: true }
-        );
+    async recordActivity(teamId: string, userId: string, type: ActivityType, description: string): Promise<void>{
+        const date = startOfToday();
+        const entry = {
+            type,
+            description,
+            createdAt: new Date()
+        };
+
+        const existing = await DailyActivity.findOneBy({
+            team: teamId,
+            user: userId,
+            date
+        });
+
+        if(!existing){
+            await DailyActivity.create({
+                team: teamId,
+                user: userId,
+                date,
+                activity: [entry],
+                minutesOnline: 0
+            }).save();
+            return;
+        }
+
+        await Object.assign(existing, { activity: [...(existing.activity ?? []), entry] }).save();
     }
 
-    async recordOnlineMinutes(teamId: string, userId: string, durationInMinutes: number): Promise<void> {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
+    async recordOnlineMinutes(teamId: string, userId: string, durationInMinutes: number): Promise<void>{
+        const date = startOfToday();
 
-        try {
-            await DailyActivityModel.updateOne(
-                { team: teamId, user: userId, date },
-                {
-                    $inc: { minutesOnline: durationInMinutes },
-                    $setOnInsert: { activity: [] }
-                },
-                { upsert: true }
-            );
-        } catch (error: unknown) {
+        try{
+            const target: FindOptionsWhere<DailyActivity> = {
+                team: teamId,
+                user: userId,
+                date
+            };
+
+            const exists = await DailyActivity.existsBy(target);
+            if(exists){
+                await DailyActivity.getRepository().increment(target, 'minutesOnline', durationInMinutes);
+                return;
+            }
+
+            await DailyActivity.create({
+                team: teamId,
+                user: userId,
+                date,
+                activity: [],
+                minutesOnline: durationInMinutes
+            }).save();
+        }catch(error: unknown){
             logger.error(error, 'Failed to update user activity');
 
-            if (error instanceof ApplicationError) {
+            if(error instanceof ApplicationError){
                 throw error;
             }
 

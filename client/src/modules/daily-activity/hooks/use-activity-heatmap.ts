@@ -188,7 +188,10 @@ const buildChartData = (
         else if(ratio > 0.5) level = 3;
         else if(ratio > 0.25) level = 2;
 
-        return { ...day, level };
+        return {
+            ...day,
+            level
+        };
     });
 };
 
@@ -198,7 +201,10 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
     const startDate = useMemo(() => subDays(today, range), [today, range]);
 
     const [tooltipOpen, setTooltipOpen] = useState(false);
-    const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({ x: 0, y: 0 });
+    const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({
+        x: 0,
+        y: 0
+    });
     const [tooltipState, setTooltipState] = useState<TooltipState>(() => createTooltipState(null));
 
     const chartData = useMemo(
@@ -211,7 +217,10 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
         value: ActivityHeatmapChartDataItem | null
     ) => {
         const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
+        setTooltipPos({
+            x: rect.left + (rect.width / 2),
+            y: rect.top
+        });
         setTooltipState(createTooltipState(value));
         setTooltipOpen(true);
     };
@@ -221,7 +230,10 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-        setTooltipPos({ x: event.clientX, y: event.clientY });
+        setTooltipPos({
+            x: event.clientX,
+            y: event.clientY
+        });
     };
 
     return {

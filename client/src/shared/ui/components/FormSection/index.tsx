@@ -1,3 +1,4 @@
+import { cn } from '@/shared/utils/cn';
 import type { ReactNode } from 'react';
 import './FormSection.css';
 
@@ -9,7 +10,7 @@ interface FormSectionProps {
 };
 
 const FormSection = ({ title, description, children, className = '' }: FormSectionProps) => {
-    const rootClassName = ['form-section', className].filter(Boolean).join(' ');
+    const rootClassName = cn('form-section', className);
 
     return (
         <section className={rootClassName}>

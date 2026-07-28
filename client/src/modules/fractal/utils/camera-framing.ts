@@ -116,7 +116,11 @@ export const resolveViewBasis = (direction: Vector3, preferredUp: Vector3): View
     const right = new Vector3().crossVectors(forward, up).normalize();
     up = new Vector3().crossVectors(right, forward).normalize();
 
-    return { forward, right, up };
+    return {
+        forward,
+        right,
+        up
+    };
 };
 
 export const getFallbackBoxFromModelWorldBounds = (modelWorldBounds?: ModelWorldBounds | null): Box3 | null => {
@@ -255,7 +259,10 @@ export const resolveOrthographicFraming = (
         1
     );
 
-    return { distance, zoom };
+    return {
+        distance,
+        zoom
+    };
 };
 
 export const applyCameraAnglePreset = ({

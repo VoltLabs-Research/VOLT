@@ -85,8 +85,14 @@ interface LatexFileJoinAck {
     update: number[];
 }
 
-const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
-const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
+const ackOk = <T>(data: T): SocketAck<T> => ({
+    ok: true,
+    data
+});
+const ackError = (error: string): SocketAck<never> => ({
+    ok: false,
+    error
+});
 
 export class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
@@ -372,7 +378,10 @@ export class LatexSocketModule extends BaseSocketModule {
             return existing.teamId === teamId ? existing : null;
         }
 
-        const files = await this.#service.listFiles({ teamId, documentId }).catch((error: unknown) => {
+        const files = await this.#service.listFiles({
+            teamId,
+            documentId
+        }).catch((error: unknown) => {
             logger.warn(`@latex-socket - failed to load files for document ${documentId}: ${(error as Error).message}`);
             return null;
         });

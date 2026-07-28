@@ -4,17 +4,6 @@ export interface PopulatePath {
     populate?: PopulatePath | PopulatePath[];
 }
 
-export interface FindOptions<T> {
-    filter?: RepositoryFilter<T>;
-    populate?: string | string[] | PopulatePath | PopulatePath[];
-    select?: string[];
-    sort?: Record<string, 1 | -1>;
-    limit?: number;
-    skip?: number;
-}
-
-export type RepositoryFilter<T> = Partial<T> | Record<string, unknown>;
-
 export interface PaginatedResult<T> {
     data: T[];
     total: number;

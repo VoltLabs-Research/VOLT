@@ -20,7 +20,10 @@ export default class ProbeRunner{
         return new Promise((resolve) => {
             const child = spawn(bin, args, {
                 shell: false,
-                env: options.env ? { ...process.env, ...options.env } : process.env
+                env: options.env ? {
+                    ...process.env,
+                    ...options.env
+                } : process.env
             });
 
             let stdout = '';
@@ -37,14 +40,28 @@ export default class ProbeRunner{
             const timer = setTimeout(() => {
                 child.kill('SIGTERM');
                 setTimeout(() => child.kill('SIGKILL'), KILL_GRACE).unref();
-                finish({ code: null, errno: 'ETIMEDOUT', stdout, stderr });
+                finish({
+                    code: null,
+                    errno: 'ETIMEDOUT',
+                    stdout,
+                    stderr
+                });
             }, options.timeoutMs ?? DEFAULT_TIMEOUT);
 
             child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
             child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
 
-            child.on('error', (err: NodeJS.ErrnoException) => finish({ code: null, errno: err.code, stdout, stderr }));
-            child.on('close', (code) => finish({ code, stdout, stderr }));
+            child.on('error', (err: NodeJS.ErrnoException) => finish({
+                code: null,
+                errno: err.code,
+                stdout,
+                stderr
+            }));
+            child.on('close', (code) => finish({
+                code,
+                stdout,
+                stderr
+            }));
         });
     }
 };

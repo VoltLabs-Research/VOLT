@@ -116,8 +116,14 @@ const OAuthCallbackTemplate = () => {
             </Box>
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{
+                    opacity: 0,
+                    scale: 0.95
+                }}
+                animate={{
+                    opacity: 1,
+                    scale: 1
+                }}
                 className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
             >
                 <Row justify='center' className='mb-1-5 oauth-status-icon'>
@@ -142,8 +148,14 @@ const OAuthCallbackTemplate = () => {
 
                 <motion.div
                     key={status}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{
+                        opacity: 0,
+                        y: 10
+                    }}
+                    animate={{
+                        opacity: 1,
+                        y: 0
+                    }}
                 >
                     <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
                         {status === 'loading' && 'Authenticating...'}

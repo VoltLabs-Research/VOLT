@@ -47,10 +47,20 @@ const usePaginationParams = (options: UsePaginationParamsOptions = {}): UsePagin
     }, [updateParams]);
     
     const setSearch = useCallback((search: string) => {
-        updateParams({ search, page: 1 });
+        updateParams({
+            search,
+            page: 1
+        });
     }, [updateParams]);
     
-    return { page, limit, search, setPage, setSearch, updateParams };
+    return {
+        page,
+        limit,
+        search,
+        setPage,
+        setSearch,
+        updateParams
+    };
 };
 
 export default usePaginationParams;

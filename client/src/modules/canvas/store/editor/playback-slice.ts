@@ -115,7 +115,10 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
                 const preloadAbortController = new AbortController();
                 _preloadAbortController = preloadAbortController;
-                set({ isPreloading: true, preloadProgress: 0 });
+                set({
+                    isPreloading: true,
+                    preloadProgress: 0
+                });
 
                 try {
                     const frameCount = timesteps.length;
@@ -133,7 +136,10 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                             }
 
                             const mbps = metrics?.bps != null ? (metrics.bps * 8) / 1_000_000 : null;
-                            set({ preloadProgress: progress, downlinkMbps: mbps });
+                            set({
+                                preloadProgress: progress,
+                                downlinkMbps: mbps
+                            });
                         },
                         maxFramesToPreload,
                         currentFrameIndex,

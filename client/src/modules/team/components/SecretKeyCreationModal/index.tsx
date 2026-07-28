@@ -76,7 +76,11 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         }
 
         await runAction({
-            action: () => createSecretKeyMutation.mutateAsync({ teamId, name, roleId }),
+            action: () => createSecretKeyMutation.mutateAsync({
+                teamId,
+                name,
+                roleId
+            }),
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
                 if (result.secretKey) {
@@ -163,7 +167,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                                 value={name}
                                 onChange={(e) => {
                                     setName(e.target.value);
-                                    if (errors.name) setErrors({ ...errors, name: undefined });
+                                    if (errors.name) setErrors({
+                                        ...errors,
+                                        name: undefined
+                                    });
                                 }}
                             />
 
@@ -177,7 +184,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                                 value={roleId}
                                 onChange={(e) => {
                                     setRoleId(e.target.value);
-                                    if (errors.roleId) setErrors({ ...errors, roleId: undefined });
+                                    if (errors.roleId) setErrors({
+                                        ...errors,
+                                        roleId: undefined
+                                    });
                                 }}
                             />
                         </>

@@ -11,12 +11,12 @@ import type {
 } from './domain';
 
 export const aiRoutes = {
-    listConversations: get<AIConversation>('/api/ai/conversations/:teamId'),
-    createConversation: post<CreateAIConversationInput, CreateAIConversationResponse>('/api/ai/conversations/:teamId'),
+    listConversations: get<AIConversation>('/api/teams/:teamId/ai-conversations'),
+    createConversation: post<CreateAIConversationInput, CreateAIConversationResponse>('/api/teams/:teamId/ai-conversations'),
 
-    listMessages: get<AIMessage>('/api/ai/conversations/:teamId/:conversationId/messages'),
-    streamMessage: post<SendAIConversationMessageInput, unknown>('/api/ai/conversations/:teamId/:conversationId/messages/stream'),
+    listMessages: get<AIMessage>('/api/teams/:teamId/ai-conversations/:conversationId/messages'),
+    streamMessage: post<SendAIConversationMessageInput, unknown>('/api/teams/:teamId/ai-conversations/:conversationId/messages'),
 
-    updateConversation: patch<UpdateAIConversationInput, AIConversation>('/api/ai/conversations/:teamId/:conversationId'),
-    deleteConversation: del('/api/ai/conversations/:teamId/:conversationId')
+    updateConversation: patch<UpdateAIConversationInput, AIConversation>('/api/teams/:teamId/ai-conversations/:conversationId'),
+    deleteConversation: del('/api/teams/:teamId/ai-conversations/:conversationId')
 } as const;

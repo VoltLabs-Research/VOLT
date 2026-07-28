@@ -1,8 +1,8 @@
 import { createRedisClient } from '@core/config/redis';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel from '@modules/auth/models/UserModel';
+import User from '@modules/auth/models/User';
 import JwtTokenService from '@modules/auth/services/JwtTokenService';
-import SessionModel from '@modules/session/models/SessionModel';
+import Session from '@modules/session/models/Session';
 import type {
     ISocketAuthenticationResult,
     ISocketConnectionData,
@@ -205,7 +205,7 @@ export class SocketGateway{
             };
         }
 
-        const user = await UserModel.findById(decoded.id);
+        const user = await User.findOneBy({ id: decoded.id });
 
         if (!user) {
             return {
@@ -221,7 +221,10 @@ export class SocketGateway{
             };
         }
 
-        const session = await SessionModel.findOne({ token, isActive: true });
+        const session = await Session.findOneBy({
+            token,
+            isActive: true
+        });
         if (!session) {
             return {
                 state: 'rejected',
@@ -234,8 +237,8 @@ export class SocketGateway{
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            avatar: user.avatar,
-            teams: user.teams.map((teamId) => teamId.toString()),
+            avatar: user.avatar ?? undefined,
+            teams: user.teams ?? [],
             role: user.role
         };
 

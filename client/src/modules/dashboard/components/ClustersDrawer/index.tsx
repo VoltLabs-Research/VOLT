@@ -35,10 +35,22 @@ const clampPercent = (value: number): number => {
 };
 
 const CLUSTER_METRIC_TABS: ReadonlyArray<{ id: ClusterMetricTabId; label: string }> = [
-    { id: 'cpu', label: 'CPU' },
-    { id: 'memory', label: 'Memory' },
-    { id: 'disk', label: 'Disk' },
-    { id: 'network', label: 'Network' }
+    {
+        id: 'cpu',
+        label: 'CPU'
+    },
+    {
+        id: 'memory',
+        label: 'Memory'
+    },
+    {
+        id: 'disk',
+        label: 'Disk'
+    },
+    {
+        id: 'network',
+        label: 'Network'
+    }
 ];
 
 const ROLE_LABELS: Record<TeamClusterRole, string> = {
@@ -138,7 +150,10 @@ const ClustersDrawer = () => {
     }, [clusters]);
 
     const setClusterMetricTab = useCallback((clusterId: string, metricTab: ClusterMetricTabId) => {
-        setActiveMetricByClusterId((previous) => ({ ...previous, [clusterId]: metricTab }));
+        setActiveMetricByClusterId((previous) => ({
+            ...previous,
+            [clusterId]: metricTab
+        }));
     }, []);
 
     const clustersLoadingState = (

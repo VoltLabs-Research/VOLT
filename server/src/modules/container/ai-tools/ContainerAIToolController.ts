@@ -37,8 +37,15 @@ export default class ContainerAIToolController extends AIToolController {
     async listContainers(input: ListContainersInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.list(input.teamId, input.userId, { page: 1, limit: 50, ...input });
-        return { summary: `Found ${total} containers.`, data };
+        const { total, data } = await this.#service.list(input.teamId, input.userId, {
+            page: 1,
+            limit: 50,
+            ...input
+        });
+        return {
+            summary: `Found ${total} containers.`,
+            data
+        };
     }
 
     @AITool({
@@ -100,7 +107,10 @@ export default class ContainerAIToolController extends AIToolController {
     })
     async getContainerPortAccessUrl(input: GetContainerPortAccessUrlInput & AIToolScope) {
         const accessUrl = await this.#service.createPortAccessUrl(input.teamId, input.containerId, input.port, input.userId);
-        return { summary: `Generated a temporary access URL for port ${input.port}.`, data: accessUrl };
+        return {
+            summary: `Generated a temporary access URL for port ${input.port}.`,
+            data: accessUrl
+        };
     }
 
     @AITool({

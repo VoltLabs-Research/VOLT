@@ -4,23 +4,17 @@ import '@/shared/ui/assets/stylesheets/base.css';
 import '@/shared/ui/assets/stylesheets/general.css';
 import '@voltstack/bravais/components.css';
 import { initializeCustomScrollbars } from '@/shared/ui/utils/custom-scrollbars';
+import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import App from './App';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-const scheduleDeferred = (task: () => void) => {
-    const requestIdle = window.requestIdleCallback;
-    if (typeof requestIdle === 'function') {
-        requestIdle(() => task(), { timeout: 1200 });
-        return;
-    }
-
-    window.setTimeout(task, 250);
-};
-
-scheduleDeferred(() => {
+requestIdleCallbackHandle(() => {
     void import('invokers-polyfill');
+}, {
+    timeoutMs: 1200,
+    fallbackDelayMs: 250
 });
 
 initializeCustomScrollbars();

@@ -146,7 +146,10 @@ export const useSocketTerminalSession = <TAttachPayload>({
 
     const handleTerminalResize = useCallback((cols: number, rows: number) => {
         if (resizeEvent && isAttachedRef.current) {
-            socketService.emitWithoutAck(resizeEvent, { cols, rows });
+            socketService.emitWithoutAck(resizeEvent, {
+                cols,
+                rows
+            });
         }
     }, [resizeEvent, socketService]);
 

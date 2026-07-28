@@ -1,6 +1,9 @@
 import { SessionActivityType } from '@volt/contracts/modules/session/domain';
+import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { Globe, KeyRound, LogIn, LogOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+const SESSION_RELATIVE_DAY_LIMIT = 30;
 
 interface SessionUserAgentInfo {
     browser: string;
@@ -25,31 +28,18 @@ export const parseSessionUserAgent = (userAgent: string): SessionUserAgentInfo =
     else if (normalizedUserAgent.includes('Linux')) os = 'Linux';
     else if (normalizedUserAgent.includes('CrOS')) os = 'ChromeOS';
 
-    return { browser, os };
+    return {
+        browser,
+        os
+    };
 };
 
 export const formatSessionRelativeTime = (dateValue: string | null | undefined): string => {
-    if (!dateValue) {
-        return 'Unknown activity';
-    }
-
-    const now = Date.now();
-    const then = new Date(dateValue).getTime();
-    if (!Number.isFinite(then)) {
-        return 'Unknown activity';
-    }
-
-    const diffMs = now - then;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHr = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHr / 24);
-
-    if (diffSec < 60) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    if (diffDay < 30) return `${diffDay}d ago`;
-    return new Date(dateValue).toLocaleDateString();
+    return formatCompactRelativeTime(dateValue, {
+        fallback: 'Unknown activity',
+        relativeDayLimit: SESSION_RELATIVE_DAY_LIMIT,
+        formatAbsolute: (date) => date.toLocaleDateString()
+    });
 };
 
 export const SESSION_ACTION_LABELS: Record<SessionActivityType, string> = {

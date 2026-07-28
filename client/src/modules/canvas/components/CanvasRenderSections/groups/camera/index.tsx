@@ -60,10 +60,34 @@ const useCameraGroup = (): RenderGroup => {
             title: CAMERA_SUBSECTION_TITLES.perspective,
             enabled: type === CameraType.Perspective,
             rows: [
-                row({ label: 'FOV', min: 10, max: 120, step: 1, decimals: 0 }, () => perspective.fov, (value: number) => setPerspective({ fov: Math.round(value) })),
-                row({ label: 'Near', min: 0.001, max: 10, step: 0.001, decimals: 3 }, () => perspective.near, (value: number) => setPerspective({ near: value })),
-                row({ label: 'Far', min: 0.01, max: 100000, step: 0.1, decimals: 1 }, () => perspective.far, (value: number) => setPerspective({ far: value })),
-                row({ label: 'Zoom', min: 0.1, max: 5, step: 0.01, decimals: 2 }, () => perspective.zoom, (value: number) => setPerspective({ zoom: value }))
+                row({
+                    label: 'FOV',
+                    min: 10,
+                    max: 120,
+                    step: 1,
+                    decimals: 0
+                }, () => perspective.fov, (value: number) => setPerspective({ fov: Math.round(value) })),
+                row({
+                    label: 'Near',
+                    min: 0.001,
+                    max: 10,
+                    step: 0.001,
+                    decimals: 3
+                }, () => perspective.near, (value: number) => setPerspective({ near: value })),
+                row({
+                    label: 'Far',
+                    min: 0.01,
+                    max: 100000,
+                    step: 0.1,
+                    decimals: 1
+                }, () => perspective.far, (value: number) => setPerspective({ far: value })),
+                row({
+                    label: 'Zoom',
+                    min: 0.1,
+                    max: 5,
+                    step: 0.01,
+                    decimals: 2
+                }, () => perspective.zoom, (value: number) => setPerspective({ zoom: value }))
             ]
         };
 
@@ -72,9 +96,27 @@ const useCameraGroup = (): RenderGroup => {
             title: CAMERA_SUBSECTION_TITLES.orthographic,
             enabled: type === CameraType.Orthographic,
             rows: [
-                row({ label: 'Near', min: 0.001, max: 10, step: 0.001, decimals: 3 }, () => orthographic.near, (value: number) => setOrthographic({ near: value })),
-                row({ label: 'Far', min: 0.01, max: 100000, step: 0.1, decimals: 1 }, () => orthographic.far, (value: number) => setOrthographic({ far: value })),
-                row({ label: 'Zoom', min: 0.1, max: 10, step: 0.01, decimals: 2 }, () => orthographic.zoom, (value: number) => setOrthographic({ zoom: value }))
+                row({
+                    label: 'Near',
+                    min: 0.001,
+                    max: 10,
+                    step: 0.001,
+                    decimals: 3
+                }, () => orthographic.near, (value: number) => setOrthographic({ near: value })),
+                row({
+                    label: 'Far',
+                    min: 0.01,
+                    max: 100000,
+                    step: 0.1,
+                    decimals: 1
+                }, () => orthographic.far, (value: number) => setOrthographic({ far: value })),
+                row({
+                    label: 'Zoom',
+                    min: 0.1,
+                    max: 10,
+                    step: 0.01,
+                    decimals: 2
+                }, () => orthographic.zoom, (value: number) => setOrthographic({ zoom: value }))
             ]
         };
 
@@ -85,10 +127,20 @@ const useCameraGroup = (): RenderGroup => {
             rows: [
                 ...vec3Rows('Pos', () => position, (index: number, value: number) => {
                     setPosition(updateVec3Value(position, index, value));
-                }, { min: -1000, max: 1000, step: 0.1, decimals: 2 }),
+                }, {
+                    min: -1000,
+                    max: 1000,
+                    step: 0.1,
+                    decimals: 2
+                }),
                 ...vec3Rows('Up', () => up, (index: number, value: number) => {
                     setUp(updateVec3Value(up, index, Math.min(1, Math.max(-1, value))));
-                }, { min: -1, max: 1, step: 0.01, decimals: 2 })
+                }, {
+                    min: -1,
+                    max: 1,
+                    step: 0.01,
+                    decimals: 2
+                })
             ]
         };
 
@@ -97,10 +149,24 @@ const useCameraGroup = (): RenderGroup => {
             title: 'Camera',
             icon: <MdCameraAlt size={12} />,
             subsections: [
-                { label: CAMERA_SUBSECTION_TITLES.projection, sections: [projectionSection] },
-                { label: CAMERA_SUBSECTION_TITLES.perspective, sections: [perspectiveSection], visible: type === CameraType.Perspective },
-                { label: CAMERA_SUBSECTION_TITLES.orthographic, sections: [orthographicSection], visible: type === CameraType.Orthographic },
-                { label: CAMERA_SUBSECTION_TITLES.position, sections: [transformSection] }
+                {
+                    label: CAMERA_SUBSECTION_TITLES.projection,
+                    sections: [projectionSection]
+                },
+                {
+                    label: CAMERA_SUBSECTION_TITLES.perspective,
+                    sections: [perspectiveSection],
+                    visible: type === CameraType.Perspective
+                },
+                {
+                    label: CAMERA_SUBSECTION_TITLES.orthographic,
+                    sections: [orthographicSection],
+                    visible: type === CameraType.Orthographic
+                },
+                {
+                    label: CAMERA_SUBSECTION_TITLES.position,
+                    sections: [transformSection]
+                }
             ]
         };
     }, [

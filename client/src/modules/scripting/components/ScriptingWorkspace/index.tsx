@@ -89,7 +89,11 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
         containerStage,
         handleDeploymentModalClose,
         retryStartJupyter
-    } = useScriptingWorkspace({ trajectoryId, notebookId, onNotebookIdChange });
+    } = useScriptingWorkspace({
+        trajectoryId,
+        notebookId,
+        onNotebookIdChange
+    });
 
     useEffect(() => {
         onJupyterUrlChange?.(jupyterUrl);
@@ -177,7 +181,11 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
     return (
         <>
             <AsyncBoundary
-                state={{ loading: isLoading, error: errorValue, accessDenied }}
+                state={{
+                    loading: isLoading,
+                    error: errorValue,
+                    accessDenied
+                }}
                 loading={loadingView}
                 error={errorView}
                 accessDenied={accessDeniedView}

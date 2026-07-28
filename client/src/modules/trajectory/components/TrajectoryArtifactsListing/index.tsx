@@ -16,18 +16,30 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         title: 'Display Name',
         sortable: true,
         render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
-        skeleton: { variant: 'text', width: 180 }
+        skeleton: {
+            variant: 'text',
+            width: 180
+        }
     },
-    enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
+    enumColumn<SceneArtifact>('sourceType', 'Source', {
+        sortable: true,
+        width: 120
+    }),
     populatedNameColumn<SceneArtifact>('trajectory', 'Trajectory', { width: 180 }),
     {
         key: 'timestep',
         title: 'Timestep',
         sortable: true,
         render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
-        skeleton: { variant: 'text', width: 80 }
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
-    statusColumn<SceneArtifact>('status', 'Status', { sortable: true, width: 90 }),
+    statusColumn<SceneArtifact>('status', 'Status', {
+        sortable: true,
+        width: 90
+    }),
     dateColumn<SceneArtifact>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

@@ -230,7 +230,10 @@ export default function IntegrationsSettings() {
         if (!id) return;
         if (modalEnabledModels.some((m) => m.id === id)) return;
 
-        setModalEnabledModels((prev) => [...prev, { id, name }]);
+        setModalEnabledModels((prev) => [...prev, {
+            id,
+            name
+        }]);
         setNewModelId('');
         setNewModelName('');
 
@@ -315,7 +318,11 @@ export default function IntegrationsSettings() {
             await runAction({
                 action: integration
                     ? () => updateTeamAIIntegration(modalProvider, payload)
-                    : () => createTeamAIIntegrationMutation.mutateAsync({ teamId, provider: modalProvider, ...payload }),
+                    : () => createTeamAIIntegrationMutation.mutateAsync({
+                        teamId,
+                        provider: modalProvider,
+                        ...payload
+                    }),
                 toast: getSaveIntegrationToastOptions(integration),
                 modalId: TEAM_AI_INTEGRATION_MODAL_ID,
                 afterSuccess: async () => {
@@ -357,7 +364,10 @@ export default function IntegrationsSettings() {
         setBusyProvider(provider);
         try {
             await runAction({
-                action: () => deleteTeamAIIntegrationMutation.mutateAsync({ teamId, provider }),
+                action: () => deleteTeamAIIntegrationMutation.mutateAsync({
+                    teamId,
+                    provider
+                }),
                 toast: getRemoveIntegrationToastOptions(integration),
                 afterSuccess: async () => {
                     if (teamId) {

@@ -12,7 +12,10 @@ const useChatActions = () => {
 
     const getOrCreateChat = useCallback(async (teamId: string, participantId: string) => {
         return runAction({
-            action: () => getOrCreateChatMutationResult.mutateAsync({ teamId, participantId }),
+            action: () => getOrCreateChatMutationResult.mutateAsync({
+                teamId,
+                participantId
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Opening chat...',
                 success: 'Chat ready',

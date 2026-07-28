@@ -25,7 +25,11 @@ const useAccessDenied = () => {
         return false;
     }, [setDeniedState]);
 
-    return { accessDenied, accessDeniedMessage, checkAccessDeniedError };
+    return {
+        accessDenied,
+        accessDeniedMessage,
+        checkAccessDeniedError
+    };
 };
 
 export default useAccessDenied;

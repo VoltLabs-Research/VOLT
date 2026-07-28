@@ -23,19 +23,43 @@ export interface DeployProps{
 type DeployState = AppEvents['deploy:state']['state'];
 
 const waitForUrl = (url: string, timeout = 120_000) =>
-    pWaitFor(() => isUp(url), { interval: 500, timeout });
+    pWaitFor(() => isUp(url), {
+        interval: 500,
+        timeout
+    });
 
 const START_PHASES: PhaseSpec[] = [
-    { id: 'sources', label: 'Resolve sources' },
-    { id: 'build', label: 'Build & start services' },
-    { id: 'server', label: 'Wait for API server' },
-    { id: 'bootstrap', label: 'Provision workspace' },
-    { id: 'daemon', label: 'Start cluster daemon' },
-    { id: 'web', label: 'Wait for web app' }
+    {
+        id: 'sources',
+        label: 'Resolve sources'
+    },
+    {
+        id: 'build',
+        label: 'Build & start services'
+    },
+    {
+        id: 'server',
+        label: 'Wait for API server'
+    },
+    {
+        id: 'bootstrap',
+        label: 'Provision workspace'
+    },
+    {
+        id: 'daemon',
+        label: 'Start cluster daemon'
+    },
+    {
+        id: 'web',
+        label: 'Wait for web app'
+    }
 ];
 
 const STOP_PHASES: PhaseSpec[] = [
-    { id: 'down', label: 'Stop services' }
+    {
+        id: 'down',
+        label: 'Stop services'
+    }
 ];
 
 export default class Deploy{
@@ -65,7 +89,10 @@ export default class Deploy{
         bus.emit('deploy:phases', { phases: START_PHASES });
 
         if(await isUp(webProbe)){
-            for(const phase of START_PHASES) bus.emit('deploy:phase', { id: phase.id, status: 'done' });
+            for(const phase of START_PHASES) bus.emit('deploy:phase', {
+                id: phase.id,
+                status: 'done'
+            });
             return;
         }
 
@@ -79,7 +106,11 @@ export default class Deploy{
             waitForUrl(`${serverOrigin}${PROBE_PATH}`));
 
         const state = await this.#phase('bootstrap', () =>
-            new Bootstrap({ appConfig: this.props.appConfig, serverOrigin, account: this.props.account }).ensure());
+            new Bootstrap({
+                appConfig: this.props.appConfig,
+                serverOrigin,
+                account: this.props.account
+            }).ensure());
 
         if(this.props.withCluster !== false){
             const daemonEnv = this.#withDaemonEnv(baseEnv, state);
@@ -189,7 +220,10 @@ export default class Deploy{
 
     #fail(err: unknown){
         if(err instanceof PreflightError) return;
-        bus.emit('deploy:state', { state: 'error', message: errMessage(err) });
+        bus.emit('deploy:state', {
+            state: 'error',
+            message: errMessage(err)
+        });
     }
 
     async #stage(startState: DeployState, endState: DeployState, fn: () => Promise<void>){
@@ -204,13 +238,23 @@ export default class Deploy{
     }
 
     async #phase<T>(id: string, fn: () => Promise<T>): Promise<T>{
-        bus.emit('deploy:phase', { id, status: 'running' });
+        bus.emit('deploy:phase', {
+            id,
+            status: 'running'
+        });
         try{
             const result = await fn();
-            bus.emit('deploy:phase', { id, status: 'done' });
+            bus.emit('deploy:phase', {
+                id,
+                status: 'done'
+            });
             return result;
         }catch(err){
-            bus.emit('deploy:phase', { id, status: 'error', detail: errMessage(err) });
+            bus.emit('deploy:phase', {
+                id,
+                status: 'error',
+                detail: errMessage(err)
+            });
             throw err;
         }
     }
@@ -225,6 +269,9 @@ export default class Deploy{
 
     async #composeEnv(sources: Record<string, string>): Promise<Record<string, string>>{
         const userEnv = await this.props.appConfig.getStackEnv();
-        return { ...userEnv, ...sources };
+        return {
+            ...userEnv,
+            ...sources
+        };
     }
 };

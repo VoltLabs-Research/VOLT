@@ -19,7 +19,10 @@ export const useDemoClusterStore = create<DemoClusterState>((set) => ({
     expiresAt: null,
     setFromCluster: (cluster) => {
         if (!cluster || !cluster.isDemo) {
-            set({ isDemo: false, expiresAt: null });
+            set({
+                isDemo: false,
+                expiresAt: null
+            });
             return;
         }
         set({
@@ -27,5 +30,8 @@ export const useDemoClusterStore = create<DemoClusterState>((set) => ({
             expiresAt: toDate(cluster.demoExpiresAt)
         });
     },
-    clear: () => set({ isDemo: false, expiresAt: null })
+    clear: () => set({
+        isDemo: false,
+        expiresAt: null
+    })
 }));

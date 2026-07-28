@@ -28,19 +28,28 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         key: 'atoms',
         title: 'Atoms',
         render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.atoms ?? 0),
-        skeleton: { variant: 'text', width: 70 }
+        skeleton: {
+            variant: 'text',
+            width: 70
+        }
     },
     {
         key: 'framesCount',
         title: 'Frames',
         render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.framesCount ?? 0),
-        skeleton: { variant: 'text', width: 70 }
+        skeleton: {
+            variant: 'text',
+            width: 70
+        }
     },
     {
         key: 'stats.totalSize',
         title: 'Size',
         render: (_value, row) => formatSize(isTrajectoryFolderRow(row) ? 0 : row.stats.totalSize),
-        skeleton: { variant: 'text', width: 90 }
+        skeleton: {
+            variant: 'text',
+            width: 90
+        }
     },
     {
         key: 'status',
@@ -48,9 +57,17 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         render: (value, row) => isTrajectoryFolderRow(row)
             ? <Text size='md' tone='muted'>-</Text>
             : <StatusBadge status={String(value)} />,
-        skeleton: { variant: 'rounded', width: 90, height: 24 }
+        skeleton: {
+            variant: 'rounded',
+            width: 90,
+            height: 24
+        }
     },
-    clusterColumn<TrajectoryListingRow>({ isFolder: isTrajectoryFolderRow, width: 150, key: 'storageClusterId' }),
+    clusterColumn<TrajectoryListingRow>({
+        isFolder: isTrajectoryFolderRow,
+        width: 150,
+        key: 'storageClusterId'
+    }),
     dateColumn<TrajectoryListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true

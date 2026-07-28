@@ -1,6 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -8,16 +7,14 @@ import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import storagePlacementService, { StoragePlacementService } from '@modules/cluster/services/StoragePlacementService';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import logger from '@shared/infrastructure/logger';
 
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
-import TrajectoryCloneJobModel, {
-    type TrajectoryCloneJobDocument,
-    type TrajectoryCloneJobProps,
-    type TrajectoryCloneJobState
-} from '@modules/trajectory/models/trajectory/TrajectoryCloneJobModel';
+import { In, IsNull, LessThanOrEqual } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
+import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
+import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/domain/trajectory-clone-job';
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
 const CLAIM_TTL_MS = 5 * 60 * 1000;
@@ -25,57 +22,57 @@ const CLAIM_RENEW_INTERVAL_MS = 60 * 1000;
 const CLONE_WORKER_ID = `${process.pid}:${Math.random().toString(36).slice(2, 10)}`;
 
 const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
-    'queued',
-    'preparing',
-    'copying'
+    TrajectoryCloneJobState.Queued,
+    TrajectoryCloneJobState.Preparing,
+    TrajectoryCloneJobState.Copying
 ];
 
 const mapCloneStateToJobStatus = (state: TrajectoryCloneJobState): JobStatus => {
-    switch (state) {
-        case 'completed':
+    switch(state){
+        case TrajectoryCloneJobState.Completed:
             return JobStatus.Completed;
-        case 'failed':
+        case TrajectoryCloneJobState.Failed:
             return JobStatus.Failed;
-        case 'queued':
+        case TrajectoryCloneJobState.Queued:
             return JobStatus.Queued;
         default:
             return JobStatus.Running;
     }
 };
 
-const getCloneJobMessage = (job: TrajectoryCloneJobDocument): string => {
+const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
     const { totalFrames, copiedFrames } = job.stats;
-    switch (job.state) {
-        case 'queued':
+    switch(job.state){
+        case TrajectoryCloneJobState.Queued:
             return 'Clone queued';
-        case 'preparing':
+        case TrajectoryCloneJobState.Preparing:
             return 'Preparing trajectory clone';
-        case 'copying':
+        case TrajectoryCloneJobState.Copying:
             return totalFrames > 0
                 ? `Copying frames ${copiedFrames}/${totalFrames}`
                 : 'Copying frames';
-        case 'completed':
+        case TrajectoryCloneJobState.Completed:
             return 'Trajectory cloned';
-        case 'failed':
+        case TrajectoryCloneJobState.Failed:
             return job.errorMessage || 'Clone failed';
         default:
             return 'Clone update';
     }
 };
 
-export class TrajectoryCloneCoordinator {
+export class TrajectoryCloneCoordinator{
     private readonly storagePlacementService: StoragePlacementService = storagePlacementService;
 
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-        private readonly eventBus = eventBus;
+    private readonly eventBus = eventBus;
 
-    async runPendingJobs(limit = 1): Promise<number> {
+    async runPendingJobs(limit = 1): Promise<number>{
         let processed = 0;
 
-        while (processed < limit) {
+        while(processed < limit){
             const claimed = await this.claimNextRunnable();
-            if (!claimed) {
+            if(!claimed){
                 break;
             }
 
@@ -84,14 +81,17 @@ export class TrajectoryCloneCoordinator {
                     claimed.id,
                     CLAIM_TTL_MS
                 ).catch((error) => {
-                    logger.warn({ error, jobId: claimed.id }, '[TrajectoryCloneCoordinator] Failed to renew claim');
+                    logger.warn({
+                        error,
+                        jobId: claimed.id
+                    }, '[TrajectoryCloneCoordinator] Failed to renew claim');
                 });
             }, CLAIM_RENEW_INTERVAL_MS);
             renewTimer.unref();
 
-            try {
+            try{
                 await this.executeJob(claimed.id);
-            } finally {
+            }finally{
                 clearInterval(renewTimer);
                 await this.releaseClaim(claimed.id).catch(() => undefined);
             }
@@ -101,51 +101,44 @@ export class TrajectoryCloneCoordinator {
         return processed;
     }
 
-    async executeJob(jobId: string): Promise<TrajectoryCloneJobDocument> {
-        const job = await TrajectoryCloneJobModel.findById(jobId);
-        if (!job) {
+    async executeJob(jobId: string): Promise<TrajectoryCloneJob>{
+        const job = await TrajectoryCloneJob.findOneBy({ id: jobId });
+        if(!job){
             throw ApplicationError.notFound('TrajectoryCloneJob::NotFound', 'Trajectory clone job not found');
         }
 
-        if (!OPEN_CLONE_JOB_STATES.includes(job.state)) {
+        if(!OPEN_CLONE_JOB_STATES.includes(job.state)){
             return job;
         }
 
-        const preparingJob = await this.setJobState(job.id, 'preparing', {
+        const preparingJob = await this.setJobState(job.id, TrajectoryCloneJobState.Preparing, {
             startedAt: job.startedAt ?? new Date(),
             errorCode: null,
             errorMessage: null
         }, { publishUpdate: true });
 
-        try {
+        try{
             const copiedJob = await this.copyFrames(preparingJob);
 
-            await TrajectoryModel.findByIdAndUpdate(copiedJob.destinationTrajectoryId, {
-                $set: {
-                    status: TrajectoryStatus.Completed,
-                    hasPreview: false,
-                    updatedAt: new Date()
-                }
-            }).exec();
+            await this.updateTrajectory(copiedJob.destinationTrajectoryId, {
+                status: TrajectoryStatus.Completed,
+                hasPreview: false
+            });
 
-            const completedJob = await this.setJobState(copiedJob.id, 'completed', {
+            const completedJob = await this.setJobState(copiedJob.id, TrajectoryCloneJobState.Completed, {
                 finishedAt: new Date()
             }, { publishUpdate: true });
 
             logger.info(`[TrajectoryCloneCoordinator] Completed clone job=${completedJob.id} source=${completedJob.sourceTrajectoryId} destination=${completedJob.destinationTrajectoryId}`);
             return completedJob;
-        } catch (error) {
+        }catch(error){
             const errorCode = error instanceof ApplicationError ? error.code : 'TrajectoryClone::Failed';
             const errorMessage = error instanceof Error ? error.message : 'Trajectory clone failed';
 
-            await TrajectoryModel.findByIdAndUpdate(preparingJob.destinationTrajectoryId, {
-                $set: {
-                    status: TrajectoryStatus.Failed,
-                    updatedAt: new Date()
-                }
-            }).exec().catch(() => undefined);
+            await this.updateTrajectory(preparingJob.destinationTrajectoryId, { status: TrajectoryStatus.Failed })
+                .catch(() => undefined);
 
-            const failedJob = await this.setJobState(preparingJob.id, 'failed', {
+            const failedJob = await this.setJobState(preparingJob.id, TrajectoryCloneJobState.Failed, {
                 finishedAt: new Date(),
                 errorCode,
                 errorMessage
@@ -156,27 +149,33 @@ export class TrajectoryCloneCoordinator {
         }
     }
 
-    private async copyFrames(initialJob: TrajectoryCloneJobDocument): Promise<TrajectoryCloneJobDocument> {
-        const sourceTrajectory = await TrajectoryModel.findById(initialJob.sourceTrajectoryId);
-        if (!sourceTrajectory) {
+    private async updateTrajectory(trajectoryId: string, patch: Partial<Trajectory>): Promise<void>{
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
+        if(!trajectory) return;
+        await Object.assign(trajectory, patch).save();
+    }
+
+    private async copyFrames(initialJob: TrajectoryCloneJob): Promise<TrajectoryCloneJob>{
+        const sourceTrajectory = await Trajectory.findOneBy({ id: initialJob.sourceTrajectoryId });
+        if(!sourceTrajectory){
             throw ApplicationError.notFound('Trajectory::NotFound', 'Source trajectory not found');
         }
 
-        const sourceFrames = await TrajectoryFrameModel.find({ trajectoryId: sourceTrajectory._id })
-            .select('timestep')
-            .sort({ timestep: 1 })
-            .lean()
-            .exec();
+        const sourceFrames = await TrajectoryFrame.find({
+            where: { trajectoryId: sourceTrajectory.id },
+            select: { timestep: true },
+            order: { timestep: 'ASC' }
+        });
         const totalFrames = sourceFrames.length;
 
-        let currentJob = await this.setJobState(initialJob.id, 'copying', {
+        let currentJob = await this.setJobState(initialJob.id, TrajectoryCloneJobState.Copying, {
             stats: {
                 ...initialJob.stats,
                 totalFrames
             }
         }, { publishUpdate: true });
 
-        if (totalFrames === 0) {
+        if(totalFrames === 0){
             return currentJob;
         }
 
@@ -202,7 +201,7 @@ export class TrajectoryCloneCoordinator {
             { timeoutClass: 'long-running-control-plane' }
         );
 
-        currentJob = await this.setJobState(currentJob.id, 'copying', {
+        currentJob = await this.setJobState(currentJob.id, TrajectoryCloneJobState.Copying, {
             stats: {
                 ...currentJob.stats,
                 copiedFrames: cloneResult.copiedFrames,
@@ -213,8 +212,8 @@ export class TrajectoryCloneCoordinator {
         return currentJob;
     }
 
-    private requireStorageClusterId(clusterId: string | null | undefined, role: 'source' | 'destination'): string {
-        if (clusterId && clusterId.trim().length > 0) {
+    private requireStorageClusterId(clusterId: string | null | undefined, role: 'source' | 'destination'): string{
+        if(clusterId && clusterId.trim().length > 0){
             return clusterId;
         }
 
@@ -224,92 +223,110 @@ export class TrajectoryCloneCoordinator {
         );
     }
 
-    private async claimNextRunnable(): Promise<TrajectoryCloneJobDocument | null> {
+    private async claimNextRunnable(): Promise<TrajectoryCloneJob | null>{
         const now = new Date();
         const claimExpiresAt = new Date(now.getTime() + CLAIM_TTL_MS);
 
-        return TrajectoryCloneJobModel.findOneAndUpdate(
-            {
-                state: { $in: OPEN_CLONE_JOB_STATES },
-                $or: [
-                    { claimedBy: null },
-                    { claimedBy: { $exists: false } },
-                    { claimExpiresAt: null },
-                    { claimExpiresAt: { $lte: now } }
-                ]
-            },
-            {
-                $set: {
+        for(;;){
+            const candidate = await TrajectoryCloneJob.findOne({
+                where: [
+                    {
+                        state: In(OPEN_CLONE_JOB_STATES),
+                        claimedBy: IsNull()
+                    },
+                    {
+                        state: In(OPEN_CLONE_JOB_STATES),
+                        claimExpiresAt: IsNull()
+                    },
+                    {
+                        state: In(OPEN_CLONE_JOB_STATES),
+                        claimExpiresAt: LessThanOrEqual(now)
+                    }
+                ],
+                order: {
+                    updatedAt: 'ASC',
+                    createdAt: 'ASC'
+                },
+                select: { id: true }
+            });
+
+            if(!candidate){
+                return null;
+            }
+
+            const claim = await TrajectoryCloneJob.createQueryBuilder()
+                .update()
+                .set({
                     claimedBy: CLONE_WORKER_ID,
                     claimExpiresAt
-                }
-            },
-            {
-                new: true,
-                sort: { updatedAt: 1, createdAt: 1 }
+                })
+                .where('id = :id', { id: candidate.id })
+                .andWhere('state IN (:...states)', { states: OPEN_CLONE_JOB_STATES })
+                .andWhere('(claimedBy IS NULL OR claimExpiresAt IS NULL OR claimExpiresAt <= :now)', { now })
+                .execute();
+
+            if(claim.affected){
+                return TrajectoryCloneJob.findOneBy({ id: candidate.id });
             }
-        ).exec();
+        }
     }
 
-    private async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean> {
+    private async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean>{
         const claimExpiresAt = new Date(Date.now() + claimTtlMs);
-        const result = await TrajectoryCloneJobModel.updateOne(
-            { _id: jobId, claimedBy: CLONE_WORKER_ID },
-            { $set: { claimExpiresAt } }
-        ).exec();
+        const result = await TrajectoryCloneJob.update({
+            id: jobId,
+            claimedBy: CLONE_WORKER_ID
+        }, { claimExpiresAt });
 
-        return result.modifiedCount > 0;
+        return (result.affected ?? 0) > 0;
     }
 
-    private async releaseClaim(jobId: string): Promise<void> {
-        await TrajectoryCloneJobModel.updateOne(
-            { _id: jobId, claimedBy: CLONE_WORKER_ID },
-            { $set: { claimedBy: null, claimExpiresAt: null } }
-        ).exec();
+    private async releaseClaim(jobId: string): Promise<void>{
+        await TrajectoryCloneJob.update({
+            id: jobId,
+            claimedBy: CLONE_WORKER_ID
+        }, {
+            claimedBy: null,
+            claimExpiresAt: null
+        });
     }
 
     private async setJobState(
         jobId: string,
         state: TrajectoryCloneJobState,
-        data: Partial<TrajectoryCloneJobProps> = {},
+        data: QueryDeepPartialEntity<TrajectoryCloneJob> = {},
         options: { publishUpdate?: boolean } = {}
-    ): Promise<TrajectoryCloneJobDocument> {
-        const updated = await TrajectoryCloneJobModel.findByIdAndUpdate(
-            jobId,
-            {
-                $set: {
-                    ...data,
-                    state,
-                    updatedAt: new Date()
-                }
-            },
-            { new: true }
-        ).exec();
-
-        if (!updated) {
+    ): Promise<TrajectoryCloneJob>{
+        const job = await TrajectoryCloneJob.findOneBy({ id: jobId });
+        if(!job){
             throw ApplicationError.notFound(
                 'TrajectoryCloneJob::NotFound',
                 'Trajectory clone job not found during update'
             );
         }
 
-        if (options.publishUpdate) {
+        const updated = await Object.assign(job, data, { state }).save();
+
+        if(options.publishUpdate){
             await this.publishJobProjection(updated);
         }
 
         return updated;
     }
 
-    async publishJobProjection(job: TrajectoryCloneJobDocument): Promise<void> {
-        try {
-            const destinationTrajectory = await TrajectoryModel.findById(
-                job.destinationTrajectoryId,
-                'name'
-            );
+    async publishJobProjection(job: TrajectoryCloneJob): Promise<void>{
+        try{
+            const destinationTrajectory = await Trajectory.findOne({
+                where: { id: job.destinationTrajectoryId },
+                select: {
+                    id: true,
+                    name: true
+                }
+            });
 
             await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
                 jobId: job.id,
-                teamId: job.team.toString(),
+                teamId: job.team,
                 status: mapCloneStateToJobStatus(job.state),
                 queueType: TRAJECTORY_CLONE_QUEUE_TYPE,
                 name: 'Trajectory Clone',
@@ -329,12 +346,12 @@ export class TrajectoryCloneCoordinator {
                 copiedBytes: job.stats.copiedBytes,
                 ...(job.errorMessage ? { error: job.errorMessage } : {})
             }));
-        } catch (error) {
+        }catch(error){
             logger.warn({ err: error }, `[TrajectoryCloneCoordinator] Failed to publish projection for job=${job.id}`);
         }
     }
 
-    ensureDestinationPlacement(trajectoryId: string): Promise<void> {
+    ensureDestinationPlacement(trajectoryId: string): Promise<void>{
         return this.storagePlacementService.ensurePlacement('trajectory', trajectoryId).then(() => undefined);
     }
 }

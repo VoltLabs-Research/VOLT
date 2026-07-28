@@ -6,7 +6,7 @@ import type {
 } from './domain';
 
 export const simulationCellRoutes = {
-    list: get<SimulationCell>('/api/simulation-cells/:teamId'),
-    getByTrajectory: get<GetSimulationCellByTrajectoryResponse>('/api/simulation-cells/:teamId/trajectories/:trajectoryId'),
-    get: get<GetSimulationCellResponse>('/api/simulation-cells/:teamId/:simulationCellId')
+    list: get<SimulationCell>('/api/teams/:teamId/simulation-cells'),
+    getByTrajectory: get<GetSimulationCellByTrajectoryResponse>('/api/teams/:teamId/trajectories/:trajectoryId/simulation-cell'),
+    get: get<GetSimulationCellResponse>('/api/teams/:teamId/simulation-cells/:simulationCellId')
 } as const;

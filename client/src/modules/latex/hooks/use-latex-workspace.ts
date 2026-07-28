@@ -175,7 +175,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 ...currentStates,
                 [file._id]: createFileEditorState(file.content)
             });
-        handleOpenTab({ type: 'file', id: file._id });
+        handleOpenTab({
+            type: 'file',
+            id: file._id
+        });
     }, [handleOpenTab]);
 
     const {
@@ -464,7 +467,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         handleCreateFolder,
         deleteAsset,
         updateAsset
-    } = useLatexAssets({ documentId, onInsertRef: handleInsertAssetRef });
+    } = useLatexAssets({
+        documentId,
+        onInsertRef: handleInsertAssetRef
+    });
 
     const activeAsset = useMemo(
         () => selection?.type === 'asset'
@@ -767,12 +773,18 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             ?? latexFiles.find((file) => isTexFile(file.name))
             ?? latexFiles[0];
         if (firstFile) {
-            handleOpenTab({ type: 'file', id: firstFile._id }, PRIMARY_EDITOR_GROUP_ID);
+            handleOpenTab({
+                type: 'file',
+                id: firstFile._id
+            }, PRIMARY_EDITOR_GROUP_ID);
             return;
         }
 
         if (assets[0]) {
-            handleOpenTab({ type: 'asset', id: assets[0]._id }, PRIMARY_EDITOR_GROUP_ID);
+            handleOpenTab({
+                type: 'asset',
+                id: assets[0]._id
+            }, PRIMARY_EDITOR_GROUP_ID);
         }
     }, [assets, editorGroupsState, handleOpenTab, isTexFile, latexFiles]);
 
@@ -808,7 +820,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const handleRenameDocument = useCallback(async (title: string): Promise<void> => {
         try {
-            await updateDocument({ documentId, title });
+            await updateDocument({
+                documentId,
+                title
+            });
             sileo.success(RENAME_TOAST.success);
         } catch (error) {
             checkAccessDeniedError(error);
@@ -861,7 +876,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const handleSelectAssetById = useCallback((assetId: string): void => {
         const asset = assets.find((currentAsset) => currentAsset._id === assetId);
         if (asset) {
-            handleOpenTab({ type: 'asset', id: asset._id });
+            handleOpenTab({
+                type: 'asset',
+                id: asset._id
+            });
         }
     }, [assets, handleOpenTab]);
 
@@ -943,13 +961,19 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
             if (!overTab || position === 'end') {
                 nextTabs.push(draggedTab);
-                return { ...group, openTabs: nextTabs };
+                return {
+                    ...group,
+                    openTabs: nextTabs
+                };
             }
 
             const overIndex = nextTabs.findIndex((tab) => isSameTab(tab, overTab));
             if (overIndex < 0) {
                 nextTabs.push(draggedTab);
-                return { ...group, openTabs: nextTabs };
+                return {
+                    ...group,
+                    openTabs: nextTabs
+                };
             }
 
             const insertionIndex = position === 'before'
@@ -957,7 +981,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 : overIndex + 1;
 
             nextTabs.splice(insertionIndex, 0, draggedTab);
-            return { ...group, openTabs: nextTabs };
+            return {
+                ...group,
+                openTabs: nextTabs
+            };
         });
     }, [updateEditorGroup]);
 

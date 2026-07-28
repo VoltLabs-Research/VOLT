@@ -13,7 +13,12 @@ export const useDemoClusterCountdown = (expiresAt: Date | null | undefined): Dem
 
     const compute = useCallback((): DemoCountdownSnapshot => {
         if (expiresAtMs === undefined) {
-            return { minutes: 0, seconds: 0, totalMs: 0, expired: false };
+            return {
+                minutes: 0,
+                seconds: 0,
+                totalMs: 0,
+                expired: false
+            };
         }
         const totalMs = Math.max(0, expiresAtMs - Date.now());
         const totalSeconds = Math.floor(totalMs / 1000);

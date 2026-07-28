@@ -78,7 +78,10 @@ export const trajectoryQuery = createPaginatedQuery<
     service: {
         list: trajectoryService.getAll,
         create: async (params) => (await trajectoryService.createUploadSession(params)).trajectory,
-        update: (id, params) => trajectoryService.update({ trajectoryId: id, ...params }),
+        update: (id, params) => trajectoryService.update({
+            trajectoryId: id,
+            ...params
+        }),
         delete: (id) => trajectoryService.delete({ trajectoryId: id })
     },
     onUpsert: () => {
@@ -119,7 +122,10 @@ export const createTrajectoryUploadSessionMutation = createMutation<
 
 const trajectoryDetailQuery = createQuery(KEYS.detail, (trajectoryId) => trajectoryService.getById({ trajectoryId }));
 export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<Trajectory[]> => {
-    const result = await trajectoryService.getAll({ page: 1, limit: 1000 });
+    const result = await trajectoryService.getAll({
+        page: 1,
+        limit: 1000
+    });
 
     return result.data.filter(
         (trajectory: Trajectory) => trajectory.status === 'completed'

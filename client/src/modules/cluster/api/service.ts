@@ -78,7 +78,7 @@ const teamClusterEndpoints = {
         '/:teamId/clusters/:teamClusterId/resource-limits'
     ),
     revealCredentials: post<RevealTeamClusterCredentialsParams, RevealTeamClusterCredentialsResponse>(
-        '/:teamId/clusters/:teamClusterId/credentials/reveal'
+        '/:teamId/clusters/:teamClusterId/credential-reveals'
     ),
     listTransferJobs: get<ListTeamClusterTransferJobsParams, ListTeamClusterTransferJobsResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'
@@ -87,7 +87,7 @@ const teamClusterEndpoints = {
         '/:teamId/clusters/:teamClusterId/transfers'
     ),
     regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenParams, RegenerateTeamClusterEnrollmentTokenResponse>(
-        '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
+        '/:teamId/clusters/:teamClusterId/enrollment-tokens'
     ),
     updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyParams, UpdateTeamClusterQueueConcurrencyResponse>(
         '/:teamId/clusters/:teamClusterId/queue-concurrency'

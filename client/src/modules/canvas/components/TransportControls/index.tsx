@@ -70,17 +70,55 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     };
 
     const handleTogglePlay = () => {
-        togglePlay({ trajectoryId, timesteps: availableTimesteps });
+        togglePlay({
+            trajectoryId,
+            timesteps: availableTimesteps
+        });
     };
 
     const buttons = useMemo(() => ([
-        { action: 'start', Icon: SkipBack, label: 'Jump to start', onClick: jumpToStart },
-        { action: 'back-10', Icon: Rewind, label: 'Back 10 timesteps', onClick: jumpBack10 },
-        { action: 'previous', Icon: ChevronLeft, label: 'Previous timestep', onClick: prevTimestep },
-        { action: 'play', Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: handleTogglePlay },
-        { action: 'next', Icon: ChevronRight, label: 'Next timestep', onClick: nextTimestep },
-        { action: 'forward-10', Icon: FastForward, label: 'Forward 10 timesteps', onClick: jumpForward10 },
-        { action: 'end', Icon: SkipForward, label: 'Jump to end', onClick: jumpToEnd }
+        {
+            action: 'start',
+            Icon: SkipBack,
+            label: 'Jump to start',
+            onClick: jumpToStart
+        },
+        {
+            action: 'back-10',
+            Icon: Rewind,
+            label: 'Back 10 timesteps',
+            onClick: jumpBack10
+        },
+        {
+            action: 'previous',
+            Icon: ChevronLeft,
+            label: 'Previous timestep',
+            onClick: prevTimestep
+        },
+        {
+            action: 'play',
+            Icon: isPlaying ? Pause : Play,
+            label: isPlaying ? 'Pause' : 'Play',
+            onClick: handleTogglePlay
+        },
+        {
+            action: 'next',
+            Icon: ChevronRight,
+            label: 'Next timestep',
+            onClick: nextTimestep
+        },
+        {
+            action: 'forward-10',
+            Icon: FastForward,
+            label: 'Forward 10 timesteps',
+            onClick: jumpForward10
+        },
+        {
+            action: 'end',
+            Icon: SkipForward,
+            label: 'Jump to end',
+            onClick: jumpToEnd
+        }
     ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
     const renderButton = (btn: typeof buttons[number]) => (
@@ -97,7 +135,10 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             data-transport-action={btn.action}
             onClick={btn.onClick}
         >
-            <btn.Icon style={{ width: 13, height: 13 }} />
+            <btn.Icon style={{
+                width: 13,
+                height: 13
+            }} />
         </Button>
     );
 

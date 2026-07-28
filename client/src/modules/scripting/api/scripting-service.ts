@@ -12,13 +12,9 @@ export interface CreateScriptingNotebookParams {
 }
 
 export interface CreateScriptingSessionParams {
-    trajectoryId: string;
+    trajectoryId?: string;
     notebookId?: string;
     teamClusterId?: string;
-}
-
-export interface CreateScriptingNotebookSessionParams {
-    notebookId: string;
 }
 
 export interface DeleteScriptingNotebookParams {
@@ -48,31 +44,36 @@ export interface DeleteNotebookSessionParams {
 }
 
 const endpoints = {
-    listNotebooks: paginated<ListScriptingNotebooksParams, PaginatedResponse<ScriptingNotebook>>(
-        ({ trajectoryId }) => trajectoryId ? `/${trajectoryId}/notebooks` : '/notebooks',
-        { omit: ['trajectoryId'] }
-    ),
+    listNotebooks: paginated<ListScriptingNotebooksParams, PaginatedResponse<ScriptingNotebook>>('/notebooks'),
     createNotebook: post<CreateScriptingNotebookParams, ScriptingNotebook>('/notebooks', {
-        body: ({ title, teamClusterId }) => ({ title, teamClusterId })
+        body: ({ title, teamClusterId }) => ({
+            title,
+            teamClusterId
+        })
     }),
     updateNotebook: patch<UpdateScriptingNotebookParams, ScriptingNotebook>('/notebooks/:notebookId', {
-        body: ({ title, teamClusterId, containerResources }) => ({ title, teamClusterId, containerResources })
+        body: ({ title, teamClusterId, containerResources }) => ({
+            title,
+            teamClusterId,
+            containerResources
+        })
     }),
     deleteNotebook: del<DeleteScriptingNotebookParams>('/notebooks/:notebookId'),
-    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions', {
-        body: ({ notebookId, teamClusterId }) => ({ notebookId, teamClusterId })
+    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/notebook-sessions', {
+        body: ({ notebookId, trajectoryId, teamClusterId }) => ({
+            notebookId,
+            trajectoryId,
+            teamClusterId
+        })
     }),
-    createNotebookSession: post<CreateScriptingNotebookSessionParams, ScriptingSession>('/sessions', {
-        body: ({ notebookId }) => ({ notebookId })
-    }),
-    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, ScriptingSession>('/sessions/:notebookId/status'),
-    deleteNotebookSession: del<DeleteNotebookSessionParams>('/sessions/:notebookId')
+    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, ScriptingSession>('/notebook-sessions/:notebookId/status'),
+    deleteNotebookSession: del<DeleteNotebookSessionParams>('/notebook-sessions/:notebookId')
 };
 
 export default createService({
     clients: {
         default: {
-            basePath: '/scripting',
+            basePath: '/teams',
             useRBAC: true
         }
     }

@@ -76,21 +76,23 @@ export const useRasterFrame = ({
         && (!requiresAnalysisFrame || Boolean(analysisId && model));
 
     const frameQuery = useQuery<Blob, ApiError | Error>({
-        queryKey: buildRasterFrameQueryKey({ scope, trajectoryId, timestep, analysisId, model, requestKey }),
+        queryKey: buildRasterFrameQueryKey({
+            scope,
+            trajectoryId,
+            timestep,
+            analysisId,
+            model,
+            requestKey
+        }),
         enabled: canFetchFrame,
         retry: false,
         queryFn: async () => {
-            const blob = requiresAnalysisFrame
-                ? await canvasService.getAnalysisRasterFrame({
-                    trajectoryId: trajectoryId!,
-                    timestep: timestep!,
-                    analysisId: analysisId!,
-                    model: model!
-                })
-                : await canvasService.getRasterFrame({
-                    trajectoryId: trajectoryId!,
-                    timestep: timestep!
-                });
+            const blob = await canvasService.getRasterFrame({
+                trajectoryId: trajectoryId!,
+                timestep: timestep!,
+                analysisId: requiresAnalysisFrame ? analysisId : undefined,
+                model: requiresAnalysisFrame ? model : undefined
+            });
 
             return blob;
         },

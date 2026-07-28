@@ -81,7 +81,11 @@ export const useAnalysesByTrajectoryQuery = (
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();
 
-    return analysesByTrajectoryQuery({ mode, dataAccess, params }, options);
+    return analysesByTrajectoryQuery({
+        mode,
+        dataAccess,
+        params
+    }, options);
 };
 
 export const useRetryFailedFramesMutation = createInvalidatingMutation<RetryFailedFramesResponse, RetryFailedFramesParams>(

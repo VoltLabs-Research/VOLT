@@ -60,16 +60,25 @@ const endpoints = {
         }
     ),
     send: post<SendInvitationInput, void>(
-        '/:teamId/invitations', { client: 'team', unwrap: 'void' }
+        '/:teamId/invitations', {
+            client: 'team',
+            unwrap: 'void'
+        }
     ),
     cancel: del<CancelInvitationInput>(
         '/:teamId/invitations/:invitationId', { client: 'team' }
     ),
     accept: patch<AcceptInvitationInput, void>(
-        '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
+        '/:invitationId/status', {
+            client: 'invitations',
+            unwrap: 'void'
+        }
     ),
     reject: patch<RejectInvitationInput, void>(
-        '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
+        '/:invitationId/status', {
+            client: 'invitations',
+            unwrap: 'void'
+        }
     )
 };
 

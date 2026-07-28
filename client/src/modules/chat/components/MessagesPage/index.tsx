@@ -44,7 +44,8 @@ const MessagesPage = () => {
         isSendingFile,
         editMessage,
         deleteMessage,
-        toggleReaction,
+        setReaction,
+        removeReaction,
         addUsersToGroup,
         leaveGroup
     } = useMessagesPage(chatId);
@@ -86,7 +87,8 @@ const MessagesPage = () => {
                 onSendFiles={handleSendFiles}
                 onEditMessage={editMessage}
                 onDeleteMessage={deleteMessage}
-                onToggleReaction={toggleReaction}
+                onSetReaction={setReaction}
+                onRemoveReaction={removeReaction}
                 onInfoClick={handleInfoClick}
                 isDetailsOpen={showDetails}
             />

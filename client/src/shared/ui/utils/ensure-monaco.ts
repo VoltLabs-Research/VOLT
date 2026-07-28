@@ -97,12 +97,30 @@ const buildMonacoTheme = (theme: VisualTheme): Monaco.editor.IStandaloneThemeDat
         base: theme === Theme.Dark ? 'vs-dark' : 'vs',
         inherit: true,
         rules: [
-            { token: 'comment', foreground: getMonacoTokenColor(tokens.secondaryForeground) },
-            { token: 'string', foreground: getMonacoTokenColor(tokens.syntaxString) },
-            { token: 'number', foreground: getMonacoTokenColor(tokens.syntaxPrimitive) },
-            { token: 'keyword', foreground: getMonacoTokenColor(tokens.accent) },
-            { token: 'type', foreground: getMonacoTokenColor(tokens.syntaxKey) },
-            { token: 'delimiter', foreground: getMonacoTokenColor(tokens.secondaryForeground) }
+            {
+                token: 'comment',
+                foreground: getMonacoTokenColor(tokens.secondaryForeground)
+            },
+            {
+                token: 'string',
+                foreground: getMonacoTokenColor(tokens.syntaxString)
+            },
+            {
+                token: 'number',
+                foreground: getMonacoTokenColor(tokens.syntaxPrimitive)
+            },
+            {
+                token: 'keyword',
+                foreground: getMonacoTokenColor(tokens.accent)
+            },
+            {
+                token: 'type',
+                foreground: getMonacoTokenColor(tokens.syntaxKey)
+            },
+            {
+                token: 'delimiter',
+                foreground: getMonacoTokenColor(tokens.secondaryForeground)
+            }
         ],
         colors: {
             'editor.background': tokens.background,

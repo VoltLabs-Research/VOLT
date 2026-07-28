@@ -64,7 +64,10 @@ const DemoWelcomeModal = () => {
 
         const alreadySeen = localStorage.getItem(STORAGE_KEY) === '1';
         if (alreadySeen) {
-            navigate(location.pathname, { replace: true, state: {} });
+            navigate(location.pathname, {
+                replace: true,
+                state: {}
+            });
             return;
         }
 
@@ -80,7 +83,10 @@ const DemoWelcomeModal = () => {
     const close = () => {
         localStorage.setItem(STORAGE_KEY, '1');
         setIsOpen(false);
-        navigate(location.pathname, { replace: true, state: {} });
+        navigate(location.pathname, {
+            replace: true,
+            state: {}
+        });
     };
 
     const goNext = () => {

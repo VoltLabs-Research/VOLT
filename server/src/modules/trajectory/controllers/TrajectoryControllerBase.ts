@@ -219,10 +219,10 @@ export default abstract class TrajectoryControllerBase extends Controller {
 
     protected validateAtomsRequest(req: AuthenticatedRequest, res: Response): boolean {
         const fmt = typeof req.query.fmt === 'string' ? req.query.fmt : undefined;
-        if (fmt !== 'bin') {
+        if (fmt !== undefined && fmt !== 'bin') {
             BaseResponse.error(
                 res,
-                'Unsupported format: expected ?fmt=bin',
+                'Unsupported format: expected bin',
                 HttpStatus.BadRequest,
                 'TRAJECTORY::ATOMS_UNSUPPORTED_FORMAT'
             );

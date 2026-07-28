@@ -78,7 +78,10 @@ export default function PerAtomViewer() {
     const analysisId = searchParams.get('analysisId') ?? undefined;
     const requestedTimestep = parseTimestepParam(searchParams.get('timestep'));
 
-    const { trajectory } = useGetTrajectoryById({ trajectoryId, enabled: Boolean(trajectoryId) });
+    const { trajectory } = useGetTrajectoryById({
+        trajectoryId,
+        enabled: Boolean(trajectoryId)
+    });
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const timestep = useMemo(() => {
         if (requestedTimestep !== undefined && availableTimesteps.includes(requestedTimestep)) {

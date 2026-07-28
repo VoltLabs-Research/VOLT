@@ -39,7 +39,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/discover/teams',
+            basePath: '/public/teams',
             useRBAC: false
         }
     }

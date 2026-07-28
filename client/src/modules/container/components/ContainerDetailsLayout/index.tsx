@@ -121,7 +121,10 @@ const ContainerDetailsLayout = () => {
             }
 
             await runAction({
-                action: () => updateContainerMutation.mutateAsync({ id, params: { action } }),
+                action: () => updateContainerMutation.mutateAsync({
+                    id,
+                    params: { action }
+                }),
                 toast: createPromiseToastOptions({
                     loading: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`,
                     success: `Container ${action}ed successfully`,
@@ -136,7 +139,10 @@ const ContainerDetailsLayout = () => {
     const handleUpdateEnv = useCallback(async (env: EnvVariable[]) => {
         if(!id) return;
         await runAction({
-            action: () => updateContainerMutation.mutateAsync({ id, params: { env } }),
+            action: () => updateContainerMutation.mutateAsync({
+                id,
+                params: { env }
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Updating environment variables...',
                 success: 'Environment variables updated',
@@ -148,7 +154,10 @@ const ContainerDetailsLayout = () => {
     const handleUpdatePorts = useCallback(async (ports: PortMapping[]) => {
         if(!id) return;
         await runAction({
-            action: () => updateContainerMutation.mutateAsync({ id, params: { ports } }),
+            action: () => updateContainerMutation.mutateAsync({
+                id,
+                params: { ports }
+            }),
             toast: createPromiseToastOptions({
                 loading: 'Updating port bindings...',
                 success: 'Port bindings updated - container will be recreated',
@@ -233,7 +242,10 @@ const ContainerDetailsLayout = () => {
                     key={pathname}
                     initial={prefersReducedMotion ? false : { opacity: 0 }}
                     animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                    transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : {
+                        duration: 0.22,
+                        ease: [0.32, 0.72, 0, 1]
+                    }}
                     style={{ height: '100%' }}
                 >
                     <Outlet context={outletContext} />

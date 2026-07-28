@@ -8,9 +8,6 @@ import type {
     RevealTeamClusterCredentialsInput,
     DeleteTeamClusterInput,
     CreateTeamClusterRemoteAccessSessionInput,
-    ListTeamClusterRemoteExplorerEntriesInput,
-    GetTeamClusterRemoteExplorerNodeInput,
-    DownloadTeamClusterRemoteExplorerObjectInput,
     ProcessTeamClusterHealthcheckInput,
     GenerateTeamClusterInstallManifestInput
 } from './http';
@@ -37,9 +34,15 @@ import type {
     ProcessTeamClusterHealthcheckResponse
 } from './domain';
 
-const head = <Output = void>(path: string): Endpoint<never, Output> => ({ method: 'HEAD', path });
+const head = <Output = void>(path: string): Endpoint<never, Output> => ({
+    method: 'HEAD',
+    path
+});
 
-const putStream = (path: string): Endpoint<never, void> => ({ method: 'PUT', path });
+const putStream = (path: string): Endpoint<never, void> => ({
+    method: 'PUT',
+    path
+});
 
 export const teamClusterRoutes = {
     list: get<TeamCluster>('/api/teams/:teamId/clusters'),
@@ -59,13 +62,13 @@ export const teamClusterRoutes = {
 
     getResourceLimits: get<ClusterResourceLimitsResponse>('/api/teams/:teamId/clusters/:teamClusterId/resource-limits'),
 
-    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>('/api/teams/:teamId/clusters/:teamClusterId/credentials/reveal'),
+    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>('/api/teams/:teamId/clusters/:teamClusterId/credential-reveals'),
     createRemoteAccessSession: post<CreateTeamClusterRemoteAccessSessionInput, CreateTeamClusterRemoteAccessSessionResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/sessions'),
-    listRemoteExplorerEntries: post<ListTeamClusterRemoteExplorerEntriesInput, ListTeamClusterRemoteExplorerEntriesResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/entries'),
-    getRemoteExplorerNode: post<GetTeamClusterRemoteExplorerNodeInput, GetTeamClusterRemoteExplorerNodeResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/node'),
-    downloadRemoteExplorerObject: post<DownloadTeamClusterRemoteExplorerObjectInput, void>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/download'),
+    listRemoteExplorerEntries: get<ListTeamClusterRemoteExplorerEntriesResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/entries'),
+    getRemoteExplorerNode: get<GetTeamClusterRemoteExplorerNodeResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/node'),
+    downloadRemoteExplorerObject: get<void>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/object'),
 
-    regenerateEnrollmentToken: post<never, RegenerateTeamClusterEnrollmentTokenResponse>('/api/teams/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'),
+    regenerateEnrollmentToken: post<never, RegenerateTeamClusterEnrollmentTokenResponse>('/api/teams/:teamId/clusters/:teamClusterId/enrollment-tokens'),
     deleteById: post<DeleteTeamClusterInput, DeleteTeamClusterResponse>('/api/teams/:teamId/clusters/:teamClusterId/delete-requests')
 } as const;
 
@@ -75,7 +78,7 @@ export const clusterLifecycleRoutes = {
 } as const;
 
 export const clusterObjectRoutes = {
-    write: putStream('/api/cluster-objects/:teamId/write/:token'),
-    readHead: head('/api/cluster-objects/:teamId/read/:token'),
-    read: get<void>('/api/cluster-objects/:teamId/read/:token')
+    write: putStream('/api/teams/:teamId/cluster-objects/:token'),
+    readHead: head('/api/teams/:teamId/cluster-objects/:token'),
+    read: get<void>('/api/teams/:teamId/cluster-objects/:token')
 } as const;

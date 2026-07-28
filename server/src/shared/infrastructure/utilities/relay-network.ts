@@ -67,7 +67,10 @@ export const resolveRelayAdvertisedHost = (bindHost: string, advertisedHostEnvNa
         }
 
         logger.warn(
-            { bindHost, serverHostname: configuredServerHostname },
+            {
+                bindHost,
+                serverHostname: configuredServerHostname
+            },
             '[RelayNetwork] Ignoring wildcard SERVER_HOSTNAME for advertised host resolution'
         );
     }
@@ -75,14 +78,20 @@ export const resolveRelayAdvertisedHost = (bindHost: string, advertisedHostEnvNa
     const autoDetectedHost = detectNonInternalIpv4Host();
     if (autoDetectedHost) {
         logger.warn(
-            { bindHost, advertisedHost: autoDetectedHost },
+            {
+                bindHost,
+                advertisedHost: autoDetectedHost
+            },
             '[RelayNetwork] Auto-detected advertised host because bind host is wildcard'
         );
         return autoDetectedHost;
     }
 
     logger.error(
-        { bindHost, advertisedHostEnvName },
+        {
+            bindHost,
+            advertisedHostEnvName
+        },
         '[RelayNetwork] Unable to determine a reachable advertised host for wildcard bind host'
     );
     throw new Error(

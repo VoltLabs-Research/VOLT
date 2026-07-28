@@ -3,22 +3,22 @@ import { RasterStorageService } from '@modules/raster/services/RasterStorageServ
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/services/SceneArtifactService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import AnalysisModel from '@modules/analysis/models/AnalysisModel';
-import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import Analysis from '@modules/analysis/models/Analysis';
+import Trajectory from '@modules/trajectory/models/Trajectory';
 
-export class RasterFrameService {
+export class RasterFrameService{
     constructor(
         private readonly rasterStorage: RasterStorageService
-    ) {}
+    ){}
 
-    async getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+    async getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult>{
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
-        if (!trajectory || trajectory.team.toString() !== teamId) {
+        if(!trajectory || trajectory.team !== teamId){
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
-        const storageClusterId = trajectory.storageClusterId?.toString();
-        if (!storageClusterId) {
+        const storageClusterId = trajectory.storageClusterId;
+        if(!storageClusterId){
             throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',
                 'Trajectory storage cluster is required'
@@ -38,15 +38,15 @@ export class RasterFrameService {
         analysisId: string,
         timestep: number,
         model: string
-    ): Promise<RasterFrameResult> {
-        const trajectory = await TrajectoryModel.findById(trajectoryId);
+    ): Promise<RasterFrameResult>{
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
-        if (!trajectory || trajectory.team.toString() !== teamId) {
+        if(!trajectory || trajectory.team !== teamId){
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const analysis = await AnalysisModel.findById(analysisId);
-        if (!analysis || analysis.team.toString() !== teamId || analysis.trajectory.toString() !== trajectoryId) {
+        const analysis = await Analysis.findOneBy({ id: analysisId });
+        if(!analysis || analysis.team !== teamId || analysis.trajectory !== trajectoryId){
             throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found');
         }
 
@@ -54,7 +54,7 @@ export class RasterFrameService {
             trajectoryId,
             analysisId
         });
-        if (!teamClusterId) {
+        if(!teamClusterId){
             throw ApplicationError.conflict(
                 'Analysis::StorageClusterRequired',
                 'Analysis storage cluster is required'

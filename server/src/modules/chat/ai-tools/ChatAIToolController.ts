@@ -20,12 +20,18 @@ export default class ChatAIToolController extends AIToolController {
         switch (input.action) {
             case 'list': {
                 const value = await this.#service.getUserChats(input.userId);
-                return { summary: `Found ${value.length} chats.`, data: value };
+                return {
+                    summary: `Found ${value.length} chats.`,
+                    data: value
+                };
             }
             case 'summarize': {
                 if (!input.chatId) throw new Error('chatId is required to summarize a chat.');
                 const value = await this.#service.getChatMessages(input.userId, input.chatId, {});
-                return { summary: `Loaded ${value.data.length} messages from chat ${input.chatId}.`, data: value };
+                return {
+                    summary: `Loaded ${value.data.length} messages from chat ${input.chatId}.`,
+                    data: value
+                };
             }
             case 'post': {
                 if (!input.chatId) throw new Error('chatId is required to post a message.');
@@ -34,7 +40,10 @@ export default class ChatAIToolController extends AIToolController {
                     content: input.text,
                     messageType: ChatMessageType.Text
                 });
-                return { summary: `Posted a message to chat ${input.chatId}.`, data: value };
+                return {
+                    summary: `Posted a message to chat ${input.chatId}.`,
+                    data: value
+                };
             }
             case 'create': {
                 if (!input.name) throw new Error('name is required to create a group chat.');
@@ -43,7 +52,10 @@ export default class ChatAIToolController extends AIToolController {
                     groupName: input.name,
                     participantIds: input.memberIds ?? []
                 });
-                return { summary: `Created group chat "${input.name}".`, data: value };
+                return {
+                    summary: `Created group chat "${input.name}".`,
+                    data: value
+                };
             }
         }
     }

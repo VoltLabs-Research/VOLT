@@ -1,6 +1,6 @@
 import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import type AuthService from '@modules/auth/services/AuthService';
-import { OAuthProvider } from '@modules/auth/models/UserModel';
+import { OAuthProvider } from '@modules/auth/contracts/domain/user';
 import BaseOAuthStrategy from '@modules/auth/services/oauth/BaseOAuthStrategy';
 import type { Profile } from 'passport';
 

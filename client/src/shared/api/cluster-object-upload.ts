@@ -46,7 +46,11 @@ class FairUploadScheduler {
     schedule(scopeId: string, run: UploadTask): Promise<void> {
         return new Promise((resolve, reject) => {
             const queue = this.queues.get(scopeId) ?? [];
-            queue.push({ run, resolve, reject });
+            queue.push({
+                run,
+                resolve,
+                reject
+            });
             this.queues.set(scopeId, queue);
 
             if (!this.queuedScopes.has(scopeId)) {

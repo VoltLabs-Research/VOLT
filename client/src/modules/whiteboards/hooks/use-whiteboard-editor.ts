@@ -128,7 +128,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                 let filePromise = loadingFilesRef.current.get(assetId);
                 if (!filePromise) {
                     filePromise = (async () => {
-                        const blob = await service.getWhiteboardAsset({ whiteboardId, assetId });
+                        const blob = await service.getWhiteboardAsset({
+                            whiteboardId,
+                            assetId
+                        });
                         const dataURL = await blobToDataURL(blob);
 
                         return {
@@ -178,7 +181,11 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                     return;
                 }
 
-                const parsed = (state as WhiteboardState) ?? { elements: [], appState: {}, revision: 0 };
+                const parsed = (state as WhiteboardState) ?? {
+                    elements: [],
+                    appState: {},
+                    revision: 0
+                };
                 const files = await hydrateFiles(parsed.elements ?? []);
 
                 if (cancelled) {
@@ -238,7 +245,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
             }
 
             titleSaveTimerRef.current = setTimeout(() => {
-                updateWhiteboard({ whiteboardId, title: incomingTitle }).catch(() => {
+                updateWhiteboard({
+                    whiteboardId,
+                    title: incomingTitle
+                }).catch(() => {
                     sileo.error({ title: 'Failed to rename whiteboard' });
                 });
             }, TITLE_SAVE_DEBOUNCE_MS);
@@ -273,7 +283,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const generateIdForFile = useCallback(async (file: File): Promise<string> => {
         try {
-            const result = await service.uploadWhiteboardAsset({ whiteboardId, file });
+            const result = await service.uploadWhiteboardAsset({
+                whiteboardId,
+                file
+            });
             return result.assetId;
         } catch {
             sileo.error({ title: 'Failed to upload asset' });
@@ -283,7 +296,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const prepareImageAsset = useCallback(async (file: File): Promise<PreparedWhiteboardImageAsset | null> => {
         try {
-            const result = await service.uploadWhiteboardAsset({ whiteboardId, file });
+            const result = await service.uploadWhiteboardAsset({
+                whiteboardId,
+                file
+            });
             const created = Date.now();
             const preparedAsset = {
                 id: result.assetId as PreparedWhiteboardImageAsset['id'],

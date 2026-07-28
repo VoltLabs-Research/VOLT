@@ -10,7 +10,10 @@ const JobSkeleton = ({ n = 10 }: JobSkeletonProps) => (
                 key={index}
                 justify='between'
                 align='center'
-                style={{ paddingTop: 12, paddingBottom: 12 }}
+                style={{
+                    paddingTop: 12,
+                    paddingBottom: 12
+                }}
             >
                 <Row gap='1' flex='1'>
                     <Skeleton

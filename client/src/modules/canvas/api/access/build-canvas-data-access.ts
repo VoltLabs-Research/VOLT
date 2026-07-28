@@ -80,10 +80,17 @@ const buildPublic = (): CanvasDataAccess => ({
     getParticleFilterProperties: (params) => canvasService.getParticleFilterProperties(params),
     getParticleFilterUniqueValues: (params) => canvasService.getParticleFilterUniqueValues(params),
     previewParticleFilter: (params) => canvasService.getParticleFilterPreview(params),
-    getPluginById: ({ trajectoryId, pluginId }) => canvasService.getPlugin({ trajectoryId, pluginId }),
+    getPluginById: ({ trajectoryId, pluginId }) => canvasService.getPlugin({
+        trajectoryId,
+        pluginId
+    }),
     getPluginListing: (params) => canvasService.getPluginListing(params),
     getSubListing: (params) => canvasService.getSubListing(params),
-    getAnalysesByTrajectory: ({ trajectoryId, page, limit }) => canvasService.listAnalyses({ trajectoryId, page, limit }),
+    getAnalysesByTrajectory: ({ trajectoryId, page, limit }) => canvasService.listAnalyses({
+        trajectoryId,
+        page,
+        limit
+    }),
     getAnalysisFrameLog: (params) => canvasService.getFrameLog(params),
     getRasterMetadata: (params) => canvasService.getRasterMetadata(params)
 });

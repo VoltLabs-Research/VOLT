@@ -76,10 +76,16 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     timestamps: true
 });
 
-ChatSchema.index({ participants: 1, team: 1 });
+ChatSchema.index({
+    participants: 1,
+    team: 1
+});
 
 ChatSchema.index({ isGroup: 1 });
-ChatSchema.index({ team: 1, isActive: 1 });
+ChatSchema.index({
+    team: 1,
+    isActive: 1
+});
 
 const ChatModel: Model<ChatDocument> = mongoose.model<ChatDocument>('Chat', ChatSchema);
 

@@ -15,7 +15,10 @@ const SelectedTimestepsField = ({
     onChange
 }: SelectedTimestepsFieldProps) => {
     const options: SelectOption[] = useMemo(
-        () => availableTimesteps.map((t) => ({ value: String(t), title: String(t) })),
+        () => availableTimesteps.map((t) => ({
+            value: String(t),
+            title: String(t)
+        })),
         [availableTimesteps]
     );
 
@@ -47,7 +50,10 @@ const SelectedTimestepsField = ({
                     options={options}
                     selectedValues={selectedValues}
                     onMultiChange={handleMultiChange}
-                    allOption={{ value: '__all__', title: 'All' }}
+                    allOption={{
+                        value: '__all__',
+                        title: 'All'
+                    }}
                     renderTriggerLabel={renderTriggerLabel}
                     hasSearch
                     searchPlaceholder='Search timesteps...'

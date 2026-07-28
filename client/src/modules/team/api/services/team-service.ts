@@ -46,10 +46,10 @@ const endpoints = {
     create: post<CreateTeamInput, Team>('/'),
     update: patch<UpdateTeamParams, Team>('/:teamId'),
     delete: del<DeleteTeamInput>('/:teamId'),
-    generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-code'),
-    deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-code'),
-    previewJoinByCode: post<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/join/preview'),
-    joinByCode: post<JoinByInviteCodeInput, JoinByInviteCodeResponse>('/join'),
+    generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-codes'),
+    deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-codes'),
+    previewJoinByCode: get<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/invite-codes/:code'),
+    joinByCode: post<JoinByInviteCodeInput, JoinByInviteCodeResponse>('/invite-codes/:code/memberships'),
     leave: del<LeaveTeamInput>('/:teamId/self/membership', { unwrap: 'void' }),
     getMyPermissions: get<GetTeamPermissionsInput, GetTeamPermissionsResponse>(
         '/:teamId/self/permissions', {

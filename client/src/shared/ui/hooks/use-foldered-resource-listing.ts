@@ -205,7 +205,10 @@ const useFolderedResourceListing = <
         const options = getItemMenuOptions(item, itemSelection);
 
         return mapItemMenuOptions
-            ? mapItemMenuOptions(options, { item, selectedItems: itemSelection })
+            ? mapItemMenuOptions(options, {
+                item,
+                selectedItems: itemSelection
+            })
             : options;
     }, [getFolderMenuOptions, getItemMenuOptions, isFolderRow, isItemRow, mapItemMenuOptions]);
 

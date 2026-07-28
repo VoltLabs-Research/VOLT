@@ -1,4 +1,5 @@
-import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
 import defaultObjectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -71,8 +72,8 @@ export interface AuthorizedTeamClusterObjectStoreAccess {
 }
 
 const findOwnerClusterById: FindOwnerClusterById = async (ownerClusterId) => {
-    const ownerClusterDocument = await TeamClusterModel.findById(ownerClusterId).exec();
-    return ownerClusterDocument ? toTeamClusterLike(ownerClusterDocument) : null;
+    const ownerClusterEntity = await TeamClusterEntity.findOneBy({ id: ownerClusterId });
+    return ownerClusterEntity ? toTeamClusterLike(ownerClusterEntity) : null;
 };
 
 export default class TeamClusterObjectStoreProxyService {

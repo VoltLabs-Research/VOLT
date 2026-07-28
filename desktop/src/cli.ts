@@ -96,7 +96,10 @@ const parseFlags = (): CliFlags => {
             'with-cluster': { type: 'boolean' },
             force: { type: 'boolean' },
             'data-dir': { type: 'string' },
-            help: { type: 'boolean', short: 'h' }
+            help: {
+                type: 'boolean',
+                short: 'h'
+            }
         }
     });
 
@@ -146,7 +149,13 @@ const main = async () => {
     
     
     const runUpdate = async (withCluster: boolean, email: string) => {
-        const deploy = new Deploy({ composeFile, appConfig, sources, docker, withCluster });
+        const deploy = new Deploy({
+            composeFile,
+            appConfig,
+            sources,
+            docker,
+            withCluster
+        });
         progress.start();
         await deploy.update();
         progress.stop();
@@ -215,8 +224,14 @@ const main = async () => {
         const choice = await p.select({
             message: `Existing deployment found (${existing.email}). What would you like to do?`,
             options: [
-                { value: 'update', label: 'Update — pull latest and rebuild (keeps your data)' },
-                { value: 'reset', label: 'Reset & re-deploy — wipe all data and start fresh' }
+                {
+                    value: 'update',
+                    label: 'Update — pull latest and rebuild (keeps your data)'
+                },
+                {
+                    value: 'reset',
+                    label: 'Reset & re-deploy — wipe all data and start fresh'
+                }
             ]
         });
         if(p.isCancel(choice)){ p.cancel('Deployment cancelled.'); process.exit(1); }
@@ -236,22 +251,53 @@ const main = async () => {
     }
 
     const answers = await p.group({
-        host: () => p.text({ message: 'Server host or domain', initialValue: detectIp(), validate: required }),
+        host: () => p.text({
+            message: 'Server host or domain',
+            initialValue: detectIp(),
+            validate: required
+        }),
         mode: () => p.select<DeployMode>({
             message: 'What do you want to deploy on this machine?',
             initialValue: 'cluster',
             options: [
-                { value: 'cluster', label: 'Server + cluster (daemon)' },
-                { value: 'server', label: 'Server only' }
+                {
+                    value: 'cluster',
+                    label: 'Server + cluster (daemon)'
+                },
+                {
+                    value: 'server',
+                    label: 'Server only'
+                }
             ]
         }),
-        fullName: () => p.text({ message: 'Full name', validate: required }),
-        email: () => p.text({ message: 'Email', validate: required }),
-        username: () => p.text({ message: 'Username', validate: (v) => (/^[a-z0-9][a-z0-9-]{1,38}$/.test(v ?? '') ? undefined : 'Lowercase letters, digits and dashes (2-39)') }),
-        password: () => p.password({ message: 'Password', validate: (v) => ((v?.length ?? 0) >= 8 ? undefined : 'Min 8 characters') }),
-        teamName: () => p.text({ message: 'Team name', validate: required }),
-        clusterName: () => p.text({ message: 'Cluster name', validate: required }),
-        autoJoinNewUsers: () => p.confirm({ message: 'Automatically add everyone who signs up to this team?', initialValue: false })
+        fullName: () => p.text({
+            message: 'Full name',
+            validate: required
+        }),
+        email: () => p.text({
+            message: 'Email',
+            validate: required
+        }),
+        username: () => p.text({
+            message: 'Username',
+            validate: (v) => (/^[a-z0-9][a-z0-9-]{1,38}$/.test(v ?? '') ? undefined : 'Lowercase letters, digits and dashes (2-39)')
+        }),
+        password: () => p.password({
+            message: 'Password',
+            validate: (v) => ((v?.length ?? 0) >= 8 ? undefined : 'Min 8 characters')
+        }),
+        teamName: () => p.text({
+            message: 'Team name',
+            validate: required
+        }),
+        clusterName: () => p.text({
+            message: 'Cluster name',
+            validate: required
+        }),
+        autoJoinNewUsers: () => p.confirm({
+            message: 'Automatically add everyone who signs up to this team?',
+            initialValue: false
+        })
     }, { onCancel: () => { p.cancel('Deployment cancelled.'); process.exit(1); } });
 
     const withCluster = answers.mode !== 'server';
@@ -293,7 +339,11 @@ const main = async () => {
         const res = await fetch(`${consoleUrl}/auth/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: answers.email, username: answers.username, password: answers.password }),
+            body: JSON.stringify({
+                email: answers.email,
+                username: answers.username,
+                password: answers.password
+            }),
             signal: AbortSignal.timeout(15_000)
         });
         consoleReady = res.ok || res.status === 409;

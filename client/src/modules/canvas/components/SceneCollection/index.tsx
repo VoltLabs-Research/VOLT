@@ -96,7 +96,10 @@ const SceneCollection = ({
     firstExposureTourTargetId
 }: SceneCollectionProps) => {
     const { pluginsById } = usePluginSelectors();
-    const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
+    const defaultScene = {
+        sceneType: 'trajectory',
+        source: 'default' as const
+    };
     const isRasterSelectionMode = selectionMode === 'raster';
     const isDefaultActive = isRasterSelectionMode
         ? isSameScene(selectedScene, defaultScene)
@@ -129,7 +132,11 @@ const SceneCollection = ({
     const trajectoryRow = (
         <CanvasTreeRow
             isActive={!!isDefaultActive}
-            icon={<Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />}
+            icon={<Atom style={{
+                width: 13,
+                height: 13,
+                color: TREE_SCENE_ICON_COLOR
+            }} />}
             label='Trajectory'
             onClick={() => {
                 if (isRasterSelectionMode) {
@@ -144,7 +151,11 @@ const SceneCollection = ({
     const simulationCellRow = (
         <CanvasTreeRow
             isActive={showSimulationCell}
-            icon={<Box style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />}
+            icon={<Box style={{
+                width: 13,
+                height: 13,
+                color: TREE_SCENE_ICON_COLOR
+            }} />}
             label='Simulation Cell'
             onClick={onToggleSimulationCell}
         />

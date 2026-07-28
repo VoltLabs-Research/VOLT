@@ -218,7 +218,10 @@ const CompactPluginExposureTable = ({
                 timestep={inlineState.timestep}
                 subListingNames={inlineState.subListingNames}
                 activeName={inlineState.activeName}
-                onActiveNameChange={(name) => setInlineState((prev) => (prev ? { ...prev, activeName: name } : prev))}
+                onActiveNameChange={(name) => setInlineState((prev) => (prev ? {
+                    ...prev,
+                    activeName: name
+                } : prev))}
                 onClose={() => setInlineState(null)}
             />
         );

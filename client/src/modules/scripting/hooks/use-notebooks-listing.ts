@@ -2,7 +2,7 @@ import service from '@/modules/scripting/api/scripting-service';
 import {
     scriptingNotebooksQueryKey,
     useCreateScriptingNotebookMutation,
-    useCreateScriptingNotebookSessionMutation,
+    useCreateScriptingSessionMutation,
     useDeleteScriptingNotebookMutation,
     useUpdateScriptingNotebookMutation
 } from '@/modules/scripting/hooks/queries';
@@ -56,10 +56,16 @@ const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
 const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_NOTEBOOK_EVENTS.DELETED, queryKeys: [scriptingNotebooksQueryKey()] }
+    {
+        event: SOCKET_NOTEBOOK_EVENTS.DELETED,
+        queryKeys: [scriptingNotebooksQueryKey()]
+    }
 ];
 
-const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Notebook' });
+const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({
+    action: 'Deleting',
+    subject: 'Notebook'
+});
 
 const CREATE_NOTEBOOK_TOAST = {
     loading: { title: 'Creating notebook...' },
@@ -70,9 +76,16 @@ const CREATE_NOTEBOOK_TOAST = {
     error: { title: 'Failed to create notebook' }
 };
 
-const RENAME_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Notebook' });
+const RENAME_NOTEBOOK_TOAST = createCrudToastOptions({
+    action: 'Renaming',
+    subject: 'Notebook'
+});
 
-const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({ action: 'Saving', subject: 'notebook deployment', success: 'Notebook deployment saved successfully' });
+const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({
+    action: 'Saving',
+    subject: 'notebook deployment',
+    success: 'Notebook deployment saved successfully'
+});
 
 const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
     return scope || DEFAULT_NOTEBOOK_SCOPE;
@@ -124,7 +137,7 @@ const useNotebooksListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
     const { mutateAsync: createNotebook } = useCreateScriptingNotebookMutation();
-    const { mutateAsync: createNotebookSession } = useCreateScriptingNotebookSessionMutation();
+    const { mutateAsync: createScriptingSession } = useCreateScriptingSessionMutation();
     const { mutateAsync: deleteNotebook } = useDeleteScriptingNotebookMutation();
     const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
     const [deploymentModalRequest, setDeploymentModalRequest] = useState<ScriptingNotebookDeploymentModalRequest | null>(null);
@@ -184,7 +197,7 @@ const useNotebooksListing = () => {
 
         try {
             const result = await startAndWaitForReadyScriptingSession({
-                createSession: () => createNotebookSession({
+                createSession: () => createScriptingSession({
                     notebookId: notebook._id
                 }),
                 readSession: () => service.readNotebookSessionStatus({ notebookId: notebook._id })
@@ -221,7 +234,7 @@ const useNotebooksListing = () => {
                 description: getJupyterStartErrorMessage(error)
             });
         }
-    }, [createNotebookSession, teamId]);
+    }, [createScriptingSession, teamId]);
 
     const handleCreate = useCallback(async () => {
         if (!teamId) {
@@ -253,7 +266,10 @@ const useNotebooksListing = () => {
     } = useRenameEntityModal({
         modalId: RENAME_SCRIPTING_NOTEBOOK_MODAL_ID,
         updateEntity: updateNotebook,
-        getUpdateParams: (notebook: ScriptingNotebook, title) => ({ notebookId: notebook._id, title }),
+        getUpdateParams: (notebook: ScriptingNotebook, title) => ({
+            notebookId: notebook._id,
+            title
+        }),
         renameToast: RENAME_NOTEBOOK_TOAST
     });
 

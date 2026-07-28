@@ -21,8 +21,14 @@ interface ExpressionSelectStageEditorProps {
 const TEXTAREA_ROWS = 3;
 
 const ACTION_OPTIONS = [
-    { value: 'color', title: 'Color selection' },
-    { value: 'delete', title: 'Delete selection' }
+    {
+        value: 'color',
+        title: 'Color selection'
+    },
+    {
+        value: 'delete',
+        title: 'Delete selection'
+    }
 ];
 
 const isAction = (value: string): value is ExpressionSelectAction =>

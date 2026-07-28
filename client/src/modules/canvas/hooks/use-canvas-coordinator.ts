@@ -34,7 +34,11 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     );
 
     const analysesQuery = useCanvasAnalysesQuery(
-        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        {
+            trajectoryId: trajectoryId ?? '',
+            page: 1,
+            limit: 100
+        },
         { enabled: shouldFetch }
     );
 

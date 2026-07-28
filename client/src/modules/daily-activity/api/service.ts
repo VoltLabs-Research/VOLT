@@ -8,7 +8,7 @@ export interface GetDailyActivityParams {
 }
 
 const endpoints = {
-    getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/', {
+    getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/daily-activities', {
         query: (params) => {
             if (!params) {
                 return undefined;
@@ -25,7 +25,7 @@ const endpoints = {
 export default createService({
     clients: {
         default: {
-            basePath: '/daily-activities',
+            basePath: '/teams',
             useRBAC: true
         }
     }
