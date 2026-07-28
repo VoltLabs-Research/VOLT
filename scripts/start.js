@@ -10,9 +10,6 @@
  * returns the cgroup memory limit rather than the host's total RAM — preventing the
  * daemon from sizing its heap beyond the container budget and getting OOM-killed.
  * Falls back to `os.totalmem()` when running outside a cgroup.
- *
- * `--expose-gc` is injected so that the memory monitor can trigger manual GC cycles
- * when heap pressure is detected (see src/core/memory.ts).
  */
 
 'use strict';
@@ -23,9 +20,8 @@ const path = require('node:path');
 
 const HEAP_FRACTION = 0.80;
 const MIN_HEAP_MB = 512;
-const MAX_HEAP_MB = 16_384; // 16 GB ceiling
+const MAX_HEAP_MB = 16_384;
 
-// Node 22 exposes cgroup-aware memory; outside cgroups it returns 0.
 const constrainedBytes = process.constrainedMemory();
 const effectiveBytes = constrainedBytes > 0 ? constrainedBytes : os.totalmem();
 const totalMemoryMB = Math.floor(effectiveBytes / (1024 * 1024));
@@ -33,35 +29,24 @@ const heapMB = Math.max(MIN_HEAP_MB, Math.min(MAX_HEAP_MB, Math.floor(totalMemor
 
 const memorySource = constrainedBytes > 0 ? 'cgroup limit' : 'host total RAM';
 
-const entrypoint = path.resolve(__dirname, '..', 'dist', 'index.js');
+const entrypoint = path.resolve(__dirname, '..', 'dist', 'daemon.js');
 
 console.log(
     `[start] Memory source: ${memorySource} — ${totalMemoryMB} MB — setting --max-old-space-size=${heapMB} MB (${Math.round(HEAP_FRACTION * 100)}%)`
 );
 
-// Propagate the heap flag and --expose-gc through NODE_OPTIONS so that the child
-// process (and any sub-processes it spawns) inherit the same settings.
 const nodeOptions = process.env.NODE_OPTIONS || '';
 const hasHeapFlag = /--max[-_]old[-_]space[-_]size/.test(nodeOptions);
-const hasExposeGc = /--expose[-_]gc/.test(nodeOptions);
 
-const extraFlags = [];
-if (!hasHeapFlag) extraFlags.push(`--max-old-space-size=${heapMB}`);
-if (!hasExposeGc) extraFlags.push('--expose-gc');
-
-if (extraFlags.length > 0) {
-    process.env.NODE_OPTIONS = `${nodeOptions} ${extraFlags.join(' ')}`.trim();
+if (!hasHeapFlag) {
+    process.env.NODE_OPTIONS = `${nodeOptions} --max-old-space-size=${heapMB}`.trim();
 }
 
-// Replace the current process with node running the entrypoint.
-// Using execFileSync with stdio: 'inherit' keeps the same PID semantics
-// that Docker expects (PID 1 signal forwarding).
 try {
     execFileSync(process.execPath, [entrypoint], {
         stdio: 'inherit',
         env: process.env
     });
 } catch (err) {
-    // execFileSync throws on non-zero exit — propagate the exit code
     process.exit(err.status || 1);
 }

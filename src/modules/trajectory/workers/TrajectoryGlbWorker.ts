@@ -1,0 +1,59 @@
+import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
+import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
+import { type Job } from 'bullmq';
+
+import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
+import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
+import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
+import type { GlbConversionQueueJobPayload } from '@shared/contracts';
+import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
+import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
+
+export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload> {
+    protected readonly queueName = TRAJECTORY_GLB_QUEUE_NAME;
+    protected readonly scopeKey: QueueScopeKey = 'trajectoryGlbConversion';
+    private readonly buildStatusReporter: ReturnType<typeof createLifecycleStatusReporter<GlbConversionQueueJobPayload>>;
+
+    constructor(
+        queueService: QueueService,
+        queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
+        private readonly glbExporter: GlbExporter,
+        daemonJobReporter: DaemonJobReporter
+    ) {
+        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        this.buildStatusReporter = createLifecycleStatusReporter<GlbConversionQueueJobPayload>(
+            {
+                started: daemonJobReporter.reportGlbStarted,
+                completed: daemonJobReporter.reportGlbCompleted,
+                failed: daemonJobReporter.reportGlbFailed
+            },
+            'trajectory GLB'
+        );
+    }
+
+    protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {
+        const maxAttempts = bullJob.opts.attempts ?? 1;
+        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
+
+        await withJobLifecycle(
+            {
+                reportStatus: this.buildStatusReporter(payload),
+                shouldReportTerminal: () => isFinalAttempt(),
+                progress: (value) => bullJob.updateProgress(value)
+            },
+            () => this.glbExporter.preprocessTrajectory(payload)
+        );
+    }
+}
+
+let trajectoryGlbWorkerInstance: TrajectoryGlbWorker | null = null;
+
+export const getTrajectoryGlbWorker = (): TrajectoryGlbWorker => {
+    trajectoryGlbWorkerInstance ??= new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter());
+    return trajectoryGlbWorkerInstance;
+};

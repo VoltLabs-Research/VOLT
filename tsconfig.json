@@ -19,14 +19,14 @@
     ],
     "baseUrl": "./src",
     "paths": {
-      "@/contracts": [
-        "support/contracts/index"
+      "@core/*": [
+        "core/*"
       ],
-      "@/contracts/*": [
-        "support/contracts/*"
+      "@modules/*": [
+        "modules/*"
       ],
-      "@/*": [
-        "*"
+      "@shared/*": [
+        "shared/*"
       ]
     }
   },

@@ -1,0 +1,28 @@
+import { getJupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
+import { getDaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
+import type { CreateNotebookSessionRequest } from '@shared/contracts';
+import { Command, CommandGroup } from '@shared/commands/command';
+import type { JupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
+import type { DaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
+
+@CommandGroup('notebook')
+export class NotebookCommands {
+    constructor(
+        private readonly jupyterRuntime: JupyterRuntime,
+        private readonly daemonExposureRegistry: DaemonExposureRegistry
+    ) {}
+
+    @Command('session.create', { status: 201 })
+    async createSession(payload: CreateNotebookSessionRequest) {
+        const response = await this.jupyterRuntime.ensureSession(payload);
+        await this.daemonExposureRegistry.sync().catch(() => {});
+        return response;
+    }
+}
+
+let NotebookCommandsInstance: NotebookCommands | null = null;
+
+export const getNotebookCommands = (): NotebookCommands => {
+    NotebookCommandsInstance ??= new NotebookCommands(getJupyterRuntime(), getDaemonExposureRegistry());
+    return NotebookCommandsInstance;
+};

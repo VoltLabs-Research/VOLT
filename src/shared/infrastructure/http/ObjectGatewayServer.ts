@@ -1,0 +1,711 @@
+import { getConfig } from '@core/config/daemon';
+import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts/types/service-exposure';
+import {
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
+} from '@shared/contracts/types/http-object-store';
+import type { LocalClusterObjectStat, LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
+import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@shared/contracts/types/object-gateway';
+import { logger } from '@shared/infrastructure/logger';
+import type { DaemonConfig } from '@core/config/daemon';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { TeamClusterServiceExposure } from '@shared/contracts/types/service-exposure';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import type { MinioService } from '@shared/infrastructure/storage/MinioService';
+import { verifyTeamClusterDirectAccessToken } from '@shared/infrastructure/http/team-cluster-direct-access-token';
+import type { Readable } from 'node:stream';
+import express, { type NextFunction, type Request, type Response } from 'express';
+
+type ObjectGatewayCollectionOperation = 'list' | 'delete-prefix' | 'compose';
+type ObjectGatewayObjectOperation = 'head' | 'get' | 'put' | 'delete';
+
+interface StatusCodeError extends Error {
+    code?: string;
+    statusCode: number;
+}
+
+interface ObjectGatewayRouteParams {
+    bucket: string;
+}
+
+interface ObjectByteRange {
+    start: number;
+    end: number;
+    length: number;
+}
+
+const OBJECT_GATEWAY_API_BASE_PATH = '/internal/object-gateway/v1';
+const OBJECT_GATEWAY_BUCKETS_PATH = `${OBJECT_GATEWAY_API_BASE_PATH}/buckets/`;
+const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
+const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
+const DEFAULT_LIST_LIMIT = 100;
+const MAX_LIST_LIMIT = 1_000;
+const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
+const LOOPBACK_HOST = '127.0.0.1';
+
+const OBJECT_COLLECTION_ROUTE = `${OBJECT_GATEWAY_BUCKETS_PATH}:bucket/objects`;
+const OBJECT_COMPOSE_ROUTE = `${OBJECT_COLLECTION_ROUTE}/compose`;
+
+const parseRangeHeader = (value: string | undefined, objectSize: number): ObjectByteRange | null => {
+    if (!value) {
+        return null;
+    }
+
+    const match = value.match(/^bytes=(\d*)-(\d*)$/i);
+    if (!match) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header must use the form bytes=start-end', 416);
+    }
+
+    const [, rawStart, rawEnd] = match;
+
+    if (!rawStart && !rawEnd) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header must include a start or end offset', 416);
+    }
+
+    if (!rawStart) {
+        const suffixLength = Number(rawEnd);
+        if (!Number.isInteger(suffixLength) || suffixLength <= 0) {
+            throw new ApplicationError('ObjectGateway::InvalidRange', 'Range suffix length must be a positive integer', 416);
+        }
+
+        const boundedLength = Math.min(suffixLength, objectSize);
+        return {
+            start: Math.max(0, objectSize - boundedLength),
+            end: objectSize - 1,
+            length: boundedLength
+        };
+    }
+
+    const start = Number(rawStart);
+    const requestedEnd = rawEnd ? Number(rawEnd) : objectSize - 1;
+
+    if (!Number.isInteger(start) || start < 0 || !Number.isInteger(requestedEnd) || requestedEnd < start) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header contains invalid byte offsets', 416);
+    }
+
+    if (start >= objectSize) {
+        throw new ApplicationError('ObjectGateway::RangeNotSatisfiable', 'Range start exceeds object size', 416);
+    }
+
+    const end = Math.min(requestedEnd, objectSize - 1);
+
+    return {
+        start,
+        end,
+        length: end - start + 1
+    };
+};
+
+export class ObjectGatewayServer {
+    private readonly app = express();
+    private server: Server | null = null;
+    private bindHost: string | null = null;
+    private bindPort: number | null = null;
+    private localTargetHost: string | null = null;
+    private exposure: TeamClusterServiceExposure | null = null;
+    private readonly allowedBuckets: Set<string>;
+
+    constructor(
+        private readonly config: DaemonConfig,
+        private readonly objectStore: LocalClusterObjectStoreGateway,
+        private readonly security: ObjectGatewaySecurity = {}
+    ) {
+        this.allowedBuckets = new Set(this.objectStore.listBuckets());
+        this.configureRoutes();
+    }
+
+    async start(): Promise<void> {
+        if (this.server && this.bindHost && this.bindPort) return;
+
+        this.server = await new Promise<Server>((resolve, reject) => {
+            const server = this.app.listen(this.config.port, this.config.host, () => {
+                resolve(server);
+            });
+
+            server.once('error', reject);
+        });
+
+        const address = this.server.address() as AddressInfo | null;
+        if (!address) {
+            throw new Error('Object gateway server did not expose a TCP address');
+        }
+
+        this.bindHost = address.address;
+        this.bindPort = address.port;
+        const isWildcardHost = address.address === '0.0.0.0' || address.address === '::' || address.address === '[::]';
+        this.localTargetHost = isWildcardHost ? LOOPBACK_HOST : address.address;
+        this.exposure = {
+            id: OBJECT_GATEWAY_EXPOSURE_ID,
+            teamClusterId: this.config.teamClusterId,
+            teamId: this.config.teamId ?? this.config.teamClusterId,
+            sourceKind: TeamClusterServiceExposureSourceKind.Daemon,
+            exposureName: OBJECT_GATEWAY_EXPOSURE_NAME,
+            accessModes: [TeamClusterServiceExposureAccessMode.Http],
+            targetHost: this.localTargetHost,
+            targetPort: this.bindPort,
+            status: TeamClusterServiceExposureStatus.Active,
+            labels: {
+                'volt.exposure.api-version': 'v1',
+                'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
+                'volt.exposure.source-kind': TeamClusterServiceExposureSourceKind.Daemon
+            }
+        };
+
+        logger.info(`Started daemon object gateway for teamClusterId=${this.config.teamClusterId}, host=${this.bindHost}, port=${this.bindPort}`);
+    }
+
+    async stop(): Promise<void> {
+        if (!this.server) return;
+
+        const server = this.server;
+        this.server = null;
+        this.bindHost = null;
+        this.bindPort = null;
+        this.localTargetHost = null;
+        this.exposure = null;
+
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+
+                resolve();
+            });
+        });
+    }
+
+    getExposure(): TeamClusterServiceExposure {
+        if (this.exposure === null) {
+            throw new Error('Object gateway server is not listening');
+        }
+
+        return this.exposure;
+    }
+
+    private configureRoutes(): void {
+        this.app.disable('x-powered-by');
+        this.app.use((request, _response, next) => {
+            try {
+                this.authorizeRequest(request);
+                next();
+            } catch (error) {
+                next(error);
+            }
+        });
+        this.app.get(OBJECT_COLLECTION_ROUTE, (request, response, next) => {
+            this.handleCollectionRequest('list', request, response, next);
+        });
+
+        this.app.delete(OBJECT_COLLECTION_ROUTE, (request, response, next) => {
+            this.handleCollectionRequest('delete-prefix', request, response, next);
+        });
+
+        this.app.post(OBJECT_COMPOSE_ROUTE, express.json({ limit: '1mb' }), (request, response, next) => {
+            this.handleCollectionRequest('compose', request, response, next);
+        });
+
+        this.app.all(OBJECT_COLLECTION_ROUTE, (request, _response, next) => {
+            next(new ApplicationError(
+                'ObjectGateway::UnsupportedCollectionMethod',
+                `Unsupported method for object collection: ${request.method}`,
+                405
+            ));
+        });
+
+        this.app.use(OBJECT_COLLECTION_ROUTE, (request, response, next) => {
+            this.handleObjectRoute(request, response).catch(next);
+        });
+
+        this.app.use((_request, _response, next) => {
+            next(new ApplicationError('ObjectGateway::RouteNotFound', 'Object gateway route not found', 404));
+        });
+
+        this.app.use((error: Error, _request: Request, response: Response, _next: NextFunction) => {
+            this.handleRequestFailure(response, error);
+        });
+    }
+
+    private async handleCollectionRequest(
+        operation: ObjectGatewayCollectionOperation,
+        request: Request<ObjectGatewayRouteParams>,
+        response: Response,
+        next: NextFunction
+    ): Promise<void> {
+        try {
+            const searchParams = new URL(request.originalUrl, 'http://localhost').searchParams;
+            const bucket = this.readAllowedBucket(request.params.bucket);
+
+            if (operation === 'list') {
+                await this.handleListCollectionRequest(bucket, searchParams, response);
+                return;
+            }
+
+            if (operation === 'compose') {
+                await this.handleComposeCollectionRequest(bucket, request.body, response);
+                return;
+            }
+
+            await this.handleDeletePrefixCollectionRequest(bucket, searchParams, response);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    private async handleObjectRoute(
+        request: Request<ObjectGatewayRouteParams>,
+        response: Response
+    ): Promise<void> {
+        const objectKeyPath = request.path.replace(/^\/+/, '');
+        if (!objectKeyPath) {
+            throw new ApplicationError('ObjectGateway::RouteNotFound', 'Object gateway route not found', 404);
+        }
+
+        const operation = this.readObjectOperation(request.method);
+
+        const bucket = this.readAllowedBucket(request.params.bucket);
+        const objectKey = this.decodePathComponent(objectKeyPath, 'objectKey');
+
+        if (operation === 'head') {
+            await this.handleHeadObjectRequest(bucket, objectKey, response);
+            return;
+        }
+
+        if (operation === 'get') {
+            await this.handleGetObjectRequest(request, bucket, objectKey, response);
+            return;
+        }
+
+        if (operation === 'put') {
+            await this.handlePutObjectRequest(request, bucket, objectKey, response);
+            return;
+        }
+
+        await this.handleDeleteObjectRequest(bucket, objectKey, response);
+    }
+
+    private readAllowedBucket(encodedBucket: string): string {
+        const bucket = this.decodePathComponent(encodedBucket, 'bucket');
+        if (!this.allowedBuckets.has(bucket)) {
+            throw new ApplicationError('ObjectGateway::BucketNotAllowed', `Bucket is not allowed: ${bucket}`, 403);
+        }
+
+        return bucket;
+    }
+
+    private decodePathComponent(value: string, fieldName: string): string {
+        try {
+            return decodeURIComponent(value);
+        } catch {
+            throw new ApplicationError('ObjectGateway::InvalidPathEncoding', `${fieldName} contains invalid path encoding`, 400);
+        }
+    }
+
+    private readContentLength(request: Pick<Request, 'get'>): number {
+        const contentLength = Number(request.get('content-length'));
+        if (!Number.isFinite(contentLength) || contentLength < 0 || !Number.isInteger(contentLength)) {
+            throw new ApplicationError('ObjectGateway::MissingContentLength', 'content-length header is required for uploads', 400);
+        }
+
+        return contentLength;
+    }
+
+    private assertDirectAccessClaims(claims: ObjectGatewayDirectAccessClaims | null): void {
+        if (
+            !claims
+            || claims.ownerClusterId !== this.config.teamClusterId
+            || claims.exposureId !== OBJECT_GATEWAY_EXPOSURE_ID
+            || claims.exposureName !== OBJECT_GATEWAY_EXPOSURE_NAME
+            || claims.accessMode !== TeamClusterServiceExposureAccessMode.Http
+        ) {
+            throw new ApplicationError('ObjectGateway::InvalidDirectAccessToken', 'Direct access token is invalid or expired', 401);
+        }
+    }
+
+    private async handleListCollectionRequest(
+        bucket: string,
+        searchParams: URLSearchParams,
+        response: Response
+    ): Promise<void> {
+        const limitParam = searchParams.get('limit');
+        const limit = limitParam === null ? DEFAULT_LIST_LIMIT : Number(limitParam);
+        if (!Number.isInteger(limit) || limit <= 0) {
+            throw new ApplicationError('ObjectGateway::InvalidListLimit', 'limit must be a positive integer', 400);
+        }
+
+        const result = await this.objectStore.listObjectsPage({
+            bucket,
+            prefix: searchParams.get('prefix') ?? '',
+            cursor: searchParams.get('cursor') ?? undefined,
+            limit: Math.min(limit, MAX_LIST_LIMIT)
+        });
+
+        this.writeJson(response, 200, result);
+    }
+
+    private async handleDeletePrefixCollectionRequest(
+        bucket: string,
+        searchParams: URLSearchParams,
+        response: Response
+    ): Promise<void> {
+        const prefix = searchParams.get('prefix');
+        if (!prefix) {
+            throw new ApplicationError('ObjectGateway::MissingPrefix', 'prefix query parameter is required', 400);
+        }
+        const deletedCount = await this.objectStore.deleteByPrefix(bucket, prefix);
+        this.writeJson(response, 200, {
+            deleted: true,
+            deletedCount
+        });
+    }
+
+    private async handleComposeCollectionRequest(
+        bucket: string,
+        body: unknown,
+        response: Response
+    ): Promise<void> {
+        if (!body || typeof body !== 'object') {
+            throw new ApplicationError('ObjectGateway::InvalidComposePayload', 'Compose payload is required', 400);
+        }
+
+        const payload = body as Record<string, unknown>;
+        const objectKey = typeof payload.objectKey === 'string' ? payload.objectKey : '';
+        const sourceObjectKeys = Array.isArray(payload.sourceObjectKeys)
+            ? payload.sourceObjectKeys.filter((value): value is string => typeof value === 'string' && value.length > 0)
+            : [];
+        const metadata = payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+            ? Object.fromEntries(
+                Object.entries(payload.metadata as Record<string, unknown>)
+                    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+            )
+            : undefined;
+
+        if (!objectKey) {
+            throw new ApplicationError('ObjectGateway::MissingComposeObjectKey', 'objectKey is required', 400);
+        }
+
+        if (sourceObjectKeys.length === 0) {
+            throw new ApplicationError('ObjectGateway::MissingComposeSources', 'sourceObjectKeys must not be empty', 400);
+        }
+
+        await this.objectStore.composeObject({
+            bucket,
+            objectKey,
+            sourceObjectKeys,
+            metadata
+        });
+
+        this.writeJson(response, 201, { composed: true });
+    }
+
+    private async handleHeadObjectRequest(
+        bucket: string,
+        objectKey: string,
+        response: Response
+    ): Promise<void> {
+        const stat = await this.readObjectStat(bucket, objectKey);
+        this.writeObjectHeaders(response, stat);
+        response.status(200).end();
+    }
+
+    private async handleGetObjectRequest(
+        request: Request<ObjectGatewayRouteParams>,
+        bucket: string,
+        objectKey: string,
+        response: Response
+    ): Promise<void> {
+        const skipMetadataHeader = request.get(TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
+        const skipMetadata = skipMetadataHeader === '1' || skipMetadataHeader === 'true';
+        const rangeHeader = request.get('range') ?? undefined;
+        const stat = skipMetadata && !rangeHeader
+            ? null
+            : await this.readObjectStat(bucket, objectKey);
+        const range = stat
+            ? parseRangeHeader(rangeHeader, stat.size)
+            : null;
+        const stream = await this.readObjectStream(bucket, objectKey, range);
+
+        if (stat) {
+            if (range) {
+                this.writePartialObjectHeaders(response, stat, range, !skipMetadata);
+            } else {
+                this.writeObjectHeaders(response, stat);
+            }
+        }
+
+        response.status(range ? 206 : 200);
+
+        await new Promise<void>((resolve, reject) => {
+            const handleFinish = (): void => {
+                cleanup();
+                resolve();
+            };
+            const handleClose = (): void => {
+                if (!response.writableEnded) {
+                    stream.destroy();
+                }
+
+                cleanup();
+                resolve();
+            };
+            const handleError = (error: Error): void => {
+                cleanup();
+                reject(error);
+            };
+            const cleanup = (): void => {
+                stream.removeListener('error', handleError);
+                response.removeListener('finish', handleFinish);
+                response.removeListener('close', handleClose);
+            };
+
+            stream.once('error', handleError);
+            response.once('finish', handleFinish);
+            response.once('close', handleClose);
+            stream.pipe(response);
+        });
+    }
+
+    private async handlePutObjectRequest(
+        request: Request<ObjectGatewayRouteParams>,
+        bucket: string,
+        objectKey: string,
+        response: Response
+    ): Promise<void> {
+        const contentLength = this.readContentLength(request);
+
+        await this.objectStore.putObjectStream({
+            bucket,
+            objectKey,
+            stream: request,
+            size: contentLength,
+            metadata: this.readUploadMetadata(request)
+        });
+
+        response.status(201).end();
+    }
+
+    private async handleDeleteObjectRequest(
+        bucket: string,
+        objectKey: string,
+        response: Response
+    ): Promise<void> {
+        await this.readObjectStat(bucket, objectKey);
+        await this.objectStore.removeObject(bucket, objectKey);
+        response.status(204).end();
+    }
+
+    private readObjectOperation(method: string): ObjectGatewayObjectOperation {
+        if (method === 'HEAD') return 'head';
+        if (method === 'GET') return 'get';
+        if (method === 'PUT') return 'put';
+        if (method === 'DELETE') return 'delete';
+        throw new ApplicationError('ObjectGateway::UnsupportedObjectMethod', `Unsupported method for object resource: ${method}`, 405);
+    }
+
+    private async readObjectStat(bucket: string, objectKey: string): Promise<LocalClusterObjectStat> {
+        try {
+            return await this.objectStore.statObject(bucket, objectKey);
+        } catch (error) {
+            if (isObjectNotFoundError(error)) {
+                throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
+            }
+
+            throw error;
+        }
+    }
+
+    private async readObjectStream(
+        bucket: string,
+        objectKey: string,
+        range?: ObjectByteRange | null
+    ): Promise<Readable> {
+        try {
+            if (range) {
+                return await this.objectStore.getObjectRangeStream(bucket, objectKey, range.start, range.length);
+            }
+
+            return await this.objectStore.getObjectStream(bucket, objectKey);
+        } catch (error) {
+            if (isObjectNotFoundError(error)) {
+                throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
+            }
+
+            throw error;
+        }
+    }
+
+    private readUploadMetadata(request: Request<ObjectGatewayRouteParams>): Record<string, string> | undefined {
+        const metadata: Record<string, string> = {};
+        const contentType = request.get('content-type');
+        const contentEncoding = request.get('content-encoding');
+
+        if (contentType) {
+            metadata['Content-Type'] = contentType;
+        }
+
+        if (contentEncoding) {
+            metadata['Content-Encoding'] = contentEncoding;
+        }
+
+        for (const headerName of Object.keys(request.headers)) {
+            if (!headerName.toLowerCase().startsWith(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX)) {
+                continue;
+            }
+
+            const headerSuffix = headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length);
+            const singleValue = request.get(headerName);
+            if (headerSuffix && singleValue) {
+                metadata[`${MINIO_METADATA_HEADER_PREFIX}${headerSuffix}`] = singleValue;
+            }
+        }
+
+        return Object.keys(metadata).length > 0 ? metadata : undefined;
+    }
+
+    private writeObjectHeaders(response: Response, stat: LocalClusterObjectStat): void {
+        const metadata: Record<string, string> = {};
+        const sourceMetadata = stat.metaData as Record<string, string>;
+
+        for (const [key, value] of Object.entries(sourceMetadata)) {
+            metadata[key.toLowerCase()] = value;
+        }
+
+        const contentType = metadata['content-type'];
+        const contentEncoding = metadata['content-encoding'];
+
+        if (contentType) {
+            response.setHeader('content-type', contentType);
+        }
+
+        response.setHeader('content-length', stat.size);
+
+        if (contentEncoding) {
+            response.setHeader('content-encoding', contentEncoding);
+        }
+
+        if (stat.etag) {
+            response.setHeader('etag', stat.etag);
+        }
+
+        if (stat.lastModified) {
+            response.setHeader('last-modified', stat.lastModified.toUTCString());
+        }
+
+        for (const [metadataKey, metadataValue] of Object.entries(metadata)) {
+            if (metadataKey.startsWith(MINIO_METADATA_HEADER_PREFIX)) {
+                response.setHeader(
+                    `${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${metadataKey.slice(MINIO_METADATA_HEADER_PREFIX.length)}`,
+                    metadataValue
+                );
+            }
+        }
+    }
+
+    private writePartialObjectHeaders(
+        response: Response,
+        stat: LocalClusterObjectStat,
+        range: ObjectByteRange,
+        includeMetadata: boolean
+    ): void {
+        if (includeMetadata) {
+            this.writeObjectHeaders(response, stat);
+        } else {
+            const sourceMetadata = stat.metaData as Record<string, string>;
+            const contentType = sourceMetadata['content-type'];
+            const contentEncoding = sourceMetadata['content-encoding'];
+
+            if (contentType) {
+                response.setHeader('content-type', contentType);
+            }
+
+            if (contentEncoding) {
+                response.setHeader('content-encoding', contentEncoding);
+            }
+
+            if (stat.etag) {
+                response.setHeader('etag', stat.etag);
+            }
+
+            if (stat.lastModified) {
+                response.setHeader('last-modified', stat.lastModified.toUTCString());
+            }
+        }
+
+        response.setHeader('accept-ranges', 'bytes');
+        response.setHeader('content-length', String(range.length));
+        response.setHeader('content-range', `bytes ${range.start}-${range.end}/${stat.size}`);
+    }
+
+    private writeJson(response: Response, statusCode: number, payload: object): number {
+        const body = Buffer.from(JSON.stringify(payload));
+        response.status(statusCode);
+        response.setHeader('content-type', 'application/json');
+        response.setHeader('content-length', body.length);
+        response.end(body);
+        return body.length;
+    }
+
+    private handleRequestFailure(response: Response, error: Error): void {
+        if (response.headersSent) {
+            response.destroy(error);
+            return;
+        }
+
+        if (error instanceof ApplicationError) {
+            this.writeJson(response, error.statusCode, {
+                code: error.code,
+                message: error.message
+            });
+            return;
+        }
+
+        const statusCodeError = error as Partial<StatusCodeError>;
+        if (statusCodeError.statusCode !== undefined) {
+            this.writeJson(response, statusCodeError.statusCode, {
+                code: statusCodeError.code,
+                message: error.message
+            });
+            return;
+        }
+
+        logger.error(`Object gateway request failed: ${error.message}`);
+        this.writeJson(response, 500, {
+            message: 'Object gateway request failed'
+        });
+    }
+
+    private authorizeRequest(request: Request): void {
+        const token = request.get(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER);
+        if (!token) {
+            throw new ApplicationError('ObjectGateway::DirectAccessTokenRequired', 'Direct access token is required', 401);
+        }
+
+        const verifyDirectAccessToken = this.security.verifyDirectAccessToken;
+        const claims = verifyDirectAccessToken ? verifyDirectAccessToken(token) : null;
+        this.assertDirectAccessClaims(claims);
+    }
+}
+
+export const OBJECT_GATEWAY_EXPOSURE = Object.freeze({
+    id: OBJECT_GATEWAY_EXPOSURE_ID,
+    exposureName: OBJECT_GATEWAY_EXPOSURE_NAME
+});
+
+let objectGatewayServerInstance: ObjectGatewayServer | null = null;
+
+export const getObjectGatewayServer = (): ObjectGatewayServer => {
+    if (objectGatewayServerInstance) {
+        return objectGatewayServerInstance;
+    }
+
+    const config = getConfig();
+    objectGatewayServerInstance = new ObjectGatewayServer(config, getMinioService(), {
+        verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
+    });
+    return objectGatewayServerInstance;
+};

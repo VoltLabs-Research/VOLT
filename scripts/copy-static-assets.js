@@ -26,34 +26,40 @@ const copyFile = async (from, to) => {
         const stat = await fs.stat(from);
         if (!stat.isFile()) return;
     } catch {
-        return;
+        throw new Error(`missing build asset: ${path.relative(root, from)}`);
     }
 
     await fs.mkdir(path.dirname(to), { recursive: true });
     await fs.copyFile(from, to);
 };
 
+const ASSETS = [
+    'modules/plugin/services/python/volt_plugin_stub.py',
+    'modules/trajectory/services/parsing/ase_import_bridge.py',
+    'modules/trajectory/services/parsing/ase_export_bridge.py',
+    'modules/trajectory/workers/parquet-ingest-worker.cjs',
+    'modules/trajectory/workers/element-table.cjs'
+];
+
+const EXECUTABLE_ASSETS = [
+    'modules/analysis/services/bin/volt-dump-transform'
+];
+
 (async () => {
-    await copyDirectory(
-        path.join(root, 'src', 'modules', 'plugin', 'infrastructure', 'python'),
-        path.join(root, 'dist', 'modules', 'plugin', 'infrastructure', 'python')
-    );
-    await copyFile(
-        path.join(root, 'src', 'modules', 'trajectory', 'infrastructure', 'storage', 'parquet-ingest-worker.cjs'),
-        path.join(root, 'dist', 'modules', 'trajectory', 'infrastructure', 'storage', 'parquet-ingest-worker.cjs')
-    );
-    // Vendored CoreToolkit CLI used by the pipeline slice/expression/merge stages.
-    // Copied with its executable bit so the built/Docker daemon can spawn it.
-    const dumpTransformTo = path.join(root, 'dist', 'modules', 'analysis', 'infrastructure', 'bin', 'volt-dump-transform');
-    await copyFile(
-        path.join(root, 'src', 'modules', 'analysis', 'infrastructure', 'bin', 'volt-dump-transform'),
-        dumpTransformTo
-    );
-    try {
-        await fs.chmod(dumpTransformTo, 0o755);
-    } catch {
-        // best-effort: the source already carries the executable bit on POSIX.
+    for (const asset of ASSETS) {
+        await copyFile(path.join(root, 'src', asset), path.join(root, 'dist', asset));
     }
+
+    for (const asset of EXECUTABLE_ASSETS) {
+        const destination = path.join(root, 'dist', asset);
+        await copyFile(path.join(root, 'src', asset), destination);
+        await fs.chmod(destination, 0o755);
+    }
+
+    await copyDirectory(
+        path.join(root, 'src', 'modules', 'plugin', 'services', 'python'),
+        path.join(root, 'dist', 'modules', 'plugin', 'services', 'python')
+    );
 })().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
