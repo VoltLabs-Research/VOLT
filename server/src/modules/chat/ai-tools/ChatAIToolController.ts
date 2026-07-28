@@ -1,12 +1,10 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ChatService from '@modules/chat/services/ChatService';
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
-import {
-    chatCollaborationSchema,
-    type ChatCollaborationInput
-} from '@volt/contracts/modules/chat/ai-tools';
+import type { ChatCollaborationInput } from '@volt/contracts/modules/chat/ai-tools';
 
 export default class ChatAIToolController extends AIToolController {
     #service = new ChatService();
@@ -14,7 +12,8 @@ export default class ChatAIToolController extends AIToolController {
     @AITool({
         name: 'chat_collaboration',
         description: 'Collaborate over team chats: list the user\'s chats, read a chat\'s messages to summarize it, post a text message to a chat, or create a new group chat. Use action to pick the operation.',
-        parameters: chatCollaborationSchema,
+        parameters: typia.llm.parameters<ChatCollaborationInput>(),
+        validate: typia.createValidate<ChatCollaborationInput>(),
         needsApproval: (input) => input.action === 'post' || input.action === 'create'
     })
     async chatCollaboration(input: ChatCollaborationInput & AIToolScope) {

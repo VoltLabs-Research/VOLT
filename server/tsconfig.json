@@ -1,4 +1,8 @@
 {
+  "ts-node": {
+    "compiler": "ts-patch/compiler",
+    "files": true
+  },
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
@@ -11,6 +15,11 @@
     "baseUrl": "./",
     "verbatimModuleSyntax": false,
     "experimentalDecorators": true,
+    "plugins": [
+      {
+        "transform": "typia/lib/transform"
+      }
+    ],
     "paths": {
       "@core/*": [
         "src/core/*"
@@ -24,8 +33,8 @@
       "@volt/contracts/*": [
         "../contracts/src/*"
       ],
-      "zod": [
-        "node_modules/zod"
+      "typia": [
+        "node_modules/typia"
       ]
     }
   },

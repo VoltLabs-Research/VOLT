@@ -1,13 +1,11 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { ErrorCodes } from '@core/constants/error-codes';
 import RasterService from '@modules/raster/services/RasterService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import {
-    renderSceneScreenshotSchema,
-    type RenderSceneScreenshotInput
-} from '@volt/contracts/modules/raster/ai-tools';
+import type { RenderSceneScreenshotInput } from '@volt/contracts/modules/raster/ai-tools';
 
 const resolveServerBaseUrl = (): string => {
     const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
@@ -27,7 +25,8 @@ export default class RasterAIToolController extends AIToolController {
         name: 'render_scene_screenshot',
         description: 'Render a PNG screenshot of a trajectory frame (optionally for a specific analysis result and model). '
             + 'Ensures a server-side raster exists for the frame and returns a viewable image URL.',
-        parameters: renderSceneScreenshotSchema
+        parameters: typia.llm.parameters<RenderSceneScreenshotInput>(),
+        validate: typia.createValidate<RenderSceneScreenshotInput>()
     })
     async renderSceneScreenshot(input: RenderSceneScreenshotInput & AIToolScope) {
         const { trajectoryId, analysisId, model } = input;

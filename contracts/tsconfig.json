@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "zod": ["../server/node_modules/zod"]
+      "typia": ["../server/node_modules/typia"]
     }
   },
   "include": ["src"]

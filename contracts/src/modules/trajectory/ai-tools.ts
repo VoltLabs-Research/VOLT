@@ -1,57 +1,48 @@
-import { z } from 'zod';
+import type { tags } from 'typia';
 
-export const listTrajectoriesSchema = z.object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(20),
-    folderId: z.string().optional(),
-    search: z.string().optional()
-});
+export interface ListTrajectoriesInput{
+    page?: number & tags.Default<1>;
+    limit?: number & tags.Default<20>;
+    folderId?: string;
+    search?: string;
+}
 
-export const listPublicTrajectoriesSchema = z.object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(20),
-    search: z.string().optional()
-});
+export interface ListPublicTrajectoriesInput{
+    page?: number & tags.Default<1>;
+    limit?: number & tags.Default<20>;
+    search?: string;
+}
 
-export const listSampleSimulationsSchema = z.object({});
+export interface ListSampleSimulationsInput{}
 
-export const getTrajectorySchema = z.object({ trajectoryId: z.string() });
+export interface GetTrajectoryInput{
+    trajectoryId: string;
+}
 
-export const getTrajectoryTeamMetricsSchema = z.object({});
+export interface GetTrajectoryTeamMetricsInput{}
 
-export const updateTrajectorySchema = z.object({
-    trajectoryId: z.string(),
-    name: z.string(),
-    isPublic: z.boolean()
-});
+export interface UpdateTrajectoryInput{
+    trajectoryId: string;
+    name: string;
+    isPublic: boolean;
+}
 
-export const cloneTrajectorySchema = z.object({
-    sourceTrajectoryId: z.string(),
-    targetClusterId: z.string().optional()
-});
+export interface CloneTrajectoryInput{
+    sourceTrajectoryId: string;
+    targetClusterId?: string;
+}
 
-export const moveTrajectorySchema = z.object({
-    trajectoryId: z.string(),
-    folderId: z.string().nullable()
-});
+export interface MoveTrajectoryInput{
+    trajectoryId: string;
+    folderId: string | null;
+}
 
-export const deleteTrajectorySchema = z.object({
-    trajectoryId: z.string(),
-    reason: z.string().optional()
-});
+export interface DeleteTrajectoryInput{
+    trajectoryId: string;
+    reason?: string;
+}
 
-export const deleteTrajectoryFolderSchema = z.object({
-    folderId: z.string(),
-    reason: z.string().optional()
-});
-
-export type ListTrajectoriesInput = z.infer<typeof listTrajectoriesSchema>;
-export type ListPublicTrajectoriesInput = z.infer<typeof listPublicTrajectoriesSchema>;
-export type ListSampleSimulationsInput = z.infer<typeof listSampleSimulationsSchema>;
-export type GetTrajectoryInput = z.infer<typeof getTrajectorySchema>;
-export type GetTrajectoryTeamMetricsInput = z.infer<typeof getTrajectoryTeamMetricsSchema>;
-export type UpdateTrajectoryInput = z.infer<typeof updateTrajectorySchema>;
-export type CloneTrajectoryInput = z.infer<typeof cloneTrajectorySchema>;
-export type MoveTrajectoryInput = z.infer<typeof moveTrajectorySchema>;
-export type DeleteTrajectoryInput = z.infer<typeof deleteTrajectorySchema>;
-export type DeleteTrajectoryFolderInput = z.infer<typeof deleteTrajectoryFolderSchema>;
+export interface DeleteTrajectoryFolderInput{
+    folderId: string;
+    reason?: string;
+}

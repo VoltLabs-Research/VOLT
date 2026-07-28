@@ -1,63 +1,53 @@
-import { z } from 'zod';
+import type { tags } from 'typia';
 import type { PortMapping } from './domain';
 
-const portMapping: z.ZodType<PortMapping> = z.object({
-    private: z.number(),
-    public: z.number()
-});
+// The AI surface always required both halves of the mapping, unlike the optional-`public` contract type.
+interface ContainerPortMappingInput extends Required<PortMapping>{}
 
-export const containerRefSchema = z.object({ containerId: z.string() });
+export interface ContainerRefInput{
+    containerId: string;
+}
 
-export const createContainerSchema = z.object({
-    name: z.string(),
-    image: z.string(),
-    tag: z.string().optional(),
-    ports: z.array(portMapping).optional(),
-    reason: z.string().optional()
-});
+export interface CreateContainerInput{
+    name: string;
+    image: string;
+    tag?: string;
+    ports?: ContainerPortMappingInput[];
+    reason?: string;
+}
 
-export const listContainersSchema = z.object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(50)
-});
+export interface ListContainersInput{
+    page?: number & tags.Default<1>;
+    limit?: number & tags.Default<50>;
+}
 
-export const listContainerFilesSchema = z.object({
-    containerId: z.string(),
-    path: z.string().optional().default('/')
-});
+export interface ListContainerFilesInput{
+    containerId: string;
+    path?: string & tags.Default<'/'>;
+}
 
-export const readContainerFileSchema = z.object({
-    containerId: z.string(),
-    path: z.string()
-});
+export interface ReadContainerFileInput{
+    containerId: string;
+    path: string;
+}
 
-export const getContainerPortAccessUrlSchema = z.object({
-    containerId: z.string(),
-    port: z.number()
-});
+export interface GetContainerPortAccessUrlInput{
+    containerId: string;
+    port: number;
+}
 
-export const updateContainerSchema = z.object({
-    containerId: z.string(),
-    name: z.string().optional(),
-    reason: z.string().optional()
-});
+export interface UpdateContainerInput{
+    containerId: string;
+    name?: string;
+    reason?: string;
+}
 
-export const moveContainerSchema = z.object({
-    containerId: z.string(),
-    folderId: z.string().nullable()
-});
+export interface MoveContainerInput{
+    containerId: string;
+    folderId: string | null;
+}
 
-export const deleteContainerSchema = z.object({
-    containerId: z.string(),
-    reason: z.string().optional()
-});
-
-export type ContainerRefInput = z.infer<typeof containerRefSchema>;
-export type CreateContainerInput = z.infer<typeof createContainerSchema>;
-export type ListContainersInput = z.infer<typeof listContainersSchema>;
-export type ListContainerFilesInput = z.infer<typeof listContainerFilesSchema>;
-export type ReadContainerFileInput = z.infer<typeof readContainerFileSchema>;
-export type GetContainerPortAccessUrlInput = z.infer<typeof getContainerPortAccessUrlSchema>;
-export type UpdateContainerInput = z.infer<typeof updateContainerSchema>;
-export type MoveContainerInput = z.infer<typeof moveContainerSchema>;
-export type DeleteContainerInput = z.infer<typeof deleteContainerSchema>;
+export interface DeleteContainerInput{
+    containerId: string;
+    reason?: string;
+}

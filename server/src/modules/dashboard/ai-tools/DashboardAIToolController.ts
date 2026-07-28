@@ -1,13 +1,12 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import DashboardService from '@modules/dashboard/services/DashboardService';
 import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
-import {
-    getDashboardMetricsSchema,
-    globalSearchSchema,
-    type GetDashboardMetricsInput,
-    type GlobalSearchInput
+import type {
+    GetDashboardMetricsInput,
+    GlobalSearchInput
 } from '@volt/contracts/modules/dashboard/ai-tools';
 
 export default class DashboardAIToolController extends AIToolController {
@@ -17,7 +16,8 @@ export default class DashboardAIToolController extends AIToolController {
         name: 'get_dashboard_metrics',
         description: 'Get the dashboard overview metrics for the current team: total counts, last-month counts, '
             + 'and weekly time-series for the main resources (trajectories, analyses, etc.).',
-        parameters: getDashboardMetricsSchema
+        parameters: typia.llm.parameters<GetDashboardMetricsInput>(),
+        validate: typia.createValidate<GetDashboardMetricsInput>()
     })
     async getDashboardMetrics(input: GetDashboardMetricsInput & AIToolScope) {
         const metrics = await teamMetricsQueryService.getTeamMetrics(input.teamId);
@@ -34,7 +34,8 @@ export default class DashboardAIToolController extends AIToolController {
         name: 'global_search',
         description: 'Search across the current team for trajectories, analyses, containers, plugins, teams and chats by name/content. '
             + 'Returns matches grouped by type, each with a deepLink the UI can navigate to.',
-        parameters: globalSearchSchema
+        parameters: typia.llm.parameters<GlobalSearchInput>(),
+        validate: typia.createValidate<GlobalSearchInput>()
     })
     async globalSearch(input: GlobalSearchInput & AIToolScope) {
         const { analyses, containers, trajectories, teams, plugins, chats } = await this.#service.getGlobalSearch(input);

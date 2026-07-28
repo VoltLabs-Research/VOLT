@@ -2,9 +2,6 @@
   "name": "@volt/contracts",
   "version": "0.0.0",
   "private": true,
-  "description": "Shared wire contracts (routes, request/response types, wire enums) consumed by VOLT server + client. Raw TypeScript source, no build step. There is no barrel: consumers import the concept file directly via the @volt/contracts/* tsconfig path / Vite alias. The ai-tools.ts files are the only runtime-valued modules here (zod schemas for AI tool inputs); zod is resolved from the consumer via its `zod` tsconfig path / Vite alias, so no node_modules lives in this package.",
-  "sideEffects": false,
-  "peerDependencies": {
-    "zod": "^4.3.6"
-  }
+  "description": "Shared wire contracts (routes, request/response types, wire enums) consumed by VOLT server + client. Raw TypeScript source, zero runtime dependencies, no build step. There is no barrel: consumers import the concept file directly via the @volt/contracts/* tsconfig path / Vite alias. The ai-tools.ts files declare AI tool inputs as plain interfaces; the server turns each one into a JSON Schema with typia.llm.parameters<T>(), so the type is the only source of truth. Their `import type { tags } from 'typia'` is erased at compile time and adds no runtime dependency.",
+  "sideEffects": false
 }

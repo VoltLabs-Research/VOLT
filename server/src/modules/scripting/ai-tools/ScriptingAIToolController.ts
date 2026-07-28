@@ -1,18 +1,14 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
-import {
-    createScriptingNotebookSchema,
-    listScriptingNotebooksSchema,
-    notebookRefSchema,
-    startScriptingJupyterSessionSchema,
-    updateScriptingNotebookSchema,
-    type CreateScriptingNotebookInput,
-    type ListScriptingNotebooksInput,
-    type NotebookRefInput,
-    type StartScriptingJupyterSessionInput,
-    type UpdateScriptingNotebookInput
+import type {
+    CreateScriptingNotebookInput,
+    ListScriptingNotebooksInput,
+    NotebookRefInput,
+    StartScriptingJupyterSessionInput,
+    UpdateScriptingNotebookInput
 } from '@volt/contracts/modules/scripting/ai-tools';
 
 export default class ScriptingAIToolController extends AIToolController {
@@ -21,7 +17,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'create_scripting_notebook',
         description: 'Create a new scripting Jupyter notebook.',
-        parameters: createScriptingNotebookSchema
+        parameters: typia.llm.parameters<CreateScriptingNotebookInput>(),
+        validate: typia.createValidate<CreateScriptingNotebookInput>()
     })
     createScriptingNotebook(input: CreateScriptingNotebookInput & AIToolScope) {
         return this.#service.createNotebook(input);
@@ -30,7 +27,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'list_scripting_notebooks',
         description: 'List scripting Jupyter notebooks in the team.',
-        parameters: listScriptingNotebooksSchema
+        parameters: typia.llm.parameters<ListScriptingNotebooksInput>(),
+        validate: typia.createValidate<ListScriptingNotebooksInput>()
     })
     async listScriptingNotebooks(input: ListScriptingNotebooksInput & AIToolScope) {
         const { total, data } = await this.#service.listNotebooks(input);
@@ -40,7 +38,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'update_scripting_notebook',
         description: 'Update a scripting Jupyter notebook.',
-        parameters: updateScriptingNotebookSchema
+        parameters: typia.llm.parameters<UpdateScriptingNotebookInput>(),
+        validate: typia.createValidate<UpdateScriptingNotebookInput>()
     })
     updateScriptingNotebook(input: UpdateScriptingNotebookInput & AIToolScope) {
         return this.#service.updateNotebook(input);
@@ -49,7 +48,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'delete_scripting_notebook',
         description: 'Delete a scripting Jupyter notebook.',
-        parameters: notebookRefSchema
+        parameters: typia.llm.parameters<NotebookRefInput>(),
+        validate: typia.createValidate<NotebookRefInput>()
     })
     deleteScriptingNotebook(input: NotebookRefInput & AIToolScope) {
         return this.#service.deleteNotebook(input);
@@ -58,7 +58,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'start_scripting_jupyter_session',
         description: 'Start a Jupyter session for a scripting notebook.',
-        parameters: startScriptingJupyterSessionSchema
+        parameters: typia.llm.parameters<StartScriptingJupyterSessionInput>(),
+        validate: typia.createValidate<StartScriptingJupyterSessionInput>()
     })
     async startScriptingJupyterSession(input: StartScriptingJupyterSessionInput & AIToolScope) {
         const session = await this.#service.createJupyterSession(input);
@@ -68,7 +69,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'get_scripting_session_status',
         description: 'Get the Jupyter session status for a scripting notebook.',
-        parameters: notebookRefSchema
+        parameters: typia.llm.parameters<NotebookRefInput>(),
+        validate: typia.createValidate<NotebookRefInput>()
     })
     async getScriptingSessionStatus(input: NotebookRefInput & AIToolScope) {
         const session = await this.#service.getSessionStatus(input);
@@ -78,7 +80,8 @@ export default class ScriptingAIToolController extends AIToolController {
     @AITool({
         name: 'stop_scripting_session',
         description: 'Stop the Jupyter session for a scripting notebook.',
-        parameters: notebookRefSchema
+        parameters: typia.llm.parameters<NotebookRefInput>(),
+        validate: typia.createValidate<NotebookRefInput>()
     })
     async stopScriptingSession(input: NotebookRefInput & AIToolScope) {
         const session = await this.#service.deleteSession(input);

@@ -1,11 +1,9 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
-import {
-    getSimulationCellSchema,
-    type GetSimulationCellInput
-} from '@volt/contracts/modules/simulation-cell/ai-tools';
+import type { GetSimulationCellInput } from '@volt/contracts/modules/simulation-cell/ai-tools';
 
 export default class SimulationCellAIToolController extends AIToolController {
     #service = new SimulationCellService();
@@ -13,7 +11,8 @@ export default class SimulationCellAIToolController extends AIToolController {
     @AITool({
         name: 'get_simulation_cell',
         description: 'Get the simulation cell for a trajectory.',
-        parameters: getSimulationCellSchema
+        parameters: typia.llm.parameters<GetSimulationCellInput>(),
+        validate: typia.createValidate<GetSimulationCellInput>()
     })
     async getSimulationCell(input: GetSimulationCellInput & AIToolScope) {
         const value = await this.#service.getByTrajectory(input);

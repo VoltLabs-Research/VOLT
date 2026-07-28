@@ -6,8 +6,9 @@
     "dev:drop:minio": "tsx tools/drop-minio.ts",
     "dev:drop:redis": "tsx tools/drop-redis.ts",
     "lint": "eslint .",
-    "smoke:modules": "node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/module-boot-smoke.ts",
-    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register/transpile-only -r tsconfig-paths/register src/server.ts",
+    "postinstall": "ts-patch install -s || echo 'ts-patch unavailable (runtime-only install); skipping TypeScript patch'",
+    "smoke:modules": "node -r ts-node/register -r tsconfig-paths/register scripts/module-boot-smoke.ts",
+    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register -r tsconfig-paths/register src/server.ts",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -34,6 +35,7 @@
     "eslint": "^9.39.2",
     "pino-pretty": "^13.1.2",
     "ts-node": "^10.9.2",
+    "ts-patch": "^3.3.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.49.0"
@@ -82,6 +84,7 @@
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
     "tsconfig-paths": "^4.2.0",
+    "typia": "^12.1.1",
     "unzipper": "^0.12.3",
     "uuid": "^11.1.0",
     "validator": "^13.15.26",

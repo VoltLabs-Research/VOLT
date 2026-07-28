@@ -1,3 +1,4 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
@@ -6,10 +7,7 @@ import TeamMemberService from '@modules/team/services/TeamMemberService';
 import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import { isPopulatedTeamMemberUser } from '@modules/team/models/team-member/TeamMemberModel';
 import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
-import {
-    getTeamContextSchema,
-    type GetTeamContextInput
-} from '@volt/contracts/modules/team/ai-tools';
+import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
 
 export default class TeamAIToolController extends AIToolController {
     #team = new TeamService();
@@ -19,7 +17,8 @@ export default class TeamAIToolController extends AIToolController {
     @AITool({
         name: 'get_team_context',
         description: 'Get a snapshot of the current team: team info, its members with their roles and online presence, and the configured AI provider integrations plus which models are available. Use this to understand who is on the team and what AI capabilities are set up.',
-        parameters: getTeamContextSchema
+        parameters: typia.llm.parameters<GetTeamContextInput>(),
+        validate: typia.createValidate<GetTeamContextInput>()
     })
     async getTeamContext(input: GetTeamContextInput & AIToolScope) {
         const team = await this.#team.getById(input.teamId);

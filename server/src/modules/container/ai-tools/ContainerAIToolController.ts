@@ -1,26 +1,18 @@
+import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ContainerService from '@modules/container/services/ContainerService';
-import {
-    containerRefSchema,
-    createContainerSchema,
-    deleteContainerSchema,
-    getContainerPortAccessUrlSchema,
-    listContainerFilesSchema,
-    listContainersSchema,
-    moveContainerSchema,
-    readContainerFileSchema,
-    updateContainerSchema,
-    type ContainerRefInput,
-    type CreateContainerInput,
-    type DeleteContainerInput,
-    type GetContainerPortAccessUrlInput,
-    type ListContainerFilesInput,
-    type ListContainersInput,
-    type MoveContainerInput,
-    type ReadContainerFileInput,
-    type UpdateContainerInput
+import type {
+    ContainerRefInput,
+    CreateContainerInput,
+    DeleteContainerInput,
+    GetContainerPortAccessUrlInput,
+    ListContainerFilesInput,
+    ListContainersInput,
+    MoveContainerInput,
+    ReadContainerFileInput,
+    UpdateContainerInput
 } from '@volt/contracts/modules/container/ai-tools';
 
 export default class ContainerAIToolController extends AIToolController {
@@ -29,7 +21,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'create_container',
         description: 'Create a new Docker container.',
-        parameters: createContainerSchema
+        parameters: typia.llm.parameters<CreateContainerInput>(),
+        validate: typia.createValidate<CreateContainerInput>()
     })
     createContainer(input: CreateContainerInput & AIToolScope) {
         return this.#service.create(input.teamId, input.userId, input);
@@ -38,17 +31,21 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'list_containers',
         description: 'List all Docker containers in the team.',
-        parameters: listContainersSchema
+        parameters: typia.llm.parameters<ListContainersInput>(),
+        validate: typia.createValidate<ListContainersInput>()
     })
     async listContainers(input: ListContainersInput & AIToolScope) {
-        const { total, data } = await this.#service.list(input.teamId, input.userId, input);
+        // typia validates but does not transform, so the documented defaults are
+        // applied here; an absent key does not override them on spread.
+        const { total, data } = await this.#service.list(input.teamId, input.userId, { page: 1, limit: 50, ...input });
         return { summary: `Found ${total} containers.`, data };
     }
 
     @AITool({
         name: 'get_container_by_id',
         description: 'Get detailed information about a specific container.',
-        parameters: containerRefSchema
+        parameters: typia.llm.parameters<ContainerRefInput>(),
+        validate: typia.createValidate<ContainerRefInput>()
     })
     getContainerById(input: ContainerRefInput & AIToolScope) {
         return this.#service.getById(input.teamId, input.containerId);
@@ -57,7 +54,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'get_container_stats',
         description: 'Get resource usage stats for a container.',
-        parameters: containerRefSchema
+        parameters: typia.llm.parameters<ContainerRefInput>(),
+        validate: typia.createValidate<ContainerRefInput>()
     })
     getContainerStats(input: ContainerRefInput & AIToolScope) {
         return this.#service.getStats(input.teamId, input.containerId);
@@ -66,7 +64,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'get_container_processes',
         description: 'List running processes in a container.',
-        parameters: containerRefSchema
+        parameters: typia.llm.parameters<ContainerRefInput>(),
+        validate: typia.createValidate<ContainerRefInput>()
     })
     getContainerProcesses(input: ContainerRefInput & AIToolScope) {
         return this.#service.getProcesses(input.teamId, input.containerId);
@@ -75,16 +74,19 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'list_container_files',
         description: 'List files in a container directory.',
-        parameters: listContainerFilesSchema
+        parameters: typia.llm.parameters<ListContainerFilesInput>(),
+        validate: typia.createValidate<ListContainerFilesInput>()
     })
     listContainerFiles(input: ListContainerFilesInput & AIToolScope) {
-        return this.#service.getFiles(input.teamId, input.containerId, input.path);
+        // `path` is positional here, so the documented default cannot ride along on a spread.
+        return this.#service.getFiles(input.teamId, input.containerId, input.path ?? '/');
     }
 
     @AITool({
         name: 'read_container_file',
         description: 'Read a file from a container.',
-        parameters: readContainerFileSchema
+        parameters: typia.llm.parameters<ReadContainerFileInput>(),
+        validate: typia.createValidate<ReadContainerFileInput>()
     })
     readContainerFile(input: ReadContainerFileInput & AIToolScope) {
         return this.#service.readFile(input.teamId, input.containerId, input.path);
@@ -93,7 +95,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'get_container_port_access_url',
         description: 'Generate a temporary browser-accessible URL for an exposed port of a running container.',
-        parameters: getContainerPortAccessUrlSchema
+        parameters: typia.llm.parameters<GetContainerPortAccessUrlInput>(),
+        validate: typia.createValidate<GetContainerPortAccessUrlInput>()
     })
     async getContainerPortAccessUrl(input: GetContainerPortAccessUrlInput & AIToolScope) {
         const accessUrl = await this.#service.createPortAccessUrl(input.teamId, input.containerId, input.port, input.userId);
@@ -103,7 +106,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'update_container',
         description: 'Update a Docker container.',
-        parameters: updateContainerSchema
+        parameters: typia.llm.parameters<UpdateContainerInput>(),
+        validate: typia.createValidate<UpdateContainerInput>()
     })
     updateContainer(input: UpdateContainerInput & AIToolScope) {
         return this.#service.update(input.teamId, input.containerId, {});
@@ -112,7 +116,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'move_container',
         description: 'Move a container into a different folder (pass folderId null to move it to the root).',
-        parameters: moveContainerSchema,
+        parameters: typia.llm.parameters<MoveContainerInput>(),
+        validate: typia.createValidate<MoveContainerInput>(),
         needsApproval: true
     })
     async moveContainer(input: MoveContainerInput & AIToolScope) {
@@ -128,7 +133,8 @@ export default class ContainerAIToolController extends AIToolController {
     @AITool({
         name: 'delete_container',
         description: 'Delete a Docker container.',
-        parameters: deleteContainerSchema
+        parameters: typia.llm.parameters<DeleteContainerInput>(),
+        validate: typia.createValidate<DeleteContainerInput>()
     })
     deleteContainer(input: DeleteContainerInput & AIToolScope) {
         return this.#service.delete(input.teamId, input.containerId, input.userId);

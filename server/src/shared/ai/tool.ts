@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { IValidation } from 'typia';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 
 /**
@@ -7,32 +7,50 @@ import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
  */
 export type AIToolApproval<TInput> = boolean | ((input: TInput) => boolean | Promise<boolean>);
 
+/**
+ * JSON Schema for a tool's keyword arguments. Always produced by
+ * `typia.llm.parameters<TInput>()`, so the TypeScript type is the only source
+ * of truth — there is no schema DSL to keep in sync.
+ */
+export interface AIToolParameters {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: readonly string[];
+    additionalProperties?: boolean;
+    $defs?: Record<string, unknown>;
+}
+
+/** Produced by `typia.createValidate<TInput>()`; rejects malformed model output. */
+export type AIToolValidator<TInput> = (input: unknown) => IValidation<TInput>;
+
 /** The three things a model needs to know about a tool, plus the optional approval gate. */
-export interface AIToolMetadata<TSchema extends z.ZodType> {
+export interface AIToolMetadata<TInput> {
     name: string;
     description: string;
-    parameters: TSchema;
-    needsApproval?: AIToolApproval<z.output<TSchema>>;
+    parameters: AIToolParameters;
+    validate: AIToolValidator<TInput>;
+    needsApproval?: AIToolApproval<TInput>;
 }
 
 export interface AIToolDefinition {
     name: string;
     description: string;
-    parameters: z.ZodType;
+    parameters: AIToolParameters;
+    validate: AIToolValidator<unknown>;
     handlerName: string | symbol;
     /** Advertised to the model but executed in the browser; the server contributes no behaviour. */
     clientExecuted: boolean;
     needsApproval?: AIToolApproval<never>;
 }
 
-/** A tool handler receives the parsed input merged with the caller's team/user scope. */
-export type AIToolHandler<TSchema extends z.ZodType> = (input: z.output<TSchema> & AIToolScope) => unknown;
+/** A tool handler receives the validated input merged with the caller's team/user scope. */
+export type AIToolHandler<TInput> = (input: TInput & AIToolScope) => unknown;
 
 const toolsByController = new WeakMap<object, AIToolDefinition[]>();
 
-const register = <TSchema extends z.ZodType>(
+const register = <TInput>(
     controller: object,
-    metadata: AIToolMetadata<TSchema>,
+    metadata: AIToolMetadata<TInput>,
     handlerName: string | symbol,
     clientExecuted: boolean
 ): void => {
@@ -42,6 +60,7 @@ const register = <TSchema extends z.ZodType>(
         name: metadata.name,
         description: metadata.description,
         parameters: metadata.parameters,
+        validate: metadata.validate as AIToolValidator<unknown>,
         handlerName,
         clientExecuted,
         needsApproval: metadata.needsApproval as AIToolApproval<never> | undefined
@@ -56,11 +75,11 @@ const register = <TSchema extends z.ZodType>(
  * hand that single object straight to a service — exactly like an HTTP
  * controller action delegates to one.
  *
- * The generic constraint makes the method signature type-check against
- * `parameters`, so a schema change surfaces on the handler instead of at runtime.
+ * `TInput` is inferred from `validate`, so the handler signature type-checks
+ * against the same type the schema was generated from.
  */
-export const AITool = <TSchema extends z.ZodType>(metadata: AIToolMetadata<TSchema>) =>
-    <THandler extends AIToolHandler<TSchema>>(
+export const AITool = <TInput>(metadata: AIToolMetadata<TInput>) =>
+    <THandler extends AIToolHandler<TInput>>(
         target: object,
         handlerName: string | symbol,
         _descriptor: TypedPropertyDescriptor<THandler>
@@ -73,7 +92,7 @@ export const AITool = <TSchema extends z.ZodType>(metadata: AIToolMetadata<TSche
  * advertises name, description and schema, so the decorated method is a
  * declaration site with no body — it is never invoked server-side.
  */
-export const ClientAITool = <TSchema extends z.ZodType>(metadata: AIToolMetadata<TSchema>): MethodDecorator =>
+export const ClientAITool = <TInput>(metadata: AIToolMetadata<TInput>): MethodDecorator =>
     (target, handlerName) => {
         register(target.constructor, metadata, handlerName, true);
     };

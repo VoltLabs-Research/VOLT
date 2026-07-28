@@ -1,9 +1,10 @@
-import { z } from 'zod';
+import type { tags } from 'typia';
 
-export const getNotificationsSchema = z.object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(20),
-    unreadOnly: z.boolean().optional().describe('When true, return only notifications that have not been read yet.')
-});
-
-export type GetNotificationsInput = z.infer<typeof getNotificationsSchema>;
+export interface GetNotificationsInput{
+    page?: number & tags.Default<1>;
+    limit?: number & tags.Default<20>;
+    /**
+     * When true, return only notifications that have not been read yet.
+     */
+    unreadOnly?: boolean;
+}

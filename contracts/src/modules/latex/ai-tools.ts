@@ -1,62 +1,54 @@
-import { z } from 'zod';
+import type { tags } from 'typia';
 
-export const latexDocumentRefSchema = z.object({ documentId: z.string() });
+export interface LatexDocumentRefInput{
+    documentId: string;
+}
 
-export const latexFileRefSchema = z.object({
-    documentId: z.string(),
-    fileId: z.string()
-});
+export interface LatexFileRefInput{
+    documentId: string;
+    fileId: string;
+}
 
-export const createLatexDocumentSchema = z.object({
-    title: z.string(),
-    folderId: z.string().nullable().optional()
-});
+export interface CreateLatexDocumentInput{
+    title: string;
+    folderId?: string | null;
+}
 
-export const listLatexDocumentsSchema = z.object({
-    page: z.number().optional().default(1),
-    limit: z.number().optional().default(50),
-    search: z.string().optional(),
-    folderId: z.string().optional()
-});
+export interface ListLatexDocumentsInput{
+    page?: number & tags.Default<1>;
+    limit?: number & tags.Default<50>;
+    search?: string;
+    folderId?: string;
+}
 
-export const updateLatexDocumentSchema = z.object({
-    documentId: z.string(),
-    title: z.string().optional()
-});
+export interface UpdateLatexDocumentInput{
+    documentId: string;
+    title?: string;
+}
 
-export const moveLatexDocumentSchema = z.object({
-    documentId: z.string(),
-    folderId: z.string().nullable()
-});
+export interface MoveLatexDocumentInput{
+    documentId: string;
+    folderId: string | null;
+}
 
-export const createLatexFileSchema = z.object({
-    documentId: z.string(),
-    name: z.string(),
-    path: z.string().optional(),
-    content: z.string().optional(),
-    isEntrypoint: z.boolean().optional()
-});
+export interface CreateLatexFileInput{
+    documentId: string;
+    name: string;
+    path?: string;
+    content?: string;
+    isEntrypoint?: boolean;
+}
 
-export const updateLatexFileSchema = z.object({
-    documentId: z.string(),
-    fileId: z.string(),
-    name: z.string().optional(),
-    path: z.string().optional(),
-    content: z.string().optional()
-});
+export interface UpdateLatexFileInput{
+    documentId: string;
+    fileId: string;
+    name?: string;
+    path?: string;
+    content?: string;
+}
 
-export const manageLatexAssetsSchema = z.object({
-    documentId: z.string(),
-    action: z.enum(['list', 'export']),
-    format: z.enum(['tex', 'zip']).optional()
-});
-
-export type LatexDocumentRefInput = z.infer<typeof latexDocumentRefSchema>;
-export type LatexFileRefInput = z.infer<typeof latexFileRefSchema>;
-export type CreateLatexDocumentInput = z.infer<typeof createLatexDocumentSchema>;
-export type ListLatexDocumentsInput = z.infer<typeof listLatexDocumentsSchema>;
-export type UpdateLatexDocumentInput = z.infer<typeof updateLatexDocumentSchema>;
-export type MoveLatexDocumentInput = z.infer<typeof moveLatexDocumentSchema>;
-export type CreateLatexFileInput = z.infer<typeof createLatexFileSchema>;
-export type UpdateLatexFileInput = z.infer<typeof updateLatexFileSchema>;
-export type ManageLatexAssetsInput = z.infer<typeof manageLatexAssetsSchema>;
+export interface ManageLatexAssetsInput{
+    documentId: string;
+    action: 'list' | 'export';
+    format?: 'tex' | 'zip';
+}
