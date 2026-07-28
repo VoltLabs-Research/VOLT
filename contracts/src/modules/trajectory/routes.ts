@@ -11,9 +11,9 @@ import type {
     CreateLineStyledModelInput
 } from './http';
 import type {
-    PersistedTrajectory,
+    Trajectory,
     TrajectoryFolder,
-    SceneArtifactView,
+    SceneArtifact,
     SampleSimulation,
     TeamMetricsResponse,
     CreateTrajectoryUploadSessionResponse,
@@ -42,11 +42,11 @@ export const trajectoryRoutes = {
     
     listSamples: get<SampleSimulation[]>('/api/trajectories/:teamId/samples'),
     downloadSamples: get<unknown>('/api/trajectories/:teamId/samples/:filename'),
-    listTeamSceneArtifacts: get<SceneArtifactView>('/api/trajectories/:teamId/scene-artifacts'),
+    listTeamSceneArtifacts: get<SceneArtifact>('/api/trajectories/:teamId/scene-artifacts'),
     createUploadSession: post<CreateTrajectoryUploadSessionInput, CreateTrajectoryUploadSessionResponse>('/api/trajectories/:teamId/upload-sessions'),
     commitUploadSession: post<never, CommitTrajectoryUploadSessionResponse>('/api/trajectories/:teamId/upload-sessions/:uploadSessionId/commit'),
     cancelUploadSession: del('/api/trajectories/:teamId/upload-sessions/:uploadSessionId'),
-    list: get<PersistedTrajectory>('/api/trajectories/:teamId'),
+    list: get<Trajectory>('/api/trajectories/:teamId'),
     clone: post<CloneTrajectoryInput, CloneTrajectoryResponse>('/api/trajectories/:teamId/clones'),
 
     listFolders: get<TrajectoryFolder>('/api/trajectories/:teamId/folders'),
@@ -60,10 +60,10 @@ export const trajectoryRoutes = {
     downloadAnalyses: get<unknown>('/api/trajectories/:teamId/:trajectoryId/analyses/download'),
     download: get<unknown>('/api/trajectories/:teamId/:trajectoryId/download'),
     getAtoms: get<unknown>('/api/trajectories/:teamId/:trajectoryId/frame/:timestep/atoms'),
-    getSceneArtifacts: get<SceneArtifactView>('/api/trajectories/:teamId/:trajectoryId/scene-artifacts'),
-    move: patch<MoveTrajectoryInput, PersistedTrajectory>('/api/trajectories/:teamId/:trajectoryId/folder'),
-    get: get<PersistedTrajectory>('/api/trajectories/:teamId/:trajectoryId'),
-    update: patch<UpdateTrajectoryInput, PersistedTrajectory>('/api/trajectories/:teamId/:trajectoryId'),
+    getSceneArtifacts: get<SceneArtifact>('/api/trajectories/:teamId/:trajectoryId/scene-artifacts'),
+    move: patch<MoveTrajectoryInput, Trajectory>('/api/trajectories/:teamId/:trajectoryId/folder'),
+    get: get<Trajectory>('/api/trajectories/:teamId/:trajectoryId'),
+    update: patch<UpdateTrajectoryInput, Trajectory>('/api/trajectories/:teamId/:trajectoryId'),
     remove: del('/api/trajectories/:teamId/:trajectoryId'),
 
     
@@ -98,7 +98,7 @@ export const trajectoryRoutes = {
     lodOctreeMetadata: get<unknown>('/api/lod/:teamId/:trajectoryId/:analysisId/:exposureId/octree-metadata'),
 
     
-    discoverListPublicTrajectories: get<PersistedTrajectory>('/api/discover/teams/:teamId/trajectories'),
+    discoverListPublicTrajectories: get<Trajectory>('/api/discover/teams/:teamId/trajectories'),
 
     
     canvasBootstrap: get<CanvasBootstrapResponse>('/api/canvas/:trajectoryId/bootstrap'),
@@ -111,7 +111,7 @@ export const trajectoryRoutes = {
     canvasRasterFrameModel: get<unknown>('/api/canvas/:trajectoryId/frames/:timestep/:analysisId/:model'),
     canvasAtoms: get<unknown>('/api/canvas/:trajectoryId/frame/:timestep/atoms'),
     canvasSimulationCell: get<CanvasSimulationCellResponse>('/api/canvas/:trajectoryId/simulation-cell'),
-    canvasSceneArtifacts: get<SceneArtifactView>('/api/canvas/:trajectoryId/scene-artifacts'),
+    canvasSceneArtifacts: get<SceneArtifact>('/api/canvas/:trajectoryId/scene-artifacts'),
 
     canvasColorCodingProperties: get<ColorCodingPropertiesResponse>('/api/canvas/:trajectoryId/color-coding/properties'),
     canvasColorCodingPropertiesByAnalysis: get<ColorCodingPropertiesResponse>('/api/canvas/:trajectoryId/color-coding/properties/:analysisId'),

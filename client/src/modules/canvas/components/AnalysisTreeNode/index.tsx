@@ -16,10 +16,10 @@ import {
     buildSceneRenderMetadata,
     isRenderableSceneExport,
     isRenderableSceneExporter
-} from '../../utilities/plugin-exposure-export';
-import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
+} from '../../utils/plugin-exposure-export';
+import { isSameScene } from '@/modules/canvas/utils/scene-identity';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
+import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
 import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
@@ -35,22 +35,22 @@ import {
     colorOption,
     lineSettingsOption,
     transparencyOption
-} from '../../utilities/tree-menus';
+} from '../../utils/tree-menus';
 import { Box, Button, Tooltip } from '@voltstack/bravais';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
-import { ANALYSIS_EXECUTION_METADATA_KEY } from '../../utilities/selected-timestep-analysis';
-import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
+import { ANALYSIS_EXECUTION_METADATA_KEY } from '../../utils/selected-timestep-analysis';
+import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
-import type { CanvasAnalysisStatus } from '../../utilities/analysis-status';
+import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { Analysis, AnalysisExpectedArtifact } from '@/modules/analysis/api/types/analysis';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
-import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;

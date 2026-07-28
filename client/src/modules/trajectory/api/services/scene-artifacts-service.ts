@@ -1,8 +1,8 @@
-import { createService, get, paginated } from '@/app/core/http/utilities/create-service';
+import { createService, get, paginated } from '@/app/core/http/utils/create-service';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { SceneArtifact } from '../types/scene-artifacts/scene-artifact';
-import type { SceneArtifactSourceType } from '../types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
+import type { SceneArtifactSourceType } from '@volt/contracts/modules/trajectory/domain';
 
 export interface RenderableExposurePayload {
     pluginId?: string;

@@ -2,40 +2,19 @@ import '@/modules/cluster/components/ClusterMonitoringPage/ClusterMonitoringPage
 import { Button, Heading, Text, Box, Loader, Stack } from '@voltstack/bravais';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
-import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
+import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
+import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-
-interface IdleCallbackHandle {
-    cancel: () => void;
-}
 
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/CpuDistribution'));
 const DiskOperations = lazy(() => import('@/modules/cluster/components/DiskOperations'));
 const ResourceUsage = lazy(() => import('@/modules/cluster/components/ResourceUsage'));
 const NetworkChart = lazy(() => import('@/shared/ui/components/NetworkChart'));
 
-const createIdleCallbackHandle = (onIdle: () => void, timeoutMs: number): IdleCallbackHandle => {
-    if (typeof window.requestIdleCallback === 'function') {
-        const idleCallbackId = window.requestIdleCallback(onIdle, { timeout: timeoutMs });
-
-        return {
-            cancel: () => {
-                window.cancelIdleCallback(idleCallbackId);
-            }
-        };
-    }
-
-    const timeoutId = window.setTimeout(onIdle, timeoutMs);
-
-    return {
-        cancel: () => {
-            window.clearTimeout(timeoutId);
-        }
-    };
-};
+const DEFERRED_VISUALIZATIONS_IDLE_TIMEOUT_MS = 200;
 
 const renderDeferredVisualizationsFallback = () => (
     <Box display='flex' align='center' justify='center' p='2' style={{ minHeight: '18rem' }}>
@@ -93,9 +72,9 @@ const ClusterMonitoringPage = () => {
             return;
         }
 
-        const idleCallbackHandle = createIdleCallbackHandle(() => {
+        const idleCallbackHandle = requestIdleCallbackHandle(() => {
             setShouldRenderVisualizations(true);
-        }, 200);
+        }, { timeoutMs: DEFERRED_VISUALIZATIONS_IDLE_TIMEOUT_MS });
 
         return () => {
             idleCallbackHandle.cancel();

@@ -1,27 +1,30 @@
-import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utils/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Plugin } from '../types/plugin/plugin';
-import type { PluginTeamClusterOption } from '../types/plugin/team-cluster';
-import type { RegistrySearchResponse } from '../types/plugin/registry';
-import type { IWorkflow } from '../types/plugin/workflow';
-import type { PluginStatus } from '../types/plugin/workflow-enums';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/domain/registry';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/domain/plugin';
+import type {
+    CreatePluginInput,
+    ExecutePipelineInput,
+    InstallRegistryPluginInput,
+    PipelineStageKind,
+    UpdatePluginInput
+} from '@volt/contracts/modules/plugin/http';
 
 export interface ClonePluginInput {
     pluginId: string;
     teamId?: string;
 }
 
-export interface CreatePluginInput {
-    workflow: IWorkflow;
-}
 
 export interface DeletePluginInput {
     _id: string;
 }
 
-export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export interface PipelineStageInput {
     kind: PipelineStageKind;
@@ -29,17 +32,7 @@ export interface PipelineStageInput {
     config: Record<string, unknown>;
 }
 
-export interface ExecutePipelineInput {
-    trajectoryId: string;
-    teamClusterId?: string;
-    selectedTimesteps?: number[];
-    timestep?: number;
-    stages: PipelineStageInput[];
-}
-
-export interface ExecutePipelineResponse {
-    analysisIds: string[];
-}
+export type ExecutePipelineParams = { trajectoryId: string } & ExecutePipelineInput;
 
 export interface ExportAnalysisResultsInput {
     pluginId: string;
@@ -71,10 +64,6 @@ export interface SearchRegistryInput {
     limit?: number;
 }
 
-export interface InstallRegistryPluginInput {
-    name: string;
-    version?: string;
-}
 
 export interface ListPluginTeamClustersInput {
     teamId: string;
@@ -89,13 +78,9 @@ export interface SavePluginInput {
     workflow: IWorkflow;
 }
 
-export interface UpdatePluginInput {
-    _id: string;
-    workflow?: IWorkflow;
-    status?: PluginStatus;
-}
+export type UpdatePluginParams = { _id: string } & UpdatePluginInput;
 
-export interface UploadBinaryInput {
+export interface UploadBinaryParams{
     pluginId: string;
     teamId: string;
     file: File;
@@ -138,12 +123,12 @@ const endpoints = {
     create: post<CreatePluginInput, Plugin>('/', {
         unwrap: { field: 'plugin' }
     }),
-    update: patch<UpdatePluginInput, Plugin>('/:_id'),
+    update: patch<UpdatePluginParams, Plugin>('/:_id'),
     clone: post<ClonePluginInput, Plugin>('/:pluginId/clones', {
         unwrap: { field: 'plugin' }
     }),
     delete: del<DeletePluginInput>('/:_id'),
-    uploadBinary: custom<UploadBinaryInput, UploadBinaryResponse>(async ({ getClient }, params) => {
+    uploadBinary: custom<UploadBinaryParams, UploadBinaryResponse>(async ({ getClient }, params) => {
         const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
             'PATCH',
             `/${params.pluginId}/binary`,
@@ -193,7 +178,7 @@ const endpoints = {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    searchRegistry: get<SearchRegistryInput, RegistrySearchResponse>('/registry/search', {
+    searchRegistry: get<SearchRegistryInput, SearchRegistryResponse>('/registry/search', {
         query: ({ q, page, limit }) => ({
             ...(q?.trim() ? { q: q.trim() } : {}),
             ...(page ? { page } : {}),
@@ -201,7 +186,7 @@ const endpoints = {
         })
     }),
     installRegistryPlugin: post<InstallRegistryPluginInput, Plugin>('/registry/install'),
-    executePipeline: post<ExecutePipelineInput, ExecutePipelineResponse>('/trajectories/:trajectoryId/pipeline-executions'),
+    executePipeline: post<ExecutePipelineParams, ExecutePipelineResponse>('/trajectories/:trajectoryId/pipeline-executions'),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),

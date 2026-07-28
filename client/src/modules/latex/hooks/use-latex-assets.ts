@@ -6,9 +6,9 @@ import {
 } from '@/modules/latex/hooks/queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
-import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
+import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME, splitWorkspacePath } from '@/modules/latex/utils/workspace';
 import { useCallback, useRef } from 'react';
-import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import type { FileWithPath } from '@/shared/utils/file';
 
 interface UseLatexAssetsInput {

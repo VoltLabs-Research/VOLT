@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { LODManager } from '@/modules/fractal/services/lod-manager';
-import { fetchOctreeMetadata } from '@/modules/trajectory/utilities/octree-metadata-reader';
-import { DEFAULT_LOD_SETTINGS } from '@/modules/fractal/types/lod-config';
-import { debugFractal } from '@/modules/fractal/utilities/debug-log';
+import { fetchOctreeMetadata } from '@/modules/trajectory/utils/octree-metadata-reader';
+import { DEFAULT_LOD_SETTINGS } from '@/modules/fractal/contracts/lod-config';
+import { debugFractal } from '@/modules/fractal/utils/debug-log';
 
 import type { LODSelection } from '@/modules/fractal/services/lod-manager';
-import type { LODSettings, OctreeMetadata, TileFetchRequest } from '@/modules/fractal/types/lod-config';
+import type { LODSettings, OctreeMetadata, TileFetchRequest } from '@/modules/fractal/contracts/lod-config';
 
 interface UseLODStreamingParams {
     trajectoryId: string;

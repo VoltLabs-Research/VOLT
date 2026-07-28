@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { http } from '@/app/core/http/utilities/create-client';
-import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
-import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
-import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
+import { http } from '@/app/core/http/utils/create-client';
+import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
+import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
+import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { geometryPool } from '@/modules/fractal/services/geometry-pool';
 import { decompress } from 'fzstd';
-import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
+import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const summarizeRenderableContent = (root: THREE.Object3D) => {

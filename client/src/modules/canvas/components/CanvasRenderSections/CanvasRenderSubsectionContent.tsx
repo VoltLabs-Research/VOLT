@@ -1,6 +1,6 @@
 import { Slider, Box, Row, Stack, Text } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import type { Subsection } from './types';
+import type { Subsection } from '@/modules/canvas/contracts/render-sections';
 
 import './CanvasRenderSections.css';
 

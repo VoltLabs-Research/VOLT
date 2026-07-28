@@ -4,7 +4,7 @@ import { List } from 'react-window';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { formatUnknownValue } from '@voltstack/bravais';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
@@ -13,7 +13,7 @@ import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTa
 import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';
 
-export interface ColumnConfig {
+export interface PluginTableColumnConfig {
     key?: string;
     title?: string;
     path?: string;
@@ -22,12 +22,12 @@ export interface ColumnConfig {
     render?: (value: unknown, row: Record<string, unknown>) => ReactNode;
 }
 
-const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
-const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
-const getColumnMinWidth = (col: ColumnConfig): number => Number(col.width ?? 120);
+const getColumnKey = (col: PluginTableColumnConfig): string => String(col.key ?? col.path ?? '');
+const getColumnTitle = (col: PluginTableColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+const getColumnMinWidth = (col: PluginTableColumnConfig): number => Number(col.width ?? 120);
 const MOBILE_COLUMN_WIDTH_SCALE = 0.62;
 const MIN_MOBILE_COLUMN_WIDTH = 44;
-const getResolvedColumnWidth = (col: ColumnConfig, widthScale = 1): number => {
+const getResolvedColumnWidth = (col: PluginTableColumnConfig, widthScale = 1): number => {
     const width = getColumnMinWidth(col);
     if (widthScale === 1) return width;
     return Math.max(MIN_MOBILE_COLUMN_WIDTH, Math.round(width * widthScale));
@@ -36,11 +36,11 @@ const getColumnFlex = (width: number, widthScale = 1): string => {
     return widthScale === 1 ? `1 1 ${width}px` : `0 0 ${width}px`;
 };
 
-interface TableRowProps {
+interface PluginTableRowProps {
     index: number;
     style: CSSProperties;
     data: Record<string, unknown>[];
-    columns: ColumnConfig[];
+    columns: PluginTableColumnConfig[];
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
     rowId?: string;
     inferredColumnTypes?: Record<string, InferredColumnType>;
@@ -57,7 +57,7 @@ const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): s
     return String(fallback);
 };
 
-const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, inferredColumnTypes, onRowClick, isSelected, columnWidthScale = 1 }: TableRowProps) => {
+const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, inferredColumnTypes, onRowClick, isSelected, columnWidthScale = 1 }: PluginTableRowProps) => {
     const row = rows[index];
     if (!row) return null;
 
@@ -147,7 +147,7 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
 
 interface VirtualizedRowExtraProps {
     data: Record<string, unknown>[];
-    columns: ColumnConfig[];
+    columns: PluginTableColumnConfig[];
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
     inferredColumnTypes?: Record<string, InferredColumnType>;
     onRowClick?: (row: Record<string, unknown>) => void;
@@ -176,7 +176,7 @@ const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredC
 };
 
 interface PluginCompactTableProps {
-    columns: ColumnConfig[];
+    columns: PluginTableColumnConfig[];
     data: Record<string, unknown>[];
     hasMore?: boolean;
     isLoading?: boolean;
@@ -222,7 +222,7 @@ const loadingMoreStyle: CSSProperties = {
     borderTop: '1px solid var(--color-border-soft)'
 };
 
-const CompactTableHeader = ({ columns, columnWidthScale = 1 }: { columns: ColumnConfig[]; columnWidthScale?: number }) => (
+const CompactTableHeader = ({ columns, columnWidthScale = 1 }: { columns: PluginTableColumnConfig[]; columnWidthScale?: number }) => (
     <Box position='sticky' className='plugin-compact-table-header'>
         {columns.map((col) => {
             const columnWidth = getResolvedColumnWidth(col, columnWidthScale);

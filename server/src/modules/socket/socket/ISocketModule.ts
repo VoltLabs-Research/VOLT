@@ -39,14 +39,7 @@ export interface ISocketConnection {
     nativeSocket?: Socket;
 }
 
-export interface PresenceUser {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    isAnonymous: boolean;
-    [key: string]: unknown;
-}
+export type { PresenceUser } from '@volt/contracts/modules/socket/domain';
 
 export type SocketEventHandler<T = unknown, TResult = unknown> = (
     connection: ISocketConnection,

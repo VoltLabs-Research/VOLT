@@ -3,7 +3,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import type { ComponentType } from 'react';
-import type { MenuIconProps, MenuOption } from '@/shared/ui/types/menu';
+import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
 
 export interface ActionConfig<T = unknown> {
     label?: string;

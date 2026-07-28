@@ -1,11 +1,11 @@
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
-import { resolveScreenshotScale, resolveScreenshotSize } from '@/modules/canvas/utilities/screenshot';
+import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
+import { resolveScreenshotScale, resolveScreenshotSize } from '@/modules/canvas/utils/screenshot';
 import {
     applyCameraAnglePreset,
     getBoxCorners,
     getCaptureBounds,
     getFallbackBoxFromModelWorldBounds
-} from '@/modules/fractal/utilities/camera-framing';
+} from '@/modules/fractal/utils/camera-framing';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useEffect, useRef, useCallback } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
@@ -19,10 +19,10 @@ import {
     Vector3
 } from 'three';
 
-import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
-import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
+import type { ScreenshotRequest } from '@/modules/canvas/utils/screenshot';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
+import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
+import type { ScreenshotComposition } from '@/modules/fractal/contracts/screenshot-composition';
 import type { MutableRefObject } from 'react';
 
 interface ScreenshotCaptureProps {

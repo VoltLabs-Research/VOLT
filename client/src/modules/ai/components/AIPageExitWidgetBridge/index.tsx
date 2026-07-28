@@ -1,5 +1,5 @@
 import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
-import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 

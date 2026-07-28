@@ -1,5 +1,5 @@
 import { tokenStorage } from '@/shared/auth/token-storage';
-import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
+import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
 import { DefaultChatTransport } from 'ai';
 import type {
     CreateConversationStreamTransportParams,

@@ -3,10 +3,10 @@ import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } fro
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utilities/container-form';
+import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utils/container-form';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
-import type { Team } from '@/modules/team/api/types/team/team';
-import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
+import type { Team } from '@volt/contracts/modules/team/domain';
+import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 
 interface ReviewStepProps {
     config: ContainerConfig;

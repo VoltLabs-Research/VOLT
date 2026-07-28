@@ -1,6 +1,6 @@
 
 
-import type { ChatMessageKind, ChatMessageMetadata } from './domain';
+import type { ChatMessageType, ChatMessageMetadata } from './domain';
 
 export interface CreateGroupChatInput{
     
@@ -32,7 +32,7 @@ export interface UpdateGroupAdminsInput{
 
 export interface SendChatMessageInput{
     content: string;
-    messageType: ChatMessageKind;
+    messageType: ChatMessageType;
     metadata?: ChatMessageMetadata;
 }
 

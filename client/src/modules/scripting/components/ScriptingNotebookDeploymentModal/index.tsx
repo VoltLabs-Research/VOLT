@@ -2,9 +2,9 @@ import ClusterResourceSelectionPanel from '@/modules/container/components/Cluste
 import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
 import { Modal, closeModal, Text } from '@voltstack/bravais';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { getNotebookTeamClusterId } from '@/modules/scripting/utilities/notebooks';
+import { getNotebookTeamClusterId } from '@/modules/scripting/utils/notebooks';
 import { useCallback, useEffect, useState } from 'react';
-import type { ScriptingNotebook } from '@/modules/scripting/api/types/scripting-notebook';
+import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 
 export const SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID = 'scripting-notebook-deployment-modal';

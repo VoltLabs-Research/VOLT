@@ -2,11 +2,11 @@ import {
     invalidateSceneArtifacts,
     sceneArtifactsQuery
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
-import { toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import { toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 
 interface UseSceneArtifactsOptions {
     trajectoryId?: string;

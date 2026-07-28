@@ -1,6 +1,6 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes, renderOptionalAuthRoutes } from './routes/RouteRenderer';
 import { resolveConfiguredRouteTitle } from './routes/metadata';
-import { reportHotspotDuration } from './core/http/utilities/client-instrumentation';
+import { reportHotspotDuration } from './core/http/utils/client-instrumentation';
 import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
 import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
 import { useFallbackPageTitle } from '@/shared/ui/hooks/use-page-title';

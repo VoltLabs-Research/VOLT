@@ -3,7 +3,7 @@ import { Box, Modal, Text } from '@voltstack/bravais';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
-import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/stores/use-jobs-drawer-store';
+import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 
 const JobsDrawer = () => {
     const trajectoryId = useJobsDrawerStore((state) => state.trajectoryId);

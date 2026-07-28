@@ -1,4 +1,4 @@
-import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group-status';
+import { frameGroupStatusClassNames } from '@/modules/jobs/utils/frame-group-status';
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
@@ -7,7 +7,7 @@ import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/types/job';
+import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@volt/contracts/modules/jobs/domain';
 
 interface JobGroupProps {
     group: TrajectoryJobGroupType;

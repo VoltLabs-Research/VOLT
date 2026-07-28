@@ -3,7 +3,7 @@ import AsyncContextMenuItem from './AsyncContextMenuItem';
 import SubmenuItemWrapper from './SubmenuItemWrapper';
 import './ContextMenuPopover.css';
 import { useState } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { MouseEvent, ReactNode } from 'react';
 import type { Placement } from '@floating-ui/react';
 

@@ -1,14 +1,14 @@
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
-import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
-import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
-import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fit';
+import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
+import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import * as THREE from 'three';
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 
 interface LocalGlbViewerProps {
     url: string;

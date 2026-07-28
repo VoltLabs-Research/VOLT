@@ -1,4 +1,4 @@
-import type { EnvVariable } from '@/modules/container/api/types/env-variable';
+import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 
 export interface ContainerTemplateCustomFieldValues {
     [fieldId: string]: string;

@@ -1,7 +1,7 @@
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useClusterResourceLimitsQuery } from '@/modules/container/hooks/queries';
 import { useEffect, useMemo } from 'react';
-import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
+import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 
 interface UseTeamClusterResourceSelectionInput {
     teamId: string | null | undefined;

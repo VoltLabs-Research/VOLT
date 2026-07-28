@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Avatar, ListRow, Tag } from '@voltstack/bravais';
 import type { TagProps } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
-import type { User } from '@/modules/auth/api/types/user';
+import type { User } from '@volt/contracts/modules/auth/domain';
 import './MemberListItem.css';
 
 type MemberRole = 'owner' | 'admin' | 'member';

@@ -3,12 +3,9 @@ import { Schema, Types } from 'mongoose';
 import mongoose from 'mongoose';
 import type { Document, Model } from 'mongoose';
 
-export enum SessionActivityType {
-    Login = 'login',
-    FailedLogin = 'failed_login',
-    OAuthLogin = 'oauth_login',
-    PasswordUpdate = 'password_update'
-}
+import { SessionActivityType } from '@volt/contracts/modules/session/domain';
+
+export { SessionActivityType };
 
 export interface SessionDocument extends Document {
     _id: Types.ObjectId;

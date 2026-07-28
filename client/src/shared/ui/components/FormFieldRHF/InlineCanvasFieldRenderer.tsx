@@ -1,10 +1,10 @@
 import { LiquidToggle, Select } from '@voltstack/bravais';
-import { matchReferenceWidth, useFloatingLayerRoot } from '@/shared/ui/utilities/floating-layer';
+import { matchReferenceWidth, useFloatingLayerRoot } from '@/shared/ui/utils/floating-layer';
 import { autoUpdate, flip, FloatingPortal, offset, shift, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import type { FieldRendererProps } from './FormFieldRHF.types';
+import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
 
 const InlineCanvasFieldRenderer = ({

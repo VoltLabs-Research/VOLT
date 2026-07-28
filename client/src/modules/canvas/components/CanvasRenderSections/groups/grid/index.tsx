@@ -1,11 +1,11 @@
 import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { Box } from '@voltstack/bravais';
 
 import { useMemo } from 'react';
 import { IoGridOutline } from 'react-icons/io5';
 import { useShallow } from 'zustand/react/shallow';
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useGridGroup = (): RenderGroup => {
     const s = useEditorStore(useShallow((state) => state.grid));

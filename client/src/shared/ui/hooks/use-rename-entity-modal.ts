@@ -1,6 +1,6 @@
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { closeModal, openModal } from '@voltstack/bravais';
-import type { PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useState } from 'react';
 
 interface UseRenameEntityModalOptions<TEntity, TUpdateParams, TResult> {

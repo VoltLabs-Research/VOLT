@@ -7,7 +7,7 @@ import { AsyncBoundary, Box, Button, Heading, Loader, Stack, Text } from '@volts
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { NotebookContainerStage } from '@/modules/scripting/api/types/scripting-session';
+import type { NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
 
 interface ScriptingWorkspaceProps {
     trajectoryId: string;

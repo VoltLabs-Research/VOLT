@@ -5,16 +5,16 @@ import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
-import { JobStatus } from '../api/types/job';
-import useTeamJobsStore from '../stores/use-team-jobs-store';
-import { applyJobUpdate } from '../utilities/job-group-updates';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import useTeamJobsStore from '../store/use-team-jobs-store';
+import { applyJobUpdate } from '../utils/job-group-updates';
 import {
     resetTeamJobsGroupsQueryData,
     setTeamJobsGroupsQueryData,
     updateTeamJobsGroupsQueryData,
     teamJobsGroups
 } from './queries';
-import type { Job, TrajectoryJobGroup } from '../api/types/job';
+import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
 interface TeamJobsEventPayload {
     revision: number;

@@ -1,12 +1,13 @@
-import { RasterFrameScope } from '@/modules/raster/api/types/raster';
+import { RasterFrameScope } from '@volt/contracts/modules/raster/domain';
 import { useRasterFrame } from '@/modules/raster/hooks/use-raster-frame';
 import { rasterMetadataQuery } from '@/modules/raster/hooks/queries';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { isApiError } from '@/shared/errors/core';
 
-import type { RasterAnalysisMetadata, RasterSceneFrame } from '@/modules/raster/api/types/raster';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { RasterAnalysisMetadata } from '@volt/contracts/modules/raster/domain';
+import type { RasterSceneFrame } from '@/modules/raster/contracts/scene-frame';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface RasterModelOption {
     value: string;

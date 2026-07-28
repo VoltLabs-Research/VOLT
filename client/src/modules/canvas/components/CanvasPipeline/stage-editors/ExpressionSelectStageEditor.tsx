@@ -1,4 +1,4 @@
-import { useCanvasPipelineStore } from '../../../stores/canvas-pipeline';
+import { useCanvasPipelineStore } from '../../../store/canvas-pipeline';
 import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -8,7 +8,7 @@ import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
     type ExpressionSelectAction,
     type ExpressionSelectStageConfig
-} from '../../../stores/canvas-pipeline';
+} from '../../../store/canvas-pipeline';
 
 interface ExpressionSelectStageEditorProps {
     stageId: string;

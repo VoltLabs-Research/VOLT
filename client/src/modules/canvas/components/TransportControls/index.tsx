@@ -1,5 +1,5 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetOrCreateChatMutation, addChatToCache } from './queries';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useNavigate } from 'react-router-dom';
 
 const useChatActions = () => {

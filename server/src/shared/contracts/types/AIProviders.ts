@@ -1,35 +1,6 @@
+import { AIProvider, AI_PROVIDERS } from '@volt/contracts/modules/ai/domain';
 
-export enum AIProvider {
-    OpenAI = 'openai',
-    Anthropic = 'anthropic',
-    Google = 'google',
-    Groq = 'groq',
-    XAI = 'xai',
-    Mistral = 'mistral',
-    Cohere = 'cohere',
-    DeepSeek = 'deepseek',
-    DeepInfra = 'deepinfra',
-    Cerebras = 'cerebras',
-    TogetherAI = 'togetherai',
-    Fireworks = 'fireworks',
-    Ollama = 'ollama'
-}
-
-export const AI_PROVIDERS = [
-    AIProvider.OpenAI,
-    AIProvider.Anthropic,
-    AIProvider.Google,
-    AIProvider.Groq,
-    AIProvider.XAI,
-    AIProvider.Mistral,
-    AIProvider.Cohere,
-    AIProvider.DeepSeek,
-    AIProvider.DeepInfra,
-    AIProvider.Cerebras,
-    AIProvider.TogetherAI,
-    AIProvider.Fireworks,
-    AIProvider.Ollama
-];
+export { AIProvider, AI_PROVIDERS };
 
 export const AI_PROVIDER_NAMES: Record<AIProvider, string> = {
     [AIProvider.OpenAI]: 'OpenAI',

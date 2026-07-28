@@ -1,4 +1,4 @@
-import type { ClientToolHandler, ClientToolModule } from './types';
+import type { ClientToolHandler, ClientToolModule } from '@/modules/ai/contracts/tools';
 
 const handlerModules = import.meta.glob<ClientToolModule>('./handlers/*.ts', { eager: true });
 

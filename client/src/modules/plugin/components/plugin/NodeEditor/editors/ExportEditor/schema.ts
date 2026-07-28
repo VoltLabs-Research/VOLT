@@ -1,4 +1,4 @@
-import { Exporter, ExportType_ as ExportType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { Exporter, WorkflowExportType as ExportType } from '@volt/contracts/modules/plugin/domain/enums';
 
 export interface ExportEditorFormValues {
     exporter: string;

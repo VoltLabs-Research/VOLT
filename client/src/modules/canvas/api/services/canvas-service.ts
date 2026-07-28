@@ -1,17 +1,17 @@
-import { createService, custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
+import { createService, custom, download, get, paginated } from '@/app/core/http/utils/create-service';
 import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import { base64ToBlob } from '@/shared/utils/file';
 
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
-import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
+import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
 import { buildSceneArtifactQuery } from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { buildPreviewQuery } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type {
     ListSceneArtifactsInput,
     RenderableExposurePayload
@@ -30,7 +30,7 @@ import type {
     PreviewFilterInput,
     PreviewFilterResponse
 } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
 import type {
     GetPluginListingInput,
     GetPluginListingResponse
@@ -44,10 +44,8 @@ import type {
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
 } from '@/modules/analysis/api/service';
-import type {
-    GetRasterMetadataParams,
-    GetRasterMetadataResponse
-} from '@/modules/raster/api/service';
+import type { GetRasterMetadataParams } from '@/modules/raster/api/service';
+import type { GetRasterMetadataResponse } from '@volt/contracts/modules/raster/domain';
 import type {
     GetPreviewInput,
     GetPreviewResponse

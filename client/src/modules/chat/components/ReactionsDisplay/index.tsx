@@ -1,6 +1,6 @@
 import { Box, Button } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
-import type { ChatReaction } from '@/modules/chat/api/types/message';
+import type { ChatReaction } from '@volt/contracts/modules/chat/domain';
 import './ReactionsDisplay.css';
 
 interface ReactionsDisplayProps {

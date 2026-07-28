@@ -1,0 +1,18 @@
+export type MetricKey = 'trajectories' | 'analysis' | string;
+
+export interface DashboardCardYDomain{
+    min: number;
+    max: number;
+}
+
+export interface DashboardCard{
+    key: MetricKey;
+    name: string;
+    listingUrl?: string;
+    count: string;
+    rawCount: number;
+    lastMonthStatus: number;
+    series: number[];
+    labels: string[];
+    yDomain: DashboardCardYDomain;
+}

@@ -1,155 +1,67 @@
-import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, del, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
-import type { ClusterResourceLimits } from '@/modules/container/api/types/cluster-resource-limits';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from './types/team-cluster';
-import type { ClusterTransferJob, ClusterTransferJobState } from './types/team-cluster-transfer';
+import type { PageParams, SearchParams, TeamScopedParams } from '@/shared/api/request-params';
+import type {
+    ClusterTransferJob,
+    ClusterTransferJobState,
+    ClusterResourceLimitsResponse,
+    CreateTeamClusterResponse,
+    CreateTeamClusterTransferRequestResponse,
+    DeleteDemoTeamClusterResponse,
+    DeleteTeamClusterResponse,
+    ProvisionDemoTeamClusterResponse,
+    RegenerateTeamClusterEnrollmentTokenResponse,
+    RevealTeamClusterCredentialsResponse,
+    TeamCluster,
+    UpdateTeamClusterQueueConcurrencyResponse,
+    UpdateTeamClusterRoleResponse
+} from '@volt/contracts/modules/cluster/domain';
+import type {
+    CreateTeamClusterInput,
+    CreateTeamClusterTransferRequestInput,
+    DeleteTeamClusterInput,
+    RevealTeamClusterCredentialsInput,
+    UpdateTeamClusterQueueConcurrencyInput,
+    UpdateTeamClusterRoleInput
+} from '@volt/contracts/modules/cluster/http';
 
-export interface CreateTeamClusterInput {
-    teamId: string;
-    name: string;
-}
-
-export interface CreateTeamClusterResponse {
-    teamCluster: TeamCluster;
-    enrollmentToken: string;
-}
-
-export interface CreateTeamClusterTransferRequestInput {
-    teamId: string;
-    teamClusterId: string;
-    destinationClusterId: string;
-}
-
-export interface CreateTeamClusterTransferRequestResponse {
-    message: string;
-    sourceClusterId: string;
-    destinationClusterId: string;
-    requestedJobs: ClusterTransferJob[];
-}
-
-export interface DeleteTeamClusterInput {
-    teamId: string;
-    teamClusterId: string;
-    password: string;
-}
-
-export interface DeleteTeamClusterResponse {
-    success: boolean;
-    deleted: boolean;
-    manualUninstallRequired: boolean;
-    message: string;
-    manualUninstallCommand?: string;
-    teamCluster?: TeamCluster;
-}
-
-export interface DeleteDemoTeamClusterInput {
-    teamId: string;
-}
-
-export interface DeleteDemoTeamClusterResponse {
-    teardownScheduled: boolean;
-}
-
-export interface GetTeamClusterResourceLimitsInput {
-    teamId: string;
+interface TeamClusterScopedParams extends TeamScopedParams{
     teamClusterId: string;
 }
 
-export interface GetTeamClusterResourceLimitsResponse {
-    resourceLimits: ClusterResourceLimits;
-}
+export type CreateTeamClusterParams = TeamScopedParams & CreateTeamClusterInput;
 
-export interface ListTeamClustersInput {
-    teamId: string;
-    page?: number;
-    limit?: number;
-    search?: string;
-}
+export type DeleteTeamClusterParams = TeamClusterScopedParams & DeleteTeamClusterInput;
+
+export type RevealTeamClusterCredentialsParams = TeamClusterScopedParams & RevealTeamClusterCredentialsInput;
+
+export type CreateTeamClusterTransferRequestParams = TeamClusterScopedParams & CreateTeamClusterTransferRequestInput;
+
+export type UpdateTeamClusterQueueConcurrencyParams = TeamClusterScopedParams & UpdateTeamClusterQueueConcurrencyInput;
+
+export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;
+
+export type GetTeamClusterResourceLimitsParams = TeamClusterScopedParams;
+
+export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
+
+export type ProvisionDemoTeamClusterParams = TeamScopedParams;
+
+export type DeleteDemoTeamClusterParams = TeamScopedParams;
+
+export type GetTeamClusterResourceLimitsResponse = ClusterResourceLimitsResponse;
+
+export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
 
 export type ListTeamClustersResponse = PaginatedResponse<TeamCluster>;
 
-export interface ListTeamClusterTransferJobsInput {
-    teamId: string;
-    teamClusterId: string;
-    page?: number;
-    limit?: number;
+export interface ListTeamClusterTransferJobsParams extends TeamClusterScopedParams, PageParams{
     state?: ClusterTransferJobState;
 }
 
 export type ListTeamClusterTransferJobsResponse = PaginatedResponse<ClusterTransferJob>;
-
-export interface RegenerateTeamClusterEnrollmentTokenInput {
-    teamId: string;
-    teamClusterId: string;
-}
-
-export interface RegenerateTeamClusterEnrollmentTokenResponse {
-    enrollmentToken: string;
-}
-
-export interface RevealTeamClusterCredentialsInput {
-    teamId: string;
-    teamClusterId: string;
-    password: string;
-}
-
-export interface RevealTeamClusterCredentialsResponse {
-    teamClusterId: string;
-    services: TeamClusterCredentialServices;
-}
-
-export interface TeamClusterQueueConcurrencyInput {
-    analysis: number;
-    rasterizer: number;
-    glbPreprocessing: number;
-    artifactUpload: number;
-    pluginWarmup: number;
-}
-
-export interface TeamClusterQueueScopeLimitInput {
-    maxRunningPerTrajectory: number;
-}
-
-export interface TeamClusterQueueScopeLimitsInput {
-    analysisProcessing: TeamClusterQueueScopeLimitInput;
-    artifactUpload: TeamClusterQueueScopeLimitInput;
-    trajectoryRasterization: TeamClusterQueueScopeLimitInput;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimitInput;
-}
-
-export interface UpdateTeamClusterQueueConcurrencyInput {
-    teamId: string;
-    teamClusterId: string;
-    queueConcurrency: TeamClusterQueueConcurrencyInput;
-    queueScopeLimits: TeamClusterQueueScopeLimitsInput;
-}
-
-export interface UpdateTeamClusterQueueConcurrencyResponse {
-    message: string;
-    restartRequested: boolean;
-    teamCluster: TeamCluster;
-}
-
-export interface UpdateTeamClusterRoleInput {
-    teamId: string;
-    teamClusterId: string;
-    role: TeamClusterRole;
-}
-
-export interface UpdateTeamClusterRoleResponse {
-    message: string;
-    teamCluster: TeamCluster;
-}
-
-export interface ProvisionDemoTeamClusterInput {
-    teamId: string;
-}
-
-export interface ProvisionDemoTeamClusterResponse {
-    teamCluster: TeamCluster;
-}
 
 export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
     await emitWithReport(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, {
@@ -159,34 +71,34 @@ export const requestClusterHistory = async (minutes: number | undefined, cluster
 };
 
 const teamClusterEndpoints = {
-    create: post<CreateTeamClusterInput, CreateTeamClusterResponse>('/:teamId/clusters'),
-    listByTeamId: paginated<ListTeamClustersInput, ListTeamClustersResponse>('/:teamId/clusters'),
-    deleteById: post<DeleteTeamClusterInput, DeleteTeamClusterResponse>('/:teamId/clusters/:teamClusterId/delete-requests'),
-    getResourceLimits: get<GetTeamClusterResourceLimitsInput, GetTeamClusterResourceLimitsResponse>(
+    create: post<CreateTeamClusterParams, CreateTeamClusterResponse>('/:teamId/clusters'),
+    listByTeamId: paginated<ListTeamClustersParams, ListTeamClustersResponse>('/:teamId/clusters'),
+    deleteById: post<DeleteTeamClusterParams, DeleteTeamClusterResponse>('/:teamId/clusters/:teamClusterId/delete-requests'),
+    getResourceLimits: get<GetTeamClusterResourceLimitsParams, GetTeamClusterResourceLimitsResponse>(
         '/:teamId/clusters/:teamClusterId/resource-limits'
     ),
-    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>(
+    revealCredentials: post<RevealTeamClusterCredentialsParams, RevealTeamClusterCredentialsResponse>(
         '/:teamId/clusters/:teamClusterId/credentials/reveal'
     ),
-    listTransferJobs: get<ListTeamClusterTransferJobsInput, ListTeamClusterTransferJobsResponse>(
+    listTransferJobs: get<ListTeamClusterTransferJobsParams, ListTeamClusterTransferJobsResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'
     ),
-    createTransferRequest: post<CreateTeamClusterTransferRequestInput, CreateTeamClusterTransferRequestResponse>(
+    createTransferRequest: post<CreateTeamClusterTransferRequestParams, CreateTeamClusterTransferRequestResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'
     ),
-    regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInput, RegenerateTeamClusterEnrollmentTokenResponse>(
+    regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenParams, RegenerateTeamClusterEnrollmentTokenResponse>(
         '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
     ),
-    updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyInput, UpdateTeamClusterQueueConcurrencyResponse>(
+    updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyParams, UpdateTeamClusterQueueConcurrencyResponse>(
         '/:teamId/clusters/:teamClusterId/queue-concurrency'
     ),
-    updateRole: patch<UpdateTeamClusterRoleInput, UpdateTeamClusterRoleResponse>(
+    updateRole: patch<UpdateTeamClusterRoleParams, UpdateTeamClusterRoleResponse>(
         '/:teamId/clusters/:teamClusterId/role'
     ),
-    provisionDemo: post<ProvisionDemoTeamClusterInput, ProvisionDemoTeamClusterResponse>(
+    provisionDemo: post<ProvisionDemoTeamClusterParams, ProvisionDemoTeamClusterResponse>(
         '/:teamId/clusters/demo'
     ),
-    deleteDemo: del<DeleteDemoTeamClusterInput, DeleteDemoTeamClusterResponse>(
+    deleteDemo: del<DeleteDemoTeamClusterParams, DeleteDemoTeamClusterResponse>(
         '/:teamId/clusters/demo'
     )
 };

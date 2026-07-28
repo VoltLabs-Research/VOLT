@@ -5,19 +5,20 @@ import service from '../api/service';
 import queryClient from '@/shared/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import type {
-    ChangePasswordInput,
-    ChangePasswordResponse,
-    CheckEmailInput,
+    UpdatePasswordInput,
+    SignInInput
+} from '@volt/contracts/modules/auth/http';
+import type {
+    AuthSession,
     CheckEmailResponse,
-    GetAvailableOAuthProvidersResponse,
-    SignInInput,
-    SignInResponse,
-    SignUpInput,
-    SignUpResponse,
-    UpdateAvatarInput,
-    UpdateProfileInput
-} from '../api/service';
-import type { User } from '../api/types/user';
+    OAuthProviders,
+    User
+} from '@volt/contracts/modules/auth/domain';
+import type {
+    CheckEmailParams,
+    SignUpFormInput,
+    UpdateMeInput
+} from '../contracts/forms';
 import type { QueryOptions } from '@/shared/query';
 
 type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>;
@@ -31,7 +32,7 @@ export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.ge
 const oauthProviders = createQuery(KEYS.oauthProviders, () => service.getAvailableOAuthProviders({}));
 
 export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, { staleTime: Infinity, ...options });
-export const useOAuthProvidersQuery = (options?: QueryOptions<GetAvailableOAuthProvidersResponse>) =>
+export const useOAuthProvidersQuery = (options?: QueryOptions<OAuthProviders>) =>
     oauthProviders(undefined, { staleTime: Infinity, ...options });
 export const fetchCurrentUser = () => currentUser.fetch(undefined, { staleTime: 0 });
 export const clearCurrentUserQueryData = async () => {
@@ -39,19 +40,19 @@ export const clearCurrentUserQueryData = async () => {
     currentUser.clear(undefined);
 };
 
-export const useSignInMutation = createMutation<SignInResponse, SignInInput>(
+export const useSignInMutation = createMutation<AuthSession, SignInInput>(
     service.signIn,
     (data) => currentUser.set(undefined, data.user)
 );
 
-export const useSignUpMutation = createMutation<SignUpResponse, SignUpInput>(
+export const useSignUpMutation = createMutation<AuthSession, SignUpFormInput>(
     service.signUp,
     (data) => currentUser.set(undefined, data.user)
 );
 
-export const useCheckEmailMutation = createMutation<CheckEmailResponse, CheckEmailInput>(service.checkEmail);
+export const useCheckEmailMutation = createMutation<CheckEmailResponse, CheckEmailParams>(service.checkEmail);
 
-export const useUpdateMeMutation = createMutation<User, UpdateProfileInput | UpdateAvatarInput>(
+export const useUpdateMeMutation = createMutation<User, UpdateMeInput>(
     service.updateMe,
     (data) => currentUser.set(undefined, data)
 );
@@ -61,7 +62,7 @@ export const useDeleteMeMutation = createMutation<void, void>(
     () => currentUser.clear(undefined)
 );
 
-export const useChangePasswordMutation = createMutation<ChangePasswordResponse, ChangePasswordInput>(
+export const useChangePasswordMutation = createMutation<AuthSession, UpdatePasswordInput>(
     async (data) => {
         const result = await service.changePassword(data);
         tokenStorage.setToken(result.token);

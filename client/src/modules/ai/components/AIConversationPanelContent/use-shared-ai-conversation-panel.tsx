@@ -1,8 +1,8 @@
 import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
-import { toAIModelSelectOptions } from '@/modules/ai/utilities/model-options';
+import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
 import { useCallback, useMemo } from 'react';
-import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
+import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { SelectOption } from '@voltstack/bravais';
 import { useNavigate } from 'react-router-dom';
 

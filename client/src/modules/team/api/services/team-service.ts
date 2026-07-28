@@ -1,12 +1,11 @@
-import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, get, post, patch, del } from '@/app/core/http/utils/create-service';
 
 import type { EmptyParams, UnwrapMode } from '@voltstack/voltclient';
-import type { Team } from '../types/team/team';
+import type { Team } from '@volt/contracts/modules/team/domain';
+import type { TeamScopedParams } from '@/shared/api/request-params';
+import type { CreateTeamInput, JoinTeamByCodeInput, UpdateTeamInput } from '@volt/contracts/modules/team/http';
+import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
 
-export interface CreateTeamInput {
-    name: string;
-    description: string;
-}
 
 export interface DeleteInviteCodeInput {
     teamId: string;
@@ -26,43 +25,26 @@ export interface GetTeamPermissionsInput {
 
 export type GetTeamPermissionsResponse = string[];
 
-export interface JoinByInviteCodeInput {
-    code: string;
-}
+export type JoinByInviteCodeInput = JoinTeamByCodeInput;
 
-export interface JoinByInviteCodeResponse {
-    message: string;
-    teamId: string;
-}
+export type JoinByInviteCodeResponse = JoinTeamResponse;
 
 export interface LeaveTeamInput {
     teamId: string;
 }
 
-export interface PreviewJoinByInviteCodeInput {
-    code: string;
-}
+export type PreviewJoinByInviteCodeInput = JoinTeamByCodeInput;
 
-export interface PreviewJoinByInviteCodeResponse {
-    message: string;
-    teamId: string;
-    teamName: string;
-    ownerName: string;
-    isAlreadyMember: boolean;
-}
+export type PreviewJoinByInviteCodeResponse = PreviewJoinTeamResponse;
 
-export interface UpdateTeamInput {
-    teamId: string;
-    name?: string;
-    description?: string;
-}
+export type UpdateTeamParams = TeamScopedParams & UpdateTeamInput;
 
 const TEAM_PERMISSIONS_UNWRAP: UnwrapMode = { field: 'permissions' };
 
 const endpoints = {
     getAll: get<EmptyParams, Team[]>('/'),
     create: post<CreateTeamInput, Team>('/'),
-    update: patch<UpdateTeamInput, Team>('/:teamId'),
+    update: patch<UpdateTeamParams, Team>('/:teamId'),
     delete: del<DeleteTeamInput>('/:teamId'),
     generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-code'),
     deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-code'),

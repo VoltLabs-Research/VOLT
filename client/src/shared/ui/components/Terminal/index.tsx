@@ -1,7 +1,7 @@
 import './Terminal.css';
 import 'xterm/css/xterm.css';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
-import { subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';

@@ -1,7 +1,8 @@
-import { createService, paginated, get, post, del } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, del } from '@/app/core/http/utils/create-service';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Analysis } from './types/analysis';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { RetryFailedFramesResponse } from '@volt/contracts/modules/analysis/domain';
 
 export interface GetAnalysesByTrajectoryParams {
     trajectoryId: string;
@@ -47,13 +48,6 @@ export interface GetAnalysisFrameLogResponse {
 
 export interface RetryFailedFramesParams {
     analysisId: string;
-}
-
-export interface RetryFailedFramesResponse {
-    message: string;
-    retriedFrames: number;
-    totalFrames: number;
-    failedTimesteps?: number[];
 }
 
 interface DeleteAnalysisParams {

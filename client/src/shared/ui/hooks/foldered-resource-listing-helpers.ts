@@ -5,7 +5,8 @@ const ROOT_FOLDER_ID = 'root';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import type { FolderedListingContext } from '@/shared/ui/hooks/use-foldered-listing';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
-import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
+import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
 
 interface FolderedItemListQueryParams {
     page: number;
@@ -127,6 +128,8 @@ interface CreateFolderedListingResourceOptions<TItem, TFolder> extends CreateFol
     pluralLabel?: string;
     folderModalNoun?: string;
     moveModalNoun?: string;
+    untitledItemLabel?: string;
+    getItemTitle?: (item: TItem) => string | null | undefined;
 }
 
 export const createFolderedListingResource = <TItem, TFolder extends FolderBreadcrumbEntity>({
@@ -139,6 +142,8 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
     pluralLabel = pluralName,
     folderModalNoun = singularName,
     moveModalNoun = singularName,
+    untitledItemLabel = `Untitled ${subject}`,
+    getItemTitle,
     ...fetcherOptions
 }: CreateFolderedListingResourceOptions<TItem, TFolder>) => {
     const modalIds: FolderedListingModalIds = {
@@ -181,7 +186,19 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
         activationDistance: 6
     };
 
-    return { subject, modalIds, toasts, copy, listingOptions };
+    return {
+        subject,
+        modalIds,
+        toasts,
+        copy,
+        listingOptions,
+        getDeleteConfirmationMessage: createListingDeleteConfirmation<TItem>({
+            singularName,
+            pluralName,
+            untitledLabel: untitledItemLabel,
+            getTitle: getItemTitle
+        })
+    };
 };
 
 export type FolderedListingResource = Pick<

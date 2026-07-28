@@ -1,11 +1,11 @@
 import { parse, evaluate } from '@voltstack/expressions';
 import { useMemo } from 'react';
-import { useStages } from '@/modules/canvas/stores/canvas-pipeline';
+import { useStages } from '@/modules/canvas/store/canvas-pipeline';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/stores/canvas-pipeline';
+import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/store/canvas-pipeline';
 import type { GetAtomsResponse, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
 import type { AtomContext, ColumnView, DType, Expr } from '@voltstack/expressions';
-import type { ExpressionSelectStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
+import type { ExpressionSelectStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
 const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
 

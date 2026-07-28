@@ -1,10 +1,10 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { Box, Button, Heading, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useState } from 'react';
 import './ClusterCredentialsModal.css';
-import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/types/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices } from '@volt/contracts/modules/cluster/domain';
 
 export const CLUSTER_CREDENTIALS_MODAL_ID = 'cluster-credentials-modal';
 

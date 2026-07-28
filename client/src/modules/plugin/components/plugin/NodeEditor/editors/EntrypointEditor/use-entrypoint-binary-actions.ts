@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { sileo } from 'sileo';
 import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plugin/hooks/plugin/queries';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';

@@ -21,8 +21,8 @@ import type {
     MoveWhiteboardParams,
     UpdateWhiteboardParams
 } from '../api/service';
-import type { WhiteboardFolder } from '../api/types/whiteboard-folder';
-import type { Whiteboard } from '../api/types/whiteboard';
+import type { WhiteboardFolder } from '@volt/contracts/modules/whiteboards/domain';
+import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 
 const BASE_KEY = 'whiteboards';
 

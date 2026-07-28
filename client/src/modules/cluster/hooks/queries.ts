@@ -1,9 +1,9 @@
 import { buildKeys, createSocketQuery } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import type { QueryClient } from '@tanstack/react-query';
-import type { ClusterHistoryMetric, ClusterMetrics } from '../api/types/cluster-metrics';
-import { MAX_HISTORY_POINTS } from '../utilities/history';
-import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
+import type { ClusterHistoryMetric, ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
+import { MAX_HISTORY_POINTS } from '../utils/history';
+import { resolveClusterMetricId } from '../utils/resolve-cluster-metric-id';
 
 type ClusterQueryKeyMap = {
     metrics: void;

@@ -3,7 +3,7 @@
 import type {
     TeamClusterRole,
     TeamClusterRemoteAccessTarget,
-    TeamClusterInstallManifestPortsWire
+    TeamClusterInstallManifestPorts
 } from './domain';
 
 export interface CreateTeamClusterInput{
@@ -70,5 +70,5 @@ export interface ProcessTeamClusterHealthcheckInput{
 export interface GenerateTeamClusterInstallManifestInput{
     daemonPassword: string;
     installRoot: string;
-    ports: TeamClusterInstallManifestPortsWire;
+    ports: TeamClusterInstallManifestPorts;
 }

@@ -2,11 +2,11 @@ import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/ClusterListPanel';
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
-import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
-import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
-import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
+import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-usable';
+import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { Box, Button, Heading, Modal, closeModal, openModal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
@@ -16,11 +16,11 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { DeleteTeamClusterResponse } from '@/modules/cluster/api/service';
-import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
+import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
+import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { FormEvent, ReactNode } from 'react';
 
-enum OnboardingStep {
+enum ClusterOnboardingStep {
     Name = 'name',
     Success = 'success'
 }
@@ -37,7 +37,7 @@ const ClusterOnboardingPage = () => {
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = hasUsableTeamCluster(clusters);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
-    const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Name);
+    const [step, setStep] = useState<ClusterOnboardingStep>(ClusterOnboardingStep.Name);
     const [name, setName] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,11 +64,11 @@ const ClusterOnboardingPage = () => {
 
         setConnectedClusterName(liveCluster.name);
         closeModal(INSTALL_MODAL_ID);
-        setStep(OnboardingStep.Success);
+        setStep(ClusterOnboardingStep.Success);
     }, [liveCluster]);
 
     useEffect(() => {
-        if (step !== OnboardingStep.Success || hasRedirected.current) {
+        if (step !== ClusterOnboardingStep.Success || hasRedirected.current) {
             return;
         }
 
@@ -196,7 +196,7 @@ const ClusterOnboardingPage = () => {
         />
     ) : null;
 
-    if (step === OnboardingStep.Success) {
+    if (step === ClusterOnboardingStep.Success) {
         return (
             <OnboardingLayout
                 onSettingsClick={handleSettingsClick}

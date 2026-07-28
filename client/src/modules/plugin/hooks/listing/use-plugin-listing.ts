@@ -5,12 +5,12 @@ import {
     usePluginListingQuery
 } from './queries';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
-import { buildSubListingsPath } from '@/modules/plugin/utilities/listing/build-sub-listings-path';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
+import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
 import { useNavigate } from 'react-router-dom';
 
 interface UsePluginListingParams {

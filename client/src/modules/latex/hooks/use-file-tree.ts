@@ -1,21 +1,16 @@
-import { buildFileTree } from '@/modules/latex/utilities/file-tree';
+import { buildFileTree } from '@/modules/latex/utils/file-tree';
 import {
     getAssetDisplayName,
     joinWorkspacePath,
     normalizeWorkspaceFolderPath,
     splitWorkspacePath
-} from '@/modules/latex/utilities/workspace';
+} from '@/modules/latex/utils/workspace';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
-import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
-import type { FileTreeNode } from '@/modules/latex/utilities/file-tree';
-
-interface RenameTarget {
-    id: string;
-    type: 'folder' | 'file' | 'asset';
-    initialName: string;
-}
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
+import type { FileTreeNode } from '@/modules/latex/utils/file-tree';
+import type { RenameTarget } from '@/modules/latex/contracts/workspace';
 
 interface UseFileTreeInput {
     files: LatexFileEntry[];

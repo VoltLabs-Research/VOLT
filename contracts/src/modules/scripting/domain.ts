@@ -1,4 +1,6 @@
-
+import type { Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
+import type { TeamCluster } from '../cluster/domain';
 
 export enum ScriptingNotebookScope{
     All = 'all',
@@ -6,20 +8,7 @@ export enum ScriptingNotebookScope{
     Trajectory = 'trajectory'
 }
 
-export interface ScriptingNotebookPopulatedUser{
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatar?: string;
-}
-
-export interface ScriptingNotebookPopulatedTrajectory{
-    _id: string;
-    name?: string;
-}
-
-export interface ScriptingNotebookPopulatedTeamCluster{
+export interface ScriptingNotebookTrajectory{
     _id: string;
     name?: string;
 }
@@ -29,14 +18,14 @@ export interface ScriptingNotebookContainerResources{
     memoryMB: number;
 }
 
-export interface PersistedScriptingNotebook{
+export interface ScriptingNotebook{
     _id: string;
-    teamCluster?: string | ScriptingNotebookPopulatedTeamCluster | null;
+    teamCluster?: Ref<TeamCluster> | null;
     containerResources?: ScriptingNotebookContainerResources | null;
     title: string;
     notebookPath: string;
-    trajectory?: string | ScriptingNotebookPopulatedTrajectory | null;
-    createdBy?: string | ScriptingNotebookPopulatedUser;
+    trajectory?: Ref<ScriptingNotebookTrajectory> | null;
+    createdBy?: Ref<User>;
     lastOpenedAt?: string;
     createdAt: string;
     updatedAt: string;
@@ -44,24 +33,25 @@ export interface PersistedScriptingNotebook{
 
 export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
-export interface ScriptingSessionJupyterInfo{
+export interface ScriptingSessionJupyter{
     url: string;
     ready: boolean;
     containerStage?: NotebookContainerStage;
 }
 
+export interface ScriptingSession{
+    notebookId?: string;
+    jupyter: ScriptingSessionJupyter;
+}
+
 export interface CreateScriptingJupyterSessionResponse{
     notebookId: string;
-    jupyter: ScriptingSessionJupyterInfo;
+    jupyter: ScriptingSessionJupyter;
 }
 
 export interface GetScriptingSessionStatusResponse{
     notebookId: string;
-    jupyter: {
-        ready: boolean;
-        url: string;
-        containerStage?: NotebookContainerStage;
-    };
+    jupyter: ScriptingSessionJupyter;
 }
 
 export interface DeleteScriptingSessionResponse{

@@ -2,17 +2,17 @@ import { useEffect, useCallback } from 'react';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { emitOrReport } from '@/modules/socket/services/socket-emit-helpers';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utilities/plugin/argument-visibility';
+import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utils/plugin/argument-visibility';
 import { SOCKET_PLUGIN_DEBUG_EVENTS } from '@/modules/socket/events/plugin';
 import { sileo } from 'sileo';
 import { useSearchParams } from 'react-router-dom';
-import type { IWorkflow } from '@/modules/plugin/api/types/plugin/workflow';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/domain/workflow';
 import type {
     DebugExecutionLogSegment,
     DebugTraceNode
-} from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+} from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 
 interface DebugSessionCreatedEvent {
     sessionId: string;

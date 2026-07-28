@@ -1,12 +1,12 @@
 import { colorField, row } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { ENVIRONMENT_SUBSECTION_TITLES } from '@/shared/rendering/environment';
 
 import { useMemo } from 'react';
 import { MdNature } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useEnvironmentGroup = (): RenderGroup => {
     const environment = useEditorStore(useShallow((state) => state.environment));

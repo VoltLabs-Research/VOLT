@@ -6,7 +6,7 @@ import {
     withSuccess
 } from '@/shared/query';
 import type { MutationOptions } from '@/shared/query';
-import type { Notification } from '../api/types/notification';
+import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 export interface NotificationQueryParams {
     limit: number;

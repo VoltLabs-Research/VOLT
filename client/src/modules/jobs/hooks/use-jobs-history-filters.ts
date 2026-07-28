@@ -1,6 +1,6 @@
-import { JobStatus } from '../api/types/job';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { useMemo } from 'react';
-import type { Job, TrajectoryJobGroup } from '../api/types/job';
+import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
 interface UseJobsHistoryFiltersArgs {
     groups: TrajectoryJobGroup[];

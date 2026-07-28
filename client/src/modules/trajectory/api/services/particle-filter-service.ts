@@ -1,9 +1,6 @@
-import { createService, get, post } from '@/app/core/http/utilities/create-service';
+import { createService, get, post } from '@/app/core/http/utils/create-service';
+import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 
-export enum ParticleFilterCombinator {
-    And = 'AND',
-    Or = 'OR'
-}
 
 export interface ParticleFilterCondition {
     kind?: 'property';

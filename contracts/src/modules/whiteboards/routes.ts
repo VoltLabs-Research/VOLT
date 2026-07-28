@@ -9,7 +9,7 @@ import type {
     SaveWhiteboardStateInput
 } from './http';
 import type {
-    WhiteboardListItem,
+    Whiteboard,
     CreateWhiteboardResponse,
     GetWhiteboardResponse,
     UpdateWhiteboardResponse,
@@ -19,7 +19,7 @@ import type {
 
 export const whiteboardRoutes = {
     create: post<CreateWhiteboardInput, CreateWhiteboardResponse>('/api/whiteboards/:teamId'),
-    list: get<WhiteboardListItem>('/api/whiteboards/:teamId'),
+    list: get<Whiteboard>('/api/whiteboards/:teamId'),
 
     listFolders: get<WhiteboardFolder>('/api/whiteboards/:teamId/folders'),
     getFolder: get<WhiteboardFolder>('/api/whiteboards/:teamId/folders/:folderId'),

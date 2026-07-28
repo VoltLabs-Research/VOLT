@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { geometryBudgetManager } from '@/modules/fractal/services/geometry-budget';
 
-import type { LODCell, LODSettings, OctreeMetadata, TileFetchRequest } from '@/modules/fractal/types/lod-config';
+import type { LODCell, LODSettings, OctreeMetadata, TileFetchRequest } from '@/modules/fractal/contracts/lod-config';
 
 const WORLD_BOX = new THREE.Box3();
 const WORLD_SPHERE = new THREE.Sphere();

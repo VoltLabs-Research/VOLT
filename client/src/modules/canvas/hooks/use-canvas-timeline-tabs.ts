@@ -2,15 +2,15 @@ import usePluginCatalog, { useEnsurePluginCatalogLoaded } from '@/modules/plugin
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface FallbackListingExposure {
     exposureId: string;

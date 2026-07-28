@@ -1,7 +1,7 @@
 import { LiquidToggle, Select, TextInput, Textarea } from '@voltstack/bravais';
 import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
-import type { FieldRendererProps } from './FormFieldRHF.types';
+import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
 
 const DefaultFieldRenderer = ({

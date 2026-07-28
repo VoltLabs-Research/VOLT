@@ -1,5 +1,6 @@
 import './ThemeCard.css';
 import { Theme } from '@/shared/ui/hooks/use-theme';
+import type { VisualTheme } from '@/shared/ui/hooks/use-theme';
 import themeTokensStylesheet from '@/shared/ui/assets/stylesheets/theme.css?raw';
 import { Row, SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
@@ -37,8 +38,6 @@ interface ThemePreviewConfig {
 interface ThemeTokenMap {
     [tokenName: string]: string;
 }
-
-type VisualTheme = Theme.Light | Theme.Dark;
 
 const extractThemeTokens = (theme: VisualTheme): ThemeTokenMap => {
     const blockPattern = new RegExp(`:root\\[data-theme='${theme}'\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');

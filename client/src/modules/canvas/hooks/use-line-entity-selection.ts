@@ -1,13 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { lineModelRangesQuery } from '@/modules/trajectory/hooks/line-style/queries';
-import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utilities/scene-utils';
+import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utils/scene-utils';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 
-import type { SceneObjectType } from '@/modules/fractal/api/types/scene';
-import type { LineEntityHighlight } from '@/modules/fractal/types/scene-config';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
+import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
+import type { LineEntityHighlight } from '@/modules/fractal/contracts/scene-config';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
 
 export const useLineEntityRowSelection = (exposureId: string | null | undefined) => {
     const { activeScenes, selection, toggleLineEntitySelection } = useEditorStore(useShallow((state) => ({

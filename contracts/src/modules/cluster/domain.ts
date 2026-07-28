@@ -1,45 +1,49 @@
+export enum TeamClusterStatus{
+    WaitingForConnection = 'waiting-for-connection',
+    HealthcheckReceived = 'healthcheck-received',
+    PreparingEnvironment = 'preparing-environment',
+    DependenciesInstallationFailed = 'dependency-installation-failed',
+    OperatingSystemNotSupported = 'operating-system-not-supported',
+    Connected = 'connected',
+    Disconnected = 'disconnected',
+    Deleting = 'deleting',
+    DeleteFailed = 'delete-failed',
+    Updating = 'updating',
+    UpdateFailed = 'update-failed'
+}
 
+export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
-export type TeamClusterStatusWire =
-    | 'waiting-for-connection'
-    | 'healthcheck-received'
-    | 'preparing-environment'
-    | 'connected'
-    | 'disconnected'
-    | 'deleting';
+export type StoragePlacementScopeType = 'trajectory' | 'analysis' | 'plugin-binary';
 
-export type TeamClusterRole = 'compute-and-storage' | 'compute-only' | 'storage-only';
-
-export type StoragePlacementScopeType = 'trajectory' | 'analysis';
-
-export interface TeamClusterServiceWire{
+export interface TeamClusterService{
     port: number | null;
 }
 
-export interface TeamClusterServicesWire{
-    minio: TeamClusterServiceWire;
-    redis: TeamClusterServiceWire;
-    mongodb: TeamClusterServiceWire;
-    daemon: TeamClusterServiceWire;
+export interface TeamClusterServices{
+    minio: TeamClusterService;
+    redis: TeamClusterService;
+    mongodb: TeamClusterService;
+    daemon: TeamClusterService;
 }
 
-export interface TeamClusterCredentialServiceWire extends TeamClusterServiceWire{
+export interface TeamClusterCredentialService extends TeamClusterService{
     username: string;
     password: string;
 }
 
-export interface TeamClusterDaemonCredentialServiceWire extends TeamClusterServiceWire{
+export interface TeamClusterDaemonCredentialService extends TeamClusterService{
     password: string;
 }
 
-export interface TeamClusterCredentialServicesWire{
-    minio: TeamClusterCredentialServiceWire;
-    redis: TeamClusterCredentialServiceWire;
-    mongodb: TeamClusterCredentialServiceWire;
-    daemon: TeamClusterDaemonCredentialServiceWire;
+export interface TeamClusterCredentialServices{
+    minio: TeamClusterCredentialService;
+    redis: TeamClusterCredentialService;
+    mongodb: TeamClusterCredentialService;
+    daemon: TeamClusterDaemonCredentialService;
 }
 
-export interface TeamClusterQueueConcurrencyWire{
+export interface TeamClusterQueueConcurrency{
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
@@ -47,60 +51,84 @@ export interface TeamClusterQueueConcurrencyWire{
     pluginWarmup: number;
 }
 
-export interface TeamClusterQueueScopeLimitWire{
+export interface TeamClusterQueueScopeLimit{
     maxRunningPerTrajectory: number;
 }
 
-export interface TeamClusterQueueScopeLimitsWire{
-    analysisProcessing: TeamClusterQueueScopeLimitWire;
-    artifactUpload: TeamClusterQueueScopeLimitWire;
-    trajectoryRasterization: TeamClusterQueueScopeLimitWire;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimitWire;
+export interface TeamClusterQueueScopeLimits{
+    analysisProcessing: TeamClusterQueueScopeLimit;
+    artifactUpload: TeamClusterQueueScopeLimit;
+    trajectoryRasterization: TeamClusterQueueScopeLimit;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimit;
 }
 
-export interface TeamClusterRuntimeRoleConfigWire{
+export interface TeamClusterRoleDraining{
+    compute: boolean;
+    storage: boolean;
+}
+
+export interface TeamClusterRuntimeRoleConfig{
     desiredRole: TeamClusterRole;
     effectiveRole: TeamClusterRole;
     runtimeVersion: number;
-    draining: {
-        compute: boolean;
-        storage: boolean;
-    };
-    lastAppliedAt?: string | null;
+    draining: TeamClusterRoleDraining;
+    lastAppliedAt: string | null;
 }
 
-export interface TeamClusterEffectiveCapabilitiesWire{
+export interface TeamClusterEffectiveCapabilities{
     acceptsComputeJobs: boolean;
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
 }
 
-export interface StoragePlacementBucketRefWire{
+export type ClusterTransferJobScopeType = StoragePlacementScopeType;
+
+export type ClusterTransferJobState =
+    | 'queued'
+    | 'freezing'
+    | 'copying'
+    | 'verifying'
+    | 'switching'
+    | 'cleaning'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
+
+export type ClusterTransferJobReason = 'manual' | 'soft-limit' | 'hard-limit';
+
+export interface ClusterTransferJobBucketRef{
     bucket: string;
     prefix: string;
 }
 
-export interface ClusterTransferJobWire{
+export interface ClusterTransferJobCursor{
+    bucketIndex: number;
+    lastObjectKey: string | null;
+}
+
+export interface ClusterTransferJobStats{
+    copiedObjects: number;
+    copiedBytes: number;
+    verifiedObjects: number;
+    verifiedBytes: number;
+    deletedObjects: number;
+}
+
+export interface ClusterTransferJob{
     _id: string;
     team: string;
-    scopeType: StoragePlacementScopeType;
+    scopeType: ClusterTransferJobScopeType;
     scopeId: string;
     sourceClusterId: string;
     destinationClusterId: string;
-    buckets: StoragePlacementBucketRefWire[];
-    state: string;
-    reason: string;
+    buckets: ClusterTransferJobBucketRef[];
+    state: ClusterTransferJobState;
+    reason: ClusterTransferJobReason;
     cleanupSource: boolean;
     requestedBy: string;
-    cursor: { bucketIndex: number; lastObjectKey: string | null };
-    stats: {
-        copiedObjects: number;
-        copiedBytes: number;
-        verifiedObjects: number;
-        verifiedBytes: number;
-        deletedObjects: number;
-    };
+    cursor: ClusterTransferJobCursor;
+    stats: ClusterTransferJobStats;
     errorCode: string | null;
     errorMessage: string | null;
     startedAt: string | null;
@@ -109,42 +137,121 @@ export interface ClusterTransferJobWire{
     updatedAt: string;
 }
 
-export interface TeamClusterWire{
+export interface TeamCluster{
     _id: string;
     name: string;
     team: string;
     createdBy: string;
-    status: TeamClusterStatusWire;
+    status: TeamClusterStatus;
     installedVersion: string | null;
     lastHeartbeatAt: string | null;
     lastDisconnectAt: string | null;
-    services: TeamClusterServicesWire;
-    queueConcurrency: TeamClusterQueueConcurrencyWire;
-    queueScopeLimits: TeamClusterQueueScopeLimitsWire;
-    roleConfig: TeamClusterRuntimeRoleConfigWire;
-    effectiveCapabilities: TeamClusterEffectiveCapabilitiesWire;
-    activeTransfers?: ClusterTransferJobWire[];
+    services: TeamClusterServices;
+    queueConcurrency: TeamClusterQueueConcurrency;
+    queueScopeLimits: TeamClusterQueueScopeLimits;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+    activeTransfers?: ClusterTransferJob[];
     isDemo: boolean;
     demoExpiresAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
 
+export interface TeamClusterLifecycleEvent{
+    teamClusterId: string;
+    teamId: string;
+    deleted: boolean;
+    teamCluster?: TeamCluster;
+    status?: TeamClusterStatus;
+    timestamp: string;
+}
+
+export enum ClusterStatus{
+    Healthy = 'Healthy',
+    Warning = 'Warning',
+    Critical = 'Critical'
+}
+
+export interface ClusterCpuMetrics{
+    usage: number;
+    cores: number;
+    coresUsage: number[];
+    loadAvg: number[];
+}
+
+export interface ClusterMemoryMetrics{
+    total: number;
+    used: number;
+    free: number;
+    usagePercent: number;
+}
+
+export interface ClusterDiskMetrics{
+    total: number;
+    used: number;
+    free: number;
+    usagePercent: number;
+}
+
+export interface ClusterNetworkMetrics{
+    incoming: number;
+    outgoing: number;
+}
+
+export interface ClusterResponseTimes{
+    mongodb: number;
+    redis: number;
+    minio: number;
+    self: number;
+}
+
+export interface ClusterDatabaseMetrics{
+    queries: number;
+    connections: number;
+    latency: number;
+}
+
+export interface ClusterDiskOperationsMetrics{
+    read: number;
+    write: number;
+    speed: number;
+}
+
+export interface ClusterMetrics{
+    timestamp?: string;
+    clusterId: string;
+    teamClusterId?: string;
+    teamClusterName?: string;
+    teamClusterStatus?: TeamClusterStatus;
+    serverId?: string;
+    status: ClusterStatus;
+    cpu: ClusterCpuMetrics;
+    memory: ClusterMemoryMetrics;
+    disk: ClusterDiskMetrics;
+    network: ClusterNetworkMetrics;
+    responseTimes: ClusterResponseTimes;
+    mongodb?: ClusterDatabaseMetrics;
+    diskOperations?: ClusterDiskOperationsMetrics;
+    uptime: number;
+    analysisCount?: number;
+}
+
 export interface CreateTeamClusterResponse{
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
     enrollmentToken: string;
 }
 
 export interface GetTeamClusterResponse{
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
 }
 
 export interface ProvisionDemoTeamClusterResponse{
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
 }
 
 export interface GetDemoTeamClusterStatusResponse{
-    teamCluster: TeamClusterWire | null;
+    teamCluster: TeamCluster | null;
     remainingMs: number | null;
     hasActiveDemo: boolean;
 }
@@ -159,17 +266,17 @@ export interface DeleteTeamClusterResponse{
     manualUninstallRequired: boolean;
     message: string;
     manualUninstallCommand?: string;
-    teamCluster?: TeamClusterWire;
+    teamCluster?: TeamCluster;
 }
 
 export interface UpdateTeamClusterRoleResponse{
     message: string;
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
 }
 
 export interface UpdateTeamClusterQueueConcurrencyResponse{
     message: string;
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
 }
 
 export interface RegenerateTeamClusterEnrollmentTokenResponse{
@@ -178,19 +285,23 @@ export interface RegenerateTeamClusterEnrollmentTokenResponse{
 
 export interface RevealTeamClusterCredentialsResponse{
     teamClusterId: string;
-    services: TeamClusterCredentialServicesWire;
+    services: TeamClusterCredentialServices;
+}
+
+export type ClusterResourceStatus = 'Healthy' | 'Warning' | 'Critical';
+
+export interface ClusterResourceLimits{
+    maxCpus: number | null;
+    maxMemoryMB: number | null;
+    status: ClusterResourceStatus | null;
+    lastUpdatedAt: string | null;
 }
 
 export interface ClusterResourceLimitsResponse{
-    resourceLimits: {
-        maxCpus: number | null;
-        maxMemoryMB: number | null;
-        status: string | null;
-        lastUpdatedAt: string | null;
-    };
+    resourceLimits: ClusterResourceLimits;
 }
 
-export interface QueueCountsSnapshotWire{
+export interface QueueCountsSnapshot{
     waiting: number;
     active: number;
     delayed: number;
@@ -198,23 +309,38 @@ export interface QueueCountsSnapshotWire{
     failed: number;
 }
 
+export interface DaemonQueueSnapshot{
+    name: string;
+    counts: QueueCountsSnapshot;
+}
+
+export interface ServerQueueSnapshot{
+    name: string;
+    location: 'server';
+    concurrency: number;
+}
+
 export interface GetTeamClusterRuntimeSnapshotResponse{
     capturedAt: string;
-    queueConcurrency: TeamClusterQueueConcurrencyWire;
-    daemonQueues: Array<{ name: string; counts: QueueCountsSnapshotWire }>;
-    serverQueues: Array<{ name: string; location: 'server'; concurrency: number }>;
+    queueConcurrency: TeamClusterQueueConcurrency;
+    daemonQueues: DaemonQueueSnapshot[];
+    serverQueues: ServerQueueSnapshot[];
 }
 
 export interface CreateTeamClusterTransferRequestResponse{
     message: string;
     sourceClusterId: string;
     destinationClusterId: string;
-    requestedJobs: ClusterTransferJobWire[];
+    requestedJobs: ClusterTransferJob[];
 }
 
-export type TeamClusterRemoteAccessTarget = 'mongo-documents' | 'redis-data' | 'minio';
+export enum TeamClusterRemoteAccessTarget{
+    MongoDocuments = 'mongo-documents',
+    RedisData = 'redis-data',
+    Minio = 'minio'
+}
 
-export interface TeamClusterRemoteAccessSessionWire{
+export interface TeamClusterRemoteAccessSession{
     sessionId: string;
     teamClusterId: string;
     target: TeamClusterRemoteAccessTarget;
@@ -223,10 +349,10 @@ export interface TeamClusterRemoteAccessSessionWire{
 }
 
 export interface CreateTeamClusterRemoteAccessSessionResponse{
-    session: TeamClusterRemoteAccessSessionWire;
+    session: TeamClusterRemoteAccessSession;
 }
 
-export interface TeamClusterRemoteExplorerEntryWire{
+export interface TeamClusterRemoteExplorerEntry{
     id: string;
     name: string;
     path: string;
@@ -240,44 +366,64 @@ export interface ListTeamClusterRemoteExplorerEntriesResponse{
     teamClusterId: string;
     target: TeamClusterRemoteAccessTarget;
     path: string;
-    entries: TeamClusterRemoteExplorerEntryWire[];
+    entries: TeamClusterRemoteExplorerEntry[];
 }
 
-export interface TeamClusterRemoteExplorerNodeWire{
+export interface TeamClusterRemoteExplorerMongoDocument{
+    id: string;
+    value: Record<string, unknown>;
+}
+
+export interface TeamClusterRemoteExplorerNode{
     path: string;
     title: string;
     type: string;
     contentType: string;
     textContent: string | null;
-    mongoDocuments: Array<{ id: string; value: Record<string, unknown> }>;
+    mongoDocuments: TeamClusterRemoteExplorerMongoDocument[];
 }
 
 export interface GetTeamClusterRemoteExplorerNodeResponse{
     teamClusterId: string;
     target: TeamClusterRemoteAccessTarget;
-    node: TeamClusterRemoteExplorerNodeWire;
+    node: TeamClusterRemoteExplorerNode;
 }
 
-export interface TeamClusterInstallManifestPortsWire{
+export interface TeamClusterInstallManifestPorts{
     minio: number;
     redis: number;
     mongodb: number;
     daemon: number;
 }
 
-export interface TeamClusterInstallManifestWire{
+export interface TeamClusterInstallManifestFile{
+    path: string;
+    contents: string;
+    mode: string;
+}
+
+export interface TeamClusterInstallManifestImages{
+    minio: string;
+    redis: string;
+    mongodb: string;
+    daemon: string;
+}
+
+export interface TeamClusterInstallManifest{
     manifestVersion: string;
     composeProjectName: string;
     buildContextArchiveBase64?: string;
-    files: Array<{ path: string; contents: string; mode: string }>;
-    images: { minio: string; redis: string; mongodb: string; daemon: string };
+    files: TeamClusterInstallManifestFile[];
+    images: TeamClusterInstallManifestImages;
 }
 
 export interface GenerateTeamClusterInstallManifestResponse{
-    manifest: TeamClusterInstallManifestWire;
+    manifest: TeamClusterInstallManifest;
 }
 
 export interface ProcessTeamClusterHealthcheckResponse{
-    teamCluster: TeamClusterWire;
+    teamCluster: TeamCluster;
     daemonPassword: string;
 }
+
+export type ClusterHistoryMetric = ClusterMetrics;

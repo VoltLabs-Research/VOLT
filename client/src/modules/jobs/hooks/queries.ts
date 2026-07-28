@@ -1,12 +1,12 @@
-import { JobStatus } from '../api/types/job';
-import { computeGroupStatus } from '../utilities/job-group-updates';
-import { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import { computeGroupStatus } from '../utils/job-group-updates';
+import { TEAM_JOBS_QUERY_KEYS } from '../utils/query-keys';
 import service from '../api/service';
 import { createSocketQuery, withSuccess } from '@/shared/query';
 import queryClient from '@/shared/query/query-client';
-import useTeamJobsStore from '../stores/use-team-jobs-store';
+import useTeamJobsStore from '../store/use-team-jobs-store';
 import { useMutation } from '@tanstack/react-query';
-import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/types/job';
+import type { FrameJobGroup, Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 import type {
     RemoveRunningJobsResponse,
     RemoveRunningJobsParams,

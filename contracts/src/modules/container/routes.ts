@@ -15,13 +15,13 @@ import type {
     GetContainerProcessesResponse,
     GetContainerStatsResponse,
     ReadContainerFileResponse,
-    PersistedContainer,
+    Container,
     ContainerFolder
 } from './domain';
 
 export const containerRoutes = {
     create: post<CreateContainerInput, CreateContainerResponse>('/api/containers/:teamId'),
-    list: get<PersistedContainer>('/api/containers/:teamId'),
+    list: get<Container>('/api/containers/:teamId'),
 
     listFolders: get<ContainerFolder>('/api/containers/:teamId/folders'),
     getFolder: get<ContainerFolder>('/api/containers/:teamId/folders/:folderId'),

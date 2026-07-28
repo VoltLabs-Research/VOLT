@@ -1,5 +1,5 @@
-import { ArgumentVisibilityOperator } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
+import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/domain/enums';
+import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import type { SelectOption } from '@voltstack/bravais';
 
 export const ARGUMENT_TYPE_LABELS: Record<string, string> = ARGUMENT_TYPE_OPTIONS.reduce<Record<string, string>>(

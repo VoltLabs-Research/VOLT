@@ -1,4 +1,4 @@
-import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import { CHART_COLORS } from '@/modules/cluster/utils/chart-colors';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { useMemo } from 'react';
@@ -12,9 +12,9 @@ import {
     Legend
 } from 'recharts';
 import { HardDrive } from 'lucide-react';
-import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
+import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
-interface DataPoint {
+interface DiskOperationsDataPoint {
     read: number;
     write: number;
     iops: number;
@@ -26,7 +26,7 @@ interface DiskOperationsProps {
 }
 
 const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
-    const chartData = useMemo<DataPoint[]>(() => {
+    const chartData = useMemo<DiskOperationsDataPoint[]>(() => {
         return history
             .filter((point) => point.diskOperations)
             .map((point) => ({

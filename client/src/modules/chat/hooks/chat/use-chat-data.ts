@@ -16,15 +16,10 @@ import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
 import { emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
-import type { ChatMessage } from '../../api/types/message';
+import type { SocketAck } from '@/modules/socket/contracts/socket-service';
+import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 
 const MAX_CACHED_CHAT_ROOMS = 4;
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
 
 const expectSocketAck = <T>(ack: SocketAck<T> | undefined, fallbackMessage: string): T | undefined => {
     if (!ack?.ok) {

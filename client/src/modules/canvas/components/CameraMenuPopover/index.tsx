@@ -4,7 +4,7 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 import './CameraMenuPopover.css';
 

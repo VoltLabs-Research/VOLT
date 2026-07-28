@@ -1,4 +1,4 @@
-import { createService, get, post } from '@/app/core/http/utilities/create-service';
+import { createService, get, post } from '@/app/core/http/utils/create-service';
 
 export interface ColorCodingPayload {
     property: string;

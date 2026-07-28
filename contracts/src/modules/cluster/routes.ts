@@ -17,7 +17,7 @@ import type {
 import type {
     CreateTeamClusterResponse,
     GetTeamClusterResponse,
-    TeamClusterWire,
+    TeamCluster,
     ProvisionDemoTeamClusterResponse,
     GetDemoTeamClusterStatusResponse,
     DeleteDemoTeamClusterResponse,
@@ -29,7 +29,7 @@ import type {
     ClusterResourceLimitsResponse,
     GetTeamClusterRuntimeSnapshotResponse,
     CreateTeamClusterTransferRequestResponse,
-    ClusterTransferJobWire,
+    ClusterTransferJob,
     CreateTeamClusterRemoteAccessSessionResponse,
     ListTeamClusterRemoteExplorerEntriesResponse,
     GetTeamClusterRemoteExplorerNodeResponse,
@@ -42,7 +42,7 @@ const head = <Output = void>(path: string): Endpoint<never, Output> => ({ method
 const putStream = (path: string): Endpoint<never, void> => ({ method: 'PUT', path });
 
 export const teamClusterRoutes = {
-    list: get<TeamClusterWire>('/api/teams/:teamId/clusters'),
+    list: get<TeamCluster>('/api/teams/:teamId/clusters'),
     create: post<CreateTeamClusterInput, CreateTeamClusterResponse>('/api/teams/:teamId/clusters'),
 
     provisionDemo: post<never, ProvisionDemoTeamClusterResponse>('/api/teams/:teamId/clusters/demo'),
@@ -54,7 +54,7 @@ export const teamClusterRoutes = {
     updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyInput, UpdateTeamClusterQueueConcurrencyResponse>('/api/teams/:teamId/clusters/:teamClusterId/queue-concurrency'),
     updateRole: patch<UpdateTeamClusterRoleInput, UpdateTeamClusterRoleResponse>('/api/teams/:teamId/clusters/:teamClusterId/role'),
 
-    listTransferJobs: get<ClusterTransferJobWire>('/api/teams/:teamId/clusters/:teamClusterId/transfers'),
+    listTransferJobs: get<ClusterTransferJob>('/api/teams/:teamId/clusters/:teamClusterId/transfers'),
     createTransferRequest: post<CreateTeamClusterTransferRequestInput, CreateTeamClusterTransferRequestResponse>('/api/teams/:teamId/clusters/:teamClusterId/transfers'),
 
     getResourceLimits: get<ClusterResourceLimitsResponse>('/api/teams/:teamId/clusters/:teamClusterId/resource-limits'),

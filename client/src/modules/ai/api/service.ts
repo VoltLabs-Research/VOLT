@@ -1,7 +1,8 @@
-import { createService, del, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, del, paginated, patch, post } from '@/app/core/http/utils/create-service';
 
-import type { AIProvider } from './types/ai-provider';
-import type { AIConversation, AIConversationMessage } from './types/ai-conversation';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
+import type { AIConversation } from '@volt/contracts/modules/ai/domain';
+import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatTransport, UIMessage } from 'ai';
 

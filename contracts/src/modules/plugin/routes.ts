@@ -9,7 +9,7 @@ import type {
     ExecutePipelineInput
 } from './http';
 import type {
-    PersistedPlugin,
+    Plugin,
     CreatePluginResponse,
     GetPluginResponse,
     UpdatePluginResponse,
@@ -18,15 +18,17 @@ import type {
     ImportPluginResponse,
     GetNodeTypesSchemaResponse,
     ValidateWorkflowResponse,
-    SearchRegistryResponse,
     BinaryUploadResult,
     BinaryUploadTarget,
-    ExecutePipelineResponse,
+    ExecutePipelineResponse
+} from './domain/plugin';
+import type { SearchRegistryResponse } from './domain/registry';
+import type {
     ListingRowData,
     ListingRowByAnalysisData,
     SubListingRowData,
     GetAnalysisListingExportOptionsResponse
-} from './domain';
+} from './domain/listing';
 
 export const pluginRoutes = {
     
@@ -50,7 +52,7 @@ export const pluginRoutes = {
     importPlugin: post<never, ImportPluginResponse>('/api/plugins/:teamId/import'),
     searchRegistry: get<SearchRegistryResponse>('/api/plugins/:teamId/registry/search'),
     installRegistry: post<InstallRegistryPluginInput, InstallRegistryPluginResponse>('/api/plugins/:teamId/registry/install'),
-    list: get<PersistedPlugin>('/api/plugins/:teamId'),
+    list: get<Plugin>('/api/plugins/:teamId'),
     create: post<CreatePluginInput, CreatePluginResponse>('/api/plugins/:teamId'),
     commitBinaryUpload: post<CommitBinaryUploadInput, BinaryUploadResult>('/api/plugins/:teamId/:pluginId/binary/commit'),
     downloadBinary: get<Blob>('/api/plugins/:teamId/:pluginId/binary'),

@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCanvasBridgeStore } from '@/modules/canvas/stores/use-canvas-bridge-store';
+import { useCanvasBridgeStore } from '@/modules/canvas/store/use-canvas-bridge-store';
 import { getClientTool } from '@/modules/ai/tools/registry';
-import type { ClientToolContext, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolContext, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 export interface ClientToolCall {
     toolCallId: string;

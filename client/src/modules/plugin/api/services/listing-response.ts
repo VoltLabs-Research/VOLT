@@ -1,5 +1,5 @@
 import type { PaginationMeta } from '@/shared/pagination/PaginationResponse';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
 import type { GetPluginListingResponse } from '@/modules/plugin/api/services/listing-service';
 
 export interface RawListingData {

@@ -3,16 +3,16 @@ import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/types/plugin/workflow';
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import type { INodeData, NodeConnectorSide } from '@volt/contracts/modules/plugin/domain/workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
 import {
     CONNECTOR_SIDE_OPTIONS,
     createNodeHandlePlacement,
     getNodeHandleDefinitions,
     readNodeConnectorLayout,
     resolveNodeHandlePlacement
-} from '@/modules/plugin/utilities/plugin/node-handles';
+} from '@/modules/plugin/utils/plugin/node-handles';
 
 interface ConnectorLayoutEditorProps {
     node: Node<INodeData>;

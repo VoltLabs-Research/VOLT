@@ -12,7 +12,7 @@ import {
 import { useMemo } from 'react';
 import { Vector2 } from 'three';
 
-import type { EffectsConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { EffectsConfigState } from '@/modules/fractal/contracts/editor/visual-types';
 
 interface DynamicEffectsProps {
     settings: EffectsConfigState;

@@ -1,5 +1,5 @@
 import { checkbox, valueRow } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     EFFECT_SECTION_ORDER,
     EFFECT_SECTION_TITLES,
@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 import { MdAutoFixHigh } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useEffectsGroup = (): RenderGroup => {
     const effects = useEditorStore(useShallow((state) => state.effects));

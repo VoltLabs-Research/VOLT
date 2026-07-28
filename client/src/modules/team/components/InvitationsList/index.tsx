@@ -1,6 +1,6 @@
 import { InvitationRow } from '../InvitationRow';
 import { Box, Stack, Text, EmptyState } from '@voltstack/bravais';
-import type { TeamInvitation } from '@/modules/team/api/types/invitation/team-invitation';
+import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 import './InvitationsList.css';
 
 interface InvitationsListProps {

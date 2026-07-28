@@ -8,8 +8,8 @@ import { cn } from '@/shared/utils/cn';
 import { toggleSelection } from '@/shared/utils/selection';
 import { Box, Button, Modal, Row, Text } from '@voltstack/bravais';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
-import type { User } from '@/modules/auth/api/types/user';
-import type { Chat } from '@/modules/chat/api/types/chat';
+import type { User } from '@volt/contracts/modules/auth/domain';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './GroupManagementModal.css';
 
 enum Tab {

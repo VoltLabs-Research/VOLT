@@ -1,5 +1,6 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { Vec3 } from '@/shared/contracts/geometry';
 
 type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric';
 
@@ -7,13 +8,16 @@ interface SetCameraViewInput {
     view?: CameraView;
 }
 
-type Vec3 = [number, number, number];
-
 const VIEW_DISTANCE = 12;
 
 const ISO = VIEW_DISTANCE / Math.sqrt(3);
 
-const VIEWS: Record<CameraView, { position: Vec3; up: Vec3 }> = {
+interface CameraViewPose {
+    position: Vec3;
+    up: Vec3;
+}
+
+const VIEWS: Record<CameraView, CameraViewPose> = {
     front: { position: [0, -VIEW_DISTANCE, 0], up: [0, 0, 1] },
     back: { position: [0, VIEW_DISTANCE, 0], up: [0, 0, 1] },
     right: { position: [VIEW_DISTANCE, 0, 0], up: [0, 0, 1] },

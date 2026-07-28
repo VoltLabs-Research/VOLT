@@ -6,7 +6,7 @@ import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import type { PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
 

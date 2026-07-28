@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import type { INodeData } from '@volt/contracts/modules/plugin/domain/workflow';
 import type { ChangeEvent } from 'react';
 
 const useNodeCollectionForm = <T extends object>(

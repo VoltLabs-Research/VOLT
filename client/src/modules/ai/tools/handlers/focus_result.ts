@@ -1,5 +1,5 @@
-import { useCanvasFocusStore } from '@/modules/canvas/stores/use-canvas-focus-store';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { useCanvasFocusStore } from '@/modules/canvas/store/use-canvas-focus-store';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface FocusResultInput {
     modifierId?: string | null;

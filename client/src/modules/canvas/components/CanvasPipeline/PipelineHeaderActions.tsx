@@ -6,7 +6,7 @@ import {
     DEFAULT_COLOR_CODING_STAGE_CONFIG,
     DEFAULT_LINE_STYLE_STAGE_CONFIG,
     DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG
-} from '../../stores/canvas-pipeline';
+} from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
@@ -14,8 +14,8 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
 import { useCallback } from 'react';
 import { Filter, FlaskConical, Palette, Play, Plus, Scissors, Spline } from 'lucide-react';
-import type { StageType, StageConfig } from '../../stores/canvas-pipeline';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { StageType, StageConfig } from '../../store/canvas-pipeline';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface PipelineHeaderActionsProps {
     trajectory?: Trajectory | null;

@@ -2,7 +2,7 @@ import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { ExportType } from '@/modules/plugin/api/services/listing-service';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 

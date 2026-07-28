@@ -1,7 +1,7 @@
 import { cn } from '@/shared/utils/cn';
 import { formatSize } from '@voltstack/bravais';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import './FileAttachment.css';
 import { Copy, Download, FileText, Image } from 'lucide-react';
 

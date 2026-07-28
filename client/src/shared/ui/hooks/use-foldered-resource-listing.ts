@@ -1,5 +1,5 @@
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import type { Identifiable } from '@/shared/ui/components/DocumentListingTable';
+import type { Identifiable } from '@/shared/contracts/entity';
 import { closeModal, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
@@ -7,8 +7,8 @@ import useFolderedListing from '@/shared/ui/hooks/use-foldered-listing';
 import type { UseFolderedListingOptions } from '@/shared/ui/hooks/use-foldered-listing';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 

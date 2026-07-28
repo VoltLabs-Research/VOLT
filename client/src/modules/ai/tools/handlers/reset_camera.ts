@@ -1,5 +1,5 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 type ResetCameraInput = Record<string, never>;
 

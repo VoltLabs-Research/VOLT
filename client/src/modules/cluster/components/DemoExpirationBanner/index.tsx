@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Row, Text } from '@voltstack/bravais';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { useDemoClusterCountdown } from '@/modules/cluster/hooks/use-demo-cluster-countdown';
 import { useDemoSessionActions } from '@/modules/cluster/hooks/use-demo-session-actions';
 import { sileo } from 'sileo';

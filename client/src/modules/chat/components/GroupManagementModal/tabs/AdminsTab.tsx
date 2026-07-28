@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { MemberListItem } from '../../MemberListItem';
 import { Button, Stack, Tag, Text } from '@voltstack/bravais';
-import type { Chat } from '@/modules/chat/api/types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 
 interface AdminsTabProps {
     chat: Chat;

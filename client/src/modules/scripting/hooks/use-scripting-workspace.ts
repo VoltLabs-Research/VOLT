@@ -8,12 +8,12 @@ import {
 import {
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     startAndWaitForReadyScriptingSession
-} from '../utilities/jupyter-session';
-import { hasNotebookDeploymentConfiguration } from '../utilities/notebooks';
+} from '../utils/jupyter-session';
+import { hasNotebookDeploymentConfiguration } from '../utils/notebooks';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
-} from '../utilities/workspace';
+} from '../utils/workspace';
 import queryClient from '@/shared/query/query-client';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -23,13 +23,13 @@ import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ScriptingNotebook } from '../api/types/scripting-notebook';
-import type { ScriptingSession, NotebookContainerStage } from '../api/types/scripting-session';
+import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingSession, NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
 import type {
     ScriptingNotebookDeploymentModalRequest,
     ScriptingNotebookDeploymentSelection
 } from '../components/ScriptingNotebookDeploymentModal';
-import type { WaitForReadyScriptingSessionOptions, WaitForReadyScriptingSessionResult } from '../utilities/jupyter-session';
+import type { WaitForReadyScriptingSessionOptions, WaitForReadyScriptingSessionResult } from '../utils/jupyter-session';
 
 interface UseScriptingWorkspaceInput {
     trajectoryId: string;

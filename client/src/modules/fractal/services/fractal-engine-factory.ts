@@ -1,17 +1,11 @@
 import type * as THREE from 'three';
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
 import { FractalEngine } from '@/modules/fractal/services/fractal-engine';
-import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
-import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { ModelLoadingState } from '@/modules/fractal/api/types/model';
+import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
+import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
+import type { ModelLoadingState } from '@/modules/fractal/contracts/model';
 import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
-
-interface FractalSurface {
-    scene: THREE.Scene;
-    camera: THREE.Camera;
-    gl: THREE.WebGLRenderer;
-    invalidate: () => void;
-}
+import type { FractalSurface } from '@/modules/fractal/contracts/engine';
 
 type FractalEngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;

@@ -8,7 +8,7 @@ import { closeModal, openModal } from '@voltstack/bravais';
 import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useMemo } from 'react';
-import type { ActiveSession } from '../api/types/session';
+import type { ActiveSession } from '@volt/contracts/modules/session/domain';
 
 export const REVOKE_ALL_MODAL_ID = 'revoke-all-sessions-modal';
 

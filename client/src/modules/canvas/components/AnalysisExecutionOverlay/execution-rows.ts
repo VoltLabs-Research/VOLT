@@ -1,16 +1,16 @@
-import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
+import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import {
     extractTrajectoryTimesteps,
     getSelectedTimestepsForAnalysis
-} from '../../utilities/selected-timestep-analysis';
+} from '../../utils/selected-timestep-analysis';
 
 import type {
     Analysis,
     AnalysisChildAnalysis,
     AnalysisStage,
     AnalysisStageStatus
-} from '@/modules/analysis/api/types/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+} from '@volt/contracts/modules/analysis/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export interface AnalysisExecutionOverlayRow {
     key: string;

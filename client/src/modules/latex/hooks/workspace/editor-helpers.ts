@@ -4,7 +4,7 @@ import type {
     LatexEditorGroup,
     LatexEditorGroupId,
     FileEditorState
-} from './types';
+} from '@/modules/latex/contracts/workspace';
 
 export const AUTOSAVE_DELAY = 500;
 

@@ -1,5 +1,5 @@
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import { useMemo } from 'react';
 
 export const useSelectedTeam = () => {

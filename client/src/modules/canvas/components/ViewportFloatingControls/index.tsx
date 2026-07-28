@@ -3,7 +3,7 @@ import PerformanceMenuPopover from '../PerformanceMenuPopover';
 import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
-import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { FloatingToolbar, IconButton, Tooltip } from '@voltstack/bravais';
 import { useMedia } from '@voltstack/bravais';
 import { Sparkles } from 'lucide-react';

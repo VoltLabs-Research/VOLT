@@ -1,4 +1,4 @@
-import { useHiddenModulesStore } from '@/modules/system/stores/use-hidden-modules-store';
+import { useHiddenModulesStore } from '@/modules/system/store/use-hidden-modules-store';
 
 interface UseHiddenModulesReturn {
     

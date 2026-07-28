@@ -1,7 +1,8 @@
-import { createService, get, post } from '@/app/core/http/utilities/create-service';
+import { createService, get, post } from '@/app/core/http/utils/create-service';
 
-import type { LineStyleSpec } from '@/modules/fractal/api/types/scene';
-import type { LineEntityRange } from '@/modules/fractal/types/scene-config';
+import type { LineStyleSpec } from '@/modules/fractal/contracts/scene';
+import type { LineEntityRange } from '@/modules/fractal/contracts/scene-config';
+import type { GetLineEntityPropertiesResponse } from '@volt/contracts/modules/trajectory/domain';
 
 export interface ApplyLineStyleInput {
     trajectoryId: string;
@@ -37,11 +38,6 @@ export interface GetLineModelRangesInput {
 export interface GetLineModelRangesResponse {
     version: number;
     entities: LineEntityRange[];
-}
-
-export interface GetLineEntityPropertiesResponse {
-    entityId: number;
-    properties: Record<string, unknown>;
 }
 
 const endpoints = {

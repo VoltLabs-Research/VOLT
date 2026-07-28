@@ -1,4 +1,4 @@
-import { createService, custom, paginated, get, patch, del, download } from '@/app/core/http/utilities/create-service';
+import { createService, custom, paginated, get, patch, del, download } from '@/app/core/http/utils/create-service';
 
 import {
     createFolderCrudEndpoints,
@@ -13,9 +13,11 @@ import { getAtomsBinary } from './atoms-binary-request';
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { VoltClient } from '@voltstack/voltclient';
-import type { DashboardMetrics } from '@/modules/dashboard/api/types/dashboard';
-import type { Trajectory } from '../types/trajectory/trajectory';
-import type { TrajectoryFolder } from '../types/trajectory/trajectory-folder';
+import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { TrajectoryFolder } from '@volt/contracts/modules/trajectory/domain';
+import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
+import type { UpdateTrajectoryInput } from '@volt/contracts/modules/trajectory/http';
 
 export interface CreateTrajectoryInput {
     name: string;
@@ -28,33 +30,6 @@ export interface CreateTrajectoryInput {
 }
 
 export type CreateTrajectoryResponse = Trajectory;
-
-export interface TrajectoryUploadPart {
-    partNumber: number;
-    offset: number;
-    size: number;
-    url: string;
-    expiresAt: string;
-}
-
-export interface TrajectoryUploadSessionFile {
-    index: number;
-    originalName: string;
-    size: number;
-    contentType?: string;
-    finalObjectKey: string;
-    parts: TrajectoryUploadPart[];
-}
-
-export interface CreateTrajectoryUploadSessionResponse {
-    trajectory: Trajectory;
-    uploadSession: {
-        id: string;
-        chunkSize: number;
-        expiresAt: string;
-        files: TrajectoryUploadSessionFile[];
-    };
-}
 
 export interface CommitTrajectoryUploadSessionInput {
     uploadSessionId: string;
@@ -138,11 +113,7 @@ export interface MoveTrajectoryParams {
     folderId: string | null;
 }
 
-export interface UpdateTrajectoryInput {
-    trajectoryId: string;
-    name?: string;
-    isPublic?: boolean;
-}
+export type UpdateTrajectoryParams = { trajectoryId: string } & UpdateTrajectoryInput;
 
 interface GetTrajectoryByIdParams {
     trajectoryId: string;
@@ -190,7 +161,7 @@ const endpoints = {
 
         return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`, requestArgs);
     }),
-    update: patch<UpdateTrajectoryInput, Trajectory>('/:trajectoryId'),
+    update: patch<UpdateTrajectoryParams, Trajectory>('/:trajectoryId'),
     delete: del<DeleteTrajectoryInput>('/:trajectoryId'),
     move: patch<{ trajectoryId: string; folderId: string | null }, void>('/:trajectoryId/folder', {
         body: ({ folderId }) => ({ folderId })

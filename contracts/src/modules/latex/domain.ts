@@ -1,16 +1,17 @@
+import type { Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
 
-
-export interface LatexDocumentView{
+export interface LatexDocument{
     _id: string;
     title: string;
     folder: string | null;
-    createdBy?: unknown;
-    lastEditedBy?: unknown;
+    createdBy?: Ref<User>;
+    lastEditedBy?: Ref<User> | null;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface LatexFileView{
+export interface LatexFile{
     _id: string;
     documentId: string;
     name: string;
@@ -21,7 +22,7 @@ export interface LatexFileView{
     updatedAt: string;
 }
 
-export interface LatexAssetView{
+export interface LatexAsset{
     _id: string;
     documentId: string;
     originalName: string;
@@ -32,7 +33,7 @@ export interface LatexAssetView{
     createdAt: string;
 }
 
-export interface LatexAssetUploadTarget extends LatexAssetView{
+export interface LatexAssetUploadTarget extends LatexAsset{
     uploadIndex: number;
     uploadUrl: string;
     expiresAt: string;
@@ -44,7 +45,7 @@ export interface UploadLatexAssetResult{
     total: number;
 }
 
-export interface LatexFolderView{
+export interface LatexFolder{
     _id: string;
     title: string;
     parent: string | null;

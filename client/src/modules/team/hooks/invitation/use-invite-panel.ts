@@ -1,10 +1,10 @@
 import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invitation-data';
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
-import type { TeamInvitation } from '@/modules/team/api/types/invitation/team-invitation';
+import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 import type { InviteButtonState } from '../../components/InviteButton';
 import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';

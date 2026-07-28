@@ -3,8 +3,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
-import type { ColumnConfig, Identifiable } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { Identifiable } from '@/shared/contracts/entity';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { formatUnknownValue } from '@voltstack/bravais';
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 

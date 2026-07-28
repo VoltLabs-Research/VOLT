@@ -4,13 +4,14 @@ import { Callout, Box, Button } from '@voltstack/bravais';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ChangePasswordInput, GetPasswordInfoResponse } from '@/modules/auth/api/service';
+import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
+import type { PasswordInfo } from '@volt/contracts/modules/auth/domain';
 import type { PasswordChangeForm as PasswordChangeFormType } from './validation-schema';
 
 interface PasswordChangeFormProps {
-    passwordInfo: GetPasswordInfoResponse | null;
+    passwordInfo: PasswordInfo | null;
     isOpen: boolean;
-    onSubmit: (data: ChangePasswordInput) => Promise<void>;
+    onSubmit: (data: UpdatePasswordInput) => Promise<void>;
     onCancel: () => void;
 }
 

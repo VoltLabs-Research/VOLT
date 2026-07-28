@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import type { FocusEvent, MouseEvent } from 'react';
 import type { HeatmapValue } from 'react-calendar-heatmap';
-import type { DailyActivity, DailyActivityHeatmapDetailEntry } from '../api/types/daily-activity';
+import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
+import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
 
 interface ActivityHeatmapDayData {
     activity: DailyActivityHeatmapDetailEntry[];

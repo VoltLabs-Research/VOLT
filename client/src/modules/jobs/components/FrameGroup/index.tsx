@@ -1,4 +1,4 @@
-import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
+import { getFrameGroupStatusLabel } from '@/modules/jobs/utils/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
@@ -6,7 +6,7 @@ import { Box, Row, StatusBadge, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { FrameJobGroup, Job } from '@/modules/jobs/api/types/job';
+import type { FrameJobGroup, Job } from '@volt/contracts/modules/jobs/domain';
 
 interface FrameGroupProps {
     frame: FrameJobGroup;

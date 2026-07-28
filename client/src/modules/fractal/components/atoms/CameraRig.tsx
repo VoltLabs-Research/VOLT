@@ -3,8 +3,8 @@ import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
 
-import type { CameraSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { CameraSettingsState } from '@/modules/fractal/contracts/editor/visual-types';
+import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
 import type { FC, RefObject } from 'react';
 import type { PerspectiveCamera as ThreePerspective } from 'three';
 

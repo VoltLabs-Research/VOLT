@@ -1,13 +1,10 @@
+export type { EnabledModel } from '@volt/contracts/modules/team/domain';
+import type { EnabledModel } from '@volt/contracts/modules/team/domain';
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export type TeamAIProvider = AIProvider;
-
-export interface EnabledModel {
-    id: string;
-    name: string;
-}
 
 type TeamAIIntegrationRef = string | mongoose.Types.ObjectId | { _id?: unknown; toString?: () => string };
 

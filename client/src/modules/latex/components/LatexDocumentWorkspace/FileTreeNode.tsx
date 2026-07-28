@@ -6,8 +6,8 @@ import WorkspaceTreeRow from './WorkspaceTreeRow';
 import {
     buildLatexWorkspaceDropId,
     canDropLatexWorkspaceItemInFolder
-} from '@/modules/latex/utilities/workspace-dnd';
-import { isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
+} from '@/modules/latex/utils/workspace-dnd';
+import { isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utils/workspace';
 import {
     File,
     FileCode,
@@ -28,21 +28,16 @@ import { useCallback, useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/shared/utils/cn';
-import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type {
     LatexWorkspaceDragData,
     LatexWorkspaceDropData
-} from '@/modules/latex/utilities/workspace-dnd';
-import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
-import type { MenuOption } from '@/shared/ui/types/menu';
+} from '@/modules/latex/utils/workspace-dnd';
+import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utils/file-tree';
+import type { RenameTarget } from '@/modules/latex/contracts/workspace';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
-
-interface RenameTarget {
-    id: string;
-    type: 'folder' | 'file' | 'asset';
-    initialName: string;
-}
 
 interface FileTreeNodeProps {
     node: FileTreeNodeType;

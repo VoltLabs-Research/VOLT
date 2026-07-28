@@ -1,12 +1,12 @@
 import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summary';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
-import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
+import { normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { formatSize } from '@voltstack/bravais';
 import { Divider, Row, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
-import type { Analysis, AnalysisStage } from '@/modules/analysis/api/types/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Analysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
 
 import './StatusBar.css';

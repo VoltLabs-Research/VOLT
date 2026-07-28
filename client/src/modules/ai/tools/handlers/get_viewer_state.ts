@@ -1,7 +1,7 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 const getViewerState: ClientToolHandler = {
     name: 'get_viewer_state',

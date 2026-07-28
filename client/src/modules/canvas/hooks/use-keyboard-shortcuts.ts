@@ -1,9 +1,9 @@
-import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
-import { useScreenshotStore } from '../stores/use-screenshot-store';
-import { useCommandPaletteStore } from '../stores/use-command-palette-store';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
-import { clearShortcutActions, registerShortcutAction } from '../utilities/shortcut-actions';
+import { useKeyboardShortcutsStore } from '../store/use-keyboard-shortcuts-store';
+import { useScreenshotStore } from '../store/use-screenshot-store';
+import { useCommandPaletteStore } from '../store/use-command-palette-store';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
+import { clearShortcutActions, registerShortcutAction } from '../utils/shortcut-actions';
 import useCanvasUrlState from './use-canvas-url-state';
 
 import { useEffect, useRef } from 'react';

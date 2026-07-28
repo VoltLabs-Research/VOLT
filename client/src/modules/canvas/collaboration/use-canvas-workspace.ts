@@ -7,7 +7,7 @@ import {
     SOCKET_CANVAS_WORKSPACE_EVENTS
 } from '@/modules/socket/events/canvas';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     applySharedCanvasPatch,
     selectSharedCanvasState

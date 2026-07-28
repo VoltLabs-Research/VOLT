@@ -1,8 +1,8 @@
-import { useCanvasPipelineStore } from '@/modules/canvas/stores/canvas-pipeline';
+import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SlicePlaneNormalAxis } from '@/modules/fractal/api/types/scene';
-import type { SlicePlaneStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
+import type { SlicePlaneNormalAxis } from '@/modules/fractal/contracts/scene';
+import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
 const NON_COMMITTABLE_NUMERIC_INPUTS = new Set(['', '-', '+', '.', '-.', '+.']);
 

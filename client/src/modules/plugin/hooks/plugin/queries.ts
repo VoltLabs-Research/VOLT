@@ -21,27 +21,11 @@ import {
 import { createMutation, createQuery, buildKeys } from '@/shared/query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin-service';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
-import type { RegistrySearchResponse } from '@/modules/plugin/api/types/plugin/registry';
-import type {
-    ClonePluginInput,
-    DeletePluginInput,
-    ExecutePipelineInput,
-    ExecutePipelineResponse,
-    ExportAnalysisResultsInput,
-    ExportPluginInput,
-    GetPluginInput,
-    GetPluginsInput,
-    ImportPluginInput,
-    InstallRegistryPluginInput,
-    ListPluginTeamClustersInput,
-    ListPluginTeamClustersResponse,
-    SavePluginInput,
-    SearchRegistryInput,
-    UpdatePluginInput,
-    UploadBinaryInput,
-    UploadBinaryResponse
-} from '../../api/services/plugin-service';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/domain/registry';
+import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
+import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
+import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/domain/plugin';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
@@ -141,15 +125,15 @@ export const usePluginTeamClustersQuery = (
     options?: QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse>
 ) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse> | undefined);
 
-const registrySearchQuery = createQuery<SearchRegistryInput, RegistrySearchResponse>(
+const registrySearchQuery = createQuery<SearchRegistryInput, SearchRegistryResponse>(
     (params) => PLUGIN_QUERY_KEYS.registrySearchList(params),
     (params) => pluginService.searchRegistry(params)
 );
 
 export const useRegistrySearchQuery = (
     params: SearchRegistryInput,
-    options?: QueryOptions<RegistrySearchResponse, RegistrySearchResponse>
-) => registrySearchQuery(params, options as QueryOptions<RegistrySearchResponse, RegistrySearchResponse> | undefined);
+    options?: QueryOptions<SearchRegistryResponse, SearchRegistryResponse>
+) => registrySearchQuery(params, options as QueryOptions<SearchRegistryResponse, SearchRegistryResponse> | undefined);
 
 const pluginEntityCache = createEntityCacheResource<Plugin>({
     listKey: PLUGIN_QUERY_KEYS.all,
@@ -227,19 +211,19 @@ export const useInstallRegistryPluginMutation = managePluginEntityMutation<Insta
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineInput>(pluginService.executePipeline);
+export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(pluginService.executePipeline);
 
 export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInput>(
     pluginService.clone,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginInput>(
+export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginParams>(
     pluginService.update,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useUploadBinaryMutation = createMutation<UploadBinaryResponse, UploadBinaryInput>(pluginService.uploadBinary);
+export const useUploadBinaryMutation = createMutation<UploadBinaryResponse, UploadBinaryParams>(pluginService.uploadBinary);
 
 export const useDeleteBinaryMutation = createMutation<void, { pluginId: string }>(pluginService.deleteBinary);
 

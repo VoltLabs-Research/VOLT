@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { Box, Button, Checkbox, NumberInput, Row, Stack, Text } from '@voltstack/bravais';
-import { useCellDisplayStore } from '@/modules/fractal/stores/cell-display-store';
-import type { CellPbc } from '@/modules/fractal/utilities/cell-wireframe';
-import { hasValidCellVectors } from '@/modules/fractal/utilities/cell-wireframe';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
+import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
+import { hasValidCellVectors } from '@/modules/fractal/utils/cell-wireframe';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
 
 interface SimulationCellViewProps {

@@ -1,8 +1,8 @@
 import {
     BUILT_IN_FEATURE_BUDGETS,
     DEFAULT_GEOMETRY_BUDGET
-} from '@/modules/fractal/types/lod-config';
-import type { FeatureBudget, GeometryBudget } from '@/modules/fractal/types/lod-config';
+} from '@/modules/fractal/contracts/lod-config';
+import type { FeatureBudget, GeometryBudget } from '@/modules/fractal/contracts/lod-config';
 
 export class GeometryBudgetManager {
     private featureBudgets = new Map<string, FeatureBudget>();

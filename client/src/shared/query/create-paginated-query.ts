@@ -1,6 +1,7 @@
 import queryClient from './query-client';
 import { skipToken, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { FetchQueryOptions, InfiniteData, QueryKey, UseInfiniteQueryOptions, UseMutationOptions, UseQueryOptions } from '@tanstack/react-query';
 import type { MutationFunctionContext } from '@tanstack/react-query';
 
@@ -52,10 +53,6 @@ type InfiniteQueryHook<TParams, TEntity> =
 
 type MutationHook<TData, TVariables> =
     (options?: MutationOptions<TData, TVariables>) => ReturnType<typeof useMutation<TData, Error, TVariables>>;
-
-interface WithId {
-    _id: string;
-};
 
 interface PaginationRequest {
     page: number;
@@ -118,7 +115,7 @@ interface InfiniteQueryStatics<TParams, TEntity> {
 };
 
 interface PaginatedQueryConfig<
-    TEntity extends WithId,
+    TEntity extends Identifiable,
     TListParams extends object,
     TCreateParams,
     TUpdateParams,
@@ -335,7 +332,7 @@ const buildPaginationFromCurrent = (current: PaginatedResponse<unknown>, shouldR
 };
 
 export const createPaginatedQuery = <
-    TEntity extends WithId,
+    TEntity extends Identifiable,
     TListParams extends object = Record<string, never>,
     TCreateParams = void,
     TUpdateParams = Partial<TEntity>,

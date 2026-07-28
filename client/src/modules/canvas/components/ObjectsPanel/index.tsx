@@ -1,5 +1,5 @@
-import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
@@ -18,21 +18,21 @@ import {
     buildTransparencySubmenu,
     colorOption,
     transparencyOption
-} from '../../utilities/tree-menus';
+} from '../../utils/tree-menus';
 import { formatArtifactLabel, pruneExpandedTimesteps } from './artifact-labels';
 
 import { ChevronDown, ChevronRight, Filter, Layers, Palette, Spline } from 'lucide-react';
 import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, CollapsibleSection, Stack } from '@voltstack/bravais';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
-import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import './ObjectsPanel.css';

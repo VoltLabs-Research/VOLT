@@ -1,6 +1,6 @@
 import { Button, Callout, Divider, FloatingToolbar, Row, SaveStatusIndicator, Stack, Text, Tooltip } from '@voltstack/bravais';
 import type { SaveStatus } from '@voltstack/bravais';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
 import { ZoomIn, ZoomOut, Maximize, Save, AlertTriangle } from 'lucide-react';
 import { useCallback } from 'react';

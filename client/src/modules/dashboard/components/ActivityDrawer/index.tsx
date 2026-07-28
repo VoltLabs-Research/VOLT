@@ -1,12 +1,12 @@
 import './ActivityDrawer.css';
 import { AsyncBoundary, Box, Modal, SegmentedTabs, Skeleton, Stack, Text, Timeline, TimelineItem, EmptyState } from '@voltstack/bravais';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
+import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utils/activity-mappings';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
+import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { formatDuration } from '@voltstack/bravais';
-import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
+import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -19,7 +19,7 @@ import {
     Tooltip
 } from 'recharts';
 import { GoBeaker } from 'react-icons/go';
-import type { DailyActivity, ActivityItem, PopulatedUser } from '@/modules/daily-activity/api/types/daily-activity';
+import type { DailyActivity, ActivityItem, DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
 import type { ReactNode } from 'react';
 
 type DashboardActivityTabId = 'activity' | 'in-app-activity';
@@ -80,7 +80,7 @@ const formatRelativeTime = (iso: string): string => {
     });
 };
 
-const getUserName = (user: string | PopulatedUser): string => {
+const getUserName = (user: string | DailyActivityUserSummary): string => {
     if (typeof user === 'string') {
         return 'Team member';
     }

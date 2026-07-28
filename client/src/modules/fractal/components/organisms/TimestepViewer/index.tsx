@@ -1,18 +1,19 @@
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import BondsModelViewer from '@/modules/fractal/components/molecules/BondsModelViewer';
-import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
+import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utils/scene-utils';
+import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utils/plugin-exposure-export';
 import { resolveBondLineSettings } from '@/modules/fractal/services/bond-render';
-import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useState, useRef, useEffect } from 'react';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
-import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/types/model';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
-import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
-import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
+import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
+import type { ModelLoadingState } from '@/modules/fractal/contracts/model';
+import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
+import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { RefObject } from 'react';
 
 interface OptionalPosition {

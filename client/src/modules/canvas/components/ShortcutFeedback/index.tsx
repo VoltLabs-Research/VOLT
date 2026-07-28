@@ -1,5 +1,5 @@
-import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
-import formatKeyName from '../../utilities/format-key-name';
+import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
+import formatKeyName from '../../utils/format-key-name';
 
 import { Fragment } from 'react';
 import { Row, Surface, Text } from '@voltstack/bravais';

@@ -1,15 +1,10 @@
+import type { DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
+export type { DailyActivityUserSummary };
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DailyActivityModel, { ActivityType } from '@modules/daily-activity/models/DailyActivityModel';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
-
-export interface DailyActivityUserSummary {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    avatar?: string;
-}
 
 export interface DailyActivityRecordView {
     _id: string;

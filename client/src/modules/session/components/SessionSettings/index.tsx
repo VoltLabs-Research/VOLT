@@ -6,15 +6,15 @@ import {
     getSessionActivityIcon,
     parseSessionUserAgent,
     SESSION_ACTION_LABELS
-} from '@/modules/session/utilities/session-display';
+} from '@/modules/session/utils/session-display';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import { Stack, EmptyState, Button, Modal, Skeleton, Text } from '@voltstack/bravais';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
 import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
-import { SessionActivityType } from '@/modules/session/api/types/session';
-import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/types/session';
+import { SessionActivityType } from '@volt/contracts/modules/session/domain';
+import type { ActiveSession, LoginActivityEntry } from '@volt/contracts/modules/session/domain';
 import type { FC, ReactNode } from 'react';
 import './SessionSettings.css';
 

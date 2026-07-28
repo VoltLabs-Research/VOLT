@@ -22,18 +22,17 @@ import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { FileText, FolderInput, Pencil } from 'lucide-react';
 import { useCallback } from 'react';
-import { getDeleteConfirmationMessage } from '../utilities/documents';
 import {
     createLatexDocumentRow,
     createLatexFolderRow,
     getLatexListingDraggableId,
     getLatexListingDroppableId,
     isLatexDocumentRow,
-    isLatexFolderRow,
-    type LatexDocumentRow
-} from '../utilities/listing';
-import type { LatexDocument } from '@/modules/latex/api/types/latex-document';
-import type { LatexFolder } from '@/modules/latex/api/types/latex-folder';
+    isLatexFolderRow
+} from '../utils/listing';
+import type { LatexDocumentRow } from '../contracts/listing';
+import type { LatexDocument } from '@volt/contracts/modules/latex/domain';
+import type { LatexFolder } from '@volt/contracts/modules/latex/domain';
 import { useNavigate } from 'react-router-dom';
 
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
@@ -131,7 +130,7 @@ const useLatexDocumentsListing = () => {
                     latexListingResource.toasts.delete
                 );
             },
-            confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
+            confirm: ({ selectedItems }) => latexListingResource.getDeleteConfirmationMessage(selectedItems),
             requiredPermission: 'latex:delete'
         }
     }), [deleteDocument, handleRenameOpen, openDocument]);

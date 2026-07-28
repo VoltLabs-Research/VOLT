@@ -1,4 +1,4 @@
-import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
+import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/contracts/container-selection';
 
 export interface CanvasExposureDownloadParams {
     pluginId: string;

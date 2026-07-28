@@ -9,25 +9,25 @@ import type {
     EditMessageInput,
     ToggleMessageReactionInput
 } from './http';
-import type { PersistedChat, PersistedChatMessage } from './domain';
+import type { Chat, ChatMessage } from './domain';
 
 export const chatRoutes = {
     
-    listUserChats: get<PersistedChat[]>('/api/chats'),
-    getOrCreate: post<never, PersistedChat>('/api/chats/teams/:teamId/participants/:targetUserId'),
-    createGroup: post<CreateGroupChatInput, PersistedChat>('/api/chats/groups'),
-    addUsersToGroup: post<AddUsersToGroupInput, PersistedChat>('/api/chats/:chatId/users'),
-    removeUsersFromGroup: del<PersistedChat>('/api/chats/:chatId/users'),
-    updateGroupInfo: patch<UpdateGroupInfoInput, PersistedChat>('/api/chats/:chatId'),
-    updateGroupAdmins: patch<UpdateGroupAdminsInput, PersistedChat>('/api/chats/:chatId/admins'),
+    listUserChats: get<Chat[]>('/api/chats'),
+    getOrCreate: post<never, Chat>('/api/chats/teams/:teamId/participants/:targetUserId'),
+    createGroup: post<CreateGroupChatInput, Chat>('/api/chats/groups'),
+    addUsersToGroup: post<AddUsersToGroupInput, Chat>('/api/chats/:chatId/users'),
+    removeUsersFromGroup: del<Chat>('/api/chats/:chatId/users'),
+    updateGroupInfo: patch<UpdateGroupInfoInput, Chat>('/api/chats/:chatId'),
+    updateGroupAdmins: patch<UpdateGroupAdminsInput, Chat>('/api/chats/:chatId/admins'),
     leaveGroup: del('/api/chats/:chatId/participants/self'),
 
     
-    listMessages: get<PersistedChatMessage>('/api/chat-messages/:chatId/messages'),
-    sendMessage: post<SendChatMessageInput, PersistedChatMessage>('/api/chat-messages/:chatId/messages'),
-    editMessage: patch<EditMessageInput, PersistedChatMessage>('/api/chat-messages/:chatId/messages/:messageId'),
+    listMessages: get<ChatMessage>('/api/chat-messages/:chatId/messages'),
+    sendMessage: post<SendChatMessageInput, ChatMessage>('/api/chat-messages/:chatId/messages'),
+    editMessage: patch<EditMessageInput, ChatMessage>('/api/chat-messages/:chatId/messages/:messageId'),
     deleteMessage: del('/api/chat-messages/:chatId/messages/:messageId'),
     markMessagesAsRead: patch<never, void>('/api/chat-messages/:chatId/messages/read'),
-    toggleMessageReaction: patch<ToggleMessageReactionInput, PersistedChatMessage>('/api/chat-messages/:chatId/messages/:messageId/reactions'),
-    sendFileMessage: post<never, PersistedChatMessage>('/api/chat-messages/:chatId/messages/file')
+    toggleMessageReaction: patch<ToggleMessageReactionInput, ChatMessage>('/api/chat-messages/:chatId/messages/:messageId/reactions'),
+    sendFileMessage: post<never, ChatMessage>('/api/chat-messages/:chatId/messages/file')
 } as const;

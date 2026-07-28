@@ -1,6 +1,6 @@
 import { get, post, del } from '../../shared/routing';
 import type {
-    PersistedAnalysis,
+    Analysis,
     RetryFailedFramesResponse,
     AnalysisFrameLogResponse,
     ProvenanceRecord,
@@ -9,11 +9,11 @@ import type {
 } from './domain';
 
 export const analysisRoutes = {
-    listByTeamId: get<PersistedAnalysis>('/api/analyses/:teamId'),
-    listByTrajectoryId: get<PersistedAnalysis>('/api/analyses/:teamId/trajectory/:trajectoryId'),
+    listByTeamId: get<Analysis>('/api/analyses/:teamId'),
+    listByTrajectoryId: get<Analysis>('/api/analyses/:teamId/trajectory/:trajectoryId'),
     getFrameLog: get<AnalysisFrameLogResponse>('/api/analyses/:teamId/:analysisId/logs/:timestep'),
     retryFailedFrames: post<never, RetryFailedFramesResponse>('/api/analyses/:teamId/:analysisId/failed-frames/retries'),
-    getById: get<PersistedAnalysis>('/api/analyses/:teamId/:analysisId'),
+    getById: get<Analysis>('/api/analyses/:teamId/:analysisId'),
     remove: del('/api/analyses/:teamId/:analysisId')
 } as const;
 

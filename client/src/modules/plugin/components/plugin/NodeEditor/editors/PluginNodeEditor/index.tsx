@@ -4,7 +4,7 @@ import {
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode,
     PluginStatus
-} from '@/modules/plugin/api/types/plugin/workflow-enums';
+} from '@volt/contracts/modules/plugin/domain/enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -12,23 +12,23 @@ import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plugin-team-clusters';
+import { normalizeSelectedTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
+import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-team-clusters';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type {
     IArgumentDefinition,
     IPluginNodeData
-} from '@/modules/plugin/api/types/plugin/workflow';
-import type { EditorProps } from '../types';
-import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
+} from '@volt/contracts/modules/plugin/domain/workflow';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
+import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 
 const EXECUTION_MODE_OPTIONS = [{
     value: PluginNodeExecutionMode.MANUAL,

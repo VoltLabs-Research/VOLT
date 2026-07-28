@@ -1,7 +1,7 @@
 import { ApiError, getErrorMessage } from '@voltstack/voltclient';
-import { ErrorSurface } from '@/shared/errors/core/types';
+import { ErrorSurface } from '@/shared/contracts/errors';
 import { sileo } from 'sileo';
-import type { ReportErrorOptions, UserFacingError } from '@/shared/errors/core/types';
+import type { ReportErrorOptions, UserFacingError } from '@/shared/contracts/errors';
 
 const DEFAULT_ERROR_TITLE = 'Something went wrong. Please try again.';
 

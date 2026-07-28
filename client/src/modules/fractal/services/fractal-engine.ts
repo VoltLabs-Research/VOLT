@@ -1,28 +1,23 @@
 import * as THREE from 'three';
-import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/types/model';
+import type { Pos3D, ModelLoadingState } from '@/modules/fractal/contracts/model';
+import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 import { Plane } from 'three';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
-import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
-import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
-import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
-import type { SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
-import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
-import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
+import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
+import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
+import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import { ModelTransform } from '@/modules/fractal/utils/model-transform';
+import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 import {
     PointCloudDetailLevel,
     PointCloudStyleMode
-} from '@/modules/fractal/stores/contracts/editor/scene-types';
+} from '@/modules/fractal/contracts/editor/scene-types';
 import MortonSortWorker from '@/modules/fractal/workers/morton-sort.worker?worker';
-import { computeBoundingBox } from '@/modules/fractal/utilities/morton-sort';
+import { computeBoundingBox } from '@/modules/fractal/utils/morton-sort';
 
-import type { LineEntityHighlight, LineEntityRange, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
-
-interface FractalSurface {
-    scene: THREE.Scene;
-    camera: THREE.Camera;
-    gl: THREE.WebGLRenderer;
-    invalidate: () => void;
-}
+import type { LineEntityHighlight, LineEntityRange, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
+import type { FractalSurface, MortonAttributePayload } from '@/modules/fractal/contracts/engine';
 
 interface FractalEngineState {
     model: THREE.Group | null;
@@ -44,12 +39,6 @@ interface LineGeometryUserData {
     lineWidthOffset?: number;
     baseColorArray?: Float32Array | Uint8Array;
     syntheticColorAttribute?: boolean;
-}
-
-interface MortonAttributePayload {
-    name: string;
-    itemSize: number;
-    array: Float32Array;
 }
 
 interface MortonSortResult {

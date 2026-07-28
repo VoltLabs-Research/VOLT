@@ -1,5 +1,5 @@
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
-import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '@/modules/canvas/stores/canvas-pipeline';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '@/modules/canvas/store/canvas-pipeline';
 import { parse as parseExpression } from '@voltstack/expressions';
 
 interface PushExpressionSelectInput {

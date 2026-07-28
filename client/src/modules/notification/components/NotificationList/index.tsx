@@ -2,7 +2,7 @@ import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
 import { useCallback, useEffect, useRef } from 'react';
 import { Box, Skeleton, Stack, EmptyState } from '@voltstack/bravais';
-import type { Notification } from '@/modules/notification/api/types/notification';
+import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 interface NotificationListProps {
     notifications: Notification[];

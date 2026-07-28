@@ -1,20 +1,20 @@
 import { DragControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { BoxBounds } from '@/modules/fractal/api/types/model';
-import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
+import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
+import { getBoxDimensions } from '@/modules/fractal/utils/box-utils';
 import {
     buildAabbWireframeGeometry,
     buildCellWireframeGeometry,
     hasValidCellVectors
-} from '@/modules/fractal/utilities/cell-wireframe';
-import type { CellPbc } from '@/modules/fractal/utilities/cell-wireframe';
+} from '@/modules/fractal/utils/cell-wireframe';
+import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useRef, useEffect, forwardRef, useState, useCallback } from 'react';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
 import type { ReactNode, RefObject } from 'react';
 

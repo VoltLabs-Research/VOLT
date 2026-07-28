@@ -1,5 +1,5 @@
 import JobsHistory from '@/modules/jobs/components/JobsHistory';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import useJobsHistoryFilters from '@/modules/jobs/hooks/use-jobs-history-filters';
 import useJobsAutoSelectAnalysis from '@/modules/jobs/hooks/use-jobs-auto-select-analysis';

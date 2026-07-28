@@ -1,6 +1,6 @@
 import { geometryBudgetManager } from '@/modules/fractal/services/geometry-budget';
 
-import type { LineSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineSceneSettings } from '@/modules/fractal/contracts/scene-config';
 
 export const BOND_EXPORTER_NAME = 'BondExporter';
 

@@ -1,5 +1,5 @@
 import rasterService from '@/modules/raster/api/service';
-import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
+import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import { buildKeys, createQuery } from '@/shared/query';
 import queryClient from '@/shared/query/query-client';
@@ -8,11 +8,8 @@ import {
     currentCanvasDataAccess,
     currentAccessKey
 } from '@/modules/canvas/api/access';
-import type {
-    GetRasterMetadataParams,
-    TriggerRasterizationParams,
-    TriggerRasterizationResponse
-} from '@/modules/raster/api/service';
+import type { GetRasterMetadataParams, TriggerRasterizationParams } from '@/modules/raster/api/service';
+import type { TriggerRasterizationResponse } from '@volt/contracts/modules/raster/domain';
 
 const BASE_KEY = 'raster';
 

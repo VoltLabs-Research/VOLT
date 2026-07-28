@@ -1,5 +1,5 @@
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { Toaster } from 'sileo';
 import { useEffect, useRef, useState } from 'react';
 

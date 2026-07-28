@@ -1,12 +1,12 @@
-import { useCommandPaletteStore } from '../../stores/use-command-palette-store';
-import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
-import { triggerShortcutAction } from '../../utilities/shortcut-actions';
-import formatKeyName from '../../utilities/format-key-name';
+import { useCommandPaletteStore } from '../../store/use-command-palette-store';
+import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
+import { triggerShortcutAction } from '../../utils/shortcut-actions';
+import formatKeyName from '../../utils/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, closeModal, openModal, Row, SearchInput, Stack, Text } from '@voltstack/bravais';
 
-import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
+import type { Shortcut } from '../../store/use-keyboard-shortcuts-store';
 
 import './CommandPalette.css';
 

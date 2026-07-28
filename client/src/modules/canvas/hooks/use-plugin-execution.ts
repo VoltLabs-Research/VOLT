@@ -1,13 +1,13 @@
-import { ArgumentType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import { resolveArgumentRuntimeValue } from '@/modules/plugin/utilities/plugin/argument-values';
-import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
+import { ArgumentType } from '@volt/contracts/modules/plugin/domain/enums';
+import { resolveArgumentRuntimeValue } from '@/modules/plugin/utils/plugin/argument-values';
+import { getVisibleArguments } from '@/modules/plugin/utils/plugin/argument-visibility';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
+import { usePendingPluginExecutionsStore } from '../store/use-pending-plugin-executions-store';
 import useCanvasUrlState from './use-canvas-url-state';
 
-import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
 
 export enum ExecState {
     Idle = 'idle',

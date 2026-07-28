@@ -1,7 +1,7 @@
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { PopoverMenuItem } from '@voltstack/bravais';
 import { useState } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 interface AsyncMenuItemWrapperProps {
     option: MenuOption;

@@ -1,6 +1,6 @@
 import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-shared-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
-import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { VisuallyHidden, IconButton, Row, Surface, Tooltip } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { useCallback, useEffect, useId, useRef } from 'react';

@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
 import SubListingDetailPanel from '@/modules/plugin/components/listing/SubListingDetailPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
+import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import listingService from '@/modules/plugin/api/services/listing-service';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';

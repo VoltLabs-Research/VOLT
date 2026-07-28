@@ -9,4 +9,4 @@ export {
 } from '@/shared/errors/core/report-error';
 export {
     ErrorSurface
-} from '@/shared/errors/core/types';
+} from '@/shared/contracts/errors';

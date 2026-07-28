@@ -1,7 +1,7 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { isPerformancePreset } from '@/shared/rendering/performance';
 
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 import type { PerformancePreset } from '@/shared/rendering/performance';
 
 interface SetAppearanceInput {

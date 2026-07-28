@@ -6,9 +6,9 @@ import {
     ReferenceArea
 } from 'recharts';
 import { useState, useCallback } from 'react';
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
-import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '../../stores/canvas-pipeline';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '../../store/canvas-pipeline';
 
 interface ExposureChartProps {
     artifact: SceneArtifact;

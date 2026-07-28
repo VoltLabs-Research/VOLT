@@ -1,7 +1,7 @@
 import { AsyncBoundary, Box, Button, Heading, Row, Skeleton, Stack, StatCard, Tag, Text } from '@voltstack/bravais';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
-import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
+import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import { SecretKeyEmptyView, SecretKeyRecoveryView } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';

@@ -4,12 +4,12 @@ import FolderNameModal from '@/shared/ui/components/FolderNameModal';
 import MoveToFolderModal from '@/shared/ui/components/MoveToFolderModal';
 import { Box, Row } from '@voltstack/bravais';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import { dateColumn, userColumn } from '@/shared/ui/utilities/column-presets';
+import { dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import { Folder } from 'lucide-react';
 import { useMemo } from 'react';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type {
     FolderBreadcrumbEntity,

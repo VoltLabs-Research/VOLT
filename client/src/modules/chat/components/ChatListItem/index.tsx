@@ -1,9 +1,9 @@
-import { getChatDisplayName } from '@/modules/chat/utilities/chat/chat-display';
+import { getChatDisplayName } from '@/modules/chat/utils/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import { ListRow, Row, Stack, Text } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
-import type { Chat } from '@/modules/chat/api/types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './ChatListItem.css';
 
 interface ChatListItemProps {

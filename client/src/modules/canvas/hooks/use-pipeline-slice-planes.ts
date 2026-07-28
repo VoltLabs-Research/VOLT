@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
 import { Plane } from 'three';
 import { useShallow } from 'zustand/react/shallow';
-import { useCanvasPipelineStore, collectEnabledSliceStages } from '@/modules/canvas/stores/canvas-pipeline';
+import { useCanvasPipelineStore, collectEnabledSliceStages } from '@/modules/canvas/store/canvas-pipeline';
 import {
     DEFAULT_SLICE_PLANE_STAGE_CONFIG
-} from '@/modules/canvas/stores/canvas-pipeline';
+} from '@/modules/canvas/store/canvas-pipeline';
 import {
     getSlicePlaneCenterDistance,
     resolveSlicePlaneDefinition
-} from '@/modules/fractal/utilities/slice-plane';
-import type { SlicePlaneStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/types/scene';
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
+} from '@/modules/fractal/utils/slice-plane';
+import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeline';
+import type { SlicePlaneConfig } from '@/modules/fractal/contracts/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 
 const EMPTY_PLANES: Plane[] = [];
 

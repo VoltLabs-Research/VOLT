@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
-import type { PresenceUser } from '@/modules/socket/types/presence-user';
+import type { PresenceUser } from '@volt/contracts/modules/socket/domain';
 
 interface WhiteboardPresenceAnnouncement {
     message: string;

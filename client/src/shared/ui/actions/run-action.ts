@@ -2,7 +2,7 @@ import { closeModal } from '@voltstack/bravais';
 import { confirmAction } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { ConfirmActionOptions } from '@/shared/ui/hooks/use-confirm';
-import type { PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 
 export type ActionSource<T> = Promise<T> | (() => Promise<T>);
 

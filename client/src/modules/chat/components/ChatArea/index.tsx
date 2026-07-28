@@ -5,14 +5,14 @@ import MessageBubble from '../MessageBubble';
 import MessageControls from '../MessageControls';
 import MessageList from '../MessageList';
 import TypingIndicator from '../TypingIndicator';
-import { PresenceStatus } from '@/modules/chat/api/types/shared/chat-events';
+import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { useState, useCallback } from 'react';
 import { IoChatbubblesOutline } from 'react-icons/io5';
 import { EmptyState, Box, openModal, Stack } from '@voltstack/bravais';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
-import type { Chat } from '@/modules/chat/api/types/chat';
-import type { ChatMessage } from '@/modules/chat/api/types/message';
-import type { TypingUser } from '@/modules/chat/api/types/shared/chat-events';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
+import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
+import type { TypingUser } from '@volt/contracts/modules/chat/domain';
 import './ChatArea.css';
 
 interface EditingMessage {

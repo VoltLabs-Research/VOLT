@@ -1,8 +1,8 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
 import { EMPTY_GLOBAL_SEARCH_RESULTS, MIN_SEARCH_QUERY_LENGTH } from '@/modules/dashboard/api/service';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
-import { isTrajectoryNavigable } from '@/modules/trajectory/api/types/trajectory/trajectory-constants';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
+import { isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import {
     autoUpdate,
     flip,
@@ -15,7 +15,8 @@ import {
 } from '@floating-ui/react';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GlobalSearchResponse, GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
+import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
+import type { GlobalSearchResponse } from '@volt/contracts/modules/dashboard/domain';
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;

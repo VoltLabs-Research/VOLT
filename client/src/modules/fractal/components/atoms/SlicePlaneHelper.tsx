@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { useEffect, useMemo, useState } from 'react';
-import { getSlicePlaneVisualizationQuaternion, getSlicePlaneVisualizationSize, resolveSlicePlaneDefinition } from '@/modules/fractal/utilities/slice-plane';
+import { getSlicePlaneVisualizationQuaternion, getSlicePlaneVisualizationSize, resolveSlicePlaneDefinition } from '@/modules/fractal/utils/slice-plane';
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/types/scene';
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
+import type { SlicePlaneConfig } from '@/modules/fractal/contracts/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { FC } from 'react';
 
 interface SlicePlaneHelperProps {

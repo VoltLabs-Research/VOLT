@@ -1,6 +1,6 @@
-import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
+import type { TrajectoryFolderRow } from '@/modules/trajectory/contracts/listing';
 import { IconButton, Popover, PopoverMenu, PopoverMenuItem, Heading, Row, Stack } from '@voltstack/bravais';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';

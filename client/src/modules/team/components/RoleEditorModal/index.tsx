@@ -2,8 +2,8 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal, closeModal, openModal, Stack, Box, Callout, Heading } from '@voltstack/bravais';
 import { runAction } from '@/shared/ui/actions/run-action';
-import type { TeamRole } from '@/modules/team/api/types/role/team-role';
-import type { RBACAction, RBACResource } from '@/modules/system/api/service';
+import type { TeamRole } from '@volt/contracts/modules/team/domain';
+import type { RbacEntry } from '@volt/contracts/modules/system/domain';
 import { IoWarningOutline } from 'react-icons/io5';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
@@ -15,8 +15,8 @@ export interface RoleEditorPayload {
 
 export interface RoleEditorModalProps {
     role?: TeamRole | null;
-    resources: RBACResource[];
-    actions: RBACAction[];
+    resources: RbacEntry[];
+    actions: RbacEntry[];
     onSave: (data: RoleEditorPayload) => Promise<void>;
     isSaving?: boolean;
 }

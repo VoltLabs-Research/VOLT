@@ -9,16 +9,8 @@ export interface GetSubListingInput {
     limit?: number;
 }
 
-export interface SubListingColumn {
-    label: string;
-    sortable: boolean;
-}
-
-export interface SubListingRowShape {
-    _id: string;
-}
-
-export type SubListingRowData = SubListingRowShape;
+export type { SubListingColumn, SubListingRowData } from '@volt/contracts/modules/plugin/domain/listing';
+import type { SubListingColumn, SubListingRowData } from '@volt/contracts/modules/plugin/domain/listing';
 
 export interface GetSubListingOutput {
     subListingName: string;

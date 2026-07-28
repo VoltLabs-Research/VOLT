@@ -1,7 +1,7 @@
-import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
-import { useScreenshotStore } from '../stores/use-screenshot-store';
+import { useKeyboardShortcutsStore } from '../store/use-keyboard-shortcuts-store';
+import { useScreenshotStore } from '../store/use-screenshot-store';
 import { resetSceneInteraction } from './use-scene-interaction';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
 import { useEffect } from 'react';

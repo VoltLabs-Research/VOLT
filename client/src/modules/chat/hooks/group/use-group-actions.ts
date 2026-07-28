@@ -10,8 +10,9 @@ import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../chat
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
-import type { CreateGroupChat, UpdateGroupAdmins, UpdateGroupInfo } from '../../api/services/group-service';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
+import type { CreateGroupChatParams } from '../../api/services/group-service';
+import type { UpdateGroupAdminsInput, UpdateGroupInfoInput } from '@volt/contracts/modules/chat/http';
 import { useNavigate } from 'react-router-dom';
 
 const useGroupActions = () => {
@@ -25,7 +26,7 @@ const useGroupActions = () => {
     const updateGroupAdminsMutationResult = useUpdateGroupAdminsMutation();
     const leaveGroupMutationResult = useLeaveGroupMutation();
 
-    const createGroup = useCallback(async (input: CreateGroupChat) => {
+    const createGroup = useCallback(async (input: CreateGroupChatParams) => {
         return runAction({
             action: () => createGroupMutationResult.mutateAsync(input),
             toast: createPromiseToastOptions({
@@ -68,7 +69,7 @@ const useGroupActions = () => {
         });
     }, [queryClient, removeUsersFromGroupMutationResult]);
 
-    const updateGroupInfo = useCallback(async (chatId: string, changes: UpdateGroupInfo) => {
+    const updateGroupInfo = useCallback(async (chatId: string, changes: UpdateGroupInfoInput) => {
         return runAction({
             action: () => updateGroupInfoMutationResult.mutateAsync({ chatId, ...changes }),
             toast: createPromiseToastOptions({
@@ -82,7 +83,7 @@ const useGroupActions = () => {
         });
     }, [queryClient, updateGroupInfoMutationResult]);
 
-    const updateGroupAdmins = useCallback(async (chatId: string, changes: UpdateGroupAdmins) => {
+    const updateGroupAdmins = useCallback(async (chatId: string, changes: UpdateGroupAdminsInput) => {
         return runAction({
             action: () => updateGroupAdminsMutationResult.mutateAsync({ chatId, ...changes }),
             toast: createPromiseToastOptions({

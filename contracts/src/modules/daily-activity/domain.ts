@@ -1,4 +1,19 @@
-
+export enum ActivityType{
+    TrajectoryUpload = 'trajectory-upload',
+    TrajectoryDeletion = 'trajectory-deletion',
+    AnalysisPerformed = 'analysis-performed',
+    AnalysisDeletion = 'analysis-deletion',
+    LatexDocumentCreation = 'latex-document-creation',
+    LatexDocumentDeletion = 'latex-document-deletion',
+    ContainerCreation = 'container-creation',
+    ContainerDeletion = 'container-deletion',
+    WhiteboardCreation = 'whiteboard-creation',
+    WhiteboardDeletion = 'whiteboard-deletion',
+    RoleCreation = 'role-creation',
+    RoleDeletion = 'role-deletion',
+    SecretKeyCreation = 'secret-key-creation',
+    SecretKeyDeletion = 'secret-key-deletion'
+}
 
 export interface DailyActivityUserSummary{
     _id: string;
@@ -7,17 +22,17 @@ export interface DailyActivityUserSummary{
     avatar?: string;
 }
 
-export interface DailyActivityEntry{
-    type: string;
+export interface ActivityItem{
+    type: ActivityType;
     description: string;
     createdAt: string;
 }
 
-export interface DailyActivityRecord{
+export interface DailyActivity{
     _id: string;
     team: string;
     user: string | DailyActivityUserSummary;
     date: string;
-    activity: DailyActivityEntry[];
+    activity: ActivityItem[];
     minutesOnline: number;
 }

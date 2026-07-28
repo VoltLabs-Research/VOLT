@@ -11,7 +11,7 @@ import { FileText, GripVertical } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
 import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 interface DocumentListingGridProps<T extends { _id: string }> {
     data: T[];

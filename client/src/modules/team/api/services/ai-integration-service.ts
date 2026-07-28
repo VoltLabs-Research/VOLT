@@ -1,13 +1,13 @@
-import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, get, post, patch, del } from '@/app/core/http/utils/create-service';
 
-import type { AIProvider } from '@/modules/ai/api/types/ai-provider';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type {
-    AIProviderCatalogItem,
+    TeamAIProviderCatalogItem,
     TeamAIIntegration,
     TeamAIModelListItem,
     TeamAIModelMetadata,
-    TeamAIProviderModelsCatalog
-} from '../types/ai-integration/team-ai-integration';
+    TeamAIProviderModels
+} from '@volt/contracts/modules/team/domain';
 
 export interface CreateTeamAIIntegrationParams {
     apiKey?: string;
@@ -33,7 +33,7 @@ export interface DeleteTeamAIIntegrationInput {
 
 export interface ListTeamAIIntegrationModelsResponse {
     teamId: string;
-    providers: TeamAIProviderModelsCatalog[];
+    providers: TeamAIProviderModels[];
     models: TeamAIModelListItem[];
 }
 
@@ -44,7 +44,7 @@ export interface GetTeamAIIntegrationModelsInput {
 export interface ListTeamAIIntegrationsResponse {
     teamId: string;
     integrations: TeamAIIntegration[];
-    providers: AIProviderCatalogItem[];
+    providers: TeamAIProviderCatalogItem[];
 }
 
 export interface GetTeamAIIntegrationsInput {

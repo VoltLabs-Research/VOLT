@@ -1,5 +1,5 @@
 import type { NodeProps, NodeTypes } from '@xyflow/react';
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
 import type {
     IArgumentsData,
     IContextData,
@@ -9,9 +9,9 @@ import type {
     IModifierData,
     ISwitchCaseData,
     ISwitchStatementData
-} from '@/modules/plugin/api/types/plugin/workflow';
+} from '@volt/contracts/modules/plugin/domain/workflow';
 import BaseNode from '@/modules/plugin/components/plugin/BaseNode';
-import { CONTEXT_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
+import { CONTEXT_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import EntrypointNode from './EntrypointNode';
 import PluginNode from './PluginNode';
 import './IfStatementNode/IfStatementNode.css';

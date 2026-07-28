@@ -1,10 +1,7 @@
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { useState } from 'react';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
-import type {
-    TeamClusterQueueConcurrencyInput,
-    TeamClusterQueueScopeLimitsInput
-} from '@/modules/cluster/api/service';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type { TeamClusterQueueConcurrency, TeamClusterQueueScopeLimits } from '@volt/contracts/modules/cluster/domain';
 
 const useClusterPageState = () => {
     const management = useClusterManagement();
@@ -33,8 +30,8 @@ const useClusterPageState = () => {
     };
 
     const updateQueueConcurrency = async (input: {
-        queueConcurrency: TeamClusterQueueConcurrencyInput;
-        queueScopeLimits: TeamClusterQueueScopeLimitsInput;
+        queueConcurrency: TeamClusterQueueConcurrency;
+        queueScopeLimits: TeamClusterQueueScopeLimits;
     }) => {
         if (!queueConcurrencyTarget) {
             throw new Error('Missing cluster queue concurrency target');

@@ -1,8 +1,4 @@
 
-export enum JobStatus {
-    Queued = 'queued',
-    Running = 'running',
-    Completed = 'completed',
-    Failed = 'failed',
-    Retrying = 'retrying'
-}
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+
+export { JobStatus };

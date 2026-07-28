@@ -1,6 +1,6 @@
-import { useClusterStore } from '../stores/use-cluster-store';
+import { useClusterStore } from '../store/use-cluster-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import {
     clusterHistoryLoadedQuery,
@@ -8,7 +8,7 @@ import {
     clusterMetricsQuery
 } from './queries';
 import { requestClusterHistory } from '../api/service';
-import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
+import { resolveClusterMetricId } from '../utils/resolve-cluster-metric-id';
 import { useMemo, useCallback } from 'react';
 
 interface UseClusterMetricsOptions {

@@ -1,6 +1,6 @@
 import useCanvasSidebarScene from './use-canvas-sidebar-scene';
 
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface UseCanvasSidebarStateProps {
     trajectory?: Trajectory | null;

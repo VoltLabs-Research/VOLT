@@ -5,11 +5,11 @@ import { Button, Row, Stack } from '@voltstack/bravais';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
-import type { OAuthProviderKey } from '@/modules/auth/api/service';
+import type { OAuthProviderId } from '@volt/contracts/modules/auth/domain';
 import type { SignInForm } from '../SignIn/validation-schema';
 
 interface OAuthProvider {
-    key: OAuthProviderKey;
+    key: OAuthProviderId;
     label: string;
     icon: ReactNode;
 }
@@ -18,8 +18,8 @@ interface EmailStepProps {
     control: Control<SignInForm>;
     isLoading: boolean;
     onSubmit: FormEventHandler<HTMLFormElement>;
-    onOAuth: (provider: OAuthProviderKey) => void;
-    availableProviders: OAuthProviderKey[];
+    onOAuth: (provider: OAuthProviderId) => void;
+    availableProviders: OAuthProviderId[];
 }
 
 const oauthProviders: OAuthProvider[] = [{

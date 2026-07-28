@@ -1,19 +1,20 @@
 
 
-import type { WorkflowWire } from './domain';
+import type { IWorkflow } from './domain/workflow';
+import type { PluginStatus } from './domain/enums';
 
 export interface ValidateWorkflowInput{
-    workflow: WorkflowWire;
+    workflow: IWorkflow;
     pluginId?: string;
 }
 
 export interface CreatePluginInput{
-    workflow: WorkflowWire;
+    workflow: IWorkflow;
 }
 
 export interface UpdatePluginInput{
-    workflow?: WorkflowWire;
-    status?: 'draft' | 'published' | 'disabled';
+    workflow?: IWorkflow;
+    status?: PluginStatus;
     
     _allowBinaryFieldUpdate?: boolean;
 }
@@ -37,8 +38,10 @@ export interface CommitBinaryUploadInput{
     sha256?: string;
 }
 
+export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
+
 export interface ExecutePipelineStageInput{
-    kind: 'plugin' | 'slice' | 'expression';
+    kind: PipelineStageKind;
     pluginId?: string;
     config: Record<string, unknown>;
 }

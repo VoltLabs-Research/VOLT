@@ -1,13 +1,12 @@
 import { Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import { ArrowLeft, ImagePlus } from 'lucide-react';
-import type { ComponentProps } from 'react';
 import type { ClipboardEventHandler, DragEventHandler } from 'react';
-
-type ExcalidrawProps = ComponentProps<typeof Excalidraw>;
-type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
-type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];
-type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps['onChange']>;
-type RenderTopRightUI = NonNullable<ExcalidrawProps['renderTopRightUI']>;
+import type {
+    ExcalidrawAPI,
+    ExcalidrawChangeHandler,
+    ExcalidrawProps,
+    RenderTopRightUI
+} from '@/modules/whiteboards/contracts/excalidraw';
 
 export interface WhiteboardCanvasProps {
     name: string;

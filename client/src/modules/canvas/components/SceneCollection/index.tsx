@@ -1,7 +1,7 @@
 import AnalysisTreeNode from '../AnalysisTreeNode';
-import { resolvePluginSceneRenderMetadata } from '../../utilities/plugin-exposure-export';
-import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
+import { isSameScene } from '@/modules/canvas/utils/scene-identity';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
     CanvasTreeRow,
@@ -14,17 +14,17 @@ import {
     buildTransparencySubmenu,
     colorOption,
     transparencyOption
-} from '../../utilities/tree-menus';
+} from '../../utils/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
 import { Stack } from '@voltstack/bravais';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { CanvasAnalysisStatusEntry } from '../../utilities/analysis-status';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
-import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 
 interface SceneCollectionProps {
     filteredSections: AnalysisSectionData[];

@@ -1,10 +1,10 @@
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
-import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
+import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
+import { resolveSelectedClusterId } from '@/modules/cluster/utils/resolve-selected-cluster-id';
 import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
+import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 const useClusterMonitoringPage = () => {
     const state = useClusterPageState();

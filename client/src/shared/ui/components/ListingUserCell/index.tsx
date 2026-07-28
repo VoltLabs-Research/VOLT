@@ -1,9 +1,9 @@
 import UserInfo from '@/modules/auth/components/UserInfo';
 import { Text } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
-import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
-import type { User } from '@/modules/auth/api/types/user';
+import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
+import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
+import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
 
 interface ListingUserCellProps {

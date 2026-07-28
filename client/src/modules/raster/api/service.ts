@@ -1,27 +1,15 @@
-import { createService, get, post } from '@/app/core/http/utilities/create-service';
-import type { RasterMetadata } from '@/modules/raster/api/types/raster';
+import { createService, get, post } from '@/app/core/http/utils/create-service';
+
+import type { GetRasterMetadataResponse, TriggerRasterizationResponse } from '@volt/contracts/modules/raster/domain';
 
 export interface GetRasterMetadataParams {
     trajectoryId: string;
-}
-
-export interface GetRasterMetadataResponse {
-    metadata: RasterMetadata | null;
 }
 
 export interface TriggerRasterizationParams {
     teamId: string;
     trajectoryId: string;
     config?: unknown;
-}
-
-export interface TriggerRasterizationResponse {
-    trajectoryId: string;
-    triggered: boolean;
-    queuedJobs: number;
-    duplicateJobs: number;
-    skippedJobs: number;
-    alreadyRasterizedJobs: number;
 }
 
 const endpoints = {

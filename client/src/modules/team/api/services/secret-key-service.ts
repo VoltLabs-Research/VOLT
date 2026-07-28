@@ -1,25 +1,13 @@
-import { createService, get, paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, get, paginated, post, patch, del } from '@/app/core/http/utils/create-service';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { SecretKey } from '@/modules/team/api/types/secret-key/secret-key';
-import type { TeamUsageMetrics, KeyUsageMetrics } from '@/modules/team/api/types/secret-key/secret-key-metrics';
+import type { SecretKey } from '@volt/contracts/modules/team/domain';
+import type { TeamUsageMetrics, KeyUsageMetrics } from '@volt/contracts/modules/team/domain';
+import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
+import type { TeamScopedParams } from '@/shared/api/request-params';
+import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
-export interface CreateSecretKeyResponse {
-    secretKeyId: string;
-    teamId: string;
-    roleId: string;
-    name: string;
-    keyPrefix: string;
-    secretKey: string;
-    isActive: boolean;
-    createdAt: Date | string;
-}
-
-export interface CreateSecretKeyInput {
-    teamId: string;
-    name: string;
-    roleId: string;
-}
+export type CreateSecretKeyParams = TeamScopedParams & CreateSecretKeyInput;
 
 export interface DeleteSecretKeyInput {
     teamId: string;
@@ -48,7 +36,7 @@ export type RevokeSecretKeyInput = DeleteSecretKeyInput;
 
 const endpoints = {
     listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
-    create: post<CreateSecretKeyInput, CreateSecretKeyResponse>('/:teamId/secret-keys'),
+    create: post<CreateSecretKeyParams, CreateSecretKeyResponse>('/:teamId/secret-keys'),
     revokeById: patch<RevokeSecretKeyInput, void>(
         '/:teamId/secret-keys/:secretKeyId', { unwrap: 'void' }
     ),

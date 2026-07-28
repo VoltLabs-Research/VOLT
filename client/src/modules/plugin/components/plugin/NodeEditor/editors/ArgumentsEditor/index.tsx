@@ -1,8 +1,8 @@
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
-import { createDefaultArgumentDefinition } from '@/modules/plugin/utilities/plugin/argument-values';
+import { createDefaultArgumentDefinition } from '@/modules/plugin/utils/plugin/argument-values';
 import ArgumentDefinitionSection from './ArgumentDefinitionSection';
-import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
-import type { EditorProps } from '../types';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 const ArgumentsEditor = ({ node }: EditorProps) => {
     const {

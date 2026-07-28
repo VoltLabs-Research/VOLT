@@ -1,6 +1,6 @@
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import { AlertTriangle, X } from 'lucide-react';
-import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
+import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/store/use-trajectory-upload-progress-store';
 import { formatSize } from '@voltstack/bravais';
 import './TrajectoryUploadProgressPanel.css';
 

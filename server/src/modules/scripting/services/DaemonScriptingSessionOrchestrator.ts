@@ -1,3 +1,5 @@
+export type { NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
+import type { NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
@@ -10,8 +12,6 @@ import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRunti
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-
-export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
 export interface ScriptingSessionNotebookInput {
     notebookPath: string;

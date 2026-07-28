@@ -45,7 +45,10 @@ export interface CreateColoredModelInput{
     gradient: string;
 }
 
-export type ParticleFilterCombinator = 'and' | 'or';
+export enum ParticleFilterCombinator{
+    And = 'AND',
+    Or = 'OR'
+}
 
 export interface ParticleFilterConditionInput{
     property: string;

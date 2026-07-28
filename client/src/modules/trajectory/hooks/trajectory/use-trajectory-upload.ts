@@ -1,12 +1,12 @@
 import { createTrajectoryUploadSessionMutation } from './queries';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
-import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
+import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/store/use-trajectory-upload-progress-store';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';
-import type { CreateTrajectoryUploadSessionResponse } from '@/modules/trajectory/api/services/trajectory-service';
+import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
 import type { FileWithPath } from '@/shared/utils/file';
 
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';

@@ -1,6 +1,6 @@
 import useAnalysisStatus from './use-analysis-status';
-import { CanvasAnalysisStatusEnum } from '../utilities/analysis-status';
-import { isRenderableSceneExport } from '../utilities/plugin-exposure-export';
+import { CanvasAnalysisStatusEnum } from '../utils/analysis-status';
+import { isRenderableSceneExport } from '../utils/plugin-exposure-export';
 
 import {
     buildSceneArtifactsQueryOptions,

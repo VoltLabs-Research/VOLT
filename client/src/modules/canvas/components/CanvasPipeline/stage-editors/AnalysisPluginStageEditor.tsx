@@ -1,13 +1,13 @@
-import { useCanvasPipelineStore } from '../../../stores/canvas-pipeline';
+import { useCanvasPipelineStore } from '../../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
-import { extractTrajectoryTimesteps } from '../../../utilities/selected-timestep-analysis';
+import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
+import { extractTrajectoryTimesteps } from '../../../utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
-import type { AnalysisPluginStageConfig } from '../../../stores/canvas-pipeline';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { AnalysisPluginStageConfig } from '../../../store/canvas-pipeline';
 
 interface AnalysisPluginStageEditorProps {
     stageId: string;

@@ -1,13 +1,13 @@
 import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
 import { MdLightbulb } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import { updateVec3Value } from '../../utilities';
+import { updateVec3Value } from '../../utils';
 
-import type { RenderGroup } from '../../types';
-import type { Vec3 } from '../../utilities';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
+import type { Vec3 } from '@/shared/contracts/geometry';
 import type { DirLight, HemiLight, PointLight, RectAreaLightCfg, SpotLight } from '@/shared/rendering/lights';
 
 const setVec3 = <T extends { position: Vec3 }>(

@@ -1,7 +1,7 @@
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
-import type { EditorProps } from '../types';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 interface SwitchCaseEditorFormValues {
     value: string;

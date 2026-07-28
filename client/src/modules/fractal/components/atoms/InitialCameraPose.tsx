@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react';
 import {
     applyCameraAnglePreset,
     getCaptureBounds
-} from '@/modules/fractal/utilities/camera-framing';
+} from '@/modules/fractal/utils/camera-framing';
 
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
+import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
 import type { MutableRefObject } from 'react';
 
 interface InitialCameraPoseProps {

@@ -6,7 +6,7 @@ import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, last
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AddToolResultFn } from '@/modules/ai/tools/use-client-tool-dispatch';
 import type { AIModelSelection } from '@/modules/ai/api/service';
-import type { AIConversationMessage } from '@/modules/ai/api/types/ai-conversation';
+import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { UseQueryResult } from '@tanstack/react-query';

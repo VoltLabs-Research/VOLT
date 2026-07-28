@@ -1,0 +1,57 @@
+import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { TimestepInfo } from '@volt/contracts/modules/trajectory/domain';
+import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
+
+const getSimulationCellBoxBounds = (simulationCell?: SimulationCell): BoxBounds | undefined => {
+    if (!simulationCell) {
+        return undefined;
+    }
+
+    const { boundingBox, geometry } = simulationCell;
+    const cellOrigin = geometry?.cell_origin;
+
+    if (!boundingBox || !cellOrigin || cellOrigin.length !== 3) {
+        return undefined;
+    }
+
+    const [xlo, ylo, zlo] = cellOrigin;
+
+    return {
+        xlo,
+        xhi: xlo + boundingBox.width,
+        ylo,
+        yhi: ylo + boundingBox.length,
+        zlo,
+        zhi: zlo + boundingBox.height
+    };
+};
+
+export const getFrameBoxBounds = (frame: TimestepInfo): BoxBounds => {
+    const simulationCellBoxBounds = getSimulationCellBoxBounds(frame.simulationCell);
+
+    if (simulationCellBoxBounds) {
+        return simulationCellBoxBounds;
+    }
+
+    if (frame.boxBounds) {
+        return frame.boxBounds;
+    }
+
+    throw new Error(`Frame ${frame.timestep} is missing canonical box bounds.`);
+};
+
+export const hasFrameBoxBounds = (frame: TimestepInfo): boolean => {
+    return Boolean(getSimulationCellBoxBounds(frame.simulationCell) || frame.boxBounds);
+};
+
+export const getTrajectoryFrameByTimestep = (
+    trajectory: Pick<Trajectory, 'frames'> | null | undefined,
+    currentTimestep: number | undefined
+): TimestepInfo | undefined => {
+    if (!trajectory || currentTimestep === undefined) {
+        return undefined;
+    }
+
+    return trajectory.frames.find((frame: TimestepInfo) => frame.timestep === currentTimestep);
+};

@@ -6,25 +6,16 @@ import { Box, Button, CollapsibleSection, Heading, Row, Stack, Tag, Text } from 
 import type { SelectOption } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { getCustomFieldValidationError } from '../../utilities/container-form';
-import { ContainerTemplateCustomFieldType } from '../../api/types/container-template';
+import { getCustomFieldValidationError } from '../../utils/container-form';
+import { ContainerTemplateCustomFieldType } from '@/modules/container/contracts/templates';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
-import type { ClusterResourceLimits } from '../../api/types/cluster-resource-limits';
-import type { ContainerTemplateCustomField } from '../../api/types/container-template';
+import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
+import type { ContainerTemplateCustomField } from '@/modules/container/contracts/templates';
+import type { EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
 import type { FieldConfig } from '@/shared/ui/components/EditableKeyValueCard';
-import type { Team } from '@/modules/team/api/types/team/team';
-import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
-
-interface PortMappingFormItem extends Record<string, unknown> {
-    private: number;
-    public?: number;
-}
-
-interface EnvVariableFormItem extends Record<string, unknown> {
-    key: string;
-    value: string;
-}
+import type { Team } from '@volt/contracts/modules/team/domain';
+import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 
 type PortMappingSourceItem = ContainerConfig['ports'][number] | PortMappingFormItem;
 

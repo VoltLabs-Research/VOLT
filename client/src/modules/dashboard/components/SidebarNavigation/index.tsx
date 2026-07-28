@@ -4,7 +4,7 @@ import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/ty
 import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
 import ClusterCredentialsModal from '@/modules/cluster/components/ClusterCredentialsModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import { Box, Tooltip } from '@voltstack/bravais';

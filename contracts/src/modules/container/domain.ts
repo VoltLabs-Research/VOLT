@@ -1,11 +1,13 @@
+import type { BaseEntity, Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
+import type { TeamCluster } from '../cluster/domain';
 
-
-export interface ContainerEnvironmentVariable{
+export interface EnvVariable{
     key: string;
     value: string;
 }
 
-export interface ContainerPortMapping{
+export interface PortMapping{
     private: number;
     public?: number;
 }
@@ -19,58 +21,118 @@ export interface ContainerAccessiblePort{
     label?: string;
 }
 
-export interface PersistedContainer{
-    _id: string;
+export interface Container extends BaseEntity{
     name: string;
     image: string;
     containerId: string;
     folder: string | null;
-    createdBy: unknown;
     status: string;
     memory: number;
     cpus: number;
     internalIp?: string;
-    team?: unknown;
-    teamCluster?: unknown;
-    env: ContainerEnvironmentVariable[];
-    ports: ContainerPortMapping[];
+    team: string;
+    teamCluster?: Ref<TeamCluster> | null;
+    createdBy: Ref<User>;
+    env: EnvVariable[];
+    ports: PortMapping[];
+    network?: string;
+    volume?: string;
     mountDockerSocket?: boolean;
     accessiblePorts?: ContainerAccessiblePort[];
-    createdAt: string;
-    updatedAt: string;
 }
 
-export interface CreateContainerResponse{
-    container: PersistedContainer;
+export interface ContainerFolder extends BaseEntity{
+    title: string;
+    parent: string | null;
 }
 
-export interface GetContainerResponse{
-    container: PersistedContainer;
+export interface ContainerFile{
+    name: string;
+    isDirectory: boolean;
+    size: string;
+    permissions: string;
+    date: string;
+    owner?: string;
+    group?: string;
 }
 
-export interface UpdateContainerResponse{
-    container: PersistedContainer | null;
-    status?: string;
-}
-
-export interface CreateContainerPortAccessUrlResponse{
+export interface ContainerPortAccessUrl{
     url: string;
     expiresAt: string;
     port: ContainerAccessiblePort;
 }
 
-export interface ContainerFileEntry{
-    name: string;
-    isDirectory: boolean;
-    size: string;
-    permissions: string;
-    owner: string;
-    group: string;
-    date: string;
+export interface ContainerCpuUsage{
+    total_usage: number;
+    percpu_usage?: number[];
 }
 
+export interface ContainerCpuStats{
+    cpu_usage: ContainerCpuUsage;
+    system_cpu_usage: number;
+    online_cpus?: number;
+}
+
+export interface ContainerMemoryStats{
+    usage: number;
+    limit: number;
+}
+
+export interface ContainerNetworkStats{
+    rx_bytes: number;
+    tx_bytes: number;
+}
+
+export interface ContainerStats{
+    cpu_stats: ContainerCpuStats;
+    memory_stats: ContainerMemoryStats;
+    networks?: Record<string, ContainerNetworkStats>;
+}
+
+export interface ContainerMemoryUsageMB{
+    used: number;
+    total: number;
+    free: number;
+}
+
+export interface ContainerNetworkTotals{
+    rxBytes: number;
+    txBytes: number;
+}
+
+export interface ContainerStatsResponse{
+    stats: ContainerStats;
+    memoryMB: ContainerMemoryUsageMB;
+    networkTotals: ContainerNetworkTotals;
+    limits?: {
+        memory: number;
+        cpus: number;
+    };
+}
+
+export interface TeamClusterOption{
+    _id: string;
+    name: string;
+    status: string;
+}
+
+export interface CreateContainerResponse{
+    container: Container;
+}
+
+export interface GetContainerResponse{
+    container: Container;
+}
+
+export interface UpdateContainerResponse{
+    container: Container | null;
+    status?: string;
+}
+
+export type CreateContainerPortAccessUrlResponse = ContainerPortAccessUrl;
+
 export interface GetContainerFilesResponse{
-    files: ContainerFileEntry[];
+    files: ContainerFile[];
 }
 
 export type ContainerProcessInfo = Record<string, unknown>;
@@ -79,31 +141,8 @@ export interface GetContainerProcessesResponse{
     processes: ContainerProcessInfo[];
 }
 
-export interface GetContainerStatsResponse{
-    stats: unknown;
-    limits: {
-        memory: number;
-        cpus: number;
-    };
-    memoryMB: {
-        used: number;
-        total: number;
-        free: number;
-    };
-    networkTotals: {
-        rxBytes: number;
-        txBytes: number;
-    };
-}
+export type GetContainerStatsResponse = ContainerStatsResponse;
 
 export interface ReadContainerFileResponse{
     content: string;
-}
-
-export interface ContainerFolder{
-    _id: string;
-    title: string;
-    parent: string | null;
-    createdAt: string;
-    updatedAt: string;
 }

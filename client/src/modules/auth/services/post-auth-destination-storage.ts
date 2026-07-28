@@ -1,4 +1,4 @@
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
+import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
 
 const POST_AUTH_DESTINATION_STORAGE_KEY = 'volt:auth:post-auth-destination';
 const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';

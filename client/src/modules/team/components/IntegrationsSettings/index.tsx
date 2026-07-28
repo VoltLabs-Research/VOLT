@@ -12,19 +12,19 @@ import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
 import useTip from '@/shared/tips/use-tip';
-import { AIProvider } from '@/modules/ai/api/types/ai-provider';
+import { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { CreateTeamAIIntegrationParams, UpdateTeamAIIntegrationParams } from '@/modules/team/api/services/ai-integration-service';
 import type {
-    AIProviderCatalogItem,
+    TeamAIProviderCatalogItem,
     TeamAIIntegration,
     TeamAIModelMetadata
-} from '@/modules/team/api/types/ai-integration/team-ai-integration';
+} from '@volt/contracts/modules/team/domain';
 import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 
@@ -115,7 +115,7 @@ export default function IntegrationsSettings() {
     const defaultModelLabelId = useId();
 
     const integrations: TeamAIIntegration[] = integrationsData?.integrations ?? [];
-    const providerCatalog: AIProviderCatalogItem[] = integrationsData?.providers ?? [];
+    const providerCatalog: TeamAIProviderCatalogItem[] = integrationsData?.providers ?? [];
 
     useEffect(() => {
         if (!integrationsError) return;

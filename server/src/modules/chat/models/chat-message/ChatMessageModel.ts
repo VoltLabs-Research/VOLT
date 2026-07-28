@@ -3,18 +3,11 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import type { ChatUserReference } from '@shared/contracts/types/Chat';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum ChatMessageType {
-    Text = 'text',
-    File = 'file'
-}
+import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
+import type { ChatMessageMetadata } from '@volt/contracts/modules/chat/domain';
 
-export interface ChatMessageMetadata {
-    fileName: string;
-    fileSize: number;
-    fileType: string;
-    fileUrl: string;
-    filePath: string;
-}
+export { ChatMessageType };
+export type { ChatMessageMetadata };
 
 export interface ChatReaction {
     emoji: string;

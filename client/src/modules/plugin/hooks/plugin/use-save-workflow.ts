@@ -1,11 +1,11 @@
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
 
 const useSaveWorkflow = () => {
     const [searchParams, setSearchParams] = useSearchParams();

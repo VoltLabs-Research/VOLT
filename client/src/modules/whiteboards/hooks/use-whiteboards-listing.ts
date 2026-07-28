@@ -22,17 +22,16 @@ import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { FolderInput, Pencil, SquarePen } from 'lucide-react';
 import { useCallback } from 'react';
-import { getDeleteConfirmationMessage } from '../utilities/whiteboards';
 import {
     createWhiteboardFolderRow,
     createWhiteboardItemRow,
     getWhiteboardListingDraggableId,
     getWhiteboardListingDroppableId,
     isWhiteboardFolderRow,
-    isWhiteboardItemRow,
-    type WhiteboardItemRow
-} from '../utilities/listing';
-import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
+    isWhiteboardItemRow
+} from '../utils/listing';
+import type { WhiteboardItemRow } from '../contracts/listing';
+import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import { useNavigate } from 'react-router-dom';
 
 export const RENAME_WHITEBOARD_MODAL_ID = 'rename-whiteboard-modal';
@@ -116,7 +115,7 @@ const useWhiteboardsListing = () => {
                     whiteboardsListingResource.toasts.delete
                 );
             },
-            confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
+            confirm: ({ selectedItems }) => whiteboardsListingResource.getDeleteConfirmationMessage(selectedItems),
             requiredPermission: 'whiteboard:delete'
         }
     }), [deleteWhiteboard, handleRenameWhiteboardOpen, openWhiteboard]);

@@ -4,7 +4,7 @@ import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { SelectOption } from '@voltstack/bravais';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Trajectory } from '../../api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export interface UseTrajectorySelectorOptions {
     allowEmpty?: boolean;

@@ -2,14 +2,14 @@ import { teamClusterService } from '@/modules/cluster/api/service';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
-import { transformClustersToRows } from '@/modules/cluster/utilities/transform-cluster-row';
+import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
+import { transformClustersToRows } from '@/modules/cluster/utils/transform-cluster-row';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { ListTeamClustersInput } from '@/modules/cluster/api/service';
-import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
-import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
-import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
+import type { ListTeamClustersParams } from '@/modules/cluster/api/service';
+import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
+import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
+import type { ServerRow } from '@/modules/cluster/utils/transform-cluster-row';
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
@@ -90,7 +90,7 @@ const useClustersListingPage = () => {
             return createEmptyPaginatedResponse<ServerRow>({ page, limit });
         }
 
-        const query: ListTeamClustersInput = {
+        const query: ListTeamClustersParams = {
             teamId: selectedTeamId,
             page,
             limit

@@ -1,5 +1,5 @@
 import useCreateContainerForm from '../../hooks/use-create-container-form';
-import { getCustomImageValidationError } from '../../utilities/container-form';
+import { getCustomImageValidationError } from '../../utils/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
 import { useStepper } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';

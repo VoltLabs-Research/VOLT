@@ -10,7 +10,7 @@ import {
     getPostAuthRedirectPath,
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
@@ -18,13 +18,13 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { Heading, Stack, Stepper, Text, Button } from '@voltstack/bravais';
 import type { StepTitles } from '@voltstack/bravais';
 import { useStepper } from '@voltstack/bravais';
-import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utilities/backend-origin';
+import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utils/backend-origin';
 import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
-import type { OAuthProviderKey } from '@/modules/auth/api/service';
+import type { OAuthProviderId } from '@volt/contracts/modules/auth/domain';
 import type { SignInForm } from './validation-schema';
 import { useNavigate } from 'react-router-dom';
 enum SignInStep {
@@ -78,7 +78,7 @@ const SignInTemplate = () => {
         });
     };
 
-    const handleOAuthRedirect = (provider: OAuthProviderKey) => {
+    const handleOAuthRedirect = (provider: OAuthProviderId) => {
         const next = getNextDestination();
         const callbackUrl = new URL(buildBackendUrl(`/api/auth/${provider}`));
         callbackUrl.searchParams.set('next', next);
@@ -127,7 +127,7 @@ const SignInTemplate = () => {
             });
             sileo.success({
                 title: 'Signed in successfully',
-                description: `Welcome back, ${result.user.firstName || result.user.username}!`
+                description: `Welcome back, ${result.user.firstName}!`
             });
             markAuthenticated(result.token);
             finalizeAuth();
@@ -177,7 +177,7 @@ const SignInTemplate = () => {
             });
             sileo.success({
                 title: 'Account created',
-                description: `Welcome, ${result.user.firstName || result.user.username}!`
+                description: `Welcome, ${result.user.firstName}!`
             });
             markAuthenticated(result.token);
             finalizeAuth();

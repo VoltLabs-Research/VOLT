@@ -2,7 +2,7 @@ import { SOCKET_TRAJECTORY_PRESENCE_EVENTS } from '@/modules/socket/events/traje
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { useEffect, useState } from 'react';
-import type { PresenceUser } from '@/modules/socket/types/presence-user';
+import type { PresenceUser } from '@volt/contracts/modules/socket/domain';
 
 interface TrajectoryPresencePayload {
     trajectoryId: string;

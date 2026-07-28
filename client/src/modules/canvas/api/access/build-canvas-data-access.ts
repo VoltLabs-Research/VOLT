@@ -8,12 +8,12 @@ import pluginService from '@/modules/plugin/api/services/plugin-service';
 import listingService from '@/modules/plugin/api/services/listing-service';
 import analysisService from '@/modules/analysis/api/service';
 import rasterService from '@/modules/raster/api/service';
-import type { CanvasAccessState } from './types';
+import type { CanvasAccessState } from '@/modules/canvas/contracts/data-access';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
+import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type {
     ListSceneArtifactsInput,
     RenderableExposurePayload
@@ -32,7 +32,7 @@ import type {
     PreviewFilterInput,
     PreviewFilterResponse
 } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
 import type {
     GetPluginListingInput,
     GetPluginListingResponse
@@ -41,16 +41,14 @@ import type {
     GetSubListingInput,
     GetSubListingResponse
 } from '@/modules/plugin/api/services/listing-service';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type {
     GetAnalysesByTrajectoryParams,
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
 } from '@/modules/analysis/api/service';
-import type {
-    GetRasterMetadataParams,
-    GetRasterMetadataResponse
-} from '@/modules/raster/api/service';
+import type { GetRasterMetadataParams } from '@/modules/raster/api/service';
+import type { GetRasterMetadataResponse } from '@volt/contracts/modules/raster/domain';
 
 interface TrajectoryScopedParams {
     trajectoryId: string;

@@ -8,24 +8,24 @@ import {
 } from '@/modules/scripting/hooks/queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { SOCKET_NOTEBOOK_EVENTS } from '@/modules/socket/events/scripting';
-import { ScriptingNotebookScope } from '@/modules/scripting/api/types/scripting-notebook-scope';
+import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     startAndWaitForReadyScriptingSession
-} from '../utilities/jupyter-session';
+} from '../utils/jupyter-session';
 import {
     getDeleteConfirmationMessage,
     hasNotebookDeploymentConfiguration,
     getTrajectoryIds
-} from '../utilities/notebooks';
-import { getJupyterStartErrorMessage } from '../utilities/workspace';
+} from '../utils/notebooks';
+import { getJupyterStartErrorMessage } from '../utils/workspace';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -33,7 +33,7 @@ import { sileo } from 'sileo';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type {
     ScriptingNotebook
-} from '@/modules/scripting/api/types/scripting-notebook';
+} from '@volt/contracts/modules/scripting/domain';
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';

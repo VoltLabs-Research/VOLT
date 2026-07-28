@@ -1,5 +1,5 @@
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface SetThemeInput {
     theme?: 'light' | 'dark' | 'system';

@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

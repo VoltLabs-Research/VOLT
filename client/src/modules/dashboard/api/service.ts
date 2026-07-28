@@ -1,25 +1,13 @@
-import { createService, custom, get } from '@/app/core/http/utilities/create-service';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { Chat } from '@/modules/chat/api/types/chat';
-import type { Container } from '@/modules/container/api/types/container';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
-import type { Team } from '@/modules/team/api/types/team/team';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
-import type { DashboardMetrics } from './types/dashboard';
+import { createService, custom, get } from '@/app/core/http/utils/create-service';
+
+import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
 import type { EmptyParams } from '@voltstack/voltclient';
+import type { GlobalSearchResponse } from '@volt/contracts/modules/dashboard/domain';
+import type { ApiResponse } from '@volt/contracts/shared/http';
 
 export interface GlobalSearchInput {
     query: string;
     limit?: number;
-}
-
-export interface GlobalSearchResponse {
-    analyses: Analysis[];
-    containers: Container[];
-    trajectories: Trajectory[];
-    teams: Team[];
-    plugins: Plugin[];
-    chats: Chat[];
 }
 
 export type GlobalSearchSectionKey = keyof GlobalSearchResponse;
@@ -32,11 +20,6 @@ export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
     plugins: [],
     chats: []
 };
-
-interface ApiResponse<T> {
-    status: string;
-    data: T;
-}
 
 interface SearchQueryParams extends Record<string, unknown> {
     query: string;

@@ -6,11 +6,9 @@ import { WorkflowSchema } from './workflow/WorkflowSchema';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';
 
-export enum PluginStatus {
-    Draft = 'draft',
-    Published = 'published',
-    Disabled = 'disabled'
-}
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+
+export { PluginStatus };
 
 export const PluginSchema = new Schema({
     team: {
@@ -25,7 +23,7 @@ export const PluginSchema = new Schema({
     status: {
         type: String,
         enum: Object.values(PluginStatus),
-        default: PluginStatus.Draft
+        default: PluginStatus.DRAFT
     },
     modifier: {
         type: ModifierDataSchema,

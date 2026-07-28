@@ -22,9 +22,9 @@ import type {
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ClusterResourceLimits } from '../api/types/cluster-resource-limits';
-import type { Container } from '../api/types/container';
-import type { ContainerFolder } from '../api/types/container-folder';
+import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
+import type { Container } from '@volt/contracts/modules/container/domain';
+import type { ContainerFolder } from '@volt/contracts/modules/container/domain';
 
 const BASE_KEY = 'container';
 

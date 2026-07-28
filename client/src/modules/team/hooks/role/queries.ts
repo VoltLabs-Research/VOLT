@@ -1,8 +1,8 @@
 import roleService from '../../api/services/role-service';
 import { createInvalidatingMutation, createQuery } from '@/shared/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
-import type { TeamRole } from '../../api/types/role/team-role';
-import type { CreateTeamRoleInput, DeleteTeamRoleInput, UpdateTeamRoleInput } from '../../api/services/role-service';
+import type { TeamRole } from '@volt/contracts/modules/team/domain';
+import type { CreateTeamRoleParams, DeleteTeamRoleInput, UpdateTeamRoleParams } from '../../api/services/role-service';
 
 interface TeamRolesAggregateQueryParams {
     teamId: string;
@@ -28,12 +28,12 @@ export const useAllTeamRolesQuery = createQuery<TeamRolesAggregateQueryParams, T
     getAllTeamRoles
 );
 
-export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleInput>(
+export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleParams>(
     roleService.create,
     (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleInput>(
+export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleParams>(
     roleService.update,
     (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );

@@ -8,7 +8,7 @@ import usePerformanceGroup from './groups/performance';
 import usePointCloudGroup from './groups/point-clouds';
 import useRendererGroup from './groups/renderer';
 import { useMemo } from 'react';
-import type { RenderGroup } from './types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useCanvasRenderGroups = (): RenderGroup[] => {
     const lightsGroup = useLightsGroup();

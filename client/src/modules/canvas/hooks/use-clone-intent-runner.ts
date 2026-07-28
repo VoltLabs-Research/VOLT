@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useExecutePipelineMutation } from '@/modules/plugin/hooks/plugin/queries';
 import {
     useTrajectoryCloneFlowStore
-} from '../stores/use-trajectory-clone-flow-store';
+} from '../store/use-trajectory-clone-flow-store';
 
 interface UseCloneIntentRunnerArgs {
     trajectoryId?: string;

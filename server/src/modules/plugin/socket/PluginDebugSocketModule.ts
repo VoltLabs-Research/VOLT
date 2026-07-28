@@ -111,7 +111,7 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
     props: {
         ...plugin.props,
         workflow: new Workflow(plugin.id, workflow),
-        status: plugin.props.status ?? PluginStatus.Draft
+        status: plugin.props.status ?? PluginStatus.DRAFT
     }
 });
 

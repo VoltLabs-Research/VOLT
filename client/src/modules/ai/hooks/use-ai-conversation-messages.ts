@@ -1,6 +1,7 @@
 import { buildConversationMessagesQueryParams, invalidateConversationMessagesQuery, messagesQuery } from '@/modules/ai/hooks/queries';
 import { useCallback, useMemo } from 'react';
-import type { AIConversationMessage, AIMessageRole } from '@/modules/ai/api/types/ai-conversation';
+import type { AIMessageRole } from '@volt/contracts/modules/ai/domain';
+import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { UIMessage } from 'ai';
 
 const toUIMessageRole = (role: AIMessageRole): UIMessage['role'] => {

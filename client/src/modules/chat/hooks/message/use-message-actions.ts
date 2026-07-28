@@ -6,7 +6,7 @@ import {
     useToggleReactionMutation
 } from './queries';
 import { useCallback } from 'react';
-import { ChatMessageType } from '../../api/types/message';
+import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import { ErrorSurface, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';

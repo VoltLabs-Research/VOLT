@@ -1,7 +1,8 @@
 import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
-import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/types/dashboard';
+import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
+import type { DashboardCard } from '@/modules/dashboard/contracts/cards';
 
 interface DashboardYDomain {
     min: number;

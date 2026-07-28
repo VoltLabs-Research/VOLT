@@ -1,4 +1,4 @@
-
+import type { BaseEntity } from '../../shared/base';
 
 export interface SimulationCellDims{
     width: number;
@@ -18,22 +18,19 @@ export interface SimulationCellGeometry{
     periodic_boundary_conditions: SimulationCellPeriodicBoundaryConditions;
 }
 
-export interface SimulationCellTrajectoryReference{
-    _id?: string;
-    name?: string;
+export interface SimulationCellTrajectory{
+    _id: string;
+    name: string;
 }
 
-export interface PersistedSimulationCell{
-    _id: string;
+export interface SimulationCell extends BaseEntity{
     boundingBox: SimulationCellDims;
     geometry: SimulationCellGeometry;
     team: string;
-    trajectory: string | SimulationCellTrajectoryReference;
+    trajectory: SimulationCellTrajectory;
     timestep: number;
-    createdAt?: string;
-    updatedAt?: string;
 }
 
-export type GetSimulationCellResponse = PersistedSimulationCell;
+export type GetSimulationCellResponse = SimulationCell;
 
-export type GetSimulationCellByTrajectoryResponse = PersistedSimulationCell | null;
+export type GetSimulationCellByTrajectoryResponse = SimulationCell | null;

@@ -2,11 +2,11 @@ import './ArgumentDefinitionSection.css';
 import {
     ArgumentType,
     ArgumentVisibilityOperator
-} from '@/modules/plugin/api/types/plugin/workflow-enums';
+} from '@volt/contracts/modules/plugin/domain/enums';
 import {
     createDefaultArgumentDefinition,
     isPluginReferenceArgumentType
-} from '@/modules/plugin/utilities/plugin/argument-values';
+} from '@/modules/plugin/utils/plugin/argument-values';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ArgumentOptionsEditor from './ArgumentOptionsEditor';
 import {
@@ -25,7 +25,7 @@ import {
     formatValueMapInput,
     parseValueMapInput
 } from './argument-definition-helpers';
-import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from './argument-field.types';
+import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from '@/modules/plugin/contracts/argument-field';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import FormSection from '@/shared/ui/components/FormSection';
 import { DashedActionBox, Row, Select, Stack, Tag, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
@@ -37,7 +37,7 @@ import type {
     IArgumentOption,
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
-} from '@/modules/plugin/api/types/plugin/workflow';
+} from '@volt/contracts/modules/plugin/domain/workflow';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];

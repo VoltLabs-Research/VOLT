@@ -10,16 +10,16 @@ import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRende
 import { LightingPreset } from '@/shared/rendering/lights';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { DprMode } from '@/shared/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
-import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
-import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
-import type { OrbitControlsHandle } from '@/modules/fractal/types';
-import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
+import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
+import type { ScreenshotRequest } from '@/modules/canvas/utils/screenshot';
+import type { FractalSceneConfig } from '@/modules/fractal/contracts/scene-config';
+import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
+import type { ScreenshotComposition } from '@/modules/fractal/contracts/screenshot-composition';
 import type { MutableRefObject, ReactNode } from 'react';
 
 interface GizmoColors {

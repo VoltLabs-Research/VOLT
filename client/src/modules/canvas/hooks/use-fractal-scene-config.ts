@@ -1,10 +1,10 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { selectFractalSceneConfig } from '@/modules/canvas/stores/editor/selectors';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { selectFractalSceneConfig } from '@/modules/canvas/store/editor/selectors';
 
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { FractalSceneConfig, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { FractalSceneConfig, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
 
 const useFractalSceneConfig = (): FractalSceneConfig => {
     const selected = useEditorStore(useShallow(selectFractalSceneConfig));

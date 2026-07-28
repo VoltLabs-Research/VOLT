@@ -4,13 +4,13 @@ import {
     registerSharedAppCleanup
 } from '@/shared/utils/app-cleanup-registry';
 
-import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import { useChatPresenceStore } from '@/modules/chat/stores/chat/use-chat-presence-store';
-import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
+import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
+import { useChatPresenceStore } from '@/modules/chat/store/chat/use-chat-presence-store';
+import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
+import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
 import queryClient from '@/shared/query/query-client';
 
 type StoreResetter = () => void;

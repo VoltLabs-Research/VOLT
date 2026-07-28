@@ -1,4 +1,4 @@
-import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
+import { decodeAtomsBinary } from '@/modules/trajectory/utils/decode-atoms-binary';
 
 import type { ServiceExecutionContext } from '@voltstack/voltclient';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';

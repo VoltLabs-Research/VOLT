@@ -1,5 +1,5 @@
 import { valueRow } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Select, Box, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
@@ -8,13 +8,13 @@ import { useMemo } from 'react';
 import { MdGrain } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 
-import { isEnumValue } from '../../utilities';
+import { isEnumValue } from '../../utils';
 import {
     PointCloudDetailLevel,
     PointCloudStyleMode
-} from '@/modules/fractal/stores/contracts/editor/scene-types';
+} from '@/modules/fractal/contracts/editor/scene-types';
 
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const DETAIL_LEVEL_OPTIONS: SelectOption[] = [
     { title: 'Auto', value: 'auto' },

@@ -1,49 +1,34 @@
-import { createService, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, post, patch, del } from '@/app/core/http/utils/create-service';
 
-import type { Chat } from '../types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
+import type { ChatScopedParams } from '@/modules/chat/contracts/api-params';
+import type {
+    AddUsersToGroupInput,
+    CreateGroupChatInput,
+    RemoveUsersFromGroupInput,
+    UpdateGroupAdminsInput,
+    UpdateGroupInfoInput
+} from '@volt/contracts/modules/chat/http';
 
-export interface AddUsersToGroupInput {
-    chatId: string;
-    userIds: string[];
-}
+export type AddUsersToGroupParams = ChatScopedParams & AddUsersToGroupInput;
 
-export interface CreateGroupChat {
-    teamId: string;
-    groupName: string;
-    groupDescription?: string;
-    participantIds: string[];
-}
+export type CreateGroupChatParams = CreateGroupChatInput;
 
-export interface RemoveUsersFromGroupInput {
-    chatId: string;
-    userIds: string[];
-}
+export type RemoveUsersFromGroupParams = ChatScopedParams & RemoveUsersFromGroupInput;
 
-export interface UpdateGroupAdmins {
-    targetUserIds: string[];
-    action: 'add' | 'remove';
-}
 
-export type UpdateGroupAdminsInput = { chatId: string } & UpdateGroupAdmins;
+export type UpdateGroupAdminsParams = ChatScopedParams & UpdateGroupAdminsInput;
 
-export interface UpdateGroupInfo {
-    groupName?: string;
-    groupDescription?: string;
-}
 
-export type UpdateGroupInfoInput = { chatId: string } & UpdateGroupInfo;
-
-interface LeaveGroupParams {
-    chatId: string;
-}
+export type UpdateGroupInfoParams = ChatScopedParams & UpdateGroupInfoInput;
 
 const endpoints = {
-    createGroup: post<CreateGroupChat, Chat>('/groups'),
-    addUsersToGroup: post<AddUsersToGroupInput, Chat>('/:chatId/users'),
-    removeUsersFromGroup: del<RemoveUsersFromGroupInput, Chat>('/:chatId/users'),
-    updateGroupInfo: patch<UpdateGroupInfoInput, Chat>('/:chatId'),
-    updateGroupAdmins: patch<UpdateGroupAdminsInput, Chat>('/:chatId/admins'),
-    leaveGroup: del<LeaveGroupParams, void>('/:chatId/participants/self', { unwrap: 'void' })
+    createGroup: post<CreateGroupChatParams, Chat>('/groups'),
+    addUsersToGroup: post<AddUsersToGroupParams, Chat>('/:chatId/users'),
+    removeUsersFromGroup: del<RemoveUsersFromGroupParams, Chat>('/:chatId/users'),
+    updateGroupInfo: patch<UpdateGroupInfoParams, Chat>('/:chatId'),
+    updateGroupAdmins: patch<UpdateGroupAdminsParams, Chat>('/:chatId/admins'),
+    leaveGroup: del<ChatScopedParams, void>('/:chatId/participants/self', { unwrap: 'void' })
 };
 
 export default createService({

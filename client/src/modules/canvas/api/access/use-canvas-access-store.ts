@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
-import { DEFAULT_CANVAS_ACCESS_STATE, type CanvasAccessState } from './types';
+import { DEFAULT_CANVAS_ACCESS_STATE, type CanvasAccessState } from '@/modules/canvas/contracts/data-access';
 import { buildCanvasDataAccess, type CanvasDataAccess } from './build-canvas-data-access';
 
 interface CanvasAccessStoreActions {

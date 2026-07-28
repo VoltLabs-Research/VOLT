@@ -5,9 +5,9 @@ import {
     CLUSTER_INSTALL_PLATFORM_OPTIONS,
     buildClusterInstallCommand,
     getDefaultClusterInstallPlatform
-} from '@/modules/cluster/utilities/build-cluster-install-command';
+} from '@/modules/cluster/utils/build-cluster-install-command';
 import { useMemo, useState } from 'react';
-import type { SupportedClusterInstallPlatform } from '@/modules/cluster/utilities/build-cluster-install-command';
+import type { SupportedClusterInstallPlatform } from '@/modules/cluster/utils/build-cluster-install-command';
 
 interface ClusterInstallCommandPickerProps {
     clusterId: string | null;

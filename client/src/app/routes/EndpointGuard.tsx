@@ -1,4 +1,4 @@
-import { hasResolvedBackendEndpoint } from '@/app/core/http/utilities/backend-origin';
+import { hasResolvedBackendEndpoint } from '@/app/core/http/utils/backend-origin';
 import { Navigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 

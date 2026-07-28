@@ -1,5 +1,5 @@
-import { useCommandPaletteStore } from '@/modules/canvas/stores/use-command-palette-store';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { useCommandPaletteStore } from '@/modules/canvas/store/use-command-palette-store';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 type CommandPaletteAction = 'open' | 'close' | 'toggle';
 

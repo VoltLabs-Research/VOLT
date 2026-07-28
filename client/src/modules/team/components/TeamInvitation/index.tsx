@@ -7,10 +7,10 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';

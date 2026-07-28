@@ -17,7 +17,7 @@ import { Download, FileArchive, FileText, FolderUp, Play, Sparkles } from 'lucid
 import { IoSparklesOutline } from 'react-icons/io5';
 import { useParams } from 'react-router-dom';
 import type { ChangeEvent } from 'react';
-import type { PresenceUser } from '@/modules/socket/types/presence-user';
+import type { PresenceUser } from '@volt/contracts/modules/socket/domain';
 
 const LatexAIPanel = lazy(() => import('./LatexAIPanel'));
 

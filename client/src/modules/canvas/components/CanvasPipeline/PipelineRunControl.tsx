@@ -1,21 +1,21 @@
-import { useCanvasPipelineStore, isOrderedPipelineStage, stageTypeToPipelineKind } from '../../stores/canvas-pipeline';
+import { useCanvasPipelineStore, isOrderedPipelineStage, stageTypeToPipelineKind } from '../../store/canvas-pipeline';
 import { useExecutePipelineMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
-import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plugin-team-clusters';
+import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-team-clusters';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { usePendingPluginExecutionsStore } from '../../stores/use-pending-plugin-executions-store';
+import { usePendingPluginExecutionsStore } from '../../store/use-pending-plugin-executions-store';
 import {
     extractTrajectoryTimesteps,
     getNearestTimestep,
     normalizeSelectedTimesteps
-} from '../../utilities/selected-timestep-analysis';
+} from '../../utils/selected-timestep-analysis';
 import {
     collectRequiredPluginGroups,
     findUnsatisfiedPrerequisites,
     formatPrerequisiteNames,
     type PrerequisiteStage
-} from '../../utilities/pipeline-prerequisites';
+} from '../../utils/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Stack, Text } from '@voltstack/bravais';
@@ -26,9 +26,9 @@ import type {
     ExpressionSelectStageConfig,
     PipelineStage,
     PipelineStageKind
-} from '../../stores/canvas-pipeline';
+} from '../../store/canvas-pipeline';
 import type { PipelineStageInput } from '@/modules/plugin/api/services/plugin-service';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface PipelineRunControlProps {
     trajectory?: Trajectory | null;

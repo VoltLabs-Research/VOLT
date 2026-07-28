@@ -11,7 +11,8 @@ import { FileText } from 'lucide-react';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
@@ -41,10 +42,6 @@ const resolveColumnStyle = <TRow,>(
         flex: `${flex} 1 ${minWidth}px`,
         minWidth
     };
-};
-
-export interface Identifiable {
-    _id: string;
 };
 
 export interface ColumnConfig<TRow = unknown> {

@@ -1,8 +1,5 @@
-export enum TeamClusterRemoteAccessTarget {
-    MongoDocuments = 'mongo-documents',
-    RedisData = 'redis-data',
-    Minio = 'minio'
-}
+import { TeamClusterRemoteAccessTarget } from '@volt/contracts/modules/cluster/domain';
+export { TeamClusterRemoteAccessTarget };
 
 export enum TeamClusterRemoteExplorerEntryType {
     Directory = 'directory',

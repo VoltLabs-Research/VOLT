@@ -1,12 +1,12 @@
 import TimelineHeader, { CORE_TABS, TimelineTab } from '../TimelineHeader';
 import AnalysisLogPanel from '../AnalysisLogPanel';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import SimulationCellView from '../SimulationCellView';
 import TimelineRuler from '../TimelineRuler';
 import useTimelineJobActivity from '../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
-import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
+import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import useTip from '@/shared/tips/use-tip';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -18,7 +18,7 @@ import PluginExposureTable from '@/modules/plugin/components/listing/PluginExpos
 import { Box, Stack } from '@voltstack/bravais';
 import type { TimelineTabOption } from '../TimelineHeader';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 import './Timeline.css';
 

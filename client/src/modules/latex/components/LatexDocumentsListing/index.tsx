@@ -15,10 +15,10 @@ import {
 import useTip from '@/shared/tips/use-tip';
 import { Upload } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { LatexDocument } from '@/modules/latex/api/types/latex-document';
-import type { LatexListingRow } from '@/modules/latex/utilities/listing';
-import { isLatexFolderRow } from '@/modules/latex/utilities/listing';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { LatexDocument } from '@volt/contracts/modules/latex/domain';
+import type { LatexListingRow } from '@/modules/latex/contracts/listing';
+import { isLatexFolderRow } from '@/modules/latex/utils/listing';
 
 const COLUMNS = createFolderedListingColumns<LatexListingRow>({
     isFolder: isLatexFolderRow,

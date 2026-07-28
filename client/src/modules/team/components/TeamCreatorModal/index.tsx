@@ -1,11 +1,11 @@
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal, resetModal, Text } from '@voltstack/bravais';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { TeamCreatorForm } from './validation-schema';

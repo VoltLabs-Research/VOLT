@@ -4,10 +4,10 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import './ClusterResourceSelectionPanel.css';
 import { Cpu, HardDrive, ServerCog } from 'lucide-react';
-import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';
+import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utils/resource-allocation';
 import { useMemo } from 'react';
-import type { ClusterResourceLimits } from '@/modules/container/api/types/cluster-resource-limits';
-import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
+import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
+import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 
 interface ClusterResourceSelectionPanelProps {
     teamClusters: TeamClusterOption[];

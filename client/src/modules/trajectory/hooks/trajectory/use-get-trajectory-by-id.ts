@@ -1,6 +1,6 @@
 import { useTrajectoryByIdQuery } from './queries';
 import useAccessDenied, { createAccessDeniedRetry } from '@/shared/ui/hooks/use-access-denied';
-import type { Trajectory } from '../../api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface UseGetTrajectoryByIdParams {
     trajectoryId?: string;

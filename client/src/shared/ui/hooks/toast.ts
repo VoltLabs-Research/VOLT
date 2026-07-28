@@ -1,6 +1,6 @@
 import { getErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/core';
 import { sileo } from 'sileo';
-import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
 interface SileoPromiseOptions<T = unknown> {

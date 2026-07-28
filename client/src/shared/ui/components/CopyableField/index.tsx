@@ -1,5 +1,5 @@
 import './CopyableField.css';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { Button, Row, Text } from '@voltstack/bravais';
 import { MdCheck, MdContentCopy } from 'react-icons/md';
 import { useState } from 'react';

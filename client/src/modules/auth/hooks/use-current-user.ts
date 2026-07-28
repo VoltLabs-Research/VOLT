@@ -1,6 +1,6 @@
 import { useCurrentUserQuery } from './queries';
-import { useAuthStore } from '../stores/use-auth-store';
-import type { User } from '../api/types/user';
+import { useAuthStore } from '../store/use-auth-store';
+import type { User } from '@volt/contracts/modules/auth/domain';
 
 export const useCurrentUser = (): User | null => {
     const isInitialized = useAuthStore((state) => state.isInitialized);

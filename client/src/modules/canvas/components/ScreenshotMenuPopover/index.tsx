@@ -1,17 +1,17 @@
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
+import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
 import {
     SCREENSHOT_ANGLE_OPTIONS,
     SCREENSHOT_RESOLUTION_OPTIONS,
     clampScreenshotDimension,
     resolveScreenshotSize
-} from '@/modules/canvas/utilities/screenshot';
+} from '@/modules/canvas/utils/screenshot';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import type { ScreenshotSettings } from '@/modules/canvas/utilities/screenshot';
+import type { ScreenshotSettings } from '@/modules/canvas/utils/screenshot';
 
 import './ScreenshotMenuPopover.css';
 

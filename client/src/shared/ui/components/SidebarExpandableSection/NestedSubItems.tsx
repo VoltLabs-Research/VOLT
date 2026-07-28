@@ -2,7 +2,7 @@ import { Button } from '@voltstack/bravais';
 import './SidebarSubItems.css';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
-import type { SubItem } from './SidebarExpandableSection.types';
+import type { SubItem } from '@/shared/contracts/sidebar';
 
 interface NestedSubItemsProps {
     item: SubItem;

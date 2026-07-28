@@ -24,10 +24,9 @@ import trajectoryNativeDaemonService, {
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 
-export enum ParticleFilterCombinator {
-    And = 'AND',
-    Or = 'OR'
-}
+import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
+
+export { ParticleFilterCombinator };
 
 export interface ParticleFilterCondition extends FilterExpression {
     kind?: 'property';

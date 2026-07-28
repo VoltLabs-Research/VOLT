@@ -1,16 +1,16 @@
 import './PresenceDrawer.css';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
-import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
+import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
+import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { AsyncBoundary, Avatar, Box, Button, Modal, Row, Skeleton, Stack, EmptyState, closeModal } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
-import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
+import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
+import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import type { User } from '@/modules/auth/api/types/user';
+import type { User } from '@volt/contracts/modules/auth/domain';
 import { useNavigate } from 'react-router-dom';
 
 interface TeamPresenceMember {

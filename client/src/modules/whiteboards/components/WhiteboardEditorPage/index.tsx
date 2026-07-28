@@ -2,38 +2,37 @@ import { Box, Button, Row, Stack } from '@voltstack/bravais';
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
-import { insertWhiteboardImages } from '@/modules/whiteboards/utilities/excalidraw-images';
-import { applyWhiteboardDrawRequest } from '@/modules/whiteboards/utilities/whiteboard-draw';
-import { useWhiteboardEditorHandleStore } from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
-import type { WhiteboardDrawRequest } from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
-import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utilities/whiteboard-image-files';
+import { insertWhiteboardImages } from '@/modules/whiteboards/utils/excalidraw-images';
+import { applyWhiteboardDrawRequest } from '@/modules/whiteboards/utils/whiteboard-draw';
+import { useWhiteboardEditorHandleStore } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
+import type { WhiteboardDrawRequest } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
+import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utils/whiteboard-image-files';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import {
     filterPersistableAppState,
     normalizeWhiteboardRuntimeAppState
-} from '@/modules/whiteboards/utilities/whiteboards';
+} from '@/modules/whiteboards/utils/whiteboards';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
+import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import type { ChangeEvent, ClipboardEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
+import type { ChangeEvent, ClipboardEvent, CSSProperties, DragEvent, ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
+import type {
+    ExcalidrawAPI,
+    ExcalidrawChangeAppState,
+    ExcalidrawChangeElements,
+    ExcalidrawChangeFiles,
+    ExcalidrawChangeHandler,
+    ExcalidrawProps,
+    RenderTopRightUI
+} from '@/modules/whiteboards/contracts/excalidraw';
 import { ImagePlus } from 'lucide-react';
 import { sileo } from 'sileo';
 import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
-type ExcalidrawProps = ComponentProps<typeof ExcalidrawComponent>;
-type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
-type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];
-type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps['onChange']>;
-type ExcalidrawElements = Parameters<ExcalidrawChangeHandler>[0];
-type ExcalidrawAppState = Parameters<ExcalidrawChangeHandler>[1];
-type ExcalidrawFiles = Parameters<ExcalidrawChangeHandler> extends [unknown, unknown, infer T, ...unknown[]] ? T : Record<string, unknown>;
-type RenderTopRightUI = NonNullable<ExcalidrawProps['renderTopRightUI']>;
 
-interface IdleCallbackHandle {
-    cancel: () => void;
-};
+const AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS = 250;
 
 const loadingShellStyles = {
     root: {
@@ -138,26 +137,6 @@ const WhiteboardCanvas = lazy(
 const LazyAIFloatingAssistantPanel = lazy(
     () => import('@/modules/ai/components/AIFloatingAssistantPanel')
 );
-
-const createIdleCallbackHandle = (onIdle: () => void): IdleCallbackHandle => {
-    if (typeof window.requestIdleCallback === 'function') {
-        const idleCallbackId = window.requestIdleCallback(onIdle, { timeout: 1500 });
-
-        return {
-            cancel: () => {
-                window.cancelIdleCallback(idleCallbackId);
-            }
-        };
-    }
-
-    const timeoutId = window.setTimeout(onIdle, 250);
-
-    return {
-        cancel: () => {
-            window.clearTimeout(timeoutId);
-        }
-    };
-};
 
 const renderLoadingShell = (): ReactNode => (
     <Row p='1' className='whiteboard-editor-loading justify-center'>
@@ -267,8 +246,8 @@ const WhiteboardEditorPage = () => {
             ignoredSceneSignatureRef.current = createSceneSignature(scene.elements, scene.appState);
             syncSceneFiles(excalidrawApiRef.current, scene.files);
             excalidrawApiRef.current.updateScene({
-                elements: scene.elements as unknown as ExcalidrawElements,
-                appState: normalizeWhiteboardRuntimeAppState(scene.appState) as unknown as ExcalidrawAppState
+                elements: scene.elements as unknown as ExcalidrawChangeElements,
+                appState: normalizeWhiteboardRuntimeAppState(scene.appState) as unknown as ExcalidrawChangeAppState
             });
         },
         [mergeRemoteState]
@@ -281,7 +260,7 @@ const WhiteboardEditorPage = () => {
     });
 
     const handleExcalidrawChange = useCallback<ExcalidrawChangeHandler>(
-        (elements: ExcalidrawElements, appState: ExcalidrawAppState, files?: ExcalidrawFiles) => {
+        (elements: ExcalidrawChangeElements, appState: ExcalidrawChangeAppState, files?: ExcalidrawChangeFiles) => {
             const mutableElements = elements as unknown as Record<string, unknown>[];
             const mutableAppState = appState as unknown as Record<string, unknown>;
             const currentSceneSignature = createSceneSignature(mutableElements, mutableAppState);
@@ -311,8 +290,8 @@ const WhiteboardEditorPage = () => {
         ignoredSceneSignatureRef.current = createSceneSignature(pendingScene.elements, pendingScene.appState);
         syncSceneFiles(api, pendingScene.files);
         api.updateScene({
-            elements: pendingScene.elements as unknown as ExcalidrawElements,
-            appState: normalizeWhiteboardRuntimeAppState(pendingScene.appState) as unknown as ExcalidrawAppState
+            elements: pendingScene.elements as unknown as ExcalidrawChangeElements,
+            appState: normalizeWhiteboardRuntimeAppState(pendingScene.appState) as unknown as ExcalidrawChangeAppState
         });
     }, []);
 
@@ -425,9 +404,9 @@ const WhiteboardEditorPage = () => {
             return;
         }
 
-        const idleCallbackHandle = createIdleCallbackHandle(() => {
+        const idleCallbackHandle = requestIdleCallbackHandle(() => {
             setShouldRenderAIAssistant(true);
-        });
+        }, { fallbackDelayMs: AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS });
 
         return () => {
             idleCallbackHandle.cancel();

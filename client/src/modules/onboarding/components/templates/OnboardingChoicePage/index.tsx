@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
+import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { Box, Heading, SelectableCard, Stack, Text } from '@voltstack/bravais';
 import { Plug, Zap } from 'lucide-react';

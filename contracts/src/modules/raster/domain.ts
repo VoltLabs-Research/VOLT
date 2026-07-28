@@ -1,5 +1,3 @@
-
-
 export interface TriggerRasterizationResponse{
     trajectoryId: string;
     triggered: boolean;
@@ -9,7 +7,17 @@ export interface TriggerRasterizationResponse{
     alreadyRasterizedJobs: number;
 }
 
-export type RasterMetadataStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export enum RasterMetadataStatus{
+    Pending = 'pending',
+    Processing = 'processing',
+    Completed = 'completed',
+    Failed = 'failed'
+}
+
+export enum RasterFrameScope{
+    Trajectory = 'trajectory',
+    Analysis = 'analysis'
+}
 
 export interface RasterFrameMetadata{
     timestep: number;
@@ -32,7 +40,7 @@ export interface RasterMetadata{
     trajectoryId: string;
     totalFrames: number;
     rasterizedFrames: number;
-    status: RasterMetadataStatus;
+    status?: RasterMetadataStatus;
     trajectory: RasterTrajectoryMetadata | null;
     analyses: RasterAnalysisMetadata[];
     createdAt: string;

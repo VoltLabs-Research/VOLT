@@ -1,4 +1,4 @@
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
 import CanvasEmptyState from '@/modules/plugin/components/plugin/CanvasEmptyState';
 import DebugContextPanel from '@/modules/plugin/components/plugin/DebugContextPanel';
 import DebugToolbar from '@/modules/plugin/components/plugin/DebugToolbar';
@@ -7,7 +7,7 @@ import { nodeTypes } from '@/modules/plugin/components/plugin/nodes';
 import FloatingNodePanel from '@/modules/plugin/components/plugin/FloatingNodePanel';
 import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
 import { Box } from '@voltstack/bravais';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';

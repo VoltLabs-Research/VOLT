@@ -1,5 +1,5 @@
-import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
-import { FrameJobGroupStatus } from '@/modules/jobs/api/types/job';
+import { getFrameGroupStatusLabel } from '@/modules/jobs/utils/job-status-label';
+import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { Heading, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
-import type { TrajectoryJobGroup } from '@/modules/jobs/api/types/job';
+import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 

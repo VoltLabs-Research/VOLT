@@ -1,7 +1,7 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { DEFAULT_SCENE } from '@/modules/fractal/utils/scene-utils';
 
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface SetVisibleLayersInput {
     layer?: string;

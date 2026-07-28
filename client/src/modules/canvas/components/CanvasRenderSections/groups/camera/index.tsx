@@ -1,5 +1,5 @@
 import { row, vec3Rows } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     CAMERA_SUBSECTION_TITLES,
     CAMERA_TYPE_OPTIONS,
@@ -11,9 +11,9 @@ import { useMemo } from 'react';
 import { MdCameraAlt } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 import { Select, Box, Button } from '@voltstack/bravais';
-import { updateVec3Value } from '../../utilities';
+import { updateVec3Value } from '../../utils';
 
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useCameraGroup = (): RenderGroup => {
     const {

@@ -13,15 +13,15 @@ import {
     DASHBOARD_LAYOUT_EVENTS,
     getDashboardWorkspaceChromeState,
     subscribeToDashboardWorkspaceChromeState
-} from '@/modules/dashboard/utilities/layout-events';
+} from '@/modules/dashboard/utils/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { Box } from '@voltstack/bravais';
 import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
 import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { isTeamClusterUsable } from '@/modules/cluster/utilities/is-team-cluster-usable';
+import { isTeamClusterUsable } from '@/modules/cluster/utils/is-team-cluster-usable';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';

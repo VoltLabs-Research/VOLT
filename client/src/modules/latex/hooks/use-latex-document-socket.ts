@@ -4,8 +4,9 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useThrottledSocketEmit from '@/modules/socket/hooks/use-throttled-socket-emit';
 import { SOCKET_LATEX_EVENTS } from '@/modules/socket/events/latex';
 import { socketErrorReporter } from '@/modules/socket/services/socket-error-reporter';
+import type { SocketAck } from '@/modules/socket/contracts/socket-service';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PresenceUser } from '@/modules/socket/types/presence-user';
+import type { PresenceUser } from '@volt/contracts/modules/socket/domain';
 import * as Y from 'yjs';
 
 const CONTENT_DEBOUNCE_MS = 500;
@@ -40,12 +41,6 @@ interface LatexFileJoinAck {
     fileId: string;
     content: string;
     update: number[];
-}
-
-interface SocketAck<TData> {
-    ok: boolean;
-    data?: TData;
-    error?: string;
 }
 
 interface LatexFileSession {

@@ -3,7 +3,7 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { RefreshCw } from 'lucide-react';
 
 import type { ReactNode } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 const INDENT_CLASSES = {
     base: 'canvas-tree-item--indent',

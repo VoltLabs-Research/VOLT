@@ -2,7 +2,7 @@ import './OnboardingLayout.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
-import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
+import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import { Button, openModal } from '@voltstack/bravais';

@@ -1,12 +1,12 @@
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities/analysis-job-status';
+import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utils/analysis-job-status';
 import { useCallback, useMemo } from 'react';
-import { AnalysisStatus, isCanvasAnalysisInProgress } from '../utilities/analysis-status';
+import { AnalysisStatus, isCanvasAnalysisInProgress } from '../utils/analysis-status';
 
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { Job } from '@/modules/jobs/api/types/job';
-import type { CanvasAnalysisStatusEntry } from '../utilities/analysis-status';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { Job } from '@volt/contracts/modules/jobs/domain';
+import type { CanvasAnalysisStatusEntry } from '../utils/analysis-status';
 
 interface UseAnalysisStatusProps {
     trajectoryId?: string;

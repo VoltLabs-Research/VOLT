@@ -1,14 +1,14 @@
-import { isSameScene, isSameSceneRenderMetadata } from '../utilities/scene-identity';
-import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
+import { isSameScene, isSameSceneRenderMetadata } from '../utils/scene-identity';
+import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utils/analysis-status';
 import useExposureManager, { DEFAULT_ENTRY } from './use-exposure-manager';
 import {
     extractTrajectoryTimesteps,
     getNearestTimestep,
     getSelectedTimestepsForAnalysis
-} from '../utilities/selected-timestep-analysis';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+} from '../utils/selected-timestep-analysis';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasUrlState from './use-canvas-url-state';
-import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
+import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utils/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
 import {
@@ -39,14 +39,14 @@ import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
-import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
-import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
+import { usePendingPluginExecutionsStore } from '../store/use-pending-plugin-executions-store';
+import { DEFAULT_SCENE } from '@/modules/fractal/utils/scene-utils';
 import { restoreQueryDataSnapshot } from '@/shared/query/cache-utils';
 
 import type { ExposureEntry } from './use-exposure-manager';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/types/scene';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 
 export interface AnalysisSectionData {

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import { ChatMessageType } from '@/modules/chat/api/types/message';
+import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import ReactionsDisplay from '../ReactionsDisplay';
 import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, Box, Row, Stack, Text } from '@voltstack/bravais';
 import FileAttachment from '@/shared/ui/components/FileAttachment';
-import type { ChatMessage } from '@/modules/chat/api/types/message';
+import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import './MessageBubble.css';
 
 interface MessageBubbleProps {

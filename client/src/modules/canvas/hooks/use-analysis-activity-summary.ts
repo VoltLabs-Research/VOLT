@@ -1,13 +1,13 @@
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
-import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities/analysis-job-status';
-import { AnalysisStatus } from '@/modules/fractal/types';
+import { normalizeCanvasAnalysisStatus } from '../utils/analysis-status';
+import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utils/analysis-job-status';
+import { AnalysisStatus } from '@/modules/fractal/contracts';
 import { useMemo } from 'react';
 
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { Job } from '@/modules/jobs/api/types/job';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { Job } from '@volt/contracts/modules/jobs/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface AnalysisActivitySummary {
     runningCount: number;

@@ -1,62 +1,26 @@
-import { createService, del, get, patch, post, request } from '@/app/core/http/utilities/create-service';
+import { createService, del, get, patch, post, request } from '@/app/core/http/utils/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { User } from './types/user';
-
-import type { SignInInput as SignInInputContract, SignUpInput as SignUpInputContract, UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
-import type { CheckEmailResponse as CheckEmailResponseContract, PasswordInfo, OAuthProviders, OAuthProviderId } from '@volt/contracts/modules/auth/domain';
-
-export type ChangePasswordInput = UpdatePasswordInput;
-
-export interface ChangePasswordResponse {
-    token: string;
-    user: User;
-}
-
-export interface CheckEmailInput {
-    email: string;
-}
-
-export type CheckEmailResponse = CheckEmailResponseContract;
-
-export type OAuthProviderKey = OAuthProviderId;
-
-export type GetAvailableOAuthProvidersResponse = OAuthProviders;
-
-export type GetPasswordInfoResponse = PasswordInfo;
-
-export type SignInInput = SignInInputContract;
-
-export interface SignInResponse {
-    user: User;
-    token: string;
-}
-
-export interface SignUpInput extends SignUpInputContract {
-    passwordConfirm: string;
-}
-
-export interface SignUpResponse {
-    user: User;
-    token: string;
-}
-
-export interface UpdateAvatarInput {
-    avatar: File;
-}
-
-export interface UpdateProfileInput {
-    fullName: string;
-    email: string;
-}
-
-type UpdateMeInput = UpdateProfileInput | UpdateAvatarInput;
+import type { SignInInput, UpdatePasswordInput, UpdateAccountInput } from '@volt/contracts/modules/auth/http';
+import type {
+    AuthSession,
+    CheckEmailResponse,
+    OAuthProviders,
+    PasswordInfo,
+    User
+} from '@volt/contracts/modules/auth/domain';
+import type {
+    CheckEmailParams,
+    SignUpFormInput,
+    UpdateAvatarInput,
+    UpdateMeInput
+} from '../contracts/forms';
 
 const isUpdateAvatarInput = (data: UpdateMeInput): data is UpdateAvatarInput => (
     'avatar' in data && data.avatar instanceof File
 );
 
-const buildUpdateMeBody = (data: UpdateMeInput): UpdateProfileInput | FormData => {
+const buildUpdateMeBody = (data: UpdateMeInput): UpdateAccountInput | FormData => {
     if (!isUpdateAvatarInput(data)) {
         return data;
     }
@@ -77,15 +41,15 @@ const endpoints = {
         headers: buildUpdateMeHeaders
     }),
     deleteMe: del<EmptyParams>('/me'),
-    signIn: post<SignInInput, SignInResponse>('/sessions'),
-    localSignIn: post<EmptyParams, SignInResponse>('/sessions/local'),
-    signUp: post<SignUpInput, SignUpResponse>('/users', {
+    signIn: post<SignInInput, AuthSession>('/sessions'),
+    localSignIn: post<EmptyParams, AuthSession>('/sessions/local'),
+    signUp: post<SignUpFormInput, AuthSession>('/users', {
         omit: ['passwordConfirm']
     }),
-    checkEmail: get<CheckEmailInput, CheckEmailResponse>('/emails/:email/availability'),
-    getAvailableOAuthProviders: get<EmptyParams, GetAvailableOAuthProvidersResponse>('/oauth/providers'),
-    getPasswordInfo: get<EmptyParams, GetPasswordInfoResponse>('/password/info'),
-    changePassword: patch<ChangePasswordInput, ChangePasswordResponse>('/me/password')
+    checkEmail: get<CheckEmailParams, CheckEmailResponse>('/emails/:email/availability'),
+    getAvailableOAuthProviders: get<EmptyParams, OAuthProviders>('/oauth/providers'),
+    getPasswordInfo: get<EmptyParams, PasswordInfo>('/password/info'),
+    changePassword: patch<UpdatePasswordInput, AuthSession>('/me/password')
 };
 
 export default createService({

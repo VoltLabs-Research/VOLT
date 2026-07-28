@@ -10,27 +10,27 @@ import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/c
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
 import { useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
-import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
-import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
+import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-timestamp';
+import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import {
     describeTeamClusterDraining,
     getTeamClusterRoleBadgeVariant,
     getTeamClusterRoleLabel,
     getTeamClusterRoleSummary,
     isTeamClusterRoleTransitionPending
-} from '@/modules/cluster/utilities/team-cluster-role';
-import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
-import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
+} from '@/modules/cluster/utils/team-cluster-role';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { ArrowRightLeft, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
+import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { ServerRow } from '@/modules/cluster/utils/transform-cluster-row';
 import '@/modules/cluster/components/ClustersListing/ServerTable.css';
 import { useNavigate } from 'react-router-dom';
 

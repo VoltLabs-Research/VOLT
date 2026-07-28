@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import pointCloudVertexSource from '@/modules/fractal/assets/shaders/point-cloud.vert?raw';
 import pointCloudFragmentSource from '@/modules/fractal/assets/shaders/point-cloud.frag?raw';
-import { debugFractal } from '@/modules/fractal/utilities/debug-log';
-import { disposeMaterialResources } from '@/modules/fractal/utilities/resource-disposal';
+import { debugFractal } from '@/modules/fractal/utils/debug-log';
+import { disposeMaterialResources } from '@/modules/fractal/utils/resource-disposal';
 import { sharedShaderRegistry } from '@/modules/fractal/services/shader-registry';
 
 interface PointCloudMaterialUniforms extends Record<string, THREE.IUniform> {

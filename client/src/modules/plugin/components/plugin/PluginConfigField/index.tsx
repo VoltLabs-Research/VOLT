@@ -1,9 +1,9 @@
-import { PluginStatus } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
     getPluginReferenceValue,
     getUserConfigurableArguments
-} from '@/modules/plugin/utilities/plugin/argument-values';
+} from '@/modules/plugin/utils/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import { CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
@@ -11,8 +11,8 @@ import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
-} from '@/modules/plugin/api/types/plugin/workflow';
-import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
+} from '@volt/contracts/modules/plugin/domain/workflow';
+import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;

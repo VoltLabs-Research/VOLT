@@ -1,4 +1,4 @@
-import type { Container as ContainerEntity } from '@/modules/container/api/types/container';
+import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';
 import {
     containerFolderQuery,
     containerFoldersQuery,
@@ -14,9 +14,9 @@ import {
     getContainerListingDraggableId,
     getContainerListingDroppableId,
     isContainerFolderRow,
-    isContainerItemRow,
-    type ContainerItemRow
-} from '@/modules/container/utilities/listing';
+    isContainerItemRow
+} from '@/modules/container/utils/listing';
+import type { ContainerItemRow } from '@/modules/container/contracts/listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -25,8 +25,8 @@ import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-
 import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { sileo } from 'sileo';
 import { Box, FolderInput, Play, RotateCcw, Square } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -39,6 +39,7 @@ export const containersListingResource = createFolderedListingResource({
     singularName: 'container',
     pluralName: 'containers',
     permissionPrefix: 'container',
+    getItemTitle: (container: ContainerEntity) => container.name,
     listItems: containerQuery.useListQuery.fetch,
     listFolders: containerFoldersQuery.fetch,
     getFolder: containerFolderQuery.fetch
@@ -53,14 +54,6 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
 const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container' });
 const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container' });
 const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container' });
-
-const getDeleteConfirmationMessage = (selectedItems: ContainerEntity[]): string => {
-    if (selectedItems.length === 1) {
-        return `Delete container "${selectedItems[0].name}"? This action cannot be undone.`;
-    }
-
-    return `Delete ${selectedItems.length} containers? This action cannot be undone.`;
-};
 
 const useContainersListing = () => {
     const navigate = useNavigate();
@@ -146,7 +139,7 @@ const useContainersListing = () => {
             handler: async ({ item: container }) => {
                 await showPromise(deleteContainerMutation.mutateAsync(container._id), containersListingResource.toasts.delete);
             },
-            confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
+            confirm: ({ selectedItems }) => containersListingResource.getDeleteConfirmationMessage(selectedItems),
             requiredPermission: 'container:delete'
         }
     }), [controlContainer, deleteContainerMutation, openContainer]);

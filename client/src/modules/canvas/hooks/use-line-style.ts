@@ -2,9 +2,9 @@ import lineStyleService from '@/modules/trajectory/api/services/line-style-servi
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { uniqueValuesQuery } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
-import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -13,7 +13,7 @@ import type {
     LineStyleSpec,
     PluginScene,
     SceneObjectType
-} from '@/modules/fractal/api/types/scene';
+} from '@/modules/fractal/contracts/scene';
 import type { ColormapName } from '@/modules/fractal/services/colormaps';
 
 export interface UseLineStyleOptions {

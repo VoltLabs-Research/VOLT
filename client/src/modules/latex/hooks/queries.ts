@@ -37,10 +37,10 @@ import type {
     UploadLatexAssetParams,
     UploadLatexAssetsResult
 } from '../api/service';
-import type { LatexAsset } from '../api/types/latex-asset';
-import type { LatexDocument } from '../api/types/latex-document';
-import type { LatexFile } from '../api/types/latex-file';
-import type { LatexFolder } from '../api/types/latex-folder';
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
+import type { LatexDocument } from '@volt/contracts/modules/latex/domain';
+import type { LatexFile } from '@volt/contracts/modules/latex/domain';
+import type { LatexFolder } from '@volt/contracts/modules/latex/domain';
 
 interface LatexQueryKeys {
     documents: ListLatexDocumentsParams;

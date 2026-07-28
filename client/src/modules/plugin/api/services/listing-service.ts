@@ -1,10 +1,11 @@
-import { createService, download, get } from '@/app/core/http/utilities/create-service';
+import { createService, download, get } from '@/app/core/http/utils/create-service';
 import { mapRawListingResponse } from './listing-response';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
 import type { RawListingResponse } from './listing-response';
+import type { GetAnalysisListingExportOptionsResponse, SubListingColumn } from '@volt/contracts/modules/plugin/domain/listing';
 
 export type ExportType = 'json' | 'csv';
 
@@ -25,31 +26,8 @@ export interface ExportPluginListingInput {
     format: ExportType;
 }
 
-export interface AnalysisListingExportOption {
-    id: string;
-    listingId: string;
-    listingName: string;
-    label: string;
-}
-
-export interface AnalysisSubListingExportOption {
-    id: string;
-    exposureId: string;
-    exposureName: string;
-    timestep: number;
-    subListingName: string;
-    label: string;
-}
-
 export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
-}
-
-export interface GetAnalysisListingExportOptionsResponse {
-    analysisId: string;
-    hasConfig: boolean;
-    listings: AnalysisListingExportOption[];
-    subListings: AnalysisSubListingExportOption[];
 }
 
 export interface PluginListingMeta extends Record<string, unknown> {
@@ -81,11 +59,6 @@ export interface GetSubListingInput {
     subListingName: string;
     page?: number;
     limit?: number;
-}
-
-export interface SubListingColumn {
-    label: string;
-    sortable: boolean;
 }
 
 export interface GetSubListingResponse {

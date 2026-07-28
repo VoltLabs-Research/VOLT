@@ -13,7 +13,7 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import useDocumentListingPagination from '@/shared/ui/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 
 import './DocumentListing.css';
 import { motion } from 'framer-motion';
@@ -25,7 +25,7 @@ import React from 'react';
 import type { CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { QueryKey } from '@tanstack/react-query';
 
 export interface SocketInvalidationConfig {

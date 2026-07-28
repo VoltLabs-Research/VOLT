@@ -1,12 +1,12 @@
 import { useMemo, useRef } from 'react';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import PluginCompactTable, { type PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
 import { Row } from '@voltstack/bravais';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
+import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 
 import type { AtomData, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
-import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
+import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
 
 interface PluginAtomsTableProps {
     trajectoryId: string;
@@ -78,8 +78,8 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         return [];
     }, [infiniteData]);
 
-    const columns: ColumnConfig[] = useMemo(() => {
-        const base: ColumnConfig[] = [
+    const columns: PluginTableColumnConfig[] = useMemo(() => {
+        const base: PluginTableColumnConfig[] = [
             { key: 'id', title: 'ID', width: 80 },
             {
                 key: 'type',

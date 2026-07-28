@@ -416,7 +416,7 @@ export class PluginDependencyResolverService {
                 continue;
             }
 
-            if (referencedPlugin.props.status !== PluginStatus.Published) {
+            if (referencedPlugin.props.status !== PluginStatus.PUBLISHED) {
                 errors.push(`Plugin reference argument "${target.referencePath}" selected unpublished plugin ${target.pluginId}`);
                 continue;
             }
@@ -489,7 +489,7 @@ export class PluginDependencyResolverService {
                 continue;
             }
 
-            if (dependencyPlugin.props.status !== PluginStatus.Published) {
+            if (dependencyPlugin.props.status !== PluginStatus.PUBLISHED) {
                 errors.push(`Plugin node ${reference.nodeId} references unpublished plugin ${reference.pluginId}`);
                 continue;
             }

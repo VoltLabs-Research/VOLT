@@ -1,8 +1,8 @@
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
-import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import type { EditorProps } from '../types';
+import { CONTEXT_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import { CONTEXT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ContextEditorFormValues } from './schema';
 

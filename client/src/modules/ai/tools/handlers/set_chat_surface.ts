@@ -1,5 +1,5 @@
-import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface SetChatSurfaceInput {
     surface?: 'floating' | 'page' | 'hidden';

@@ -1,4 +1,4 @@
-import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
+import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
 import {
     useCreateTeamClusterTransferRequestMutation,
     useCreateTeamClusterMutation,
@@ -8,21 +8,14 @@ import {
     useUpdateTeamClusterQueueConcurrencyMutation,
     useUpdateTeamClusterRoleMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
-import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
-import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
+import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
+import { resolveSelectedClusterId } from '@/modules/cluster/utils/resolve-selected-cluster-id';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
-import type {
-    CreateTeamClusterTransferRequestResponse,
-    DeleteTeamClusterResponse,
-    TeamClusterQueueConcurrencyInput,
-    TeamClusterQueueScopeLimitsInput,
-    UpdateTeamClusterQueueConcurrencyResponse,
-    UpdateTeamClusterRoleResponse
-} from '@/modules/cluster/api/service';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type { CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, TeamClusterQueueConcurrency, TeamClusterQueueScopeLimits, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
 
 interface ClusterCreateToastOptions {
     loading: { title: string };
@@ -96,8 +89,8 @@ export interface ClusterManagementResult {
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterResponse>;
     updateQueueConcurrency: (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInput,
-        queueScopeLimits: TeamClusterQueueScopeLimitsInput
+        queueConcurrency: TeamClusterQueueConcurrency,
+        queueScopeLimits: TeamClusterQueueScopeLimits
     ) => Promise<UpdateTeamClusterQueueConcurrencyResponse>;
     updateRole: (
         teamClusterId: string,
@@ -172,8 +165,8 @@ const useClusterManagement = (): ClusterManagementResult => {
 
     const updateQueueConcurrency = async (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInput,
-        queueScopeLimits: TeamClusterQueueScopeLimitsInput
+        queueConcurrency: TeamClusterQueueConcurrency,
+        queueScopeLimits: TeamClusterQueueScopeLimits
     ) => {
         return showPromise(updateQueueConcurrencyMutation.mutateAsync({
             teamId: requireSelectedTeamId(),

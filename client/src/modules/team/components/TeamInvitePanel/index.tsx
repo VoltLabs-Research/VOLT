@@ -6,7 +6,7 @@ import { Box, Button, Row, Stack, Text } from '@voltstack/bravais';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useCallback, useMemo, useState } from 'react';
 import { BookOpen, Copy } from 'lucide-react';
 import './TeamInvitePanel.css';

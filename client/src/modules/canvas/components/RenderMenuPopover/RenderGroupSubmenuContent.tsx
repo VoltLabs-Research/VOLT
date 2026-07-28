@@ -1,6 +1,6 @@
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
 import { SectionLabel, Stack } from '@voltstack/bravais';
-import type { RenderGroup } from '../CanvasRenderSections/types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 interface RenderGroupSubmenuContentProps {
     group: RenderGroup;

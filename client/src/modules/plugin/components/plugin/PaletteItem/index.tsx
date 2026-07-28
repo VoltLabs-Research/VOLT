@@ -1,7 +1,7 @@
 import type { DragEvent } from 'react';
-import type { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-registry';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import type { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import type { NodeTypeConfig } from '@/modules/plugin/utils/plugin/node-registry';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 import { Row, Stack, Text } from '@voltstack/bravais';
 interface PaletteItemProps {

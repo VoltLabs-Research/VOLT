@@ -2,7 +2,7 @@ import { createEntityCacheResource } from '@/shared/api/query-resources';
 import { buildKeys, createMutation, createQuery } from '@/shared/query';
 import chatService from '../../api/services/chat-service';
 import type { QueryClient } from '@tanstack/react-query';
-import type { Chat } from '../../api/types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { GetOrCreateChatInput } from '../../api/services/chat-service';
 
 type ChatQueryKeyMap = {

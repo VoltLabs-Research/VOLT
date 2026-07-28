@@ -1,7 +1,7 @@
 import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import './DebugContextPanel.css';

@@ -1,4 +1,4 @@
-import { COMMON_REACTIONS } from '@/modules/chat/api/types/shared/chat-reactions';
+import { COMMON_REACTIONS } from '@/modules/chat/utils/reactions';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import EmojiPicker from '@/shared/ui/components/EmojiPicker';
 import { Box, IconButton, Popover, PopoverMenuItem, PopoverMenu } from '@voltstack/bravais';

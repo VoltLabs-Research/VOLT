@@ -2,9 +2,9 @@ import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Box, Modal, closeModal, Stack, Text } from '@voltstack/bravais';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { useState } from 'react';
-import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
-import type { DeleteTeamClusterResponse } from '@/modules/cluster/api/service';
-import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
+import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 
 export const DELETE_CLUSTER_MODAL_ID = 'delete-cluster-modal';
 

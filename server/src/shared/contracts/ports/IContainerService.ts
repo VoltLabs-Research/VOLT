@@ -1,15 +1,10 @@
 
 import type Docker from 'dockerode';
 
-export interface ContainerEnvironmentVariable {
-    key: string;
-    value: string;
-}
+import type { EnvVariable, PortMapping, ContainerFile } from '@volt/contracts/modules/container/domain';
 
-export interface ContainerPortMapping {
-    private: number;
-    public?: number;
-}
+export type ContainerEnvironmentVariable = EnvVariable;
+export type ContainerPortMapping = PortMapping;
 
 export interface CreateRuntimeContainerOptions {
     image: string;
@@ -31,15 +26,7 @@ export type ContainerProcessInfo = Record<string, unknown>;
 export type ContainerStats = Docker.ContainerStats;
 export type RuntimeContainerInfo = Docker.ContainerInspectInfo;
 
-export interface ContainerFileEntry {
-    name: string;
-    isDirectory: boolean;
-    size: string;
-    permissions: string;
-    owner: string;
-    group: string;
-    date: string;
-}
+export type ContainerFileEntry = ContainerFile;
 
 export interface ContainerTerminalSize {
     rows: number;

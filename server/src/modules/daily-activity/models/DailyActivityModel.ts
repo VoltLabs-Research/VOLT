@@ -1,22 +1,9 @@
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
-export enum ActivityType {
-    TrajectoryUpload = 'trajectory-upload',
-    TrajectoryDeletion = 'trajectory-deletion',
-    AnalysisPerformed = 'analysis-performed',
-    AnalysisDeletion = 'analysis-deletion',
-    LatexDocumentCreation = 'latex-document-creation',
-    LatexDocumentDeletion = 'latex-document-deletion',
-    ContainerCreation = 'container-creation',
-    ContainerDeletion = 'container-deletion',
-    WhiteboardCreation = 'whiteboard-creation',
-    WhiteboardDeletion = 'whiteboard-deletion',
-    RoleCreation = 'role-creation',
-    RoleDeletion = 'role-deletion',
-    SecretKeyCreation = 'secret-key-creation',
-    SecretKeyDeletion = 'secret-key-deletion'
-}
+import { ActivityType } from '@volt/contracts/modules/daily-activity/domain';
+
+export { ActivityType };
 
 export interface IDailyActivityEntry {
     type: ActivityType;

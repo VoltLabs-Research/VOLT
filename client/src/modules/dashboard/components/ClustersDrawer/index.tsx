@@ -2,13 +2,13 @@ import './ClustersDrawer.css';
 import { AsyncBoundary, Box, Loader, Modal, Row, SegmentedTabs, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import { formatNetworkSpeed } from '@/modules/cluster/utilities/format-network';
-import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
+import { getClusterLiveMetricsStatus } from '@/modules/cluster/utils/cluster-live-metrics-status';
+import { formatNetworkSpeed } from '@/modules/cluster/utils/format-network';
+import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
+import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useCallback, useMemo, useState } from 'react';
-import type { TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
+import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { ReactNode } from 'react';
 
 type ClusterMetricTabId = 'cpu' | 'memory' | 'disk' | 'network';

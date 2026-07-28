@@ -4,15 +4,15 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
+import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-usable';
+import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
+import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utils/resolve-onboarding-step';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
-import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
+import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';

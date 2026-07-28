@@ -2,7 +2,7 @@ import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
 import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
-import { isWorkspaceTextLikeFile, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
+import { isWorkspaceTextLikeFile, splitWorkspacePath } from '@/modules/latex/utils/workspace';
 import type {
     LatexFileEntry,
     LatexWorkspaceSelection,
@@ -12,7 +12,7 @@ import type {
     FileEditorState,
     PendingRemoteFileUpdate,
     WorkspaceUploadEntry
-} from './workspace/types';
+} from '@/modules/latex/contracts/workspace';
 import {
     AUTOSAVE_DELAY,
     LIVE_COMPILE_DELAY,
@@ -39,13 +39,13 @@ import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { ChangeEvent } from 'react';
-import type { LatexFile } from '@/modules/latex/api/types/latex-file';
+import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 
 interface UseLatexWorkspaceInput {
     documentId: string;
 }
 
-export type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab, LatexEditorGroupId } from './workspace/types';
+export type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab, LatexEditorGroupId } from '@/modules/latex/contracts/workspace';
 
 const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const teamId = useSelectedTeamId();

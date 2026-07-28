@@ -1,4 +1,4 @@
-import { useCanvasBridgeStore } from '@/modules/canvas/stores/use-canvas-bridge-store';
+import { useCanvasBridgeStore } from '@/modules/canvas/store/use-canvas-bridge-store';
 import { Row, Text } from '@voltstack/bravais';
 import { useEffect, useState } from 'react';
 import { IoSparklesOutline } from 'react-icons/io5';

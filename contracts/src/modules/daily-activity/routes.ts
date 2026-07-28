@@ -1,6 +1,6 @@
 import { get } from '../../shared/routing';
-import type { DailyActivityRecord } from './domain';
+import type { DailyActivity } from './domain';
 
 export const dailyActivityRoutes = {
-    getTeamActivitySummary: get<DailyActivityRecord[]>('/api/daily-activities/:teamId')
+    getTeamActivitySummary: get<DailyActivity[]>('/api/daily-activities/:teamId')
 } as const;

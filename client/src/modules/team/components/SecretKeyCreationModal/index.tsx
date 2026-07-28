@@ -6,7 +6,7 @@ import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCreateSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 

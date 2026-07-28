@@ -8,18 +8,18 @@ import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
-import type { ClusterResourceLimits } from '../api/types/cluster-resource-limits';
+import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
 import type {
     ContainerTemplate,
     ContainerTemplateCustomField,
     ContainerTemplateCustomFieldValues
-} from '../api/types/container-template';
-import type { EnvVariable } from '../api/types/env-variable';
-import type { PortMapping } from '../api/types/port-mapping';
-import type { TeamClusterOption } from '../api/types/team-cluster-option';
-import type { Team } from '@/modules/team/api/types/team/team';
+} from '@/modules/container/contracts/templates';
+import type { EnvVariable } from '@volt/contracts/modules/container/domain';
+import type { PortMapping } from '@volt/contracts/modules/container/domain';
+import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
+import type { Team } from '@volt/contracts/modules/team/domain';
 import { v4 as uuidv4 } from 'uuid';
-import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
+import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utils/resource-allocation';
 import {
     getContainerTemplateById,
     getTemplateConfiguration,
@@ -27,7 +27,7 @@ import {
     mergeContainerEnvVariables,
     hasInvalidCustomField,
     getCustomImageValidationError
-} from '../utilities/container-form';
+} from '../utils/container-form';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;

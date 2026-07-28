@@ -24,7 +24,6 @@ export type {
 export type {
     GetSubListingInput,
     SubListingColumn,
-    SubListingRowShape,
     SubListingRowData,
     GetSubListingOutput
 } from './GetSubListing';

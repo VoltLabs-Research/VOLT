@@ -1,9 +1,9 @@
-import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
+import { extractTrajectoryTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
 import { fetchTrajectoryAtoms } from '@/modules/trajectory/hooks/trajectory/queries';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
-import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
+import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
+import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { Select, Row, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';

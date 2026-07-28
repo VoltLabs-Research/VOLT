@@ -1,3 +1,5 @@
+import type { BinaryUploadResult, BinaryUploadTarget } from '@volt/contracts/modules/plugin/domain/plugin';
+export type { BinaryUploadResult, BinaryUploadTarget };
 import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
@@ -21,18 +23,6 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
-
-export interface BinaryUploadResult {
-    objectPath: string;
-    fileName: string;
-    size: number;
-    binaryHash: string;
-}
-
-export interface BinaryUploadTarget extends BinaryUploadResult {
-    uploadUrl: string;
-    expiresAt: string;
-}
 
 export interface PluginImportResult {
     plugin: Plugin;
@@ -147,11 +137,11 @@ export default class PluginStorageService {
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
 
-        if (plugin.props.status === PluginStatus.Published) {
+        if (plugin.props.status === PluginStatus.PUBLISHED) {
             await PluginModel.findByIdAndUpdate(pluginId, {
-                $set: { status: PluginStatus.Draft }
+                $set: { status: PluginStatus.DRAFT }
             }).exec();
-            plugin.props.status = PluginStatus.Draft;
+            plugin.props.status = PluginStatus.DRAFT;
         }
 
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
@@ -371,7 +361,7 @@ export default class PluginStorageService {
             );
         }
 
-        const requestedStatus = status ?? PluginStatus.Published;
+        const requestedStatus = status ?? PluginStatus.PUBLISHED;
         const workflow = new Workflow('', importData.workflow);
         workflow.updateEntrypoint({
             binary: undefined,
@@ -382,8 +372,8 @@ export default class PluginStorageService {
 
         const newPluginDoc = await PluginModel.create({
             workflow: workflow.props,
-            status: requestedStatus === PluginStatus.Published
-                ? PluginStatus.Draft
+            status: requestedStatus === PluginStatus.PUBLISHED
+                ? PluginStatus.DRAFT
                 : requestedStatus,
             team: teamId,
             modifier: projection.modifier,
@@ -431,7 +421,7 @@ export default class PluginStorageService {
             binaryImported = true;
         }
 
-        if (requestedStatus === PluginStatus.Published) {
+        if (requestedStatus === PluginStatus.PUBLISHED) {
             const validation = await this.workflowValidator.validate(
                 newPlugin.props.workflow.props,
                 newPlugin.id,
@@ -440,10 +430,10 @@ export default class PluginStorageService {
 
             if (validation.isValid) {
                 const publishedDoc = await PluginModel.findByIdAndUpdate(newPlugin.id, {
-                    $set: { status: PluginStatus.Published }
+                    $set: { status: PluginStatus.PUBLISHED }
                 }, { new: true }).exec();
                 persistedPlugin = publishedDoc ? toPluginLike(publishedDoc) : newPlugin;
-                persistedPlugin.props.status = PluginStatus.Published;
+                persistedPlugin.props.status = PluginStatus.PUBLISHED;
             } else {
                 logger.warn(
                     {
@@ -479,10 +469,10 @@ export default class PluginStorageService {
         }
 
         const publishedDoc = await PluginModel.findByIdAndUpdate(plugin.id, {
-            $set: { status: PluginStatus.Published }
+            $set: { status: PluginStatus.PUBLISHED }
         }, { new: true }).exec();
         const published = publishedDoc ? toPluginLike(publishedDoc) : plugin;
-        published.props.status = PluginStatus.Published;
+        published.props.status = PluginStatus.PUBLISHED;
         return published;
     }
 
@@ -503,7 +493,7 @@ export default class PluginStorageService {
         const projection = WorkflowProjectionService.project(workflow, '');
         const pluginProps = {
             workflow: workflow.props,
-            status: PluginStatus.Draft,
+            status: PluginStatus.DRAFT,
             team: teamId,
             modifier: projection.modifier,
             exposures: projection.exposures,

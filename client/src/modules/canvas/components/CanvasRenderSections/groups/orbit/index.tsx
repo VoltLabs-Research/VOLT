@@ -1,11 +1,11 @@
 import { row, PRESETS, checkboxGrid, targetRows } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
 import { MdRotateLeft } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
 import { Box, Button } from '@voltstack/bravais';
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useOrbitGroup = (): RenderGroup => {
     const s = useEditorStore(useShallow((state) => state.orbitControls));

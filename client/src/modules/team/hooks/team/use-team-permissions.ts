@@ -1,7 +1,7 @@
 import { useTeamPermissionsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/utilities/team/permission-evaluator';
-import type { PermissionMode } from '@/modules/team/utilities/team/permission-evaluator';
+import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/utils/team/permission-evaluator';
+import type { PermissionMode } from '@/modules/team/utils/team/permission-evaluator';
 import { useMemo } from 'react';
 
 export default function useTeamPermissions() {

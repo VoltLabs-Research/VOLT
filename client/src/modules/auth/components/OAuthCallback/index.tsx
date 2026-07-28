@@ -5,7 +5,7 @@ import {
     getPostAuthRedirectPath,
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Box, Heading, Loader, Row, Text } from '@voltstack/bravais';

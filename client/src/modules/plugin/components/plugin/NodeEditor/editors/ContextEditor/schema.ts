@@ -1,4 +1,4 @@
-import { ModifierContext } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { ModifierContext } from '@volt/contracts/modules/plugin/domain/enums';
 
 export interface ContextEditorFormValues {
     source: string;

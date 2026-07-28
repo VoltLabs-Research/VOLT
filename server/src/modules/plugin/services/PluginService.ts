@@ -103,6 +103,10 @@ import type {
 import type { GetSubListingInput, GetSubListingOutput, SubListingColumn } from '@shared/contracts/operations/GetSubListing';
 import logger from '@shared/infrastructure/logger';
 import { Readable } from 'node:stream';
+import type {
+    UploadBinaryInput as WireUploadBinaryInput,
+    CommitBinaryUploadInput as WireCommitBinaryUploadInput
+} from '@volt/contracts/modules/plugin/http';
 
 export interface ClonePluginInput {
     pluginId: string;
@@ -239,24 +243,16 @@ export interface UpdatePluginByIdInput {
     _allowBinaryFieldUpdate?: boolean;
 }
 
-export interface UploadBinaryInput {
+export interface UploadBinaryInput extends WireUploadBinaryInput {
     pluginId: string;
     teamId: string;
     userId: string;
-    fileName: string;
-    size: number;
-    type?: string;
-    sha256?: string;
 }
 
-export interface CommitBinaryUploadInput {
+export interface CommitBinaryUploadInput extends WireCommitBinaryUploadInput {
     pluginId: string;
     teamId: string;
     userId: string;
-    objectPath: string;
-    fileName: string;
-    size: number;
-    sha256?: string;
 }
 
 export interface ValidateWorkflowInput {
@@ -656,7 +652,7 @@ export default class PluginService {
         const pluginDoc = await PluginModel.create({
             workflow: workflow.props,
             team: input.teamId,
-            status: PluginStatus.Draft,
+            status: PluginStatus.DRAFT,
             modifier: projection.modifier,
             exposures: projection.exposures,
             arguments: projection.arguments,
@@ -809,7 +805,7 @@ export default class PluginService {
         const pluginDoc = await PluginModel.create({
             workflow: workflow.props,
             team: input.teamId,
-            status: PluginStatus.Draft,
+            status: PluginStatus.DRAFT,
             modifier: projection.modifier,
             exposures: projection.exposures,
             arguments: projection.arguments,
@@ -855,11 +851,11 @@ export default class PluginService {
 
         if (input.workflow) {
             const effectiveStatus = input.status ?? plugin.props.status;
-            const validationMode = effectiveStatus === PluginStatus.Published
+            const validationMode = effectiveStatus === PluginStatus.PUBLISHED
                 ? WorkflowValidationMode.Strict
                 : WorkflowValidationMode.Draft;
             const { isValid, errors } = await this.#workflowValidator.validate(input.workflow, plugin.id, validationMode);
-            if (effectiveStatus === PluginStatus.Published && !isValid) {
+            if (effectiveStatus === PluginStatus.PUBLISHED && !isValid) {
                 throw ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
@@ -894,7 +890,7 @@ export default class PluginService {
             update.listingExposures = projection.listingExposures;
         }
 
-        if (input.status === PluginStatus.Published && !input.workflow) {
+        if (input.status === PluginStatus.PUBLISHED && !input.workflow) {
             const { isValid, errors } = await this.#workflowValidator.validate(plugin.props.workflow.props, plugin.id, WorkflowValidationMode.Strict);
             if (!isValid) {
                 throw ApplicationError.badRequest(
@@ -914,8 +910,8 @@ export default class PluginService {
             );
         }
 
-        const transitionedToPublished = input.status === PluginStatus.Published
-            && plugin.props.status !== PluginStatus.Published;
+        const transitionedToPublished = input.status === PluginStatus.PUBLISHED
+            && plugin.props.status !== PluginStatus.PUBLISHED;
 
         if (transitionedToPublished) {
             const entrypointNode = updatedPlugin.props.workflow.props.nodes
@@ -1183,7 +1179,7 @@ export default class PluginService {
         if (!plugin) {
             return fail(ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, `Plugin ${stage.pluginId} not found`));
         }
-        if (plugin.props.status !== PluginStatus.Published) {
+        if (plugin.props.status !== PluginStatus.PUBLISHED) {
             return fail(ApplicationError.badRequest(ErrorCodes.PLUGIN_NOT_FOUND, `Plugin ${stage.pluginId} is not published`));
         }
 

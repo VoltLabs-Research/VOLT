@@ -3,8 +3,8 @@ import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/us
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
-import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
+import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useCallback } from 'react';
 
 const GENERATE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({

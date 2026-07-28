@@ -1,17 +1,17 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { reportHotspotDuration } from '@/app/core/http/utilities/client-instrumentation';
+import { reportHotspotDuration } from '@/app/core/http/utils/client-instrumentation';
 import {
     getClusterOnboardingRedirectPath,
     getOnboardingRedirectPath,
     resolvePostAuthDestination,
     setPostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import socketService from '@/modules/socket/services/socket-service';
-import { setGetTeamId } from '@/app/core/http/utilities/create-client';
-import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
-import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { setGetTeamId } from '@/app/core/http/utils/create-client';
+import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-usable';
+import { resetTeamSessionState, useTeamStore } from '@/modules/team/store/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';

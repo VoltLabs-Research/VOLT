@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import './DemoWelcomeModal.css';
 interface DemoLocationState {

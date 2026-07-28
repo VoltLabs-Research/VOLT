@@ -4,9 +4,9 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import type { ICondition } from '@/modules/plugin/api/types/plugin/workflow';
-import type { ConditionType, ConditionHandler } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import type { EditorProps } from '../types';
+import type { ICondition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { ConditionType, ConditionHandler } from '@volt/contracts/modules/plugin/domain/enums';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 const CONDITION_TYPE_OPTIONS = [
     { value: 'and', title: 'AND' },

@@ -14,20 +14,16 @@ import {
 import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
 import { SquarePen } from 'lucide-react';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
-import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
-import { WhiteboardListingRowType } from '@/modules/whiteboards/utilities/listing';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
+import type { WhiteboardListingRow } from '@/modules/whiteboards/contracts/listing';
+import { isWhiteboardFolderRow } from '@/modules/whiteboards/utils/listing';
 import { useMemo } from 'react';
 
 const EMPTY_WHITEBOARDS_ICON = <SquarePen size={28} strokeWidth={1.6} />;
 
-const isWhiteboardFolder = (row: WhiteboardListingRow): boolean => {
-    return row.rowType === WhiteboardListingRowType.Folder;
-};
-
 const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
-    isFolder: isWhiteboardFolder,
+    isFolder: isWhiteboardFolderRow,
     resolveTitle: (row) => row.title,
     skeletonWidth: 180,
     wrapperClassName: 'whiteboards-listing-title-cell',

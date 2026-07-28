@@ -1,5 +1,5 @@
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
-import { useCanvasPipelineStore } from '@/modules/canvas/stores/canvas-pipeline';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 
 interface LaunchGrainSegmentationInput {
     dislocation_density_threshold: number;

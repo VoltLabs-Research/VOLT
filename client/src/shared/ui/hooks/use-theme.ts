@@ -6,6 +6,8 @@ export enum Theme {
     System = 'system'
 };
 
+export type VisualTheme = Theme.Light | Theme.Dark;
+
 interface UseThemeReturn {
     
     theme: Theme;

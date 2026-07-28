@@ -2,13 +2,14 @@ import canvasService from '../api/services/canvas-service';
 import trajectoryCloneService from '../api/services/trajectory-clone';
 import { buildKeys, createMutation, createQuery } from '@/shared/query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Analysis } from '@/modules/analysis/api/types/analysis';
-import type { CloneTrajectoryInput, CloneTrajectoryOutput } from '@/modules/canvas/api/services/trajectory-clone';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { CloneTrajectoryOutput } from '@/modules/canvas/api/services/trajectory-clone';
+import type { CloneTrajectoryInput } from '@volt/contracts/modules/trajectory/http';
 import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
 } from '@/modules/canvas/api/services/canvas-service';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 const BASE_KEY = 'canvas';
 

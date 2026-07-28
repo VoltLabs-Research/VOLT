@@ -5,21 +5,13 @@ export interface GetAnalysisListingExportOptionsInput {
     teamId: string;
 }
 
-export interface AnalysisListingExportOptionView {
-    id: string;
-    listingId: string;
-    listingName: string;
-    label: string;
-}
+import type {
+    AnalysisListingExportOption,
+    AnalysisSubListingExportOption
+} from '@volt/contracts/modules/plugin/domain/listing';
 
-export interface AnalysisSubListingExportOptionView {
-    id: string;
-    exposureId: string;
-    exposureName: string;
-    timestep: number;
-    subListingName: string;
-    label: string;
-}
+export type AnalysisListingExportOptionView = AnalysisListingExportOption;
+export type AnalysisSubListingExportOptionView = AnalysisSubListingExportOption;
 
 export interface GetAnalysisListingExportOptionsOutput {
     analysisId: string;

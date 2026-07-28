@@ -1,57 +1,43 @@
-import { createService, paginated, request, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, request, post, patch, del } from '@/app/core/http/utils/create-service';
 
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ChatMessage, ChatMessageType } from '../types/message';
+import type { ChatMessage, ChatMessageType } from '@volt/contracts/modules/chat/domain';
+import type { ChatMessageScopedParams, ChatScopedParams } from '@/modules/chat/contracts/api-params';
+import type { EditMessageInput } from '@volt/contracts/modules/chat/http';
 
-export interface DeleteMessageInput {
-    chatId: string;
-    messageId: string;
-}
+export type DeleteMessageInput = ChatMessageScopedParams;
 
-export interface EditMessageInput {
-    chatId: string;
-    messageId: string;
-    content: string;
-}
+export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
 
-export interface GetChatMessagesInput {
-    chatId: string;
+export interface GetChatMessagesInput extends ChatScopedParams {
     page: number;
     limit: number;
 }
 
-export interface SendFileMessageInput {
-    chatId: string;
+export interface SendFileMessageInput extends ChatScopedParams {
     file: File;
 }
 
-export interface SendMessageInput {
-    chatId: string;
+export interface SendMessageInput extends ChatScopedParams {
     content: string;
     messageType: ChatMessageType;
 }
 
-export interface ToggleReactionInput {
-    chatId: string;
-    messageId: string;
+export interface ToggleReactionInput extends ChatMessageScopedParams {
     emoji: string;
-}
-
-interface MarkAsReadParams {
-    chatId: string;
 }
 
 const endpoints = {
     getMessages: paginated<GetChatMessagesInput, PaginatedResponse<ChatMessage>>('/:chatId/messages'),
     sendMessage: post<SendMessageInput, ChatMessage>('/:chatId/messages'),
-    editMessage: patch<EditMessageInput, ChatMessage>('/:chatId/messages/:messageId'),
+    editMessage: patch<EditMessageParams, ChatMessage>('/:chatId/messages/:messageId'),
     deleteMessage: del<DeleteMessageInput>('/:chatId/messages/:messageId'),
     sendFileMessage: request<SendFileMessageInput, ChatMessage>('POST', '/:chatId/messages/file', {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    markAsRead: patch<MarkAsReadParams, void>('/:chatId/messages/read', {
+    markAsRead: patch<ChatScopedParams, void>('/:chatId/messages/read', {
         unwrap: 'void',
         body: () => ({})
     }),

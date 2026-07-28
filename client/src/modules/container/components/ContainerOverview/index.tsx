@@ -8,26 +8,17 @@ import ContainerInspectorList from '../ContainerInspectorList';
 import useTimeSeriesBuffer from '@/modules/container/hooks/use-time-series-buffer';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import useTip from '@/shared/tips/use-tip';
-import type { Container as ContainerEntity } from '@/modules/container/api/types/container';
-import type { EnvVariable } from '@/modules/container/api/types/env-variable';
-import type { PortMapping } from '@/modules/container/api/types/port-mapping';
+import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';
+import type { EnvVariable } from '@volt/contracts/modules/container/domain';
+import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
+import type { EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
 import type { InspectorRow } from '../ContainerInspectorList';
 import './ContainerOverview.css';
 
 const HISTORY_POINTS = 60;
 
 const METRIC_COLOR = 'var(--color-text-muted)';
-
-interface EnvVariableFormItem extends Record<string, unknown> {
-    key: string;
-    value: string;
-}
-
-interface PortMappingFormItem extends Record<string, unknown> {
-    private: number;
-    public?: number;
-}
 
 interface MetricPoint {
     v: number;

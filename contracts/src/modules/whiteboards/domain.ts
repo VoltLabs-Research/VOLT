@@ -1,22 +1,21 @@
+import type { Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
 
-
-export interface WhiteboardUserSummary{
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatar?: string;
-}
-
-export type WhiteboardLastEditedBy = string | WhiteboardUserSummary | null;
-
-export interface WhiteboardListItem{
+export interface Whiteboard{
     _id: string;
     title: string;
     folder: string | null;
     payloadKey: string;
     thumbnailKey?: string;
-    lastEditedBy?: WhiteboardLastEditedBy;
+    lastEditedBy?: Ref<User> | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface WhiteboardFolder{
+    _id: string;
+    title: string;
+    parent: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -30,15 +29,7 @@ export interface CreateWhiteboardResponse{
     updatedAt: string;
 }
 
-export interface GetWhiteboardResponse{
-    _id: string;
-    title: string;
-    payloadKey: string;
-    thumbnailKey?: string;
-    lastEditedBy?: WhiteboardLastEditedBy;
-    createdAt: string;
-    updatedAt: string;
-}
+export type GetWhiteboardResponse = Whiteboard;
 
 export interface UpdateWhiteboardResponse{
     _id: string;
@@ -50,12 +41,4 @@ export interface UploadWhiteboardAssetResponse{
     assetId: string;
     uploadUrl: string;
     expiresAt: string;
-}
-
-export interface WhiteboardFolder{
-    _id: string;
-    title: string;
-    parent: string | null;
-    createdAt: string;
-    updatedAt: string;
 }

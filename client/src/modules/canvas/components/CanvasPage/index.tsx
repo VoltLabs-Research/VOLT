@@ -1,9 +1,9 @@
-import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
-import { useCanvasBridgeStore } from '../../stores/use-canvas-bridge-store';
+import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
+import { useCanvasBridgeStore } from '../../store/use-canvas-bridge-store';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
-import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
+import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../hooks/use-canvas-coordinator';
 import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
@@ -11,7 +11,7 @@ import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-worksp
 import useLiveModelDrag from '@/modules/canvas/collaboration/use-live-model-drag';
 import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
 import WorkspaceCursorsOverlay from '../WorkspaceCursorsOverlay';
-import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
+import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
 import useDownloadPluginListing from '../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
@@ -39,7 +39,7 @@ import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewpo
 
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
@@ -58,13 +58,13 @@ import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { DownloadAnalysisListingParams } from '@/modules/canvas/hooks/use-download-plugin-listing';
-import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
+import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/contracts/container-selection';
 
 import './CanvasPage.css';
-import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
-import { clampFrameIndex, fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utilities/local-glb-manifest';
+import { createInitialRasterContainerSelections } from '@/modules/raster/contracts/container-selection';
+import { clampFrameIndex, fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utils/local-glb-manifest';
 
-import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utilities/local-glb-manifest';
+import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utils/local-glb-manifest';
 import type { CanvasExposureDownloadParams } from '@/modules/canvas/components/canvas-panel-props';
 
 interface CanvasLocationState {

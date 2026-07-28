@@ -1,4 +1,4 @@
-import composeRefs from '@/shared/ui/utilities/compose-refs';
+import composeRefs from '@/shared/ui/utils/compose-refs';
 import './EditableTag.css';
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 

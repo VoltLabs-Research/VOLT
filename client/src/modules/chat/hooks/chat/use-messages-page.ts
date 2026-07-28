@@ -1,6 +1,6 @@
-import { PresenceStatus } from '../../api/types/shared/chat-events';
-import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
-import { getOtherParticipant } from '../../utilities/chat/chat-display';
+import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
+import { useChatPresenceStore } from '../../store/chat/use-chat-presence-store';
+import { getOtherParticipant } from '../../utils/chat/chat-display';
 import useChatData from './use-chat-data';
 import useChatActions from './use-chat-actions';
 import useChatNavigation from './use-chat-navigation';
@@ -14,7 +14,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import type { User } from '@/modules/auth/api/types/user';
+import type { User } from '@volt/contracts/modules/auth/domain';
 
 const useMessagesPage = (chatId?: string) => {
     const { handleSelectChat, navigateToMessages } = useChatNavigation();

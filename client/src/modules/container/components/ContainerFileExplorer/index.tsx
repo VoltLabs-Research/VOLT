@@ -8,7 +8,7 @@ import RefreshButton from '@/shared/ui/components/RefreshButton';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { ContainerFile } from '@/modules/container/api/types/container-file';
+import type { ContainerFile } from '@volt/contracts/modules/container/domain';
 import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {

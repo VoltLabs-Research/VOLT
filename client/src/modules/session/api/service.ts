@@ -1,15 +1,11 @@
 
-import { createService, del, get } from '@/app/core/http/utilities/create-service';
-import type { ActiveSession, LoginActivityEntry } from './types/session';
+import { createService, del, get } from '@/app/core/http/utils/create-service';
+import type { ActiveSession } from '@volt/contracts/modules/session/domain';
 import type { EmptyParams } from '@voltstack/voltclient';
+import type { GetLoginActivityResponse } from '@volt/contracts/modules/session/domain';
 
 export interface GetLoginActivityInput {
     limit?: number;
-}
-
-export interface GetLoginActivityResponse {
-    activities: LoginActivityEntry[];
-    total: number;
 }
 
 export interface RevokeAllOtherSessionsResponse {

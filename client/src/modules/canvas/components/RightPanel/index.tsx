@@ -1,7 +1,7 @@
 import ObjectsPanel from '../ObjectsPanel';
 import { memo } from 'react';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 import './RightPanel.css';
 

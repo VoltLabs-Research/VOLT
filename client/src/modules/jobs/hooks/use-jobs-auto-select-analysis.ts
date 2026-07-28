@@ -1,9 +1,9 @@
-import { JobStatus } from '../api/types/job';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import type { Job } from '../api/types/job';
+import type { Job } from '@volt/contracts/modules/jobs/domain';
 
 interface UseJobsAutoSelectAnalysisArgs {
     enabled?: boolean;

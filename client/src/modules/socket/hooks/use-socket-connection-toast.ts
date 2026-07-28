@@ -1,4 +1,4 @@
-import { SocketConnectionStatus } from '@/modules/socket/socket-connection-status';
+import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
 import useSocketConnectionStatus from './use-socket-connection-status';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';

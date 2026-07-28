@@ -1,13 +1,13 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useDeleteMeMutation, useUpdateMeMutation } from '@/modules/auth/hooks/queries';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
 import { Callout, Stack } from '@voltstack/bravais';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';

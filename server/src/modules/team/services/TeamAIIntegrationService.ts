@@ -14,7 +14,7 @@ import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/tea
 import type {
     GetTeamAIIntegrationsResponse,
     GetTeamAIIntegrationModelsResponse,
-    TeamAIIntegrationItem,
+    TeamAIIntegration,
     TeamAIIntegrationMutationResponse,
     TeamAIProviderModels,
     TeamAIModelListItem
@@ -181,7 +181,7 @@ export default class TeamAIIntegrationService {
         await TeamAIIntegrationModel.deleteOne({ team: teamId, provider });
     }
 
-    #toItem(integration: TeamAIIntegrationDoc): TeamAIIntegrationItem {
+    #toItem(integration: TeamAIIntegrationDoc): TeamAIIntegration {
         const providerMetadata = this.#providerCatalog.getProviderMetadata(integration.provider);
         return {
             _id: String(integration._id),

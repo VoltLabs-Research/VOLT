@@ -1,11 +1,8 @@
+export type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
-
-export interface ScriptingNotebookContainerResources {
-    cpus: number;
-    memoryMB: number;
-}
 
 export interface ScriptingNotebookProps {
     team: string;

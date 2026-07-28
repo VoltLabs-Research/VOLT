@@ -3,8 +3,8 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
 import { Callout, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
-import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 
 export interface PluginExecutionPreflight {
     issues: string[];

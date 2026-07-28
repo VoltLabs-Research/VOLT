@@ -1,7 +1,7 @@
 import ContainerTerminal from '../ContainerTerminal';
 import useContainersListing, { containersListingResource } from '@/modules/container/hooks/use-containers-listing';
-import type { ContainerListingRow } from '@/modules/container/utilities/listing';
-import { isContainerFolderRow } from '@/modules/container/utilities/listing';
+import type { ContainerListingRow } from '@/modules/container/contracts/listing';
+import { isContainerFolderRow } from '@/modules/container/utils/listing';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';
 import {
     createFolderedTitleColumn,
@@ -10,12 +10,12 @@ import {
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import { Heading, Text } from '@voltstack/bravais';
-import { clusterColumn, dateColumn } from '@/shared/ui/utilities/column-presets';
+import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 const ContainersListing = () => {
     useTip('containers-organization');

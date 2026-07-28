@@ -2,10 +2,10 @@ import './RegistryBrowserModal.css';
 import { Box, Button, EmptyState, Loader, Modal, SearchInput, Stack, Text } from '@voltstack/bravais';
 import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/ui/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Package } from 'lucide-react';
-import type { RegistryPackageSummary } from '@/modules/plugin/api/types/plugin/registry';
+import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/domain/registry';
 
 export const REGISTRY_BROWSER_MODAL_ID = 'plugin-registry-browser-modal';
 

@@ -1,5 +1,5 @@
 import { resolveDestination } from '@/modules/ai/tools/navigation-destinations';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface NavigateToInput {
     destination?: string;

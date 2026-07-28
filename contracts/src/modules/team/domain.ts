@@ -1,13 +1,51 @@
+import type { BaseEntity, Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
+import type { AIProvider } from '../ai/domain';
 
-
-export interface PersistedTeam{
-    _id: string;
+export interface Team extends BaseEntity{
     name: string;
-    description: string;
-    owner: unknown;
+    description?: string;
+    owner: User;
     inviteCode?: string;
-    createdAt: string;
-    updatedAt: string;
+}
+
+export interface TeamRole extends BaseEntity{
+    team: string;
+    name: string;
+    permissions: string[];
+    isSystem: boolean;
+}
+
+export interface TeamMember extends BaseEntity{
+    team: Ref<Team>;
+    user: User;
+    role: TeamRole;
+    joinedAt: string;
+}
+
+export interface TeamMemberStats extends TeamMember{
+    trajectoriesCount: number;
+    analysesCount: number;
+    latexCount: number;
+    whiteboardsCount: number;
+}
+
+export enum TeamInvitationStatus{
+    Pending = 'pending',
+    Accepted = 'accepted',
+    Rejected = 'rejected'
+}
+
+export interface TeamInvitation extends BaseEntity{
+    team: Team;
+    invitedBy: User;
+    invitedUser: User;
+    email: string;
+    token: string;
+    role: string;
+    expiresAt: string;
+    acceptedAt?: string;
+    status: TeamInvitationStatus;
 }
 
 export interface JoinTeamResponse{
@@ -40,51 +78,23 @@ export interface DeleteInviteCodeResponse{
     message: string;
 }
 
-export interface PersistedTeamMember{
-    _id: string;
-    team: unknown;
-    user: unknown;
-    role: unknown;
-    joinedAt: string;
-    createdAt: string;
-    updatedAt: string;
-    trajectoriesCount?: number;
-    analysesCount?: number;
-    latexCount?: number;
-    whiteboardsCount?: number;
-}
-
-export interface PersistedTeamRole{
-    _id: string;
-    team: string;
-    name: string;
-    permissions: string[];
-    isSystem: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export interface DeleteTeamRoleResponse{
     success: boolean;
 }
 
-export interface PersistedTeamInvitation{
-    _id: string;
-    team: unknown;
-    invitedBy: unknown;
-    invitedUser: unknown;
-    email: string;
-    token: string;
-    role: unknown;
-    expiresAt: string;
-    acceptedAt?: string;
-    status: string;
-    createdAt?: string;
-    updatedAt?: string;
-}
-
 export interface TeamInvitationActionResponse{
     message: string;
+}
+
+export interface SecretKey extends BaseEntity{
+    teamId: string;
+    roleId: string;
+    roleName: string;
+    name: string;
+    keyPrefix: string;
+    createdBy?: Ref<User>;
+    isActive: boolean;
+    lastUsedAt?: string;
 }
 
 export interface CreateSecretKeyResponse{
@@ -93,24 +103,9 @@ export interface CreateSecretKeyResponse{
     roleId: string;
     name: string;
     keyPrefix: string;
-    
     secretKey: string;
     isActive: boolean;
     createdAt: string;
-}
-
-export interface SecretKeyListItem{
-    _id: string;
-    teamId: string;
-    roleId: string;
-    roleName: string;
-    name: string;
-    keyPrefix: string;
-    createdBy: unknown;
-    isActive: boolean;
-    lastUsedAt?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface RevokeSecretKeyResponse{
@@ -133,28 +128,113 @@ export interface CurrentSecretKeyResponse{
     updatedAt: string;
 }
 
-export type SecretKeyTeamMetricsResponse = Record<string, unknown>;
+export interface SecretKeyEndpointStat{
+    method: string;
+    path: string;
+    count: number;
+    avgResponseTime: number;
+    successRate: number;
+}
 
-export type SecretKeyUsageResponse = Record<string, unknown>;
+export interface SecretKeyStatusCodeStat{
+    code: number;
+    count: number;
+}
 
-export interface EnabledModel{
+export interface SecretKeyPerKeyMetric{
+    secretKeyId: string;
+    name: string;
+    keyPrefix: string;
+    roleName: string;
+    isActive: boolean;
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+    lastRequestAt: string | null;
+}
+
+export interface SecretKeyTeamUsageOverview{
+    totalRequests: number;
+    successRate: number;
+    avgResponseTime: number;
+}
+
+export interface SecretKeyTeamDailySeries{
+    labels: string[];
+    total: number[];
+    byKey: Record<string, number[]>;
+}
+
+export interface TeamUsageMetrics{
+    overview: SecretKeyTeamUsageOverview;
+    totalKeys: number;
+    activeKeys: number;
+    revokedKeys: number;
+    perKey: SecretKeyPerKeyMetric[];
+    daily: SecretKeyTeamDailySeries;
+    topEndpoints: SecretKeyEndpointStat[];
+}
+
+export interface KeyUsageMetricsKeySummary{
+    _id: string;
+    name: string;
+    keyPrefix: string;
+    roleName: string;
+    isActive: boolean;
+    createdAt: string;
+    lastUsedAt: string | null;
+}
+
+export interface KeyUsageMetricsStats{
+    totalRequests: number;
+    requests24h: number;
+    requests7d: number;
+    successRate: number;
+    avgResponseTime: number;
+    peakHour: string;
+}
+
+export interface KeyUsageMetricsSeries{
+    labels: string[];
+    data: number[];
+}
+
+export interface KeyUsageMetricsRequest{
+    method: string;
+    path: string;
+    statusCode: number;
+    responseTime: number;
+    ip: string;
+    createdAt: string;
+}
+
+export interface KeyUsageMetrics{
+    key: KeyUsageMetricsKeySummary;
+    stats: KeyUsageMetricsStats;
+    hourly: KeyUsageMetricsSeries;
+    daily: KeyUsageMetricsSeries;
+    endpoints: SecretKeyEndpointStat[];
+    statusDistribution: SecretKeyStatusCodeStat[];
+    recentRequests: KeyUsageMetricsRequest[];
+}
+
+export interface TeamAIModelMetadata{
     id: string;
     name: string;
 }
 
-export interface TeamAIIntegrationItem{
-    _id: string;
+export type EnabledModel = TeamAIModelMetadata;
+
+export interface TeamAIIntegration extends BaseEntity{
     teamId: string;
-    provider: string;
+    provider: AIProvider;
     providerName: string;
     isEnabled: boolean;
     defaultModel?: string;
-    enabledModels?: EnabledModel[];
+    enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
     hasApiKey: boolean;
     createdBy?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface TeamAIProviderCatalogItem{
@@ -163,19 +243,8 @@ export interface TeamAIProviderCatalogItem{
     description: string;
 }
 
-export interface GetTeamAIIntegrationsResponse{
-    teamId: string;
-    integrations: TeamAIIntegrationItem[];
-    providers: TeamAIProviderCatalogItem[];
-}
-
-export interface TeamAIModelMetadata{
-    id: string;
-    name: string;
-}
-
 export interface TeamAIProviderModels{
-    provider: string;
+    provider: AIProvider;
     providerName: string;
     defaultModel?: string;
     metadata?: Record<string, unknown>;
@@ -183,9 +252,15 @@ export interface TeamAIProviderModels{
 }
 
 export interface TeamAIModelListItem extends TeamAIModelMetadata{
-    provider: string;
+    provider: AIProvider;
     providerName: string;
     isDefault: boolean;
+}
+
+export interface GetTeamAIIntegrationsResponse{
+    teamId: string;
+    integrations: TeamAIIntegration[];
+    providers: TeamAIProviderCatalogItem[];
 }
 
 export interface GetTeamAIIntegrationModelsResponse{
@@ -195,5 +270,5 @@ export interface GetTeamAIIntegrationModelsResponse{
 }
 
 export interface TeamAIIntegrationMutationResponse{
-    integration: TeamAIIntegrationItem;
+    integration: TeamAIIntegration;
 }

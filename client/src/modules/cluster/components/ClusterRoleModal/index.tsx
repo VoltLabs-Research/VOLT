@@ -1,7 +1,7 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import { Heading, Modal, closeModal, Row, Stack, StatusBadge, Text, Select } from '@voltstack/bravais';
-import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     describeTeamClusterDraining,
     getTeamClusterRoleBadgeVariant,
@@ -10,10 +10,10 @@ import {
     getTeamClusterRoleSummary,
     isTeamClusterRoleTransitionPending,
     TEAM_CLUSTER_ROLE_OPTIONS
-} from '@/modules/cluster/utilities/team-cluster-role';
+} from '@/modules/cluster/utils/team-cluster-role';
 import { useEffect, useMemo, useState } from 'react';
-import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
-import type { UpdateTeamClusterRoleResponse } from '@/modules/cluster/api/service';
+import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type { UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
 
 interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;

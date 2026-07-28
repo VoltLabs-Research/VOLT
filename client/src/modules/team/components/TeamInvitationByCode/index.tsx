@@ -14,7 +14,7 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team/hooks/team/queries';
-import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
+import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { AlertCircle, CheckCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';

@@ -1,34 +1,12 @@
 import { Grid } from '@react-three/drei';
 import { useMemo } from 'react';
-import type { CanvasGridSettingsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import { getGridThemeDefaults } from '@/shared/rendering/grid';
+import type { CanvasGridSettingsState } from '@/modules/fractal/contracts/editor/visual-types';
 
 interface CanvasGridProps {
     settings: CanvasGridSettingsState;
     darkTheme: boolean;
 }
-
-interface GridThemeDefaults {
-    sectionColor: string;
-    cellColor: string;
-}
-
-const DARK_GRID_DEFAULTS: GridThemeDefaults = {
-    sectionColor: '#262626',
-    cellColor: '#161616'
-};
-
-const LIGHT_GRID_DEFAULTS: GridThemeDefaults = {
-    sectionColor: '#d1d1d6',
-    cellColor: '#e5e5ea'
-};
-
-const getGridThemeDefaults = (darkTheme: boolean): GridThemeDefaults => {
-    if (darkTheme) {
-        return DARK_GRID_DEFAULTS;
-    }
-
-    return LIGHT_GRID_DEFAULTS;
-};
 
 const CanvasGrid = ({ settings, darkTheme }: CanvasGridProps) => {
     const themeDefaults = useMemo(() => getGridThemeDefaults(darkTheme), [darkTheme]);

@@ -3,14 +3,9 @@ import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import { EmptyState, Box } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
+import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { UIMessage } from 'ai';
-
-interface ToolApprovalResponseParams {
-    id: string;
-    approved: boolean;
-    reason?: string;
-}
+import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
 
 interface AIConversationPanelContentProps {
     conversationId?: string;

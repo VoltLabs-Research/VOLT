@@ -1,11 +1,11 @@
 import {
     useWhiteboardEditorHandleStore
-} from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
+} from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
 import type {
     WhiteboardDrawElement,
     WhiteboardEditorHandleSnapshot
-} from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+} from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface DrawOnWhiteboardInput {
     whiteboardId?: string;

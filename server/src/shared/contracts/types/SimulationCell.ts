@@ -1,22 +1,5 @@
-
-
-export interface SimulationCellDims {
-    width: number;
-    height: number;
-    length: number;
-}
-
-export interface SimulationCellPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
-}
-
-export interface SimulationCellGeometry {
-    cell_vectors: number[][];
-    cell_origin: number[];
-    periodic_boundary_conditions: SimulationCellPeriodicBoundaryConditions;
-}
+export type { SimulationCellDims, SimulationCellPeriodicBoundaryConditions, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
+import type { SimulationCellDims, SimulationCellPeriodicBoundaryConditions, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
 
 export interface SimulationCellTrajectoryReference {
     _id?: string;

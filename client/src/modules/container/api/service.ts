@@ -1,4 +1,4 @@
-import { createService, paginated, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, patch, del } from '@/app/core/http/utils/create-service';
 import {
     createFolderCrudEndpoints,
     type FolderCreateParams,
@@ -8,13 +8,14 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Container } from './types/container';
-import type { ContainerFile } from './types/container-file';
-import type { ContainerFolder } from './types/container-folder';
-import type { ContainerPortAccessUrl } from './types/container-port-access-url';
-import type { ContainerStatsResponse } from './types/container-stats';
-import type { EnvVariable } from './types/env-variable';
-import type { PortMapping } from './types/port-mapping';
+import type { Container } from '@volt/contracts/modules/container/domain';
+
+import type { ContainerFolder } from '@volt/contracts/modules/container/domain';
+import type { ContainerPortAccessUrl } from '@volt/contracts/modules/container/domain';
+import type { ContainerStatsResponse } from '@volt/contracts/modules/container/domain';
+import type { EnvVariable } from '@volt/contracts/modules/container/domain';
+import type { PortMapping } from '@volt/contracts/modules/container/domain';
+import type { GetContainerFilesResponse, ReadContainerFileResponse } from '@volt/contracts/modules/container/domain';
 
 export enum ContainerAction {
     Start = 'start',
@@ -69,17 +70,9 @@ export interface GetContainerFilesInput {
     path?: string;
 }
 
-export interface GetContainerFilesResponse {
-    files: ContainerFile[];
-}
-
 export interface ReadContainerFileInput {
     containerId: string;
     path: string;
-}
-
-export interface ReadContainerFileResponse {
-    content: string;
 }
 
 export interface CreateContainerPortAccessUrlParams {

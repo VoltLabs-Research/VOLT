@@ -28,20 +28,11 @@ import {
     currentAccessKey
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type {
-    CreateTrajectoryInput,
-    CreateTrajectoryResponse,
-    CreateTrajectoryUploadSessionResponse,
-    DownloadTrajectoryAnalysesInput,
-    DownloadTrajectoryInput,
-    GetAtomsInput,
-    GetAtomsResponse,
-    GetPreviewInput,
-    GetTrajectoriesInput
-} from '../../api/services/trajectory-service';
+import type { CreateTrajectoryInput, CreateTrajectoryResponse, DownloadTrajectoryAnalysesInput, DownloadTrajectoryInput, GetAtomsInput, GetAtomsResponse, GetPreviewInput, GetTrajectoriesInput } from '../../api/services/trajectory-service';
+import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
 import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';
-import type { Trajectory } from '../../api/types/trajectory/trajectory';
-import type { TrajectoryFolder } from '../../api/types/trajectory/trajectory-folder';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { TrajectoryFolder } from '@volt/contracts/modules/trajectory/domain';
 import type { InfiniteQueryOptions, QueryOptions } from '@/shared/query';
 
 const BASE_KEY = 'trajectory';

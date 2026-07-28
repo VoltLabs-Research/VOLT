@@ -1,7 +1,0 @@
-import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
-
-export interface ScreenshotComposition {
-    framingBoundsWorld?: ModelWorldBounds | null;
-    cropBoundsWorld?: ModelWorldBounds | null;
-    cropSource?: 'simulation-cell' | 'auto-simulation-cell';
-}

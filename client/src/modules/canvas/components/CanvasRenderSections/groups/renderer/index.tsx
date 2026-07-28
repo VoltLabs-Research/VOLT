@@ -1,5 +1,5 @@
 import { checkbox, row, selectField } from '../../../CanvasRenderConfigHelpers';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     RENDERER_SHADOW_TYPE_OPTIONS,
     RENDERER_SUBSECTION_TITLES,
@@ -13,9 +13,9 @@ import { Box } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { MdTune } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import { isEnumValue } from '../../utilities';
+import { isEnumValue } from '../../utils';
 
-import type { RenderGroup } from '../../types';
+import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useRendererGroup = (): RenderGroup => {
     const rendererSettings = useEditorStore(useShallow((state) => state.rendererSettings));

@@ -14,6 +14,10 @@ import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
+import type {
+    CloneTrajectoryInput as WireCloneTrajectoryInput,
+    MoveTrajectoryInput as WireMoveTrajectoryInput
+} from '@volt/contracts/modules/trajectory/http';
 
 export { ParticleFilterCombinator };
 
@@ -49,10 +53,9 @@ export interface UpdateTrajectoryByIdOutput extends TrajectoryProps {
     _id: string;
 }
 
-export interface MoveTrajectoryInput {
+export interface MoveTrajectoryInput extends WireMoveTrajectoryInput {
     teamId: string;
     trajectoryId: string;
-    folderId: string | null;
 }
 
 export type MoveTrajectoryOutput = null;
@@ -91,11 +94,9 @@ export interface ListPublicTeamTrajectoriesOutput extends PaginatedResult<Trajec
     };
 }
 
-export interface CloneTrajectoryInput {
+export interface CloneTrajectoryInput extends WireCloneTrajectoryInput {
     teamId: string;
     userId: string;
-    sourceTrajectoryId: string;
-    targetClusterId?: string;
 }
 
 export interface CloneTrajectoryOutput {

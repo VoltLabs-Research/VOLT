@@ -1,30 +1,31 @@
+import type { BaseEntity } from '../../shared/base';
+
 export type OAuthProviderId = 'github' | 'microsoft' | 'google';
 
 export type UserRoleId = 'admin' | 'user';
 
-export interface PersistedUser{
-    _id: string;
+export interface User extends BaseEntity{
     email: string;
-    firstName: string;
-    lastName: string;
-    role?: UserRoleId;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
     avatar?: string;
-    teams: string[];
-    analyses: string[];
-    lastLoginAt: string;
+    role?: UserRoleId;
+    teams?: string[];
+    analyses?: string[];
+    lastLoginAt?: string;
     lastSeenAt?: string | null;
+    isOnline?: boolean;
     passwordChangedAt?: string;
     oauthProvider?: OAuthProviderId;
     oauthId?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
-export type Account = PersistedUser & { fullName: string };
+export type Account = User & { fullName: string };
 
 export interface AuthSession{
     token: string;
-    user: PersistedUser;
+    user: User;
 }
 
 export interface GuestIdentity{

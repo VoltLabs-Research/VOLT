@@ -1,9 +1,9 @@
-import { PresenceStatus } from '@/modules/chat/api/types/shared/chat-events';
-import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
+import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
+import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utils/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import { IoArrowBackOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import { IconButton, Row, Stack, StatusDot, Text, Tooltip } from '@voltstack/bravais';
-import type { Chat } from '@/modules/chat/api/types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './ChatHeader.css';
 
 interface ChatHeaderProps {

@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState, forwardRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { IconType } from 'react-icons';
-import type { SubItem } from './SidebarExpandableSection.types';
+import type { SubItem } from '@/shared/contracts/sidebar';
 
 interface SidebarExpandableSectionProps {
     label: string;

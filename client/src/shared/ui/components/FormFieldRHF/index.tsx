@@ -10,7 +10,7 @@ import type {
     FormFieldRHFProps,
     SyntheticChangeEvent,
     UncontrolledProps
-} from './FormFieldRHF.types';
+} from '@/shared/contracts/form-field';
 import type { FieldValues } from 'react-hook-form';
 
 const isControlled = <TForm extends FieldValues>(

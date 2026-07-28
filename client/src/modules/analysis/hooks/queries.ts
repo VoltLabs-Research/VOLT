@@ -16,13 +16,9 @@ import {
     type CanvasDataAccess
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Analysis } from '../api/types/analysis';
-import type {
-    GetAnalysesByTrajectoryParams,
-    GetAnalysesParams,
-    RetryFailedFramesParams,
-    RetryFailedFramesResponse
-} from '../api/service';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { GetAnalysesByTrajectoryParams, GetAnalysesParams, RetryFailedFramesParams } from '../api/service';
+import type { RetryFailedFramesResponse } from '@volt/contracts/modules/analysis/domain';
 
 type AnalysisQueryKeys = Record<string, unknown> & {
     detail: string;

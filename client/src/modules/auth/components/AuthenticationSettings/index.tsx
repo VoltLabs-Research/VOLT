@@ -8,7 +8,7 @@ import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { useState } from 'react';
-import type { ChangePasswordInput } from '@/modules/auth/api/service';
+import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 import { useNavigate } from 'react-router-dom';
 const AuthenticationSettings = () => {
     const navigate = useNavigate();
@@ -17,7 +17,7 @@ const AuthenticationSettings = () => {
     const { data: passwordInfo } = passwordInfoQuery(undefined);
     const changePasswordMutation = useChangePasswordMutation();
 
-    const handleChangePassword = async (data: ChangePasswordInput) => {
+    const handleChangePassword = async (data: UpdatePasswordInput) => {
         await showPromise(
             async () => {
                 await changePasswordMutation.mutateAsync(data);

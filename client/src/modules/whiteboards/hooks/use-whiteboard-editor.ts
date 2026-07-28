@@ -8,20 +8,21 @@ import {
     filterPersistableAppState,
     mergeWhiteboardAppState,
     mergeWhiteboardElements
-} from '@/modules/whiteboards/utilities/whiteboards';
-import type { PreparedWhiteboardImageAsset } from '@/modules/whiteboards/utilities/excalidraw-images';
+} from '@/modules/whiteboards/utils/whiteboards';
+import type { PreparedWhiteboardImageAsset } from '@/modules/whiteboards/utils/excalidraw-images';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
-
-type ExcalidrawElements = Record<string, unknown>[];
-type AppState = Record<string, unknown>;
-type ExcalidrawFiles = Record<string, unknown>;
+import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
+import type {
+    WhiteboardAppState,
+    WhiteboardElements,
+    WhiteboardFiles
+} from '@/modules/whiteboards/contracts/excalidraw';
 
 interface WhiteboardState {
-    elements: ExcalidrawElements;
-    appState: AppState;
-    files?: ExcalidrawFiles;
+    elements: WhiteboardElements;
+    appState: WhiteboardAppState;
+    files?: WhiteboardFiles;
     revision?: number;
 };
 
@@ -76,9 +77,9 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const titleRef = useRef<string | null>(null);
     const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const activeWhiteboardIdRef = useRef(whiteboardId);
-    const currentElementsRef = useRef<ExcalidrawElements>([]);
-    const currentAppStateRef = useRef<AppState>({});
-    const currentFilesRef = useRef<ExcalidrawFiles>({});
+    const currentElementsRef = useRef<WhiteboardElements>([]);
+    const currentAppStateRef = useRef<WhiteboardAppState>({});
+    const currentFilesRef = useRef<WhiteboardFiles>({});
     const loadingFilesRef = useRef(new Map<string, Promise<HydratedWhiteboardFile>>());
 
     const updateSceneState = useCallback((nextState: WhiteboardState) => {
@@ -110,7 +111,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         setInitialState(null);
     }, []);
 
-    const hydrateFiles = useCallback(async (elements: ExcalidrawElements) => {
+    const hydrateFiles = useCallback(async (elements: WhiteboardElements) => {
         const requestedFileIds = extractWhiteboardFileIds(elements);
         if (requestedFileIds.length === 0) {
             return currentFilesRef.current;
@@ -221,7 +222,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         };
     }, [hydrateFiles, resetEditorState, updateSceneState, whiteboardId]);
 
-    const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState, files?: ExcalidrawFiles) => {
+    const handleChange = useCallback((elements: WhiteboardElements, appState: WhiteboardAppState, files?: WhiteboardFiles) => {
         currentElementsRef.current = cloneWhiteboardElements(elements);
         currentAppStateRef.current = cloneWhiteboardAppState(appState);
         currentFilesRef.current = files
@@ -245,8 +246,8 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     }, [updateWhiteboard, whiteboardId]);
 
     const mergeRemoteState = useCallback(async (
-        elements: ExcalidrawElements,
-        appState: AppState,
+        elements: WhiteboardElements,
+        appState: WhiteboardAppState,
         revision: number,
         elementOrder?: string[]
     ) => {

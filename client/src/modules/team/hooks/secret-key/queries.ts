@@ -1,7 +1,8 @@
 import secretKeyService from '../../api/services/secret-key-service';
 import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/query';
-import type { CreateSecretKeyInput, CreateSecretKeyResponse, DeleteSecretKeyInput, RevokeSecretKeyInput } from '../../api/services/secret-key-service';
-import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/types/secret-key/secret-key-metrics';
+import type { CreateSecretKeyParams, DeleteSecretKeyInput, RevokeSecretKeyInput } from '../../api/services/secret-key-service';
+import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '@volt/contracts/modules/team/domain';
 
 interface SecretKeyUsageQueryParams {
     teamId: string;
@@ -74,7 +75,7 @@ export const useSecretKeyTeamMetricsQuery = createQuery<SecretKeyTeamMetricsQuer
     secretKeyService.getTeamMetrics
 );
 
-export const useCreateSecretKeyMutation = createInvalidatingMutation<CreateSecretKeyResponse, CreateSecretKeyInput>(
+export const useCreateSecretKeyMutation = createInvalidatingMutation<CreateSecretKeyResponse, CreateSecretKeyParams>(
     secretKeyService.create,
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );

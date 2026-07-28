@@ -1,7 +1,7 @@
-import { CanvasAnalysisStatusEnum } from '../utilities/analysis-status';
+import { CanvasAnalysisStatusEnum } from '../utils/analysis-status';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../utilities/analysis-status';
+import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../utils/analysis-status';
 import type { TimelineTickTone } from './use-timeline-job-activity';
 
 export type AnalysisActivityTone = TimelineTickTone | 'failed';

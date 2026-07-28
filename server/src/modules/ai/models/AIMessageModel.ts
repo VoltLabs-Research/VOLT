@@ -19,10 +19,9 @@ export interface AIConversationMessage {
     parts: AIConversationMessageParts;
 }
 
-export enum AIMessageRole {
-    User = 'user',
-    Assistant = 'assistant'
-}
+import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
+
+export { AIMessageRole };
 
 export interface AIMessageToolCall {
     toolName: string;

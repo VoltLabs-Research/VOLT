@@ -1,4 +1,4 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS

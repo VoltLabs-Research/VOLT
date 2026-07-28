@@ -1,6 +1,6 @@
 
 
-import type { ContainerEnvironmentVariable, ContainerPortMapping } from './domain';
+import type { EnvVariable, PortMapping } from './domain';
 
 export interface CreateContainerInput{
     name: string;
@@ -8,8 +8,8 @@ export interface CreateContainerInput{
     operationId?: string;
     teamClusterId?: string;
     folderId?: string | null;
-    env?: ContainerEnvironmentVariable[];
-    ports?: ContainerPortMapping[];
+    env?: EnvVariable[];
+    ports?: PortMapping[];
     cmd?: string[];
     memory?: number;
     cpus?: number;
@@ -20,8 +20,8 @@ export interface CreateContainerInput{
 export interface UpdateContainerInput{
     teamClusterId?: string;
     action?: 'start' | 'stop' | 'restart';
-    env?: ContainerEnvironmentVariable[];
-    ports?: ContainerPortMapping[];
+    env?: EnvVariable[];
+    ports?: PortMapping[];
 }
 
 export interface MoveContainerInput{

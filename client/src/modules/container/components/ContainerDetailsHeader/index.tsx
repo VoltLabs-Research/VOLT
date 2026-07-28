@@ -6,10 +6,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
-import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
+import { getPrimaryAccessiblePort } from '@/modules/container/utils/get-primary-accessible-port';
 import { ContainerAction } from '@/modules/container/api/service';
 import type { ReactNode } from 'react';
-import type { Container as ContainerEntity } from '@/modules/container/api/types/container';
+import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';
 import './ContainerDetailsHeader.css';
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 

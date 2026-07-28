@@ -1,7 +1,7 @@
-import { createService, get, post } from '@/app/core/http/utilities/create-service';
+import { createService, get, post } from '@/app/core/http/utils/create-service';
 
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { Chat } from '../types/chat';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 
 export interface GetOrCreateChatInput {
     teamId: string;

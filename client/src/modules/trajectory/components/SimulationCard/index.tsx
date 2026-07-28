@@ -1,6 +1,6 @@
 import { cn } from '@/shared/utils/cn';
-import { getStageMessage, isProcessingStatus, isTrajectoryNavigable } from '@/modules/trajectory/api/types/trajectory/trajectory-constants';
-import { JobStatus } from '@/modules/jobs/api/types/job';
+import { getStageMessage, isProcessingStatus, isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
@@ -9,7 +9,7 @@ import { Row } from '@voltstack/bravais';
 import { PiAtomThin } from 'react-icons/pi';
 import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import './SimulationCard.css';
 import { useNavigate } from 'react-router-dom';
 const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [

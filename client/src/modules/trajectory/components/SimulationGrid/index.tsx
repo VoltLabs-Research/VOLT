@@ -8,7 +8,7 @@ import useTrajectoriesListing, { trajectoriesListingResource } from '@/modules/t
 import {
     getTrajectoryListingFolderDroppableId,
     isTrajectoryFolderRow
-} from '@/modules/trajectory/utilities/listing';
+} from '@/modules/trajectory/utils/listing';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
@@ -18,8 +18,8 @@ import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { DiscoverTeamSummary } from '@/modules/trajectory/api/services/discover-service';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
-import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
 import './SimulationGrid.css';
 
 export type SimulationGridItem = TrajectoryListingRow;

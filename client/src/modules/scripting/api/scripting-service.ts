@@ -1,9 +1,9 @@
-import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, del, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ScriptingNotebook, ScriptingNotebookContainerResources } from './types/scripting-notebook';
-import type { ScriptingNotebookScope } from './types/scripting-notebook-scope';
-import type { ScriptingSession } from './types/scripting-session';
+import type { ScriptingNotebook, ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingSession } from '@volt/contracts/modules/scripting/domain';
 
 export interface CreateScriptingNotebookParams {
     teamId: string;

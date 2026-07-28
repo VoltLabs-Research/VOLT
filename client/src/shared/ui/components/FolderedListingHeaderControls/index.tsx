@@ -1,6 +1,6 @@
 import { Button, openModal } from '@voltstack/bravais';
 import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 interface NewFolderHeaderActionProps {
     modalId: string;

@@ -1,13 +1,9 @@
 import {
     registerDashboardWorkspaceChrome,
     unregisterDashboardWorkspaceChrome
-} from '@/modules/dashboard/utilities/layout-events';
+} from '@/modules/dashboard/utils/layout-events';
+import type { DashboardWorkspaceChromeOptions } from '@/modules/dashboard/contracts/layout';
 import { useId, useLayoutEffect } from 'react';
-
-interface DashboardWorkspaceChromeOptions {
-    collapseSidebar?: boolean;
-    hideHeader?: boolean;
-}
 
 const useDashboardWorkspaceChrome = ({
     collapseSidebar = false,

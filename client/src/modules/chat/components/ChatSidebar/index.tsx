@@ -7,8 +7,8 @@ import '../ChatListSkeleton/ChatListSkeleton.css';
 import ChatListItem from '../ChatListItem';
 import TeamMemberList from '../TeamMemberList';
 import { matchesQuery } from '@/shared/utils/matches-query';
-import type { User } from '@/modules/auth/api/types/user';
-import type { Chat } from '@/modules/chat/api/types/chat';
+import type { User } from '@volt/contracts/modules/auth/domain';
+import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './ChatSidebar.css';
 
 interface ChatSidebarProps {

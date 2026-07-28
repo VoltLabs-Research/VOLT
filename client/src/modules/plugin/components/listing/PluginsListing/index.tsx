@@ -6,21 +6,21 @@ import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plug
 import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { PluginStatus } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import { SOCKET_PLUGIN_EVENTS } from '@/modules/socket/events/plugin';
 import { runAction } from '@/shared/ui/actions/run-action';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
-import { dateColumn, statusColumn } from '@/shared/ui/utilities/column-presets';
-import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import { dateColumn, statusColumn } from '@/shared/ui/utils/column-presets';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GetPluginsInput } from '@/modules/plugin/api/services/plugin-service';
-import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
-import type { BaseEntity } from '@/shared/types/BaseEntity';
+import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { BaseEntity } from '@volt/contracts/shared/base';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import './PluginsListing.css';
 import { useNavigate } from 'react-router-dom';
 interface PluginListingRow extends BaseEntity {

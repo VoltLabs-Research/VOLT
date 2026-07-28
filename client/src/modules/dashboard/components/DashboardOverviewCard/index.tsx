@@ -1,10 +1,10 @@
 import './DashboardOverviewCard.css';
 import { Sparkline, Box, IconFrame, Row, Stack, Text } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { getTrendColor } from '@/modules/dashboard/utilities/trend-color';
+import { getTrendColor } from '@/modules/dashboard/utils/trend-color';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
-import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/types/dashboard';
+import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/contracts/cards';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 interface DashboardOverviewCardProps {

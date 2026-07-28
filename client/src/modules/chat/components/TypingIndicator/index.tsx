@@ -1,6 +1,6 @@
 import { Box, Row, Text, ThinkingDots } from '@voltstack/bravais';
 import './TypingIndicator.css';
-import type { TypingUser } from '@/modules/chat/api/types/shared/chat-events';
+import type { TypingUser } from '@volt/contracts/modules/chat/domain';
 
 interface TypingIndicatorProps {
     users: TypingUser[];

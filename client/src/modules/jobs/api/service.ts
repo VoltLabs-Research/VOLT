@@ -1,17 +1,10 @@
 
-import type { TrajectoryJobGroup } from './types/job';
-import { createService, del, post } from '@/app/core/http/utilities/create-service';
+import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
+import { createService, del, post } from '@/app/core/http/utils/create-service';
+import type { TeamClusterFailureDetail } from '@volt/contracts/modules/jobs/domain';
 
 export interface RemoveRunningJobsParams {
     trajectoryId: string;
-}
-
-export interface TeamClusterFailureDetail {
-    teamClusterId: string;
-    requestedJobs: number;
-    affectedJobs: number;
-    reason: 'command-failed' | 'partial-confirmation';
-    message?: string;
 }
 
 export interface RemoveRunningJobsResponse {

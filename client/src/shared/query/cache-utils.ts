@@ -1,14 +1,11 @@
 import queryClient from './query-client';
 import type { PaginatedResponse, PaginationMeta } from '@/shared/pagination/PaginationResponse';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { InfiniteData, Query, QueryKey } from '@tanstack/react-query';
-
-interface WithId {
-    _id: string;
-};
 
 export type QueryDataSnapshot = Array<[QueryKey, unknown]>;
 
-export const upsertEntityInList = <T extends WithId>(
+export const upsertEntityInList = <T extends Identifiable>(
     page: PaginatedResponse<T>,
     entity: T
 ): PaginatedResponse<T> => {
@@ -22,7 +19,7 @@ export const upsertEntityInList = <T extends WithId>(
     return { ...page, data, pagination };
 };
 
-export const removeEntityFromList = <T extends WithId>(
+export const removeEntityFromList = <T extends Identifiable>(
     page: PaginatedResponse<T>,
     id: string
 ): PaginatedResponse<T> => {
@@ -40,7 +37,7 @@ export const removeEntityFromList = <T extends WithId>(
     };
 };
 
-export const patchPaginatedPage = <T extends WithId>(
+export const patchPaginatedPage = <T extends Identifiable>(
     keyPrefix: QueryKey,
     updater: (current: PaginatedResponse<T>) => PaginatedResponse<T>
 ): void => {
@@ -53,7 +50,7 @@ export const patchPaginatedPage = <T extends WithId>(
     );
 };
 
-export const patchInfinitePages = <T extends WithId>(
+export const patchInfinitePages = <T extends Identifiable>(
     keyPrefix: QueryKey,
     pageUpdater: (page: PaginatedResponse<T>) => PaginatedResponse<T>
 ): void => {

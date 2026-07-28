@@ -1,11 +1,11 @@
 import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import type { IModifierData } from '@/modules/plugin/api/types/plugin/workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import type { IModifierData } from '@volt/contracts/modules/plugin/domain/workflow';
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import Sidebar from '@/shared/ui/components/Sidebar';
 import { confirm } from '@/shared/ui/hooks/use-confirm';

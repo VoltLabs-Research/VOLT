@@ -5,8 +5,8 @@ import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { buildAnalysisExecutionRows } from './execution-rows';
 import { Text } from '@voltstack/bravais';
 
-import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@/modules/analysis/api/types/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 import './AnalysisExecutionOverlay.css';
 

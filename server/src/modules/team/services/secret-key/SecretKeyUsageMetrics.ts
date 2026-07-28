@@ -1,17 +1,15 @@
-interface EndpointStat {
-    method: string;
-    path: string;
-    count: number;
-    avgResponseTime: number;
-    successRate: number;
-}
+import type {
+    SecretKeyEndpointStat,
+    SecretKeyStatusCodeStat,
+    SecretKeyTeamUsageOverview,
+    SecretKeyTeamDailySeries,
+    KeyUsageMetricsStats,
+    KeyUsageMetricsSeries
+} from '@volt/contracts/modules/team/domain';
 
-interface StatusCodeStat {
-    code: number;
-    count: number;
-}
+export type { SecretKeyEndpointStat, SecretKeyStatusCodeStat };
 
-interface PerKeyMetric {
+export interface PerKeyMetric {
     secretKeyId: string;
     totalRequests: number;
     successRequests: number;
@@ -20,45 +18,26 @@ interface PerKeyMetric {
 }
 
 export interface TeamUsageMetrics {
-    overview: {
-        totalRequests: number;
-        successRate: number;
-        avgResponseTime: number;
-    };
+    overview: SecretKeyTeamUsageOverview;
     perKey: PerKeyMetric[];
-    daily: {
-        labels: string[];
-        total: number[];
-        byKey: Record<string, number[]>;
-    };
-    topEndpoints: EndpointStat[];
+    daily: SecretKeyTeamDailySeries;
+    topEndpoints: SecretKeyEndpointStat[];
+}
+
+export interface KeyUsageMetricsRecentRequest {
+    method: string;
+    path: string;
+    statusCode: number;
+    responseTime: number;
+    ip: string;
+    createdAt: Date;
 }
 
 export interface KeyUsageMetrics {
-    stats: {
-        totalRequests: number;
-        requests24h: number;
-        requests7d: number;
-        successRate: number;
-        avgResponseTime: number;
-        peakHour: string;
-    };
-    hourly: {
-        labels: string[];
-        data: number[];
-    };
-    daily: {
-        labels: string[];
-        data: number[];
-    };
-    endpoints: EndpointStat[];
-    statusDistribution: StatusCodeStat[];
-    recentRequests: {
-        method: string;
-        path: string;
-        statusCode: number;
-        responseTime: number;
-        ip: string;
-        createdAt: Date;
-    }[];
+    stats: KeyUsageMetricsStats;
+    hourly: KeyUsageMetricsSeries;
+    daily: KeyUsageMetricsSeries;
+    endpoints: SecretKeyEndpointStat[];
+    statusDistribution: SecretKeyStatusCodeStat[];
+    recentRequests: KeyUsageMetricsRecentRequest[];
 }

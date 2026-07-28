@@ -1,4 +1,4 @@
-import { endpointStorage } from '@/app/core/http/utilities/endpoint-storage';
+import { endpointStorage } from '@/app/core/http/utils/endpoint-storage';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import teamStorage from '@/modules/team/services/team/team-storage';
 

@@ -1,8 +1,8 @@
 import { useTeamAIIntegrationModelsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AIModelSelection } from '@/modules/ai/api/service';
-import type { AIProvider } from '@/modules/ai/api/types/ai-provider';
-import type { TeamAIModelListItem, TeamAIProviderModelsCatalog } from '@/modules/team/api/types/ai-integration/team-ai-integration';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
+import type { TeamAIModelListItem, TeamAIProviderModels } from '@volt/contracts/modules/team/domain';
 
 const createModelSelectionKey = (provider: AIProvider, modelId: string): string => (
     `${provider}::${modelId}`
@@ -28,7 +28,7 @@ const useAIModelSelection = (teamId: string | null) => {
         })) ?? [];
     }, [teamAIIntegrationsQuery.data]);
 
-    const providerCatalog: TeamAIProviderModelsCatalog[] = useMemo(() => {
+    const providerCatalog: TeamAIProviderModels[] = useMemo(() => {
         return teamAIIntegrationModelsQuery.data?.providers ?? [];
     }, [teamAIIntegrationModelsQuery.data]);
 

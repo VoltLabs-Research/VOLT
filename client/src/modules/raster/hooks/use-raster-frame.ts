@@ -1,10 +1,10 @@
 import canvasService from '@/modules/canvas/api/services/canvas-service';
-import { RasterFrameScope } from '@/modules/raster/api/types/raster';
+import { RasterFrameScope } from '@volt/contracts/modules/raster/domain';
 import { isApiError } from '@/shared/errors/core';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import type { ApiError } from '@voltstack/voltclient';
-import type { RasterSceneFrame } from '@/modules/raster/api/types/raster';
+import type { RasterSceneFrame } from '@/modules/raster/contracts/scene-frame';
 
 interface UseRasterFrameParams {
     trajectoryId?: string;

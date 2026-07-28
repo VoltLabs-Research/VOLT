@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import useModelInteraction from '@/modules/fractal/hooks/use-model-interaction';
 import { createFractalEngine } from '@/modules/fractal/services/fractal-engine-factory';
-import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
-import type { UseGlbSceneParams } from '@/modules/fractal/types';
-import type { ModelLoadingState } from '@/modules/fractal/api/types/model';
-import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
+import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
+import type { UseGlbSceneParams } from '@/modules/fractal/contracts';
+import type { ModelLoadingState } from '@/modules/fractal/contracts/model';
+import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
 import type { RefObject } from 'react';
 

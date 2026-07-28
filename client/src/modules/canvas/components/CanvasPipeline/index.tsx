@@ -3,7 +3,7 @@ import {
     useCanvasPipelineStore,
     useStages,
     isOrderedPipelineStage
-} from '../../stores/canvas-pipeline';
+} from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -18,9 +18,9 @@ import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Spline, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { PipelineStage } from '../../stores/canvas-pipeline';
-import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../stores/canvas-pipeline';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { PipelineStage } from '../../store/canvas-pipeline';
+import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../store/canvas-pipeline';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface CanvasPipelineProps {
     trajectory?: Trajectory | null;

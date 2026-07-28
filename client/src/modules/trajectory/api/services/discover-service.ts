@@ -1,6 +1,6 @@
-import { createService, paginated } from '@/app/core/http/utilities/create-service';
+import { createService, paginated } from '@/app/core/http/utils/create-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export interface DiscoverTeamSummary {
     _id: string;

@@ -1,4 +1,4 @@
-import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
+import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
 
 export interface ClusterObjectUploadPart {
     url: string;

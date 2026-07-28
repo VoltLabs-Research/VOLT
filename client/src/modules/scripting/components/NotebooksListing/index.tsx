@@ -1,8 +1,8 @@
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
 import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
-import { ScriptingNotebookScope } from '@/modules/scripting/api/types/scripting-notebook-scope';
-import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
-import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utilities/column-presets';
+import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
+import { getPrimaryTrajectory } from '@/modules/scripting/utils/notebooks';
+import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
@@ -14,7 +14,7 @@ import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-note
 import type {
     ScriptingNotebook,
     ScriptingNotebookTrajectory
-} from '@/modules/scripting/api/types/scripting-notebook';
+} from '@volt/contracts/modules/scripting/domain';
 
 enum NotebooksListingTabId {
     List = 'list',

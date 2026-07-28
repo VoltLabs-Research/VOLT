@@ -6,7 +6,7 @@ import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { useMemo, useState } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
-import type { AIConversation } from '@/modules/ai/api/types/ai-conversation';
+import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import './AIConversationSidebar.css';
 

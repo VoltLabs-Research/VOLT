@@ -13,8 +13,8 @@ import type {
     ListScriptingNotebooksParams,
     UpdateScriptingNotebookParams
 } from '../api/scripting-service';
-import type { ScriptingNotebook } from '../api/types/scripting-notebook';
-import type { ScriptingSession } from '../api/types/scripting-session';
+import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingSession } from '@volt/contracts/modules/scripting/domain';
 
 interface ScriptingQueryKeys {
     notebooks: ListScriptingNotebooksParams;

@@ -1,5 +1,5 @@
 import type { DragEndEvent } from '@dnd-kit/core';
-import type { Identifiable } from '@/shared/ui/components/DocumentListingTable';
+import type { Identifiable } from '@/shared/contracts/entity';
 
 export interface DocumentListingDragEndPayload<T extends Identifiable> {
     event: DragEndEvent;

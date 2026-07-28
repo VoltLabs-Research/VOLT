@@ -2,35 +2,27 @@ import { teamClusterService } from '@/modules/cluster/api/service';
 import { buildKeys, createMutation, createQuery, queryClient, withSuccess } from '@/shared/query';
 import type { MutationOptions, QueryOptions } from '@/shared/query';
 import type {
-    CreateTeamClusterInput,
-    CreateTeamClusterResponse,
-    CreateTeamClusterTransferRequestInput,
-    CreateTeamClusterTransferRequestResponse,
-    DeleteDemoTeamClusterInput,
-    DeleteDemoTeamClusterResponse,
-    DeleteTeamClusterInput,
-    DeleteTeamClusterResponse,
-    ListTeamClustersInput,
-    ListTeamClustersResponse,
-    ListTeamClusterTransferJobsInput,
+    CreateTeamClusterParams,
+    CreateTeamClusterTransferRequestParams,
+    DeleteDemoTeamClusterParams,
+    DeleteTeamClusterParams,
+    ListTeamClusterTransferJobsParams,
     ListTeamClusterTransferJobsResponse,
-    ProvisionDemoTeamClusterInput,
-    ProvisionDemoTeamClusterResponse,
-    RegenerateTeamClusterEnrollmentTokenInput,
-    RegenerateTeamClusterEnrollmentTokenResponse,
-    RevealTeamClusterCredentialsInput,
-    RevealTeamClusterCredentialsResponse,
-    UpdateTeamClusterQueueConcurrencyInput,
-    UpdateTeamClusterQueueConcurrencyResponse,
-    UpdateTeamClusterRoleInput,
-    UpdateTeamClusterRoleResponse
+    ListTeamClustersParams,
+    ListTeamClustersResponse,
+    ProvisionDemoTeamClusterParams,
+    RegenerateTeamClusterEnrollmentTokenParams,
+    RevealTeamClusterCredentialsParams,
+    UpdateTeamClusterQueueConcurrencyParams,
+    UpdateTeamClusterRoleParams
 } from '@/modules/cluster/api/service';
-import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
-import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/types/team-cluster';
+import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteDemoTeamClusterResponse, DeleteTeamClusterResponse, ProvisionDemoTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse, RevealTeamClusterCredentialsResponse, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type { TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/modules/cluster/domain';
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
-    transferJobs: ListTeamClusterTransferJobsInput;
+    transferJobs: ListTeamClusterTransferJobsParams;
 }
 
 const TEAM_CLUSTER_STALE_TIME = 5 * 60 * 1000;
@@ -65,7 +57,7 @@ const mergeTeamClusterTransferState = (current: TeamCluster | undefined, incomin
 };
 
 export const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (teamId: string) => {
-    const params: ListTeamClustersInput = {
+    const params: ListTeamClustersParams = {
         teamId,
         page: 1,
         limit: 100
@@ -161,8 +153,8 @@ export const applyTeamClusterLifecycleEvent = (event: TeamClusterLifecycleEvent)
     }
 };
 
-export const useCreateTeamClusterMutation = (options?: MutationOptions<CreateTeamClusterResponse, CreateTeamClusterInput>) => {
-    return createMutation<CreateTeamClusterResponse, CreateTeamClusterInput>(teamClusterService.create)({
+export const useCreateTeamClusterMutation = (options?: MutationOptions<CreateTeamClusterResponse, CreateTeamClusterParams>) => {
+    return createMutation<CreateTeamClusterResponse, CreateTeamClusterParams>(teamClusterService.create)({
         ...options,
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
@@ -171,15 +163,15 @@ export const useCreateTeamClusterMutation = (options?: MutationOptions<CreateTea
 };
 
 export const useRevealTeamClusterCredentialsMutation = (
-    options?: MutationOptions<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsInput>
+    options?: MutationOptions<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsParams>
 ) => {
-    return createMutation<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsInput>(
+    return createMutation<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsParams>(
         teamClusterService.revealCredentials
     )(options);
 };
 
-export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTeamClusterResponse, DeleteTeamClusterInput>) => {
-    return createMutation<DeleteTeamClusterResponse, DeleteTeamClusterInput>(teamClusterService.deleteById)({
+export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTeamClusterResponse, DeleteTeamClusterParams>) => {
+    return createMutation<DeleteTeamClusterResponse, DeleteTeamClusterParams>(teamClusterService.deleteById)({
         ...options,
         onSuccess: withSuccess((data, variables) => {
             if (data.deleted) {
@@ -206,7 +198,7 @@ export const invalidateTeamClusterTransferJobsQuery = () => {
 };
 
 export const useTeamClusterTransferJobsQuery = (
-    params: ListTeamClusterTransferJobsInput,
+    params: ListTeamClusterTransferJobsParams,
     options?: QueryOptions<ListTeamClusterTransferJobsResponse>
 ) => {
     return transferJobsQuery(params, {
@@ -217,17 +209,17 @@ export const useTeamClusterTransferJobsQuery = (
 };
 
 export const useRegenerateTeamClusterEnrollmentTokenMutation = (
-    options?: MutationOptions<RegenerateTeamClusterEnrollmentTokenResponse, RegenerateTeamClusterEnrollmentTokenInput>
+    options?: MutationOptions<RegenerateTeamClusterEnrollmentTokenResponse, RegenerateTeamClusterEnrollmentTokenParams>
 ) => {
-    return createMutation<RegenerateTeamClusterEnrollmentTokenResponse, RegenerateTeamClusterEnrollmentTokenInput>(
+    return createMutation<RegenerateTeamClusterEnrollmentTokenResponse, RegenerateTeamClusterEnrollmentTokenParams>(
         teamClusterService.regenerateEnrollmentToken
     )(options);
 };
 
 export const useUpdateTeamClusterQueueConcurrencyMutation = (
-    options?: MutationOptions<UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterQueueConcurrencyInput>
+    options?: MutationOptions<UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterQueueConcurrencyParams>
 ) => {
-    return createMutation<UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterQueueConcurrencyInput>(
+    return createMutation<UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterQueueConcurrencyParams>(
         teamClusterService.updateQueueConcurrency
     )({
         ...options,
@@ -238,9 +230,9 @@ export const useUpdateTeamClusterQueueConcurrencyMutation = (
 };
 
 export const useUpdateTeamClusterRoleMutation = (
-    options?: MutationOptions<UpdateTeamClusterRoleResponse, UpdateTeamClusterRoleInput>
+    options?: MutationOptions<UpdateTeamClusterRoleResponse, UpdateTeamClusterRoleParams>
 ) => {
-    return createMutation<UpdateTeamClusterRoleResponse, UpdateTeamClusterRoleInput>(
+    return createMutation<UpdateTeamClusterRoleResponse, UpdateTeamClusterRoleParams>(
         teamClusterService.updateRole
     )({
         ...options,
@@ -251,9 +243,9 @@ export const useUpdateTeamClusterRoleMutation = (
 };
 
 export const useProvisionDemoTeamClusterMutation = (
-    options?: MutationOptions<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterInput>
+    options?: MutationOptions<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterParams>
 ) => {
-    return createMutation<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterInput>(
+    return createMutation<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterParams>(
         teamClusterService.provisionDemo
     )({
         ...options,
@@ -264,9 +256,9 @@ export const useProvisionDemoTeamClusterMutation = (
 };
 
 export const useDeleteDemoTeamClusterMutation = (
-    options?: MutationOptions<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterInput>
+    options?: MutationOptions<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterParams>
 ) => {
-    return createMutation<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterInput>(
+    return createMutation<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterParams>(
         teamClusterService.deleteDemo
     )({
         ...options,
@@ -281,9 +273,9 @@ export const useDeleteDemoTeamClusterMutation = (
 };
 
 export const useCreateTeamClusterTransferRequestMutation = (
-    options?: MutationOptions<CreateTeamClusterTransferRequestResponse, CreateTeamClusterTransferRequestInput>
+    options?: MutationOptions<CreateTeamClusterTransferRequestResponse, CreateTeamClusterTransferRequestParams>
 ) => {
-    return createMutation<CreateTeamClusterTransferRequestResponse, CreateTeamClusterTransferRequestInput>(
+    return createMutation<CreateTeamClusterTransferRequestResponse, CreateTeamClusterTransferRequestParams>(
         teamClusterService.createTransferRequest
     )({
         ...options,

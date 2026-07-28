@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import type { DragEvent } from 'react';
 import type { ReactFlowInstance, Connection, Edge } from '@xyflow/react';
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 
 interface UseCanvasHandlersOptions {
     reactFlowInstance: ReactFlowInstance | null;

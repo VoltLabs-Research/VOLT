@@ -2,7 +2,7 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import type { EditorProps } from '../types';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import { FOR_EACH_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ForEachEditorFormValues } from './schema';
 

@@ -11,14 +11,14 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Cpu } from 'lucide-react';
-import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
+import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 interface CpuDistributionProps {
     history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
 }
 
-interface DataPoint {
+interface CpuCoreDataPoint {
     [key: string]: number;
 }
 
@@ -33,9 +33,9 @@ const generateCoreColors = (numCores: number): string[] => (
 );
 
 const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
-    const chartData = useMemo<DataPoint[]>(() => {
+    const chartData = useMemo<CpuCoreDataPoint[]>(() => {
         return history.map((point) => {
-            const cores: DataPoint = {};
+            const cores: CpuCoreDataPoint = {};
             point.cpu.coresUsage.forEach((usage, index) => {
                 cores[`core${index}`] = usage;
             });

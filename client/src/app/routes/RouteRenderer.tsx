@@ -1,6 +1,6 @@
-import { canAccessByPermissions } from '@/modules/team/utilities/team/permission-evaluator';
+import { canAccessByPermissions } from '@/modules/team/utils/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
+import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { Loader } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';

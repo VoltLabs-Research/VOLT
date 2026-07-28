@@ -1,4 +1,4 @@
-import { EntrypointType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { EntrypointType } from '@volt/contracts/modules/plugin/domain/enums';
 
 export interface EntrypointEditorFormValues {
     binary: string;

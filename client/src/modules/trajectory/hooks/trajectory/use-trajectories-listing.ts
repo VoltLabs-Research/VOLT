@@ -1,5 +1,5 @@
-import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import { extractTrajectoryTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import {
     createTrajectoryFolderRow,
     createTrajectoryItemRow,
@@ -7,11 +7,11 @@ import {
     getTrajectoryListingDroppableId,
     isTrajectoryFolderRow,
     isTrajectoryItemRow,
-    resolveTrajectoryListingDroppableFolderId,
-    type TrajectoryItemRow
-} from '@/modules/trajectory/utilities/listing';
-import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
-import { isTrajectoryNavigable } from '@/modules/trajectory/api/types/trajectory/trajectory-constants';
+    resolveTrajectoryListingDroppableFolderId
+} from '@/modules/trajectory/utils/listing';
+import type { TrajectoryItemRow } from '@/modules/trajectory/contracts/listing';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
+import { isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
 import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -21,7 +21,7 @@ import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-
 import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { Download, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';

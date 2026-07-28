@@ -2,11 +2,9 @@ import { ValidationCodes } from '@core/constants/validation-codes';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-export enum TeamInvitationStatus{
-    Pending = 'pending',
-    Accepted = 'accepted',
-    Rejected = 'rejected'
-}
+import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
+
+export { TeamInvitationStatus };
 
 export interface TeamInvitationProps{
     team: string;

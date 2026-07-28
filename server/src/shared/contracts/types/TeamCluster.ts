@@ -1,18 +1,9 @@
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 
+export { TeamClusterStatus };
+export type { TeamClusterRole };
 
-export enum TeamClusterStatus {
-    WaitingForConnection = 'waiting-for-connection',
-    HealthcheckReceived = 'healthcheck-received',
-    PreparingEnvironment = 'preparing-environment',
-    DependenciesInstallationFailed = 'dependency-installation-failed',
-    OperatingSystemNotSupported = 'operating-system-not-supported',
-    Connected = 'connected',
-    Disconnected = 'disconnected',
-    Deleting = 'deleting',
-    DeleteFailed = 'delete-failed',
-    Updating = 'updating',
-    UpdateFailed = 'update-failed'
-}
 
 export interface TeamClusterServiceProps {
     port: number | null;
@@ -51,7 +42,6 @@ export interface TeamClusterQueueScopeLimitsProps {
     trajectoryGlbConversion: TeamClusterQueueScopeLimitProps;
 }
 
-export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export interface TeamClusterRoleCapabilitiesProps {
     canStore: boolean;

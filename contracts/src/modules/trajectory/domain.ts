@@ -1,16 +1,120 @@
+import type { BaseEntity, Ref } from '../../shared/base';
+import type { User } from '../auth/domain';
+import type { Team } from '../team/domain';
+import type { TeamCluster } from '../cluster/domain';
+import type { Analysis } from '../analysis/domain';
+import type { SimulationCell } from '../simulation-cell/domain';
 
-
-export type PersistedTrajectory = Record<string, unknown>;
-
-export interface TrajectoryFolder{
-    _id: string;
-    title: string;
-    parent: string | null;
-    createdAt: string;
-    updatedAt: string;
+export interface BoxBounds{
+    xlo: number;
+    xhi: number;
+    ylo: number;
+    yhi: number;
+    zlo: number;
+    zhi: number;
 }
 
-export type SceneArtifactView = Record<string, unknown>;
+export interface TimestepInfo{
+    timestep: number;
+    natoms: number;
+    fileId?: string;
+    simulationCell?: SimulationCell;
+    boxBounds?: BoxBounds;
+}
+
+export interface TrajectoryStats{
+    totalAtoms: number;
+    totalFrames: number;
+    totalSize: number;
+    atomTypes: string[];
+}
+
+export type TrajectoryStatus =
+    | 'waiting-for-process'
+    | 'queued'
+    | 'processing'
+    | 'completed'
+    | 'failed';
+
+export interface Trajectory extends BaseEntity{
+    name: string;
+    team: Ref<Team>;
+    folder: string | null;
+    analysis: Analysis[];
+    frames: TimestepInfo[];
+    framesCount?: number;
+    atoms?: number;
+    firstTimestep?: number;
+    stats: TrajectoryStats;
+    hasPreview?: boolean;
+    preview?: string;
+    isPublic?: boolean;
+    status?: TrajectoryStatus;
+    users: Ref<User>[];
+    createdBy?: Ref<User>;
+    storageClusterId?: Ref<TeamCluster> | null;
+}
+
+export interface TrajectoryFolder extends BaseEntity{
+    title: string;
+    parent: string | null;
+}
+
+export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure' | 'line-style';
+
+export interface SceneArtifactParticleFilterPropertyCondition{
+    kind?: 'property';
+    property: string;
+    operator: string;
+    value: number | string;
+    exposureId?: string;
+}
+
+export type SceneArtifactParticleFilterCondition = SceneArtifactParticleFilterPropertyCondition;
+
+export interface SceneArtifactParams{
+    property?: string;
+    startValue?: number;
+    endValue?: number;
+    gradient?: string;
+    operator?: string;
+    value?: number | string;
+    action?: 'delete' | 'highlight';
+    exposureId?: string;
+    combinator?: 'AND' | 'OR';
+    conditions?: SceneArtifactParticleFilterCondition[];
+    style?: Record<string, unknown>;
+}
+
+export interface SceneArtifactTrajectory{
+    _id: string;
+    name?: string;
+    storageClusterId?: Ref<TeamCluster> | null;
+}
+
+export interface SceneArtifactAnalysis{
+    _id: string;
+}
+
+export interface SceneArtifactPlugin{
+    _id: string;
+    name?: string;
+}
+
+export interface SceneArtifact extends BaseEntity{
+    trajectory: Ref<SceneArtifactTrajectory>;
+    analysis?: Ref<SceneArtifactAnalysis>;
+    plugin?: Ref<SceneArtifactPlugin>;
+    storageClusterId?: Ref<TeamCluster> | null;
+    sourceType: SceneArtifactSourceType;
+    timestep: number;
+    objectName: string;
+    storageBucket: string;
+    params: SceneArtifactParams;
+    displayName: string;
+    status: 'ready' | 'failed';
+    metadata?: Record<string, unknown>;
+}
 
 export type SampleSimulation = Record<string, unknown>;
 
@@ -33,14 +137,16 @@ export interface TrajectoryUploadSessionFile{
     parts: TrajectoryUploadPart[];
 }
 
+export interface TrajectoryUploadSession{
+    id: string;
+    chunkSize: number;
+    expiresAt: string;
+    files: TrajectoryUploadSessionFile[];
+}
+
 export interface CreateTrajectoryUploadSessionResponse{
-    trajectory: PersistedTrajectory;
-    uploadSession: {
-        id: string;
-        chunkSize: number;
-        expiresAt: string;
-        files: TrajectoryUploadSessionFile[];
-    };
+    trajectory: Trajectory;
+    uploadSession: TrajectoryUploadSession;
 }
 
 export interface CommitTrajectoryUploadSessionResponse{

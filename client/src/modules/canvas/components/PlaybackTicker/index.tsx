@@ -1,4 +1,4 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
 

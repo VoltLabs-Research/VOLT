@@ -4,8 +4,8 @@ import { buildLatexRef } from '@/modules/latex/hooks/use-latex-assets';
 import {
     canDropLatexWorkspaceItemInFolder,
     LATEX_WORKSPACE_ROOT_DROP_ID
-} from '@/modules/latex/utilities/workspace-dnd';
-import { joinWorkspacePath, normalizeWorkspaceFolderPath } from '@/modules/latex/utilities/workspace';
+} from '@/modules/latex/utils/workspace-dnd';
+import { joinWorkspacePath, normalizeWorkspaceFolderPath } from '@/modules/latex/utils/workspace';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FileExplorer from '@/shared/ui/components/FileExplorer';
@@ -18,13 +18,13 @@ import { cn } from '@/shared/utils/cn';
 import { processFileSystemEntry } from '@/shared/utils/file';
 import { FilePlus, FolderOpen, FolderPlus, Upload } from 'lucide-react';
 import { sileo } from 'sileo';
-import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
-import type { LatexWorkspaceDragData, LatexWorkspaceDropData } from '@/modules/latex/utilities/workspace-dnd';
-import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
+import type { LatexWorkspaceDragData, LatexWorkspaceDropData } from '@/modules/latex/utils/workspace-dnd';
+import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utils/file-tree';
 import type { FileWithPath } from '@/shared/utils/file';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { ChangeEvent, DragEvent, MouseEvent, RefObject } from 'react';
 
 interface LatexFilePanelProps {

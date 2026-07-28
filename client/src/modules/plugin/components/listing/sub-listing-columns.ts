@@ -1,9 +1,9 @@
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
+import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { inferColumnType, type InferredCellKind, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import type { ColumnConfig as DocumentColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { ColumnConfig as CompactColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
-import type { SubListingColumn } from '@/modules/plugin/api/services/listing-service';
+import type { PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
+import type { SubListingColumn } from '@volt/contracts/modules/plugin/domain/listing';
 
 export interface SubListingColumnSnapshot<TRow extends Record<string, unknown>> {
     columns: DocumentColumnConfig<TRow>[];
@@ -41,7 +41,7 @@ const getColumnWidth = (inferred: InferredColumnType): number => {
 export const buildCompactSubListingColumns = (
     columns: SubListingColumn[],
     rows: Record<string, unknown>[]
-): CompactColumnConfig[] => {
+): PluginTableColumnConfig[] => {
     return columns.map((column) => {
         const key = column.label;
         const inferred = inferColumnFromRows(rows, key);

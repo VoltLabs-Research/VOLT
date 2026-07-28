@@ -1,13 +1,7 @@
 import { SOCKET_TEAM_EVENTS } from '../events/team';
 import socketService from './socket-service';
 import { emitOrSwallow, emitWithReport } from './socket-emit-helpers';
-import type { ISocketService } from './contracts/socket-service';
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
+import type { ISocketService, SocketAck } from '@/modules/socket/contracts/socket-service';
 
 class TeamSocketRoomService {
     private currentTeamId: string | null = null;

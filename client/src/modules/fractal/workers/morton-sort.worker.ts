@@ -2,13 +2,8 @@ import {
     buildPermutation,
     computeBoundingBox,
     computeMortonCodes
-} from '@/modules/fractal/utilities/morton-sort';
-
-interface MortonAttributePayload {
-    name: string;
-    itemSize: number;
-    array: Float32Array;
-}
+} from '@/modules/fractal/utils/morton-sort';
+import type { MortonAttributePayload } from '@/modules/fractal/contracts/engine';
 
 interface MortonSortRequest {
     type: 'morton-sort';

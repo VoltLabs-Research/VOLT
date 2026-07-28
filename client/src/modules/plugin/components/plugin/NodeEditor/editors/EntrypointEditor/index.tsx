@@ -3,16 +3,16 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import { EntrypointType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utilities/ensure-monaco';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { EntrypointType } from '@volt/contracts/modules/plugin/domain/enums';
+import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import Editor from '@monaco-editor/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Upload, File, Trash2, Check } from 'lucide-react';
 import { ENTRYPOINT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
-import type { EditorProps } from '../types';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import './EntrypointEditor.css';
 
 const ENTRYPOINT_TYPE_OPTIONS = [{

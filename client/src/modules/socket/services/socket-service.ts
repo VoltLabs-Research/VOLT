@@ -1,9 +1,9 @@
 import SocketIOAdapter from './socket-io-adapter';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import { createSocketTraceAuth } from '@/app/core/http/utilities/client-instrumentation';
-import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
-import { SocketConnectionStatus } from '@/modules/socket/socket-connection-status';
-import type { ISocketService } from './contracts/socket-service';
+import { createSocketTraceAuth } from '@/app/core/http/utils/client-instrumentation';
+import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
+import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
+import type { ISocketService } from '@/modules/socket/contracts/socket-service';
 
 type SocketAuth = Record<string, unknown>;
 

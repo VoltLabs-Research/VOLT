@@ -9,18 +9,9 @@ import {
 import type { QueryOptions } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
-import type { Team } from '../../api/types/team/team';
-import type {
-    CreateTeamInput,
-    DeleteInviteCodeInput,
-    GenerateInviteCodeInput,
-    JoinByInviteCodeInput,
-    JoinByInviteCodeResponse,
-    LeaveTeamInput,
-    PreviewJoinByInviteCodeInput,
-    PreviewJoinByInviteCodeResponse,
-    UpdateTeamInput
-} from '../../api/services/team-service';
+import type { Team } from '@volt/contracts/modules/team/domain';
+import type { DeleteInviteCodeInput, GenerateInviteCodeInput, JoinByInviteCodeInput, JoinByInviteCodeResponse, LeaveTeamInput, PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse, UpdateTeamParams } from '../../api/services/team-service';
+import type { CreateTeamInput } from '@volt/contracts/modules/team/http';
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
 
@@ -143,7 +134,7 @@ export const useCreateTeamMutation = createMutation<Team, CreateTeamInput>(
     }
 );
 
-export const useUpdateTeamMutation = createMutation<Team, UpdateTeamInput>(
+export const useUpdateTeamMutation = createMutation<Team, UpdateTeamParams>(
     teamService.update,
     (updatedTeam) => {
         setTeamsQueryData((previous) => {

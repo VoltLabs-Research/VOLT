@@ -1,6 +1,6 @@
 import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
+import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { useEffect, useRef } from 'react';
 
 export default function useTeamRoomSubscription(): void {

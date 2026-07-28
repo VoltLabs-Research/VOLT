@@ -1,4 +1,4 @@
-import { useCanvasPipelineStore } from '../../stores/canvas-pipeline';
+import { useCanvasPipelineStore } from '../../store/canvas-pipeline';
 import { EmptyState, Row, SearchInput, Stack, Surface, Text } from '@voltstack/bravais';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';

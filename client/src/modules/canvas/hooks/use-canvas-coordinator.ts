@@ -2,9 +2,9 @@ import {
     extractTrajectoryTimesteps,
     getNearestTimestep,
     getSelectedTimestepsForAnalysis
-} from '../utilities/selected-timestep-analysis';
+} from '../utils/selected-timestep-analysis';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from './queries';
 import useAccessDenied, { createAccessDeniedRetry } from '@/shared/ui/hooks/use-access-denied';
 import useCanvasUrlState from './use-canvas-url-state';

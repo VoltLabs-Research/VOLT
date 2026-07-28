@@ -1,6 +1,6 @@
 import './UserInfo.css';
 import { Avatar, Box, Row, Text } from '@voltstack/bravais';
-import type { User } from '@/modules/auth/api/types/user';
+import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
 
 interface UserInfoProps {

@@ -1,24 +1,5 @@
-
-export interface TeamClusterFailureDetail {
-    teamClusterId: string;
-    requestedJobs: number;
-    affectedJobs: number;
-    reason: 'command-failed' | 'partial-confirmation';
-    message?: string;
-}
-
-export interface RemoveTeamJobsResult {
-    deletedJobs: number;
-    deletedAnalyses: number;
-    affectedClusters: number;
-    clusterFailures: TeamClusterFailureDetail[];
-}
-
-export interface RetryTeamJobsResult {
-    retriedFrames: number;
-    affectedClusters: number;
-    clusterFailures: TeamClusterFailureDetail[];
-}
+export type { TeamClusterFailureDetail, RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
+import type { TeamClusterFailureDetail, RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
 
 export interface TrajectoryDeletedCleanupInput {
     teamId: string;

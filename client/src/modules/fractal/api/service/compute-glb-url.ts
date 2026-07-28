@@ -1,4 +1,4 @@
-import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
+import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
 import type { CanvasAccessMode } from '@/modules/canvas/api/access';
 import type {
     SceneObjectType,
@@ -7,7 +7,7 @@ import type {
     LineStyleScene,
     ParticleFilterScene,
     ParticleFilterSceneCondition
-} from '@/modules/fractal/api/types/scene';
+} from '@/modules/fractal/contracts/scene';
 
 export interface ComputeGlbUrlParams {
     teamId: string;

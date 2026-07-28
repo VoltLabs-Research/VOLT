@@ -1,7 +1,7 @@
 import { getClusterOnboardingRedirectPath } from '@/modules/auth/services/post-auth-destination-storage';
-import type { DeleteDemoTeamClusterResponse } from '@/modules/cluster/api/service';
+import type { DeleteDemoTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
 import { useDeleteDemoTeamClusterMutation } from '@/modules/cluster/hooks/team-cluster/queries';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';

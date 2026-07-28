@@ -1,13 +1,10 @@
-import {
-    AIMessageArtifactKind,
-    AIMessageRole
-} from '@/modules/ai/api/types/ai-conversation';
+import { AIMessageArtifactKind, AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import {
     parseTableFromChildren
-} from '@/modules/ai/utilities/message-content';
-import { resolveImagePayload } from '@/modules/ai/utilities/message-artifacts';
-import { presentToolCall } from '@/modules/ai/utilities/tool-presentation';
-import type { ToolActionPhase } from '@/modules/ai/utilities/tool-presentation';
+} from '@/modules/ai/utils/message-content';
+import { resolveImagePayload } from '@/modules/ai/utils/message-artifacts';
+import { presentToolCall } from '@/modules/ai/utils/tool-presentation';
+import type { ToolActionPhase } from '@/modules/ai/utils/tool-presentation';
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
@@ -17,17 +14,12 @@ import { IoCheckmarkOutline, IoCopyOutline, IoExpandOutline } from 'react-icons/
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
-import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
-import type { ParsedMarkdownTable } from '@/modules/ai/utilities/message-content';
+import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
+import type { ParsedMarkdownTable } from '@/modules/ai/utils/message-content';
 import type { UIMessage } from 'ai';
+import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import './AIConversationThread.css';
-
-interface ToolApprovalResponseParams {
-    id: string;
-    approved: boolean;
-    reason?: string;
-}
 
 interface AIConversationThreadProps {
     conversationId?: string;

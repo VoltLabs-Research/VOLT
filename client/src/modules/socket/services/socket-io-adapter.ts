@@ -1,7 +1,7 @@
 import { SOCKET_CONNECTION_EVENTS } from '../constants/socket-connection-events';
-import { SocketConnectionStatus } from '../socket-connection-status';
+import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
 import { io, Socket } from 'socket.io-client';
-import type { EventSubscription, ISocketService, SocketOptions } from './contracts/socket-service';
+import type { EventSubscription, ISocketService, SocketOptions } from '@/modules/socket/contracts/socket-service';
 
 class SocketIOAdapter implements ISocketService {
     private socket: Socket | null = null;

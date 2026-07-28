@@ -1,3 +1,5 @@
+export type { ClusterTransferJobState, ClusterTransferJobReason, ClusterTransferJobCursor, ClusterTransferJobStats } from '@volt/contracts/modules/cluster/domain';
+import type { ClusterTransferJobState, ClusterTransferJobReason, ClusterTransferJobCursor, ClusterTransferJobStats } from '@volt/contracts/modules/cluster/domain';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type {
     StoragePlacementBucketRef,
@@ -6,35 +8,6 @@ import type {
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
-
-export type ClusterTransferJobState =
-    | 'queued'
-    | 'freezing'
-    | 'copying'
-    | 'verifying'
-    | 'switching'
-    | 'cleaning'
-    | 'completed'
-    | 'failed'
-    | 'cancelled';
-
-export type ClusterTransferJobReason =
-    | 'manual'
-    | 'soft-limit'
-    | 'hard-limit';
-
-export interface ClusterTransferJobCursor {
-    bucketIndex: number;
-    lastObjectKey: string | null;
-}
-
-export interface ClusterTransferJobStats {
-    copiedObjects: number;
-    copiedBytes: number;
-    verifiedObjects: number;
-    verifiedBytes: number;
-    deletedObjects: number;
-}
 
 export interface ClusterTransferJobProps {
     team: string;

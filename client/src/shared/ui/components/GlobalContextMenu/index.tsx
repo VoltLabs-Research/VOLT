@@ -2,7 +2,7 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { BookOpen, Braces, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 import { useNavigate } from 'react-router-dom';
 interface GlobalContextMenuProps {
     children: ReactNode;

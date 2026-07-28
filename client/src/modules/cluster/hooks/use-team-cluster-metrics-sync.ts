@@ -1,4 +1,4 @@
-import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
+import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -12,7 +12,7 @@ import {
 } from '@/modules/cluster/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import type { ClusterMetrics, ClusterHistoryMetric } from '@/modules/cluster/api/types/cluster-metrics';
+import type { ClusterMetrics, ClusterHistoryMetric } from '@volt/contracts/modules/cluster/domain';
 
 interface ClusterMetricsHistoryEvent {
     clusterId: string;

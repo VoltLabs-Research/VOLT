@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color, Fog } from 'three';
 
-import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { EnvironmentConfigState } from '@/modules/fractal/contracts/editor/visual-types';
 
 interface DynamicEnvironmentProps {
     settings: EnvironmentConfigState;

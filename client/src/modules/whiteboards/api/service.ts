@@ -8,10 +8,10 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 
-import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Whiteboard } from './types/whiteboard';
-import type { WhiteboardFolder } from './types/whiteboard-folder';
+import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
+import type { WhiteboardFolder } from '@volt/contracts/modules/whiteboards/domain';
 
 export interface CreateWhiteboardParams {
     teamId: string;

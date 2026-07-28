@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import { resolveBondLineSettings, shouldRenderBonds } from '@/modules/fractal/services/bond-render';
-import { warnFractal } from '@/modules/fractal/utilities/debug-log';
+import { warnFractal } from '@/modules/fractal/utils/debug-log';
 
 import type { ComponentProps, FC } from 'react';
 

@@ -1,6 +1,6 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import type { SceneKeyConfig } from '@/modules/fractal/utilities/scene-utils';
+import { useEditorStore } from '@/modules/canvas/store/editor';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
+import type { SceneKeyConfig } from '@/modules/fractal/utils/scene-utils';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import useSceneInteraction from '../../hooks/use-scene-interaction';
 

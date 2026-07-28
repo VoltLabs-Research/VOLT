@@ -5,9 +5,9 @@ import { Button, Stack } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
-import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-usable';
+import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
+import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import {
     useProvisionDemoTeamClusterMutation,
     useTeamClustersQuery

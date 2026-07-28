@@ -1,4 +1,4 @@
-import type { FieldRendererProps, FieldStatusAriaProps } from './FormFieldRHF.types';
+import type { FieldRendererProps, FieldStatusAriaProps } from '@/shared/contracts/form-field';
 
 interface BuildFieldAccessibilityStateInput {
     reactId: string;

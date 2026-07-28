@@ -1,4 +1,4 @@
-import { createService, custom, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
+import { createService, custom, paginated, get, post, patch, del, download, request } from '@/app/core/http/utils/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import {
@@ -11,10 +11,10 @@ import {
 } from '@/shared/api/folder-endpoints';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { LatexAsset } from './types/latex-asset';
-import type { LatexDocument } from './types/latex-document';
-import type { LatexFile } from './types/latex-file';
-import type { LatexFolder } from './types/latex-folder';
+import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
+import type { LatexDocument } from '@volt/contracts/modules/latex/domain';
+import type { LatexFile } from '@volt/contracts/modules/latex/domain';
+import type { LatexFolder } from '@volt/contracts/modules/latex/domain';
 
 export interface CompileLatexDocumentParams {
     documentId: string;

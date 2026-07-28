@@ -1,7 +1,7 @@
-import { createService, paginated, patch } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, patch } from '@/app/core/http/utils/create-service';
 
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { Notification } from './types/notification';
+import type { Notification } from '@volt/contracts/modules/notification/domain';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 
 export interface ListNotificationsInput {

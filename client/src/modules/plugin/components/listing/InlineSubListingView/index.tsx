@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
 import { IconButton } from '@voltstack/bravais';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
+import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';

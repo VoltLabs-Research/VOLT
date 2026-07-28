@@ -2,15 +2,9 @@ import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/query';
 import messageService from '../../api/services/message-service';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ChatMessage } from '../../api/types/message';
-import type {
-    DeleteMessageInput,
-    EditMessageInput,
-    GetChatMessagesInput,
-    SendFileMessageInput,
-    SendMessageInput,
-    ToggleReactionInput
-} from '../../api/services/message-service';
+import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
+import type { ChatScopedParams } from '@/modules/chat/contracts/api-params';
+import type { DeleteMessageInput, EditMessageParams, GetChatMessagesInput, SendFileMessageInput, SendMessageInput, ToggleReactionInput } from '../../api/services/message-service';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
 
@@ -23,10 +17,6 @@ type MessageQueryKeyMap = {
     infiniteMessages: InfiniteMessagesParams;
 };
 
-interface MarkAsReadParams {
-    chatId: string;
-}
-
 interface UseChatMessagesInfiniteQueryParams {
     chatId: string;
     limit?: number;
@@ -38,10 +28,10 @@ interface UseChatMessagesInfiniteQueryOptions {
 
 const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 
-export const useMarkAsReadMutation = createMutation<void, MarkAsReadParams>(messageService.markAsRead);
+export const useMarkAsReadMutation = createMutation<void, ChatScopedParams>(messageService.markAsRead);
 export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInput>(messageService.sendMessage);
 export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInput>(messageService.sendFileMessage);
-export const useEditMessageMutation = createMutation<ChatMessage, EditMessageInput>(messageService.editMessage);
+export const useEditMessageMutation = createMutation<ChatMessage, EditMessageParams>(messageService.editMessage);
 export const useDeleteMessageMutation = createMutation<void, DeleteMessageInput>(messageService.deleteMessage);
 export const useToggleReactionMutation = createMutation<ChatMessage, ToggleReactionInput>(messageService.toggleReaction);
 

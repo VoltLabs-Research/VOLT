@@ -1,13 +1,13 @@
 import { Sparkline, Box, IconFrame, Row, Stack, Text, openModal } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { getTrendColor } from '@/modules/dashboard/utilities/trend-color';
+import { getTrendColor } from '@/modules/dashboard/utils/trend-color';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
+import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import { useMemo } from 'react';
-import type { DailyActivity } from '@/modules/daily-activity/api/types/daily-activity';
+import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 
 const ACTIVITY_LOOKBACK_DAYS = 7;
 const ACTIVITY_REFRESH_INTERVAL_MS = 10_000;

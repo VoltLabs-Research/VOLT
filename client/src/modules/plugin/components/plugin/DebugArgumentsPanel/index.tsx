@@ -1,28 +1,22 @@
 import { Box, Button, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
+import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import {
     collectVisibleDefaultArgumentValues,
     getUserConfigurableArguments
-} from '@/modules/plugin/utilities/plugin/argument-values';
+} from '@/modules/plugin/utils/plugin/argument-values';
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
+import type { ArgumentsNodeData } from '@/modules/plugin/contracts/debug';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {
     onStart: () => void;
     canStart: boolean;
-}
-
-interface ArgumentsNodeData {
-    arguments?: {
-        arguments?: IArgumentDefinition[];
-    };
 }
 
 const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) => {

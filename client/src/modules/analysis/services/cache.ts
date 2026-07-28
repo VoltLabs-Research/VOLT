@@ -2,7 +2,7 @@ import { analysisQuery, KEYS } from '../hooks/queries';
 import { patchPaginatedPage, removeEntityFromList, snapshotQueries } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Analysis } from '../api/types/analysis';
+import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { GetAnalysesByTrajectoryParams } from '../api/service';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 

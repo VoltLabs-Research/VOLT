@@ -8,7 +8,7 @@ import {
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
-import type { SceneArtifact } from '../../api/types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type {
     ListSceneArtifactsInput,
     RenderableExposurePayload

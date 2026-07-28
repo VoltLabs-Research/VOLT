@@ -1,11 +1,11 @@
 import { simulationCellsQuery, simulationCellsQueryKey } from '@/modules/simulation-cell/hooks/queries';
-import { dateColumn } from '@/shared/ui/utilities/column-presets';
+import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { Row, Tag } from '@voltstack/bravais';
 import { Box } from 'lucide-react';
-import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
+import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { formatNumber } from '@voltstack/bravais';
 

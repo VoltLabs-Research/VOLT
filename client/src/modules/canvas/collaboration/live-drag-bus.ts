@@ -1,4 +1,4 @@
-import type { ModelDragOffset } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { ModelDragOffset } from '@/modules/fractal/contracts/editor/scene-types';
 
 export interface ModelDragEvent {
     sceneKey: string;

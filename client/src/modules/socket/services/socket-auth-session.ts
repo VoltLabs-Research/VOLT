@@ -1,7 +1,7 @@
 import socketService from './socket-service';
 import teamSocketRoomService from './team-room-service';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import type { ISocketService } from './contracts/socket-service';
+import type { ISocketService } from '@/modules/socket/contracts/socket-service';
 
 export const updateSocketAuthToken = (token: string | null): Promise<void> => {
     const service: ISocketService = socketService;

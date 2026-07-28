@@ -1,5 +1,5 @@
-import { switchSelectedTeam, useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
+import { switchSelectedTeam, useTeamStore } from '@/modules/team/store/team/use-team-store';
+import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface SwitchTeamInput {
     teamId?: string;

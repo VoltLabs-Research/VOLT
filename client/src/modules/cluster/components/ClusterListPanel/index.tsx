@@ -1,15 +1,15 @@
 import './ClusterListPanel.css';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
 import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/cluster/hooks/team-cluster/queries';
-import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
-import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
+import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
+import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Box, Button, IconButton, openModal, Row, Stack, StatusDot, Text, Tooltip } from '@voltstack/bravais';
 import type { StatusDotTone } from '@voltstack/bravais';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
+import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 
 interface ClusterListPanelProps {
     clusters: TeamCluster[];

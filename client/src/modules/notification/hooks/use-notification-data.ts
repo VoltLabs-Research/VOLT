@@ -2,7 +2,7 @@ import { useMarkAllReadMutation, useNotificationsInfiniteQuery, DEFAULT_LIMIT } 
 import useNotificationSocket from './use-notification-socket';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import type { Notification } from '../api/types/notification';
+import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 const useNotificationData = () => {
     useNotificationSocket();

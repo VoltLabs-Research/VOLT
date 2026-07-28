@@ -1,9 +1,9 @@
 import useCanvasUrlState from './use-canvas-url-state';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useExportAnalysisResultsMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
@@ -12,7 +12,7 @@ import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 
 interface UsePluginResultsOptions {
     pluginId: string;

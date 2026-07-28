@@ -1,5 +1,5 @@
-import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
 import { useCallback } from 'react';

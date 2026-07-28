@@ -1,6 +1,6 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 
-import type { EditorStore } from '@/modules/canvas/stores/editor/types';
+import type { EditorStore } from '@/modules/canvas/store/editor/types';
 
 type Plain = Record<string, unknown>;
 

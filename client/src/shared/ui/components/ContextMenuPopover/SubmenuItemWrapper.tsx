@@ -6,11 +6,11 @@ import FloatingRootContext, {
     useFloatingOwnerIds,
     useFloatingRoot
 } from '@/shared/ui/contexts/FloatingRootContext';
-import composeRefs from '@/shared/ui/utilities/compose-refs';
+import composeRefs from '@/shared/ui/utils/compose-refs';
 import { FloatingPortal, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/react';
 import { ChevronRight } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
+import type { MenuOption } from '@/shared/contracts/menu';
 
 interface SubmenuItemWrapperProps {
     option: MenuOption;

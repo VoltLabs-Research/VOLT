@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';

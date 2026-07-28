@@ -1,6 +1,6 @@
-import { JobStatus } from '@/modules/jobs/api/types/job';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { isQueuedJobStatus, isRunningJobStatus } from '@/modules/canvas/utilities/analysis-job-status';
+import { isQueuedJobStatus, isRunningJobStatus } from '@/modules/canvas/utils/analysis-job-status';
 import { useMemo } from 'react';
 
 interface JobStatusCounts {

@@ -57,11 +57,11 @@ import type {
     UpdateLatexFolderInput
 } from '@volt/contracts/modules/latex/http';
 import type {
-    LatexDocumentView,
-    LatexFileView,
-    LatexAssetView,
+    LatexDocument,
+    LatexFile,
+    LatexAsset,
     UploadLatexAssetResult,
-    LatexFolderView,
+    LatexFolder,
     LatexAssetUploadTarget
 } from '@volt/contracts/modules/latex/domain';
 
@@ -78,7 +78,7 @@ type CatalogFolderDoc = { _id: unknown; title: string; parent: unknown; createdA
 interface TeamScoped { teamId: string }
 interface DocumentScoped extends TeamScoped { documentId: string }
 
-const toDocumentView = (doc: LatexDocumentDoc): LatexDocumentView => ({
+const toDocumentView = (doc: LatexDocumentDoc): LatexDocument => ({
     _id: String(doc._id),
     title: doc.title,
     folder: doc.folder ? String(doc.folder) : null,
@@ -86,9 +86,9 @@ const toDocumentView = (doc: LatexDocumentDoc): LatexDocumentView => ({
     lastEditedBy: doc.lastEditedBy,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt
-}) as unknown as LatexDocumentView;
+}) as unknown as LatexDocument;
 
-const toFileView = (doc: LatexFileDoc): LatexFileView => ({
+const toFileView = (doc: LatexFileDoc): LatexFile => ({
     _id: String(doc._id),
     documentId: String(doc.document),
     name: doc.name,
@@ -97,15 +97,15 @@ const toFileView = (doc: LatexFileDoc): LatexFileView => ({
     isEntrypoint: doc.isEntrypoint,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt
-}) as unknown as LatexFileView;
+}) as unknown as LatexFile;
 
-const toFolderView = (folder: CatalogFolderDoc): LatexFolderView => ({
+const toFolderView = (folder: CatalogFolderDoc): LatexFolder => ({
     _id: String(folder._id),
     title: folder.title,
     parent: folder.parent ? String(folder.parent) : null,
     createdAt: folder.createdAt,
     updatedAt: folder.updatedAt
-}) as unknown as LatexFolderView;
+}) as unknown as LatexFolder;
 
 export default class LatexService {
     #signedUrlService = new ClusterObjectSignedUrlService();
@@ -119,7 +119,7 @@ export default class LatexService {
 
         #eventBus = eventBus;
 
-    async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocumentView>> {
+    async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocument>> {
         const page = Math.max(1, Number(input.page) || 1);
         const limit = Math.max(1, Math.min(500, Number(input.limit) || 500));
 
@@ -151,7 +151,7 @@ export default class LatexService {
         };
     }
 
-    async createDocument(input: CreateLatexDocumentInput & TeamScoped & { userId: string }): Promise<LatexDocumentView> {
+    async createDocument(input: CreateLatexDocumentInput & TeamScoped & { userId: string }): Promise<LatexDocument> {
         const title = input.title?.trim();
         if (!title) {
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Document title is required');
@@ -184,12 +184,12 @@ export default class LatexService {
         return toDocumentView(document);
     }
 
-    async getDocument(input: DocumentScoped): Promise<LatexDocumentView> {
+    async getDocument(input: DocumentScoped): Promise<LatexDocument> {
         const document = await this.#requireDocument(input.teamId, input.documentId);
         return toDocumentView(document);
     }
 
-    async updateDocument(input: UpdateLatexDocumentInput & DocumentScoped & { userId?: string }): Promise<LatexDocumentView> {
+    async updateDocument(input: UpdateLatexDocumentInput & DocumentScoped & { userId?: string }): Promise<LatexDocument> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         const patch: Record<string, unknown> = {
@@ -242,7 +242,7 @@ export default class LatexService {
         }
     }
 
-    async importDocument(input: TeamScoped & { userId: string; file: Express.Multer.File; folderId?: string | null }): Promise<LatexDocumentView> {
+    async importDocument(input: TeamScoped & { userId: string; file: Express.Multer.File; folderId?: string | null }): Promise<LatexDocument> {
         if (!input.file?.buffer?.length) {
             throw ApplicationError.badRequest(ErrorCodes.FILE_READ_ERROR, 'No file provided or file is empty');
         }
@@ -270,7 +270,7 @@ export default class LatexService {
         return this.#importFromTex(input, storageClusterId);
     }
 
-    async listAssets(input: DocumentScoped): Promise<LatexAssetView[]> {
+    async listAssets(input: DocumentScoped): Promise<LatexAsset[]> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         const assets = await LatexAssetModel.find({ document: input.documentId }).sort({ createdAt: -1 }).exec();
@@ -392,7 +392,7 @@ export default class LatexService {
         await LatexAssetModel.deleteOne({ _id: input.assetId });
     }
 
-    async updateAsset(input: DocumentScoped & { assetId: string; path: string }): Promise<LatexAssetView> {
+    async updateAsset(input: DocumentScoped & { assetId: string; path: string }): Promise<LatexAsset> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         const asset = await LatexAssetModel.findOne({ _id: input.assetId, document: input.documentId });
@@ -542,13 +542,13 @@ export default class LatexService {
         });
     }
 
-    async listFiles(input: DocumentScoped): Promise<LatexFileView[]> {
+    async listFiles(input: DocumentScoped): Promise<LatexFile[]> {
         await this.#requireDocument(input.teamId, input.documentId);
         const files = await this.#findFilesByDocument(input.documentId);
         return files.map((file) => toFileView(file));
     }
 
-    async createFile(input: CreateLatexFileInput & DocumentScoped & { userId: string }): Promise<LatexFileView> {
+    async createFile(input: CreateLatexFileInput & DocumentScoped & { userId: string }): Promise<LatexFile> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         if (input.isEntrypoint) {
@@ -570,7 +570,7 @@ export default class LatexService {
         return toFileView(file);
     }
 
-    async updateFile(input: UpdateLatexFileInput & DocumentScoped & { fileId: string; source?: 'ai' | 'editor' }): Promise<LatexFileView> {
+    async updateFile(input: UpdateLatexFileInput & DocumentScoped & { fileId: string; source?: 'ai' | 'editor' }): Promise<LatexFile> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         const existing = await LatexFileModel.findOne({ _id: input.fileId, document: input.documentId });
@@ -625,7 +625,7 @@ export default class LatexService {
         await LatexFileModel.deleteOne({ _id: input.fileId });
     }
 
-    async setFileEntrypoint(input: DocumentScoped & { fileId: string }): Promise<LatexFileView> {
+    async setFileEntrypoint(input: DocumentScoped & { fileId: string }): Promise<LatexFile> {
         await this.#requireDocument(input.teamId, input.documentId);
 
         const file = await LatexFileModel.findOne({ _id: input.fileId, document: input.documentId });
@@ -641,7 +641,7 @@ export default class LatexService {
         return toFileView(updated);
     }
 
-    async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolderView>> {
+    async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolder>> {
         const page = Number(input.page) || 1;
         const limit = Number(input.limit) || 500;
         const filter = { team: input.teamId, kind: CatalogFolderKind.Latex, parent: input.parentId ?? null };
@@ -660,12 +660,12 @@ export default class LatexService {
         };
     }
 
-    async getFolder(input: TeamScoped & { folderId: string }): Promise<LatexFolderView> {
+    async getFolder(input: TeamScoped & { folderId: string }): Promise<LatexFolder> {
         const folder = await this.#requireFolder(input.teamId, input.folderId);
         return toFolderView(folder);
     }
 
-    async createFolder(input: CreateLatexFolderInput & TeamScoped & { userId: string }): Promise<LatexFolderView> {
+    async createFolder(input: CreateLatexFolderInput & TeamScoped & { userId: string }): Promise<LatexFolder> {
         const folder = await CatalogFolderModel.create({
             team: input.teamId,
             createdBy: input.userId,
@@ -678,7 +678,7 @@ export default class LatexService {
         return toFolderView(folder);
     }
 
-    async updateFolder(input: UpdateLatexFolderInput & TeamScoped & { folderId: string }): Promise<LatexFolderView> {
+    async updateFolder(input: UpdateLatexFolderInput & TeamScoped & { folderId: string }): Promise<LatexFolder> {
         await this.#requireFolder(input.teamId, input.folderId);
         const updated = await CatalogFolderModel.findByIdAndUpdate(
             input.folderId,
@@ -734,7 +734,7 @@ export default class LatexService {
         await LatexFileModel.updateMany({ document: documentId, isEntrypoint: true }, { $set: { isEntrypoint: false } }).exec();
     }
 
-    #toAssetView(teamId: string, documentId: string, asset: LatexAssetDoc): LatexAssetView {
+    #toAssetView(teamId: string, documentId: string, asset: LatexAssetDoc): LatexAsset {
         return {
             _id: String(asset._id),
             documentId: String(asset.document),
@@ -767,7 +767,7 @@ export default class LatexService {
         return cleaned || 'Imported Document';
     }
 
-    async #importFromTex(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocumentView> {
+    async #importFromTex(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
         const content = input.file.buffer.toString('utf-8');
         const title = this.#deriveTitle(input.file.originalname);
 
@@ -796,7 +796,7 @@ export default class LatexService {
         return toDocumentView(document);
     }
 
-    async #importFromZip(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocumentView> {
+    async #importFromZip(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
         let directory: unzipper.CentralDirectory;
         try {
             directory = await unzipper.Open.buffer(input.file.buffer);
@@ -875,7 +875,7 @@ export default class LatexService {
         return toDocumentView(document);
     }
 
-    async #importFromPdf(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocumentView> {
+    async #importFromPdf(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument> {
         const originalName = input.file.originalname ?? 'imported.pdf';
         const title = this.#deriveTitle(originalName);
         const ext = path.extname(originalName);

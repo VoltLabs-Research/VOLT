@@ -216,7 +216,7 @@ export class WorkflowValidatorService {
                 props: {
                     team: '',
                     workflow: new Workflow(rootPluginId, workflow),
-                    status: PluginStatus.Draft,
+                    status: PluginStatus.DRAFT,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }

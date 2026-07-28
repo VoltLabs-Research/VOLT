@@ -1,5 +1,5 @@
 import { buildMenus } from '../TopToolbarMenus';
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
+import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import CanvasPluginSearch from '../CanvasPluginSearch';
 import MenuPopover from '../MenuPopover';
@@ -10,7 +10,7 @@ import WorkspaceTabs from '../WorkspaceTabs';
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
@@ -21,7 +21,7 @@ import './TopToolbar.css';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
 interface TopToolbarShareInfo {
     trajectoryId: string;

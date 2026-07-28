@@ -9,12 +9,12 @@ import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing'
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
-import { buildSubListingsPath } from '@/modules/plugin/utilities/listing/build-sub-listings-path';
+import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
+import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
 import type { ReactNode } from 'react';
-import type { MenuOption } from '@/shared/ui/types/menu';
-import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import { useNavigate } from 'react-router-dom';
 export interface PluginExposureTableProps {

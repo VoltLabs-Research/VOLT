@@ -1,8 +1,8 @@
 import useFrameProperties from './use-frame-properties';
-import { buildPropertyOptions, resolvePropertySelection } from './use-property-selector.utilities';
+import { buildPropertyOptions, resolvePropertySelection } from './use-property-selector.utils';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 
-import type { PropertyOption } from './use-property-selector.utilities';
+import type { PropertyOption } from './use-property-selector.utils';
 
 interface UsePropertySelectorParams {
     trajectoryId?: string;

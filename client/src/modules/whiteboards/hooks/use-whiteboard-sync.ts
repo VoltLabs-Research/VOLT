@@ -5,41 +5,34 @@ import {
     filterPersistableAppState,
     mergeWhiteboardAppState,
     mergeWhiteboardElements
-} from '@/modules/whiteboards/utilities/whiteboards';
+} from '@/modules/whiteboards/utils/whiteboards';
 import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
+import type { SocketAck } from '@/modules/socket/contracts/socket-service';
+import type { WhiteboardAppState, WhiteboardElement } from '@/modules/whiteboards/contracts/excalidraw';
 import { useCallback, useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import { v4 as uuidv4 } from 'uuid';
-
-type ExcalidrawElement = Record<string, unknown>;
-type AppState = Record<string, unknown>;
 
 interface WhiteboardPatchPayload {
     whiteboardId: string;
     clientId: string;
     baseRevision: number;
-    elements: ExcalidrawElement[];
-    appState: AppState;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
     elementOrder?: string[];
 };
 
 interface WhiteboardStatePayload {
     whiteboardId: string;
     revision: number;
-    elements: ExcalidrawElement[];
-    appState: AppState;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
     elementOrder?: string[];
     senderId?: string;
     clientId?: string;
     baseRevision?: number;
-};
-
-interface SocketAck<TData> {
-    ok: boolean;
-    data?: TData;
-    error?: string;
 };
 
 interface WhiteboardSubscribeAck {
@@ -54,16 +47,16 @@ interface WhiteboardPatchAck {
 };
 
 interface WhiteboardSceneState {
-    elements: ExcalidrawElement[];
-    appState: AppState;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
 };
 
 interface UseWhiteboardSyncProps {
     whiteboardId?: string;
     enabled?: boolean;
     onRemoteState?: (
-        elements: ExcalidrawElement[],
-        appState: AppState,
+        elements: WhiteboardElement[],
+        appState: WhiteboardAppState,
         revision: number,
         elementOrder?: string[]
     ) => Promise<void> | void;
@@ -197,7 +190,7 @@ const useWhiteboardSync = ({
             });
     }, [applyPatchAck, enabled, notifyConflictSync, readAckData, whiteboardId, socketService]);
 
-    const sendDelta = useCallback((elements: ExcalidrawElement[], appState: AppState) => {
+    const sendDelta = useCallback((elements: WhiteboardElement[], appState: WhiteboardAppState) => {
         if (!enabled || !whiteboardId) {
             return;
         }

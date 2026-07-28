@@ -1,6 +1,6 @@
-import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, get, post, patch, del } from '@/app/core/http/utils/create-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { TeamInvitation } from '../types/invitation/team-invitation';
+import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 
 export interface AcceptInvitationInput {
     invitationId: string;

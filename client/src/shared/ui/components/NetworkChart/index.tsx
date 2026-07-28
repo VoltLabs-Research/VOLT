@@ -30,7 +30,7 @@ interface NetworkChartProps {
     height?: number;
 };
 
-interface DataPoint {
+interface NetworkDataPoint {
     time: string;
     rx: number;
     tx: number;
@@ -53,7 +53,7 @@ const CHART_COLORS: ChartColors = {
     axis: 'var(--color-text-muted)',
     legend: 'var(--color-text-primary)'
 };
-const EMPTY_DATA: DataPoint[] = [{ time: '', rx: 0, tx: 0 }];
+const EMPTY_DATA: NetworkDataPoint[] = [{ time: '', rx: 0, tx: 0 }];
 const CHART_MARGIN = {
     top: 10,
     right: 10,
@@ -124,7 +124,7 @@ const NetworkChart = ({
     title = 'Network I/O',
     height = 250
 }: NetworkChartProps) => {
-    const [history, setHistory] = useState<DataPoint[]>([]);
+    const [history, setHistory] = useState<NetworkDataPoint[]>([]);
     const [prevData, setPrevData] = useState<NetworkData | null>(null);
     const gradientId = useId();
 
@@ -146,7 +146,7 @@ const NetworkChart = ({
 
         setPrevData(data);
 
-        const newPoint: DataPoint = {
+        const newPoint: NetworkDataPoint = {
             time: formatTime(new Date()),
             rx: rxValue,
             tx: txValue

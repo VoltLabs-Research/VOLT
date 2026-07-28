@@ -1,6 +1,6 @@
 
-import { createService, get } from '@/app/core/http/utilities/create-service';
-import type { DailyActivity } from './types/daily-activity';
+import { createService, get } from '@/app/core/http/utils/create-service';
+import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 
 export interface GetDailyActivityParams {
     range?: number;
