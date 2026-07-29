@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
@@ -16,13 +17,13 @@ import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
-import type { TrajectoryFrameStore } from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import { createZstdDecompressionStream } from '@shared/infrastructure/storage/storage-codec';
@@ -50,7 +51,10 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         private readonly redisConnection: RedisConnection,
         daemonJobReporter: DaemonJobReporter
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
         this.buildStatusReporter = createLifecycleStatusReporter<FrameProcessingQueueJobPayload>(
             {
                 started: daemonJobReporter.reportGlbStarted,
@@ -62,13 +66,10 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 
     protected async process(payload: FrameProcessingQueueJobPayload, bullJob: Job<FrameProcessingQueueJobPayload>): Promise<void> {
-        const maxAttempts = bullJob.opts.attempts ?? 1;
-        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
-
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(),
+                shouldReportTerminal: () => isFinalAttempt(bullJob),
                 progress: (value) => bullJob.updateProgress(value)
             },
             () => this.processFrame(payload, bullJob)
@@ -115,7 +116,10 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                     trajectoryId,
                     teamId: payload.teamId,
                     storageClusterId: ownerClusterId,
-                    config: { autoPreview: true, timestep }
+                    config: {
+                        autoPreview: true,
+                        timestep
+                    }
                 });
             } catch (error) {
                 logger.warn(
@@ -162,7 +166,10 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                     const decompressed = createZstdDecompressionStream(response.stream);
                     await pipeline(decompressed.stream, createWriteStream(localPath));
                     await decompressed.completion;
-                    localFrames.push({ timestep: frame.timestep, dumpPath: localPath });
+                    localFrames.push({
+                        timestep: frame.timestep,
+                        dumpPath: localPath
+                    });
                 }
 
                 await this.trajectoryFrameStore.ingest({
@@ -225,9 +232,4 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 }
 
-let trajectoryFrameProcessingWorkerInstance: TrajectoryFrameProcessingWorker | null = null;
-
-export const getTrajectoryFrameProcessingWorker = (): TrajectoryFrameProcessingWorker => {
-    trajectoryFrameProcessingWorkerInstance ??= new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getMinioService(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getRedisConnection(), getDaemonJobReporter());
-    return trajectoryFrameProcessingWorkerInstance;
-};
+export const getTrajectoryFrameProcessingWorker = singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getMinioService(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getRedisConnection(), getDaemonJobReporter()));

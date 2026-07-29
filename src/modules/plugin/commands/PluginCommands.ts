@@ -2,7 +2,7 @@ import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStor
 import { getPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getConfig } from '@core/config/daemon';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 import {
@@ -101,7 +101,10 @@ export class PluginCommands {
         const queued = await this.queueService.enqueue(PLUGIN_WARMUP_QUEUE_NAME, warmupPayload, {
             preserveExistingJob: true
         });
-        return { queued, jobId };
+        return {
+            queued,
+            jobId
+        };
     }
 
     @Command('registry.install')
@@ -133,19 +136,32 @@ export class PluginCommands {
             const scope = payload.name.replace(/^@/, '').replace(/\//g, '-');
             const objectPath = `plugin-binaries/registry/${scope}/${payload.version}/${payload.platform}/${fileName}`;
 
-            logger.info({ fileName, type: entrypoint.type, size: body.length, objectPath }, '@plugin-registry-install: uploading binary');
+            logger.info({
+                fileName,
+                type: entrypoint.type,
+                size: body.length,
+                objectPath
+            }, '@plugin-registry-install: uploading binary');
             await this.objectStore.putObject({
                 ownerClusterId: this.config.teamClusterId,
                 bucket: ObjectBucketName.Plugins,
                 objectKey: objectPath,
                 body,
-                metadata: { sha256: hash, 'original-name': fileName }
+                metadata: {
+                    sha256: hash,
+                    'original-name': fileName
+                }
             });
             logger.info({ objectPath }, '@plugin-registry-install: upload complete');
 
             return {
                 workflow,
-                binary: { objectPath, fileName, hash, sizeBytes: body.length },
+                binary: {
+                    objectPath,
+                    fileName,
+                    hash,
+                    sizeBytes: body.length
+                },
                 ownerClusterId: this.config.teamClusterId
             };
         });
@@ -167,7 +183,11 @@ export class PluginCommands {
     }
 
     private async readWorkflow(extractDir: string): Promise<unknown> {
-        const [pluginJsonPath] = await fg('**/plugin.json', { cwd: extractDir, absolute: true, dot: true });
+        const [pluginJsonPath] = await fg('**/plugin.json', {
+            cwd: extractDir,
+            absolute: true,
+            dot: true
+        });
         if (!pluginJsonPath) {
             throw new ApplicationError('Plugin::RegistryWorkflowMissing', 'plugin.json not found in registry package', { statusCode: 422 });
         }
@@ -191,8 +211,18 @@ export class PluginCommands {
     }
 
     private async locateExecutable(extractDir: string, binaryName: string): Promise<string> {
-        const matches = await fg(`**/bin/${fg.escapePath(binaryName)}`, { cwd: extractDir, absolute: true, dot: true, onlyFiles: true });
-        const found = matches[0] ?? (await fg(`**/${fg.escapePath(binaryName)}`, { cwd: extractDir, absolute: true, dot: true, onlyFiles: true }))[0];
+        const matches = await fg(`**/bin/${fg.escapePath(binaryName)}`, {
+            cwd: extractDir,
+            absolute: true,
+            dot: true,
+            onlyFiles: true
+        });
+        const found = matches[0] ?? (await fg(`**/${fg.escapePath(binaryName)}`, {
+            cwd: extractDir,
+            absolute: true,
+            dot: true,
+            onlyFiles: true
+        }))[0];
         if (!found) {
             throw new ApplicationError('Plugin::RegistryBinaryMissing', `Binary ${binaryName} not found in registry package`, { statusCode: 422 });
         }
@@ -211,7 +241,12 @@ export class PluginCommands {
         });
 
         archive.pipe(output);
-        const files = await fg('**/*', { cwd: extractDir, onlyFiles: true, followSymbolicLinks: true, dot: true });
+        const files = await fg('**/*', {
+            cwd: extractDir,
+            onlyFiles: true,
+            followSymbolicLinks: true,
+            dot: true
+        });
         for (const relativePath of files) {
             archive.file(await fs.realpath(path.join(extractDir, relativePath)), { name: relativePath });
         }
@@ -249,9 +284,4 @@ export class PluginCommands {
     }
 }
 
-let PluginCommandsInstance: PluginCommands | null = null;
-
-export const getPluginCommands = (): PluginCommands => {
-    PluginCommandsInstance ??= new PluginCommands(getObjectStore(), getPluginListingRepository(), getQueueService(), getConfig());
-    return PluginCommandsInstance;
-};
+export const getPluginCommands = commandGroupFactory(PluginCommands, () => new PluginCommands(getObjectStore(), getPluginListingRepository(), getQueueService(), getConfig()));

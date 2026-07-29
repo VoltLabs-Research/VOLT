@@ -71,7 +71,10 @@ export class ModuleRegistry {
             errors.push(`Requires-cycle detected: ${cycle.join(' -> ')}.`);
         }
 
-        return { ok: errors.length === 0, errors };
+        return {
+            ok: errors.length === 0,
+            errors
+        };
     }
 
     isEnabled(key: string, enabled: Set<string>): boolean {

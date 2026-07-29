@@ -1,7 +1,7 @@
 import { getDebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';
 import type { NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@shared/contracts';
 import type { ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { DebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';
 
 interface DebugStartPayload {
@@ -72,9 +72,4 @@ export class DebugCommands {
     }
 }
 
-let DebugCommandsInstance: DebugCommands | null = null;
-
-export const getDebugCommands = (): DebugCommands => {
-    DebugCommandsInstance ??= new DebugCommands(getDebugSessionManager());
-    return DebugCommandsInstance;
-};
+export const getDebugCommands = commandGroupFactory(DebugCommands, () => new DebugCommands(getDebugSessionManager()));

@@ -16,11 +16,19 @@ export const createLifecycleStatusReporter = <P extends JobIdentity>(
     const promise =
         status === 'started' ? triple.started(payload)
         : status === 'completed' ? triple.completed(payload)
-        : triple.failed({ ...payload, error: error ?? 'Unknown error' } as Failed<P>);
+        : triple.failed({
+            ...payload,
+            error: error ?? 'Unknown error'
+        } as Failed<P>);
 
     promise.catch((err: unknown) => {
         logger.error(
-            { err, jobId: payload.jobId, status, trajectoryId: payload.trajectoryId },
+            {
+                err,
+                jobId: payload.jobId,
+                status,
+                trajectoryId: payload.trajectoryId
+            },
             `Failed to report ${kind} job ${status} status: ${errorMessage(err)}`
         );
     });

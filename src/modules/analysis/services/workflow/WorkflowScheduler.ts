@@ -269,7 +269,10 @@ export class WorkflowScheduler {
             }
 
             if (itemCount > 0) {
-                return { resolved: true, active: true };
+                return {
+                    resolved: true,
+                    active: true
+                };
             }
 
             return {
@@ -286,7 +289,10 @@ export class WorkflowScheduler {
             );
 
             if(activeNodeIds.has(targetNodeId)){
-                return { resolved: true, active: true };
+                return {
+                    resolved: true,
+                    active: true
+                };
             }
 
             return {
@@ -309,7 +315,10 @@ export class WorkflowScheduler {
                 : null;
 
             if(edge.sourceHandle === 'cases' && matchedCaseId === targetNodeId){
-                return { resolved: true, active: true };
+                return {
+                    resolved: true,
+                    active: true
+                };
             }
 
             return {

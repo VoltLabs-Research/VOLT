@@ -1,6 +1,6 @@
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import type { ContainerAction, CreateContainerRequest } from '@shared/contracts';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { resolveComposeDefaultNetworkName } from '@shared/contracts/types/runtime-container';
 import type { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 
@@ -35,7 +35,10 @@ export class ContainerCommands {
 
         return this.dockerRuntime.createContainer(
             networkMode && !payload.networkMode
-                ? { ...payload, networkMode }
+                ? {
+                    ...payload,
+                    networkMode
+                }
                 : payload
         );
     }
@@ -79,9 +82,4 @@ export class ContainerCommands {
     }
 }
 
-let ContainerCommandsInstance: ContainerCommands | null = null;
-
-export const getContainerCommands = (): ContainerCommands => {
-    ContainerCommandsInstance ??= new ContainerCommands(getDockerRuntime());
-    return ContainerCommandsInstance;
-};
+export const getContainerCommands = commandGroupFactory(ContainerCommands, () => new ContainerCommands(getDockerRuntime()));

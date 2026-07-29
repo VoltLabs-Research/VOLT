@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
@@ -389,9 +390,4 @@ export class DaemonExposureRegistry {
     }
 };
 
-let daemonExposureRegistryInstance: DaemonExposureRegistry | null = null;
-
-export const getDaemonExposureRegistry = (): DaemonExposureRegistry => {
-    daemonExposureRegistryInstance ??= new DaemonExposureRegistry(getConfig(), getDockerRuntime(), getVoltCloudConnection(), getEventDispatcher());
-    return daemonExposureRegistryInstance;
-};
+export const getDaemonExposureRegistry = singleton((): DaemonExposureRegistry => new DaemonExposureRegistry(getConfig(), getDockerRuntime(), getVoltCloudConnection(), getEventDispatcher()));

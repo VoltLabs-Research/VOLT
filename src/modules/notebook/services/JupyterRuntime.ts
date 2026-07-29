@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { DockerRuntime, getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import {
@@ -81,17 +82,50 @@ export class JupyterRuntime {
             image: this.config.jupyter.image,
             name: this.buildContainerName(input.notebook._id),
             env: [
-                { key: 'JUPYTER_TOKEN', value: this.config.jupyter.token },
-                { key: 'VOLT_NOTEBOOK_ID', value: input.notebook._id },
-                { key: 'VOLT_NOTEBOOK_PATH', value: input.notebook.notebookPath },
-                { key: 'VOLT_TEAM_ID', value: input.notebook.teamId },
-                { key: 'VOLT_REQUESTED_BY', value: input.requestedBy },
-                { key: 'VOLT_BASE_URL', value: input.baseUrl },
-                ...(input.secretKey ? [{ key: 'VOLT_SECRET_KEY', value: input.secretKey }] : []),
-                ...(input.trajectoryId ? [{ key: 'VOLT_TRAJECTORY_ID', value: input.trajectoryId }] : []),
-                { key: PUBLIC_BASE_PATH_ENV_KEY, value: input.publicBasePath },
-                { key: 'DOCKER_STACKS_JUPYTER_CMD', value: 'lab' },
-                { key: RUNTIME_FINGERPRINT_ENV_KEY, value: this.buildRuntimeFingerprint(input) }
+                {
+                    key: 'JUPYTER_TOKEN',
+                    value: this.config.jupyter.token
+                },
+                {
+                    key: 'VOLT_NOTEBOOK_ID',
+                    value: input.notebook._id
+                },
+                {
+                    key: 'VOLT_NOTEBOOK_PATH',
+                    value: input.notebook.notebookPath
+                },
+                {
+                    key: 'VOLT_TEAM_ID',
+                    value: input.notebook.teamId
+                },
+                {
+                    key: 'VOLT_REQUESTED_BY',
+                    value: input.requestedBy
+                },
+                {
+                    key: 'VOLT_BASE_URL',
+                    value: input.baseUrl
+                },
+                ...(input.secretKey ? [{
+                    key: 'VOLT_SECRET_KEY',
+                    value: input.secretKey
+                }] : []),
+                ...(input.trajectoryId ? [{
+                    key: 'VOLT_TRAJECTORY_ID',
+                    value: input.trajectoryId
+                }] : []),
+                {
+                    key: PUBLIC_BASE_PATH_ENV_KEY,
+                    value: input.publicBasePath
+                },
+                {
+                    key: 'DOCKER_STACKS_JUPYTER_CMD',
+                    value: 'lab'
+                },
+                {
+                    key: RUNTIME_FINGERPRINT_ENV_KEY,
+                    value: this.buildRuntimeFingerprint(input)
+                }
             ],
             ports: [{ private: jupyterPort }],
             publishUnassignedPorts: true,
@@ -263,9 +297,4 @@ export class JupyterRuntime {
     }
 }
 
-let jupyterRuntimeInstance: JupyterRuntime | null = null;
-
-export const getJupyterRuntime = (): JupyterRuntime => {
-    jupyterRuntimeInstance ??= new JupyterRuntime(getConfig(), getDockerRuntime());
-    return jupyterRuntimeInstance;
-};
+export const getJupyterRuntime = singleton((): JupyterRuntime => new JupyterRuntime(getConfig(), getDockerRuntime()));

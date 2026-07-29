@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
@@ -300,9 +301,4 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
     }
 }
 
-let remoteClientInstance: DirectObjectStoreClient | null = null;
-
-export const getRemoteClient = (): DirectObjectStoreClient => {
-    remoteClientInstance ??= new DirectObjectStoreClient(getConfig());
-    return remoteClientInstance;
-};
+export const getRemoteClient = singleton((): DirectObjectStoreClient => new DirectObjectStoreClient(getConfig()));

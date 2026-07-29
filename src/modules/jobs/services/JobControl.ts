@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
@@ -29,7 +30,10 @@ export class JobControl {
             affectedJobIds.push(jobId);
         }
 
-        return { affectedJobs: affectedJobIds.length, affectedJobIds };
+        return {
+            affectedJobs: affectedJobIds.length,
+            affectedJobIds
+        };
     };
 
     removeRunningJobs = async (input: RemoveRunningJobsRequest): Promise<JobsActionResponse> => {
@@ -46,13 +50,11 @@ export class JobControl {
             affectedJobIds.push(jobId);
         }
 
-        return { affectedJobs: affectedJobIds.length, affectedJobIds };
+        return {
+            affectedJobs: affectedJobIds.length,
+            affectedJobIds
+        };
     };
 }
 
-let jobControlInstance: JobControl | null = null;
-
-export const getJobControl = (): JobControl => {
-    jobControlInstance ??= new JobControl(getQueueService(), getRedisConnection());
-    return jobControlInstance;
-};
+export const getJobControl = singleton((): JobControl => new JobControl(getQueueService(), getRedisConnection()));

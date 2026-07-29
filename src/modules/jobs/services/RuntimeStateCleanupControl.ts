@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import type {
     AnalysisRuntimeCleanupRequest,
@@ -61,9 +62,4 @@ export class RuntimeStateCleanupControl {
     }
 }
 
-let runtimeStateCleanupControlInstance: RuntimeStateCleanupControl | null = null;
-
-export const getRuntimeStateCleanupControl = (): RuntimeStateCleanupControl => {
-    runtimeStateCleanupControlInstance ??= new RuntimeStateCleanupControl(getRedisConnection());
-    return runtimeStateCleanupControlInstance;
-};
+export const getRuntimeStateCleanupControl = singleton((): RuntimeStateCleanupControl => new RuntimeStateCleanupControl(getRedisConnection()));

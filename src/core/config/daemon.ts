@@ -88,10 +88,6 @@ export const getConfig = (): DaemonConfig => {
     return cachedConfig;
 };
 
-export const resetConfigCache = (): void => {
-    cachedConfig = null;
-};
-
 export const loadConfig = (): DaemonConfig => {
     const minio: MinioConfig = {
         endpoint: readRequiredString('MINIO_ENDPOINT'),

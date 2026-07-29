@@ -7,7 +7,7 @@ import type { ExecutionLogSegment } from '@shared/contracts/types/execution-log'
 import type {
     BaseAnalysisEventData
 } from '@modules/analysis/events/analysis-events';
-import type { AnalysisProvenance } from '@modules/analysis/services/provenance-types';
+import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
 
 type AnalysisJobCompletionPayload = BaseAnalysisEventData & { error?: string };
 

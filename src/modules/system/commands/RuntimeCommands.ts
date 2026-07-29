@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 import type { RuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import type { DaemonConfig } from '@core/config/daemon';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type {
     TeamClusterDaemonQueueConcurrencyApplyPayload,
@@ -112,9 +112,4 @@ export class RuntimeCommands {
     }
 }
 
-let RuntimeCommandsInstance: RuntimeCommands | null = null;
-
-export const getRuntimeCommands = (): RuntimeCommands => {
-    RuntimeCommandsInstance ??= new RuntimeCommands(getRuntimeRoleCoordinator(), getConfig(), getDockerRuntime(), getVoltCloudConnection(), getQueueService());
-    return RuntimeCommandsInstance;
-};
+export const getRuntimeCommands = commandGroupFactory(RuntimeCommands, () => new RuntimeCommands(getRuntimeRoleCoordinator(), getConfig(), getDockerRuntime(), getVoltCloudConnection(), getQueueService()));

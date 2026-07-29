@@ -1,3 +1,5 @@
+import { createRedisClient, toRedisConnectionOptions } from '@shared/infrastructure/redis/create-redis-client';
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import type { DaemonConfig } from '@core/config/daemon';
 import Redis, { type RedisOptions } from 'ioredis';
@@ -65,9 +67,4 @@ export class RedisExplorer {
 
 };
 
-let redisExplorerInstance: RedisExplorer | null = null;
-
-export const getRedisExplorer = (): RedisExplorer => {
-    redisExplorerInstance ??= new RedisExplorer(getConfig());
-    return redisExplorerInstance;
-};
+export const getRedisExplorer = singleton((): RedisExplorer => new RedisExplorer(getConfig()));

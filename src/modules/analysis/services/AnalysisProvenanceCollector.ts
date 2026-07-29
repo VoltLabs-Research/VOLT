@@ -1,9 +1,10 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import { logger } from '@shared/infrastructure/logger';
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/provenance-event';
-import type { AnalysisProvenance } from '@modules/analysis/services/provenance-types';
+import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/analysis-events';
+import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -75,15 +76,13 @@ export class AnalysisProvenanceCollector {
         );
 
         logger.info(
-            { analysisId: identity.analysisId, plugin: provenance.pluginName },
+            {
+                analysisId: identity.analysisId,
+                plugin: provenance.pluginName
+            },
             'Analysis provenance emitted'
         );
     }
 }
 
-let analysisProvenanceCollectorInstance: AnalysisProvenanceCollector | null = null;
-
-export const getAnalysisProvenanceCollector = (): AnalysisProvenanceCollector => {
-    analysisProvenanceCollectorInstance ??= new AnalysisProvenanceCollector(getEventDispatcher());
-    return analysisProvenanceCollectorInstance;
-};
+export const getAnalysisProvenanceCollector = singleton((): AnalysisProvenanceCollector => new AnalysisProvenanceCollector(getEventDispatcher()));

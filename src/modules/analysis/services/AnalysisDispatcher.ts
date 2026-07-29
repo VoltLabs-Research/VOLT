@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getAnalysisQueueAdmissionController } from '@modules/analysis/services/AnalysisQueueAdmissionController';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
@@ -85,9 +86,4 @@ export class AnalysisDispatcher {
     }
 }
 
-let analysisDispatcherInstance: AnalysisDispatcher | null = null;
-
-export const getAnalysisDispatcher = (): AnalysisDispatcher => {
-    analysisDispatcherInstance ??= new AnalysisDispatcher(getWorkflowEngine(), getAnalysisDataStore(), getEventBroker(), getAnalysisQueueAdmissionController());
-    return analysisDispatcherInstance;
-};
+export const getAnalysisDispatcher = singleton((): AnalysisDispatcher => new AnalysisDispatcher(getWorkflowEngine(), getAnalysisDataStore(), getEventBroker(), getAnalysisQueueAdmissionController()));

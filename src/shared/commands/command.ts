@@ -14,16 +14,22 @@ export interface CommandGroupMetadata {
     readonly commands: readonly CommandMethodMetadata[];
 }
 
-export type CommandGroupClass = new (...args: any[]) => any;
+export type CommandGroupClass = new (...args: never[]) => object;
 
-const registeredGroups = new Set<CommandGroupClass>();
+export type CommandPayload = object | undefined;
+
+export type CommandHandlerMap = Record<string, (payload: CommandPayload) => unknown>;
+
+export interface CommandGroupFactory {
+    (): CommandHandlerMap;
+    readonly group: CommandGroupClass;
+}
+
 const namespaces = new WeakMap<CommandGroupClass, string>();
 const commandsByGroup = new WeakMap<CommandGroupClass, CommandMethodMetadata[]>();
 
 export const CommandGroup = (namespace: string): ClassDecorator => (target) => {
-    const groupClass = target as unknown as CommandGroupClass;
-    registeredGroups.add(groupClass);
-    namespaces.set(groupClass, namespace);
+    namespaces.set(target as unknown as CommandGroupClass, namespace);
 };
 
 export const Command = (name: string, options: CommandOptions = {}): MethodDecorator => (target, propertyKey, descriptor) => {
@@ -33,24 +39,38 @@ export const Command = (name: string, options: CommandOptions = {}): MethodDecor
 
     const groupClass = (target as { constructor: CommandGroupClass }).constructor;
     const methods = commandsByGroup.get(groupClass) ?? [];
-    methods.push({ name, options, propertyKey: String(propertyKey) });
+    methods.push({
+        name,
+        options,
+        propertyKey: String(propertyKey)
+    });
     commandsByGroup.set(groupClass, methods);
 };
 
-export const getCommandGroupMetadata = (value: unknown): CommandGroupMetadata | null => {
-    if (typeof value !== 'function') {
-        return null;
-    }
-
-    const groupClass = value as CommandGroupClass;
-    const namespace = namespaces.get(groupClass);
-    const commands = commandsByGroup.get(groupClass);
+export const getCommandGroupMetadata = (group: CommandGroupClass): CommandGroupMetadata | null => {
+    const namespace = namespaces.get(group);
+    const commands = commandsByGroup.get(group);
 
     if (!namespace || !commands?.length) {
         return null;
     }
 
-    return { namespace, commands: [...commands] };
+    return {
+        namespace,
+        commands: [...commands]
+    };
 };
 
-export const getRegisteredCommandGroups = (): readonly CommandGroupClass[] => [...registeredGroups];
+export const commandGroupFactory = <TGroup extends object>(
+    group: new (...args: never[]) => TGroup,
+    create: () => TGroup
+): CommandGroupFactory => {
+    let instance: TGroup | null = null;
+
+    const factory = (): CommandHandlerMap => {
+        instance ??= create();
+        return instance as unknown as CommandHandlerMap;
+    };
+
+    return Object.assign(factory, { group: group as CommandGroupClass });
+};

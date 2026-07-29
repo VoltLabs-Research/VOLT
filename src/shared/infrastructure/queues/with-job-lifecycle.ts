@@ -45,7 +45,13 @@ export const withJobLifecycle = async <T>(
         throw error;
     } finally {
         if (handlers.cleanup) {
-            await handlers.cleanup({ reachedTerminal, error: caughtError });
+            await handlers.cleanup({
+                reachedTerminal,
+                error: caughtError
+            });
         }
     }
 };
+
+export const isFinalAttempt = (bullJob: { attemptsMade: number; opts: { attempts?: number } }): boolean =>
+    bullJob.attemptsMade + 1 >= (bullJob.opts.attempts ?? 1);

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
@@ -163,9 +164,4 @@ export class WorkflowEngine {
     }
 };
 
-let workflowEngineInstance: WorkflowEngine | null = null;
-
-export const getWorkflowEngine = (): WorkflowEngine => {
-    workflowEngineInstance ??= new WorkflowEngine(getWorkflowNodeRegistry());
-    return workflowEngineInstance;
-};
+export const getWorkflowEngine = singleton((): WorkflowEngine => new WorkflowEngine(getWorkflowNodeRegistry()));

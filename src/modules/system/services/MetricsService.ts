@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { TTLCache } from '@isaacs/ttlcache';
 import type { DiskUsageSnapshot, MetricsSnapshot } from '@shared/contracts/types/metrics';
 import * as os from 'node:os';
@@ -76,7 +77,12 @@ export class MetricsService {
                 usedBytes: rootFileSystem.used,
                 usagePercent: Math.round(rootFileSystem.use)
             }
-            : { totalBytes: 0, freeBytes: 0, usedBytes: 0, usagePercent: 0 };
+            : {
+                totalBytes: 0,
+                freeBytes: 0,
+                usedBytes: 0,
+                usagePercent: 0
+            };
 
         this.cachedDiskUsage.set(DISK_USAGE_CACHE_KEY, snapshot);
 
@@ -100,9 +106,4 @@ export class MetricsService {
     }
 }
 
-let metricsServiceInstance: MetricsService | null = null;
-
-export const getMetricsService = (): MetricsService => {
-    metricsServiceInstance ??= new MetricsService();
-    return metricsServiceInstance;
-};
+export const getMetricsService = singleton((): MetricsService => new MetricsService());

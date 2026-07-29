@@ -182,7 +182,10 @@ export class TerminalSessionManager {
         }
 
         this.options.coordinator.touchSession(payload.sessionId);
-        terminalState.attachment.exec.resize({ rows: payload.rows, cols: payload.cols }).catch(() => {});
+        terminalState.attachment.exec.resize({
+            rows: payload.rows,
+            cols: payload.cols
+        }).catch(() => {});
         return true;
     }
 

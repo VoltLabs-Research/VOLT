@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@shared/contracts/types/team-cluster-runtime';
 import type { TeamClusterDaemonQueueScopeLimits } from '@shared/contracts/types/team-cluster-runtime';
 
@@ -115,9 +116,4 @@ export class QueueScopeLimitsRegistry {
     }
 }
 
-let queueScopeLimitsRegistryInstance: QueueScopeLimitsRegistry | null = null;
-
-export const getQueueScopeLimitsRegistry = (): QueueScopeLimitsRegistry => {
-    queueScopeLimitsRegistryInstance ??= new QueueScopeLimitsRegistry();
-    return queueScopeLimitsRegistryInstance;
-};
+export const getQueueScopeLimitsRegistry = singleton((): QueueScopeLimitsRegistry => new QueueScopeLimitsRegistry());

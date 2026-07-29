@@ -7,10 +7,8 @@ import { logger } from '@shared/infrastructure/logger';
 import { MetricsService } from '@modules/system/services/MetricsService';
 import type { TeamClusterDaemonRuntimeConfig } from '@shared/contracts/types/team-cluster-runtime';
 import {
-    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    createPlaneSocket,
+    connectPlaneSocket,
     registerSignalHandlers
 } from '@shared/infrastructure/planes/plane-shared';
 
@@ -26,7 +24,7 @@ const config = loadConfig();
 const metricsService = new MetricsService();
 
 let socket: Socket | null = null;
-let registered = false;
+let isRegistered = (): boolean => false;
 let runtimeConfig: TeamClusterDaemonRuntimeConfig | null = null;
 let heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
 let latencyProbeTimer: ReturnType<typeof setInterval> | null = null;
@@ -47,7 +45,7 @@ const scheduleHeartbeat = (immediate = false): void => {
                 logger.warn(`Heartbeat plane failed: ${error instanceof Error ? error.message : String(error)}`);
             })
             .finally(() => {
-                if (registered) {
+                if (isRegistered()) {
                     scheduleHeartbeat(false);
                 }
             });
@@ -57,7 +55,7 @@ const scheduleHeartbeat = (immediate = false): void => {
 
 const emitHeartbeatEvent = (payload: object): void => {
     const activeSocket = socket;
-    if (!activeSocket || !registered) {
+    if (!activeSocket || !isRegistered()) {
         throw new Error('Heartbeat socket is not connected or not registered');
     }
 
@@ -70,7 +68,7 @@ const emitHeartbeatEvent = (payload: object): void => {
 const sendHeartbeat = async (): Promise<void> => {
     const metrics = await metricsService.collectSnapshot({
         cloudLatencyMs: lastCloudLatencyMs,
-        connectedToCloud: registered
+        connectedToCloud: isRegistered()
     });
 
     emitHeartbeatEvent({
@@ -130,39 +128,27 @@ const startLatencyProbe = (): void => {
 };
 
 const start = (): void => {
-    socket = createPlaneSocket(config.voltCloudUrl);
+    const connection = connectPlaneSocket(
+        config,
+        {
+            channel: HEARTBEAT_CHANNEL,
+            label: 'Heartbeat plane'
+        },
+        {
+            onRegistered: () => scheduleHeartbeat(true),
+            onDisconnected: clearHeartbeatTimer,
+            onError: clearHeartbeatTimer
+        }
+    );
 
-    socket.on('connect', () => {
-        socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
-            teamClusterId: config.teamClusterId,
-            daemonPassword: config.daemonPassword,
-            channel: HEARTBEAT_CHANNEL
-        });
-    });
-
-    socket.on(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, () => {
-        registered = true;
-        logger.info('Heartbeat plane connected to VoltCloud');
-        scheduleHeartbeat(true);
-    });
-
-    socket.on('disconnect', (reason) => {
-        registered = false;
-        clearHeartbeatTimer();
-        logger.warn(`Heartbeat plane disconnected (${reason})`);
-    });
-
-    socket.on('connect_error', (error) => {
-        registered = false;
-        clearHeartbeatTimer();
-        logger.warn(`Heartbeat plane connection error: ${error.message}`);
-    });
+    socket = connection.socket;
+    isRegistered = connection.isRegistered;
 
     startLatencyProbe();
 };
 
 const stop = (): void => {
-    registered = false;
+    isRegistered = () => false;
     clearHeartbeatTimer();
     if (latencyProbeTimer) {
         clearInterval(latencyProbeTimer);

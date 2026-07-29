@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import path from 'node:path';
 
 import { BinaryExecutorService, getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
@@ -76,9 +77,4 @@ export class DumpTransformService {
     }
 }
 
-let dumpTransformServiceInstance: DumpTransformService | null = null;
-
-export const getDumpTransformService = (): DumpTransformService => {
-    dumpTransformServiceInstance ??= new DumpTransformService(getBinaryExecutorService());
-    return dumpTransformServiceInstance;
-};
+export const getDumpTransformService = singleton((): DumpTransformService => new DumpTransformService(getBinaryExecutorService()));

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { dir as createTempDir } from 'tmp-promise';
@@ -179,9 +180,4 @@ export class ArtifactUploadQueue {
     }
 }
 
-let artifactUploadQueueInstance: ArtifactUploadQueue | null = null;
-
-export const getArtifactUploadQueue = (): ArtifactUploadQueue => {
-    artifactUploadQueueInstance ??= new ArtifactUploadQueue(getQueueService());
-    return artifactUploadQueueInstance;
-};
+export const getArtifactUploadQueue = singleton((): ArtifactUploadQueue => new ArtifactUploadQueue(getQueueService()));

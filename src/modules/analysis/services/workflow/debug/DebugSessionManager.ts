@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getWorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 import { getDebugEnvironment } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
@@ -222,7 +223,10 @@ export class DebugSessionManager {
 
         return {
             sessionId,
-            executionOrder: executableNodes.map((node) => ({ nodeId: node.id, type: node.type })),
+            executionOrder: executableNodes.map((node) => ({
+                nodeId: node.id,
+                type: node.type
+            })),
             forEachNodeId: session.forEachNodeId,
             totalIterations
         };
@@ -714,9 +718,4 @@ export class DebugSessionManager {
     }
 }
 
-let debugSessionManagerInstance: DebugSessionManager | null = null;
-
-export const getDebugSessionManager = (): DebugSessionManager => {
-    debugSessionManagerInstance ??= new DebugSessionManager(getWorkflowNodeRegistry(), getDebugEnvironment(), getWorkflowRuntime(), getPluginBinaryCache(), getBinaryExecutorService());
-    return debugSessionManagerInstance;
-};
+export const getDebugSessionManager = singleton((): DebugSessionManager => new DebugSessionManager(getWorkflowNodeRegistry(), getDebugEnvironment(), getWorkflowRuntime(), getPluginBinaryCache(), getBinaryExecutorService()));

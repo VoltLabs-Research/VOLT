@@ -50,8 +50,14 @@ export const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
     maxDrawCalls: 100,
     perFeature: {
         points: { maxGeometry: 100_000_000 },
-        vectors: { maxGeometry: 2_000_000, decimation: 10 },
-        bonds: { maxGeometry: 10_000_000, decimation: 5 },
+        vectors: {
+            maxGeometry: 2_000_000,
+            decimation: 10
+        },
+        bonds: {
+            maxGeometry: 10_000_000,
+            decimation: 5
+        },
         meshes: { maxGeometry: 1_000_000 }
     }
 };
@@ -152,7 +158,10 @@ const mortonSortLeaf = (positions: Float32Array, bounds: BoundsCell, indices: nu
             quant(positions[base + 2], bounds.minZ, ez)
         );
     };
-    const keyed = indices.map((i) => ({ i, k: keyOf(i) }));
+    const keyed = indices.map((i) => ({
+        i,
+        k: keyOf(i)
+    }));
     keyed.sort((a, b) => a.k - b.k);
     for (let n = 0; n < keyed.length; n += 1) indices[n] = keyed[n].i;
 };
@@ -175,7 +184,10 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
         valueMax: NaN
     };
 
-    const stack: { node: BuildNode; indices: number[] }[] = [{ node: root, indices: rootIndices }];
+    const stack: { node: BuildNode; indices: number[] }[] = [{
+        node: root,
+        indices: rootIndices
+    }];
 
     while (stack.length > 0) {
         const { node, indices } = stack.pop()!;
@@ -205,7 +217,10 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
                 valueMax: NaN
             };
             node.children[o] = child;
-            if (bucket.length > 0) stack.push({ node: child, indices: bucket });
+            if (bucket.length > 0) stack.push({
+                node: child,
+                indices: bucket
+            });
         }
     }
 
@@ -250,7 +265,10 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
 const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: number[] } => {
     const cells: LODCell[] = [];
     const atomOrder: number[] = [];
-    if (!root) return { cells, atomOrder };
+    if (!root) return {
+        cells,
+        atomOrder
+    };
 
     const pushCell = (node: BuildNode): number => {
         const cell: LODCell = {
@@ -268,7 +286,10 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         return cells.length - 1;
     };
 
-    const queue: { node: BuildNode; cellIndex: number }[] = [{ node: root, cellIndex: pushCell(root) }];
+    const queue: { node: BuildNode; cellIndex: number }[] = [{
+        node: root,
+        cellIndex: pushCell(root)
+    }];
 
     let head = 0;
     while (head < queue.length) {
@@ -283,7 +304,10 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         for (const child of node.children) {
             const childIndex = pushCell(child);
             childIndices.push(childIndex);
-            queue.push({ node: child, cellIndex: childIndex });
+            queue.push({
+                node: child,
+                cellIndex: childIndex
+            });
         }
         cells[cellIndex].childIndices = childIndices;
     }
@@ -296,7 +320,10 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         if (Number.isFinite(first)) cell.firstAtomIndex = first;
     }
 
-    return { cells, atomOrder };
+    return {
+        cells,
+        atomOrder
+    };
 };
 
 interface BuiltOctree {
@@ -315,12 +342,22 @@ export const buildOctree = (
     for (const cell of cells) if (cell.level > maxLevel) maxLevel = cell.level;
     const metadata: OctreeMetadata = {
         version: 1,
-        rootBounds: root ? root.bounds : { minX: 0, minY: 0, minZ: 0, maxX: 0, maxY: 0, maxZ: 0 },
+        rootBounds: root ? root.bounds : {
+            minX: 0,
+            minY: 0,
+            minZ: 0,
+            maxX: 0,
+            maxY: 0,
+            maxZ: 0
+        },
         maxDepth: maxLevel,
         cells
     };
     if (options.geometryBudget) metadata.geometryBudget = options.geometryBudget;
-    return { metadata, atomOrder };
+    return {
+        metadata,
+        atomOrder
+    };
 };
 
 export const buildOctreeMetadata = (

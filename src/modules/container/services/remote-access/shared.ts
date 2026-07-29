@@ -82,5 +82,8 @@ export const toMongoDocument = (value: RemoteExplorerMongoDocument['value']): Re
     const idValue = recordValue._id;
     const id = typeof idValue === 'string' ? idValue : JSON.stringify(idValue) as string;
 
-    return { id, value: recordValue };
+    return {
+        id,
+        value: recordValue
+    };
 };

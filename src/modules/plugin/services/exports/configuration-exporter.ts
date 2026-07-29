@@ -79,10 +79,17 @@ export const exportConfigurationArtifact = async (
             ownerClusterId
         });
     } catch (err) {
-        logger.error({ err, analysisId: input.executionData.analysisId, format: options.format },
+        logger.error({
+            err,
+            analysisId: input.executionData.analysisId,
+            format: options.format
+        },
             'ConfigurationExporter failed');
         throw err;
     } finally {
-        await fs.rm(tmpDir, { recursive: true, force: true });
+        await fs.rm(tmpDir, {
+            recursive: true,
+            force: true
+        });
     }
 };

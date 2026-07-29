@@ -1,7 +1,7 @@
 import { getConfig } from '@core/config/daemon';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { DaemonConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import type { ClusterObjectStore, LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
@@ -154,9 +154,4 @@ export class ObjectStoreArchiveCommands {
     }
 }
 
-let ObjectStoreArchiveCommandsInstance: ObjectStoreArchiveCommands | null = null;
-
-export const getObjectStoreArchiveCommands = (): ObjectStoreArchiveCommands => {
-    ObjectStoreArchiveCommandsInstance ??= new ObjectStoreArchiveCommands(getConfig(), getObjectStore(), getMinioService());
-    return ObjectStoreArchiveCommandsInstance;
-};
+export const getObjectStoreArchiveCommands = commandGroupFactory(ObjectStoreArchiveCommands, () => new ObjectStoreArchiveCommands(getConfig(), getObjectStore(), getMinioService()));

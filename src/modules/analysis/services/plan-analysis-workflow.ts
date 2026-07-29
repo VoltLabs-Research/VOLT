@@ -106,5 +106,9 @@ export const planAnalysisWorkflow = async (
         traceContext: serializedTraceContext
     };
 
-    return { executionData, jobs, plan };
+    return {
+        executionData,
+        jobs,
+        plan
+    };
 };

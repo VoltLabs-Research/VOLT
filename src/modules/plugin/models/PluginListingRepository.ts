@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { PluginListingRowModel } from '@modules/plugin/models/plugin-listing-row-model';
 import { PluginSubListingRowModel } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
@@ -368,9 +369,4 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     }
 };
 
-let pluginListingRepositoryInstance: PluginListingRepository | null = null;
-
-export const getPluginListingRepository = (): PluginListingRepository => {
-    pluginListingRepositoryInstance ??= new MongoPluginListingRepository();
-    return pluginListingRepositoryInstance;
-};
+export const getPluginListingRepository = singleton((): PluginListingRepository => new MongoPluginListingRepository());

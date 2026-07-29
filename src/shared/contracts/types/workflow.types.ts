@@ -1,15 +1,14 @@
 import { Graph as GraphlibGraph, alg as graphlibAlgorithms, type Edge as GraphlibEdge } from '@dagrejs/graphlib';
 import type { ProcessExecutionLogSink } from '@shared/contracts/types/execution-log';
-import type { BinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
-import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
+import type { BinaryExecutor, PluginRuntimeProvider } from '@shared/contracts/types/plugin-execution';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
-import type { ResultProcessorService } from '@modules/plugin/services/exports/result-processor-service-contract';
-import type { WorkflowExposureInspectionResult } from '@modules/analysis/services/workflow/exposure-payload-reader';
-import type { TrajectoryFrameStore } from '@modules/trajectory/services/storage/TrajectoryFrameStore';
-import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
+import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
+import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
+import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 
 import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
-import type { PipelineContext } from '@modules/analysis/services/pipeline-context';
+import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 import type {
     TrajectoryDumpDescriptor,
     TrajectoryFrame,
@@ -64,8 +63,8 @@ export interface WorkflowEntrypointExecutionOptions {
     defaults?: WorkflowEntrypointConfigDefaults;
     jobId: string;
     outputDir: string;
-    pluginBinaryCache: PluginBinaryCache;
-    binaryExecutorService: BinaryExecutorService;
+    pluginBinaryCache: PluginRuntimeProvider;
+    binaryExecutorService: BinaryExecutor;
     trajectoryFrameStore?: TrajectoryFrameStore;
     ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
@@ -73,7 +72,7 @@ export interface WorkflowEntrypointExecutionOptions {
     restoreOutputOnError?: boolean;
     includeOutputFiles?: boolean;
     extraOutput?: WorkflowNodeOutput;
-    nonZeroExitMessage?: string | ((result: Awaited<ReturnType<BinaryExecutorService['executeProcess']>>) => string);
+    nonZeroExitMessage?: string | ((result: Awaited<ReturnType<BinaryExecutor['executeProcess']>>) => string);
     requireNonEmptyArguments?: boolean;
     requireEntrypointType?: boolean;
     missingTypeMessage?: string;

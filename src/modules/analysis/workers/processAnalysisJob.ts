@@ -93,10 +93,16 @@ export const processAnalysisJob = async (
         stage: Omit<AnalysisStageReportInput, 'stageStatus'>,
         operation: () => Promise<T>
     ): Promise<T> => {
-        await stageReporter.report({ ...stage, stageStatus: 'running' });
+        await stageReporter.report({
+            ...stage,
+            stageStatus: 'running'
+        });
         try {
             const result = await operation();
-            await stageReporter.report({ ...stage, stageStatus: 'completed' });
+            await stageReporter.report({
+                ...stage,
+                stageStatus: 'completed'
+            });
             return result;
         } catch (error) {
             await stageReporter.report({
@@ -113,7 +119,10 @@ export const processAnalysisJob = async (
         try {
             await hooks.updateProgress(value);
         } catch (error) {
-            logger.warn({ err: error, jobId: job.jobId }, 'processAnalysisJob progress callback failed');
+            logger.warn({
+                err: error,
+                jobId: job.jobId
+            }, 'processAnalysisJob progress callback failed');
         }
     };
 
@@ -235,7 +244,10 @@ export const processAnalysisJob = async (
     } finally {
         const analysisId = job.analysisId ?? executionData.identity.analysisId;
         await deps.analysisQueueAdmissionController.enqueueNextDeferredJob(analysisId).catch(
-            logAndSwallow('warn', { jobId: job.jobId, analysisId }, 'Deferred analysis admission failed')
+            logAndSwallow('warn', {
+                jobId: job.jobId,
+                analysisId
+            }, 'Deferred analysis admission failed')
         );
     }
 };

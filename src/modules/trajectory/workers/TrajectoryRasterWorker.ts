@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
@@ -9,7 +10,7 @@ import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 import { ObjectBucketName, type RasterQueueJobPayload } from '@shared/contracts';
 import { isRecord } from '@shared/domain/utilities/is-record';
@@ -30,7 +31,10 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
         private readonly rasterizer: Rasterizer,
         daemonJobReporter: DaemonJobReporter
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
         this.buildStatusReporter = createLifecycleStatusReporter<RasterQueueJobPayload>(
             {
                 started: daemonJobReporter.reportRasterStarted,
@@ -42,20 +46,20 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 
     protected async process(payload: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
-        const maxAttempts = bullJob.opts.attempts ?? 1;
-        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
-
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(),
+                shouldReportTerminal: () => isFinalAttempt(bullJob),
                 progress: (value) => bullJob.updateProgress(value),
                 cleanup: async ({ reachedTerminal }) => {
                     if (reachedTerminal && isRecord(payload.metadata) && payload.metadata.autoPreview === true) {
                         await this.trajectoryAutoPreviewClaimStore
                             .releaseRasterization(payload.trajectoryId)
                             .catch(logAndSwallow('error',
-                                { jobId: payload.jobId, trajectoryId: payload.trajectoryId },
+                                {
+                                    jobId: payload.jobId,
+                                    trajectoryId: payload.trajectoryId
+                                },
                                 'Failed to release trajectory auto-preview claim'));
                     }
                 }
@@ -71,9 +75,4 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 }
 
-let trajectoryRasterWorkerInstance: TrajectoryRasterWorker | null = null;
-
-export const getTrajectoryRasterWorker = (): TrajectoryRasterWorker => {
-    trajectoryRasterWorkerInstance ??= new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter());
-    return trajectoryRasterWorkerInstance;
-};
+export const getTrajectoryRasterWorker = singleton((): TrajectoryRasterWorker => new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter()));

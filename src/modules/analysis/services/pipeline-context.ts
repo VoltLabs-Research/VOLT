@@ -1,11 +1,9 @@
+import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowDefinition } from '@shared/contracts';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 
-export interface PipelineContext {
-    sharedExposures: Record<string, string>;
-    pipelineTempPath: string;
-}
+export type { PipelineContext };
 
 export const createPipelineContext = (pipelineTempPath: string): PipelineContext => ({
     sharedExposures: {},

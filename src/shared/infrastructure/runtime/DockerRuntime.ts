@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEventBroker } from '@shared/application/events/RuntimeEventBroker';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
@@ -14,6 +15,7 @@ import { Writable, type Duplex } from 'node:stream';
 import Docker from 'dockerode';
 import net from 'node:net';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 interface DockerContainerFilter {
     label?: string[];
@@ -83,12 +85,6 @@ const TERMINAL_CLOSE_TIMEOUT_MS = 5_000;
 const TERMINAL_CLOSE_POLL_INTERVAL_MS = 100;
 const TERMINAL_INTERRUPT_EXIT_DELAY_MS = 100;
 
-const sleep = (milliseconds: number): Promise<void> => {
-    return new Promise((resolve) => {
-        setTimeout(resolve, milliseconds);
-    });
-};
-
 const isWritableTerminalStreamOpen = (stream: Duplex): boolean => {
     return !stream.destroyed && !stream.writableEnded;
 };
@@ -142,7 +138,7 @@ const waitForTerminalExecExit = async (
             return true;
         }
 
-        await sleep(pollIntervalMs);
+        await delay(pollIntervalMs);
     }
 
     return false;
@@ -161,7 +157,7 @@ export const closeTerminalExec = async (
     if (!execAlreadyStopped) {
         try {
             await writeToTerminalStream(stream, '\u0003');
-            await sleep(interruptDelayMs);
+            await delay(interruptDelayMs);
         } catch {
         }
 
@@ -255,7 +251,10 @@ export class DockerRuntime {
             }
         }
 
-        return { exposedPorts, portBindings };
+        return {
+            exposedPorts,
+            portBindings
+        };
     }
 
     private getEnvFromRequest(input: CreateContainerRequest): string[] {
@@ -358,7 +357,10 @@ export class DockerRuntime {
 
     readonly deleteContainer = async (containerId: string): Promise<void> => {
         await this.assertTenantOwnership(containerId);
-        await this.docker.getContainer(containerId).remove({ force: true, v: true });
+        await this.docker.getContainer(containerId).remove({
+            force: true,
+            v: true
+        });
     };
 
     readonly getContainerStats = async (containerId: string): Promise<Docker.ContainerStats> => {
@@ -442,7 +444,10 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
             Cmd: ['/bin/sh'],
             Env: ['TERM=xterm-256color']
         });
-        const stream = await dockerExec.start({ hijack: true, stdin: true }) as unknown as Duplex;
+        const stream = await dockerExec.start({
+            hijack: true,
+            stdin: true
+        }) as unknown as Duplex;
         let closePromise: Promise<void> | null = null;
 
         return {
@@ -481,7 +486,10 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         });
 
         for (const containerInfo of containers) {
-            await this.docker.getContainer(containerInfo.Id).remove({ force: true, v: true });
+            await this.docker.getContainer(containerInfo.Id).remove({
+                force: true,
+                v: true
+            });
         }
 
         for (const volumeInfo of volumes.Volumes) {
@@ -656,7 +664,10 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                 AttachStdout: true,
                 AttachStderr: true
             });
-            const stream = await dockerExec.start({ hijack: true, stdin: hasStdin });
+            const stream = await dockerExec.start({
+                hijack: true,
+                stdin: hasStdin
+            });
             const chunks: Buffer[] = [];
             let totalBytes = 0;
             let truncated = false;
@@ -741,9 +752,4 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
     }
 }
 
-let dockerRuntimeInstance: DockerRuntime | null = null;
-
-export const getDockerRuntime = (): DockerRuntime => {
-    dockerRuntimeInstance ??= new DockerRuntime(getEventBroker(), getConfig());
-    return dockerRuntimeInstance;
-};
+export const getDockerRuntime = singleton((): DockerRuntime => new DockerRuntime(getEventBroker(), getConfig()));

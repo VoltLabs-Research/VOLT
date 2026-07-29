@@ -57,7 +57,7 @@ RUN apt-get update \
 COPY package*.json ./
 RUN npm ci
 
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 COPY scripts ./scripts
 COPY --from=tailscale-bin /usr/local/bin/tailscale /usr/local/bin/tailscale

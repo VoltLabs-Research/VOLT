@@ -1,5 +1,5 @@
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 
 @CommandGroup('trajectory.plugin')
@@ -44,9 +44,4 @@ export class TrajectoryPluginCommands {
     }
 }
 
-let TrajectoryPluginCommandsInstance: TrajectoryPluginCommands | null = null;
-
-export const getTrajectoryPluginCommands = (): TrajectoryPluginCommands => {
-    TrajectoryPluginCommandsInstance ??= new TrajectoryPluginCommands(getPluginPropertyStore());
-    return TrajectoryPluginCommandsInstance;
-};
+export const getTrajectoryPluginCommands = commandGroupFactory(TrajectoryPluginCommands, () => new TrajectoryPluginCommands(getPluginPropertyStore()));

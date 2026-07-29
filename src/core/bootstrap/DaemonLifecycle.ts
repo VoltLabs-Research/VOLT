@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import mongoose from 'mongoose';
 import { getConfig } from '@core/config/daemon';
 import { isModuleEnabled } from '@core/bootstrap/module-state';
@@ -127,9 +128,4 @@ export class DaemonLifecycle {
     }
 }
 
-let daemonLifecycleInstance: DaemonLifecycle | null = null;
-
-export const getDaemonLifecycle = (): DaemonLifecycle => {
-    daemonLifecycleInstance ??= new DaemonLifecycle();
-    return daemonLifecycleInstance;
-};
+export const getDaemonLifecycle = singleton((): DaemonLifecycle => new DaemonLifecycle());

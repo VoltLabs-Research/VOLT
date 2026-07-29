@@ -1,12 +1,11 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import {
     getCommandGroupMetadata,
-    type CommandGroupClass,
+    type CommandGroupFactory,
     type CommandMethodMetadata
 } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
-import type { ReverseChannelBridge } from '@modules/container/socket/ReverseChannelBridge';
-
-export type CommandPayload = object | undefined;
+import type { CommandTransport } from '@shared/contracts/channel/command-transport';
 
 export interface CommandResult {
     status?: number;
@@ -14,12 +13,6 @@ export interface CommandResult {
     body?: Buffer;
     headers?: Record<string, string>;
     stream?: ReadableStream<Uint8Array>;
-}
-
-export interface CommandGroupBinding {
-    moduleKey: string;
-    group: CommandGroupClass;
-    resolve: () => Record<string, (payload: CommandPayload) => unknown>;
 }
 
 const normalizeCommandResult = (result: unknown, command: CommandMethodMetadata): CommandResult => {
@@ -35,19 +28,16 @@ const normalizeCommandResult = (result: unknown, command: CommandMethodMetadata)
 
 export class CommandRegistry {
     registerGroups(
-        bindings: readonly CommandGroupBinding[],
-        reverseChannelBridge: ReverseChannelBridge
+        factories: readonly CommandGroupFactory[],
+        transport: CommandTransport
     ): void {
         const commandNames = new Set<string>();
-        let groups = 0;
 
-        for (const { group, resolve } of bindings) {
-            const metadata = getCommandGroupMetadata(group);
+        for (const factory of factories) {
+            const metadata = getCommandGroupMetadata(factory.group);
             if (!metadata) {
-                throw new Error(`Command group "${(group as CommandGroupClass & { name: string }).name}" is missing @CommandGroup metadata.`);
+                throw new Error(`Command group "${factory.group.name}" is missing @CommandGroup metadata.`);
             }
-
-            groups += 1;
 
             for (const method of metadata.commands) {
                 const commandName = `${metadata.namespace}.${method.name}`;
@@ -56,20 +46,15 @@ export class CommandRegistry {
                 }
                 commandNames.add(commandName);
 
-                reverseChannelBridge.registerCommand(commandName, async (payload) => {
-                    const result = await resolve()[method.propertyKey](payload);
+                transport.registerCommand(commandName, async (payload) => {
+                    const result = await factory()[method.propertyKey](payload);
                     return normalizeCommandResult(result, method);
                 });
             }
         }
 
-        logger.info(`@command-registry: registered ${commandNames.size} commands from ${groups}/${bindings.length} groups`);
+        logger.info(`@command-registry: registered ${commandNames.size} commands from ${factories.length} groups`);
     }
 }
 
-let commandRegistryInstance: CommandRegistry | null = null;
-
-export const getCommandRegistry = (): CommandRegistry => {
-    commandRegistryInstance ??= new CommandRegistry();
-    return commandRegistryInstance;
-};
+export const getCommandRegistry = singleton((): CommandRegistry => new CommandRegistry());

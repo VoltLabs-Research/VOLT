@@ -1,5 +1,5 @@
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { ANALYSIS_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 
@@ -37,9 +37,4 @@ export class QueueCommands {
     }
 }
 
-let QueueCommandsInstance: QueueCommands | null = null;
-
-export const getQueueCommands = (): QueueCommands => {
-    QueueCommandsInstance ??= new QueueCommands(getQueueService());
-    return QueueCommandsInstance;
-};
+export const getQueueCommands = commandGroupFactory(QueueCommands, () => new QueueCommands(getQueueService()));

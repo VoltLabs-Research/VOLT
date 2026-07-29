@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
@@ -63,7 +64,10 @@ export class AnalysisQueueAdmissionController {
                 job = JSON.parse(deferredPayload) as AnalysisQueueJobPayload;
             } catch (error) {
                 logger.error(
-                    { err: error, analysisId },
+                    {
+                        err: error,
+                        analysisId
+                    },
                     '@analysis-queue-admission: failed to parse deferred analysis job payload'
                 );
                 continue;
@@ -87,9 +91,4 @@ export class AnalysisQueueAdmissionController {
     }
 }
 
-let analysisQueueAdmissionControllerInstance: AnalysisQueueAdmissionController | null = null;
-
-export const getAnalysisQueueAdmissionController = (): AnalysisQueueAdmissionController => {
-    analysisQueueAdmissionControllerInstance ??= new AnalysisQueueAdmissionController(getQueueService(), getRedisConnection());
-    return analysisQueueAdmissionControllerInstance;
-};
+export const getAnalysisQueueAdmissionController = singleton((): AnalysisQueueAdmissionController => new AnalysisQueueAdmissionController(getQueueService(), getRedisConnection()));

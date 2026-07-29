@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
@@ -103,7 +104,13 @@ export class AnalysisEnvironment {
             unsafeCleanup: true
         })).path;
 
-        return { outputDir, outputs: new Map(), dumpTargets: [], dumpLocalPaths: [], primaryFrameIndex: 0 };
+        return {
+            outputDir,
+            outputs: new Map(),
+            dumpTargets: [],
+            dumpLocalPaths: [],
+            primaryFrameIndex: 0
+        };
     }
 
     private async downloadFrameSet(
@@ -199,7 +206,10 @@ export class AnalysisEnvironment {
         const primaryFrame = localizedFrames[primaryIndex];
         outputs.set(forEachNodeId, {
             ...outputs.get(forEachNodeId),
-            currentValue: { ...metadata.forEachItem, path: (primaryFrame?.path as string | undefined) },
+            currentValue: {
+                ...metadata.forEachItem,
+                path: (primaryFrame?.path as string | undefined)
+            },
             currentIndex: metadata.forEachIndex,
             outputPath: runtime.outputDir
         });
@@ -426,9 +436,4 @@ export class AnalysisEnvironment {
     }
 }
 
-let analysisEnvironmentInstance: AnalysisEnvironment | null = null;
-
-export const getAnalysisEnvironment = (): AnalysisEnvironment => {
-    analysisEnvironmentInstance ??= new AnalysisEnvironment(getObjectStore());
-    return analysisEnvironmentInstance;
-};
+export const getAnalysisEnvironment = singleton((): AnalysisEnvironment => new AnalysisEnvironment(getObjectStore()));

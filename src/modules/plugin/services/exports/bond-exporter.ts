@@ -34,12 +34,19 @@ export const DEFAULT_BOND_OPTIONS: Required<BondExportOptions> = {
 const resolveBondOptions = (options: BondExportOptions): Required<BondExportOptions> => ({
     ...DEFAULT_BOND_OPTIONS,
     ...options,
-    material: { ...DEFAULT_BOND_OPTIONS.material, ...options.material }
+    material: {
+        ...DEFAULT_BOND_OPTIONS.material,
+        ...options.material
+    }
 });
 
 const bondToLineEntity = (bond: BondExportData['bonds'][number]): LineEntity => {
     const { points, ...properties } = bond;
-    return { ...properties, id: bond.id, points };
+    return {
+        ...properties,
+        id: bond.id,
+        points
+    };
 };
 
 const stageRangesSidecarUpload = async (

@@ -121,7 +121,11 @@ const parseDumpMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
     let timestep = 0;
     let natoms = 0;
     let headers: string[] = [];
-    const simulationCell = createSimulationCell({ x: false, y: false, z: false });
+    const simulationCell = createSimulationCell({
+        x: false,
+        y: false,
+        z: false
+    });
 
     for (let index = 0; index < headerLines.length; index += 1) {
         const line = headerLines[index].trim();
@@ -184,7 +188,11 @@ const parseDataMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
     let timestep = 0;
     let natoms = 0;
     const headers: string[] = [];
-    const simulationCell = createSimulationCell({ x: true, y: true, z: true });
+    const simulationCell = createSimulationCell({
+        x: true,
+        y: true,
+        z: true
+    });
 
     const content = headerLines.join('\n');
     const timestepMatch = content.match(/timestep\s*=\s*(\d+)/i);

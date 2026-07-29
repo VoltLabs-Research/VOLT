@@ -4,12 +4,10 @@ import { type Socket } from 'socket.io-client';
 import { loadConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import {
-    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    createPlaneSocket,
-    sendToParent,
-    registerSignalHandlers
+    connectPlaneSocket,
+    registerSignalHandlers,
+    sendToParent
 } from '@shared/infrastructure/planes/plane-shared';
 
 const CONTROL_CHANNEL = 'control';
@@ -61,7 +59,7 @@ type ParentMessage = EmitMessage | SendCommandMessage | CommandResponseMessage;
 
 const config = loadConfig();
 let socket: Socket | null = null;
-let registered = false;
+let isRegistered = (): boolean => false;
 const pendingInboundCommands = new Map<string, PendingInboundCommand>();
 const pendingCommands = new Map<string, PendingCommand>();
 
@@ -78,7 +76,7 @@ const sendCommand = (
     timeoutMs: number | undefined
 ): Promise<unknown> => {
     const activeSocket = socket;
-    if (!activeSocket || !registered) {
+    if (!activeSocket || !isRegistered()) {
         return Promise.reject(new Error('Control socket is not connected or not registered'));
     }
 
@@ -92,7 +90,12 @@ const sendCommand = (
         }, effectiveTimeout);
         timeout.unref();
 
-        pendingCommands.set(requestId, { command, resolve, reject, timeout });
+        pendingCommands.set(requestId, {
+            command,
+            resolve,
+            reject,
+            timeout
+        });
 
         activeSocket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
             type: 'command',
@@ -121,36 +124,20 @@ const resolvePendingCommand = (response: SocketResponse): void => {
 };
 
 const start = (): void => {
-    socket = createPlaneSocket(config.voltCloudUrl);
+    const connection = connectPlaneSocket(
+        config,
+        {
+            channel: CONTROL_CHANNEL,
+            label: 'Control plane',
+            notifyParent: true
+        },
+        { onDisconnected: () => pendingInboundCommands.clear() }
+    );
 
-    socket.on('connect', () => {
-        socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
-            teamClusterId: config.teamClusterId,
-            daemonPassword: config.daemonPassword,
-            channel: CONTROL_CHANNEL
-        });
-    });
+    socket = connection.socket;
+    isRegistered = connection.isRegistered;
 
-    socket.on(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, () => {
-        registered = true;
-        logger.info('Control plane connected to VoltCloud');
-        sendToParent({ type: 'connected' });
-    });
-
-    socket.on('disconnect', (reason) => {
-        registered = false;
-        pendingInboundCommands.clear();
-        logger.warn(`Control plane disconnected (${reason})`);
-        sendToParent({ type: 'disconnected', reason });
-    });
-
-    socket.on('connect_error', (error) => {
-        registered = false;
-        logger.warn(`Control plane connection error: ${error.message}`);
-        sendToParent({ type: 'error', message: error.message });
-    });
-
-    socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: unknown) => {
+    connection.socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: unknown) => {
         if (!message || typeof message !== 'object' || Array.isArray(message)) {
             return;
         }
@@ -185,7 +172,7 @@ const start = (): void => {
 };
 
 const stop = (): void => {
-    registered = false;
+    isRegistered = () => false;
     pendingInboundCommands.clear();
     socket?.removeAllListeners();
     socket?.close();

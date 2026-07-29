@@ -25,7 +25,7 @@ import type {
     PluginProcessResponse
 } from '@shared/contracts/types/plugin-batch';
 import type { SharedFramePublishInput } from '@modules/plugin/services/runtime/SharedMemoryBridge';
-import type { TypedColumn } from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+import type { TypedColumn } from '@shared/contracts/types/trajectory-frame-store';
 import fs from 'node:fs/promises';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -289,11 +289,20 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         try {
             const parsed = JSON.parse(trimmed) as unknown;
             if (isRecord(parsed)) {
-                return { ...base, ...parsed };
+                return {
+                    ...base,
+                    ...parsed
+                };
             }
-            return { ...base, config: parsed };
+            return {
+                ...base,
+                config: parsed
+            };
         } catch {
-            return { ...base, raw: trimmed };
+            return {
+                ...base,
+                raw: trimmed
+            };
         }
     }
 
@@ -360,7 +369,11 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
 
             if (execution.nonZeroExitMessage) {
                 const message = typeof execution.nonZeroExitMessage === 'function'
-                    ? execution.nonZeroExitMessage({ code: exitCode, stdout: '', stderr })
+                    ? execution.nonZeroExitMessage({
+                        code: exitCode,
+                        stdout: '',
+                        stderr
+                    })
                     : execution.nonZeroExitMessage;
                 throw new Error(message);
             }

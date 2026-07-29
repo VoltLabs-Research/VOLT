@@ -1,3 +1,4 @@
+import type { AnalysisStageReportInput, AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type {
     AnalysisStageStatus,
     AnalysisStageStatusPayload,
@@ -6,27 +7,7 @@ import type {
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@modules/analysis/events/analysis-events';
 
-export interface AnalysisStageReportInput {
-    stageKey: string;
-    label: string;
-    stageType: AnalysisStageType;
-    stageStatus: AnalysisStageStatus;
-    timestep?: number;
-    pluginId?: string;
-    pluginDisplayName?: string;
-    nodeId?: string;
-    exposureId?: string;
-    configHash?: string;
-    cacheHit?: boolean;
-    detail?: string;
-    startedAt?: Date;
-    finishedAt?: Date;
-    durationMs?: number;
-}
-
-export interface AnalysisStageReporter {
-    report(input: AnalysisStageReportInput): Promise<void>;
-}
+export type { AnalysisStageReportInput, AnalysisStageReporter };
 
 type AnalysisStageReporterTransport = Pick<DaemonJobReporter, 'reportAnalysisStageStatus' | 'reportAnalysisLogChunk'>;
 

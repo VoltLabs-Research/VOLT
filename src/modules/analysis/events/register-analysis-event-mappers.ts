@@ -17,10 +17,10 @@ import {
     AnalysisLogChunkReportedEvent,
     AnalysisStageStatusReportedEvent,
     AnalysisStartedEvent,
+    AnalysisProvenanceRecordedEvent,
     DebugLogChunkReportedEvent,
     type BaseAnalysisEventData
 } from '@modules/analysis/events/analysis-events';
-import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/provenance-event';
 
 type AnalysisLifecycleStatus = 'started' | 'completed' | 'failed';
 

@@ -1,7 +1,7 @@
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { getRedisExplorer } from '@modules/container/services/remote-access/RedisExplorer';
 import { RemoteExplorerTarget, type RemoteExplorerRequest } from '@shared/contracts';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { MinioService } from '@shared/infrastructure/storage/MinioService';
 import type { RedisExplorer } from '@modules/container/services/remote-access/RedisExplorer';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';
@@ -51,9 +51,4 @@ export class RemoteCommands {
     }
 }
 
-let RemoteCommandsInstance: RemoteCommands | null = null;
-
-export const getRemoteCommands = (): RemoteCommands => {
-    RemoteCommandsInstance ??= new RemoteCommands(getMinioService(), getRedisExplorer());
-    return RemoteCommandsInstance;
-};
+export const getRemoteCommands = commandGroupFactory(RemoteCommands, () => new RemoteCommands(getMinioService(), getRedisExplorer()));

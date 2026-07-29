@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
@@ -39,7 +40,10 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
         private readonly pipelineSharedExposureStore: PipelineSharedExposureStore,
         private readonly objectStore: ClusterObjectStore
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
     }
 
     protected async process(payload: PipelineQueueJobPayload, bullJob: BullMQJob<PipelineQueueJobPayload>): Promise<void> {
@@ -58,9 +62,4 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
     }
 }
 
-let pipelineWorkerInstance: PipelineWorker | null = null;
-
-export const getPipelineWorker = (): PipelineWorker => {
-    pipelineWorkerInstance ??= new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore());
-    return pipelineWorkerInstance;
-};
+export const getPipelineWorker = singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore()));

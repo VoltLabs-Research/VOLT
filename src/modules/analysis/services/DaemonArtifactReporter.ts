@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import Bottleneck from 'bottleneck';
 
@@ -74,9 +75,4 @@ export class DaemonArtifactReporter {
     }
 }
 
-let daemonArtifactReporterInstance: DaemonArtifactReporter | null = null;
-
-export const getDaemonArtifactReporter = (): DaemonArtifactReporter => {
-    daemonArtifactReporterInstance ??= new DaemonArtifactReporter(getEventDispatcher());
-    return daemonArtifactReporterInstance;
-};
+export const getDaemonArtifactReporter = singleton((): DaemonArtifactReporter => new DaemonArtifactReporter(getEventDispatcher()));

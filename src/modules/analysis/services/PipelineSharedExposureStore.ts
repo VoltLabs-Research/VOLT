@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -63,7 +64,10 @@ export class PipelineSharedExposureStore {
             size: stat.size
         });
 
-        return { objectKey, ext };
+        return {
+            objectKey,
+            ext
+        };
     }
 
     async fetch(input: FetchSharedExposureInput): Promise<string | null> {
@@ -115,9 +119,4 @@ export class PipelineSharedExposureStore {
     }
 }
 
-let pipelineSharedExposureStoreInstance: PipelineSharedExposureStore | null = null;
-
-export const getPipelineSharedExposureStore = (): PipelineSharedExposureStore => {
-    pipelineSharedExposureStoreInstance ??= new PipelineSharedExposureStore(getObjectStore());
-    return pipelineSharedExposureStoreInstance;
-};
+export const getPipelineSharedExposureStore = singleton((): PipelineSharedExposureStore => new PipelineSharedExposureStore(getObjectStore()));

@@ -22,7 +22,10 @@ export class WorkflowContextHandler implements WorkflowNodeHandler {
         return Promise.resolve({
             trajectory_dumps: dumps,
             count: dumps.length,
-            trajectory: { _id: context.trajectoryId, frames: dumps }
+            trajectory: {
+                _id: context.trajectoryId,
+                frames: dumps
+            }
         });
     }
 }

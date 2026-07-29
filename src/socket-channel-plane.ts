@@ -1,12 +1,9 @@
 import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@core/config/daemon';
-import { logger } from '@shared/infrastructure/logger';
 import {
-    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    createPlaneSocket,
+    connectPlaneSocket,
     sendToParent,
     registerSignalHandlers
 } from '@shared/infrastructure/planes/plane-shared';
@@ -23,11 +20,11 @@ const channel = process.argv[2] || process.env.TEAM_CLUSTER_SOCKET_CHANNEL_PROCE
 const label = process.argv[3] || process.env.TEAM_CLUSTER_SOCKET_CHANNEL_LABEL || channel || 'socket channel';
 
 let socket: Socket | null = null;
-let registered = false;
+let isRegistered = (): boolean => false;
 const bufferedMessages: unknown[] = [];
 
 const drainBufferedMessages = (): void => {
-    if (!socket || !registered) return;
+    if (!socket || !isRegistered()) return;
 
     while (bufferedMessages.length > 0) {
         socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, bufferedMessages.shift());
@@ -35,7 +32,7 @@ const drainBufferedMessages = (): void => {
 };
 
 const emitMessage = (message: unknown): void => {
-    if (!socket || !registered) {
+    if (!socket || !isRegistered()) {
         if (bufferedMessages.length >= MAX_BUFFERED_MESSAGES) {
             bufferedMessages.shift();
         }
@@ -46,43 +43,30 @@ const emitMessage = (message: unknown): void => {
     socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
 };
 
-const start = (): void => {
-    socket = createPlaneSocket(config.voltCloudUrl);
+const start = (activeChannel: string): void => {
+    const connection = connectPlaneSocket(
+        config,
+        {
+            channel: activeChannel,
+            label,
+            notifyParent: true
+        },
+        { onRegistered: drainBufferedMessages }
+    );
 
-    socket.on('connect', () => {
-        socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
-            teamClusterId: config.teamClusterId,
-            daemonPassword: config.daemonPassword,
-            channel
-        });
-    });
-
-    socket.on(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, () => {
-        registered = true;
-        logger.info(`${label} connected to VoltCloud`);
-        sendToParent({ type: 'connected' });
-        drainBufferedMessages();
-    });
-
-    socket.on('disconnect', (reason) => {
-        registered = false;
-        logger.warn(`${label} disconnected (${reason})`);
-        sendToParent({ type: 'disconnected', reason });
-    });
-
-    socket.on('connect_error', (error) => {
-        registered = false;
-        logger.warn(`${label} connection error: ${error.message}`);
-        sendToParent({ type: 'error', message: error.message });
-    });
+    socket = connection.socket;
+    isRegistered = connection.isRegistered;
 
     socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: unknown) => {
-        sendToParent({ type: 'message', message });
+        sendToParent({
+            type: 'message',
+            message
+        });
     });
 };
 
 const stop = (): void => {
-    registered = false;
+    isRegistered = () => false;
     bufferedMessages.length = 0;
     socket?.removeAllListeners();
     socket?.close();
@@ -97,5 +81,5 @@ process.on('message', (message: EmitMessage) => {
 registerSignalHandlers(stop);
 
 if (channel) {
-    start();
+    start(channel);
 }

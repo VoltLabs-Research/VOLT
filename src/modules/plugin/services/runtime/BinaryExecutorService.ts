@@ -1,3 +1,10 @@
+import { singleton } from '@shared/application/utilities/singleton';
+import type {
+    ProcessExecutionResult,
+    ProcessExecutionInput,
+    PersistentPluginInvocationInput,
+    PersistentPluginInvocationResult
+} from '@shared/contracts/types/plugin-execution';
 import { logger } from '@shared/infrastructure/logger';
 import type {
     ProcessExecutionLogSink,
@@ -13,41 +20,12 @@ import type {
 } from '@shared/contracts/types/plugin-batch';
 import { spawn } from 'node:child_process';
 
-export interface ProcessExecutionResult {
-    code: number;
-    stdout: string;
-    stderr: string;
-}
-
-export interface ProcessExecutionInput {
-    jobId: string;
-    commandPath: string;
-    args: string[];
-    cwd: string;
-    env?: NodeJS.ProcessEnv;
-    timeoutMs?: number;
-    logSink?: ProcessExecutionLogSink;
-}
-
-export interface PersistentPluginInvocationInput {
-    pluginId: string;
-    pythonCommandPath: string;
-    pluginRoot: string;
-    entrypointScript: string;
-    env?: NodeJS.ProcessEnv;
-    logSink?: ProcessExecutionLogSink;
-    frame?: PluginFrameDescriptor;
-    frames?: PluginFrameDescriptor[];
-    shmFramePublish?: SharedFramePublishInput;
-    shmFramePublishes?: SharedFramePublishInput[];
-    config?: Record<string, unknown>;
-    mode?: 'single' | 'batch';
-    timeoutMs?: number;
-}
-
-export interface PersistentPluginInvocationResult {
-    response: PluginProcessResponse;
-}
+export type {
+    ProcessExecutionResult,
+    ProcessExecutionInput,
+    PersistentPluginInvocationInput,
+    PersistentPluginInvocationResult
+};
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
@@ -188,7 +166,10 @@ export class BinaryExecutorService {
             if (input.shmFramePublishes?.length) {
                 for (let index = 0; index < input.shmFramePublishes.length; index += 1) {
                     const publish = input.shmFramePublishes[index]!;
-                    const baseFrame = input.frames?.[index] ?? { timestep: index, natoms: 0 };
+                    const baseFrame = input.frames?.[index] ?? {
+                        timestep: index,
+                        natoms: 0
+                    };
                     frames.push(await this.attachPublishedFrame(baseFrame, publish, releaseables));
                 }
             } else if (input.frames?.length) {
@@ -204,7 +185,10 @@ export class BinaryExecutorService {
         let frame = input.frame;
         if (input.shmFramePublish) {
             frame = await this.attachPublishedFrame(
-                frame ?? { timestep: 0, natoms: 0 },
+                frame ?? {
+                    timestep: 0,
+                    natoms: 0
+                },
                 input.shmFramePublish,
                 releaseables
             );
@@ -296,9 +280,4 @@ export class BinaryExecutorService {
     }
 }
 
-let binaryExecutorServiceInstance: BinaryExecutorService | null = null;
-
-export const getBinaryExecutorService = (): BinaryExecutorService => {
-    binaryExecutorServiceInstance ??= new BinaryExecutorService(getPluginProcessPool(), getSharedMemoryBridge());
-    return binaryExecutorServiceInstance;
-};
+export const getBinaryExecutorService = singleton((): BinaryExecutorService => new BinaryExecutorService(getPluginProcessPool(), getSharedMemoryBridge()));

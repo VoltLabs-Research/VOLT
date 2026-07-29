@@ -1,3 +1,5 @@
+import { singleton } from '@shared/application/utilities/singleton';
+import Bottleneck from 'bottleneck';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import { Client, CopyDestinationOptions, CopySourceOptions } from 'minio';
@@ -184,20 +186,21 @@ export class MinioService implements LocalClusterObjectStoreGateway {
         let batch: string[] = [];
         let deletedCount = 0;
         let continuationToken = '';
+
+        // Bottleneck admits on first completion, where the previous hand-rolled
+        // `inFlight.shift()` drained head-of-line, so one slow batch stalled the
+        // whole window. The count is also only incremented once the delete has
+        // actually resolved — it used to be added up front, so a failed batch
+        // was still reported as deleted.
+        const limiter = new Bottleneck({ maxConcurrent: MAX_INFLIGHT_BATCHES });
+        const resolvedBucket = this.resolveBucket(bucket);
         const inFlight: Promise<void>[] = [];
 
-        const drainInFlight = async (minFree: number): Promise<void> => {
-            while (inFlight.length >= MAX_INFLIGHT_BATCHES - minFree + 1 && inFlight.length > 0) {
-                await inFlight.shift();
-            }
-        };
-
-        const resolvedBucket = this.resolveBucket(bucket);
-        const submitBatch = async (keys: string[]): Promise<void> => {
-            deletedCount += keys.length;
-            const task = this.client.removeObjects(resolvedBucket, keys).then(() => undefined);
-            inFlight.push(task);
-            await drainInFlight(1);
+        const submitBatch = (keys: string[]): void => {
+            inFlight.push(limiter.schedule(async () => {
+                await this.client.removeObjects(resolvedBucket, keys);
+                deletedCount += keys.length;
+            }));
         };
 
         do {
@@ -221,7 +224,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
                 if (batch.length >= BATCH_SIZE) {
                     const toSubmit = batch;
                     batch = [];
-                    await submitBatch(toSubmit);
+                    submitBatch(toSubmit);
                 }
             }
 
@@ -231,7 +234,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
         } while (continuationToken);
 
         if (batch.length > 0) {
-            await submitBatch(batch);
+            submitBatch(batch);
         }
 
         await Promise.all(inFlight);
@@ -252,9 +255,4 @@ export class MinioService implements LocalClusterObjectStoreGateway {
     }
 }
 
-let minioServiceInstance: MinioService | null = null;
-
-export const getMinioService = (): MinioService => {
-    minioServiceInstance ??= new MinioService(getConfig());
-    return minioServiceInstance;
-};
+export const getMinioService = singleton((): MinioService => new MinioService(getConfig()));

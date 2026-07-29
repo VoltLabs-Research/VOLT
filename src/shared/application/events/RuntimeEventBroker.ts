@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import type { RuntimeProgressPayload } from '@shared/contracts/types/reverse-channel-runtime';
@@ -14,9 +15,4 @@ export class RuntimeEventBroker {
     }
 }
 
-let eventBrokerInstance: RuntimeEventBroker | null = null;
-
-export const getEventBroker = (): RuntimeEventBroker => {
-    eventBrokerInstance ??= new RuntimeEventBroker(getEventDispatcher());
-    return eventBrokerInstance;
-};
+export const getEventBroker = singleton((): RuntimeEventBroker => new RuntimeEventBroker(getEventDispatcher()));

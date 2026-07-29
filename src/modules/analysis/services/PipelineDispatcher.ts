@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { randomUUID } from 'node:crypto';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
@@ -123,7 +124,10 @@ export class PipelineDispatcher {
         serializedTraceContext?: Record<string, string>
     ): Promise<PipelinePlannedStage> {
         if (stage.kind !== 'plugin') {
-            return { kind: stage.kind, config: stage.config };
+            return {
+                kind: stage.kind,
+                config: stage.config
+            };
         }
 
         if (stage.cacheHit) {
@@ -189,9 +193,4 @@ export class PipelineDispatcher {
     }
 }
 
-let pipelineDispatcherInstance: PipelineDispatcher | null = null;
-
-export const getPipelineDispatcher = (): PipelineDispatcher => {
-    pipelineDispatcherInstance ??= new PipelineDispatcher(getWorkflowEngine(), getAnalysisDataStore(), getEventBroker(), getQueueService());
-    return pipelineDispatcherInstance;
-};
+export const getPipelineDispatcher = singleton((): PipelineDispatcher => new PipelineDispatcher(getWorkflowEngine(), getAnalysisDataStore(), getEventBroker(), getQueueService()));

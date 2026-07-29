@@ -1,5 +1,5 @@
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { mapLimited } from '@shared/application/utilities/map-limited';
@@ -90,9 +90,4 @@ export class TrajectoryCloneCommand {
     }
 }
 
-let TrajectoryCloneCommandInstance: TrajectoryCloneCommand | null = null;
-
-export const getTrajectoryCloneCommand = (): TrajectoryCloneCommand => {
-    TrajectoryCloneCommandInstance ??= new TrajectoryCloneCommand(getObjectStore());
-    return TrajectoryCloneCommandInstance;
-};
+export const getTrajectoryCloneCommand = commandGroupFactory(TrajectoryCloneCommand, () => new TrajectoryCloneCommand(getObjectStore()));

@@ -7,7 +7,7 @@ import type {
     RasterizeTrajectoryRequest,
     TrajectoryRuntimeCleanupRequest
 } from '@shared/contracts';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
@@ -95,9 +95,4 @@ export class TrajectoryQueueCommands {
     }
 }
 
-let TrajectoryQueueCommandsInstance: TrajectoryQueueCommands | null = null;
-
-export const getTrajectoryQueueCommands = (): TrajectoryQueueCommands => {
-    TrajectoryQueueCommandsInstance ??= new TrajectoryQueueCommands(getTrajectoryRasterQueue(), getQueueService(), getRuntimeStateCleanupControl());
-    return TrajectoryQueueCommandsInstance;
-};
+export const getTrajectoryQueueCommands = commandGroupFactory(TrajectoryQueueCommands, () => new TrajectoryQueueCommands(getTrajectoryRasterQueue(), getQueueService(), getRuntimeStateCleanupControl()));

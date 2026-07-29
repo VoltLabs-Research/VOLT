@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import path from 'node:path';
@@ -162,7 +163,10 @@ const evaluateComparison = (
         }
     }
 
-    return { mask, matchCount };
+    return {
+        mask,
+        matchCount
+    };
 };
 
 const evaluateStringComparison = (
@@ -192,7 +196,10 @@ const evaluateStringComparison = (
         }
     }
 
-    return { mask, matchCount };
+    return {
+        mask,
+        matchCount
+    };
 };
 
 const countActive = (mask: Uint8Array): number => {
@@ -235,7 +242,11 @@ const selectAtomsByMask = (
         cursor++;
     }
 
-    return { positions: selectedPositions, types: selectedTypes, count };
+    return {
+        positions: selectedPositions,
+        types: selectedTypes,
+        count
+    };
 };
 
 const buildHighlightColors = (
@@ -256,7 +267,10 @@ const buildHighlightColors = (
         }
     }
 
-    return { colors, highlightedCount };
+    return {
+        colors,
+        highlightedCount
+    };
 };
 
 export class FilterEvaluator {
@@ -321,7 +335,10 @@ export class FilterEvaluator {
 
         await this.uploadGlb(buffer, input.objectKey, input.ownerClusterId);
 
-        return { objectKey: input.objectKey, atomsResult };
+        return {
+            objectKey: input.objectKey,
+            atomsResult
+        };
     }
 
     private buildDeletedAtomsModel(
@@ -345,7 +362,10 @@ export class FilterEvaluator {
             parsed.max
         );
 
-        return { buffer, atomsResult: retained.count };
+        return {
+            buffer,
+            atomsResult: retained.count
+        };
     }
 
     private buildHighlightedAtomsModel(
@@ -361,7 +381,10 @@ export class FilterEvaluator {
             parsed.max
         );
 
-        return { buffer, atomsResult: highlightedCount };
+        return {
+            buffer,
+            atomsResult: highlightedCount
+        };
     }
 
     private async resolveTrajectoryValues(
@@ -378,17 +401,29 @@ export class FilterEvaluator {
             if (externalValues.type === 'string') {
                 const values = this.remapExternalStringValues(parsed, externalValues.values);
                 this.assertStringValuesAvailable(values, input);
-                return { parsed, values, valueType: 'string' };
+                return {
+                    parsed,
+                    values,
+                    valueType: 'string'
+                };
             }
 
             const values = this.trajectoryParser.remapExternalValues(parsed, externalValues.values);
             this.assertValuesAvailable(values, input);
-            return { parsed, values, valueType: 'number' };
+            return {
+                parsed,
+                values,
+                valueType: 'number'
+            };
         }
 
         const values = this.trajectoryParser.getPropertyValues(parsed, input.property);
         this.assertValuesAvailable(values, input);
-        return { parsed, values, valueType: 'number' };
+        return {
+            parsed,
+            values,
+            valueType: 'number'
+        };
     }
 
     private async resolveExternalValues(input: PerAtomValueSource): Promise<
@@ -398,7 +433,10 @@ export class FilterEvaluator {
     > {
         if (input.externalValues) {
             if (input.externalValues instanceof Float32Array) {
-                return { type: 'number', values: input.externalValues };
+                return {
+                    type: 'number',
+                    values: input.externalValues
+                };
             }
             const bytes = input.externalValues instanceof Uint8Array
                 ? input.externalValues
@@ -414,7 +452,10 @@ export class FilterEvaluator {
                 };
             }
             const aligned = new Uint8Array(bytes);
-            return { type: 'number', values: new Float32Array(aligned.buffer) };
+            return {
+                type: 'number',
+                values: new Float32Array(aligned.buffer)
+            };
         }
 
         if (!input.analysisId || !input.exposureId) {
@@ -525,9 +566,4 @@ export class FilterEvaluator {
     }
 }
 
-let filterEvaluatorInstance: FilterEvaluator | null = null;
-
-export const getFilterEvaluator = (): FilterEvaluator => {
-    filterEvaluatorInstance ??= new FilterEvaluator(getObjectStore(), getTrajectoryParser(), getPluginPropertyStore());
-    return filterEvaluatorInstance;
-};
+export const getFilterEvaluator = singleton((): FilterEvaluator => new FilterEvaluator(getObjectStore(), getTrajectoryParser(), getPluginPropertyStore()));

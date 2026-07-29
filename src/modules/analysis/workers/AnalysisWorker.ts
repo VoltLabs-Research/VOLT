@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
@@ -36,7 +37,10 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController,
         private readonly analysisProvenanceCollector: AnalysisProvenanceCollector
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
     }
 
     protected async process(payload: AnalysisQueueJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {
@@ -54,9 +58,4 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
     }
 }
 
-let analysisWorkerInstance: AnalysisWorker | null = null;
-
-export const getAnalysisWorker = (): AnalysisWorker => {
-    analysisWorkerInstance ??= new AnalysisWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getAnalysisQueueAdmissionController(), getAnalysisProvenanceCollector());
-    return analysisWorkerInstance;
-};
+export const getAnalysisWorker = singleton((): AnalysisWorker => new AnalysisWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getAnalysisQueueAdmissionController(), getAnalysisProvenanceCollector()));

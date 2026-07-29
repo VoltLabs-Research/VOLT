@@ -86,7 +86,10 @@ export const processPipelineJob = async (
         try {
             await hooks.updateProgress(value);
         } catch (error) {
-            logger.warn({ err: error, jobId: payload.jobId }, 'processPipelineJob progress callback failed');
+            logger.warn({
+                err: error,
+                jobId: payload.jobId
+            }, 'processPipelineJob progress callback failed');
         }
     };
 
@@ -136,7 +139,10 @@ export const processPipelineJob = async (
                 trajectoryId: payload.trajectoryId,
                 timestep,
                 error: message
-            }).catch(logAndSwallow('warn', { jobId: payload.jobId, analysisId }, 'Failed to report pipeline stage failure'));
+            }).catch(logAndSwallow('warn', {
+                jobId: payload.jobId,
+                analysisId
+            }, 'Failed to report pipeline stage failure'));
         }
         throw error;
     } finally {

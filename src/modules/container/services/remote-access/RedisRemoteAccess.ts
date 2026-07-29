@@ -140,14 +140,35 @@ export default class RedisRemoteAccess extends BaseRemoteAccess {
             await client.connect();
             const type = await client.type(key);
 
-            if (type === 'string') return { type, value: await client.get(key) };
-            if (type === 'hash') return { type, value: await client.hgetall(key) };
-            if (type === 'list') return { type, value: await client.lrange(key, 0, 99) };
-            if (type === 'set') return { type, value: await client.smembers(key) };
-            if (type === 'zset') return { type, value: await client.zrange(key, 0, 99, 'WITHSCORES') };
-            if (type === 'stream') return { type, value: await client.xrange(key, '-', '+', 'COUNT', 100) };
+            if (type === 'string') return {
+                type,
+                value: await client.get(key)
+            };
+            if (type === 'hash') return {
+                type,
+                value: await client.hgetall(key)
+            };
+            if (type === 'list') return {
+                type,
+                value: await client.lrange(key, 0, 99)
+            };
+            if (type === 'set') return {
+                type,
+                value: await client.smembers(key)
+            };
+            if (type === 'zset') return {
+                type,
+                value: await client.zrange(key, 0, 99, 'WITHSCORES')
+            };
+            if (type === 'stream') return {
+                type,
+                value: await client.xrange(key, '-', '+', 'COUNT', 100)
+            };
 
-            return { type, value: null };
+            return {
+                type,
+                value: null
+            };
         } finally {
             await client.quit();
         }

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -40,7 +41,11 @@ export const buildPluginProcessEnv = (
     inputEnv?: NodeJS.ProcessEnv,
     extraEnv: NodeJS.ProcessEnv = {}
 ): NodeJS.ProcessEnv => {
-    const env = { ...process.env, ...inputEnv, ...extraEnv };
+    const env = {
+        ...process.env,
+        ...inputEnv,
+        ...extraEnv
+    };
     const threadCount = String(DEFAULT_NATIVE_THREAD_COUNT);
 
     for (const key of NATIVE_THREAD_ENV_KEYS) {
@@ -257,7 +262,12 @@ export class PluginProcessPool {
             timeout.unref();
 
             internals.activeLogSink = options.logSink;
-            const pending: PendingRequest = { opId, resolve, reject, timeout };
+            const pending: PendingRequest = {
+                opId,
+                resolve,
+                reject,
+                timeout
+            };
             internals.pendingByOpId.set(opId, pending);
 
             const writeOk = internals.child.stdin.write(header) && internals.child.stdin.write(payloadBuffer);
@@ -354,7 +364,10 @@ export class PluginProcessPool {
         const inFlight = (async (): Promise<number> => {
             const sample = await si.mem();
             const freeMb = selectAvailableMemoryMb(sample);
-            this.memSampleCache = { freeMb, capturedAt: Date.now() };
+            this.memSampleCache = {
+                freeMb,
+                capturedAt: Date.now()
+            };
             return freeMb;
         })();
         this.memSampleInFlight = inFlight;
@@ -459,7 +472,10 @@ export class PluginProcessPool {
         });
 
         child.on('error', (error) => {
-            logger.warn({ err: error, pluginId: input.pluginId }, '@plugin-process-pool: spawn error');
+            logger.warn({
+                err: error,
+                pluginId: input.pluginId
+            }, '@plugin-process-pool: spawn error');
             this.handleTerminatedProcess(group, internals, `error:${error.message}`);
         });
 
@@ -467,7 +483,11 @@ export class PluginProcessPool {
             const reason = signal ? `signal:${signal}` : `exit:${code ?? 'null'}`;
             if (internals.stderrBuffer) {
                 logger.warn(
-                    { pluginId: input.pluginId, reason, stderr: internals.stderrBuffer.slice(-2048) },
+                    {
+                        pluginId: input.pluginId,
+                        reason,
+                        stderr: internals.stderrBuffer.slice(-2048)
+                    },
                     '@plugin-process-pool: plugin process exited'
                 );
             }
@@ -475,7 +495,10 @@ export class PluginProcessPool {
         });
 
         child.stdin.on('error', (error) => {
-            logger.warn({ err: error, pluginId: input.pluginId }, '@plugin-process-pool: stdin error');
+            logger.warn({
+                err: error,
+                pluginId: input.pluginId
+            }, '@plugin-process-pool: stdin error');
         });
 
         return internals;
@@ -671,7 +694,10 @@ export class PluginProcessPool {
 
     private restartInternals(internals: PooledProcessInternals, reason: string): void {
         if (internals.closed) return;
-        logger.warn({ pluginId: internals.pluginId, reason }, '@plugin-process-pool: restarting plugin process');
+        logger.warn({
+            pluginId: internals.pluginId,
+            reason
+        }, '@plugin-process-pool: restarting plugin process');
         try {
             internals.child.kill('SIGTERM');
         } catch { }
@@ -689,7 +715,10 @@ export class PluginProcessPool {
             text,
             occurredAt: new Date().toISOString()
         })).catch((error: unknown) => {
-            logger.warn({ err: error, pluginId: internals.pluginId }, '@plugin-process-pool: failed to forward stderr log chunk');
+            logger.warn({
+                err: error,
+                pluginId: internals.pluginId
+            }, '@plugin-process-pool: failed to forward stderr log chunk');
         });
     }
 
@@ -788,9 +817,4 @@ export const resolvePythonStubPath = (): string => {
     return candidates[0];
 };
 
-let pluginProcessPoolInstance: PluginProcessPool | null = null;
-
-export const getPluginProcessPool = (): PluginProcessPool => {
-    pluginProcessPoolInstance ??= new PluginProcessPool();
-    return pluginProcessPoolInstance;
-};
+export const getPluginProcessPool = singleton((): PluginProcessPool => new PluginProcessPool());

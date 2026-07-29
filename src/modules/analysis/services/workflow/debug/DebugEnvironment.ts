@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { DAEMON_PATHS } from '@core/config/paths';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
@@ -63,9 +64,4 @@ export class DebugEnvironment {
     }
 }
 
-let debugEnvironmentInstance: DebugEnvironment | null = null;
-
-export const getDebugEnvironment = (): DebugEnvironment => {
-    debugEnvironmentInstance ??= new DebugEnvironment(getObjectStore());
-    return debugEnvironmentInstance;
-};
+export const getDebugEnvironment = singleton((): DebugEnvironment => new DebugEnvironment(getObjectStore()));

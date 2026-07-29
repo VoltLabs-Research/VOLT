@@ -33,7 +33,10 @@ pluginListingRowSchema.index(
     { name: 'plugin_listing_analysis_exposure_timestep_idx' }
 );
 pluginListingRowSchema.index(
-    { analysis: 1, timestep: -1 },
+    {
+        analysis: 1,
+        timestep: -1
+    },
     { name: 'plugin_listing_analysis_timestep_idx' }
 );
 pluginListingRowSchema.index(

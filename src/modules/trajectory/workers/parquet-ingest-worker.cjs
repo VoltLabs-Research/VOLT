@@ -180,7 +180,11 @@ const buildParquet = async (input) => {
             '(FORMAT PARQUET, COMPRESSION ZSTD)'
         );
 
-        return { columnDtypes, units, elementTable };
+        return {
+            columnDtypes,
+            units,
+            elementTable
+        };
     } finally {
         connection.closeSync();
     }
@@ -199,7 +203,10 @@ if (!parentPort) {
 }
 
 buildParquet(workerData)
-    .then((result) => parentPort.postMessage({ ok: true, result }))
+    .then((result) => parentPort.postMessage({
+        ok: true,
+        result
+    }))
     .catch((error) => {
         const err = error instanceof Error ? error : new Error(String(error));
         parentPort.postMessage({

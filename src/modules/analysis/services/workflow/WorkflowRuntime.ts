@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import { getResultProcessor } from '@modules/plugin/services/exports/ResultProcessor';
@@ -30,9 +31,9 @@ import type { BinaryExecutorService } from '@modules/plugin/services/runtime/Bin
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import type { AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
-import type { ResultProcessorService } from '@modules/plugin/services/exports/result-processor-service-contract';
+import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
 import type { WorkflowExecutionOptions } from '@shared/contracts/types/workflow.types';
-import type { TrajectoryFrameStore } from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { PipelineContext } from '@modules/analysis/services/pipeline-context';
 import {
@@ -284,7 +285,10 @@ export class WorkflowRuntime {
             runtimeArguments: {},
             trajectoryId: identity.trajectoryId,
             trajectoryFrames,
-            analysis: { _id: identity.analysisId, pluginDisplayName: identity.pluginId },
+            analysis: {
+                _id: identity.analysisId,
+                pluginDisplayName: identity.pluginId
+            },
             analysisId: identity.analysisId,
             pluginId: identity.pluginId,
             teamId: identity.teamId,
@@ -482,7 +486,10 @@ export class WorkflowRuntime {
             trajectoryId: identity.trajectoryId,
             trajectoryFrames: input.executionData.trajectoryFrames,
             analysisId: identity.analysisId,
-            analysis: { _id: identity.analysisId, pluginDisplayName: identity.pluginId },
+            analysis: {
+                _id: identity.analysisId,
+                pluginDisplayName: identity.pluginId
+            },
             teamId: identity.teamId,
             ownerClusterId: identity.storageClusterId,
             rootNodeId: node.id,
@@ -841,7 +848,10 @@ export class WorkflowRuntime {
                     stageReporter: input.stageReporter
                 });
 
-                return { output: execution.output, trace: execution.trace };
+                return {
+                    output: execution.output,
+                    trace: execution.trace
+                };
             },
             buildNodeContext: (node, executionPath) => {
                 const baseContext = session.context;
@@ -1012,9 +1022,4 @@ export class WorkflowRuntime {
 
 }
 
-let workflowRuntimeInstance: WorkflowRuntime | null = null;
-
-export const getWorkflowRuntime = (): WorkflowRuntime => {
-    workflowRuntimeInstance ??= new WorkflowRuntime(getWorkflowNodeRegistry(), getPluginBinaryCache(), getBinaryExecutorService(), getResultProcessor(), getTrajectoryFrameStore());
-    return workflowRuntimeInstance;
-};
+export const getWorkflowRuntime = singleton((): WorkflowRuntime => new WorkflowRuntime(getWorkflowNodeRegistry(), getPluginBinaryCache(), getBinaryExecutorService(), getResultProcessor(), getTrajectoryFrameStore()));

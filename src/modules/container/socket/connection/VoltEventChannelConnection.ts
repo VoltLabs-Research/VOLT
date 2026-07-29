@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
 import { logger } from '@shared/infrastructure/logger';
@@ -165,9 +166,4 @@ export class VoltEventChannelConnection {
     }
 }
 
-let voltEventChannelConnectionInstance: VoltEventChannelConnection | null = null;
-
-export const getVoltEventChannelConnection = (): VoltEventChannelConnection => {
-    voltEventChannelConnectionInstance ??= new VoltEventChannelConnection(getConfig(), getVoltCloudConnection());
-    return voltEventChannelConnectionInstance;
-};
+export const getVoltEventChannelConnection = singleton((): VoltEventChannelConnection => new VoltEventChannelConnection(getConfig(), getVoltCloudConnection()));

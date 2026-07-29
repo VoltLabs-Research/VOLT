@@ -1,9 +1,7 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import path from 'node:path';
-
+import { PlaneProcessSupervisor } from '@shared/infrastructure/planes/PlaneProcessSupervisor';
 import { logger } from '@shared/infrastructure/logger';
+import type { ChildProcess } from 'node:child_process';
 import type { DaemonConfig } from '@core/config/daemon';
-import { applyPreferredPlaneProcessPriority } from '@shared/infrastructure/utilities/process-priority';
 
 type MessageListener = (message: unknown) => void;
 type DisconnectedListener = () => void;
@@ -18,11 +16,8 @@ interface ChildEvent {
 
 const PROCESS_RESTART_DELAY_MS = 2_000;
 
-export class SocketChannelProcessClient {
-    private child: ChildProcess | null = null;
-    private stopping = false;
+export class SocketChannelProcessClient extends PlaneProcessSupervisor {
     private ready = false;
-    private restartTimer: ReturnType<typeof setTimeout> | null = null;
     private readonly messageListeners: MessageListener[] = [];
     private readonly disconnectedListeners: DisconnectedListener[] = [];
     private readonly connectedListeners: ConnectedListener[] = [];
@@ -32,7 +27,19 @@ export class SocketChannelProcessClient {
         private readonly config: DaemonConfig,
         private readonly channel: string,
         private readonly label: string
-    ) {}
+    ) {
+        super({
+            label: `${channel}-plane`,
+            script: 'socket-channel-plane',
+            restartDelayMs: PROCESS_RESTART_DELAY_MS,
+            env: {
+                TEAM_CLUSTER_SOCKET_CHANNEL_PROCESS: channel,
+                TEAM_CLUSTER_SOCKET_CHANNEL_LABEL: label
+            },
+            advancedSerialization: true,
+            args: [channel, label]
+        });
+    }
 
     async start(): Promise<void> {
         if (this.child) return;
@@ -72,16 +79,8 @@ export class SocketChannelProcessClient {
     }
 
     stop(): void {
-        this.stopping = true;
         this.ready = false;
-        if (this.restartTimer) {
-            clearTimeout(this.restartTimer);
-            this.restartTimer = null;
-        }
-
-        const child = this.child;
-        this.child = null;
-        child?.kill('SIGTERM');
+        this.stopProcess();
     }
 
     isReady(): boolean {
@@ -95,7 +94,10 @@ export class SocketChannelProcessClient {
             return;
         }
 
-        child.send({ type: 'emit-message', message });
+        child.send({
+            type: 'emit-message',
+            message
+        });
     }
 
     onMessage(listener: MessageListener): this {
@@ -132,52 +134,21 @@ export class SocketChannelProcessClient {
         }
     }
 
-    private spawnProcess(): void {
-        const command = this.resolveProcessCommand();
-        const child = spawn(command.execPath, command.args, {
-            cwd: process.cwd(),
-            env: {
-                ...process.env,
-                TEAM_CLUSTER_SOCKET_CHANNEL_PROCESS: this.channel,
-                TEAM_CLUSTER_SOCKET_CHANNEL_LABEL: this.label
-            },
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-            serialization: 'advanced'
-        });
-
-        this.child = child;
-        applyPreferredPlaneProcessPriority(child.pid, `${this.channel}-plane`);
-
-        child.stdout?.on('data', (chunk: Buffer) => {
-            process.stdout.write(`[${this.channel}-plane] ${chunk.toString('utf8')}`);
-        });
-        child.stderr?.on('data', (chunk: Buffer) => {
-            process.stderr.write(`[${this.channel}-plane] ${chunk.toString('utf8')}`);
-        });
+    protected override onProcessSpawned(child: ChildProcess): void {
         child.on('message', (message: ChildEvent) => {
             this.handleChildMessage(message);
         });
-        child.on('error', (error) => {
-            logger.error({ err: error }, `@${this.channel}-plane: process error`);
-            this.errorListeners.forEach((listener) => listener(error));
-        });
-        child.on('exit', (code, signal) => {
-            if (this.child === child) {
-                this.child = null;
-            }
-            this.ready = false;
+    }
 
-            if (this.stopping) return;
+    protected override onProcessError(error: Error): void {
+        logger.error({ err: error }, `@${this.channel}-plane: process error`);
+        this.errorListeners.forEach((listener) => listener(error));
+    }
 
-            this.disconnectedListeners.forEach((listener) => listener());
-
-            logger.warn(`${this.label} process exited code=${code ?? 'null'} signal=${signal ?? 'none'}; restarting`);
-            this.restartTimer = setTimeout(() => {
-                this.restartTimer = null;
-                this.spawnProcess();
-            }, PROCESS_RESTART_DELAY_MS);
-            this.restartTimer.unref();
-        });
+    protected override onProcessExit(): void {
+        this.ready = false;
+        if (this.stopping) return;
+        this.disconnectedListeners.forEach((listener) => listener());
     }
 
     private handleChildMessage(message: ChildEvent): void {
@@ -206,22 +177,4 @@ export class SocketChannelProcessClient {
         }
     }
 
-    private resolveProcessCommand(): { execPath: string; args: string[] } {
-        const runningFromDist = __filename.endsWith('.js') && __dirname.includes(`${path.sep}dist${path.sep}`);
-        const scriptPath = runningFromDist
-            ? path.resolve(__dirname, '..', '..', '..', '..', 'socket-channel-plane.js')
-            : path.resolve(process.cwd(), 'src', 'socket-channel-plane.ts');
-
-        if (runningFromDist) {
-            return {
-                execPath: process.execPath,
-                args: [scriptPath, this.channel, this.label]
-            };
-        }
-
-        return {
-            execPath: path.resolve(process.cwd(), 'node_modules', '.bin', 'tsx'),
-            args: [scriptPath, this.channel, this.label]
-        };
-    }
 }

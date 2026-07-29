@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -223,7 +224,11 @@ const sweepPluginParquetCache = async (): Promise<void> => {
                 .map(async (name) => {
                     const filePath = path.join(dir, name);
                     const stat = await fs.stat(filePath);
-                    return { filePath, size: stat.size, mtimeMs: stat.mtimeMs };
+                    return {
+                        filePath,
+                        size: stat.size,
+                        mtimeMs: stat.mtimeMs
+                    };
                 })
         );
 
@@ -325,7 +330,10 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         try {
             const parquetPath = request.timestep === undefined
                 ? await this.resolveFirstExposureLocalParquet(request)
-                : await this.resolveExposureLocalParquet({ ...request, timestep: request.timestep });
+                : await this.resolveExposureLocalParquet({
+                    ...request,
+                    timestep: request.timestep
+                });
             if (!parquetPath) return [];
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
@@ -387,7 +395,10 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
 
         const values = await this.getModifierValues(request);
-        return values ? { type: 'number' as const, values } : null;
+        return values ? {
+            type: 'number' as const,
+            values
+        } : null;
     }
 
     public async getModifierStats(request: PluginModifierValuesRequest): Promise<ModifierStats | null> {
@@ -409,7 +420,10 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             const [row] = reader.getRowObjectsJS();
             const min = toFiniteNumber(row?.min);
             const max = toFiniteNumber(row?.max);
-            return min === null || max === null ? null : { min, max };
+            return min === null || max === null ? null : {
+                min,
+                max
+            };
         } catch {
             return null;
         } finally {
@@ -538,11 +552,18 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             const propertyNames = getColumnNames(rows as Record<string, unknown>[]);
             if (propertyNames.length === 0) continue;
 
-            exposureResults.push({ exposureId, propertyNames, rows });
+            exposureResults.push({
+                exposureId,
+                propertyNames,
+                rows
+            });
         }
 
         if (exposureResults.length === 0) {
-            return { propertyNames: [], atoms: [] };
+            return {
+                propertyNames: [],
+                atoms: []
+            };
         }
 
         return this.mergeExposureRows(exposureResults, request.atomIds);
@@ -891,9 +912,4 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 }
 
-let pluginPropertyStoreInstance: ParquetPluginPropertyStore | null = null;
-
-export const getPluginPropertyStore = (): ParquetPluginPropertyStore => {
-    pluginPropertyStoreInstance ??= new ParquetPluginPropertyStore(getObjectStore());
-    return pluginPropertyStoreInstance;
-};
+export const getPluginPropertyStore = singleton((): ParquetPluginPropertyStore => new ParquetPluginPropertyStore(getObjectStore()));

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { getRemoteClient } from '@shared/infrastructure/storage/DirectObjectStoreClient';
@@ -224,16 +225,11 @@ const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMeta
 export const createClusterObjectStore = (deps: ClusterObjectStoreDeps): ClusterObjectStore =>
     new DefaultClusterObjectStore(deps);
 
-let objectStoreInstance: ClusterObjectStore | null = null;
-
-export const getObjectStore = (): ClusterObjectStore => {
-    objectStoreInstance ??= createClusterObjectStore({
+export const getObjectStore = singleton((): ClusterObjectStore => createClusterObjectStore({
         config: getConfig(),
         minioService: getMinioService(),
         remoteClient: getRemoteClient()
-    });
-    return objectStoreInstance;
-};
+    }));
 
 export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,

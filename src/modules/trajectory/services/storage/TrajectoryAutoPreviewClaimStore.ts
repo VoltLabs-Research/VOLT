@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 
@@ -26,9 +27,4 @@ export class TrajectoryAutoPreviewClaimStore {
     }
 };
 
-let trajectoryAutoPreviewClaimStoreInstance: TrajectoryAutoPreviewClaimStore | null = null;
-
-export const getTrajectoryAutoPreviewClaimStore = (): TrajectoryAutoPreviewClaimStore => {
-    trajectoryAutoPreviewClaimStoreInstance ??= new TrajectoryAutoPreviewClaimStore(getRedisConnection());
-    return trajectoryAutoPreviewClaimStoreInstance;
-};
+export const getTrajectoryAutoPreviewClaimStore = singleton((): TrajectoryAutoPreviewClaimStore => new TrajectoryAutoPreviewClaimStore(getRedisConnection()));

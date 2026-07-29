@@ -1,3 +1,5 @@
+import { singleton } from '@shared/application/utilities/singleton';
+import type { SharedFrameColumn, SharedFramePublishInput } from '@shared/contracts/types/shared-frame';
 import { logger } from '@shared/infrastructure/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -9,16 +11,7 @@ const DEFAULT_FRAME_MMAP_ROOT = path.resolve(process.cwd(), 'storage', 'plugin-f
 const FRAME_MMAP_ROOT_ENV = 'PLUGIN_FRAME_MMAP_DIR';
 const FRAME_MMAP_FILE_PREFIX = 'volt-plugin-frame-';
 
-export interface SharedFrameColumn {
-    name: string;
-    dtype: string;
-    shape: number[];
-    data: ArrayBufferView;
-}
-
-export interface SharedFramePublishInput {
-    columns: SharedFrameColumn[];
-}
+export type { SharedFrameColumn, SharedFramePublishInput };
 
 export interface SharedFrameHandle {
     id: string;
@@ -77,7 +70,10 @@ export class SharedMemoryBridge {
             return handle;
         } catch (error: unknown) {
             await safeRemovePath(filePath).catch(() => undefined);
-            logger.error({ err: error, filePath }, '@shared-memory-bridge: failed to publish frame mmap file');
+            logger.error({
+                err: error,
+                filePath
+            }, '@shared-memory-bridge: failed to publish frame mmap file');
             throw error;
         }
     }
@@ -144,7 +140,10 @@ export class SharedMemoryBridge {
             await fileHandle.close();
         }
 
-        return { bindings, totalBytes };
+        return {
+            bindings,
+            totalBytes
+        };
     }
 
     private prepareStorageRoot(): Promise<string> {
@@ -165,7 +164,10 @@ export class SharedMemoryBridge {
         try {
             entries = await fs.readdir(storageRoot);
         } catch (error: unknown) {
-            logger.warn({ err: error, storageRoot }, '@shared-memory-bridge: failed to list stale frame mmap files');
+            logger.warn({
+                err: error,
+                storageRoot
+            }, '@shared-memory-bridge: failed to list stale frame mmap files');
             return;
         }
 
@@ -173,16 +175,14 @@ export class SharedMemoryBridge {
             .filter((entry) => entry.startsWith(FRAME_MMAP_FILE_PREFIX))
             .map((entry) => safeRemovePath(path.join(storageRoot, entry)).catch((error: unknown) => {
                 logger.warn(
-                    { err: error, filePath: path.join(storageRoot, entry) },
+                    {
+                        err: error,
+                        filePath: path.join(storageRoot, entry)
+                    },
                     '@shared-memory-bridge: failed to remove stale frame mmap file'
                 );
             })));
     }
 }
 
-let sharedMemoryBridgeInstance: SharedMemoryBridge | null = null;
-
-export const getSharedMemoryBridge = (): SharedMemoryBridge => {
-    sharedMemoryBridgeInstance ??= new SharedMemoryBridge();
-    return sharedMemoryBridgeInstance;
-};
+export const getSharedMemoryBridge = singleton((): SharedMemoryBridge => new SharedMemoryBridge());

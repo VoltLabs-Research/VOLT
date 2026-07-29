@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
@@ -91,9 +92,4 @@ export class GlbExporter {
     }
 }
 
-let glbExporterInstance: GlbExporter | null = null;
-
-export const getGlbExporter = (): GlbExporter => {
-    glbExporterInstance ??= new GlbExporter(getObjectStore(), getTrajectoryParser(), getTrajectoryRasterQueue());
-    return glbExporterInstance;
-};
+export const getGlbExporter = singleton((): GlbExporter => new GlbExporter(getObjectStore(), getTrajectoryParser(), getTrajectoryRasterQueue()));

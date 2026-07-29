@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
@@ -233,9 +234,4 @@ export class TrajectoryRasterQueue {
     }
 }
 
-let trajectoryRasterQueueInstance: TrajectoryRasterQueue | null = null;
-
-export const getTrajectoryRasterQueue = (): TrajectoryRasterQueue => {
-    trajectoryRasterQueueInstance ??= new TrajectoryRasterQueue(getObjectStore(), getQueueService(), getTrajectoryAutoPreviewClaimStore());
-    return trajectoryRasterQueueInstance;
-};
+export const getTrajectoryRasterQueue = singleton((): TrajectoryRasterQueue => new TrajectoryRasterQueue(getObjectStore(), getQueueService(), getTrajectoryAutoPreviewClaimStore()));

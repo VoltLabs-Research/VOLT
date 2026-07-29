@@ -1,5 +1,5 @@
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
-import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 
 export interface ResultProcessorService {

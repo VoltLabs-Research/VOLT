@@ -1,3 +1,4 @@
+import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
 import { DuckDBConnection } from '@duckdb/node-api';
 import type { PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
@@ -12,12 +13,7 @@ export interface WorkflowExposurePayloadReadResult {
     exportData: JsonObject | null;
 }
 
-export interface WorkflowExposureInspectionResult {
-    outputFilePath: string;
-    listingRowCount: number;
-    subListingNames: string[];
-    exportPayload: JsonObject | null;
-}
+export type { WorkflowExposureInspectionResult };
 
 const PER_ATOM_KEY = 'per-atom-properties';
 const FIXED_ATOM_COLUMNS = new Set(['atom_index', 'id', 'x', 'y', 'z', 'bucket', 'structure_id', 'structure_name']);
@@ -109,7 +105,10 @@ const reconstructFromBondTable = (rows: JsonObject[]): WorkflowExposurePayloadRe
     for (const row of rows) {
         const { points, ...properties } = row;
         const bondPoints = Array.isArray(points) ? points : [];
-        bonds.push({ ...properties, points: bondPoints as JsonObject[string] });
+        bonds.push({
+            ...properties,
+            points: bondPoints as JsonObject[string]
+        });
         propertyRows.push(properties);
     }
 
@@ -132,12 +131,20 @@ const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadRe
         const { points, ...properties } = row;
         const linePoints = Array.isArray(points) ? points : [];
         totalPoints += linePoints.length;
-        lines.push({ ...properties, points: linePoints as JsonObject[string] });
+        lines.push({
+            ...properties,
+            points: linePoints as JsonObject[string]
+        });
         propertyRows.push(properties);
     }
 
     return {
-        listing: { main_listing: { lines: rows.length, total_points: totalPoints } },
+        listing: {
+            main_listing: {
+                lines: rows.length,
+                total_points: totalPoints
+            }
+        },
         subListingNames: propertyRows.length > 0 ? ['lines'] : [],
         subListings: propertyRows.length > 0 ? { lines: propertyRows } : {},
         perAtomProperties: propertyRows as unknown as PerAtomProperties,
@@ -169,7 +176,10 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
                 propertyRow[key] = value as JsonObject[string];
             }
         }
-        const entry = buckets.get(bucket) ?? { structureId, atoms: [] };
+        const entry = buckets.get(bucket) ?? {
+            structureId,
+            atoms: []
+        };
         entry.atoms.push(atom);
         buckets.set(bucket, entry);
         propertyRows.push(propertyRow);
@@ -179,11 +189,20 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
     const structures: JsonObject[] = [];
     for (const [name, { structureId, atoms }] of buckets.entries()) {
         atomisticExporter[name] = atoms as JsonObject[string];
-        structures.push({ structure_id: structureId, structure_name: name, atom_count: atoms.length });
+        structures.push({
+            structure_id: structureId,
+            structure_name: name,
+            atom_count: atoms.length
+        });
     }
 
     return {
-        listing: { main_listing: { total_atoms: rows.length, structure_count: buckets.size } },
+        listing: {
+            main_listing: {
+                total_atoms: rows.length,
+                structure_count: buckets.size
+            }
+        },
         subListingNames: structures.length > 0 ? ['structures'] : [],
         subListings: structures.length > 0 ? { structures } : {},
         perAtomProperties: propertyRows as unknown as PerAtomProperties,

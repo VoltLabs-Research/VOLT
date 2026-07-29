@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEnabledModules } from '@core/bootstrap/module-state';
 import { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
@@ -15,36 +16,39 @@ interface EventMapperBinding {
 }
 
 const EVENT_MAPPERS: readonly EventMapperBinding[] = [
-    { moduleKey: null, register: registerRuntimeEventMappers },
-    { moduleKey: 'container', register: registerContainerEventMappers },
-    { moduleKey: 'analysis', register: registerAnalysisEventMappers },
-    { moduleKey: 'plugin', register: registerPluginEventMappers },
-    { moduleKey: 'trajectory', register: registerTrajectoryEventMappers }
+    {
+        moduleKey: null,
+        register: registerRuntimeEventMappers
+    },
+    {
+        moduleKey: 'container',
+        register: registerContainerEventMappers
+    },
+    {
+        moduleKey: 'analysis',
+        register: registerAnalysisEventMappers
+    },
+    {
+        moduleKey: 'plugin',
+        register: registerPluginEventMappers
+    },
+    {
+        moduleKey: 'trajectory',
+        register: registerTrajectoryEventMappers
+    }
 ];
 
-let domainEventBridgeInstance: DomainEventBridge | null = null;
-
-export const getDomainEventBridge = (): DomainEventBridge => {
-    if (domainEventBridgeInstance) {
-        return domainEventBridgeInstance;
-    }
-
+export const getDomainEventBridge = singleton((): DomainEventBridge => {
     const enabled = getEnabledModules();
     const bridge = new DomainEventBridge(getVoltEventChannelConnection());
+    const mounted = EVENT_MAPPERS.filter(({ moduleKey }) => moduleKey === null || enabled.has(moduleKey));
 
-    let mounted = 0;
-    for (const { moduleKey, register } of EVENT_MAPPERS) {
-        if (moduleKey !== null && !enabled.has(moduleKey)) {
-            continue;
-        }
+    for (const { register } of mounted) {
         register(bridge);
-        mounted += 1;
     }
 
     bridge.subscribeAll(getEventDispatcher());
+    logger.info(`@event-bootstrap: mounted ${mounted.length}/${EVENT_MAPPERS.length} event mapper sets`);
 
-    logger.info(`@event-bootstrap: mounted ${mounted}/${EVENT_MAPPERS.length} event mapper sets`);
-
-    domainEventBridgeInstance = bridge;
-    return domainEventBridgeInstance;
-};
+    return bridge;
+});

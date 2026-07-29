@@ -1,10 +1,8 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-
+import { PlaneProcessSupervisor } from '@shared/infrastructure/planes/PlaneProcessSupervisor';
 import { logger } from '@shared/infrastructure/logger';
+import type { ChildProcess } from 'node:child_process';
 import type { DaemonConfig } from '@core/config/daemon';
-import { applyPreferredPlaneProcessPriority } from '@shared/infrastructure/utilities/process-priority';
 import type {
     CommandResult,
     HandlerContext,
@@ -33,11 +31,8 @@ interface ChildMessage {
 
 const CONTROL_PROCESS_RESTART_DELAY_MS = 2_000;
 
-export class ControlPlaneProcessClient {
-    private child: ChildProcess | null = null;
-    private stopping = false;
+export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
     private ready = false;
-    private restartTimer: ReturnType<typeof setTimeout> | null = null;
     private connectWaiters: Array<{ resolve: () => void; reject: (error: Error) => void }> = [];
     private readonly handlers = new Map<string, ReverseChannelHandler>();
     private readonly messageListeners: Array<(message: NonCommandMessage) => void> = [];
@@ -46,7 +41,15 @@ export class ControlPlaneProcessClient {
     private readonly errorListeners: Array<(error: Error) => void> = [];
     private readonly pendingSendCommands = new Map<string, PendingSendCommand>();
 
-    constructor(private readonly config: DaemonConfig) {}
+    constructor(private readonly config: DaemonConfig) {
+        super({
+            label: 'control-plane',
+            script: 'control-plane',
+            restartDelayMs: CONTROL_PROCESS_RESTART_DELAY_MS,
+            env: { TEAM_CLUSTER_CONTROL_PLANE: '1' },
+            advancedSerialization: true
+        });
+    }
 
     connect(): Promise<void> {
         if (!this.child) {
@@ -59,21 +62,16 @@ export class ControlPlaneProcessClient {
         }
 
         return new Promise((resolve, reject) => {
-            this.connectWaiters.push({ resolve, reject });
+            this.connectWaiters.push({
+                resolve,
+                reject
+            });
         });
     }
 
     disconnect(): void {
-        this.stopping = true;
         this.ready = false;
-        if (this.restartTimer) {
-            clearTimeout(this.restartTimer);
-            this.restartTimer = null;
-        }
-
-        const child = this.child;
-        this.child = null;
-        child?.kill('SIGTERM');
+        this.stopProcess();
     }
 
     sendCommand<T = unknown>(command: string, payload?: object, timeout?: number): Promise<T | undefined> {
@@ -103,7 +101,10 @@ export class ControlPlaneProcessClient {
         if (!child || !child.connected || !this.ready) {
             throw new Error('Control socket is not ready');
         }
-        child.send({ type: 'emit', message });
+        child.send({
+            type: 'emit',
+            message
+        });
     }
 
     isReady(): boolean {
@@ -148,48 +149,18 @@ export class ControlPlaneProcessClient {
         return this.config.daemonPassword;
     }
 
-    private spawnProcess(): void {
-        const command = this.resolveProcessCommand();
-        const child = spawn(command.execPath, command.args, {
-            cwd: process.cwd(),
-            env: {
-                ...process.env,
-                TEAM_CLUSTER_CONTROL_PLANE: '1'
-            },
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-            serialization: 'advanced'
-        });
-
-        this.child = child;
-        applyPreferredPlaneProcessPriority(child.pid, 'control-plane');
-
-        child.stdout?.on('data', (chunk: Buffer) => {
-            process.stdout.write(`[control-plane] ${chunk.toString('utf8')}`);
-        });
-        child.stderr?.on('data', (chunk: Buffer) => {
-            process.stderr.write(`[control-plane] ${chunk.toString('utf8')}`);
-        });
+    protected override onProcessSpawned(child: ChildProcess): void {
         child.on('message', (message) => {
             void this.handleChildMessage(message as ChildMessage);
         });
-        child.on('error', (error) => {
-            this.notifyError(error);
-        });
-        child.on('exit', (code, signal) => {
-            if (this.child === child) {
-                this.child = null;
-            }
-            this.setDisconnected(`exit:${signal ?? code ?? 'unknown'}`);
+    }
 
-            if (this.stopping) return;
+    protected override onProcessError(error: Error): void {
+        this.notifyError(error);
+    }
 
-            logger.warn(`Control plane exited code=${code ?? 'null'} signal=${signal ?? 'none'}; restarting`);
-            this.restartTimer = setTimeout(() => {
-                this.restartTimer = null;
-                this.spawnProcess();
-            }, CONTROL_PROCESS_RESTART_DELAY_MS);
-            this.restartTimer.unref();
-        });
+    protected override onProcessExit(code: number | null, signal: NodeJS.Signals | null): void {
+        this.setDisconnected(`exit:${signal ?? code ?? 'unknown'}`);
     }
 
     private async handleChildMessage(message: ChildMessage): Promise<void> {
@@ -341,22 +312,4 @@ export class ControlPlaneProcessClient {
         }
     }
 
-    private resolveProcessCommand(): { execPath: string; args: string[] } {
-        const runningFromDist = __filename.endsWith('.js') && __dirname.includes(`${path.sep}dist${path.sep}`);
-        const scriptPath = runningFromDist
-            ? path.resolve(__dirname, '..', '..', '..', '..', 'control-plane.js')
-            : path.resolve(process.cwd(), 'src', 'control-plane.ts');
-
-        if (runningFromDist) {
-            return {
-                execPath: process.execPath,
-                args: [scriptPath]
-            };
-        }
-
-        return {
-            execPath: path.resolve(process.cwd(), 'node_modules', '.bin', 'tsx'),
-            args: [scriptPath]
-        };
-    }
 }

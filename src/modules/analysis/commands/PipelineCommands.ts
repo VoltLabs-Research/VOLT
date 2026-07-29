@@ -7,7 +7,7 @@ import type {
     PipelineStartTransportPayload,
     PipelineStageTransport
 } from '@shared/contracts';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { extractDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
 import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64-json';
 import type { PipelineDispatcher } from '@modules/analysis/services/PipelineDispatcher';
@@ -87,9 +87,4 @@ export class PipelineCommands {
     }
 }
 
-let PipelineCommandsInstance: PipelineCommands | null = null;
-
-export const getPipelineCommands = (): PipelineCommands => {
-    PipelineCommandsInstance ??= new PipelineCommands(getPipelineDispatcher());
-    return PipelineCommandsInstance;
-};
+export const getPipelineCommands = commandGroupFactory(PipelineCommands, () => new PipelineCommands(getPipelineDispatcher()));

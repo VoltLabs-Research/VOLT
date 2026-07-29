@@ -60,7 +60,10 @@ export const resolveExporterEntries = (
                 continue;
             }
 
-            entries.push({ exportData: exporterData, arrayIndex: index });
+            entries.push({
+                exportData: exporterData,
+                arrayIndex: index
+            });
         }
 
         return entries;
@@ -75,7 +78,10 @@ export const resolveExporterEntries = (
         return [];
     }
 
-    return [{ exportData: exporterData, arrayIndex: undefined }];
+    return [{
+        exportData: exporterData,
+        arrayIndex: undefined
+    }];
 };
 
 export const buildArtifactReportInput = (

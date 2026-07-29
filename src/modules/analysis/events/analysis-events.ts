@@ -5,6 +5,7 @@ import type {
     DebugLogChunkPayload
 } from '@shared/contracts/channel/reverse-channel-analysis';
 import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
+import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
 
 export type BaseAnalysisEventData = JobIdentity & { name: string };
 
@@ -16,3 +17,4 @@ export const AnalysisFailedEvent = createDomainEvent<AnalysisFailedEventData>('a
 export const AnalysisStageStatusReportedEvent = createDomainEvent<AnalysisStageStatusPayload>('analysis.stage-status-reported');
 export const AnalysisLogChunkReportedEvent = createDomainEvent<AnalysisLogChunkPayload>('analysis.log-chunk-reported');
 export const DebugLogChunkReportedEvent = createDomainEvent<DebugLogChunkPayload>('analysis.debug-log-chunk-reported');
+export const AnalysisProvenanceRecordedEvent = createDomainEvent<AnalysisProvenance>('analysis.provenance-recorded');

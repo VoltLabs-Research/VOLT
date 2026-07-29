@@ -1,3 +1,5 @@
+import { createRedisClient, toRedisConnectionOptions } from '@shared/infrastructure/redis/create-redis-client';
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { RedisConnectionOptions } from '@shared/contracts/types/redis-connection';
@@ -264,9 +266,4 @@ export class RedisConnection {
     }
 }
 
-let redisConnectionInstance: RedisConnection | null = null;
-
-export const getRedisConnection = (): RedisConnection => {
-    redisConnectionInstance ??= new RedisConnection(getConfig());
-    return redisConnectionInstance;
-};
+export const getRedisConnection = singleton((): RedisConnection => new RedisConnection(getConfig()));

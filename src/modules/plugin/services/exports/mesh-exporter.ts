@@ -188,7 +188,10 @@ export const exportMeshArtifact = async (
     ownerClusterId: string,
     options: MeshExportOptions
 ): Promise<boolean> => {
-    const material: ExportMaterial = { ...DEFAULT_MESH_MATERIAL, ...options.material };
+    const material: ExportMaterial = {
+        ...DEFAULT_MESH_MATERIAL,
+        ...options.material
+    };
     const processed = processMesh(exportData, options.smoothIterations);
     if (!processed) {
         await stageExportBufferUpload(input, {

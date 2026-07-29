@@ -32,7 +32,10 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
         }
 
         if (data.mode === 'all') {
-            return [{ primaryTimestep: timesteps[0], windowTimesteps: [...timesteps] }];
+            return [{
+                primaryTimestep: timesteps[0],
+                windowTimesteps: [...timesteps]
+            }];
         }
 
         return timesteps.map((primaryTimestep, primaryIndex) => ({

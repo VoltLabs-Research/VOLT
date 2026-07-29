@@ -51,7 +51,11 @@ const createLineGeometry = (
     vertexOffset: number
 ): { positions: Float32Array; normals: Float32Array; indices: Uint32Array } => {
     if (points.length < 2) {
-        return { positions: new Float32Array(0), normals: new Float32Array(0), indices: new Uint32Array(0) };
+        return {
+            positions: new Float32Array(0),
+            normals: new Float32Array(0),
+            indices: new Uint32Array(0)
+        };
     }
 
     const maxEdges = points.length - 1;
@@ -175,11 +179,17 @@ const estimateLineGeometry = (
         totalIndices += edges * tubularSegments * 6;
 
         if (totalVertices > MAX_LINE_VERTICES) {
-            return { vertexCount: MAX_LINE_VERTICES, indexCount: totalIndices };
+            return {
+                vertexCount: MAX_LINE_VERTICES,
+                indexCount: totalIndices
+            };
         }
     }
 
-    return { vertexCount: totalVertices, indexCount: totalIndices };
+    return {
+        vertexCount: totalVertices,
+        indexCount: totalIndices
+    };
 };
 
 const buildDefaultColorResolver = (
@@ -304,7 +314,10 @@ export const processLines = async (
         vertexCount: vertexOffset,
         triangleCount: finalIndices.length / 3,
         entityRanges,
-        bounds: { min, max }
+        bounds: {
+            min,
+            max
+        }
     };
 };
 
@@ -325,7 +338,10 @@ export const DEFAULT_LINE_OPTIONS: Required<LineExportOptions> = {
 export const resolveLineOptions = (options: LineExportOptions): Required<LineExportOptions> => ({
     ...DEFAULT_LINE_OPTIONS,
     ...options,
-    material: { ...DEFAULT_LINE_OPTIONS.material, ...options.material }
+    material: {
+        ...DEFAULT_LINE_OPTIONS.material,
+        ...options.material
+    }
 });
 
 export const generateEmptyLineGLB = (material: Required<LineExportOptions>['material']): Buffer => (
@@ -385,7 +401,10 @@ export const buildLineGlb = (
 };
 
 export const encodeLineRangesSidecar = (entityRanges: LineEntityRange[]): Buffer => {
-    const sidecar: LineEntityRangesSidecar = { version: 1, entities: entityRanges };
+    const sidecar: LineEntityRangesSidecar = {
+        version: 1,
+        entities: entityRanges
+    };
     return Buffer.from(JSON.stringify(sidecar), 'utf8');
 };
 

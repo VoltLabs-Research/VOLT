@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -77,7 +78,11 @@ const sqlString = (value: string): string => `'${value.replace(/'/g, "''")}'`;
 
 const toLineEntity = (row: JsonObject): LineEntity => {
     const points = Array.isArray(row.points) ? row.points : [];
-    return { ...row, id: Number(row.id), points } as LineEntity;
+    return {
+        ...row,
+        id: Number(row.id),
+        points
+    } as LineEntity;
 };
 
 const numericPropertyValue = (entity: LineEntity, property: string): number => {
@@ -300,9 +305,4 @@ export class LineModelEvaluator {
     }
 }
 
-let lineModelEvaluatorInstance: LineModelEvaluator | null = null;
-
-export const getLineModelEvaluator = (): LineModelEvaluator => {
-    lineModelEvaluatorInstance ??= new LineModelEvaluator(getObjectStore());
-    return lineModelEvaluatorInstance;
-};
+export const getLineModelEvaluator = singleton((): LineModelEvaluator => new LineModelEvaluator(getObjectStore()));

@@ -95,17 +95,29 @@ export class WorkflowPlanner {
             try {
                 const execution = await this.nodeExecutor.executeNode(node, context);
                 if (execution.status === 'skipped') {
-                    await hooks.afterNodeSkipped?.({ node, reason: execution.reason, startedAt });
+                    await hooks.afterNodeSkipped?.({
+                        node,
+                        reason: execution.reason,
+                        startedAt
+                    });
                     continue;
                 }
 
                 let output = execution.output as WorkflowNodeOutput;
-                const transformed = await hooks.afterNodeExecuted?.({ node, output, startedAt });
+                const transformed = await hooks.afterNodeExecuted?.({
+                    node,
+                    output,
+                    startedAt
+                });
                 if (transformed !== undefined) {
                     output = transformed;
                 }
 
-                executed.push({ node, status: 'executed', output });
+                executed.push({
+                    node,
+                    status: 'executed',
+                    output
+                });
 
                 if (node.type === WorkflowNodeType.Context) {
                     contextNodeId = node.id;
@@ -113,9 +125,17 @@ export class WorkflowPlanner {
 
                 if (node.type === WorkflowNodeType.ForEach) {
                     const items = (output as WorkflowForEachItemsOutput).items;
-                    forEach = { node, items };
+                    forEach = {
+                        node,
+                        items
+                    };
 
-                    const halt = await hooks.onForEach?.({ node, output, items, startedAt });
+                    const halt = await hooks.onForEach?.({
+                        node,
+                        output,
+                        items,
+                        startedAt
+                    });
                     if (halt === true) {
                         haltedEarly = true;
                     }
@@ -124,13 +144,22 @@ export class WorkflowPlanner {
                 }
             } catch (error) {
                 if (hooks.onError) {
-                    await hooks.onError({ node, error, startedAt });
+                    await hooks.onError({
+                        node,
+                        error,
+                        startedAt
+                    });
                 }
 
                 throw error;
             }
         }
 
-        return { executed, forEach, contextNodeId, haltedEarly };
+        return {
+            executed,
+            forEach,
+            contextNodeId,
+            haltedEarly
+        };
     }
 }

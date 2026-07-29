@@ -1,13 +1,14 @@
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { Command, CommandGroup } from '@shared/commands/command';
+import Bottleneck from 'bottleneck';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type {
     TrajectoryFrameStore,
     TrajectoryFrameStoreIngestResult
-} from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+} from '@shared/contracts/types/trajectory-frame-store';
 import { createZstdDecompressionStream, isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { createWriteStream } from 'node:fs';
@@ -34,24 +35,15 @@ const TRAJECTORY_PARQUET_INGEST_CONCURRENCY = (
     readPositiveIntegerEnv('TRAJECTORY_PARQUET_INGEST_CONCURRENCY')
     ?? DEFAULT_TRAJECTORY_PARQUET_INGEST_CONCURRENCY
 );
-let activeParquetIngestCount = 0;
-const parquetIngestWaiters: Array<() => void> = [];
 
-const acquireParquetIngestSlot = async (): Promise<() => void> => {
-    if (activeParquetIngestCount >= TRAJECTORY_PARQUET_INGEST_CONCURRENCY) {
-        await new Promise<void>((resolve) => parquetIngestWaiters.push(resolve));
-    }
-
-    activeParquetIngestCount += 1;
-    let released = false;
-
-    return () => {
-        if (released) return;
-        released = true;
-        activeParquetIngestCount = Math.max(0, activeParquetIngestCount - 1);
-        parquetIngestWaiters.shift()?.();
-    };
-};
+/**
+ * Serializes parquet ingests: each one downloads every frame of a trajectory to
+ * local disk before handing it to DuckDB, so overlapping runs multiply peak
+ * memory and disk. Bottleneck re-checks capacity when a slot is released, which
+ * a hand-rolled counter cannot do safely — incrementing after an `await` lets a
+ * caller entering during the same microtask turn slip past a full gate.
+ */
+const parquetIngestLimiter = new Bottleneck({ maxConcurrent: TRAJECTORY_PARQUET_INGEST_CONCURRENCY });
 
 @CommandGroup('trajectory.parquet')
 export class TrajectoryParquetIngestCommand {
@@ -69,9 +61,8 @@ export class TrajectoryParquetIngestCommand {
             throw new Error(`parquet ingest requires at least one frame (trajectoryId=${payload.trajectoryId})`);
         }
 
-        const release = await acquireParquetIngestSlot();
-        try {
-            return await withNativeProcessingTempDir('trajectory-parquet-ingest-download', async (tempDirectory) => {
+        return parquetIngestLimiter.schedule(async () => {
+            return withNativeProcessingTempDir('trajectory-parquet-ingest-download', async (tempDirectory) => {
                 const localFrames: { timestep: number; dumpPath: string }[] = [];
 
                 for (const frame of payload.frames) {
@@ -89,7 +80,10 @@ export class TrajectoryParquetIngestCommand {
                     } else {
                         await pipeline(response.stream, createWriteStream(localPath));
                     }
-                    localFrames.push({ timestep: frame.timestep, dumpPath: localPath });
+                    localFrames.push({
+                        timestep: frame.timestep,
+                        dumpPath: localPath
+                    });
                 }
 
                 logger.info(`@trajectory-parquet-ingest-command: downloaded ${localFrames.length} frames for trajectoryId=${payload.trajectoryId}`);
@@ -101,15 +95,8 @@ export class TrajectoryParquetIngestCommand {
                     customProperties: payload.customProperties
                 });
             });
-        } finally {
-            release();
-        }
+        });
     }
 }
 
-let TrajectoryParquetIngestCommandInstance: TrajectoryParquetIngestCommand | null = null;
-
-export const getTrajectoryParquetIngestCommand = (): TrajectoryParquetIngestCommand => {
-    TrajectoryParquetIngestCommandInstance ??= new TrajectoryParquetIngestCommand(getTrajectoryFrameStore(), getObjectStore());
-    return TrajectoryParquetIngestCommandInstance;
-};
+export const getTrajectoryParquetIngestCommand = commandGroupFactory(TrajectoryParquetIngestCommand, () => new TrajectoryParquetIngestCommand(getTrajectoryFrameStore(), getObjectStore()));

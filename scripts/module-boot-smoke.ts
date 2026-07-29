@@ -54,7 +54,10 @@ const runCase = (testCase: SmokeCase): { ok: boolean; reasons: string[] } => {
     try {
         enabled = resolveEnabledModules();
     } catch (error) {
-        return { ok: false, reasons: [`resolveEnabledModules threw: ${(error as Error).message}`] };
+        return {
+            ok: false,
+            reasons: [`resolveEnabledModules threw: ${(error as Error).message}`]
+        };
     }
 
     for (const kernelKey of KERNEL) {
@@ -75,7 +78,10 @@ const runCase = (testCase: SmokeCase): { ok: boolean; reasons: string[] } => {
         }
     }
 
-    return { ok: reasons.length === 0, reasons };
+    return {
+        ok: reasons.length === 0,
+        reasons
+    };
 };
 
 const main = (): void => {

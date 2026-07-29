@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { ObjectBucketName } from '@shared/contracts';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
@@ -77,9 +78,4 @@ export class Rasterizer {
     }
 }
 
-let rasterizerInstance: Rasterizer | null = null;
-
-export const getRasterizer = (): Rasterizer => {
-    rasterizerInstance ??= new Rasterizer(getObjectStore());
-    return rasterizerInstance;
-};
+export const getRasterizer = singleton((): Rasterizer => new Rasterizer(getObjectStore()));

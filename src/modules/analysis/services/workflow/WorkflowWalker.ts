@@ -283,7 +283,10 @@ export class WorkflowWalker {
 
     private appendTrace(node: WorkflowNode, entry: WorkflowWalkerTraceEntry): void {
         const sanitized = entry.output !== undefined
-            ? { ...entry, output: sanitizeTraceOutput(entry.output) }
+            ? {
+                ...entry,
+                output: sanitizeTraceOutput(entry.output)
+            }
             : entry;
 
         this.trace.push({

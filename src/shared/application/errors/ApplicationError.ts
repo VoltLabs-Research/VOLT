@@ -51,7 +51,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 400 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 400
+        });
     }
 
     static notFound(
@@ -59,7 +62,10 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 404 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 404
+        });
     }
 
     static unprocessableEntity(
@@ -67,6 +73,9 @@ export default class ApplicationError extends Error {
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 422 });
+        return new ApplicationError(code, message, {
+            ...options,
+            statusCode: 422
+        });
     }
 }

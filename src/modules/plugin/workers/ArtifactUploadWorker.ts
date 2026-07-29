@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getDaemonArtifactReporter } from '@modules/analysis/services/DaemonArtifactReporter';
@@ -56,7 +57,10 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         private readonly daemonArtifactReporter: ArtifactUploadReporter,
         private readonly daemonJobReporter: ArtifactUploadStatusReporter
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
         this.buildStatusReporter = createLifecycleStatusReporter<BaseArtifactUploadEventData>(
             {
                 started: daemonJobReporter.reportArtifactUploadStarted,
@@ -115,7 +119,10 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                     if (error === null || isFinalAttempt()) {
                         await this.daemonArtifactReporter.flushPendingArtifacts().catch(
                             logAndSwallow('error',
-                                { jobId: payload.jobId, trajectoryId: payload.trajectoryId },
+                                {
+                                    jobId: payload.jobId,
+                                    trajectoryId: payload.trajectoryId
+                                },
                                 'Failed to flush pending artifacts')
                         );
                         await this.cleanupBatchDirectory(payload.batchDirectory);
@@ -196,9 +203,4 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 }
 
-let artifactUploadWorkerInstance: ArtifactUploadWorker | null = null;
-
-export const getArtifactUploadWorker = (): ArtifactUploadWorker => {
-    artifactUploadWorkerInstance ??= new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter());
-    return artifactUploadWorkerInstance;
-};
+export const getArtifactUploadWorker = singleton((): ArtifactUploadWorker => new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter()));

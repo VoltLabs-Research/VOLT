@@ -61,11 +61,19 @@ const cellToSimulationCell = (
     const length = Math.abs(b[1]);
     const height = Math.abs(c[2]);
     return {
-        boundingBox: { width, length, height },
+        boundingBox: {
+            width,
+            length,
+            height
+        },
         geometry: {
             cell_vectors: cell,
             cell_origin: [0, 0, 0],
-            periodic_boundary_conditions: { x: pbc[0], y: pbc[1], z: pbc[2] }
+            periodic_boundary_conditions: {
+                x: pbc[0],
+                y: pbc[1],
+                z: pbc[2]
+            }
         }
     };
 };

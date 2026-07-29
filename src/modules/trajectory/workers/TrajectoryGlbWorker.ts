@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -8,7 +9,7 @@ import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import type { GlbConversionQueueJobPayload } from '@shared/contracts';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -25,7 +26,10 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
         private readonly glbExporter: GlbExporter,
         daemonJobReporter: DaemonJobReporter
     ) {
-        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
+        super({
+            queueService,
+            scopeLimitsRegistry: queueScopeLimitsRegistry
+        });
         this.buildStatusReporter = createLifecycleStatusReporter<GlbConversionQueueJobPayload>(
             {
                 started: daemonJobReporter.reportGlbStarted,
@@ -37,13 +41,10 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
     }
 
     protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {
-        const maxAttempts = bullJob.opts.attempts ?? 1;
-        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
-
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(),
+                shouldReportTerminal: () => isFinalAttempt(bullJob),
                 progress: (value) => bullJob.updateProgress(value)
             },
             () => this.glbExporter.preprocessTrajectory(payload)
@@ -51,9 +52,4 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
     }
 }
 
-let trajectoryGlbWorkerInstance: TrajectoryGlbWorker | null = null;
-
-export const getTrajectoryGlbWorker = (): TrajectoryGlbWorker => {
-    trajectoryGlbWorkerInstance ??= new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter());
-    return trajectoryGlbWorkerInstance;
-};
+export const getTrajectoryGlbWorker = singleton((): TrajectoryGlbWorker => new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter()));

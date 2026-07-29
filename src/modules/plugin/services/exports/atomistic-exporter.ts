@@ -177,7 +177,12 @@ const buildPointCloudDataDirect = async (exportData: AtomisticExportData): Promi
         }
     }
 
-    return { positions, colors, min, max };
+    return {
+        positions,
+        colors,
+        min,
+        max
+    };
 };
 
 export const exportAtomisticArtifact = async (

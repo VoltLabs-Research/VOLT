@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
@@ -77,9 +78,4 @@ export class VoltObjectGatewayConnection {
     }
 }
 
-let voltObjectGatewayConnectionInstance: VoltObjectGatewayConnection | null = null;
-
-export const getVoltObjectGatewayConnection = (): VoltObjectGatewayConnection => {
-    voltObjectGatewayConnectionInstance ??= new VoltObjectGatewayConnection(getConfig());
-    return voltObjectGatewayConnectionInstance;
-};
+export const getVoltObjectGatewayConnection = singleton((): VoltObjectGatewayConnection => new VoltObjectGatewayConnection(getConfig()));

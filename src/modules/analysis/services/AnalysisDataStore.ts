@@ -1,7 +1,9 @@
+import { createRedisClient } from '@shared/infrastructure/redis/create-redis-client';
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/domain/utilities/analysis-execution-data';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts';
 import type { RedisConnectionOptions } from '@shared/contracts/types/redis-connection';
@@ -28,11 +30,7 @@ export class AnalysisDataStore {
             keyPrefix: config.redis.keyPrefix
         };
 
-        this.client = new Redis({
-            ...connectionOptions,
-            maxRetriesPerRequest: null,
-            lazyConnect: true
-        });
+        this.client = createRedisClient(connectionOptions);
     }
 
     async connect(): Promise<void> {
@@ -113,9 +111,4 @@ export class AnalysisDataStore {
     }
 };
 
-let analysisDataStoreInstance: AnalysisDataStore | null = null;
-
-export const getAnalysisDataStore = (): AnalysisDataStore => {
-    analysisDataStoreInstance ??= new AnalysisDataStore(getConfig());
-    return analysisDataStoreInstance;
-};
+export const getAnalysisDataStore = singleton((): AnalysisDataStore => new AnalysisDataStore(getConfig()));

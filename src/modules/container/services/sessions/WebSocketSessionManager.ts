@@ -392,15 +392,24 @@ export class WebSocketSessionManager {
 
     private async readWebSocketMessage(data: WebSocketMessageData): Promise<WebSocketMessageResult> {
         if (typeof data === 'string') {
-            return { data: Buffer.from(data, 'utf8'), isBinary: false };
+            return {
+                data: Buffer.from(data, 'utf8'),
+                isBinary: false
+            };
         }
 
         if (Array.isArray(data)) {
-            return { data: Buffer.concat(data), isBinary: true };
+            return {
+                data: Buffer.concat(data),
+                isBinary: true
+            };
         }
 
         if (data instanceof ArrayBuffer) {
-            return { data: Buffer.from(data), isBinary: true };
+            return {
+                data: Buffer.from(data),
+                isBinary: true
+            };
         }
 
         if (ArrayBuffer.isView(data)) {
@@ -411,7 +420,10 @@ export class WebSocketSessionManager {
         }
 
         if (data instanceof Blob) {
-            return { data: Buffer.from(await data.arrayBuffer()), isBinary: true };
+            return {
+                data: Buffer.from(await data.arrayBuffer()),
+                isBinary: true
+            };
         }
 
         throw new Error('Unsupported websocket message payload');

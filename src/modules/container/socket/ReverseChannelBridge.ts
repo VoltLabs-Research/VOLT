@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getDaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
 import { TTLCache } from '@isaacs/ttlcache';
 import { createTraceLogContext, extractDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
@@ -214,7 +215,10 @@ export class ReverseChannelBridge {
             return;
         }
 
-        this.pendingCommands.push({ commandName, execute });
+        this.pendingCommands.push({
+            commandName,
+            execute
+        });
     }
 
     bindToClient(voltCloudConnection: VoltCloudConnection): void {
@@ -412,7 +416,10 @@ export class ReverseChannelBridge {
 
         return Promise.resolve({
             status: 400,
-            data: { status: 'error', message: `Unsupported session kind: ${payload.kind}` }
+            data: {
+                status: 'error',
+                message: `Unsupported session kind: ${payload.kind}`
+            }
         });
     }
 
@@ -752,7 +759,10 @@ export class ReverseChannelBridge {
         }, TUNNEL_DRAIN_TIMEOUT_MS);
         timeout.unref();
 
-        tunnelState.pendingOutboundAcks.set(sequence, { bytes, timeout });
+        tunnelState.pendingOutboundAcks.set(sequence, {
+            bytes,
+            timeout
+        });
         tunnelState.pendingOutboundBytes += bytes;
 
         const dataPayload: BinaryTunnelDataPayload = {
@@ -868,9 +878,4 @@ export class ReverseChannelBridge {
     }
 }
 
-let reverseChannelBridgeInstance: ReverseChannelBridge | null = null;
-
-export const getReverseChannelBridge = (): ReverseChannelBridge => {
-    reverseChannelBridgeInstance ??= new ReverseChannelBridge(getDockerRuntime(), getDaemonExposureRegistry());
-    return reverseChannelBridgeInstance;
-};
+export const getReverseChannelBridge = singleton((): ReverseChannelBridge => new ReverseChannelBridge(getDockerRuntime(), getDaemonExposureRegistry()));

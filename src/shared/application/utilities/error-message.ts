@@ -18,5 +18,8 @@ export const safeExecute = async <T>(
 export const logAndSwallow =
     (level: 'warn' | 'error', ctx: Record<string, unknown>, msg: string) =>
     (err: unknown): void => {
-        logger[level]({ err, ...ctx }, `${msg}: ${errorMessage(err)}`);
+        logger[level]({
+            err,
+            ...ctx
+        }, `${msg}: ${errorMessage(err)}`);
     };

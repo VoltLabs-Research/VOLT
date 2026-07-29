@@ -1,3 +1,5 @@
+import { withDefaults, withNestedDefaults } from '@shared/application/utilities/with-defaults';
+import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { mountConcurrencyTrackedWorkers, mountWorkers } from '@core/bootstrap/mount-workers';
 import { logger } from '@shared/infrastructure/logger';
@@ -23,33 +25,6 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
     pluginWarmup: 4
 };
 
-const normalizeQueueConcurrency = (
-    queueConcurrency: Partial<TeamClusterDaemonQueueConcurrency> | undefined
-): TeamClusterDaemonQueueConcurrency => ({
-    ...DEFAULT_QUEUE_CONCURRENCY,
-    ...queueConcurrency
-});
-
-const normalizeQueueScopeLimits = (
-    queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits> | undefined
-): TeamClusterDaemonQueueScopeLimits => ({
-    analysisProcessing: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing,
-        ...queueScopeLimits?.analysisProcessing
-    },
-    artifactUpload: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload,
-        ...queueScopeLimits?.artifactUpload
-    },
-    trajectoryRasterization: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryRasterization,
-        ...queueScopeLimits?.trajectoryRasterization
-    },
-    trajectoryGlbConversion: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion,
-        ...queueScopeLimits?.trajectoryGlbConversion
-    }
-});
 
 export class RuntimeRoleCoordinator {
     private computeWorkersRunning = false;
@@ -63,8 +38,8 @@ export class RuntimeRoleCoordinator {
     async initialize(runtimeConfig: TeamClusterDaemonRuntimeConfig): Promise<TeamClusterDaemonRuntimeConfig> {
         return this.runRoleOperation(async () => {
             this.snapshot = {
-                queueConcurrency: normalizeQueueConcurrency(runtimeConfig.queueConcurrency),
-                queueScopeLimits: normalizeQueueScopeLimits(runtimeConfig.queueScopeLimits),
+                queueConcurrency: withDefaults(DEFAULT_QUEUE_CONCURRENCY, runtimeConfig.queueConcurrency),
+                queueScopeLimits: withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, runtimeConfig.queueScopeLimits),
                 roleConfig: structuredClone(runtimeConfig.roleConfig)
             };
 
@@ -88,8 +63,8 @@ export class RuntimeRoleCoordinator {
         queueConcurrency: TeamClusterDaemonQueueConcurrency,
         queueScopeLimits: TeamClusterDaemonQueueScopeLimits
     ): QueueSettingsSnapshot {
-        this.snapshot.queueConcurrency = normalizeQueueConcurrency(queueConcurrency);
-        this.snapshot.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
+        this.snapshot.queueConcurrency = withDefaults(DEFAULT_QUEUE_CONCURRENCY, queueConcurrency);
+        this.snapshot.queueScopeLimits = withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, queueScopeLimits);
         getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
         for (const worker of mountWorkers('always')) {
@@ -131,7 +106,10 @@ export class RuntimeRoleCoordinator {
             desiredRole: nextRoleConfig.desiredRole,
             effectiveRole: nextRoleConfig.desiredRole,
             runtimeVersion: nextRoleConfig.runtimeVersion,
-            draining: { compute: false, storage: false },
+            draining: {
+                compute: false,
+                storage: false
+            },
             lastAppliedAt: new Date().toISOString()
         };
 
@@ -182,9 +160,4 @@ export class RuntimeRoleCoordinator {
     }
 }
 
-let runtimeRoleCoordinatorInstance: RuntimeRoleCoordinator | null = null;
-
-export const getRuntimeRoleCoordinator = (): RuntimeRoleCoordinator => {
-    runtimeRoleCoordinatorInstance ??= new RuntimeRoleCoordinator();
-    return runtimeRoleCoordinatorInstance;
-};
+export const getRuntimeRoleCoordinator = singleton((): RuntimeRoleCoordinator => new RuntimeRoleCoordinator());

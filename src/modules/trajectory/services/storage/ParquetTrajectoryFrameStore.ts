@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -23,7 +24,7 @@ import {
     type TrajectoryFrameStoreIngestInput,
     type TrajectoryFrameStoreIngestResult,
     type TypedColumn
-} from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+} from '@shared/contracts/types/trajectory-frame-store';
 import { DEFAULT_UNITS } from '@shared/domain/catalog';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import {
@@ -467,9 +468,4 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 }
 
-let trajectoryFrameStoreInstance: ParquetTrajectoryFrameStore | null = null;
-
-export const getTrajectoryFrameStore = (): ParquetTrajectoryFrameStore => {
-    trajectoryFrameStoreInstance ??= new ParquetTrajectoryFrameStore(getObjectStore());
-    return trajectoryFrameStoreInstance;
-};
+export const getTrajectoryFrameStore = singleton((): ParquetTrajectoryFrameStore => new ParquetTrajectoryFrameStore(getObjectStore()));

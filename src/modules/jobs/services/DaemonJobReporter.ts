@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getEventDispatcher, type EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import type { DomainEventClass, PayloadOf } from '@shared/domain/events/createDomainEvent';
 import {
@@ -82,9 +83,4 @@ const createDaemonJobReporterService = (eventDispatcher: EventDispatcher): Daemo
     return Object.fromEntries(entries) as DaemonJobReporter;
 };
 
-let daemonJobReporterInstance: DaemonJobReporter | null = null;
-
-export const getDaemonJobReporter = (): DaemonJobReporter => {
-    daemonJobReporterInstance ??= createDaemonJobReporterService(getEventDispatcher());
-    return daemonJobReporterInstance;
-};
+export const getDaemonJobReporter = singleton((): DaemonJobReporter => createDaemonJobReporterService(getEventDispatcher()));

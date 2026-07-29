@@ -1,3 +1,5 @@
+import { singleton } from '@shared/application/utilities/singleton';
+import type { PluginExecutionRuntime, PluginExecutionRuntimeInput } from '@shared/contracts/types/plugin-execution';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
@@ -18,22 +20,9 @@ import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterO
 import { Readable } from 'node:stream';
 import * as tar from 'tar';
 
-interface ExecutionRuntimeInput {
-    binaryObjectPath: string;
-    ownerClusterId?: string;
-    entrypointType?: EntrypointType;
-    requirementsFile?: string;
-    entrypointScript?: string;
-}
+type ExecutionRuntimeInput = PluginExecutionRuntimeInput;
 
-interface ExecutionRuntime {
-    artifactPath: string;
-    commandPath: string;
-    argsPrefix: string[];
-    env?: NodeJS.ProcessEnv;
-    projectPath?: string;
-    binaryHash?: string;
-}
+type ExecutionRuntime = PluginExecutionRuntime;
 
 interface ResolvedPluginBinarySource {
     ownerClusterId: string;
@@ -69,7 +58,10 @@ const runCommand = (commandPath: string, args: string[], cwd: string, env?: Node
     return new Promise((resolve, reject) => {
         const child = spawn(commandPath, args, {
             cwd,
-            env: { ...process.env, ...env },
+            env: {
+                ...process.env,
+                ...env
+            },
             stdio: ['ignore', 'pipe', 'pipe']
         });
         const stderrChunks: Buffer[] = [];
@@ -389,13 +381,19 @@ export class PluginBinaryCache {
                 tar.x({ cwd: runtimeDirectory })
             );
             await fs.writeFile(appliedMarker, source.expectedHash, 'utf-8');
-            logger.info({ binaryObjectPath, runtimeKey }, '@plugin-binary-cache: warm image applied');
+            logger.info({
+                binaryObjectPath,
+                runtimeKey
+            }, '@plugin-binary-cache: warm image applied');
             return true;
         } catch (error: unknown) {
             if (this.isStorageNotFound(error)) {
                 return false;
             }
-            logger.warn({ err: error, warmObjectKey }, '@plugin-binary-cache: warm image restore failed');
+            logger.warn({
+                err: error,
+                warmObjectKey
+            }, '@plugin-binary-cache: warm image restore failed');
             return false;
         }
     }
@@ -634,7 +632,10 @@ export class PluginBinaryCache {
             await fs.mkdir(runtimeDirectory, { recursive: true });
 
             await this.ensureWarmPluginRestored(binaryObjectPath, source.ownerClusterId).catch((error: unknown) => {
-                logger.warn({ err: error, binaryObjectPath }, '@plugin-binary-cache: warm prefetch failed');
+                logger.warn({
+                    err: error,
+                    binaryObjectPath
+                }, '@plugin-binary-cache: warm prefetch failed');
             });
 
             let scriptPath = artifactPath;
@@ -650,7 +651,10 @@ export class PluginBinaryCache {
                         throw new Error('stale python project marker');
                     }
                 } catch {
-                    await fs.rm(projectDir, { recursive: true, force: true });
+                    await fs.rm(projectDir, {
+                        recursive: true,
+                        force: true
+                    });
                     await fs.mkdir(projectDir, { recursive: true });
                     await extractZipInProcess(artifactPath, projectDir);
                     await fs.writeFile(extractMarkerPath, extractMarkerValue, 'utf-8');
@@ -773,7 +777,10 @@ export class PluginBinaryCache {
                     throw new Error('stale packaged project marker');
                 }
             } catch {
-                await fs.rm(projectDir, { recursive: true, force: true });
+                await fs.rm(projectDir, {
+                    recursive: true,
+                    force: true
+                });
                 await fs.mkdir(projectDir, { recursive: true });
                 await extractZipInProcess(artifactPath, projectDir);
                 await fs.writeFile(extractMarkerPath, extractMarkerValue, 'utf-8');
@@ -805,9 +812,4 @@ export class PluginBinaryCache {
     }
 }
 
-let pluginBinaryCacheInstance: PluginBinaryCache | null = null;
-
-export const getPluginBinaryCache = (): PluginBinaryCache => {
-    pluginBinaryCacheInstance ??= new PluginBinaryCache(getObjectStore(), getConfig());
-    return pluginBinaryCacheInstance;
-};
+export const getPluginBinaryCache = singleton((): PluginBinaryCache => new PluginBinaryCache(getObjectStore(), getConfig()));

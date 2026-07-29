@@ -1,10 +1,11 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
 import { normalizePagination, calculatePaginationOffset } from '@shared/contracts/types/pagination';
 import type {
     TrajectoryFrameData,
     TrajectoryFrameStore,
     TrajectoryElementMetadata
-} from '@modules/trajectory/services/storage/TrajectoryFrameStore';
+} from '@shared/contracts/types/trajectory-frame-store';
 import type { ParsedSimulationCell } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 import type {
@@ -85,11 +86,19 @@ const buildSimulationCell = (frame: TrajectoryFrameData): ParsedSimulationCell =
     const length = frame.frameBbox[4] - frame.frameBbox[1];
     const height = frame.frameBbox[5] - frame.frameBbox[2];
     return {
-        boundingBox: { width, length, height },
+        boundingBox: {
+            width,
+            length,
+            height
+        },
         geometry: {
             cell_vectors: [[width, 0, 0], [0, length, 0], [0, 0, height]],
             cell_origin: [frame.frameBbox[0], frame.frameBbox[1], frame.frameBbox[2]],
-            periodic_boundary_conditions: { x: true, y: true, z: true }
+            periodic_boundary_conditions: {
+                x: true,
+                y: true,
+                z: true
+            }
         }
     };
 };
@@ -118,7 +127,10 @@ const frameToParsedTrajectory = (
 };
 
 const computeStats = (values: Int32Array | Float32Array): { min: number; max: number } => {
-    if (values.length === 0) return { min: 0, max: 0 };
+    if (values.length === 0) return {
+        min: 0,
+        max: 0
+    };
     let min = Number.POSITIVE_INFINITY;
     let max = Number.NEGATIVE_INFINITY;
     for (let index = 0; index < values.length; index++) {
@@ -127,8 +139,14 @@ const computeStats = (values: Int32Array | Float32Array): { min: number; max: nu
         if (value < min) min = value;
         if (value > max) max = value;
     }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 0 };
-    return { min, max };
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return {
+        min: 0,
+        max: 0
+    };
+    return {
+        min,
+        max
+    };
 };
 
 const collectUnique = (values: Int32Array | Float32Array, maxValues: number): number[] => {
@@ -170,7 +188,10 @@ export class TrajectoryParser {
     public async getPropertyStats(input: PropertyStatsInput): Promise<PropertyStatsResult> {
         const parsed = await this.readFrame(input);
         const column = this.getPropertyColumn(parsed, input.property);
-        return { ...computeStats(column.values), dtype: column.dtype };
+        return {
+            ...computeStats(column.values),
+            dtype: column.dtype
+        };
     }
 
     public async getUniqueValues(input: UniqueValuesInput): Promise<UniqueValuesResult> {
@@ -230,10 +251,17 @@ export class TrajectoryParser {
 
     public getPropertyColumn(parsed: ParsedTrajectory, property: string): TypedColumn {
         const lowerProperty = property.toLowerCase();
-        const axisIndex = ({ x: 0, y: 1, z: 2 } as const)[lowerProperty as 'x' | 'y' | 'z'];
+        const axisIndex = ({
+            x: 0,
+            y: 1,
+            z: 2
+        } as const)[lowerProperty as 'x' | 'y' | 'z'];
 
         if (lowerProperty === 'type') {
-            return { dtype: 'i32', values: Int32Array.from(parsed.types) };
+            return {
+                dtype: 'i32',
+                values: Int32Array.from(parsed.types)
+            };
         }
 
         if (axisIndex !== undefined) {
@@ -241,15 +269,24 @@ export class TrajectoryParser {
             for (let index = 0; index < values.length; index++) {
                 values[index] = parsed.positions[index * 3 + axisIndex];
             }
-            return { dtype: 'f32', values };
+            return {
+                dtype: 'f32',
+                values
+            };
         }
 
         if (lowerProperty === 'id' && parsed.ids) {
-            return { dtype: 'i32', values: Int32Array.from(parsed.ids) };
+            return {
+                dtype: 'i32',
+                values: Int32Array.from(parsed.ids)
+            };
         }
 
         const source = parsed.properties[property] ?? parsed.properties[lowerProperty];
-        return source ?? { dtype: 'f32', values: new Float32Array(0) };
+        return source ?? {
+            dtype: 'f32',
+            values: new Float32Array(0)
+        };
     }
 
     public getPropertyValues(parsed: ParsedTrajectory, property: string): Float32Array {
@@ -288,9 +325,4 @@ export class TrajectoryParser {
     }
 }
 
-let trajectoryParserInstance: TrajectoryParser | null = null;
-
-export const getTrajectoryParser = (): TrajectoryParser => {
-    trajectoryParserInstance ??= new TrajectoryParser(getTrajectoryFrameStore());
-    return trajectoryParserInstance;
-};
+export const getTrajectoryParser = singleton((): TrajectoryParser => new TrajectoryParser(getTrajectoryFrameStore()));

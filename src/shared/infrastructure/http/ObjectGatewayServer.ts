@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts/types/service-exposure';
@@ -696,16 +697,9 @@ export const OBJECT_GATEWAY_EXPOSURE = Object.freeze({
     exposureName: OBJECT_GATEWAY_EXPOSURE_NAME
 });
 
-let objectGatewayServerInstance: ObjectGatewayServer | null = null;
-
-export const getObjectGatewayServer = (): ObjectGatewayServer => {
-    if (objectGatewayServerInstance) {
-        return objectGatewayServerInstance;
-    }
-
+export const getObjectGatewayServer = singleton((): ObjectGatewayServer => {
     const config = getConfig();
-    objectGatewayServerInstance = new ObjectGatewayServer(config, getMinioService(), {
+    return new ObjectGatewayServer(config, getMinioService(), {
         verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
     });
-    return objectGatewayServerInstance;
-};
+});

@@ -32,6 +32,16 @@ const resolveZstdExit = (
     reject(new Error(stderr || `zstd exited with code ${code}`));
 };
 
+/**
+ * Spawns the external `zstd` CLI on purpose, even though `PluginBinaryCache` and
+ * `PluginCommands` use the native `node:zlib` zstd bindings. Benchmarked on a
+ * 40.6 MB file under Node v25.9.0: the CLI compresses in 0.32 s with 2 threads
+ * and decompresses in 0.16 s at 7 MB RSS, while native single-threaded needs
+ * 1.43 s to compress and 0.55-0.68 s to decompress at ~60 MB RSS. Native
+ * streaming compression also throws `ERR_STREAM_PUSH_AFTER_EOF` whenever
+ * `ZSTD_c_nbWorkers` >= 1, so the multithreaded path does not exist natively
+ * today. Do not "simplify" this onto `node:zlib`.
+ */
 const createZstdStream = (args: string[], input: Readable | null = null): ZstdStreamResult => {
     const child = spawn('zstd', args, {
         stdio: ['pipe', 'pipe', 'pipe']

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import { logger } from '@shared/infrastructure/logger';
@@ -12,7 +13,7 @@ import { processExportNode } from '@modules/plugin/services/exports/ExportNodePr
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
-import type { ResultProcessorService } from '@modules/plugin/services/exports/result-processor-service-contract';
+import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
 import type { PluginMongoRow, PluginMongoValue } from '@modules/plugin/models/plugin-listing-repository-contract';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
@@ -54,7 +55,10 @@ export class DefaultResultProcessor implements ResultProcessorService {
 
         if (!isParquetExposure(exposure.results)) {
             logger.debug(
-                { exposure: exposure.name, results: exposure.results },
+                {
+                    exposure: exposure.name,
+                    results: exposure.results
+                },
                 'Non-Parquet shared-context exposure; skipping scene/property processing'
             );
             return;
@@ -260,9 +264,4 @@ async function precomputeSubListingRows(
     await pluginListingRepository.replaceSubListingRows(inputs);
 }
 
-let resultProcessorInstance: DefaultResultProcessor | null = null;
-
-export const getResultProcessor = (): DefaultResultProcessor => {
-    resultProcessorInstance ??= new DefaultResultProcessor(getPluginListingRepository(), getPluginPropertyStore());
-    return resultProcessorInstance;
-};
+export const getResultProcessor = singleton((): DefaultResultProcessor => new DefaultResultProcessor(getPluginListingRepository(), getPluginPropertyStore()));

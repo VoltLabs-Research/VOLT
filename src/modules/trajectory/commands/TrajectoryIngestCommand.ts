@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
@@ -241,7 +241,10 @@ export class TrajectoryIngestCommand {
             return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
         } catch (error) {
             logger.warn(
-                { file: staged.originalName, err: error instanceof Error ? error.message : String(error) },
+                {
+                    file: staged.originalName,
+                    err: error instanceof Error ? error.message : String(error)
+                },
                 '@trajectory-ingest: skipping unparseable staged file'
             );
             await this.removeIgnoredStagedObject(bucket, staged.objectKey);
@@ -281,7 +284,10 @@ export class TrajectoryIngestCommand {
             const resolvedOutputPath = path.resolve(outputPath);
             if (!resolvedOutputPath.startsWith(resolvedExtractRoot + path.sep) && resolvedOutputPath !== resolvedExtractRoot) {
                 logger.warn(
-                    { entry: entry.path, trajectoryId },
+                    {
+                        entry: entry.path,
+                        trajectoryId
+                    },
                     '@trajectory-ingest: skipping ZIP entry with path traversal'
                 );
                 continue;
@@ -300,7 +306,10 @@ export class TrajectoryIngestCommand {
                 metadata = await parseTrajectoryMetadata(resolvedOutputPath);
             } catch (error) {
                 logger.warn(
-                    { entry: entry.path, err: error instanceof Error ? error.message : String(error) },
+                    {
+                        entry: entry.path,
+                        err: error instanceof Error ? error.message : String(error)
+                    },
                     '@trajectory-ingest: skipping unparseable ZIP entry'
                 );
                 continue;
@@ -413,9 +422,4 @@ export class TrajectoryIngestCommand {
     }
 }
 
-let TrajectoryIngestCommandInstance: TrajectoryIngestCommand | null = null;
-
-export const getTrajectoryIngestCommand = (): TrajectoryIngestCommand => {
-    TrajectoryIngestCommandInstance ??= new TrajectoryIngestCommand(getConfig(), getMinioService(), getQueueService(), getRedisConnection());
-    return TrajectoryIngestCommandInstance;
-};
+export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getMinioService(), getQueueService(), getRedisConnection()));

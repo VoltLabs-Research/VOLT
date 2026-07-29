@@ -4,11 +4,11 @@
     "private": true,
     "type": "commonjs",
     "scripts": {
-        "start": "node scripts/start.js",
-        "dev": "tsx src/daemon.ts",
         "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node scripts/copy-static-assets.js",
-        "test": "node --import tsx --test \"src/**/*.test.ts\"",
+        "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
+        "dev": "tsx src/daemon.ts",
         "smoke:modules": "tsx scripts/module-boot-smoke.ts",
+        "start": "node scripts/start.js",
         "typecheck": "tsc -p tsconfig.json --noEmit"
     },
     "dependencies": {

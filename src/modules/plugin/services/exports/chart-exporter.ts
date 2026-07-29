@@ -86,7 +86,10 @@ export const exportChartArtifact = async (
             datasets: [{
                 label: title.length > 0 ? title : 'Data',
                 data: chartType === 'scatter'
-                    ? chartData.map((point) => ({ x: Number(point.x), y: point.y }))
+                    ? chartData.map((point) => ({
+                        x: Number(point.x),
+                        y: point.y
+                    }))
                     : chartData.map((point) => point.y),
                 borderColor: lineColor,
                 backgroundColor: fillColor,

@@ -3,7 +3,7 @@ import { getTrajectoryParser } from '@modules/trajectory/services/parsing/Trajec
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import { getFilterEvaluator } from '@modules/trajectory/services/FilterEvaluator';
 import { getLineModelEvaluator } from '@modules/trajectory/services/LineModelEvaluator';
-import { Command, CommandGroup } from '@shared/commands/command';
+import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import type { TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
@@ -98,9 +98,4 @@ export class TrajectoryNativeCommands {
     }
 }
 
-let TrajectoryNativeCommandsInstance: TrajectoryNativeCommands | null = null;
-
-export const getTrajectoryNativeCommands = (): TrajectoryNativeCommands => {
-    TrajectoryNativeCommandsInstance ??= new TrajectoryNativeCommands(getGlbExporter(), getTrajectoryParser(), getPluginPropertyStore(), getFilterEvaluator(), getLineModelEvaluator());
-    return TrajectoryNativeCommandsInstance;
-};
+export const getTrajectoryNativeCommands = commandGroupFactory(TrajectoryNativeCommands, () => new TrajectoryNativeCommands(getGlbExporter(), getTrajectoryParser(), getPluginPropertyStore(), getFilterEvaluator(), getLineModelEvaluator()));

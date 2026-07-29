@@ -34,7 +34,10 @@ export class BufferedDedupeQueue<T> {
             this.dedupeKeys.add(dedupeKey);
         }
 
-        this.entries.push({ item, dedupeKey });
+        this.entries.push({
+            item,
+            dedupeKey
+        });
         return 'enqueued';
     }
 

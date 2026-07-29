@@ -36,10 +36,16 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
             if (error instanceof DelayedError) {
                 return;
             }
-            logger.error({ job, error }, 'Queue worker job failed');
+            logger.error({
+                job,
+                error
+            }, 'Queue worker job failed');
         });
 
-        logger.info({ queueName: this.queueName, concurrency }, 'Queue worker started');
+        logger.info({
+            queueName: this.queueName,
+            concurrency
+        }, 'Queue worker started');
     }
 
     async stop(): Promise<void> {

@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { logger } from '@shared/infrastructure/logger';
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
@@ -32,7 +33,10 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
 
     protected async process(payload: PluginWarmupJobPayload, bullJob: Job<PluginWarmupJobPayload>): Promise<void> {
         logger.info(
-            { pluginId: payload.pluginId, bullJobId: bullJob.id },
+            {
+                pluginId: payload.pluginId,
+                bullJobId: bullJob.id
+            },
             '@plugin-warmup-worker: starting plugin warmup'
         );
         try {
@@ -44,12 +48,18 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
                 entrypointScript: payload.entrypointScript
             });
             logger.info(
-                { pluginId: payload.pluginId, descriptor },
+                {
+                    pluginId: payload.pluginId,
+                    descriptor
+                },
                 '@plugin-warmup-worker: plugin warm image published'
             );
         } catch (error: unknown) {
             logger.error(
-                { err: error, pluginId: payload.pluginId },
+                {
+                    err: error,
+                    pluginId: payload.pluginId
+                },
                 '@plugin-warmup-worker: warmup failed'
             );
             throw error instanceof Error ? error : new Error(String(error));
@@ -57,9 +67,4 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
     }
 }
 
-let pluginWarmupWorkerInstance: PluginWarmupWorker | null = null;
-
-export const getPluginWarmupWorker = (): PluginWarmupWorker => {
-    pluginWarmupWorkerInstance ??= new PluginWarmupWorker(getQueueService(), getPluginBinaryCache());
-    return pluginWarmupWorkerInstance;
-};
+export const getPluginWarmupWorker = singleton((): PluginWarmupWorker => new PluginWarmupWorker(getQueueService(), getPluginBinaryCache()));

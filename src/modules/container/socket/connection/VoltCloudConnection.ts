@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
@@ -99,9 +100,4 @@ export class VoltCloudConnection {
     }
 };
 
-let voltCloudConnectionInstance: VoltCloudConnection | null = null;
-
-export const getVoltCloudConnection = (): VoltCloudConnection => {
-    voltCloudConnectionInstance ??= new VoltCloudConnection(getConfig());
-    return voltCloudConnectionInstance;
-};
+export const getVoltCloudConnection = singleton((): VoltCloudConnection => new VoltCloudConnection(getConfig()));

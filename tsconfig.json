@@ -17,22 +17,21 @@
     "types": [
       "node"
     ],
-    "baseUrl": "./src",
+    "baseUrl": "./",
     "paths": {
       "@core/*": [
-        "core/*"
+        "src/core/*"
       ],
       "@modules/*": [
-        "modules/*"
+        "src/modules/*"
       ],
       "@shared/*": [
-        "shared/*"
+        "src/shared/*"
       ]
     }
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.test.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

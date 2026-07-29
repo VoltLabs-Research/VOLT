@@ -1,3 +1,4 @@
+import { singleton } from '@shared/application/utilities/singleton';
 import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PIPELINE_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 import { RedisConnection, getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import { TTLCache } from '@isaacs/ttlcache';
@@ -236,9 +237,4 @@ export class QueueService {
     }
 }
 
-let queueServiceInstance: QueueService | null = null;
-
-export const getQueueService = (): QueueService => {
-    queueServiceInstance ??= new QueueService(getRedisConnection());
-    return queueServiceInstance;
-};
+export const getQueueService = singleton((): QueueService => new QueueService(getRedisConnection()));

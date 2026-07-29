@@ -32,7 +32,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'always',
         concurrencyKey: 'glbPreprocessing',
         tracksConcurrencyWhileRunning: false,
-        resolve: () => getTrajectoryFrameProcessingWorker()
+        resolve: getTrajectoryFrameProcessingWorker
     },
     {
         name: 'trajectory-raster',
@@ -40,7 +40,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'always',
         concurrencyKey: 'rasterizer',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getTrajectoryRasterWorker()
+        resolve: getTrajectoryRasterWorker
     },
     {
         name: 'analysis',
@@ -48,7 +48,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'compute',
         concurrencyKey: 'analysis',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getAnalysisWorker()
+        resolve: getAnalysisWorker
     },
     {
         name: 'pipeline',
@@ -56,7 +56,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'compute',
         concurrencyKey: 'analysis',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getPipelineWorker()
+        resolve: getPipelineWorker
     },
     {
         name: 'artifact-upload',
@@ -64,7 +64,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'compute',
         concurrencyKey: 'artifactUpload',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getArtifactUploadWorker()
+        resolve: getArtifactUploadWorker
     },
     {
         name: 'plugin-warmup',
@@ -72,7 +72,7 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'compute',
         concurrencyKey: 'pluginWarmup',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getPluginWarmupWorker()
+        resolve: getPluginWarmupWorker
     },
     {
         name: 'trajectory-glb',
@@ -80,11 +80,9 @@ const WORKERS: readonly WorkerBinding[] = [
         scope: 'compute',
         concurrencyKey: 'glbPreprocessing',
         tracksConcurrencyWhileRunning: true,
-        resolve: () => getTrajectoryGlbWorker()
+        resolve: getTrajectoryGlbWorker
     }
 ];
-
-export const totalWorkerCount = WORKERS.length;
 
 export const mountWorkers = (scope: WorkerStartScope): readonly WorkerBinding[] => {
     const enabled = getEnabledModules();

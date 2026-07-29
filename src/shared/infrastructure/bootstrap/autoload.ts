@@ -26,7 +26,10 @@ const TEST_FILE_PATTERNS: readonly RegExp[] = [
 ];
 
 const collectFiles = (rootAbsolute: string): string[] => {
-    const entries = readdirSync(rootAbsolute, { withFileTypes: true, recursive: true }) as unknown as Array<{
+    const entries = readdirSync(rootAbsolute, {
+        withFileTypes: true,
+        recursive: true
+    }) as unknown as Array<{
         name: string;
         parentPath?: string;
         path?: string;
