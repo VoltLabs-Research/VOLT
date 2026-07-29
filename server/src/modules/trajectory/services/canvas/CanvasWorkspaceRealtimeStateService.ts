@@ -103,11 +103,6 @@ class CanvasWorkspaceRealtimeStateService {
             .exec();
     }
 
-    async listOwners(trajectoryId: string): Promise<string[]> {
-        const members = await redis!.smembers(this.buildIndexKey(trajectoryId));
-        return members.filter((id): id is string => typeof id === 'string' && id.length > 0);
-    }
-
     private async persist(snapshot: CanvasWorkspaceSnapshot): Promise<void> {
         const key = this.buildKey(snapshot.trajectoryId, snapshot.ownerId);
         const indexKey = this.buildIndexKey(snapshot.trajectoryId);

@@ -10,13 +10,19 @@ import type { Response } from 'express';
 
 export default class ClusterLifecycleController extends ClusterControllerBase {
     @Route(clusterLifecycleRoutes.processHealthcheck)
-    async processHealthcheck(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async processHealthcheck(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.processHealthcheck(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(clusterLifecycleRoutes.generateInstallManifest)
-    async generateInstallManifest(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async generateInstallManifest(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.generateInstallManifest(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }

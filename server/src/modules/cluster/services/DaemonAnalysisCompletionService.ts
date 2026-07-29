@@ -6,8 +6,6 @@ import type {
     AnalysisChildAnalysis,
     AnalysisExpectedArtifact,
     AnalysisStage,
-    AnalysisStageStatus,
-    AnalysisStageType,
     TrajectoryLike
 } from '@shared/contracts/types';
 import { JobStatus } from '@shared/contracts/types';
@@ -20,6 +18,11 @@ import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
+import AnalysisStageProjection from '@modules/cluster/services/AnalysisStageProjection';
+import type {
+    DaemonAnalysisStageStatusInput,
+    DaemonJobInputBase
+} from '@modules/cluster/contracts/domain/daemon-analysis-jobs';
 
 interface DaemonExecutionLogService {
     markFrameRunning(input: {
@@ -109,13 +112,6 @@ interface JobTrajectoryContext {
     timestep?: number;
 }
 
-interface DaemonJobInputBase {
-    teamClusterId: string;
-    jobId: string;
-    teamId: string;
-    error?: string;
-}
-
 interface DaemonJobCompletionInput extends DaemonJobInputBase {
     name: string;
     analysisId: string;
@@ -186,27 +182,6 @@ interface ProjectedJobStatusInput {
     error?: string;
 }
 
-interface DaemonAnalysisStageStatusInput extends DaemonJobInputBase {
-    name: string;
-    analysisId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    stageKey: string;
-    label: string;
-    stageType: AnalysisStageType;
-    stageStatus: AnalysisStageStatus;
-    pluginId?: string;
-    pluginDisplayName?: string;
-    nodeId?: string;
-    exposureId?: string;
-    configHash?: string;
-    cacheHit?: boolean;
-    detail?: string;
-    startedAt?: string;
-    finishedAt?: string;
-    durationMs?: number;
-}
-
 interface ResolvedTrajectoryOwnership {
     teamId: string;
     trajectory: TrajectoryLike;
@@ -221,6 +196,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         private readonly redis = redisClient;
         private readonly eventBus = eventBus;
     private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;
+    private readonly stageProjection = new AnalysisStageProjection();
 
     private toAnalysisLike(entity: AnalysisEntity): Analysis {
         return {
@@ -502,23 +478,23 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         const resolved = await this.resolveAnalysisOwnership(input);
         const analysis = resolved.analysis;
         const trajectoryId = resolved.trajectory._id;
-        const stage = this.toAnalysisStage(input, resolved.trajectoryContext.timestep);
+        const stage = this.stageProjection.toAnalysisStage(input, resolved.trajectoryContext.timestep);
         const currentStages = analysis.props.stages ?? [];
-        const previousStage = currentStages.find((candidate) => this.isSameStageIdentity(candidate, stage));
-        if (previousStage && this.shouldIgnoreStageUpdate(previousStage, stage)) {
+        const previousStage = currentStages.find((candidate) => this.stageProjection.isSameStageIdentity(candidate, stage));
+        if (previousStage && this.stageProjection.shouldIgnoreStageUpdate(previousStage, stage)) {
             return;
         }
 
-        const stages = this.upsertStage(currentStages, stage);
-        const expectedArtifacts = this.updateExpectedArtifactsForStage(
+        const stages = this.stageProjection.upsertStage(currentStages, stage);
+        const expectedArtifacts = this.stageProjection.updateExpectedArtifactsForStage(
             analysis.props.expectedArtifacts ?? [],
             stage
         );
-        const childAnalyses = this.upsertChildAnalysisForStage(
+        const childAnalyses = this.stageProjection.upsertChildAnalysisForStage(
             analysis.props.childAnalyses ?? [],
             stage
         );
-        const artifactStatus = this.resolveArtifactStatusForStage(
+        const artifactStatus = this.stageProjection.resolveArtifactStatusForStage(
             analysis.props.artifactStatus ?? 'pending',
             expectedArtifacts,
             stage
@@ -628,7 +604,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
     async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {
         const resolved = await this.resolveAnalysisOwnership(input);
-        const nextArtifactStatus = this.resolveArtifactStatusForUpload(
+        const nextArtifactStatus = this.stageProjection.resolveArtifactStatusForUpload(
             resolved.analysis.props.expectedArtifacts ?? [],
             input.status
         );
@@ -710,294 +686,6 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         });
     }
 
-    private toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
-        return {
-            stageKey: input.stageKey,
-            label: input.label,
-            type: input.stageType,
-            status: input.stageStatus,
-            timestep,
-            pluginId: input.pluginId,
-            pluginDisplayName: input.pluginDisplayName,
-            nodeId: input.nodeId,
-            exposureId: input.exposureId,
-            configHash: input.configHash,
-            cacheHit: input.cacheHit,
-            detail: input.detail,
-            startedAt: this.parseDate(input.startedAt),
-            finishedAt: this.parseDate(input.finishedAt),
-            durationMs: input.durationMs
-        };
-    }
-
-    private upsertStage(stages: AnalysisStage[], stage: AnalysisStage): AnalysisStage[] {
-        const index = stages.findIndex((candidate) => this.isSameStageIdentity(candidate, stage));
-        if (index < 0) {
-            return [...stages, stage];
-        }
-
-        const previous = stages[index];
-        if (previous && this.shouldIgnoreStageUpdate(previous, stage)) {
-            return stages;
-        }
-
-        const next = [...stages];
-        next[index] = {
-            ...previous,
-            ...stage,
-            startedAt: stage.startedAt ?? previous.startedAt,
-            finishedAt: stage.finishedAt ?? previous.finishedAt,
-            durationMs: stage.durationMs ?? previous.durationMs
-        };
-        return next;
-    }
-
-    private isSameStageIdentity(left: AnalysisStage, right: AnalysisStage): boolean {
-        return left.stageKey === right.stageKey
-            && this.hasSameTimestepIdentity(left.timestep, right.timestep);
-    }
-
-    private hasSameTimestepIdentity(left?: number, right?: number): boolean {
-        const hasLeftTimestep = typeof left === 'number';
-        const hasRightTimestep = typeof right === 'number';
-
-        if (hasLeftTimestep || hasRightTimestep) {
-            return left === right;
-        }
-
-        return true;
-    }
-
-    private shouldIgnoreStageUpdate(previous: AnalysisStage, next: AnalysisStage): boolean {
-        if (!this.isTerminalStageStatus(previous.status) || this.isTerminalStageStatus(next.status)) {
-            return false;
-        }
-
-        const previousFinishedAt = previous.finishedAt?.getTime();
-        const nextStartedAt = next.startedAt?.getTime();
-        return typeof previousFinishedAt === 'number'
-            && typeof nextStartedAt === 'number'
-            && nextStartedAt <= previousFinishedAt;
-    }
-
-    private isTerminalStageStatus(status: AnalysisStageStatus): boolean {
-        return status === 'completed' || status === 'failed' || status === 'cached';
-    }
-
-    private updateExpectedArtifactsForStage(
-        artifacts: AnalysisExpectedArtifact[],
-        stage: AnalysisStage
-    ): AnalysisExpectedArtifact[] {
-        if (stage.type !== 'exposure' || !stage.exposureId) {
-            return artifacts;
-        }
-
-        const nextStatus = stage.status === 'failed'
-            ? 'failed'
-            : stage.status === 'running'
-                ? 'generating'
-                : stage.status === 'completed' || stage.status === 'cached'
-                    ? 'uploading'
-                    : undefined;
-
-        if (!nextStatus) {
-            return artifacts;
-        }
-
-        return artifacts.map((artifact) => artifact.exposureId === stage.exposureId
-            ? {
-                ...artifact,
-                status: artifact.status === 'ready' && nextStatus !== 'failed'
-                    ? artifact.status
-                    : nextStatus
-            }
-            : artifact);
-    }
-
-    private upsertChildAnalysisForStage(
-        childAnalyses: AnalysisChildAnalysis[],
-        stage: AnalysisStage
-    ): AnalysisChildAnalysis[] {
-        if (stage.type !== 'plugin-ref' || !stage.pluginId) {
-            return childAnalyses;
-        }
-
-        const child: AnalysisChildAnalysis = {
-            id: stage.stageKey,
-            pluginId: stage.pluginId,
-            pluginDisplayName: stage.pluginDisplayName,
-            configHash: stage.configHash,
-            timestep: stage.timestep,
-            status: stage.status,
-            cacheHit: stage.cacheHit,
-            startedAt: stage.startedAt,
-            finishedAt: stage.finishedAt,
-            durationMs: stage.durationMs
-        };
-        const index = childAnalyses.findIndex((candidate) => this.isSameChildAnalysisIdentity(candidate, child));
-        if (index < 0) {
-            return [...childAnalyses, child];
-        }
-
-        const next = [...childAnalyses];
-        if (this.shouldIgnoreChildAnalysisUpdate(next[index]!, child)) {
-            return childAnalyses;
-        }
-
-        next[index] = {
-            ...next[index],
-            ...child,
-            startedAt: child.startedAt ?? next[index].startedAt,
-            finishedAt: child.finishedAt ?? next[index].finishedAt,
-            durationMs: child.durationMs ?? next[index].durationMs
-        };
-        return next;
-    }
-
-    private isSameChildAnalysisIdentity(left: AnalysisChildAnalysis, right: AnalysisChildAnalysis): boolean {
-        return left.id === right.id
-            && this.hasSameTimestepIdentity(left.timestep, right.timestep);
-    }
-
-    private shouldIgnoreChildAnalysisUpdate(previous: AnalysisChildAnalysis, next: AnalysisChildAnalysis): boolean {
-        if (!this.isTerminalStageStatus(previous.status) || this.isTerminalStageStatus(next.status)) {
-            return false;
-        }
-
-        const previousFinishedAt = previous.finishedAt?.getTime();
-        const nextStartedAt = next.startedAt?.getTime();
-        return typeof previousFinishedAt === 'number'
-            && typeof nextStartedAt === 'number'
-            && nextStartedAt <= previousFinishedAt;
-    }
-
-    private resolveArtifactStatusForStage(
-        currentStatus: AnalysisArtifactStatus,
-        expectedArtifacts: AnalysisExpectedArtifact[],
-        stage: AnalysisStage
-    ): AnalysisArtifactStatus {
-        if (stage.status === 'failed') {
-            return 'failed';
-        }
-        if (currentStatus === 'ready') {
-            return currentStatus;
-        }
-        if (stage.type === 'exposure' && stage.status === 'running') {
-            return 'generating';
-        }
-        if (stage.type === 'exposure' && (stage.status === 'completed' || stage.status === 'cached')) {
-            return this.areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
-        }
-        if (stage.type === 'artifact-upload' && stage.status === 'running') {
-            return 'uploading';
-        }
-        if (stage.type === 'artifact-upload' && stage.status === 'completed') {
-            return this.areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
-        }
-        return currentStatus;
-    }
-
-    private resolveArtifactStatusForUpload(
-        expectedArtifacts: AnalysisExpectedArtifact[],
-        status: JobStatus
-    ): AnalysisArtifactStatus {
-        if (status === JobStatus.Failed) {
-            return 'failed';
-        }
-        if (status === JobStatus.Queued || status === JobStatus.Running || status === JobStatus.Completed) {
-            return this.areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
-        }
-        return 'pending';
-    }
-
-    private areArtifactsReady(expectedArtifacts: AnalysisExpectedArtifact[]): boolean {
-        return expectedArtifacts.length > 0
-            && expectedArtifacts.every((artifact) => artifact.status === 'ready');
-    }
-
-    private parseDate(value: string | undefined): Date | undefined {
-        if (!value) {
-            return undefined;
-        }
-
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? undefined : date;
-    }
-
-    private closeRunningStages(
-        stages: AnalysisStage[] | undefined,
-        finalStatus: Analysis['props']['status'],
-        finishedAt: Date
-    ): AnalysisStage[] | undefined {
-        if (!stages?.length) {
-            return stages;
-        }
-
-        const stageStatus: AnalysisStageStatus = finalStatus === 'failed' ? 'failed' : 'completed';
-        return stages.map((stage) => {
-            if (stage.status !== 'running') {
-                return stage;
-            }
-
-            return {
-                ...stage,
-                status: stageStatus,
-                finishedAt,
-                durationMs: stage.durationMs
-                    ?? (stage.startedAt ? Math.max(0, finishedAt.getTime() - stage.startedAt.getTime()) : undefined)
-            };
-        });
-    }
-
-    private closeRunningChildAnalyses(
-        childAnalyses: AnalysisChildAnalysis[] | undefined,
-        finalStatus: Analysis['props']['status'],
-        finishedAt: Date
-    ): AnalysisChildAnalysis[] | undefined {
-        if (!childAnalyses?.length) {
-            return childAnalyses;
-        }
-
-        const stageStatus: AnalysisStageStatus = finalStatus === 'failed' ? 'failed' : 'completed';
-        return childAnalyses.map((child) => {
-            if (child.status !== 'running') {
-                return child;
-            }
-
-            return {
-                ...child,
-                status: stageStatus,
-                finishedAt,
-                durationMs: child.durationMs
-                    ?? (child.startedAt ? Math.max(0, finishedAt.getTime() - child.startedAt.getTime()) : undefined)
-            };
-        });
-    }
-
-    private closeGeneratingArtifacts(
-        expectedArtifacts: AnalysisExpectedArtifact[] | undefined,
-        finalStatus: Analysis['props']['status']
-    ): AnalysisExpectedArtifact[] | undefined {
-        if (!expectedArtifacts?.length) {
-            return expectedArtifacts;
-        }
-
-        let changed = false;
-        const nextArtifacts = expectedArtifacts.map((artifact) => {
-            if (artifact.status !== 'generating') {
-                return artifact;
-            }
-
-            changed = true;
-            const nextStatus: AnalysisExpectedArtifact['status'] = finalStatus === 'failed' ? 'failed' : 'uploading';
-            return {
-                ...artifact,
-                status: nextStatus
-            };
-        });
-
-        return changed ? nextArtifacts : expectedArtifacts;
-    }
 
     private async publishJobStatusChanged(input: ProjectedJobStatusInput): Promise<void> {
         const {
@@ -1200,9 +888,9 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
         const finishedAt = new Date();
         const currentAnalysis = await this.findAnalysisById(analysisId);
-        const closedStages = this.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
-        const closedChildAnalyses = this.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
-        const closedExpectedArtifacts = this.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
+        const closedStages = this.stageProjection.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
+        const closedChildAnalyses = this.stageProjection.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
+        const closedExpectedArtifacts = this.stageProjection.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
         const analysisUpdates: Partial<Analysis['props']> = {
             status,
             finishedAt,

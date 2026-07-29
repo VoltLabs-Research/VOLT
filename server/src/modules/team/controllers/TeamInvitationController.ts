@@ -15,25 +15,40 @@ export default class TeamInvitationController extends Controller {
     @Route(teamInvitationRoutes.send)
     @Status(201)
     @Middleware(teamScoped(Resource.TEAM_INVITATION))
-    send(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: SendTeamInvitationInput) {
+    send(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: SendTeamInvitationInput
+    ){
         return this.#service.send(teamId, userId, body);
     }
 
     @Route(teamInvitationRoutes.list)
     @Middleware(teamScoped(Resource.TEAM_INVITATION))
-    listByTeamId(@Param('teamId') teamId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    listByTeamId(
+        @Param('teamId') teamId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ){
         return this.#service.listByTeamId(teamId, page ? Number(page) : 1, limit ? Number(limit) : 10);
     }
 
     @Route(teamInvitationRoutes.remove)
     @Middleware(teamScoped(Resource.TEAM_INVITATION))
-    async deleteById(@Param('teamId') teamId: string, @Param('invitationId') invitationId: string) {
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @Param('invitationId') invitationId: string
+    ){
         await this.#service.deleteById(teamId, invitationId);
     }
 
     @Route(teamInvitationRoutes.update)
     @Middleware(teamScoped(Resource.TEAM_INVITATION))
-    updateById(@Param('teamId') teamId: string, @Param('invitationId') invitationId: string, @Body() body: UpdateTeamInvitationInput) {
+    updateById(
+        @Param('teamId') teamId: string,
+        @Param('invitationId') invitationId: string,
+        @Body() body: UpdateTeamInvitationInput
+    ){
         return this.#service.updateById(teamId, invitationId, body);
     }
 
@@ -54,7 +69,11 @@ export default class TeamInvitationController extends Controller {
     }
 
     @Route(teamInvitationRoutes.updateStatusPublic)
-    updateStatusPublic(@Param('invitationId') invitationId: string, @CurrentUser() userId: string, @Body() body: TeamInvitationStatusInput) {
+    updateStatusPublic(
+        @Param('invitationId') invitationId: string,
+        @CurrentUser() userId: string,
+        @Body() body: TeamInvitationStatusInput
+    ){
         return this.#service.updateStatus(invitationId, userId, body);
     }
 }

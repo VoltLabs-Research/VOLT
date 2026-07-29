@@ -64,7 +64,7 @@ interface ResolvedPlacementDefinition{
     buckets: StoragePlacementBucketRef[];
 }
 
-export class StoragePlacementService implements IStoragePlacementService{
+class StoragePlacementService implements IStoragePlacementService{
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async findByScope(

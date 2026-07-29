@@ -12,7 +12,10 @@ export default class SimulationCellController extends Controller {
     #service = new SimulationCellService();
 
     @Route(simulationCellRoutes.list)
-    list(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+    list(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.list({
             teamId,
             page: query.page,

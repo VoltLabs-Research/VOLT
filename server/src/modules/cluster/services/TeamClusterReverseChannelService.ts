@@ -18,7 +18,6 @@ import {
     TeamClusterDaemonSessionKind,
     TeamClusterServiceExposureAccessMode,
     TeamClusterTunnelSessionStatus,
-    type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonExposureSnapshotPayload,
     type TeamClusterDaemonMessage,
     type TeamClusterDaemonRuntimeProgressPayload,
@@ -49,33 +48,20 @@ import type {
     TeamClusterDaemonInboundStreamPayload,
     TeamClusterDaemonInboundStreamConsumer
 } from '@modules/cluster/services/TeamClusterReverseChannelTypes';
-import logger from '@shared/infrastructure/logger';
+import DaemonChannelRegistry from '@modules/cluster/services/DaemonChannelRegistry';
 import {
-    EnvelopeKind,
-    decodeEnvelope,
-    encodeEnvelope,
-    toUint8Array
-} from '@shared/infrastructure/types/reverseChannelBinary';
+    clearPendingTimeout,
+    createCommandMessage,
+    createTunnelOpenPayload,
+    describeBinaryCarrier,
+    resolveTunnelChannel,
+    unwrapEnvelopeBuffer,
+    wrapEnvelopeBuffer
+} from '@modules/cluster/services/reverse-channel-protocol';
+import logger from '@shared/infrastructure/logger';
 import { randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
 import teamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
-
-interface TeamClusterDaemonExposureTunnelOpenMessage {
-    type: 'tunnel-open';
-    sessionId: string;
-    exposureId: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-interface TeamClusterDaemonDirectTunnelOpenMessage {
-    type: 'tunnel-open';
-    sessionId: string;
-    targetHost: string;
-    targetPort: number;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-type TeamClusterDaemonTunnelOpenMessage = TeamClusterDaemonExposureTunnelOpenMessage | TeamClusterDaemonDirectTunnelOpenMessage;
 
 interface BasePendingEntry {
     socketId: string;
@@ -180,21 +166,13 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
     120_000
 );
-const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
 class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
-    private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
-    private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();
-    private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();
-    private readonly eventSocketIdsByTeamClusterId = new Map<string, string>();
+    private readonly channels = new Map<TeamClusterDaemonSocketChannel, DaemonChannelRegistry>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
     private readonly socketChannelsBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();
     private readonly pendingEntries = new Map<string, PendingEntry>();
     private readonly inboundStreamConsumers = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
-    private readonly connectionWaiters = new Map<string, Array<(socketId: string) => void>>();
-    private readonly heartbeatConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
-    private readonly objectGatewayConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
-    private readonly eventConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly requestTimeoutMs = 30_000;
     private readonly terminalTimeoutMs = 15_000;
     private readonly daemonConnectionWaitTimeoutMs = 30_000;
@@ -262,33 +240,26 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): void {
-        const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
-        const previousSocketId = socketsByTeamClusterId.get(teamClusterId);
+        const registry = this.registryFor(channel);
+        const previousSocketId = registry.socketIdFor(teamClusterId);
         if (previousSocketId && previousSocketId !== socketId) {
             this.unregisterDaemonConnection(previousSocketId);
         }
 
-        socketsByTeamClusterId.set(teamClusterId, socketId);
+        registry.bind(teamClusterId, socketId);
         this.teamClusterIdsBySocketId.set(socketId, teamClusterId);
         this.socketChannelsBySocketId.set(socketId, channel);
 
-        const waitersByTeamClusterId = this.getWaiterMapForChannel(channel);
-        const waiters = waitersByTeamClusterId.get(teamClusterId);
-        if (waiters) {
-            for (const resolve of waiters) {
-                resolve(socketId);
-            }
-            waitersByTeamClusterId.delete(teamClusterId);
-        }
+        registry.resolveWaiters(teamClusterId, socketId);
     }
 
     unregisterDaemonConnection(socketId: string): TeamClusterDaemonSocketRegistration | null {
         const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
         const channel = this.socketChannelsBySocketId.get(socketId);
         if (teamClusterId && channel) {
-            const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
-            if (socketsByTeamClusterId.get(teamClusterId) === socketId) {
-                socketsByTeamClusterId.delete(teamClusterId);
+            const registry = this.registryFor(channel);
+            if (registry.socketIdFor(teamClusterId) === socketId) {
+                registry.release(teamClusterId);
                 if (channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
                     this.exposureRegistryService.clearTeamCluster(teamClusterId);
                 }
@@ -322,39 +293,18 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
     }
 
     hasDaemonConnection(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): boolean {
-        return this.getSocketMapForChannel(channel).has(teamClusterId);
+        return this.registryFor(channel).has(teamClusterId);
     }
 
-    private getSocketMapForChannel(
-        channel: TeamClusterDaemonSocketChannel
-    ): Map<string, string> {
-        switch (channel) {
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat:
-                return this.heartbeatSocketIdsByTeamClusterId;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway:
-                return this.objectGatewaySocketIdsByTeamClusterId;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events:
-                return this.eventSocketIdsByTeamClusterId;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control:
-            default:
-                return this.daemonSocketIdsByTeamClusterId;
+    private registryFor(channel: TeamClusterDaemonSocketChannel): DaemonChannelRegistry {
+        const existing = this.channels.get(channel);
+        if (existing) {
+            return existing;
         }
-    }
 
-    private getWaiterMapForChannel(
-        channel: TeamClusterDaemonSocketChannel
-    ): Map<string, Array<(socketId: string) => void>> {
-        switch (channel) {
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat:
-                return this.heartbeatConnectionWaiters;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway:
-                return this.objectGatewayConnectionWaiters;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events:
-                return this.eventConnectionWaiters;
-            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control:
-            default:
-                return this.connectionWaiters;
-        }
+        const registry = new DaemonChannelRegistry();
+        this.channels.set(channel, registry);
+        return registry;
     }
 
     registerInboundStreamConsumer(
@@ -511,7 +461,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
     ): Promise<TeamClusterTunnelStream> {
         const socketId = await this.requireDaemonSocketId(
             teamClusterId,
-            this.resolveTunnelChannel(target)
+            resolveTunnelChannel(target)
         );
         const sessionId = randomUUID();
         const tunnelOptions = typeof target === 'string'
@@ -520,7 +470,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         const accessMode = typeof target === 'string'
             ? accessModeOrOptions as TeamClusterServiceExposureAccessMode | undefined
             : undefined;
-        const openPayload = this.createTunnelOpenPayload(sessionId, target, accessMode);
+        const openPayload = createTunnelOpenPayload(sessionId, target, accessMode);
 
         const stream = new TeamClusterReverseTunnelStream({
             onWrite: (chunk, callback) => {
@@ -725,7 +675,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         switch (entry.type) {
             case 'response':
                 this.pendingEntries.delete(payload.requestId);
-                this.clearTimeout(entry.timeout);
+                clearPendingTimeout(entry.timeout);
                 entry.resolve(payload);
                 return;
 
@@ -747,7 +697,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         payload: TeamClusterDaemonSocketResponsePayload,
         entry: PendingStreamEntry
     ): void {
-        this.clearTimeout(entry.timeout);
+        clearPendingTimeout(entry.timeout);
         entry.timeout = null;
 
         if (!payload.ok) {
@@ -791,7 +741,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
             return;
         }
 
-        this.clearTimeout(entry.timeout);
+        clearPendingTimeout(entry.timeout);
         entry.timeout = null;
 
         if (entry.type === 'terminal') {
@@ -817,7 +767,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         }
 
         this.touchSession(payload.requestId);
-        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        const chunk = unwrapEnvelopeBuffer(payload.chunk);
         if (!entry.stream.write(chunk)) {
             logger.debug(`[ReverseChannel] Stream backpressure hit requestId=${payload.requestId}`);
         }
@@ -852,7 +802,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
 
         let chunk: Buffer;
         try {
-            chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+            chunk = unwrapEnvelopeBuffer(payload.chunk);
         } catch (error) {
             logger.warn(
                 error,
@@ -906,7 +856,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         }
 
         this.touchSession(payload.sessionId);
-        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        const chunk = unwrapEnvelopeBuffer(payload.chunk);
 
         if (entry.type === 'terminal') {
             entry.stream.write(chunk);
@@ -1024,7 +974,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
 
         const error = payload.error ? new Error(payload.error) : undefined;
         if (entry.timeout) {
-            this.clearTimeout(entry.timeout);
+            clearPendingTimeout(entry.timeout);
             entry.timeout = null;
 
             if (payload.status !== TeamClusterTunnelSessionStatus.Open || error) {
@@ -1061,10 +1011,10 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         this.touchSession(payload.sessionId);
         let chunk: Buffer;
         try {
-            chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+            chunk = unwrapEnvelopeBuffer(payload.chunk);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            logger.warn(`[ReverseChannel] tunnel-data decode failed sessionId=${payload.sessionId} chunkShape=${this.describeBinaryCarrier(payload.chunk)} error=${message}`);
+            logger.warn(`[ReverseChannel] tunnel-data decode failed sessionId=${payload.sessionId} chunkShape=${describeBinaryCarrier(payload.chunk)} error=${message}`);
             this.failPendingTunnelWrites(entry, error instanceof Error ? error : new Error(message));
             entry.stream.fail(error instanceof Error ? error : new Error(message));
             this.pendingEntries.delete(payload.sessionId);
@@ -1116,12 +1066,6 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         this.untouchSession(payload.sessionId);
     }
 
-    private clearTimeout(timeout: NodeJS.Timeout | null): void {
-        if (timeout) {
-            clearTimeout(timeout);
-        }
-    }
-
     private createBufferedStream(): PassThrough {
         return new PassThrough({ highWaterMark: this.streamHighWaterMark });
     }
@@ -1169,7 +1113,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
     }
 
     private emitCommand(socketId: string, requestId: string, payload: TeamClusterDaemonCommandPayload): void {
-        this.emitToDaemon(socketId, this.createCommandMessage(requestId, payload));
+        this.emitToDaemon(socketId, createCommandMessage(requestId, payload));
     }
 
     private emitSessionAttachCommand(
@@ -1193,7 +1137,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         const payload: TeamClusterDaemonSessionInputPayload = {
             type: 'session-input',
             sessionId,
-            chunk: this.wrapEnvelopeBuffer(chunk),
+            chunk: wrapEnvelopeBuffer(chunk),
             isBinary
         };
 
@@ -1255,7 +1199,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         const payload: TeamClusterDaemonTunnelDataPayload = {
             type: 'tunnel-data',
             sessionId,
-            chunk: this.wrapEnvelopeBuffer(chunk),
+            chunk: wrapEnvelopeBuffer(chunk),
             isBinary,
             sequence,
             requiresAck: true
@@ -1281,139 +1225,20 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
         this.emitToDaemon(socketId, payload);
     }
 
-    private wrapEnvelopeBuffer(chunk: Buffer | Uint8Array): Uint8Array {
-        return encodeEnvelope(0, EnvelopeKind.StreamChunk, chunk);
-    }
-
-    private unwrapEnvelopeBuffer(chunk: Uint8Array | Buffer | ArrayBuffer): Buffer {
-        const bytes = toUint8Array(chunk);
-        const decoded = decodeEnvelope(bytes);
-        if (decoded.kind !== EnvelopeKind.StreamChunk) {
-            throw ApplicationError.internalServerError(
-                `Unexpected reverse channel envelope kind: ${decoded.kind}`
-            );
-        }
-        return Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
-    }
-
-    private describeBinaryCarrier(value: unknown): string {
-        if (value === null) return 'null';
-        if (value === undefined) return 'undefined';
-        if (value instanceof Uint8Array) return `${value.constructor.name}(byteLength=${value.byteLength})`;
-        if (value instanceof ArrayBuffer) return `ArrayBuffer(byteLength=${value.byteLength})`;
-        if (ArrayBuffer.isView(value)) {
-            const view = value as ArrayBufferView;
-            return `${value.constructor.name}(byteLength=${view.byteLength})`;
-        }
-        if (Array.isArray(value)) return `Array(length=${value.length})`;
-        if (typeof value === 'object') {
-            const record = value as Record<string, unknown>;
-            return `Object(keys=${Object.keys(record).slice(0, 8).join(',')}; type=${String(record.type)}; data=${Array.isArray(record.data) ? `array:${record.data.length}` : typeof record.data}; length=${String(record.length)})`;
-        }
-        return typeof value;
-    }
-
-    private createCommandMessage(
-        requestId: string,
-        payload: TeamClusterDaemonCommandPayload
-    ): TeamClusterDaemonCommandMessage {
-        return {
-            type: 'command',
-            requestId,
-            command: payload.command,
-            responseType: this.requireCommandResponseType(payload.responseType),
-            payload: payload.payload ? { ...payload.payload } : undefined
-        };
-    }
-
-    private requireCommandResponseType(
-        responseType: TeamClusterDaemonResponseType | undefined
-    ): TeamClusterDaemonResponseType {
-        if (!responseType) {
-            throw ApplicationError.internalServerError('Daemon command response type is required');
-        }
-
-        return responseType;
-    }
-
-    private resolveTunnelChannel(
-        target: string | TeamClusterTunnelOpenRequest
-    ): TeamClusterDaemonSocketChannel {
-        const exposureId = typeof target === 'string'
-            ? target
-            : 'exposureId' in target
-                ? target.exposureId
-                : null;
-
-        return exposureId === OBJECT_GATEWAY_EXPOSURE_ID
-            ? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
-            : TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
-    }
-
-    private createTunnelOpenPayload(
-        sessionId: string,
-        target: string | TeamClusterTunnelOpenRequest,
-        accessMode?: TeamClusterServiceExposureAccessMode
-    ): TeamClusterDaemonTunnelOpenMessage {
-        if (typeof target === 'string') {
-            if (!accessMode) {
-                throw ApplicationError.badRequest(
-                    'TeamCluster::TunnelAccessModeRequired',
-                    'Tunnel access mode is required when opening a tunnel by exposure id'
-                );
-            }
-
-            return {
-                type: 'tunnel-open',
-                sessionId,
-                exposureId: target,
-                accessMode
-            };
-        }
-
-        if ('exposureId' in target) {
-            return {
-                type: 'tunnel-open',
-                sessionId,
-                exposureId: target.exposureId,
-                accessMode: target.accessMode
-            };
-        }
-
-        return {
-            type: 'tunnel-open',
-            sessionId,
-            targetHost: target.targetHost,
-            targetPort: target.targetPort,
-            accessMode: target.accessMode
-        };
-    }
-
     private async requireDaemonSocketId(
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): Promise<string> {
-        const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
-        const socketId = socketsByTeamClusterId.get(teamClusterId);
+        const registry = this.registryFor(channel);
+        const socketId = registry.socketIdFor(teamClusterId);
         if (socketId) {
             return socketId;
         }
 
         logger.info(`[ReverseChannel] Waiting for daemon ${channel} reconnection: cluster=${teamClusterId}`);
-        const waitersByTeamClusterId = this.getWaiterMapForChannel(channel);
-
         return new Promise<string>((resolve, reject) => {
             const timeout = setTimeout(() => {
-                const waiters = waitersByTeamClusterId.get(teamClusterId);
-                if (waiters) {
-                    const idx = waiters.indexOf(onConnected);
-                    if (idx >= 0) {
-                        waiters.splice(idx, 1);
-                    }
-                    if (waiters.length === 0) {
-                        waitersByTeamClusterId.delete(teamClusterId);
-                    }
-                }
+                registry.removeWaiter(teamClusterId, onConnected);
 
                 reject(ApplicationError.conflict(
                     'TeamCluster::DaemonUnavailable',
@@ -1426,10 +1251,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
                 resolve(nextSocketId);
             };
 
-            if (!waitersByTeamClusterId.has(teamClusterId)) {
-                waitersByTeamClusterId.set(teamClusterId, []);
-            }
-            waitersByTeamClusterId.get(teamClusterId)!.push(onConnected);
+            registry.addWaiter(teamClusterId, onConnected);
         });
     }
 
@@ -1453,7 +1275,7 @@ class TeamClusterReverseChannelService implements ITeamClusterReverseChannelServ
     private rejectPendingEntry(correlationId: string, entry: PendingEntry, error: Error): void {
         this.pendingEntries.delete(correlationId);
         this.untouchSession(correlationId);
-        this.clearTimeout(entry.timeout);
+        clearPendingTimeout(entry.timeout);
 
         if (entry.timeout) {
             entry.reject(error);

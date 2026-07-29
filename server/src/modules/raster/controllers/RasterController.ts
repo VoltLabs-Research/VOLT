@@ -17,7 +17,10 @@ export default class RasterController extends Controller {
 
     @Route(rasterRoutes.triggerRasterization)
     @Status(202)
-    triggerRasterization(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+    triggerRasterization(
+        @Param('teamId') teamId: string,
+        @Param('trajectoryId') trajectoryId: string
+    ){
         return this.#service.triggerRasterization({
             trajectoryId,
             teamId
@@ -25,7 +28,10 @@ export default class RasterController extends Controller {
     }
 
     @Route(rasterRoutes.getRasterMetadata)
-    getRasterMetadata(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+    getRasterMetadata(
+        @Param('teamId') teamId: string,
+        @Param('trajectoryId') trajectoryId: string
+    ){
         return this.#service.getRasterMetadata({
             trajectoryId,
             teamId

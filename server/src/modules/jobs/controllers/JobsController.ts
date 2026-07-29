@@ -25,7 +25,10 @@ export default class JobsController extends Controller {
     }
 
     @Route(jobsRoutes.retryFailedJobs)
-    retryFailedJobs(@Param('teamId') teamId: string, @Body() body: RetryTeamFailedJobsInput) {
+    retryFailedJobs(
+        @Param('teamId') teamId: string,
+        @Body() body: RetryTeamFailedJobsInput
+    ){
         return this.#service.retryFailedJobs({
             teamId,
             trajectoryId: body.trajectoryId

@@ -3,6 +3,8 @@ import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
+import AnalysisResultSummarizer from '@modules/plugin/services/AnalysisResultSummarizer';
+import PluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
 import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import type { PluginRecord } from '@modules/plugin/contracts/domain/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
@@ -61,6 +63,8 @@ const diffSets = (a: string[], b: string[]) => ({
 
 export default class PluginAIToolController extends AIToolController {
     #service = new PluginService();
+    #summarizer = new AnalysisResultSummarizer();
+    #argumentDescriber = new PluginArgumentDescriber();
 
     @AITool({
         name: 'install_plugin',
@@ -138,7 +142,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<PluginRefInput>()
     })
     async describePluginArguments(input: PluginRefInput) {
-        const described = await this.#service.describePluginArguments(input);
+        const described = await this.#argumentDescriber.describePluginArguments(input);
         return {
             summary: `Plugin "${described.name}" accepts ${described.arguments.length} argument(s).`,
             data: described
@@ -321,7 +325,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<SummarizeAnalysisResultInput>()
     })
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput & AIToolScope) {
-        const summarized = await this.#service.summarizeAnalysisResult(input);
+        const summarized = await this.#summarizer.summarizeAnalysisResult(input);
 
         if (!summarized.hasResults) {
             return {

@@ -182,13 +182,6 @@ export class SocketGateway{
         this.initialized = false;
     }
 
-    getIO(): Server{
-        if(!this.io){
-            throw new Error('SocketIO not initialized');
-        }
-        return this.io;
-    }
-
     private async authenticateSocketConnection(token?: string): Promise<ISocketAuthenticationResult> {
         if (!token) {
             return {

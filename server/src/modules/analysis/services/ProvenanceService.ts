@@ -2,7 +2,6 @@ import logger from '@shared/infrastructure/logger';
 import AnalysisProvenanceEntity from '@modules/analysis/models/AnalysisProvenance';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
-import crypto from 'node:crypto';
 
 const QUERY_DEFAULT_LIMIT = 50;
 
@@ -46,9 +45,6 @@ export class ProvenanceNotFoundError extends Error{
 }
 
 export class ProvenanceService{
-    static computeHash(data: Buffer | string): string{
-        return crypto.createHash('sha256').update(data).digest('hex');
-    }
 
     async recordAnalysisExecution(input: RecordProvenanceInput): Promise<AnalysisProvenanceEntity>{
         const reproductionCommand = `voltcli analyze --plugin ${input.pluginName}@${input.pluginVersion} --provenance-replay`;

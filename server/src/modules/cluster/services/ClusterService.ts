@@ -16,10 +16,7 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import type { TeamClusterDaemonSemanticCommandResult } from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
-import { JobStatus } from '@shared/contracts/types';
 import type {
-    AnalysisStageStatus,
-    AnalysisStageType,
     AnalysisExpectedArtifact,
     SceneArtifactParams,
     SceneArtifactSourceType,
@@ -43,6 +40,18 @@ import type { FindOptionsWhere } from 'typeorm';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
+import {
+    isAnalysisJobCompletionInput,
+    isAnalysisJobStatusInput,
+    isAnalysisStageStatusInput,
+    isArtifactUploadJobStatusInput,
+    isGlbJobStatusInput,
+    isRasterJobStatusInput
+} from '@modules/cluster/contracts/domain/daemon-job-completion';
+import type {
+    ProcessDaemonJobCompletionInput,
+    ProcessDaemonJobCompletionOutput
+} from '@modules/cluster/contracts/domain/daemon-job-completion';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import type {
     TeamClusterProps,
@@ -52,8 +61,7 @@ import type {
     TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import {
-    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-    createDefaultTeamClusterQueueScopeLimits
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY
 } from '@modules/cluster/services/TeamClusterFactory';
 import {
     ClusterTransferJobState as ClusterTransferJobStateColumn,
@@ -65,10 +73,16 @@ import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage
 import type {
     TeamClusterView,
     TeamClusterQueueConcurrencyView,
-    TeamClusterQueueScopeLimitsView,
     TeamClusterCredentialServicesView
 } from '@modules/cluster/services/TeamClusterView';
 import type { ClusterTransferJobView } from '@modules/cluster/services/TeamClusterView';
+import {
+    toClusterTransferJobViewFromDomain,
+    toClusterTransferJobViewFromEntity,
+    toTeamClusterQueueConcurrencyView,
+    toTeamClusterQueueScopeLimitsView,
+    toTeamClusterViewFromEntity
+} from '@modules/cluster/services/TeamClusterView';
 import {
     TeamClusterRemoteAccessTarget,
     type TeamClusterRemoteAccessSessionView,
@@ -166,119 +180,6 @@ interface ClusterResourceLimitsView {
     maxMemoryMB: number | null;
     status: SystemStatus | null;
     lastUpdatedAt: string | null;
-}
-
-type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
-type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
-type ArtifactUploadJobStatus = JobStatus.Queued | JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
-
-interface ProcessDaemonAnalysisJobCompletionInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    success: boolean;
-    error?: string;
-}
-
-interface ProcessDaemonAnalysisJobStatusInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    status: JobStatus;
-    error?: string;
-}
-
-interface ProcessDaemonAnalysisStageStatusInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    stageKey: string;
-    label: string;
-    stageType: AnalysisStageType;
-    stageStatus: AnalysisStageStatus;
-    pluginId?: string;
-    pluginDisplayName?: string;
-    nodeId?: string;
-    exposureId?: string;
-    configHash?: string;
-    cacheHit?: boolean;
-    detail?: string;
-    startedAt?: string;
-    finishedAt?: string;
-    durationMs?: number;
-}
-
-interface ProcessDaemonRasterJobStatusInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: JobStatus;
-    error?: string;
-}
-
-interface ValidProcessDaemonRasterJobStatusInput extends ProcessDaemonRasterJobStatusInput {
-    status: RasterJobStatus;
-}
-
-interface ProcessDaemonGlbJobStatusInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: JobStatus;
-    error?: string;
-}
-
-interface ValidProcessDaemonGlbJobStatusInput extends ProcessDaemonGlbJobStatusInput {
-    status: GlbJobStatus;
-}
-
-interface ProcessDaemonArtifactUploadJobStatusInput {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: JobStatus;
-    error?: string;
-}
-
-interface ValidProcessDaemonArtifactUploadJobStatusInput extends ProcessDaemonArtifactUploadJobStatusInput {
-    status: ArtifactUploadJobStatus;
-}
-
-type ProcessDaemonJobCompletionInput =
-    | ProcessDaemonAnalysisJobCompletionInput
-    | ProcessDaemonAnalysisJobStatusInput
-    | ProcessDaemonAnalysisStageStatusInput
-    | ProcessDaemonRasterJobStatusInput
-    | ProcessDaemonGlbJobStatusInput
-    | ProcessDaemonArtifactUploadJobStatusInput;
-
-interface ProcessDaemonJobCompletionOutput {
-    acknowledged: boolean;
 }
 
 export interface ProcessDaemonSceneArtifactUpsertInput {
@@ -464,7 +365,7 @@ export default class ClusterService {
         }
 
         return {
-            teamCluster: this.#presentTeamCluster(created),
+            teamCluster: toTeamClusterViewFromEntity(created),
             enrollmentToken
         };
     }
@@ -526,7 +427,7 @@ export default class ClusterService {
             });
 
             for (const job of activeTransferJobs) {
-                const jobView = this.#presentClusterTransferJob(job);
+                const jobView = toClusterTransferJobViewFromEntity(job);
 
                 if (clusterIdSet.has(job.sourceClusterId)) {
                     const sourceJobs = activeTransfersByClusterId.get(job.sourceClusterId) ?? [];
@@ -542,7 +443,7 @@ export default class ClusterService {
             }
         }
 
-        const data = entities.map((entity) => this.#presentTeamCluster(entity, {
+        const data = entities.map((entity) => toTeamClusterViewFromEntity(entity, {
             activeTransfers: activeTransfersByClusterId.get(entity.id) ?? []
         }));
 
@@ -553,7 +454,7 @@ export default class ClusterService {
         const existingDemo = await findActiveDemo(input.teamId);
         if (existingDemo) {
             logger.info(`[ClusterService.provisionDemo] Returning existing demo teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
-            return { teamCluster: this.#presentTeamCluster(existingDemo) };
+            return { teamCluster: toTeamClusterViewFromEntity(existingDemo) };
         }
 
         const enrollmentToken = createEnrollmentToken();
@@ -594,7 +495,7 @@ export default class ClusterService {
             if (this.#isUniqueViolation(error)) {
                 const fallback = await findActiveDemo(input.teamId);
                 if (fallback) {
-                    return { teamCluster: this.#presentTeamCluster(fallback) };
+                    return { teamCluster: toTeamClusterViewFromEntity(fallback) };
                 }
             }
             logger.error(error, `[ClusterService.provisionDemo] Failed to persist demo cluster teamId=${input.teamId}`);
@@ -607,7 +508,7 @@ export default class ClusterService {
             logger.error(error, `[ClusterService.provisionDemo] Demo stack deploy failed teamClusterId=${created.id} teamId=${input.teamId}`);
         });
 
-        return { teamCluster: this.#presentTeamCluster(created) };
+        return { teamCluster: toTeamClusterViewFromEntity(created) };
     }
 
     async deleteDemo(input: { teamId: string; userId: string }): Promise<{ teardownScheduled: boolean }> {
@@ -651,7 +552,7 @@ export default class ClusterService {
         const expiresAt = demo.demoExpiresAt;
         if (!expiresAt) {
             return {
-                teamCluster: this.#presentTeamCluster(demo),
+                teamCluster: toTeamClusterViewFromEntity(demo),
                 remainingMs: null,
                 hasActiveDemo: true
             };
@@ -663,14 +564,14 @@ export default class ClusterService {
         if (remainingMs <= 0) {
             void this.#scheduleExpiredDemoCleanup(demo.id, input.teamId);
             return {
-                teamCluster: this.#presentTeamCluster(demo),
+                teamCluster: toTeamClusterViewFromEntity(demo),
                 remainingMs: 0,
                 hasActiveDemo: false
             };
         }
 
         return {
-            teamCluster: this.#presentTeamCluster(demo),
+            teamCluster: toTeamClusterViewFromEntity(demo),
             remainingMs,
             hasActiveDemo: true
         };
@@ -678,7 +579,7 @@ export default class ClusterService {
 
     async getById(input: { teamId: string; teamClusterId: string }): Promise<{ teamCluster: TeamClusterView }> {
         const entity = await this.#getOwnedTeamCluster(input.teamClusterId, input.teamId);
-        return { teamCluster: this.#presentTeamCluster(entity) };
+        return { teamCluster: toTeamClusterViewFromEntity(entity) };
     }
 
     async getRuntimeSnapshot(input: { teamId: string; teamClusterId: string }): Promise<{
@@ -709,7 +610,7 @@ export default class ClusterService {
 
         return {
             capturedAt,
-            queueConcurrency: this.#presentQueueConcurrency(doc.queueConcurrency),
+            queueConcurrency: toTeamClusterQueueConcurrencyView(doc.queueConcurrency),
             daemonQueues,
             serverQueues: []
         };
@@ -740,8 +641,8 @@ export default class ClusterService {
         if (updated.status === TeamClusterStatus.Connected) {
             try {
                 const queueConcurrencyPayload: TeamClusterDaemonQueueConcurrencyApplyPayload = {
-                    queueConcurrency: this.#presentQueueConcurrency(updated.queueConcurrency),
-                    queueScopeLimits: this.#presentQueueScopeLimits(updated.queueScopeLimits)
+                    queueConcurrency: toTeamClusterQueueConcurrencyView(updated.queueConcurrency),
+                    queueScopeLimits: toTeamClusterQueueScopeLimitsView(updated.queueScopeLimits)
                 };
                 const queueConcurrencyCommandResult = await this.#teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string }>(
                     updated.id,
@@ -763,7 +664,7 @@ export default class ClusterService {
 
         return {
             message: 'Queue settings saved.',
-            teamCluster: this.#presentTeamCluster(updated)
+            teamCluster: toTeamClusterViewFromEntity(updated)
         };
     }
 
@@ -810,7 +711,7 @@ export default class ClusterService {
 
         return {
             message: 'Team cluster role saved.',
-            teamCluster: this.#presentTeamCluster(updated)
+            teamCluster: toTeamClusterViewFromEntity(updated)
         };
     }
 
@@ -845,7 +746,7 @@ export default class ClusterService {
             take: pageRequest.limit
         });
 
-        return paginate([entities.map((entity) => this.#presentClusterTransferJob(entity)), total], pageRequest);
+        return paginate([entities.map((entity) => toClusterTransferJobViewFromEntity(entity)), total], pageRequest);
     }
 
     async createTransferRequest(input: { teamId: string; teamClusterId: string; destinationClusterId: string; authenticatedUserId: string }): Promise<{
@@ -895,7 +796,7 @@ export default class ClusterService {
                 : `Queued ${requestedJobs.length} transfer jobs for this cluster.`,
             sourceClusterId: sourceCluster.id,
             destinationClusterId: destinationCluster.id,
-            requestedJobs: requestedJobs.map((job) => this.#presentClusterTransferJobEntity(job))
+            requestedJobs: requestedJobs.map((job) => toClusterTransferJobViewFromDomain(job))
         };
     }
 
@@ -1305,7 +1206,7 @@ export default class ClusterService {
         try {
             await this.#lifecycleService.authenticateDaemonConnection(input.teamClusterId, input.daemonPassword);
 
-            if (this.#isAnalysisStageStatusInput(input)) {
+            if (isAnalysisStageStatusInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleAnalysisStageStatus({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1333,7 +1234,7 @@ export default class ClusterService {
                 return { acknowledged: true };
             }
 
-            if (this.#isAnalysisJobStatusInput(input)) {
+            if (isAnalysisJobStatusInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleAnalysisJobStatus({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1349,7 +1250,7 @@ export default class ClusterService {
                 return { acknowledged: true };
             }
 
-            if (this.#isAnalysisJobCompletionInput(input)) {
+            if (isAnalysisJobCompletionInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleJobCompletion({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1365,7 +1266,7 @@ export default class ClusterService {
                 return { acknowledged: true };
             }
 
-            if (this.#isGlbJobStatusInput(input)) {
+            if (isGlbJobStatusInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleGlbJobStatus({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1379,7 +1280,7 @@ export default class ClusterService {
                 return { acknowledged: true };
             }
 
-            if (this.#isArtifactUploadJobStatusInput(input)) {
+            if (isArtifactUploadJobStatusInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleArtifactUploadJobStatus({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1394,7 +1295,7 @@ export default class ClusterService {
                 return { acknowledged: true };
             }
 
-            if (this.#isRasterJobStatusInput(input)) {
+            if (isRasterJobStatusInput(input)) {
                 await this.#daemonAnalysisCompletionService.handleRasterJobStatus({
                     teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
@@ -1415,23 +1316,6 @@ export default class ClusterService {
             }
 
             throw ApplicationError.internalServerError('Failed to process daemon job completion');
-        }
-    }
-
-    async processDaemonSceneArtifactUpsert(input: ProcessDaemonSceneArtifactUpsertInput): Promise<ProcessDaemonSceneArtifactUpsertOutput> {
-        try {
-            const entries = await this.#prepareSceneArtifactUpsertEntries([input]);
-            await this.#upsertSceneArtifactsByObjectName(entries);
-            await this.#markAnalysisArtifactsReady(entries);
-            await this.#publishSceneArtifactBatchUpserted(entries);
-
-            return { acknowledged: true };
-        } catch (error: unknown) {
-            if (error instanceof ApplicationError) {
-                throw error;
-            }
-
-            throw ApplicationError.internalServerError('Failed to process daemon scene artifact upsert');
         }
     }
 
@@ -1597,195 +1481,6 @@ export default class ClusterService {
 
         const bareMatch = value.match(/filename=([^;]+)/i);
         return bareMatch?.[1]?.trim();
-    }
-
-    #presentTeamCluster(entity: TeamClusterEntity, options: { activeTransfers?: ClusterTransferJobView[] } = {}): TeamClusterView {
-        const services = entity.services;
-        const roleConfig = entity.roleConfig;
-        const effectiveCapabilities = entity.effectiveCapabilities;
-        const activeTransfers = options.activeTransfers;
-
-        return {
-            _id: entity.id,
-            name: entity.name,
-            team: entity.team,
-            createdBy: entity.createdBy,
-            status: entity.status,
-            installedVersion: entity.installedVersion,
-            lastHeartbeatAt: entity.lastHeartbeatAt,
-            lastDisconnectAt: entity.lastDisconnectAt,
-            services: {
-                minio: { port: services.minio.port },
-                redis: { port: services.redis.port },
-                mongodb: { port: services.mongodb.port },
-                daemon: { port: services.daemon.port }
-            },
-            queueConcurrency: this.#presentQueueConcurrency(entity.queueConcurrency),
-            queueScopeLimits: this.#presentQueueScopeLimits(entity.queueScopeLimits ?? createDefaultTeamClusterQueueScopeLimits()),
-            roleConfig: {
-                desiredRole: roleConfig.desiredRole,
-                effectiveRole: roleConfig.effectiveRole,
-                runtimeVersion: roleConfig.runtimeVersion,
-                draining: { ...roleConfig.draining },
-                lastAppliedAt: roleConfig.lastAppliedAt ?? null
-            },
-            effectiveCapabilities: { ...effectiveCapabilities },
-            ...(activeTransfers ? { activeTransfers } : {}),
-            isDemo: entity.isDemo,
-            demoExpiresAt: entity.demoExpiresAt,
-            createdAt: entity.createdAt,
-            updatedAt: entity.updatedAt
-        };
-    }
-
-    #presentQueueConcurrency(queueConcurrency: TeamClusterQueueConcurrencyProps): TeamClusterQueueConcurrencyView {
-        return {
-            analysis: queueConcurrency.analysis,
-            rasterizer: queueConcurrency.rasterizer,
-            glbPreprocessing: queueConcurrency.glbPreprocessing,
-            artifactUpload: queueConcurrency.artifactUpload,
-            pluginWarmup: queueConcurrency.pluginWarmup
-        };
-    }
-
-    #presentQueueScopeLimits(queueScopeLimits: TeamClusterQueueScopeLimitsProps): TeamClusterQueueScopeLimitsView {
-        return {
-            analysisProcessing: { maxRunningPerTrajectory: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory },
-            artifactUpload: { maxRunningPerTrajectory: queueScopeLimits.artifactUpload.maxRunningPerTrajectory },
-            trajectoryRasterization: { maxRunningPerTrajectory: queueScopeLimits.trajectoryRasterization.maxRunningPerTrajectory },
-            trajectoryGlbConversion: { maxRunningPerTrajectory: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory }
-        };
-    }
-
-    #presentClusterTransferJob(entity: ClusterTransferJobEntity): ClusterTransferJobView {
-        return {
-            _id: entity.id,
-            team: entity.team,
-            scopeType: entity.scopeType,
-            scopeId: entity.scopeId,
-            sourceClusterId: entity.sourceClusterId,
-            destinationClusterId: entity.destinationClusterId,
-            buckets: entity.buckets.map((bucketRef) => ({
-                bucket: bucketRef.bucket,
-                prefix: bucketRef.prefix
-            })),
-            state: entity.state,
-            reason: entity.reason,
-            cleanupSource: entity.cleanupSource,
-            requestedBy: entity.requestedBy,
-            cursor: {
-                bucketIndex: entity.cursor.bucketIndex,
-                lastObjectKey: entity.cursor.lastObjectKey
-            },
-            stats: {
-                copiedObjects: entity.stats.copiedObjects,
-                copiedBytes: entity.stats.copiedBytes,
-                verifiedObjects: entity.stats.verifiedObjects,
-                verifiedBytes: entity.stats.verifiedBytes,
-                deletedObjects: entity.stats.deletedObjects
-            },
-            errorCode: entity.errorCode,
-            errorMessage: entity.errorMessage,
-            startedAt: entity.startedAt,
-            finishedAt: entity.finishedAt,
-            createdAt: entity.createdAt,
-            updatedAt: entity.updatedAt
-        };
-    }
-
-    #presentClusterTransferJobEntity(job: ClusterTransferJob): ClusterTransferJobView {
-        return {
-            _id: job.id,
-            team: job.props.team,
-            scopeType: job.props.scopeType,
-            scopeId: job.props.scopeId,
-            sourceClusterId: job.props.sourceClusterId,
-            destinationClusterId: job.props.destinationClusterId,
-            buckets: job.props.buckets.map((bucketRef) => ({
-                bucket: bucketRef.bucket,
-                prefix: bucketRef.prefix
-            })),
-            state: job.props.state,
-            reason: job.props.reason,
-            cleanupSource: job.props.cleanupSource,
-            requestedBy: job.props.requestedBy,
-            cursor: {
-                bucketIndex: job.props.cursor.bucketIndex,
-                lastObjectKey: job.props.cursor.lastObjectKey
-            },
-            stats: { ...job.props.stats },
-            errorCode: job.props.errorCode,
-            errorMessage: job.props.errorMessage,
-            startedAt: job.props.startedAt,
-            finishedAt: job.props.finishedAt,
-            createdAt: job.props.createdAt,
-            updatedAt: job.props.updatedAt
-        };
-    }
-
-    #isAnalysisJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisJobStatusInput {
-        return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
-    }
-
-    #isAnalysisStageStatusInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisStageStatusInput {
-        return 'analysisId' in input
-            && 'name' in input
-            && 'stageKey' in input
-            && 'stageStatus' in input
-            && 'stageType' in input;
-    }
-
-    #isAnalysisJobCompletionInput(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonAnalysisJobCompletionInput {
-        return 'analysisId' in input && 'name' in input && 'success' in input && !this.#hasJobStatusFields(input);
-    }
-
-    #isGlbJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonGlbJobStatusInput {
-        return this.#hasJobStatusFields(input)
-            && !this.#hasAnalysisJobCompletionFields(input)
-            && this.#isGlbJobId(input.jobId)
-            && this.#isValidJobStatus(input.status);
-    }
-
-    #isArtifactUploadJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonArtifactUploadJobStatusInput {
-        return this.#hasJobStatusFields(input)
-            && !this.#hasAnalysisJobCompletionFields(input)
-            && this.#isArtifactUploadJobId(input.jobId)
-            && this.#isValidArtifactUploadJobStatus(input.status);
-    }
-
-    #isRasterJobStatusInput(input: ProcessDaemonJobCompletionInput): input is ValidProcessDaemonRasterJobStatusInput {
-        return this.#hasJobStatusFields(input)
-            && !this.#hasAnalysisJobCompletionFields(input)
-            && !this.#isGlbJobId(input.jobId)
-            && !this.#isArtifactUploadJobId(input.jobId)
-            && this.#isValidJobStatus(input.status);
-    }
-
-    #hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInput): boolean {
-        return 'name' in input || 'success' in input;
-    }
-
-    #hasJobStatusFields(input: ProcessDaemonJobCompletionInput): input is ProcessDaemonRasterJobStatusInput {
-        return 'jobId' in input && 'trajectoryId' in input && 'status' in input;
-    }
-
-    #isGlbJobId(jobId: string): boolean {
-        return jobId.startsWith('trajectory-glb:') || jobId.startsWith('trajectory-frame:');
-    }
-
-    #isArtifactUploadJobId(jobId: string): boolean {
-        return jobId.startsWith('artifact-upload-');
-    }
-
-    #isValidJobStatus(status: JobStatus): status is RasterJobStatus {
-        return status === JobStatus.Running || status === JobStatus.Completed || status === JobStatus.Failed;
-    }
-
-    #isValidArtifactUploadJobStatus(status: JobStatus): status is ArtifactUploadJobStatus {
-        return status === JobStatus.Queued
-            || status === JobStatus.Running
-            || status === JobStatus.Completed
-            || status === JobStatus.Failed;
     }
 
     async #publishSceneArtifactBatchUpserted(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {

@@ -66,7 +66,10 @@ export default class AnalysisController extends Controller {
     }
 
     @Route(analysisRoutes.getById)
-    getById(@Param('teamId') teamId: string, @Param('analysisId') analysisId: string) {
+    getById(
+        @Param('teamId') teamId: string,
+        @Param('analysisId') analysisId: string
+    ){
         return this.#service.getAnalysisById({
             teamId,
             analysisId

@@ -13,7 +13,11 @@ export default class TeamMemberController extends Controller {
     #service = new TeamMemberService();
 
     @Route(teamMemberRoutes.list)
-    listByTeamId(@Param('teamId') teamId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    listByTeamId(
+        @Param('teamId') teamId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ){
         return this.#service.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
     }
 
@@ -23,12 +27,18 @@ export default class TeamMemberController extends Controller {
     }
 
     @Route(teamMemberRoutes.update)
-    updateById(@Param('teamMemberId') teamMemberId: string, @Body() body: UpdateTeamMemberInput) {
+    updateById(
+        @Param('teamMemberId') teamMemberId: string,
+        @Body() body: UpdateTeamMemberInput
+    ){
         return this.#service.updateById(teamMemberId, body);
     }
 
     @Route(teamMemberRoutes.remove)
-    async deleteById(@Param('teamId') teamId: string, @Param('memberId') memberId: string) {
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @Param('memberId') memberId: string
+    ){
         await this.#service.deleteById(teamId, memberId);
     }
 }

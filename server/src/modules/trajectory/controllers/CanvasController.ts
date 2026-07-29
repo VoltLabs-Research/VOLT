@@ -22,19 +22,28 @@ export default class CanvasController extends TrajectoryControllerBase {
     #canvas = new PublicCanvasService();
 
     @Route(trajectoryRoutes.canvasBootstrap)
-    async canvasBootstrap(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasBootstrap(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.bootstrap(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasTrajectory)
-    async canvasTrajectory(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasTrajectory(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.trajectory(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasPreview)
-    async canvasPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasPreview(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         try {
             const value = await this.#canvas.preview(this.params(req, this.withOptionalUserId));
             sendTrajectoryPreview(res, value);
@@ -48,19 +57,28 @@ export default class CanvasController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.canvasAnalyses)
-    async canvasAnalyses(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasAnalyses(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.#canvas.listAnalyses(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasDump)
-    async canvasDump(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasDump(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.dump(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
         await this.pipeStream(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasGlb)
-    async canvasGlb(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasGlb(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.glb(this.params(req, this.withGlbRequestContext));
 
         const headers: Record<string, string> = {
@@ -81,14 +99,20 @@ export default class CanvasController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.canvasRasterFrame)
-    async canvasRasterFrame(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasRasterFrame(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.rasterFrame(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
         await this.pipeStream(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasAtoms)
-    async canvasAtomsBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasAtomsBinary(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         if (!this.validateAtomsRequest(req, res)) {
             return;
         }
@@ -101,90 +125,135 @@ export default class CanvasController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.canvasSimulationCell)
-    async canvasSimulationCell(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasSimulationCell(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.simulationCell(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasSceneArtifacts)
-    async canvasSceneArtifacts(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasSceneArtifacts(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.#canvas.listSceneArtifacts(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasColorCodingProperties)
-    async canvasColorCodingProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasColorCodingProperties(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.colorCodingProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasColorCodingStats)
-    async canvasColorCodingStats(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasColorCodingStats(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.colorCodingStats(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasColorCodingModel)
-    async canvasColorCodingModel(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasColorCodingModel(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.coloredModelStream(this.params(req, this.withOptionalUserId));
         await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterProperties)
-    async canvasParticleFilterProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasParticleFilterProperties(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.particleFilterProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterUniqueValues)
-    async canvasParticleFilterUniqueValues(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasParticleFilterUniqueValues(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.particleFilterUniqueValues(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterPreview)
-    async canvasParticleFilterPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasParticleFilterPreview(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.particleFilterPreview(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterModel)
-    async canvasParticleFilterModel(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasParticleFilterModel(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.filteredModelStream(this.params(req, this.withOptionalUserId));
         await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));
     }
 
     @Route(trajectoryRoutes.canvasPlugin)
-    async canvasPlugin(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasPlugin(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.plugin(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasPluginListing)
-    async canvasPluginListing(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasPluginListing(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.#canvas.pluginListing(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasSubListing)
-    async canvasSubListing(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasSubListing(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.subListing(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasExposureGlb)
-    async canvasExposureGlb(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasExposureGlb(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#canvas.pluginExposureGLB(this.params(req, this.withGlbRequestContext));
         await output.prepare?.();
         await this.pipeStream(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasFrameLog)
-    async canvasFrameLog(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasFrameLog(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.analysisFrameLog(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.canvasRasterMetadata)
-    async canvasRasterMetadata(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async canvasRasterMetadata(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.#canvas.rasterMetadata(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }

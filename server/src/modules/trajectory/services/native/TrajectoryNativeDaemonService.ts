@@ -139,14 +139,6 @@ class TrajectoryNativeDaemonService {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
-    async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {
-        await this.teamClusterDaemonClient.command(
-            input.teamClusterId,
-            ChannelCommands.TrajectoryNativePreprocess,
-            this.toBaseBody(input)
-        );
-    }
-
     async getTrajectoryMetadata(input: TrajectoryNativeRequest): Promise<FrameMetadata> {
         return this.teamClusterDaemonClient.command(
             input.teamClusterId,
@@ -167,12 +159,6 @@ class TrajectoryNativeDaemonService {
             ...this.toBaseBody(input),
             property: input.property,
             maxValues: input.maxValues
-        });
-    }
-
-    async getAtomIds(input: TrajectoryNativeRequest): Promise<number[]> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeAtomIds, {
-            ...this.toBaseBody(input)
         });
     }
 
@@ -243,10 +229,6 @@ class TrajectoryNativeDaemonService {
 
     private floatArrayToBytes(floats: Float32Array): Uint8Array {
         return new Uint8Array(floats.buffer, floats.byteOffset, floats.byteLength);
-    }
-
-    async getObjectBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        return this.objectGatewayClient.getBuffer(teamClusterId, bucket, objectKey);
     }
 
     async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {

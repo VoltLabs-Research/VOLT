@@ -358,30 +358,6 @@ export class PluginDependencyResolverService {
             .filter((reference) => Boolean(reference.pluginId));
     }
 
-    getArgumentPluginReferenceExecutions(
-        plugin: Plugin,
-        config: Record<string, unknown>
-    ): PluginReferenceExecutionRequest[] {
-        const argumentsNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-        const definitions = Array.isArray(argumentsNode?.data.arguments?.arguments)
-            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
-            : [];
-        const results: PluginReferenceExecutionRequest[] = [];
-
-        for (const definition of definitions) {
-            collectArgumentPluginReferenceExecutions(
-                definitions,
-                definition,
-                config[definition.argument],
-                config,
-                definition.argument,
-                results
-            );
-        }
-
-        return results;
-    }
-
     async validateArgumentPluginReferenceExecutions(
         plugin: Plugin,
         config: Record<string, unknown>

@@ -88,6 +88,7 @@ import { createReadStream } from 'node:fs';
 import { access } from 'node:fs/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
 
 import type {
     CreateTrajectoryOutput,
@@ -203,7 +204,6 @@ const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 const ANALYSIS_STATUS_COMPLETED = 'completed';
 const ANALYSIS_EXPORT_CONCURRENCY = 8;
 const TRAJECTORY_LIST_DEFAULT_LIMIT = 20;
-const FOLDER_LIST_DEFAULT_LIMIT = 500;
 const SCENE_ARTIFACT_LIST_DEFAULT_LIMIT = 100;
 const DEFAULT_UPLOAD_CHUNK_SIZE = 64 * 1024 * 1024;
 const DEFAULT_UPLOAD_SESSION_TTL_SECONDS = 6 * 60 * 60;
@@ -331,6 +331,7 @@ export default class TrajectoryService {
     #cloneCoordinator = trajectoryCloneCoordinator;
     #cloneRunner = trajectoryCloneRunner;
     #access = new TrajectoryAccessGuard();
+    #folders = new CatalogFolderService(CatalogFolderKind.Trajectory);
 
     async createUploadSession(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
         const { teamId, userId } = input;
@@ -1021,72 +1022,30 @@ export default class TrajectoryService {
     }
 
     async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
-        const pageRequest = readPageRequest(query.page, query.limit, { defaultLimit: FOLDER_LIST_DEFAULT_LIMIT });
-        const where: FindOptionsWhere<CatalogFolder> = {
-            team: teamId,
-            kind: CatalogFolderKind.Trajectory,
-            parent: query.parentId ?? IsNull()
-        };
-
-        const [folders, total] = await CatalogFolder.findAndCount({
-            where,
-            order: { createdAt: 'DESC' },
-            skip: skipFor(pageRequest),
-            take: pageRequest.limit
+        return this.#folders.list(teamId, {
+            parentId: query.parentId,
+            page: query.page,
+            limit: query.limit
         });
-
-        return paginate([folders.map((folder) => this.#presentFolder(folder)), total], pageRequest);
     }
 
     async getFolder(teamId: string, folderId: string): Promise<TrajectoryFolderView> {
-        const folder = await CatalogFolder.findOneBy({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Trajectory
-        });
-        if (!folder) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
-        }
-        return this.#presentFolder(folder);
+        return this.#folders.get(teamId, folderId, 'Trajectory folder not found');
     }
 
     async createFolder(teamId: string, userId: string, input: { title: string; parentId?: string | null }): Promise<TrajectoryFolderView> {
-        const folder = await CatalogFolder.create({
-            team: teamId,
-            createdBy: userId,
-            title: input.title,
-            parent: input.parentId ?? null,
-            kind: CatalogFolderKind.Trajectory
-        }).save();
-        return this.#presentFolder(folder);
+        return this.#folders.create(teamId, userId, input);
     }
 
     async updateFolder(teamId: string, folderId: string, input: { title: string }): Promise<TrajectoryFolderView> {
-        const folder = await CatalogFolder.findOneBy({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Trajectory
-        });
-        if (!folder) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
-        }
-        folder.title = input.title;
-        await folder.save();
-        return this.#presentFolder(folder);
+        await this.#folders.require(teamId, folderId, 'Trajectory folder not found');
+        return this.#folders.update(teamId, folderId, input.title);
     }
 
     async deleteFolder(teamId: string, folderId: string): Promise<null> {
         try {
-            const folder = await CatalogFolder.findOneBy({
-                id: folderId,
-                team: teamId,
-                kind: CatalogFolderKind.Trajectory
-            });
-            if (!folder) {
-                throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory folder not found');
-            }
-
-            await this.#deleteFolderTree(teamId, folderId);
+            await this.#folders.require(teamId, folderId, 'Trajectory folder not found');
+            await this.#folders.removeTree(teamId, folderId, (id) => this.#deleteTrajectoriesInFolder(teamId, id));
             return null;
         } catch (error) {
             if (error instanceof ApplicationError) {
@@ -1790,26 +1749,7 @@ export default class TrajectoryService {
             .filter((item): item is NonNullable<typeof item> => item !== null);
     }
 
-    #presentFolder(folder: CatalogFolder): TrajectoryFolderView {
-        return {
-            _id: folder.id,
-            title: folder.title,
-            parent: folder.parent ? String(folder.parent) : null,
-            createdAt: folder.createdAt,
-            updatedAt: folder.updatedAt
-        };
-    }
-
-    async #deleteFolderTree(teamId: string, folderId: string): Promise<void> {
-        const subfolders = await CatalogFolder.findBy({
-            team: teamId,
-            parent: folderId,
-            kind: CatalogFolderKind.Trajectory
-        });
-        for (const subfolder of subfolders) {
-            await this.#deleteFolderTree(teamId, subfolder.id);
-        }
-
+    async #deleteTrajectoriesInFolder(teamId: string, folderId: string): Promise<void> {
         const trajectories = await Trajectory.find({
             where: {
                 team: teamId,
@@ -1823,12 +1763,6 @@ export default class TrajectoryService {
                 teamId
             });
         }
-
-        await CatalogFolder.delete({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Trajectory
-        });
     }
 
     async #replaceFrames(trajectoryId: string, frames: TrajectoryFrame[]): Promise<void> {

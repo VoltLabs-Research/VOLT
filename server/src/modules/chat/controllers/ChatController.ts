@@ -48,48 +48,81 @@ export default class ChatController extends Controller {
 
     @Route(chatRoutes.createGroup)
     @Status(201)
-    createGroup(@CurrentUser() userId: string, @Body() body: CreateGroupChatInput) {
+    createGroup(
+        @CurrentUser() userId: string,
+        @Body() body: CreateGroupChatInput
+    ){
         return this.#service.createGroupChat(userId, body);
     }
 
     @Route(chatRoutes.addUsersToGroup)
-    addUsersToGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: AddUsersToGroupInput) {
+    addUsersToGroup(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: AddUsersToGroupInput
+    ){
         return this.#service.addUsersToGroup(userId, chatId, body.userIds);
     }
 
     @Route(chatRoutes.removeUsersFromGroup)
-    removeUsersFromGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: RemoveUsersFromGroupInput) {
+    removeUsersFromGroup(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: RemoveUsersFromGroupInput
+    ){
         return this.#service.removeUsersFromGroup(userId, chatId, body.userIds);
     }
 
     @Route(chatRoutes.updateGroupInfo)
-    updateGroupInfo(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: UpdateGroupInfoInput) {
+    updateGroupInfo(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UpdateGroupInfoInput
+    ){
         return this.#service.updateGroupInfo(userId, chatId, body);
     }
 
     @Route(chatRoutes.updateGroupAdmins)
-    updateGroupAdmins(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: UpdateGroupAdminsInput) {
+    updateGroupAdmins(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UpdateGroupAdminsInput
+    ){
         return this.#service.updateGroupAdmins(userId, chatId, body);
     }
 
     @Route(chatRoutes.leaveGroup)
-    async leaveGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
+    async leaveGroup(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.leaveGroup(userId, chatId);
     }
 
     @Route(chatRoutes.listMessages)
-    listMessages(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Query() query: Record<string, string>) {
+    listMessages(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.getChatMessages(userId, chatId, query);
     }
 
     @Route(chatRoutes.sendMessage)
     @Status(201)
-    sendMessage(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: SendChatMessageInput) {
+    sendMessage(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: SendChatMessageInput
+    ){
         return this.#service.sendChatMessage(userId, chatId, body);
     }
 
     @Route(chatRoutes.markMessagesAsRead)
-    async markMessagesAsRead(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
+    async markMessagesAsRead(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.markMessagesAsRead(userId, chatId);
     }
 
@@ -104,7 +137,11 @@ export default class ChatController extends Controller {
     }
 
     @Route(chatRoutes.deleteMessage)
-    async deleteMessage(@Param('chatId') chatId: string, @Param('messageId') messageId: string, @CurrentUser() userId: string) {
+    async deleteMessage(
+        @Param('chatId') chatId: string,
+        @Param('messageId') messageId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteMessage(userId, chatId, messageId);
     }
 
@@ -131,7 +168,11 @@ export default class ChatController extends Controller {
     @Route(chatRoutes.sendFileMessage)
     @Status(201)
     @Middleware(uploadChatSingleFile('file'), uploadToStorage)
-    sendFileMessage(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: ChatFileBody) {
+    sendFileMessage(
+        @Param('chatId') chatId: string,
+        @CurrentUser() userId: string,
+        @Body() body: ChatFileBody
+    ){
         return this.#service.sendFileMessage(userId, chatId, body.fileData);
     }
 }

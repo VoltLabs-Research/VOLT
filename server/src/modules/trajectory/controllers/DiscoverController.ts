@@ -8,7 +8,10 @@ import type { Response } from 'express';
 
 export default class DiscoverController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.discoverListPublicTrajectories)
-    async discoverListPublicTeamTrajectories(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async discoverListPublicTeamTrajectories(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.service.listPublicTeamTrajectories(this.params(req)));
     }
 }

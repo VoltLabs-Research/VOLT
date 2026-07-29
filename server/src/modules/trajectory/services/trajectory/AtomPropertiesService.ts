@@ -30,26 +30,8 @@ interface ExposureAtomConfig {
     schemaKeysMap: Map<string, string[]>;
 }
 
-interface AnalysisAllAtomsResult {
-    propertyNames: string[];
-    atoms: Record<string, unknown>[];
-}
-
 class AtomPropertiesService {
         private readonly daemonClient = teamClusterDaemonClient;
-
-    async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {
-        const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId, timestep);
-        const props: Record<string, string[]> = {};
-
-        for (const config of exposureConfigs) {
-            if (config.perAtomProperties.length > 0) {
-                props[config.exposureId] = config.perAtomProperties;
-            }
-        }
-
-        return props;
-    }
 
     async getAnalysisExposureAtomConfigs(analysisId: string, timestep?: string): Promise<ExposureAtomConfig[]> {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
@@ -124,31 +106,6 @@ class AtomPropertiesService {
         };
     }
 
-    async getAnalysisAllPerAtomProperties(
-        teamClusterId: string,
-        trajectoryId: string,
-        analysisId: string,
-        timestep: string
-    ): Promise<AnalysisAllAtomsResult | null> {
-        const analysisEntity = await AnalysisEntity.findOneBy({ id: analysisId });
-        if (!analysisEntity) {
-            return null;
-        }
-        const analysis = toAnalysisLike(analysisEntity);
-        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
-
-        return this.daemonClient.command<AnalysisAllAtomsResult | null>(
-            teamClusterId,
-            ChannelCommands.TrajectoryPluginAnalysisAllAtoms,
-            {
-                trajectoryId,
-                analysisId,
-                timestep: Number(timestep),
-                ownerClusterId
-            }
-        );
-    }
-
     async buildPluginIndexForAtomIds(
         trajectoryId: string,
         analysisId: string,
@@ -190,46 +147,6 @@ class AtomPropertiesService {
         }
 
         return pluginIndex.size > 0 ? pluginIndex : null;
-    }
-
-    async getModifierValues(
-        trajectoryId: string,
-        analysisId: string,
-        exposureId: string,
-        timestep: string,
-        property: string
-    ): Promise<Float32Array | undefined> {
-        const { analysis } = await this.getAnalysisAndPlugin(analysisId);
-        const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
-
-        if (!teamClusterId) return undefined;
-
-        const result = await this.daemonClient.command<Record<number, number> | number[] | null>(
-            teamClusterId,
-            ChannelCommands.TrajectoryPluginModifierValues,
-            {
-                trajectoryId,
-                analysisId,
-                exposureId,
-                timestep: Number(timestep),
-                property,
-                ownerClusterId
-            }
-        );
-
-        if (!result) return undefined;
-
-        if (Array.isArray(result)) {
-            return new Float32Array(result);
-        }
-
-        const length = Object.keys(result).length;
-        const arr = new Float32Array(length);
-        for (let i = 0; i < length; i++) {
-            arr[i] = result[i] || 0;
-        }
-        return arr;
     }
 
     async getModifierStats(

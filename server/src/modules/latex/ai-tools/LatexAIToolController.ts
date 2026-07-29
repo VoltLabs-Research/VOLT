@@ -4,6 +4,7 @@ import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import LatexService from '@modules/latex/services/LatexService';
 import type { LatexFile } from '@volt/contracts/modules/latex/domain';
+import LatexAssetService from '@modules/latex/services/LatexAssetService';
 import type {
     CreateLatexDocumentInput,
     CreateLatexFileInput,
@@ -18,6 +19,7 @@ import type {
 
 export default class LatexAIToolController extends AIToolController {
     #service = new LatexService();
+    #assets = new LatexAssetService();
 
     @AITool({
         name: 'create_latex_document',
@@ -186,7 +188,7 @@ export default class LatexAIToolController extends AIToolController {
     })
     async manageLatexAssets(input: ManageLatexAssetsInput & AIToolScope) {
         if (input.action === 'list') {
-            const assets = await this.#service.listAssets(input);
+            const assets = await this.#assets.listAssets(input);
             return {
                 summary: `Found ${assets.length} LaTeX assets.`,
                 data: assets

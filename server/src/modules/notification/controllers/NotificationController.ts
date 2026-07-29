@@ -10,7 +10,10 @@ export default class NotificationController extends Controller {
     #service = new NotificationService();
 
     @Route(notificationRoutes.list)
-    list(@CurrentUser() userId: string, @Query() query: Record<string, string>) {
+    list(
+        @CurrentUser() userId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.getMyNotifications({
             userId,
             page: query.page ? Number(query.page) : undefined,

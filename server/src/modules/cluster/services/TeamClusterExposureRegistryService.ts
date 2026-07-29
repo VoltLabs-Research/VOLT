@@ -1,6 +1,4 @@
 import {
-    TeamClusterServiceExposureAccessMode,
-    TeamClusterServiceExposureStatus,
     type TeamClusterServiceExposure
 } from '@shared/contracts/types/TeamClusterExposure';
 import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports';
@@ -48,10 +46,6 @@ class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistry
         }
     }
 
-    getTeamClusterExposure(teamClusterId: string, exposureId: string): TeamClusterServiceExposure | null {
-        return this.exposuresByRegistryKey.get(buildRegistryKey(teamClusterId, exposureId)) || null;
-    }
-
     listTeamClusterExposures(teamClusterId: string): TeamClusterServiceExposure[] {
         const registryKeys = this.registryKeysByTeamClusterId.get(teamClusterId);
         if (!registryKeys) {
@@ -67,36 +61,6 @@ class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistry
         }
 
         return exposures;
-    }
-
-    findTeamClusterExposure(
-        teamClusterId: string,
-        predicate: (exposure: TeamClusterServiceExposure) => boolean
-    ): TeamClusterServiceExposure | null {
-        const exposures = this.listTeamClusterExposures(teamClusterId);
-
-        for (const exposure of exposures) {
-            if (predicate(exposure)) {
-                return exposure;
-            }
-        }
-
-        return null;
-    }
-
-    listActiveTcpExposures(): TeamClusterServiceExposure[] {
-        return Array.from(this.exposuresByRegistryKey.values()).filter((exposure) => {
-            return exposure.status === TeamClusterServiceExposureStatus.Active
-                && exposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp);
-        });
-    }
-
-    onChanged(listener: (event: ExposureRegistryChangeEvent) => void): void {
-        this.events.on('changed', listener);
-    }
-
-    offChanged(listener: (event: ExposureRegistryChangeEvent) => void): void {
-        this.events.off('changed', listener);
     }
 
     private emitChanged(teamClusterId: string): void {

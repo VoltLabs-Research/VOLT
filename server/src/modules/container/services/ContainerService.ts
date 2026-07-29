@@ -12,7 +12,6 @@ import type {
     ContainerAccessiblePort
 } from '@volt/contracts/modules/container/domain';
 import type {
-    ContainerEnvironmentVariable,
     ContainerFileEntry,
     ContainerPortMapping,
     ContainerProcessInfo,
@@ -33,14 +32,22 @@ import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persi
 import logger from '@shared/infrastructure/logger';
 import { ILike, IsNull } from 'typeorm';
 import type { FindManyOptions, FindOptionsWhere } from 'typeorm';
+import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
+import {
+    buildContainerRuntimeConfig,
+    clusterId,
+    requireInternalIp,
+    requireRelayInternalIp,
+    requireTeamClusterId,
+    resolveAccessiblePorts,
+    resolveInternalIp,
+    resolveNonPlaceholderInternalIp,
+    toRuntimePorts,
+} from '@modules/container/services/container-network';
 
 const MB_PER_GB = 1024;
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const DEFAULT_LIST_LIMIT = 100;
-const DEFAULT_FOLDER_LIST_LIMIT = 500;
-
-const BROWSER_ACCESSIBLE_PORTS = new Set([80, 81, 3000, 3001, 4173, 4200, 5000, 5173, 5174, 8000, 8080, 8081, 8088, 8888, 8889]);
-const BROWSER_ACCESSIBLE_LABELS = [/^https?$/i, /^web$/i, /^app$/i, /^ui$/i, /^dashboard$/i, /^jupyter$/i];
 
 const LIST_REFERENCE_OPTIONS = {
     relations: {
@@ -115,6 +122,7 @@ export default class ContainerService{
     readonly #systemMetrics: NonNullable<ContainerServiceDependencies['systemMetrics']>;
     readonly #clusterSelection: ITeamClusterSelectionService;
     readonly #eventBus: Pick<IEventBus, 'emit'>;
+    readonly #folders = new CatalogFolderService(CatalogFolderKind.Container);
 
     constructor(dependencies: ContainerServiceDependencies = {}){
         this.#runtime = dependencies.runtime ?? daemonContainerRuntimeService;
@@ -164,12 +172,12 @@ export default class ContainerService{
         let persistedContainerId: string | null = null;
 
         try{
-            const dockerConfig = this.#buildContainerRuntimeConfig(
+            const dockerConfig = buildContainerRuntimeConfig(
                 {
                     image,
                     name,
                     env,
-                    ports: this.#toRuntimePorts(assignedPorts),
+                    ports: toRuntimePorts(assignedPorts),
                     teamId,
                     teamClusterId,
                     operationId: input.operationId
@@ -186,7 +194,7 @@ export default class ContainerService{
             const containerInfo = await this.#runtime.createContainer(teamClusterId, dockerConfig);
             dockerId = containerInfo.Id;
             const runtimeContainer = await this.#runtime.getContainer(teamClusterId, dockerId);
-            const internalIp = this.#requireInternalIp(runtimeContainer);
+            const internalIp = requireInternalIp(runtimeContainer);
 
             const container = await Container.create({
                 name,
@@ -266,7 +274,7 @@ export default class ContainerService{
 
         const data = containers.map((container) => ({
             ...container.toJSON(),
-            accessiblePorts: this.#resolveAccessiblePorts(container.ports, container.status)
+            accessiblePorts: resolveAccessiblePorts(container.ports, container.status)
         }));
 
         return paginate([data, total], pageRequest);
@@ -274,7 +282,7 @@ export default class ContainerService{
 
     async getById(teamId: string, containerId: string): Promise<{ container: Record<string, unknown> }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#clusterId(container);
+        const teamClusterId = clusterId(container);
 
         if(teamClusterId){
             const runtimeContainer = await this.#runtime.getContainer(teamClusterId, container.containerId);
@@ -286,7 +294,7 @@ export default class ContainerService{
         return {
             container: {
                 ...container.toJSON(),
-                accessiblePorts: this.#resolveAccessiblePorts(container.ports, container.status)
+                accessiblePorts: resolveAccessiblePorts(container.ports, container.status)
             }
         };
     }
@@ -294,7 +302,7 @@ export default class ContainerService{
     async update(teamId: string, containerId: string, input: UpdateContainerInput): Promise<{ container: Container | null; status?: string }>{
         const { action, env, ports } = input;
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
 
         if(action){
             let runtimeContainer: RuntimeContainerInfo | null = null;
@@ -309,7 +317,7 @@ export default class ContainerService{
                 container.status = runtimeContainer.State?.Status || 'running';
             }
 
-            const internalIp = runtimeContainer ? this.#resolveInternalIp(runtimeContainer) : undefined;
+            const internalIp = runtimeContainer ? resolveInternalIp(runtimeContainer) : undefined;
             if(internalIp){
                 container.internalIp = internalIp;
             }
@@ -350,7 +358,7 @@ export default class ContainerService{
             const existingPublicPorts = new Set(container.ports
                 .map((port) => port.public)
                 .filter((port): port is number => typeof port === 'number' && port > 0));
-            const internalIp = this.#requireRelayInternalIp(container.internalIp);
+            const internalIp = requireRelayInternalIp(container.internalIp);
 
             nextRelays = nextPorts.map((port) => ({
                 teamId,
@@ -393,7 +401,7 @@ export default class ContainerService{
 
     async delete(teamId: string, containerId: string, userId: string): Promise<{ message: string }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
 
         await this.#runtime.removeContainer(teamClusterId, container.containerId);
         await Container.delete({ id: containerId });
@@ -416,7 +424,7 @@ export default class ContainerService{
         userId: string
     ): Promise<{ url: string; expiresAt: string; port: ContainerAccessiblePort }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const accessiblePorts = this.#resolveAccessiblePorts(container.ports, container.status);
+        const accessiblePorts = resolveAccessiblePorts(container.ports, container.status);
         const port = accessiblePorts.find((item) => item.private === privatePort);
 
         if(!port){
@@ -432,7 +440,7 @@ export default class ContainerService{
             throw ApplicationError.conflict('Container::PublicPortUnavailable', 'Container port has no public port assigned');
         }
 
-        const teamClusterId = this.#clusterId(container);
+        const teamClusterId = clusterId(container);
         if(!teamClusterId || !container.internalIp){
             throw ApplicationError.conflict('Container::PortUnavailable', 'Container networking is not ready yet');
         }
@@ -456,14 +464,14 @@ export default class ContainerService{
 
     async getFiles(teamId: string, containerId: string, path?: string): Promise<{ files: ContainerFileEntry[] }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
         const files = await this.#runtime.getFiles(teamClusterId, container.containerId, path || '/');
         return { files };
     }
 
     async getProcesses(teamId: string, containerId: string): Promise<{ processes: ContainerProcessInfo[] }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
         const processes = await this.#runtime.getProcesses(teamClusterId, container.containerId);
         return { processes };
     }
@@ -475,7 +483,7 @@ export default class ContainerService{
         networkTotals: { rxBytes: number; txBytes: number };
     }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
         const stats = await this.#runtime.getStats(teamClusterId, container.containerId);
 
         const usedBytes = stats.memory_stats?.usage ?? 0;
@@ -511,7 +519,7 @@ export default class ContainerService{
 
     async readFile(teamId: string, containerId: string, path: string): Promise<{ content: string }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
-        const teamClusterId = this.#requireTeamClusterId(this.#clusterId(container));
+        const teamClusterId = requireTeamClusterId(clusterId(container));
         const content = await this.#runtime.readFile(teamClusterId, container.containerId, path);
         return { content };
     }
@@ -548,70 +556,33 @@ export default class ContainerService{
     }
 
     async listFolders(teamId: string, query: ContainerFolderQuery): Promise<PaginatedResult<ContainerFolderView>>{
-        const pageRequest = readPageRequest(Number(query.page), Number(query.limit), { defaultLimit: DEFAULT_FOLDER_LIST_LIMIT });
-        const [folders, total] = await CatalogFolder.findAndCount({
-            where: {
-                team: teamId,
-                kind: CatalogFolderKind.Container,
-                parent: query.parentId ?? IsNull()
-            },
-            order: { createdAt: 'DESC' },
-            take: pageRequest.limit,
-            skip: skipFor(pageRequest)
+        return this.#folders.list(teamId, {
+            parentId: query.parentId,
+            page: Number(query.page),
+            limit: Number(query.limit)
         });
-
-        return paginate([folders.map((folder) => this.#presentFolder(folder)), total], pageRequest);
     }
 
     async getFolder(teamId: string, folderId: string): Promise<ContainerFolderView>{
-        const folder = await CatalogFolder.findOneBy({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Container
-        });
-        if(!folder){
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Container folder not found');
-        }
-        return this.#presentFolder(folder);
+        return this.#folders.get(teamId, folderId, 'Container folder not found');
     }
 
     async createFolder(teamId: string, userId: string, input: CreateContainerFolderInput): Promise<ContainerFolderView>{
-        const folder = await CatalogFolder.create({
-            team: teamId,
-            createdBy: userId,
+        return this.#folders.create(teamId, userId, {
             title: input.title,
-            parent: input.parentId || null,
-            kind: CatalogFolderKind.Container
-        }).save();
-
-        return this.#presentFolder(folder);
+            parentId: input.parentId || null
+        });
     }
 
     async updateFolder(teamId: string, folderId: string, input: UpdateContainerFolderInput): Promise<ContainerFolderView>{
-        const folder = await CatalogFolder.findOneBy({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Container
-        });
-        if(!folder){
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Container folder not found');
-        }
-
-        return this.#presentFolder(await Object.assign(folder, { title: input.title }).save());
+        await this.#folders.require(teamId, folderId, 'Container folder not found');
+        return this.#folders.update(teamId, folderId, input.title);
     }
 
     async deleteFolder(teamId: string, folderId: string, userId: string): Promise<null>{
         try{
-            const folder = await CatalogFolder.findOneBy({
-                id: folderId,
-                team: teamId,
-                kind: CatalogFolderKind.Container
-            });
-            if(!folder){
-                throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Container folder not found');
-            }
-
-            await this.#deleteFolderTree(teamId, folderId, userId);
+            await this.#folders.require(teamId, folderId, 'Container folder not found');
+            await this.#folders.removeTree(teamId, folderId, (id) => this.#deleteContainersInFolder(teamId, id, userId));
             return null;
         }catch(error){
             if(error instanceof ApplicationError){
@@ -632,16 +603,7 @@ export default class ContainerService{
         return container;
     }
 
-    async #deleteFolderTree(teamId: string, folderId: string, userId: string): Promise<void>{
-        const subfolders = await CatalogFolder.findBy({
-            team: teamId,
-            parent: folderId,
-            kind: CatalogFolderKind.Container
-        });
-        for(const subfolder of subfolders){
-            await this.#deleteFolderTree(teamId, subfolder.id, userId);
-        }
-
+    async #deleteContainersInFolder(teamId: string, folderId: string, userId: string): Promise<void>{
         const containers = await Container.find({
             where: {
                 team: teamId,
@@ -652,117 +614,8 @@ export default class ContainerService{
         for(const container of containers){
             await this.delete(teamId, container.id, userId);
         }
-
-        await CatalogFolder.delete({
-            id: folderId,
-            team: teamId,
-            kind: CatalogFolderKind.Container
-        });
     }
 
-    #presentFolder(folder: CatalogFolder): ContainerFolderView{
-        return {
-            _id: folder.id,
-            title: folder.title,
-            parent: folder.parent ?? null,
-            createdAt: folder.createdAt,
-            updatedAt: folder.updatedAt
-        };
-    }
-
-    #clusterId(container: Container): string | undefined{
-        return container.teamCluster || undefined;
-    }
-
-    #resolveAccessiblePorts(ports: ContainerPortMapping[], containerStatus: string): ContainerAccessiblePort[]{
-        return ports.map((port) => ({
-            private: port.private,
-            public: port.public,
-            protocol: 'tcp',
-            browserAccessible: this.#isBrowserAccessible(port),
-            status: containerStatus === 'running' ? 'available' : 'unavailable'
-        }));
-    }
-
-    #isBrowserAccessible(port: ContainerPortMapping): boolean{
-        if(BROWSER_ACCESSIBLE_PORTS.has(port.private) || (typeof port.public === 'number' && BROWSER_ACCESSIBLE_PORTS.has(port.public))){
-            return true;
-        }
-        const rawLabel = (port as ContainerPortMapping & { label?: unknown }).label;
-        const label = typeof rawLabel === 'string' && rawLabel.trim().length > 0 ? rawLabel.trim().toLowerCase() : null;
-        if(!label){
-            return false;
-        }
-        return BROWSER_ACCESSIBLE_LABELS.some((pattern) => pattern.test(label));
-    }
-
-    #buildContainerRuntimeConfig(
-        input: { image: string; name: string; env?: ContainerEnvironmentVariable[]; ports?: ContainerPortMapping[]; teamId: string; teamClusterId: string; operationId?: string },
-        options: { memoryInMegabytes: number; cpus: number; binds: string[]; groupAdd: string[]; cmd?: string[]; user?: string }
-    ){
-        const sanitizedName = input.name.replace(/\s+/g, '-');
-        return {
-            image: input.image,
-            name: `${sanitizedName}-${Date.now()}`,
-            operationId: input.operationId,
-            env: input.env,
-            ports: input.ports,
-            labels: {
-                'volt.team.id': input.teamId,
-                'volt.team-cluster.id': input.teamClusterId
-            },
-            memoryInMegabytes: options.memoryInMegabytes,
-            cpus: options.cpus,
-            binds: options.binds,
-            groupAdd: options.groupAdd,
-            cmd: options.cmd,
-            user: options.user
-        };
-    }
-
-    #toRuntimePorts(ports: ContainerPortMapping[]): ContainerPortMapping[]{
-        return ports.map((port) => ({ private: port.private }));
-    }
-
-    #resolveInternalIp(runtimeContainer: RuntimeContainerInfo): string | undefined{
-        const primaryIp = runtimeContainer.NetworkSettings?.IPAddress;
-        if(typeof primaryIp === 'string' && primaryIp.length > 0){
-            return primaryIp;
-        }
-        const networks = runtimeContainer.NetworkSettings?.Networks;
-        if(!networks){
-            return undefined;
-        }
-        for(const endpoint of Object.values(networks)){
-            const address = endpoint?.IPAddress;
-            if(typeof address === 'string' && address.length > 0){
-                return address;
-            }
-        }
-        return undefined;
-    }
-
-    #requireInternalIp(runtimeContainer: RuntimeContainerInfo): string{
-        const internalIp = this.#resolveInternalIp(runtimeContainer);
-        if(!internalIp){
-            throw ApplicationError.conflict('Container::NetworkingUnavailable', 'Container networking is not ready');
-        }
-        return internalIp;
-    }
-
-    #requireRelayInternalIp(internalIp?: string | null): string{
-        if(!internalIp){
-            throw ApplicationError.conflict('Container::PortUnavailable', 'Container networking is not ready yet');
-        }
-        return internalIp;
-    }
-
-    #requireTeamClusterId(teamClusterId?: string): string{
-        if(!teamClusterId){
-            throw ApplicationError.conflict('TeamCluster::Missing', 'Container is not assigned to a team cluster');
-        }
-        return teamClusterId;
-    }
 
     async #validateClusterResourceLimits(teamClusterId: string, memoryInMegabytes: number, cpuCount: number): Promise<void>{
         const metrics = await this.#systemMetrics.getLatestByClusterId(teamClusterId);
@@ -895,7 +748,7 @@ export default class ContainerService{
             if(container.internalIp === undefined || container.internalIp === PLACEHOLDER_INTERNAL_IP){
                 try{
                     const runtimeInfo = await this.#runtime.getContainer(teamClusterId, container.containerId);
-                    const runtimeInternalIp = this.#resolveNonPlaceholderInternalIp(runtimeInfo);
+                    const runtimeInternalIp = resolveNonPlaceholderInternalIp(runtimeInfo);
                     if(runtimeInternalIp !== undefined && container.internalIp !== runtimeInternalIp){
                         update.internalIp = runtimeInternalIp;
                     }
@@ -911,21 +764,4 @@ export default class ContainerService{
         }));
     }
 
-    #resolveNonPlaceholderInternalIp(runtimeContainer: RuntimeContainerInfo): string | undefined{
-        const primaryIp = runtimeContainer.NetworkSettings?.IPAddress;
-        if(typeof primaryIp === 'string' && primaryIp.length > 0 && primaryIp !== PLACEHOLDER_INTERNAL_IP){
-            return primaryIp;
-        }
-        const networks = runtimeContainer.NetworkSettings?.Networks;
-        if(!networks){
-            return undefined;
-        }
-        for(const endpoint of Object.values(networks)){
-            const internalIp = endpoint?.IPAddress;
-            if(typeof internalIp === 'string' && internalIp.length > 0 && internalIp !== PLACEHOLDER_INTERNAL_IP){
-                return internalIp;
-            }
-        }
-        return undefined;
-    }
 }

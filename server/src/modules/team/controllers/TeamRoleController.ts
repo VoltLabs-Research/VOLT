@@ -13,18 +13,30 @@ export default class TeamRoleController extends Controller {
     #service = new TeamRoleService();
 
     @Route(teamRoleRoutes.list)
-    listByTeamId(@Param('teamId') teamId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    listByTeamId(
+        @Param('teamId') teamId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ){
         return this.#service.listByTeamId(teamId, page ? Number(page) : 1, limit ? Number(limit) : 10);
     }
 
     @Route(teamRoleRoutes.create)
     @Status(201)
-    create(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateTeamRoleInput) {
+    create(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateTeamRoleInput
+    ){
         return this.#service.create(teamId, userId, body);
     }
 
     @Route(teamRoleRoutes.remove)
-    async deleteById(@Param('teamId') teamId: string, @Param('roleId') roleId: string, @CurrentUser() userId: string) {
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @Param('roleId') roleId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteById(teamId, roleId, userId);
     }
 
@@ -34,7 +46,10 @@ export default class TeamRoleController extends Controller {
     }
 
     @Route(teamRoleRoutes.update)
-    updateById(@Param('roleId') roleId: string, @Body() body: UpdateTeamRoleInput) {
+    updateById(
+        @Param('roleId') roleId: string,
+        @Body() body: UpdateTeamRoleInput
+    ){
         return this.#service.updateById(roleId, body);
     }
 }

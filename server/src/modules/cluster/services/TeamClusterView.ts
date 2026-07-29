@@ -18,7 +18,10 @@ import type {
     ClusterTransferJobState,
     ClusterTransferJobStats
 } from '@volt/contracts/modules/cluster/domain';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/services/TeamClusterFactory';
+import { createDefaultTeamClusterQueueScopeLimits, DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/services/TeamClusterFactory';
+import type TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import type ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
+import type { ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
 
 export interface ClusterTransferJobView {
     _id: string;
@@ -77,7 +80,7 @@ export interface TeamClusterQueueConcurrencyView {
     pluginWarmup: number;
 }
 
-export interface TeamClusterQueueScopeLimitView {
+interface TeamClusterQueueScopeLimitView {
     maxRunningPerTrajectory: number;
 }
 
@@ -226,3 +229,120 @@ export const toTeamClusterView = (
         updatedAt: teamCluster.props.updatedAt
     };
 };
+
+
+export const toTeamClusterViewFromEntity = (
+    entity: TeamClusterEntity,
+    options: {
+        activeTransfers?: ClusterTransferJobView[];
+    } = {}
+): TeamClusterView => {
+    const services = entity.services;
+    const roleConfig = entity.roleConfig;
+    const activeTransfers = options.activeTransfers;
+
+    return {
+        _id: entity.id,
+        name: entity.name,
+        team: entity.team,
+        createdBy: entity.createdBy,
+        status: entity.status,
+        installedVersion: entity.installedVersion,
+        lastHeartbeatAt: entity.lastHeartbeatAt,
+        lastDisconnectAt: entity.lastDisconnectAt,
+        services: {
+            minio: toServiceView(services.minio),
+            redis: toServiceView(services.redis),
+            mongodb: toServiceView(services.mongodb),
+            daemon: toServiceView(services.daemon)
+        },
+        queueConcurrency: toTeamClusterQueueConcurrencyView(entity.queueConcurrency),
+        queueScopeLimits: toTeamClusterQueueScopeLimitsView(
+            entity.queueScopeLimits ?? createDefaultTeamClusterQueueScopeLimits()
+        ),
+        roleConfig: {
+            desiredRole: roleConfig.desiredRole,
+            effectiveRole: roleConfig.effectiveRole,
+            runtimeVersion: roleConfig.runtimeVersion,
+            draining: {
+                ...roleConfig.draining
+            },
+            lastAppliedAt: roleConfig.lastAppliedAt ?? null
+        },
+        effectiveCapabilities: {
+            ...entity.effectiveCapabilities
+        },
+        ...(activeTransfers ? { activeTransfers } : {}),
+        isDemo: entity.isDemo,
+        demoExpiresAt: entity.demoExpiresAt,
+        createdAt: entity.createdAt,
+        updatedAt: entity.updatedAt
+    };
+};
+
+const toBucketRefViews = (buckets: StoragePlacementBucketRef[]): StoragePlacementBucketRef[] => (
+    buckets.map((bucketRef) => ({
+        bucket: bucketRef.bucket,
+        prefix: bucketRef.prefix
+    }))
+);
+
+export const toClusterTransferJobViewFromEntity = (
+    entity: ClusterTransferJobEntity
+): ClusterTransferJobView => ({
+    _id: entity.id,
+    team: entity.team,
+    scopeType: entity.scopeType,
+    scopeId: entity.scopeId,
+    sourceClusterId: entity.sourceClusterId,
+    destinationClusterId: entity.destinationClusterId,
+    buckets: toBucketRefViews(entity.buckets),
+    state: entity.state,
+    reason: entity.reason,
+    cleanupSource: entity.cleanupSource,
+    requestedBy: entity.requestedBy,
+    cursor: {
+        bucketIndex: entity.cursor.bucketIndex,
+        lastObjectKey: entity.cursor.lastObjectKey
+    },
+    stats: {
+        copiedObjects: entity.stats.copiedObjects,
+        copiedBytes: entity.stats.copiedBytes,
+        verifiedObjects: entity.stats.verifiedObjects,
+        verifiedBytes: entity.stats.verifiedBytes,
+        deletedObjects: entity.stats.deletedObjects
+    },
+    errorCode: entity.errorCode,
+    errorMessage: entity.errorMessage,
+    startedAt: entity.startedAt,
+    finishedAt: entity.finishedAt,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt
+});
+
+export const toClusterTransferJobViewFromDomain = (job: ClusterTransferJob): ClusterTransferJobView => ({
+    _id: job.id,
+    team: job.props.team,
+    scopeType: job.props.scopeType,
+    scopeId: job.props.scopeId,
+    sourceClusterId: job.props.sourceClusterId,
+    destinationClusterId: job.props.destinationClusterId,
+    buckets: toBucketRefViews(job.props.buckets),
+    state: job.props.state,
+    reason: job.props.reason,
+    cleanupSource: job.props.cleanupSource,
+    requestedBy: job.props.requestedBy,
+    cursor: {
+        bucketIndex: job.props.cursor.bucketIndex,
+        lastObjectKey: job.props.cursor.lastObjectKey
+    },
+    stats: {
+        ...job.props.stats
+    },
+    errorCode: job.props.errorCode,
+    errorMessage: job.props.errorMessage,
+    startedAt: job.props.startedAt,
+    finishedAt: job.props.finishedAt,
+    createdAt: job.props.createdAt,
+    updatedAt: job.props.updatedAt
+});

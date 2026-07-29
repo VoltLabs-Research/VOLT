@@ -20,38 +20,60 @@ export default class SecretKeyController extends Controller {
 
     @Route(secretKeyRoutes.teamMetrics)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    teamMetrics(@Param('teamId') teamId: string, @Query('days') days?: string) {
+    teamMetrics(
+        @Param('teamId') teamId: string,
+        @Query('days') days?: string
+    ){
         return this.#service.teamMetrics(teamId, days ? Number(days) : undefined);
     }
 
     @Route(secretKeyRoutes.keyUsage)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    keyUsage(@Param('teamId') teamId: string, @Param('secretKeyId') secretKeyId: string, @Query('days') days?: string) {
+    keyUsage(
+        @Param('teamId') teamId: string,
+        @Param('secretKeyId') secretKeyId: string,
+        @Query('days') days?: string
+    ){
         return this.#service.keyUsage(teamId, secretKeyId, days ? Number(days) : undefined);
     }
 
     @Route(secretKeyRoutes.list)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    listByTeamId(@Param('teamId') teamId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    listByTeamId(
+        @Param('teamId') teamId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ){
         return this.#service.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
     }
 
     @Route(secretKeyRoutes.create)
     @Status(201)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    create(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateSecretKeyInput) {
+    create(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateSecretKeyInput
+    ){
         return this.#service.create(teamId, userId, body);
     }
 
     @Route(secretKeyRoutes.revokeById)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    revokeById(@Param('teamId') teamId: string, @Param('secretKeyId') secretKeyId: string) {
+    revokeById(
+        @Param('teamId') teamId: string,
+        @Param('secretKeyId') secretKeyId: string
+    ){
         return this.#service.revokeById(teamId, secretKeyId);
     }
 
     @Route(secretKeyRoutes.deleteById)
     @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
-    async deleteById(@Param('teamId') teamId: string, @Param('secretKeyId') secretKeyId: string, @CurrentUser() userId: string) {
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @Param('secretKeyId') secretKeyId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteById(teamId, secretKeyId, userId);
     }
 }

@@ -66,12 +66,6 @@ export default class SocketIORoomManager {
         }
     }
 
-    getRoomsOfSocket(socketId: string): string[]{
-        const socket = this.sockets.get(socketId);
-        if(!socket) return [];
-        return Array.from(socket.rooms).filter((room) => room !== socketId);
-    }
-
     isInRoom(socketId: string, room: string): boolean{
         const socket = this.sockets.get(socketId);
         if(!socket) return false;

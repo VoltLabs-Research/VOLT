@@ -26,7 +26,10 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.downloadSamples)
-    async downloadSamples(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async downloadSamples(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.downloadSamples(this.params(req));
         await this.pipeStream(res, output.stream, {
             'Content-Type': 'application/zip',
@@ -35,41 +38,63 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.listTeamSceneArtifacts)
-    async listTeamSceneArtifacts(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async listTeamSceneArtifacts(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.service.listTeamSceneArtifacts(this.params(req)));
     }
 
     @Route(trajectoryRoutes.createUploadSession)
-    async createUploadSession(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async createUploadSession(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.createUploadSession(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
     @Route(trajectoryRoutes.commitUploadSession)
-    async commitUploadSession(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async commitUploadSession(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.commitUploadSession(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.cancelUploadSession)
-    async cancelUploadSession(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async cancelUploadSession(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         await this.service.cancelUploadSession(this.params(req, this.withAuthenticatedUserId));
         res.status(HttpStatus.NoContent).send();
     }
 
     @Route(trajectoryRoutes.list)
-    async getByTeamId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getByTeamId(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.service.getByTeamId(this.params(req)));
     }
 
     @Route(trajectoryRoutes.clone)
-    async cloneTrajectory(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async cloneTrajectory(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.cloneTrajectory(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.Accepted);
     }
 
     @Route(trajectoryRoutes.listFolders)
-    async listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>, @Res() res: Response): Promise<void> {
+    async listFolders(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>,
+        @Res() res: Response
+    ): Promise<void>{
         const result = await this.service.listFolders(teamId, {
             page: query.page ? Number(query.page) : undefined,
             limit: query.limit ? Number(query.limit) : undefined,
@@ -79,7 +104,11 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.getFolder)
-    async getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Res() res: Response): Promise<void> {
+    async getFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @Res() res: Response
+    ): Promise<void>{
         const folder = await this.service.getFolder(teamId, folderId);
         BaseResponse.success(res, folder);
     }
@@ -107,19 +136,29 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.removeFolder)
-    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Res() res: Response): Promise<void> {
+    async removeFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @Res() res: Response
+    ): Promise<void>{
         await this.service.deleteFolder(teamId, folderId);
         res.status(HttpStatus.NoContent).send();
     }
 
     @Route(trajectoryRoutes.getMetrics)
-    async getMetrics(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getMetrics(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getTeamMetrics(this.params(req));
         BaseResponse.success(res, value);
     }
 
     @Route(trajectoryRoutes.getPreview)
-    async getPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getPreview(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         try {
             const value = await this.service.getPreview(this.params(req));
             sendTrajectoryPreview(res, value);
@@ -133,21 +172,30 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.downloadAnalyses)
-    async downloadTrajectoryAnalyses(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async downloadTrajectoryAnalyses(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.downloadTrajectoryAnalyses(this.params(req));
         await output.prepare?.();
         await this.pipeStream(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.download)
-    async downloadTrajectory(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async downloadTrajectory(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.downloadTrajectory(this.params(req));
         await output.prepare?.();
         await this.pipeStream(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.getAtoms)
-    async getAtomsBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getAtomsBinary(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         if (!this.validateAtomsRequest(req, res)) {
             return;
         }
@@ -157,114 +205,171 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.getSceneArtifacts)
-    async getSceneArtifacts(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getSceneArtifacts(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         this.sendPaginated(res, await this.service.getSceneArtifacts(this.params(req)));
     }
 
     @Route(trajectoryRoutes.move)
-    async move(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async move(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.move(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.get)
-    async getById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async getById(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.update)
-    async updateById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async updateById(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.updateById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.remove)
-    async deleteById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async deleteById(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         await this.service.deleteById(this.params(req));
         res.status(HttpStatus.NoContent).send();
     }
 
     @Route(trajectoryRoutes.colorCodingProperties)
-    async colorCodingGetProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async colorCodingGetProperties(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getColorCodingProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.colorCodingStats)
-    async colorCodingGetStats(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async colorCodingGetStats(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getColorCodingStats(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.colorCodingModel)
-    async colorCodingGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async colorCodingGet(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.getColoredModelStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.colorCodingCreate)
-    async colorCodingCreate(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async colorCodingCreate(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.createColoredModel(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterProperties)
-    async particleFilterGetProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async particleFilterGetProperties(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getParticleFilterProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterPreview)
-    async particleFilterPreview(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async particleFilterPreview(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.previewParticleFilter(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterUniqueValues)
-    async particleFilterGetUniqueValues(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async particleFilterGetUniqueValues(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getParticleFilterUniqueValues(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterModel)
-    async particleFilterGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async particleFilterGet(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.getFilteredModelStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.particleFilterApply)
-    async particleFilterApplyAction(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async particleFilterApplyAction(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.applyParticleFilterAction(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.lineStyleModel)
-    async lineStyleGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async lineStyleGet(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.getLineStyledModelStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.lineStyleCreate)
-    async lineStyleCreate(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async lineStyleCreate(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.createLineStyledModel(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.lineStyleRanges)
-    async lineStyleGetRanges(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async lineStyleGetRanges(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.getLineModelRangesStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.lineStyleEntityProperties)
-    async lineStyleGetEntityProperties(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async lineStyleGetEntityProperties(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const value = await this.service.getLineEntityProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.lodOctreeMetadata)
-    async lodGetOctreeMetadata(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+    async lodGetOctreeMetadata(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.service.getOctreeMetadataStream(this.params(req));
         await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
     }

@@ -80,7 +80,10 @@ export default class ClusterObjectController extends Controller {
     readonly #transferService = new ClusterObjectTransferService();
 
     @Route(clusterObjectRoutes.write)
-    async write(@Req() request: Request, @Res() response: Response): Promise<void> {
+    async write(
+        @Req() request: Request,
+        @Res() response: Response
+    ): Promise<void>{
         try {
             await this.#transferService.write(
                 readRouteParam(request, 'teamId'),
@@ -105,7 +108,10 @@ export default class ClusterObjectController extends Controller {
     }
 
     @Route(clusterObjectRoutes.readHead)
-    async readHead(@Req() request: Request, @Res() response: Response): Promise<void> {
+    async readHead(
+        @Req() request: Request,
+        @Res() response: Response
+    ): Promise<void>{
         try {
             const head = await this.#transferService.head(
                 readRouteParam(request, 'teamId'),
@@ -126,7 +132,10 @@ export default class ClusterObjectController extends Controller {
     }
 
     @Route(clusterObjectRoutes.read)
-    async read(@Req() request: Request, @Res() response: Response): Promise<void> {
+    async read(
+        @Req() request: Request,
+        @Res() response: Response
+    ): Promise<void>{
         try {
             const rangeHeader = request.header('range') || undefined;
             const streamResponse = await this.#transferService.openRead(

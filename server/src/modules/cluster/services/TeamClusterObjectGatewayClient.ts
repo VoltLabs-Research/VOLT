@@ -6,8 +6,7 @@ import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGua
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
-    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
-    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
 } from '@shared/infrastructure/contracts/team-cluster';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import jwt from 'jsonwebtoken';
@@ -15,13 +14,20 @@ import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
+import {
+    buildCollectionPath,
+    buildComposePath,
+    buildObjectPath,
+    buildReadHeaders,
+    buildUploadHeaders,
+} from '@modules/cluster/services/object-gateway-paths';
+import type { TeamClusterObjectGatewayReadOptions } from '@modules/cluster/services/object-gateway-paths';
 import type {
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayListEntry,
     TeamClusterObjectGatewayListResponse,
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayStreamResponse,
-    TeamClusterObjectGatewayPutRequest,
     TeamClusterObjectGatewayPutStreamRequest,
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayComposeRequest
@@ -67,11 +73,6 @@ type ObjectGatewayOperationName =
     | 'compose'
     | 'delete'
     | 'delete-prefix';
-
-interface TeamClusterObjectGatewayReadOptions {
-    skipMetadata?: boolean;
-    rangeHeader?: string;
-}
 
 interface ObjectGatewayJsonListResponse {
     keys?: unknown;
@@ -122,7 +123,6 @@ interface ObjectGatewayRequestTimeouts {
 
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
-const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 const DEFAULT_LIST_LIMIT = 100;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 const TOKEN_TTL_SECONDS = 5 * 60;
@@ -141,13 +141,7 @@ const readHeaderValue = (value: string | null): string | undefined => {
         : undefined;
 };
 
-const encodePathComponent = (value: string): string => {
-    return encodeURIComponent(value);
-};
 
-const encodeObjectKeyPath = (objectKey: string): string => {
-    return objectKey.split('/').map(encodePathComponent).join('/');
-};
 
 const headersFromIncoming = (headers: http.IncomingHttpHeaders): Headers => {
     const normalized = new Headers();
@@ -309,7 +303,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
 
         const response = await this.fetchJson<ObjectGatewayJsonListResponse>(teamClusterId, {
             method: 'GET',
-            path: `${this.buildCollectionPath(request.bucket)}?${query.toString()}`
+            path: `${buildCollectionPath(request.bucket)}?${query.toString()}`
         }, 'list');
         const objects = Array.isArray(response.objects)
             ? response.objects.map(parseListEntry).filter((entry): entry is TeamClusterObjectGatewayListEntry => entry !== null)
@@ -358,7 +352,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     async head(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayHeadResponse> {
         const response = await this.fetch(teamClusterId, {
             method: 'HEAD',
-            path: this.buildObjectPath(bucket, objectKey)
+            path: buildObjectPath(bucket, objectKey)
         }, 'head');
 
         const head = parseHeadResponse(response.headers);
@@ -388,8 +382,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     ): Promise<TeamClusterObjectGatewayStreamResponse> {
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey),
-            headers: this.buildReadHeaders(options)
+            path: buildObjectPath(bucket, objectKey),
+            headers: buildReadHeaders(options)
         }, 'get');
 
         return {
@@ -402,8 +396,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     async getBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey),
-            headers: this.buildReadHeaders({ skipMetadata: true })
+            path: buildObjectPath(bucket, objectKey),
+            headers: buildReadHeaders({ skipMetadata: true })
         }, 'get');
 
         return buffer(response.stream);
@@ -412,8 +406,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     async putStream(teamClusterId: string, request: TeamClusterObjectGatewayPutStreamRequest): Promise<void> {
         await this.fetch(teamClusterId, {
             method: 'PUT',
-            path: this.buildObjectPath(request.bucket, request.objectKey),
-            headers: this.buildUploadHeaders(request),
+            path: buildObjectPath(request.bucket, request.objectKey),
+            headers: buildUploadHeaders(request),
             body: request.stream
         }, 'put').then((response) => buffer(response.stream));
     }
@@ -421,8 +415,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     async putBuffer(teamClusterId: string, request: TeamClusterObjectGatewayPutBufferRequest): Promise<void> {
         await this.fetch(teamClusterId, {
             method: 'PUT',
-            path: this.buildObjectPath(request.bucket, request.objectKey),
-            headers: this.buildUploadHeaders(request),
+            path: buildObjectPath(request.bucket, request.objectKey),
+            headers: buildUploadHeaders(request),
             body: request.buffer
         }, 'put').then((response) => buffer(response.stream));
     }
@@ -436,7 +430,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
 
         await this.fetch(teamClusterId, {
             method: 'POST',
-            path: this.buildComposePath(request.bucket),
+            path: buildComposePath(request.bucket),
             headers: {
                 'content-type': 'application/json',
                 'content-length': String(body.length)
@@ -448,7 +442,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
         await this.fetch(teamClusterId, {
             method: 'DELETE',
-            path: this.buildObjectPath(bucket, objectKey)
+            path: buildObjectPath(bucket, objectKey)
         }, 'delete').then((response) => buffer(response.stream));
     }
 
@@ -458,7 +452,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
 
         const response = await this.fetchJson<ObjectGatewayDeleteResponse>(teamClusterId, {
             method: 'DELETE',
-            path: `${this.buildCollectionPath(bucket)}?${query.toString()}`
+            path: `${buildCollectionPath(bucket)}?${query.toString()}`
         }, 'delete-prefix');
 
         return typeof response.deletedCount === 'number'
@@ -760,51 +754,6 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         return `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_ID}:${TeamClusterServiceExposureAccessMode.Http}`;
     }
 
-    private buildCollectionPath(bucket: string): string {
-        return `${OBJECT_GATEWAY_BASE_PATH}/buckets/${encodePathComponent(bucket)}/objects`;
-    }
-
-    private buildObjectPath(bucket: string, objectKey: string): string {
-        return `${this.buildCollectionPath(bucket)}/${encodeObjectKeyPath(objectKey)}`;
-    }
-
-    private buildComposePath(bucket: string): string {
-        return `${this.buildCollectionPath(bucket)}/compose`;
-    }
-
-    private buildUploadHeaders(request: TeamClusterObjectGatewayPutRequest): Record<string, string> {
-        const headers: Record<string, string> = {
-            'content-length': String(request.contentLength)
-        };
-
-        if (request.contentType) {
-            headers['content-type'] = request.contentType;
-        }
-
-        if (request.contentEncoding) {
-            headers['content-encoding'] = request.contentEncoding;
-        }
-
-        for (const [key, value] of Object.entries(request.metadata ?? {})) {
-            headers[`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
-        }
-
-        return headers;
-    }
-
-    private buildReadHeaders(options?: TeamClusterObjectGatewayReadOptions): Record<string, string> | undefined {
-        const headers: Record<string, string> = {};
-
-        if (options?.skipMetadata) {
-            headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER] = '1';
-        }
-
-        if (options?.rangeHeader) {
-            headers.range = options.rangeHeader;
-        }
-
-        return Object.keys(headers).length > 0 ? headers : undefined;
-    }
 }
 
 export default new TeamClusterObjectGatewayClient();

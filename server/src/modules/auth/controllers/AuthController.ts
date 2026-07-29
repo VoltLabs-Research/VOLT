@@ -58,7 +58,11 @@ export default class AuthController extends Controller {
     @Route(authRoutes.signIn)
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
-    signIn(@Body() body: SignInInput, @Ip() ip: string, @UserAgent() userAgent: string) {
+    signIn(
+        @Body() body: SignInInput,
+        @Ip() ip: string,
+        @UserAgent() userAgent: string
+    ){
         return this.#service.signIn(body, {
             ip,
             userAgent
@@ -68,7 +72,10 @@ export default class AuthController extends Controller {
     @Route(authRoutes.localSignIn)
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
-    localSignIn(@Ip() ip: string, @UserAgent() userAgent: string) {
+    localSignIn(
+        @Ip() ip: string,
+        @UserAgent() userAgent: string
+    ){
         return this.#service.localSignIn({
             ip,
             userAgent
@@ -77,7 +84,11 @@ export default class AuthController extends Controller {
 
     @Route(authRoutes.signUp)
     @Status(201)
-    signUp(@Body() body: SignUpInput, @Ip() ip: string, @UserAgent() userAgent: string) {
+    signUp(
+        @Body() body: SignUpInput,
+        @Ip() ip: string,
+        @UserAgent() userAgent: string
+    ){
         return this.#service.signUp(body, {
             ip,
             userAgent
@@ -129,7 +140,11 @@ export default class AuthController extends Controller {
     @Route(authRoutes.updateMyAccount)
     @Middleware(protect, avatarUpload.single('avatar'))
     @Status(200)
-    updateMyAccount(@CurrentUser() userId: string, @Body() body: UpdateAccountInput, @Req() req: AuthenticatedRequest) {
+    updateMyAccount(
+        @CurrentUser() userId: string,
+        @Body() body: UpdateAccountInput,
+        @Req() req: AuthenticatedRequest
+    ){
         return this.#service.updateAccount(userId, body, req.file);
     }
 

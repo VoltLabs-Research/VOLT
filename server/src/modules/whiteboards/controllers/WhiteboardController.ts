@@ -28,12 +28,19 @@ export default class WhiteboardController extends Controller {
 
     @Route(whiteboardRoutes.create)
     @Status(201)
-    createWhiteboard(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateWhiteboardInput) {
+    createWhiteboard(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateWhiteboardInput
+    ){
         return this.#service.createWhiteboard(teamId, userId, body);
     }
 
     @Route(whiteboardRoutes.list)
-    listWhiteboards(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+    listWhiteboards(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.listWhiteboards(teamId, {
             folderId: query.folderId,
             page: query.page !== undefined ? Number(query.page) : undefined,
@@ -42,7 +49,10 @@ export default class WhiteboardController extends Controller {
     }
 
     @Route(whiteboardRoutes.listFolders)
-    listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+    listFolders(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.listFolders(teamId, {
             parentId: query.parentId,
             page: query.page !== undefined ? Number(query.page) : undefined,
@@ -51,28 +61,46 @@ export default class WhiteboardController extends Controller {
     }
 
     @Route(whiteboardRoutes.getFolder)
-    getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+    getFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string
+    ){
         return this.#service.getFolder(teamId, folderId);
     }
 
     @Route(whiteboardRoutes.createFolder)
     @Status(201)
-    createFolder(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateWhiteboardFolderInput) {
+    createFolder(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateWhiteboardFolderInput
+    ){
         return this.#service.createFolder(teamId, userId, body);
     }
 
     @Route(whiteboardRoutes.updateFolder)
-    updateFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Body() body: UpdateWhiteboardFolderInput) {
+    updateFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @Body() body: UpdateWhiteboardFolderInput
+    ){
         return this.#service.updateFolder(teamId, folderId, body);
     }
 
     @Route(whiteboardRoutes.removeFolder)
-    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @CurrentUser() userId: string) {
+    async removeFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteFolder(teamId, folderId, userId);
     }
 
     @Route(whiteboardRoutes.get)
-    getWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string) {
+    getWhiteboard(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string
+    ){
         return this.#service.getWhiteboard(teamId, whiteboardId);
     }
 
@@ -87,18 +115,30 @@ export default class WhiteboardController extends Controller {
     }
 
     @Route(whiteboardRoutes.remove)
-    async deleteWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @CurrentUser() userId: string) {
+    async deleteWhiteboard(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteWhiteboard(teamId, whiteboardId, userId);
     }
 
     @Route(whiteboardRoutes.move)
     @Status(200)
-    async moveWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @Body() body: MoveWhiteboardInput) {
+    async moveWhiteboard(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @Body() body: MoveWhiteboardInput
+    ){
         return this.#service.moveWhiteboard(teamId, whiteboardId, body.folderId);
     }
 
     @Route(whiteboardRoutes.getState)
-    async getWhiteboardState(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @Res() res: Response): Promise<void> {
+    async getWhiteboardState(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#service.getWhiteboardState(teamId, whiteboardId);
         this.#pipeStream(res, output.stream, {
             'Content-Type': 'application/json',

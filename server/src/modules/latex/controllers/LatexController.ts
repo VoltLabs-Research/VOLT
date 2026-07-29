@@ -12,6 +12,7 @@ import logger from '@shared/infrastructure/logger';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
+import LatexAssetService from '@modules/latex/services/LatexAssetService';
 import type {
     CreateLatexDocumentInput,
     UpdateLatexDocumentInput,
@@ -27,9 +28,13 @@ import type {
 @Middleware(protect, teamScoped(Resource.LATEX))
 export default class LatexController extends Controller {
     #service = new LatexService();
+    #assets = new LatexAssetService();
 
     @Route(latexRoutes.listDocuments)
-    listDocuments(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+    listDocuments(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.listDocuments({
             teamId,
             ...query
@@ -38,7 +43,11 @@ export default class LatexController extends Controller {
 
     @Route(latexRoutes.createDocument)
     @Status(201)
-    createDocument(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateLatexDocumentInput) {
+    createDocument(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateLatexDocumentInput
+    ){
         return this.#service.createDocument({
             teamId,
             userId,
@@ -49,7 +58,11 @@ export default class LatexController extends Controller {
     @Route(latexRoutes.importDocument)
     @Status(201)
     @Middleware(upload.single('file'))
-    importDocument(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Req() req: AuthenticatedRequest) {
+    importDocument(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Req() req: AuthenticatedRequest
+    ){
         const body = (req.body ?? {}) as { folderId?: string | null };
         return this.#service.importDocument({
             teamId,
@@ -60,7 +73,10 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.getDocument)
-    getDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
+    getDocument(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string
+    ){
         return this.#service.getDocument({
             teamId,
             documentId
@@ -68,7 +84,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.deleteDocument)
-    async deleteDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @CurrentUser() userId: string) {
+    async deleteDocument(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteDocument({
             teamId,
             documentId,
@@ -93,7 +113,11 @@ export default class LatexController extends Controller {
 
     @Route(latexRoutes.moveDocument)
     @Status(200)
-    moveDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Body() body: MoveLatexDocumentInput) {
+    moveDocument(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Body() body: MoveLatexDocumentInput
+    ){
         return this.#service.moveDocument({
             teamId,
             documentId,
@@ -102,8 +126,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.listAssets)
-    listAssets(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
-        return this.#service.listAssets({
+    listAssets(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string
+    ){
+        return this.#assets.listAssets({
             teamId,
             documentId
         });
@@ -116,7 +143,7 @@ export default class LatexController extends Controller {
         @Query('key') key: string,
         @Res() res: Response
     ): Promise<void> {
-        const output = await this.#service.getAssetContent({
+        const output = await this.#assets.getAssetContent({
             teamId,
             documentId,
             key
@@ -144,7 +171,7 @@ export default class LatexController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: UploadLatexAssetInput
     ) {
-        return this.#service.uploadAsset({
+        return this.#assets.uploadAsset({
             teamId,
             documentId,
             userId,
@@ -153,8 +180,12 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.deleteAsset)
-    async deleteAsset(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('assetId') assetId: string) {
-        await this.#service.deleteAsset({
+    async deleteAsset(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Param('assetId') assetId: string
+    ){
+        await this.#assets.deleteAsset({
             teamId,
             documentId,
             assetId
@@ -168,7 +199,7 @@ export default class LatexController extends Controller {
         @Param('assetId') assetId: string,
         @Body() body: UpdateLatexAssetInput
     ) {
-        return this.#service.updateAsset({
+        return this.#assets.updateAsset({
             teamId,
             documentId,
             assetId,
@@ -177,7 +208,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.exportDocumentTex)
-    async exportDocumentTex(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+    async exportDocumentTex(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#service.exportDocumentTex({
             teamId,
             documentId
@@ -187,7 +222,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.exportDocumentZip)
-    async exportDocumentZip(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+    async exportDocumentZip(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#service.exportDocumentZip({
             teamId,
             documentId
@@ -197,7 +236,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.compileDocument)
-    async compileDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+    async compileDocument(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Res() res: Response
+    ): Promise<void>{
         const output = await this.#service.compileDocument({
             teamId,
             documentId
@@ -207,7 +250,10 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.listFiles)
-    listFiles(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
+    listFiles(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string
+    ){
         return this.#service.listFiles({
             teamId,
             documentId
@@ -246,7 +292,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.deleteFile)
-    async deleteFile(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('fileId') fileId: string) {
+    async deleteFile(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Param('fileId') fileId: string
+    ){
         await this.#service.deleteFile({
             teamId,
             documentId,
@@ -255,7 +305,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.setFileEntrypoint)
-    setFileEntrypoint(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('fileId') fileId: string) {
+    setFileEntrypoint(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Param('fileId') fileId: string
+    ){
         return this.#service.setFileEntrypoint({
             teamId,
             documentId,
@@ -264,7 +318,10 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.listFolders)
-    listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+    listFolders(
+        @Param('teamId') teamId: string,
+        @Query() query: Record<string, string>
+    ){
         return this.#service.listFolders({
             teamId,
             ...query
@@ -272,7 +329,10 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.getFolder)
-    getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+    getFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string
+    ){
         return this.#service.getFolder({
             teamId,
             folderId
@@ -281,7 +341,11 @@ export default class LatexController extends Controller {
 
     @Route(latexRoutes.createFolder)
     @Status(201)
-    createFolder(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateLatexFolderInput) {
+    createFolder(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateLatexFolderInput
+    ){
         return this.#service.createFolder({
             teamId,
             userId,
@@ -290,7 +354,11 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.updateFolder)
-    updateFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Body() body: UpdateLatexFolderInput) {
+    updateFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @Body() body: UpdateLatexFolderInput
+    ){
         return this.#service.updateFolder({
             teamId,
             folderId,
@@ -299,7 +367,10 @@ export default class LatexController extends Controller {
     }
 
     @Route(latexRoutes.removeFolder)
-    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+    async removeFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string
+    ){
         await this.#service.deleteFolder({
             teamId,
             folderId

@@ -28,7 +28,10 @@ export default class ProvenanceController extends Controller {
     #service = new ProvenanceService();
 
     @Route(provenanceRoutes.query)
-    async query(@Query() query: Record<string, string>, @Res() res: Response): Promise<void> {
+    async query(
+        @Query() query: Record<string, string>,
+        @Res() res: Response
+    ): Promise<void>{
         const { pluginName, pluginVersion, trajectoryId, executedBy, from, to, limit, skip } = query;
         const records = await this.#service.queryProvenance({
             pluginName,
@@ -44,12 +47,18 @@ export default class ProvenanceController extends Controller {
     }
 
     @Route(provenanceRoutes.get)
-    async get(@Param('provenanceId') provenanceId: string, @Res() res: Response): Promise<void> {
+    async get(
+        @Param('provenanceId') provenanceId: string,
+        @Res() res: Response
+    ): Promise<void>{
         await sendServiceResult(res, () => this.#service.getRequired(provenanceId));
     }
 
     @Route(provenanceRoutes.reproduce)
-    async reproduce(@Param('provenanceId') provenanceId: string, @Res() res: Response): Promise<void> {
+    async reproduce(
+        @Param('provenanceId') provenanceId: string,
+        @Res() res: Response
+    ): Promise<void>{
         await sendServiceResult(res, () => this.#service.getReproduction(provenanceId));
     }
 }

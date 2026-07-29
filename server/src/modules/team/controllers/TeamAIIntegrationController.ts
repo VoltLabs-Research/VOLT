@@ -24,17 +24,29 @@ export default class TeamAIIntegrationController extends Controller {
 
     @Route(teamAIIntegrationRoutes.createByProvider)
     @Status(201)
-    createByProvider(@Param('teamId') teamId: string, @Param('provider') provider: string, @CurrentUser() userId: string, @Body() body: TeamAIIntegrationMutationInput) {
+    createByProvider(
+        @Param('teamId') teamId: string,
+        @Param('provider') provider: string,
+        @CurrentUser() userId: string,
+        @Body() body: TeamAIIntegrationMutationInput
+    ){
         return this.#service.createByProvider(teamId, userId, provider, body);
     }
 
     @Route(teamAIIntegrationRoutes.updateByProvider)
-    updateByProvider(@Param('teamId') teamId: string, @Param('provider') provider: string, @Body() body: TeamAIIntegrationMutationInput) {
+    updateByProvider(
+        @Param('teamId') teamId: string,
+        @Param('provider') provider: string,
+        @Body() body: TeamAIIntegrationMutationInput
+    ){
         return this.#service.updateByProvider(teamId, provider, body);
     }
 
     @Route(teamAIIntegrationRoutes.deleteByProvider)
-    async deleteByProvider(@Param('teamId') teamId: string, @Param('provider') provider: string) {
+    async deleteByProvider(
+        @Param('teamId') teamId: string,
+        @Param('provider') provider: string
+    ){
         await this.#service.deleteByProvider(teamId, provider);
     }
 }

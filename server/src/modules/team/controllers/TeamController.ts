@@ -24,12 +24,18 @@ export default class TeamController extends Controller {
     #service = new TeamService();
 
     @Route(teamRoutes.previewJoinByCode)
-    previewJoinByCode(@CurrentUser() userId: string, @Param('code') code: string) {
+    previewJoinByCode(
+        @CurrentUser() userId: string,
+        @Param('code') code: string
+    ){
         return this.#service.previewJoinByCode(userId, code);
     }
 
     @Route(teamRoutes.joinByCode)
-    joinByCode(@CurrentUser() userId: string, @Param('code') code: string) {
+    joinByCode(
+        @CurrentUser() userId: string,
+        @Param('code') code: string
+    ){
         return this.#service.joinByCode(userId, code);
     }
 
@@ -40,7 +46,10 @@ export default class TeamController extends Controller {
 
     @Route(teamRoutes.create)
     @Status(201)
-    create(@CurrentUser() userId: string, @Body() body: CreateTeamInput) {
+    create(
+        @CurrentUser() userId: string,
+        @Body() body: CreateTeamInput
+    ){
         return this.#service.create(userId, body);
     }
 
@@ -52,49 +61,73 @@ export default class TeamController extends Controller {
 
     @Route(teamRoutes.updateById)
     @Middleware(teamScoped(Resource.TEAM))
-    updateById(@Param('teamId') teamId: string, @Body() body: UpdateTeamInput) {
+    updateById(
+        @Param('teamId') teamId: string,
+        @Body() body: UpdateTeamInput
+    ){
         return this.#service.updateById(teamId, body);
     }
 
     @Route(teamRoutes.remove)
     @Middleware(teamScoped(Resource.TEAM))
-    async deleteById(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.deleteById(teamId, userId);
     }
 
     @Route(teamRoutes.setDefaultForNewUsers)
     @Middleware(teamScoped(Resource.TEAM))
-    setDefaultForNewUsers(@Param('teamId') teamId: string, @Body() body: SetDefaultTeamInput) {
+    setDefaultForNewUsers(
+        @Param('teamId') teamId: string,
+        @Body() body: SetDefaultTeamInput
+    ){
         return this.#service.setDefaultForNewUsers(teamId, body.enabled);
     }
 
     @Route(teamRoutes.checkInvitePermission)
     @Middleware(teamScoped(Resource.TEAM))
-    checkInvitePermission(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    checkInvitePermission(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         return this.#service.checkInvitePermission(teamId, userId);
     }
 
     @Route(teamRoutes.generateInviteCode)
     @Middleware(teamScoped(Resource.TEAM))
-    generateInviteCode(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    generateInviteCode(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         return this.#service.generateInviteCode(teamId, userId);
     }
 
     @Route(teamRoutes.deleteInviteCode)
     @Middleware(teamScoped(Resource.TEAM))
-    deleteInviteCode(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    deleteInviteCode(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         return this.#service.deleteInviteCode(teamId, userId);
     }
 
     @Route(teamRoutes.getMyPermissions)
     @Middleware(teamMembership)
-    getMyPermissions(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    getMyPermissions(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         return this.#service.getMyPermissions(teamId, userId);
     }
 
     @Route(teamRoutes.leave)
     @Middleware(teamMembership)
-    async leave(@Param('teamId') teamId: string, @CurrentUser() userId: string) {
+    async leave(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string
+    ){
         await this.#service.leave(teamId, userId);
     }
 }

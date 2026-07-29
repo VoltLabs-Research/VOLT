@@ -66,7 +66,10 @@ export default class ScriptingController extends Controller {
     }
 
     @Route(scriptingRoutes.removeNotebook)
-    async removeNotebook(@Param('teamId') teamId: string, @Param('notebookId') notebookId: string) {
+    async removeNotebook(
+        @Param('teamId') teamId: string,
+        @Param('notebookId') notebookId: string
+    ){
         await this.#service.deleteNotebook({
             teamId,
             notebookId

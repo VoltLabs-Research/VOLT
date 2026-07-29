@@ -53,11 +53,6 @@ export class TrajectoryDumpStorageService {
         return this.toDumpStreamResponse(objectName, response);
     }
 
-    async getDumpStream(trajectoryId: string, timestep: string): Promise<Readable> {
-        const response = await this.getDumpResponse(trajectoryId, timestep);
-        return response.stream;
-    }
-
     async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
         const storageClusterId = await this.requireStorageClusterId(trajectoryId);
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);

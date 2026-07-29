@@ -19,6 +19,29 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import {
+    collectCleanupClusterIds,
+    didRedisMutationAffect,
+    distinctJobIds as toDistinctJobIds,
+    emptyRemoveResult,
+    emptyRetryResult,
+    getErrorMessage,
+    groupByCluster,
+    partitionByBackingSource,
+} from '@modules/jobs/services/team-job-maintenance-helpers';
+import {
+    analysisFailedKey,
+    analysisRemainingKey,
+    analysisTerminalReceiptKey,
+    analysisTerminalReceiptSetKey,
+    canvasWorkspaceIndexKey,
+    canvasWorkspaceKey,
+    glbFailedKey,
+    glbRemainingKey,
+    glbTerminalReceiptKey,
+    glbTerminalReceiptSetKey,
+    jupyterTrajectoryLockKey,
+} from '@modules/jobs/services/JobRedisKeys';
+import {
     jobStatusKey,
     jobTombstoneKey,
     projectedTeamJobsKey,
@@ -45,11 +68,6 @@ interface ClusterActionResponse {
 
 interface RuntimeCleanupResponse {
     deletedKeys: number;
-}
-
-interface PartitionedJobs {
-    daemonJobs: TeamJobSummary[];
-    localJobs: TeamJobSummary[];
 }
 
 interface GlbPreprocessingEnqueueResult {
@@ -80,14 +98,14 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {
         if (targetJobs.length === 0) {
-            return this.emptyRemoveResult();
+            return emptyRemoveResult();
         }
 
-        const { daemonJobs, localJobs } = this.partitionByBackingSource(targetJobs);
+        const { daemonJobs, localJobs } = partitionByBackingSource(targetJobs);
         const clusterFailures: TeamClusterFailureDetail[] = [];
         const clustersReached = new Set<string>();
 
-        for (const [teamClusterId, clusterJobs] of this.groupByCluster(daemonJobs)) {
+        for (const [teamClusterId, clusterJobs] of groupByCluster(daemonJobs)) {
             const requestedJobIds = clusterJobs.map((job) => job.jobId);
             try {
                 const response = await this.teamClusterDaemonClient.command<ClusterActionResponse>(
@@ -115,7 +133,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
                     requestedJobs: clusterJobs.length,
                     affectedJobs: 0,
                     reason: 'command-failed',
-                    message: this.getErrorMessage(error)
+                    message: getErrorMessage(error)
                 });
                 logger.warn(error, `[TeamJobMaintenanceService] Failed to remove jobs on cluster ${teamClusterId}`);
             }
@@ -163,7 +181,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             (job) => job.trajectoryId === input.trajectoryId
         );
         const removableJobs = allTargetJobs.filter((job) => REMOVABLE_STATUSES.has(job.status));
-        const distinctJobIds = this.distinctJobIds(allTargetJobs);
+        const distinctJobIds = toDistinctJobIds(allTargetJobs);
         const daemonClusterIds = await this.stopDaemonJobsBestEffort(removableJobs);
 
         await this.dropProjectedJobs(input.teamId, allTargetJobs, {
@@ -175,7 +193,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             this.cleanupLocalAnalysisSessionStates(input.analysisIds ?? [])
         ]);
 
-        const cleanupClusterIds = this.collectCleanupClusterIds(
+        const cleanupClusterIds = collectCleanupClusterIds(
             input.storageClusterId,
             input.analysisComputeClusterIds ?? [],
             daemonClusterIds
@@ -198,7 +216,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             (job) => job.analysisId === input.analysisId
         );
         const removableJobs = allTargetJobs.filter((job) => REMOVABLE_STATUSES.has(job.status));
-        const distinctJobIds = this.distinctJobIds(allTargetJobs);
+        const distinctJobIds = toDistinctJobIds(allTargetJobs);
         const daemonClusterIds = await this.stopDaemonJobsBestEffort(removableJobs);
 
         await this.dropProjectedJobs(input.teamId, allTargetJobs, {
@@ -207,7 +225,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
         await this.cleanupLocalAnalysisSessionState(input.analysisId);
 
-        const cleanupClusterIds = this.collectCleanupClusterIds(
+        const cleanupClusterIds = collectCleanupClusterIds(
             input.computeClusterId,
             [],
             daemonClusterIds
@@ -239,7 +257,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
     async retryJobs(teamId: string, jobIds: string[]): Promise<RetryTeamJobsResult> {
         if (jobIds.length === 0) {
-            return this.emptyRetryResult();
+            return emptyRetryResult();
         }
 
         const targetJobs = await this.resolveJobs(teamId, jobIds);
@@ -248,20 +266,20 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
     private async retryResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RetryTeamJobsResult> {
         if (targetJobs.length === 0) {
-            return this.emptyRetryResult();
+            return emptyRetryResult();
         }
 
-        const { daemonJobs } = this.partitionByBackingSource(targetJobs);
+        const { daemonJobs } = partitionByBackingSource(targetJobs);
 
         if (daemonJobs.length === 0) {
-            return this.emptyRetryResult();
+            return emptyRetryResult();
         }
 
         const clusterFailures: TeamClusterFailureDetail[] = [];
         let retriedFrames = 0;
         let affectedClusters = 0;
 
-        for (const [teamClusterId, clusterJobs] of this.groupByCluster(daemonJobs)) {
+        for (const [teamClusterId, clusterJobs] of groupByCluster(daemonJobs)) {
             const requestedJobIds = clusterJobs.map((job) => job.jobId);
             try {
                 const response = await this.teamClusterDaemonClient.command<ClusterActionResponse>(
@@ -301,7 +319,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
                     requestedJobs: clusterJobs.length,
                     affectedJobs: 0,
                     reason: 'command-failed',
-                    message: this.getErrorMessage(error)
+                    message: getErrorMessage(error)
                 });
                 logger.warn(error, `[TeamJobMaintenanceService] Failed to retry jobs on cluster ${teamClusterId}`);
             }
@@ -430,40 +448,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         return teamJobs.filter((job) => targetSet.has(job.jobId));
     }
 
-    private partitionByBackingSource(jobs: TeamJobSummary[]): PartitionedJobs {
-        const daemonJobs: TeamJobSummary[] = [];
-        const localJobs: TeamJobSummary[] = [];
 
-        for (const job of jobs) {
-            if (this.isDaemonJob(job)) {
-                daemonJobs.push(job);
-                continue;
-            }
-
-            localJobs.push(job);
-        }
-
-        return {
-            daemonJobs,
-            localJobs
-        };
-    }
-
-    private groupByCluster(jobs: TeamJobSummary[]): Map<string, TeamJobSummary[]> {
-        const grouped = new Map<string, TeamJobSummary[]>();
-
-        for (const job of jobs) {
-            if (!job.teamClusterId) {
-                throw new Error(`[TeamJobMaintenanceService] Missing teamClusterId for daemon job ${job.jobId}`);
-            }
-
-            const bucket = grouped.get(job.teamClusterId) ?? [];
-            bucket.push(job);
-            grouped.set(job.teamClusterId, bucket);
-        }
-
-        return grouped;
-    }
 
     private async dropProjectedJobs(
         teamId: string,
@@ -514,7 +499,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
         for (const job of jobs) {
             const analysisId = analysisIdsByJobId.get(job.jobId);
-            const delResult = this.didRedisMutationAffect(results[index]);
+            const delResult = didRedisMutationAffect(results[index]);
             index += 1;
             index += 1;
             index += 1;
@@ -538,12 +523,12 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     }
 
     private async stopDaemonJobsBestEffort(targetJobs: TeamJobSummary[]): Promise<string[]> {
-        const { daemonJobs } = this.partitionByBackingSource(targetJobs);
+        const { daemonJobs } = partitionByBackingSource(targetJobs);
         if (daemonJobs.length === 0) {
             return [];
         }
 
-        const grouped = this.groupByCluster(daemonJobs);
+        const grouped = groupByCluster(daemonJobs);
 
         await Promise.all(Array.from(grouped.entries()).map(async ([teamClusterId, clusterJobs]) => {
             try {
@@ -603,23 +588,23 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
     private async cleanupLocalTrajectoryRuntimeState(teamId: string, trajectoryId: string): Promise<void> {
         const [glbTerminalKeys, canvasOwnerIds] = await Promise.all([
-            this.redis.smembers(this.glbTerminalReceiptSetKey(trajectoryId)),
-            this.redis.smembers(this.canvasWorkspaceIndexKey(trajectoryId))
+            this.redis.smembers(glbTerminalReceiptSetKey(trajectoryId)),
+            this.redis.smembers(canvasWorkspaceIndexKey(trajectoryId))
         ]);
         const pipeline = this.redis.pipeline();
 
-        pipeline.del(this.glbRemainingKey(trajectoryId));
-        pipeline.del(this.glbFailedKey(trajectoryId));
-        pipeline.del(this.glbTerminalReceiptSetKey(trajectoryId));
-        pipeline.del(this.jupyterTrajectoryLockKey(teamId, trajectoryId));
-        pipeline.del(this.canvasWorkspaceIndexKey(trajectoryId));
+        pipeline.del(glbRemainingKey(trajectoryId));
+        pipeline.del(glbFailedKey(trajectoryId));
+        pipeline.del(glbTerminalReceiptSetKey(trajectoryId));
+        pipeline.del(jupyterTrajectoryLockKey(teamId, trajectoryId));
+        pipeline.del(canvasWorkspaceIndexKey(trajectoryId));
 
         for (const terminalKey of glbTerminalKeys) {
             pipeline.del(terminalKey);
         }
 
         for (const ownerId of canvasOwnerIds) {
-            pipeline.del(this.canvasWorkspaceKey(trajectoryId, ownerId));
+            pipeline.del(canvasWorkspaceKey(trajectoryId, ownerId));
         }
 
         await pipeline.exec();
@@ -633,12 +618,12 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     }
 
     private async cleanupLocalAnalysisSessionState(analysisId: string): Promise<void> {
-        const terminalKeys = await this.redis.smembers(this.analysisTerminalReceiptSetKey(analysisId));
+        const terminalKeys = await this.redis.smembers(analysisTerminalReceiptSetKey(analysisId));
         const pipeline = this.redis.pipeline();
 
-        pipeline.del(this.analysisRemainingKey(analysisId));
-        pipeline.del(this.analysisFailedKey(analysisId));
-        pipeline.del(this.analysisTerminalReceiptSetKey(analysisId));
+        pipeline.del(analysisRemainingKey(analysisId));
+        pipeline.del(analysisFailedKey(analysisId));
+        pipeline.del(analysisTerminalReceiptSetKey(analysisId));
 
         for (const terminalKey of terminalKeys) {
             pipeline.del(terminalKey);
@@ -647,43 +632,23 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         await pipeline.exec();
     }
 
-    private collectCleanupClusterIds(
-        primaryClusterId: string | undefined,
-        additionalClusterIds: string[],
-        daemonClusterIds: string[]
-    ): string[] {
-        return [
-            primaryClusterId,
-            ...additionalClusterIds,
-            ...daemonClusterIds
-        ].filter((clusterId): clusterId is string => typeof clusterId === 'string' && clusterId.length > 0)
-            .filter((clusterId, index, values) => values.indexOf(clusterId) === index);
-    }
 
-    private distinctJobIds(jobs: TeamJobSummary[]): string[] {
-        return [...new Set(jobs.map((job) => job.jobId).filter((jobId) => jobId.trim().length > 0))];
-    }
 
-    private isDaemonJob(job: TeamJobSummary): boolean {
-        return typeof job.teamClusterId === 'string'
-            && job.teamClusterId.length > 0
-            && job.backingSource === 'daemon';
-    }
 
     private async resetRetriedDaemonJobState(job: TeamJobSummary): Promise<void> {
         const { analysisId, trajectoryId } = job;
         const pipeline = this.redis.pipeline();
 
         if (job.queueType === 'analysis_processing' && analysisId) {
-            const terminalReceiptKey = this.analysisTerminalReceiptKey(analysisId, job.jobId);
+            const terminalReceiptKey = analysisTerminalReceiptKey(analysisId, job.jobId);
             pipeline.del(terminalReceiptKey);
-            pipeline.srem(this.analysisTerminalReceiptSetKey(analysisId), terminalReceiptKey);
+            pipeline.srem(analysisTerminalReceiptSetKey(analysisId), terminalReceiptKey);
         }
 
         if (job.queueType === 'trajectory_glb_conversion' && trajectoryId) {
-            const terminalReceiptKey = this.glbTerminalReceiptKey(trajectoryId, job.jobId);
+            const terminalReceiptKey = glbTerminalReceiptKey(trajectoryId, job.jobId);
             pipeline.del(terminalReceiptKey);
-            pipeline.srem(this.glbTerminalReceiptSetKey(trajectoryId), terminalReceiptKey);
+            pipeline.srem(glbTerminalReceiptSetKey(trajectoryId), terminalReceiptKey);
         }
 
         await pipeline.exec();
@@ -703,87 +668,10 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         });
     }
 
-    private getErrorMessage(error: unknown): string | undefined {
-        if (error instanceof Error && error.message.trim().length > 0) {
-            return error.message;
-        }
 
-        return undefined;
-    }
 
-    private didRedisMutationAffect(result: [Error | null, unknown] | undefined): boolean {
-        if (!result) {
-            return false;
-        }
 
-        const [error, value] = result;
-        if (error) {
-            return false;
-        }
 
-        return typeof value === 'number' && value > 0;
-    }
-
-    private emptyRemoveResult(): RemoveTeamJobsResult {
-        return {
-            deletedJobs: 0,
-            deletedAnalyses: 0,
-            affectedClusters: 0,
-            clusterFailures: []
-        };
-    }
-
-    private emptyRetryResult(): RetryTeamJobsResult {
-        return {
-            retriedFrames: 0,
-            affectedClusters: 0,
-            clusterFailures: []
-        };
-    }
-
-    private analysisRemainingKey(analysisId: string): string {
-        return `daemon-analysis:${analysisId}:remaining`;
-    }
-
-    private analysisFailedKey(analysisId: string): string {
-        return `daemon-analysis:${analysisId}:failed`;
-    }
-
-    private analysisTerminalReceiptKey(analysisId: string, jobId: string): string {
-        return `daemon-analysis:${analysisId}:terminal:${jobId}`;
-    }
-
-    private analysisTerminalReceiptSetKey(analysisId: string): string {
-        return `daemon-analysis:${analysisId}:terminal-keys`;
-    }
-
-    private glbTerminalReceiptKey(trajectoryId: string, jobId: string): string {
-        return `daemon-glb:${trajectoryId}:terminal:${jobId}`;
-    }
-
-    private glbTerminalReceiptSetKey(trajectoryId: string): string {
-        return `daemon-glb:${trajectoryId}:terminal-keys`;
-    }
-
-    private glbRemainingKey(trajectoryId: string): string {
-        return `daemon-glb:${trajectoryId}:remaining`;
-    }
-
-    private glbFailedKey(trajectoryId: string): string {
-        return `daemon-glb:${trajectoryId}:failed`;
-    }
-
-    private canvasWorkspaceKey(trajectoryId: string, ownerId: string): string {
-        return `canvas:workspace:${trajectoryId}:${ownerId}`;
-    }
-
-    private canvasWorkspaceIndexKey(trajectoryId: string): string {
-        return `canvas:workspace:index:${trajectoryId}`;
-    }
-
-    private jupyterTrajectoryLockKey(teamId: string, trajectoryId: string): string {
-        return `lock:jupyter:${teamId}:trajectory:${trajectoryId}`;
-    }
 }
 
 export default new TeamJobMaintenanceService();

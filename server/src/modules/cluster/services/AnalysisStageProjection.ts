@@ -1,0 +1,307 @@
+
+import type {
+    Analysis,
+    AnalysisArtifactStatus,
+    AnalysisChildAnalysis,
+    AnalysisExpectedArtifact,
+    AnalysisStage,
+    AnalysisStageStatus
+} from '@shared/contracts/types';
+import { JobStatus } from '@shared/contracts/types';
+import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/domain/daemon-analysis-jobs';
+
+/**
+ * Pure projection rules for analysis stages, child analyses and expected
+ * artifacts. Decides how a daemon stage report changes the stored analysis
+ * without touching persistence or the event bus.
+ */
+export default class AnalysisStageProjection{
+    toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
+        return {
+            stageKey: input.stageKey,
+            label: input.label,
+            type: input.stageType,
+            status: input.stageStatus,
+            timestep,
+            pluginId: input.pluginId,
+            pluginDisplayName: input.pluginDisplayName,
+            nodeId: input.nodeId,
+            exposureId: input.exposureId,
+            configHash: input.configHash,
+            cacheHit: input.cacheHit,
+            detail: input.detail,
+            startedAt: this.#parseDate(input.startedAt),
+            finishedAt: this.#parseDate(input.finishedAt),
+            durationMs: input.durationMs
+        };
+    }
+
+    upsertStage(stages: AnalysisStage[], stage: AnalysisStage): AnalysisStage[] {
+        const index = stages.findIndex((candidate) => this.isSameStageIdentity(candidate, stage));
+        if (index < 0) {
+            return [...stages, stage];
+        }
+
+        const previous = stages[index];
+        if (previous && this.shouldIgnoreStageUpdate(previous, stage)) {
+            return stages;
+        }
+
+        const next = [...stages];
+        next[index] = {
+            ...previous,
+            ...stage,
+            startedAt: stage.startedAt ?? previous.startedAt,
+            finishedAt: stage.finishedAt ?? previous.finishedAt,
+            durationMs: stage.durationMs ?? previous.durationMs
+        };
+        return next;
+    }
+
+    isSameStageIdentity(left: AnalysisStage, right: AnalysisStage): boolean {
+        return left.stageKey === right.stageKey
+            && this.#hasSameTimestepIdentity(left.timestep, right.timestep);
+    }
+
+    #hasSameTimestepIdentity(left?: number, right?: number): boolean {
+        const hasLeftTimestep = typeof left === 'number';
+        const hasRightTimestep = typeof right === 'number';
+
+        if (hasLeftTimestep || hasRightTimestep) {
+            return left === right;
+        }
+
+        return true;
+    }
+
+    shouldIgnoreStageUpdate(previous: AnalysisStage, next: AnalysisStage): boolean {
+        if (!this.#isTerminalStageStatus(previous.status) || this.#isTerminalStageStatus(next.status)) {
+            return false;
+        }
+
+        const previousFinishedAt = previous.finishedAt?.getTime();
+        const nextStartedAt = next.startedAt?.getTime();
+        return typeof previousFinishedAt === 'number'
+            && typeof nextStartedAt === 'number'
+            && nextStartedAt <= previousFinishedAt;
+    }
+
+    #isTerminalStageStatus(status: AnalysisStageStatus): boolean {
+        return status === 'completed' || status === 'failed' || status === 'cached';
+    }
+
+    updateExpectedArtifactsForStage(
+        artifacts: AnalysisExpectedArtifact[],
+        stage: AnalysisStage
+    ): AnalysisExpectedArtifact[] {
+        if (stage.type !== 'exposure' || !stage.exposureId) {
+            return artifacts;
+        }
+
+        const nextStatus = stage.status === 'failed'
+            ? 'failed'
+            : stage.status === 'running'
+                ? 'generating'
+                : stage.status === 'completed' || stage.status === 'cached'
+                    ? 'uploading'
+                    : undefined;
+
+        if (!nextStatus) {
+            return artifacts;
+        }
+
+        return artifacts.map((artifact) => artifact.exposureId === stage.exposureId
+            ? {
+                ...artifact,
+                status: artifact.status === 'ready' && nextStatus !== 'failed'
+                    ? artifact.status
+                    : nextStatus
+            }
+            : artifact);
+    }
+
+    upsertChildAnalysisForStage(
+        childAnalyses: AnalysisChildAnalysis[],
+        stage: AnalysisStage
+    ): AnalysisChildAnalysis[] {
+        if (stage.type !== 'plugin-ref' || !stage.pluginId) {
+            return childAnalyses;
+        }
+
+        const child: AnalysisChildAnalysis = {
+            id: stage.stageKey,
+            pluginId: stage.pluginId,
+            pluginDisplayName: stage.pluginDisplayName,
+            configHash: stage.configHash,
+            timestep: stage.timestep,
+            status: stage.status,
+            cacheHit: stage.cacheHit,
+            startedAt: stage.startedAt,
+            finishedAt: stage.finishedAt,
+            durationMs: stage.durationMs
+        };
+        const index = childAnalyses.findIndex((candidate) => this.#isSameChildAnalysisIdentity(candidate, child));
+        if (index < 0) {
+            return [...childAnalyses, child];
+        }
+
+        const next = [...childAnalyses];
+        if (this.#shouldIgnoreChildAnalysisUpdate(next[index]!, child)) {
+            return childAnalyses;
+        }
+
+        next[index] = {
+            ...next[index],
+            ...child,
+            startedAt: child.startedAt ?? next[index].startedAt,
+            finishedAt: child.finishedAt ?? next[index].finishedAt,
+            durationMs: child.durationMs ?? next[index].durationMs
+        };
+        return next;
+    }
+
+    #isSameChildAnalysisIdentity(left: AnalysisChildAnalysis, right: AnalysisChildAnalysis): boolean {
+        return left.id === right.id
+            && this.#hasSameTimestepIdentity(left.timestep, right.timestep);
+    }
+
+    #shouldIgnoreChildAnalysisUpdate(previous: AnalysisChildAnalysis, next: AnalysisChildAnalysis): boolean {
+        if (!this.#isTerminalStageStatus(previous.status) || this.#isTerminalStageStatus(next.status)) {
+            return false;
+        }
+
+        const previousFinishedAt = previous.finishedAt?.getTime();
+        const nextStartedAt = next.startedAt?.getTime();
+        return typeof previousFinishedAt === 'number'
+            && typeof nextStartedAt === 'number'
+            && nextStartedAt <= previousFinishedAt;
+    }
+
+    resolveArtifactStatusForStage(
+        currentStatus: AnalysisArtifactStatus,
+        expectedArtifacts: AnalysisExpectedArtifact[],
+        stage: AnalysisStage
+    ): AnalysisArtifactStatus {
+        if (stage.status === 'failed') {
+            return 'failed';
+        }
+        if (currentStatus === 'ready') {
+            return currentStatus;
+        }
+        if (stage.type === 'exposure' && stage.status === 'running') {
+            return 'generating';
+        }
+        if (stage.type === 'exposure' && (stage.status === 'completed' || stage.status === 'cached')) {
+            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+        }
+        if (stage.type === 'artifact-upload' && stage.status === 'running') {
+            return 'uploading';
+        }
+        if (stage.type === 'artifact-upload' && stage.status === 'completed') {
+            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+        }
+        return currentStatus;
+    }
+
+    resolveArtifactStatusForUpload(
+        expectedArtifacts: AnalysisExpectedArtifact[],
+        status: JobStatus
+    ): AnalysisArtifactStatus {
+        if (status === JobStatus.Failed) {
+            return 'failed';
+        }
+        if (status === JobStatus.Queued || status === JobStatus.Running || status === JobStatus.Completed) {
+            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+        }
+        return 'pending';
+    }
+
+    #areArtifactsReady(expectedArtifacts: AnalysisExpectedArtifact[]): boolean {
+        return expectedArtifacts.length > 0
+            && expectedArtifacts.every((artifact) => artifact.status === 'ready');
+    }
+
+    #parseDate(value: string | undefined): Date | undefined {
+        if (!value) {
+            return undefined;
+        }
+
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? undefined : date;
+    }
+
+    closeRunningStages(
+        stages: AnalysisStage[] | undefined,
+        finalStatus: Analysis['props']['status'],
+        finishedAt: Date
+    ): AnalysisStage[] | undefined {
+        if (!stages?.length) {
+            return stages;
+        }
+
+        const stageStatus: AnalysisStageStatus = finalStatus === 'failed' ? 'failed' : 'completed';
+        return stages.map((stage) => {
+            if (stage.status !== 'running') {
+                return stage;
+            }
+
+            return {
+                ...stage,
+                status: stageStatus,
+                finishedAt,
+                durationMs: stage.durationMs
+                    ?? (stage.startedAt ? Math.max(0, finishedAt.getTime() - stage.startedAt.getTime()) : undefined)
+            };
+        });
+    }
+
+    closeRunningChildAnalyses(
+        childAnalyses: AnalysisChildAnalysis[] | undefined,
+        finalStatus: Analysis['props']['status'],
+        finishedAt: Date
+    ): AnalysisChildAnalysis[] | undefined {
+        if (!childAnalyses?.length) {
+            return childAnalyses;
+        }
+
+        const stageStatus: AnalysisStageStatus = finalStatus === 'failed' ? 'failed' : 'completed';
+        return childAnalyses.map((child) => {
+            if (child.status !== 'running') {
+                return child;
+            }
+
+            return {
+                ...child,
+                status: stageStatus,
+                finishedAt,
+                durationMs: child.durationMs
+                    ?? (child.startedAt ? Math.max(0, finishedAt.getTime() - child.startedAt.getTime()) : undefined)
+            };
+        });
+    }
+
+    closeGeneratingArtifacts(
+        expectedArtifacts: AnalysisExpectedArtifact[] | undefined,
+        finalStatus: Analysis['props']['status']
+    ): AnalysisExpectedArtifact[] | undefined {
+        if (!expectedArtifacts?.length) {
+            return expectedArtifacts;
+        }
+
+        let changed = false;
+        const nextArtifacts = expectedArtifacts.map((artifact) => {
+            if (artifact.status !== 'generating') {
+                return artifact;
+            }
+
+            changed = true;
+            const nextStatus: AnalysisExpectedArtifact['status'] = finalStatus === 'failed' ? 'failed' : 'uploading';
+            return {
+                ...artifact,
+                status: nextStatus
+            };
+        });
+
+        return changed ? nextArtifacts : expectedArtifacts;
+    }
+}

@@ -2,7 +2,6 @@ import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
-import storagePlacementService, { StoragePlacementService } from '@modules/cluster/services/StoragePlacementService';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
@@ -59,7 +58,6 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
 };
 
 class TrajectoryCloneCoordinator{
-    private readonly storagePlacementService: StoragePlacementService = storagePlacementService;
 
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
@@ -347,10 +345,6 @@ class TrajectoryCloneCoordinator{
         }catch(error){
             logger.warn({ err: error }, `[TrajectoryCloneCoordinator] Failed to publish projection for job=${job.id}`);
         }
-    }
-
-    ensureDestinationPlacement(trajectoryId: string): Promise<void>{
-        return this.storagePlacementService.ensurePlacement('trajectory', trajectoryId).then(() => undefined);
     }
 }
 

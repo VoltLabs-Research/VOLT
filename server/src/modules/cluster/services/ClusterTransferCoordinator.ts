@@ -1,30 +1,24 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+
+import MongoListingReplicator from '@modules/cluster/services/MongoListingReplicator';
+import ClusterTransferJobStore from '@modules/cluster/services/ClusterTransferJobStore';
+import ClusterTransferJobProjector from '@modules/cluster/services/ClusterTransferJobProjector';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
-import Analysis from '@modules/analysis/models/Analysis';
-import Trajectory from '@modules/trajectory/models/Trajectory';
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
 import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
-import { JobStatus } from '@shared/contracts/types';
 import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
     SOFT_STORAGE_LIMIT_PCT
 } from '@shared/application/utilities/cluster-storage-policy';
-import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import {
-    ClusterTransferJobReason as ClusterTransferJobReasonColumn,
-    ClusterTransferJobState as ClusterTransferJobStateColumn,
     createClusterTransferJobProps
 } from '@modules/cluster/contracts/domain/cluster-transfer-job';
 import type {
-    ClusterTransferJobReason,
-    ClusterTransferJobState
+    ClusterTransferJobReason
 } from '@volt/contracts/modules/cluster/domain';
-import { StoragePlacementScopeType as StoragePlacementScopeTypeColumn } from '@modules/cluster/contracts/domain/storage-placement';
 import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -34,17 +28,16 @@ import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';
-import {
-    ChannelCommands,
-    type TeamClusterDaemonPluginMongoDocumentType,
-    type TeamClusterDaemonPluginMongoExportResult,
-    type TeamClusterDaemonPluginMongoImportResult,
-    type TeamClusterDaemonPluginMongoPurgeResult
-} from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import { In, IsNull, LessThanOrEqual, Or } from 'typeorm';
 import type { Readable } from 'node:stream';
 import storagePlacementService from './StoragePlacementService';
+import {
+    CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS,
+    CLUSTER_TRANSFER_CLAIM_TTL_MS,
+    TRANSFER_PROGRESS_FLUSH_EVERY_BYTES,
+    TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS,
+    isOpenTransferJobState
+} from '@modules/cluster/services/cluster-transfer-constants';
 
 interface ObjectHeadSnapshot {
     contentLength?: number;
@@ -66,82 +59,8 @@ interface ObjectListEntry {
     lastModified?: Date;
 }
 
-const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobStateColumn[] = [
-    ClusterTransferJobStateColumn.Queued,
-    ClusterTransferJobStateColumn.Freezing,
-    ClusterTransferJobStateColumn.Copying,
-    ClusterTransferJobStateColumn.Verifying,
-    ClusterTransferJobStateColumn.Switching,
-    ClusterTransferJobStateColumn.Cleaning
-];
 
-const isOpenTransferJobState = (state: ClusterTransferJobState): boolean => {
-    return OPEN_TRANSFER_JOB_STATES.includes(state as ClusterTransferJobStateColumn);
-};
 
-const MONGO_TRANSFER_BATCH_SIZE = 200;
-const MONGO_DOCUMENT_TYPES: TeamClusterDaemonPluginMongoDocumentType[] = ['listing', 'sub-listing'];
-const CLUSTER_TRANSFER_QUEUE_TYPE = 'cluster_transfer';
-const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID = 'cluster-transfer-operations';
-const CLUSTER_TRANSFER_CLAIM_TTL_MS = 5 * 60 * 1000;
-const CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS = 60 * 1000;
-const CLUSTER_TRANSFER_WORKER_ID = `${process.pid}:${Math.random().toString(36).slice(2, 10)}`;
-const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME = 'Cluster Transfers';
-const TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS = 50;
-const TRANSFER_PROGRESS_FLUSH_EVERY_BYTES = 64 * 1024 * 1024;
-
-const mapTransferStateToJobStatus = (state: ClusterTransferJobState): JobStatus => {
-    switch (state) {
-        case 'completed':
-            return JobStatus.Completed;
-        case 'failed':
-            return JobStatus.Failed;
-        case 'queued':
-            return JobStatus.Queued;
-        default:
-            return JobStatus.Running;
-    }
-};
-
-const getTransferJobName = (scopeType: StoragePlacementScopeType): string => {
-    switch (scopeType) {
-        case 'trajectory':
-            return 'Trajectory Transfer';
-        case 'analysis':
-            return 'Analysis Transfer';
-        default:
-            return 'Storage Transfer';
-    }
-};
-
-const getTransferJobMessage = (job: ClusterTransferJob): string => {
-    switch (job.props.state) {
-        case 'queued':
-            return 'Waiting for transfer worker';
-        case 'freezing':
-            return 'Freezing source placement';
-        case 'copying':
-            return 'Copying authoritative storage objects';
-        case 'verifying':
-            return 'Verifying copied storage objects';
-        case 'switching':
-            return 'Switching authoritative storage owner';
-        case 'cleaning':
-            return 'Cleaning source cluster copy';
-        case 'completed':
-            return 'Transfer completed';
-        case 'failed':
-            return job.props.errorMessage || 'Transfer failed';
-        default:
-            return 'Transfer update';
-    }
-};
-
-interface TransferJobProjectionContext {
-    trajectoryId: string;
-    trajectoryName: string;
-    analysisId?: string;
-}
 
 const normalizeOpaqueTag = (value?: string): string | undefined => {
     if (!value) {
@@ -191,12 +110,13 @@ interface TransferRequestInput {
 class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
     private readonly systemMetricsRepository = systemMetricsRepository;
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
+        private readonly mongoListings = new MongoListingReplicator();
+        private readonly jobStore = new ClusterTransferJobStore();
+        private readonly jobProjector = new ClusterTransferJobProjector();
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
-        private readonly eventBus = eventBus;
 
     async requestTransfer(input: TransferRequestInput): Promise<ClusterTransferJob> {
         const placement = await this.storagePlacementService.ensurePlacement(input.scopeType, input.scopeId);
@@ -215,7 +135,7 @@ class ClusterTransferCoordinator {
                 }
             );
 
-            const completedJob = await this.createTransferJob(createClusterTransferJobProps({
+            const completedJob = await this.jobStore.createTransferJob(createClusterTransferJobProps({
                 team: input.teamId,
                 scopeType: input.scopeType,
                 scopeId: input.scopeId,
@@ -230,14 +150,14 @@ class ClusterTransferCoordinator {
                 finishedAt: new Date()
             }));
 
-            await this.publishTransferJobProjection(completedJob);
+            await this.jobProjector.publishTransferJobProjection(completedJob);
 
             return completedJob;
         }
 
-        const openTransferJob = await this.findOpenTransferJobByScope(input.scopeType, input.scopeId);
+        const openTransferJob = await this.jobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
         if (openTransferJob && openTransferJob.props.destinationClusterId === input.destinationClusterId) {
-            await this.publishTransferJobProjection(openTransferJob);
+            await this.jobProjector.publishTransferJobProjection(openTransferJob);
             return openTransferJob;
         }
 
@@ -245,7 +165,7 @@ class ClusterTransferCoordinator {
 
         let queuedJob: ClusterTransferJob;
         try {
-            queuedJob = await this.createTransferJob(createClusterTransferJobProps({
+            queuedJob = await this.jobStore.createTransferJob(createClusterTransferJobProps({
                 team: input.teamId,
                 scopeType: input.scopeType,
                 scopeId: input.scopeId,
@@ -257,15 +177,15 @@ class ClusterTransferCoordinator {
                 reason: input.reason ?? 'manual'
             }));
         } catch (error) {
-            const duplicate = await this.findOpenTransferJobByScope(input.scopeType, input.scopeId);
+            const duplicate = await this.jobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
             if (duplicate) {
-                await this.publishTransferJobProjection(duplicate);
+                await this.jobProjector.publishTransferJobProjection(duplicate);
                 return duplicate;
             }
             throw error;
         }
 
-        await this.publishTransferJobProjection(queuedJob);
+        await this.jobProjector.publishTransferJobProjection(queuedJob);
 
         return queuedJob;
     }
@@ -274,13 +194,13 @@ class ClusterTransferCoordinator {
         let processedJobs = 0;
 
         while (processedJobs < limit) {
-            const claimedJob = await this.claimNextRunnable();
+            const claimedJob = await this.jobStore.claimNextRunnable();
             if (!claimedJob) {
                 break;
             }
 
             const renewTimer = setInterval(() => {
-                void this.renewClaim(
+                void this.jobStore.renewClaim(
                     claimedJob.id,
                     CLUSTER_TRANSFER_CLAIM_TTL_MS
                 ).catch((error) => {
@@ -296,7 +216,7 @@ class ClusterTransferCoordinator {
                 await this.executeJob(claimedJob.id);
             } finally {
                 clearInterval(renewTimer);
-                await this.releaseClaim(claimedJob.id).catch(() => undefined);
+                await this.jobStore.releaseClaim(claimedJob.id).catch(() => undefined);
             }
             processedJobs += 1;
         }
@@ -331,7 +251,7 @@ class ClusterTransferCoordinator {
                 continue;
             }
 
-            const existingJob = await this.findOpenTransferJobByScope(
+            const existingJob = await this.jobStore.findOpenTransferJobByScope(
                 candidatePlacement.props.scopeType,
                 candidatePlacement.props.scopeId
             );
@@ -371,7 +291,7 @@ class ClusterTransferCoordinator {
 
         await this.assertTransferClusters(placement, job.props.destinationClusterId);
 
-        const startedJob = await this.setJobState(job.id, 'freezing', {
+        const startedJob = await this.jobStore.setJobState(job.id, 'freezing', {
             startedAt: job.props.startedAt ?? new Date(),
             errorCode: null,
             errorMessage: null
@@ -383,8 +303,8 @@ class ClusterTransferCoordinator {
             await this.storagePlacementService.setPlacementState(job.props.scopeType, job.props.scopeId, 'read-only');
             const copiedJob = await this.copyPlacement(startedJob, placement);
             const verificationResult = await this.verifyPlacement(copiedJob, placement);
-            await this.replicateMongoListings(copiedJob);
-            const switchingJob = await this.setJobState(copiedJob.id, 'switching', {}, {
+            await this.mongoListings.replicateMongoListings(copiedJob);
+            const switchingJob = await this.jobStore.setJobState(copiedJob.id, 'switching', {}, {
                 publishUpdate: true
             });
             const nextReplicaClusterIds = [...new Set([
@@ -413,7 +333,7 @@ class ClusterTransferCoordinator {
             let finalizedReplicaClusterIds = nextReplicaClusterIds;
             let finalizedJob = switchingJob;
 
-            finalizedJob = await this.setJobState(switchingJob.id, 'cleaning', {}, {
+            finalizedJob = await this.jobStore.setJobState(switchingJob.id, 'cleaning', {}, {
                 publishUpdate: true
             });
             const cleanupResult = await this.cleanupSourceCopy(
@@ -423,7 +343,7 @@ class ClusterTransferCoordinator {
                 job.props.scopeId
             );
             finalizedReplicaClusterIds = nextReplicaClusterIds.filter((clusterId) => clusterId !== job.props.sourceClusterId);
-            finalizedJob = await this.setJobState(finalizedJob.id, 'cleaning', {
+            finalizedJob = await this.jobStore.setJobState(finalizedJob.id, 'cleaning', {
                 stats: {
                     ...finalizedJob.props.stats,
                     deletedObjects: cleanupResult.deletedObjects
@@ -443,7 +363,7 @@ class ClusterTransferCoordinator {
                 }
             );
 
-            const completedJob = await this.setJobState(finalizedJob.id, 'completed', {
+            const completedJob = await this.jobStore.setJobState(finalizedJob.id, 'completed', {
                 finishedAt: new Date(),
                 cursor: {
                     bucketIndex: job.props.buckets.length,
@@ -458,7 +378,7 @@ class ClusterTransferCoordinator {
             return completedJob;
         } catch (error) {
             await this.storagePlacementService.setPlacementState(job.props.scopeType, job.props.scopeId, 'active').catch(() => undefined);
-            const failedJob = await this.setJobState(job.id, 'failed', {
+            const failedJob = await this.jobStore.setJobState(job.id, 'failed', {
                 finishedAt: new Date(),
                 errorCode: error instanceof ApplicationError ? error.code : 'ClusterTransfer::Failed',
                 errorMessage: error instanceof Error ? error.message : 'Cluster transfer failed'
@@ -478,7 +398,7 @@ class ClusterTransferCoordinator {
     ): Promise<ClusterTransferJob> {
         logger.info(`Starting cluster transfer copy phase transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
 
-        let currentJob = await this.setJobState(job.id, 'copying', {}, {
+        let currentJob = await this.jobStore.setJobState(job.id, 'copying', {}, {
             publishUpdate: true
         });
 
@@ -497,7 +417,7 @@ class ClusterTransferCoordinator {
             let pendingCopiedBytes = 0;
 
             const flushProgress = async (nextCursor: { bucketIndex: number; lastObjectKey: string | null; }) => {
-                currentJob = await this.setJobState(currentJob.id, 'copying', {
+                currentJob = await this.jobStore.setJobState(currentJob.id, 'copying', {
                     cursor: nextCursor,
                     stats: {
                         ...currentJob.props.stats,
@@ -552,7 +472,7 @@ class ClusterTransferCoordinator {
         job: ClusterTransferJob,
         placement: StoragePlacement
     ): Promise<{ verifiedObjects: number; verifiedBytes: number; }> {
-        let currentJob = await this.setJobState(job.id, 'verifying', {}, {
+        let currentJob = await this.jobStore.setJobState(job.id, 'verifying', {}, {
             publishUpdate: true
         });
         let verifiedObjects = 0;
@@ -619,7 +539,7 @@ class ClusterTransferCoordinator {
             }
         }
 
-        currentJob = await this.setJobState(currentJob.id, 'verifying', {
+        currentJob = await this.jobStore.setJobState(currentJob.id, 'verifying', {
             stats: {
                 ...currentJob.props.stats,
                 verifiedObjects,
@@ -647,7 +567,7 @@ class ClusterTransferCoordinator {
             await this.deleteByPrefix(sourceClusterId, bucketRef.bucket, bucketRef.prefix);
         }
 
-        const deletedMongoRows = await this.purgeMongoListings(sourceClusterId, scopeType, scopeId);
+        const deletedMongoRows = await this.mongoListings.purgeMongoListings(sourceClusterId, scopeType, scopeId);
 
         return {
             deletedObjects,
@@ -696,127 +616,6 @@ class ClusterTransferCoordinator {
             copied: true,
             bytesTransferred: sourceObject.contentLength ?? sourceEntry.contentLength ?? 0
         };
-    }
-
-    private async replicateMongoListings(job: ClusterTransferJob): Promise<void> {
-        const analysisIds = await this.resolveMongoReplicationAnalysisIds(
-            job.props.scopeType,
-            job.props.scopeId,
-            job.props.sourceClusterId
-        );
-        if (!analysisIds.length) {
-            return;
-        }
-
-        logger.info(`Replicating daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
-
-        for (const documentType of MONGO_DOCUMENT_TYPES) {
-            let skip = 0;
-
-            while (true) {
-                const batch = await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoExportResult>(
-                    job.props.sourceClusterId,
-                    ChannelCommands.PluginTransferMongoExport,
-                    {
-                        analysisIds,
-                        documentType,
-                        skip,
-                        limit: MONGO_TRANSFER_BATCH_SIZE
-                    },
-                    {
-                        timeoutClass: 'long-running-control-plane',
-                        retryClass: 'safe-read'
-                    }
-                );
-
-                if (batch.rows.length > 0) {
-                    await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoImportResult>(
-                        job.props.destinationClusterId,
-                        ChannelCommands.PluginTransferMongoImport,
-                        {
-                            analysisIds,
-                            documentType,
-                            rows: batch.rows
-                        },
-                        {
-                            timeoutClass: 'long-running-control-plane',
-                            retryClass: 'idempotent-command'
-                        }
-                    );
-                }
-
-                if (!batch.hasMore || batch.rows.length === 0) {
-                    break;
-                }
-
-                skip = batch.nextSkip;
-            }
-        }
-
-        logger.info(`Replicated daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
-    }
-
-    private async purgeMongoListings(
-        sourceClusterId: string,
-        scopeType: StoragePlacementScopeType,
-        scopeId: string
-    ): Promise<number> {
-        const analysisIds = await this.resolveMongoReplicationAnalysisIds(scopeType, scopeId, sourceClusterId);
-        if (!analysisIds.length) {
-            return 0;
-        }
-
-        let deletedRows = 0;
-
-        for (const documentType of MONGO_DOCUMENT_TYPES) {
-            const result = await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoPurgeResult>(
-                sourceClusterId,
-                ChannelCommands.PluginTransferMongoPurge,
-                {
-                    analysisIds,
-                    documentType
-                },
-                {
-                    timeoutClass: 'long-running-control-plane',
-                    retryClass: 'idempotent-command'
-                }
-            );
-            deletedRows += result.deletedRows;
-        }
-
-        logger.info(`Purged source daemon Mongo listing state for cluster transfer sourceClusterId=${sourceClusterId} scopeType=${scopeType} scopeId=${scopeId} analysisCount=${analysisIds.length}`);
-
-        return deletedRows;
-    }
-
-    private async resolveMongoReplicationAnalysisIds(
-        scopeType: StoragePlacementScopeType,
-        scopeId: string,
-        sourceClusterId: string
-    ): Promise<string[]> {
-        if (scopeType === 'plugin-binary') {
-            return [];
-        }
-
-        if (scopeType === 'analysis') {
-            const analysis = await Analysis.findOneBy({ id: scopeId });
-            if (!analysis) {
-                return [];
-            }
-
-            return resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }) === sourceClusterId
-                ? [analysis.id]
-                : [];
-        }
-
-        const analyses = await Analysis.find({
-            where: { trajectory: scopeId },
-            order: { createdAt: 'ASC' }
-        });
-
-        return analyses
-            .filter((analysis) => resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }) === sourceClusterId)
-            .map((analysis) => analysis.id);
     }
 
     private async selectVictimPlacement(sourceCluster: TeamCluster): Promise<StoragePlacement | null> {
@@ -882,7 +681,7 @@ class ClusterTransferCoordinator {
     }
 
     private async assertSourceReadableCluster(teamId: string, clusterId: string): Promise<void> {
-        const cluster = await this.findTeamClusterById(clusterId);
+        const cluster = await this.jobStore.findTeamClusterById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::SourceClusterUnavailable',
@@ -899,7 +698,7 @@ class ClusterTransferCoordinator {
     }
 
     private async assertDestinationWritableCluster(teamId: string, clusterId: string): Promise<void> {
-        const cluster = await this.findTeamClusterById(clusterId);
+        const cluster = await this.jobStore.findTeamClusterById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::DestinationClusterUnavailable',
@@ -1020,250 +819,7 @@ class ClusterTransferCoordinator {
         await this.objectGatewayClient.deleteByPrefix(ownerClusterId, bucket, prefix);
     }
 
-    private async publishTransferJobProjection(job: ClusterTransferJob): Promise<void> {
-        try {
-            const projectionContext = await this.resolveTransferJobProjectionContext(job);
-            const status = mapTransferStateToJobStatus(job.props.state);
 
-            await this.eventBus.emit('job.status.changed', {
-                jobId: job.id,
-                teamId: job.props.team,
-                status,
-                queueType: CLUSTER_TRANSFER_QUEUE_TYPE,
-                name: getTransferJobName(job.props.scopeType),
-                message: getTransferJobMessage(job),
-                trajectoryId: projectionContext.trajectoryId,
-                trajectoryName: projectionContext.trajectoryName,
-                analysisId: projectionContext.analysisId,
-                source: 'projected',
-                backingSource: 'local',
-                cleanupScope: 'cluster-transfer',
-                transferJobId: job.id,
-                transferState: job.props.state,
-                transferReason: job.props.reason,
-                transferScopeType: job.props.scopeType,
-                transferScopeId: job.props.scopeId,
-                sourceClusterId: job.props.sourceClusterId,
-                destinationClusterId: job.props.destinationClusterId,
-                cleanupSource: job.props.cleanupSource,
-                copiedObjects: job.props.stats.copiedObjects,
-                copiedBytes: job.props.stats.copiedBytes,
-                verifiedObjects: job.props.stats.verifiedObjects,
-                verifiedBytes: job.props.stats.verifiedBytes,
-                deletedObjects: job.props.stats.deletedObjects,
-                ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
-            });
-        } catch {
-            logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
-        }
-    }
-
-    private async resolveTransferJobProjectionContext(
-        job: ClusterTransferJob
-    ): Promise<TransferJobProjectionContext> {
-        if (job.props.scopeType === 'trajectory') {
-            const trajectory = await Trajectory.findOne({
-                where: { id: job.props.scopeId },
-                select: {
-                    id: true,
-                    name: true
-                }
-            });
-
-            return {
-                trajectoryId: job.props.scopeId,
-                trajectoryName: trajectory?.name || `Trajectory ${job.props.scopeId}`
-            };
-        }
-
-        if (job.props.scopeType === 'analysis') {
-            const analysis = await Analysis.findOne({
-                where: { id: job.props.scopeId },
-                select: {
-                    id: true,
-                    trajectory: true
-                }
-            });
-            const trajectoryId = analysis?.trajectory;
-
-            if (trajectoryId) {
-                const trajectory = await Trajectory.findOne({
-                    where: { id: trajectoryId },
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                });
-
-                return {
-                    trajectoryId,
-                    trajectoryName: trajectory?.name || `Trajectory ${trajectoryId}`,
-                    analysisId: job.props.scopeId
-                };
-            }
-        }
-
-        return {
-            trajectoryId: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID,
-            trajectoryName: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME,
-            ...(job.props.scopeType === 'analysis' ? { analysisId: job.props.scopeId } : {})
-        };
-    }
-
-    private async setJobState(
-        jobId: string,
-        state: ClusterTransferJobState,
-        data: Partial<ClusterTransferJob['props']> = {},
-        options: {
-            publishUpdate?: boolean;
-        } = {}
-    ): Promise<ClusterTransferJob> {
-        const jobEntity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
-        if (!jobEntity) {
-            throw ApplicationError.notFound('ClusterTransferJob::NotFound', 'Cluster transfer job not found during update');
-        }
-
-        const updatedJobEntity = await Object.assign(jobEntity, {
-            ...this.toJobEntityPatch(data),
-            state: state as ClusterTransferJobStateColumn
-        }).save();
-        const updatedJob = toClusterTransferJobLike(updatedJobEntity);
-
-        if (options.publishUpdate) {
-            await this.publishTransferJobProjection(updatedJob);
-        }
-
-        return updatedJob;
-    }
-
-    private toJobEntityPatch(data: Partial<ClusterTransferJob['props']>): Partial<ClusterTransferJobEntity> {
-        const patch: Partial<ClusterTransferJobEntity> = {};
-
-        if (data.team !== undefined) patch.team = data.team;
-        if (data.scopeType !== undefined) patch.scopeType = data.scopeType as StoragePlacementScopeTypeColumn;
-        if (data.scopeId !== undefined) patch.scopeId = data.scopeId;
-        if (data.sourceClusterId !== undefined) patch.sourceClusterId = data.sourceClusterId;
-        if (data.destinationClusterId !== undefined) patch.destinationClusterId = data.destinationClusterId;
-        if (data.buckets !== undefined) patch.buckets = data.buckets;
-        if (data.state !== undefined) patch.state = data.state as ClusterTransferJobStateColumn;
-        if (data.reason !== undefined) patch.reason = data.reason as ClusterTransferJobReasonColumn;
-        if (data.cleanupSource !== undefined) patch.cleanupSource = data.cleanupSource;
-        if (data.requestedBy !== undefined) patch.requestedBy = data.requestedBy;
-        if (data.cursor !== undefined) patch.cursor = data.cursor;
-        if (data.stats !== undefined) patch.stats = data.stats;
-        if (data.errorCode !== undefined) patch.errorCode = data.errorCode;
-        if (data.errorMessage !== undefined) patch.errorMessage = data.errorMessage;
-        if (data.startedAt !== undefined) patch.startedAt = data.startedAt;
-        if (data.finishedAt !== undefined) patch.finishedAt = data.finishedAt;
-
-        return patch;
-    }
-
-    private async createTransferJob(props: Partial<ClusterTransferJob['props']>): Promise<ClusterTransferJob> {
-        const created = await ClusterTransferJobEntity.create({ ...this.toJobEntityPatch(props) }).save();
-        return toClusterTransferJobLike(created);
-    }
-
-    private async findOpenTransferJobByScope(
-        scopeType: StoragePlacementScopeType,
-        scopeId: string
-    ): Promise<ClusterTransferJob | null> {
-        const entity = await ClusterTransferJobEntity.findOne({
-            where: {
-                scopeType: scopeType as StoragePlacementScopeTypeColumn,
-                scopeId,
-                state: In(OPEN_TRANSFER_JOB_STATES)
-            },
-            order: { createdAt: 'DESC' }
-        });
-
-        return entity ? toClusterTransferJobLike(entity) : null;
-    }
-
-    private async claimNextRunnable(): Promise<ClusterTransferJob | null> {
-        const now = new Date();
-        const claimExpiresAt = new Date(now.getTime() + CLUSTER_TRANSFER_CLAIM_TTL_MS);
-        const candidates = await ClusterTransferJobEntity.find({
-            where: [
-                {
-                    state: In(OPEN_TRANSFER_JOB_STATES),
-                    claimedBy: IsNull()
-                },
-                {
-                    state: In(OPEN_TRANSFER_JOB_STATES),
-                    claimExpiresAt: Or(IsNull(), LessThanOrEqual(now))
-                }
-            ],
-            order: {
-                updatedAt: 'ASC',
-                createdAt: 'ASC'
-            },
-            select: { id: true }
-        });
-
-        for (const candidate of candidates) {
-            const claimed = await this.tryClaimJob(candidate.id, now, claimExpiresAt);
-            if (!claimed) {
-                continue;
-            }
-
-            return claimed;
-        }
-
-        return null;
-    }
-
-    private async tryClaimJob(jobId: string, now: Date, claimExpiresAt: Date): Promise<ClusterTransferJob | null> {
-        const claim = {
-            claimedBy: CLUSTER_TRANSFER_WORKER_ID,
-            claimExpiresAt
-        };
-        const unclaimed = await ClusterTransferJobEntity.update({
-            id: jobId,
-            state: In(OPEN_TRANSFER_JOB_STATES),
-            claimedBy: IsNull()
-        }, claim);
-
-        if (!unclaimed.affected) {
-            const expired = await ClusterTransferJobEntity.update({
-                id: jobId,
-                state: In(OPEN_TRANSFER_JOB_STATES),
-                claimExpiresAt: Or(IsNull(), LessThanOrEqual(now))
-            }, claim);
-
-            if (!expired.affected) {
-                return null;
-            }
-        }
-
-        const entity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
-        return entity ? toClusterTransferJobLike(entity) : null;
-    }
-
-    private async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean> {
-        const claimExpiresAt = new Date(Date.now() + claimTtlMs);
-        const result = await ClusterTransferJobEntity.update({
-            id: jobId,
-            claimedBy: CLUSTER_TRANSFER_WORKER_ID
-        }, { claimExpiresAt });
-
-        return (result.affected ?? 0) > 0;
-    }
-
-    private async releaseClaim(jobId: string): Promise<void> {
-        await ClusterTransferJobEntity.update({
-            id: jobId,
-            claimedBy: CLUSTER_TRANSFER_WORKER_ID
-        }, {
-            claimedBy: null,
-            claimExpiresAt: null
-        });
-    }
-
-    private async findTeamClusterById(clusterId: string): Promise<TeamCluster | null> {
-        const entity = await TeamClusterEntity.findOneBy({ id: clusterId });
-        return entity ? toTeamClusterLike(entity) : null;
-    }
 }
 
 export default new ClusterTransferCoordinator();
