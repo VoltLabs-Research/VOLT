@@ -1,5 +1,4 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
@@ -10,10 +9,9 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import logger from '@shared/infrastructure/logger';
 
-export class TeamPresenceSocketModule extends BaseSocketModule {
+class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 
     private unsubscribeFromTeamSubscription?: () => void;

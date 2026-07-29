@@ -71,7 +71,7 @@ export const setPostAuthDestination = (destination: string): void => {
     window.sessionStorage.setItem(POST_AUTH_DESTINATION_STORAGE_KEY, safeDestination);
 };
 
-export const getPostAuthDestination = (): string | null => {
+const getPostAuthDestination = (): string | null => {
     const destination = sanitizePostAuthDestination(window.sessionStorage.getItem(POST_AUTH_DESTINATION_STORAGE_KEY));
 
     if (!destination) {

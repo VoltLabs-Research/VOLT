@@ -3,7 +3,7 @@ import type { Secret, SignOptions } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 
-export interface TokenPayload {
+interface TokenPayload {
     id: string;
     iat?: number;
     exp?: number;

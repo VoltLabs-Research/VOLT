@@ -1,19 +1,19 @@
 const HEALTH_PROBE_TIMEOUT_MS = 5000;
 
-export enum EndpointHealthFailure {
+enum EndpointHealthFailure {
     Invalid = 'invalid',
     Unreachable = 'unreachable',
     NotVolt = 'not-volt',
     Timeout = 'timeout'
 }
 
-export type EndpointHealthResult =
+type EndpointHealthResult =
     | { ok: true; origin: string }
     | { ok: false; reason: EndpointHealthFailure };
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/$/, '');
 
-export const normalizeEndpoint = (raw: string): string | null => {
+const normalizeEndpoint = (raw: string): string | null => {
     const trimmed = raw.trim();
     if (trimmed.length === 0) {
         return null;

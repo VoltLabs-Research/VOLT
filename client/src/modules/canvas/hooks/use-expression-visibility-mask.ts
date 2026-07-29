@@ -17,7 +17,7 @@ interface UseExpressionVisibilityMaskParams {
     currentTimestep?: number;
 }
 
-export interface UseExpressionVisibilityMaskResult {
+interface UseExpressionVisibilityMaskResult {
     
     
     mask: Uint8Array | null;

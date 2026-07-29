@@ -3,7 +3,7 @@ import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/dom
 
 const EXECUTION_CLUSTER_ROLES = new Set<TeamClusterRole>(['cluster', 'compute-node']);
 
-export const supportsPluginExecutionRole = (role?: TeamClusterRole): boolean => {
+const supportsPluginExecutionRole = (role?: TeamClusterRole): boolean => {
     return Boolean(role && EXECUTION_CLUSTER_ROLES.has(role));
 };
 

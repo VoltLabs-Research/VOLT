@@ -1,5 +1,4 @@
 import type { Readable } from 'node:stream';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports/IContainerService';
 
 export interface TeamClusterDaemonCommandOptions {
     timeoutMs?: number;

@@ -84,19 +84,19 @@ export interface ArgumentDefinition {
     visibleWhen?: ArgumentVisibilityCondition;
 }
 
-export interface ArgumentsNodeData {
+interface ArgumentsNodeData {
     arguments: ArgumentDefinition[];
 }
 
-export enum ContextSource {
+enum ContextSource {
     TrajectoryDumps = 'trajectory_dumps'
 }
 
-export interface ContextNodeData {
+interface ContextNodeData {
     source: ContextSource;
 }
 
-export interface ForEachNodeData {
+interface ForEachNodeData {
     iterableSource: string;
 }
 
@@ -122,12 +122,12 @@ export enum PluginNodeExecutionMode {
     ArgumentReference = 'argumentReference'
 }
 
-export enum PluginNodeOutputPathMode {
+enum PluginNodeOutputPathMode {
     Isolated = 'isolated',
     Parent = 'parent'
 }
 
-export interface PluginNodeData {
+interface PluginNodeData {
     executionMode?: PluginNodeExecutionMode;
     outputPathMode?: PluginNodeOutputPathMode;
     pluginId?: string;
@@ -144,7 +144,7 @@ export interface ExposureProperty {
     type?: string;
 }
 
-export interface ExposureNodeData {
+interface ExposureNodeData {
     name: string;
     icon?: string;
     results: string;
@@ -178,32 +178,32 @@ export interface ExportNodeData {
     options?: Record<string, unknown>;
 }
 
-export enum IfStatementConditionType {
+enum IfStatementConditionType {
     And = 'and',
     Or = 'or'
 }
 
-export enum IfStatementConditionHandler {
+enum IfStatementConditionHandler {
     IsEqualTo = 'is_equal_to',
     IsNotEqualTo = 'is_not_equal_to'
 }
 
-export interface IfStatementCondition {
+interface IfStatementCondition {
     type: IfStatementConditionType;
     leftExpression: string;
     handler: IfStatementConditionHandler;
     rightExpression: string;
 }
 
-export interface IfStatementNodeData {
+interface IfStatementNodeData {
     conditions: IfStatementCondition[];
 }
 
-export interface SwitchStatementNodeData {
+interface SwitchStatementNodeData {
     expression: string;
 }
 
-export interface SwitchCaseNodeData {
+interface SwitchCaseNodeData {
     value: string;
     defaultCase?: boolean;
 }

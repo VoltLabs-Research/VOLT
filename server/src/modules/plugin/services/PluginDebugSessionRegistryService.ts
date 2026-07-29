@@ -3,12 +3,12 @@ import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import type { IPluginDebugSessionRegistryService as IPluginDebugSessionRegistryServicePort } from '@shared/contracts/ports';
 
-export interface PluginDebugSessionRegistryEntry {
+interface PluginDebugSessionRegistryEntry {
     socketId: string;
     teamClusterId: string;
 }
 
-export class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryServicePort {
+class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryServicePort {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(

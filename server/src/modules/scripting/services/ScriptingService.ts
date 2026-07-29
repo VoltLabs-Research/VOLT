@@ -116,7 +116,7 @@ interface DeleteSessionResult{
     runtimeNotebookId?: string;
 }
 
-export interface ScriptingNotebookView{
+interface ScriptingNotebookView{
     _id: string;
     teamCluster?: unknown;
     containerResources?: { cpus: number; memoryMB: number } | null;

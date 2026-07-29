@@ -1,7 +1,7 @@
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import type { NormalizedTeamSubscription } from '@modules/socket/socket/team-subscription/team-subscription';
 
-export interface TeamSubscriptionContext {
+interface TeamSubscriptionContext {
     connection: ISocketConnection;
     subscription: NormalizedTeamSubscription;
 }
@@ -10,31 +10,29 @@ type TeamSubscriptionHandler = (
     context: TeamSubscriptionContext
 ) => void | Promise<void>;
 
-export default class SocketTeamSubscriptionCoordinator {
-    private readonly handlers = new Set<TeamSubscriptionHandler>();
+class SocketTeamSubscriptionCoordinator {
+    #handlers = new Set<TeamSubscriptionHandler>();
 
-    subscribe(handler: TeamSubscriptionHandler): () => void {
-        this.handlers.add(handler);
+    subscribe(handler: TeamSubscriptionHandler): () => void{
+        this.#handlers.add(handler);
         return () => {
-            this.handlers.delete(handler);
+            this.#handlers.delete(handler);
         };
     }
 
-    async notify(context: TeamSubscriptionContext): Promise<void> {
-        for (const handler of this.handlers) {
-            await handler(context);
-        }
+    async notify(context: TeamSubscriptionContext): Promise<void>{
+        for(const handler of this.#handlers) await handler(context);
     }
 
-    getCurrentTeamId(connection: ISocketConnection): string | undefined {
+    getCurrentTeamId(connection: ISocketConnection): string | undefined{
         return connection.data.currentTeamId;
     }
 
-    setCurrentTeamId(connection: ISocketConnection, teamId: string): void {
+    setCurrentTeamId(connection: ISocketConnection, teamId: string): void{
         connection.data.currentTeamId = teamId;
     }
 
-    clearCurrentTeamId(connection: ISocketConnection): void {
+    clearCurrentTeamId(connection: ISocketConnection): void{
         delete connection.data.currentTeamId;
     }
 }

@@ -9,7 +9,7 @@ export enum UserRole {
     User = 'user'
 }
 
-export interface SplitFullNameResult{
+interface SplitFullNameResult{
     firstName: string;
     lastName?: string;
 }

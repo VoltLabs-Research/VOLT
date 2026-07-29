@@ -1,7 +1,7 @@
 import type { ClusterTransferJob, ClusterTransferJobScopeType, ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
 import type { StatusBadgeProps } from '@voltstack/bravais';
 
-export const OPEN_CLUSTER_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
+const OPEN_CLUSTER_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'queued',
     'freezing',
     'copying',

@@ -3,7 +3,7 @@ import { cn } from '@/shared/utils/cn';
 import { Row, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
-export interface SettingsRowProps {
+interface SettingsRowProps {
     icon?: ReactNode;
     title: string;
     description?: string;

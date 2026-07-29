@@ -28,12 +28,12 @@ import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/htt
 
 export { ParticleFilterCombinator };
 
-export interface ParticleFilterCondition extends FilterExpression {
+interface ParticleFilterCondition extends FilterExpression {
     kind?: 'property';
     exposureId?: string;
 }
 
-export interface ParticleFilterRequest {
+interface ParticleFilterRequest {
     combinator: ParticleFilterCombinator;
     conditions: ParticleFilterCondition[];
 }
@@ -136,7 +136,7 @@ const buildPluginPropertyUnavailableError = (
     );
 };
 
-export class ParticleFilterService {
+class ParticleFilterService {
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async getProperties(

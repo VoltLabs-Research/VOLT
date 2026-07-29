@@ -3,7 +3,7 @@ import logger from '@shared/infrastructure/logger';
 
 type WorkspaceStatePatch = Record<string, unknown>;
 
-export interface CanvasWorkspaceSnapshot {
+interface CanvasWorkspaceSnapshot {
     trajectoryId: string;
     ownerId: string;
     revision: number;
@@ -11,7 +11,7 @@ export interface CanvasWorkspaceSnapshot {
     updatedAt: number;
 }
 
-export interface CanvasWorkspaceApplyResult {
+interface CanvasWorkspaceApplyResult {
     revision: number;
     state: WorkspaceStatePatch;
     delta: WorkspaceStatePatch;
@@ -21,7 +21,7 @@ const KEY_PREFIX = 'canvas:workspace';
 const INDEX_PREFIX = 'canvas:workspace:index';
 const TTL_SECONDS = 60 * 60;
 
-export class CanvasWorkspaceRealtimeStateService {
+class CanvasWorkspaceRealtimeStateService {
     async getSnapshot(trajectoryId: string, ownerId: string): Promise<CanvasWorkspaceSnapshot | null> {
         const key = this.buildKey(trajectoryId, ownerId);
         const raw = await redis!.get(key);

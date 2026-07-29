@@ -22,13 +22,13 @@ const TEAM_CLUSTER_ROLE_CAPABILITIES: Record<TeamClusterRole, TeamClusterRoleCap
     }
 };
 
-export const resolveTeamClusterRoleCapabilities = (
+const resolveTeamClusterRoleCapabilities = (
     role: TeamClusterRole
 ): TeamClusterRoleCapabilitiesProps => {
     return { ...TEAM_CLUSTER_ROLE_CAPABILITIES[role] };
 };
 
-export const buildTeamClusterEffectiveCapabilities = (
+const buildTeamClusterEffectiveCapabilities = (
     role: TeamClusterRole,
     draining: Partial<TeamClusterRoleDrainProps> = {}
 ): TeamClusterEffectiveCapabilitiesProps => {

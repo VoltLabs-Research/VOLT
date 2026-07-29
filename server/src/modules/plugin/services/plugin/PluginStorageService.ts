@@ -28,7 +28,7 @@ import type { DeepPartial } from 'typeorm';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
-export interface PluginImportResult {
+interface PluginImportResult {
     plugin: Plugin;
     binaryImported: boolean;
 }

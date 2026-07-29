@@ -6,7 +6,7 @@ import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { GetAnalysesByTrajectoryParams } from '../api/service';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 
-export interface PatchAnalysisStatusInput {
+interface PatchAnalysisStatusInput {
     analysisId: string;
     status: Analysis['status'];
     totalFrames?: number;
@@ -16,7 +16,7 @@ export interface PatchAnalysisStatusInput {
     childAnalyses?: Analysis['childAnalyses'];
 };
 
-export interface PatchAnalysisExecutionInput {
+interface PatchAnalysisExecutionInput {
     analysisId: string;
     artifactStatus?: Analysis['artifactStatus'];
     expectedArtifacts?: Analysis['expectedArtifacts'];
@@ -134,7 +134,7 @@ export const removeAnalysisCaches = (analysisId: string): void => {
     patchCanvasAnalysesQueries(removeFromPage);
 };
 
-export const upsertAnalysisCaches = (analysis: Analysis): void => {
+const upsertAnalysisCaches = (analysis: Analysis): void => {
     analysisQuery.cache.upsert(analysis);
 
     const analysisTrajectoryId = analysis.trajectory?._id;

@@ -1,4 +1,4 @@
-export const readWebSocketProtocols = (value: string | string[] | undefined): string[] => {
+const readWebSocketProtocols = (value: string | string[] | undefined): string[] => {
     const rawValues = Array.isArray(value)
         ? value
         : value

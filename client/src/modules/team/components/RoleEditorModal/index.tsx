@@ -13,7 +13,7 @@ export interface RoleEditorPayload {
     permissions: string[];
 }
 
-export interface RoleEditorModalProps {
+interface RoleEditorModalProps {
     role?: TeamRole | null;
     resources: RbacEntry[];
     actions: RbacEntry[];

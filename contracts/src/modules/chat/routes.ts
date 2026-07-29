@@ -3,7 +3,6 @@ import type {
     GetOrCreateDirectChatInput,
     CreateGroupChatInput,
     AddUsersToGroupInput,
-    RemoveUsersFromGroupInput,
     UpdateGroupInfoInput,
     UpdateGroupAdminsInput,
     SendChatMessageInput,

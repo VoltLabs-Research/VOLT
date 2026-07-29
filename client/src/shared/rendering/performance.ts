@@ -34,7 +34,7 @@ export interface PerformanceSettingsState {
     interactionDegrade: InteractionDegradeSettings;
 };
 
-export interface PerformancePresetDefinition {
+interface PerformancePresetDefinition {
     label: string;
     powerPreference: PowerPreference;
     settings: PerformanceSettingsState;
@@ -45,11 +45,11 @@ export interface CanvasRuntimeResolutionOptions {
     boostScreenshot?: boolean;
 };
 
-export interface CanvasRuntimeInteractionSource {
+interface CanvasRuntimeInteractionSource {
     interactionDegradeEnabled: boolean;
 };
 
-export interface CanvasRuntimeSource extends CanvasRuntimeInteractionSource {
+interface CanvasRuntimeSource extends CanvasRuntimeInteractionSource {
     dpr: DprSettings;
     performance: CanvasPerformanceProp;
 };
@@ -64,9 +64,9 @@ export interface ResolvedCanvasRuntimeProps {
     performance: CanvasPerformanceProp;
 };
 
-export type PerformancePresetOption = RenderingOption<PerformancePreset>;
+type PerformancePresetOption = RenderingOption<PerformancePreset>;
 
-export type PowerPreferenceOption = RenderingOption<PowerPreference>;
+type PowerPreferenceOption = RenderingOption<PowerPreference>;
 
 export enum DprMode {
     Fixed = 'fixed',
@@ -87,7 +87,7 @@ export enum PowerPreference {
     LowPower = 'low-power'
 };
 
-export const PERFORMANCE_PRESET_ORDER: PerformancePreset[] = [
+const PERFORMANCE_PRESET_ORDER: PerformancePreset[] = [
     PerformancePreset.Ultra,
     PerformancePreset.High,
     PerformancePreset.Balanced,
@@ -110,7 +110,7 @@ export const POWER_PREFERENCE_OPTIONS: PowerPreferenceOption[] = [
     }
 ];
 
-export const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDefinition> = {
+const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDefinition> = {
     [PerformancePreset.Ultra]: {
         label: 'Ultra',
         powerPreference: PowerPreference.HighPerformance,

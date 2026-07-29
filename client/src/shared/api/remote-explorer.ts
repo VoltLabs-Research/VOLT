@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Dispatch, SetStateAction } from 'react';
 
-export interface RemoteExplorerFetchState<TEntry> {
+interface RemoteExplorerFetchState<TEntry> {
     entries: TEntry[];
     cwd?: string;
     isLoading: boolean;
@@ -11,7 +11,7 @@ export interface RemoteExplorerFetchState<TEntry> {
     isRefreshing?: boolean;
 };
 
-export interface RemoteExplorerState<TEntry> extends RemoteExplorerFetchState<TEntry> {
+interface RemoteExplorerState<TEntry> extends RemoteExplorerFetchState<TEntry> {
     path: string;
     cwd: string;
     isAtRoot: boolean;

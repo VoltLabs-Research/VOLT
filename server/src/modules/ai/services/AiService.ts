@@ -55,7 +55,7 @@ const extractLastUserMessageText = (messages: AIConversationMessage[]): string =
     return '';
 };
 
-export interface AIConversationView {
+interface AIConversationView {
     _id: string;
     userId: string;
     teamId: string;
@@ -72,7 +72,7 @@ interface AIMessageArtifactsView {
     items: Record<string, unknown>[];
 }
 
-export interface AIMessageView {
+interface AIMessageView {
     _id: string;
     conversationId: string;
     role: AIMessageRole;

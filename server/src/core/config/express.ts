@@ -1,7 +1,6 @@
 import './env';
 import { requestContextMiddleware, TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
-import logger from '@shared/infrastructure/logger';
-import { collectAllowedClientOrigins, normalizeOrigin } from '@shared/infrastructure/utilities/client-origins';
+import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
@@ -15,23 +14,10 @@ const captureRawBody = (req: Request, _res: unknown, buffer: Buffer): void => {
 
 app.set('trust proxy', 1);
 
-const baseAllowedOrigins = new Set<string>(collectAllowedClientOrigins([
-    process.env.CLIENT_HOST,
-    process.env.CLIENT_DEV_HOST
-]));
-
 const resolvePublicClientHost = (): string | null =>
     collectAllowedClientOrigins([process.env.CLIENT_HOST])[0]
     ?? collectAllowedClientOrigins([process.env.CLIENT_DEV_HOST])[0]
     ?? null;
-
-const readSingleHeader = (value: string | string[] | undefined): string | undefined => {
-    if (Array.isArray(value)) {
-        return value[0];
-    }
-
-    return value;
-};
 
 const corsBaseOptions = {
     credentials: true,

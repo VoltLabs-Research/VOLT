@@ -4,7 +4,7 @@ import {
 } from '@/modules/fractal/contracts/lod-config';
 import type { FeatureBudget, GeometryBudget } from '@/modules/fractal/contracts/lod-config';
 
-export class GeometryBudgetManager {
+class GeometryBudgetManager {
     private featureBudgets = new Map<string, FeatureBudget>();
     private globalBudget: { maxTriangles: number; maxDrawCalls: number };
 

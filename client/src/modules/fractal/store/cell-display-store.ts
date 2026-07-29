@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 
-export interface EditableCell {
+interface EditableCell {
     cellVectors: number[][];
     cellOrigin: number[];
     pbc: CellPbc;

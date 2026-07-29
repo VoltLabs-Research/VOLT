@@ -51,7 +51,7 @@ const calculateCpuUsage = (metrics: ClusterMetrics | null): number | null => {
     return Math.round(usage);
 };
 
-export const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected }: TransformClusterToRowParams): ServerRow => {
+const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected }: TransformClusterToRowParams): ServerRow => {
     const liveMetrics = isMetricsConnected ? metrics : null;
     const liveMetricsStatus = getClusterLiveMetricsStatus({
         metrics: liveMetrics,

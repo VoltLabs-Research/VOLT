@@ -9,7 +9,7 @@ type BaseRow = {
     className?: string;
 };
 
-export type SliderRowDef =
+type SliderRowDef =
     | (BaseRow & { get: () => number; set: (value: number) => void })
     | (BaseRow & { value: number; onChange: (value: number) => void });
 

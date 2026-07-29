@@ -1,12 +1,12 @@
 import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
 
-export interface ClusterObjectUploadPart {
+interface ClusterObjectUploadPart {
     url: string;
     offset: number;
     size: number;
 }
 
-export interface UploadClusterObjectPartsOptions {
+interface UploadClusterObjectPartsOptions {
     file: File;
     parts: ClusterObjectUploadPart[];
     concurrency?: number;

@@ -10,7 +10,7 @@ export interface SocketInvalidationRule<TPayload = unknown> {
     enabled?: boolean;
 };
 
-export interface UseSocketQueryInvalidationOptions {
+interface UseSocketQueryInvalidationOptions {
     debounceMs?: number;
     enabled?: boolean;
 };

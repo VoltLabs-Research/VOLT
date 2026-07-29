@@ -94,7 +94,7 @@ const ackError = (error: string): SocketAck<never> => ({
     error
 });
 
-export class LatexSocketModule extends BaseSocketModule {
+class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
     private readonly saveTimers = new Map<string, NodeJS.Timeout>();

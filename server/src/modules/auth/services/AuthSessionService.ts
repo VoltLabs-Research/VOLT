@@ -2,7 +2,7 @@ import JwtTokenService from '@modules/auth/services/JwtTokenService';
 import Session from '@modules/session/models/Session';
 import { SessionActivityType } from '@volt/contracts/modules/session/domain';
 
-export interface CreateSessionInput{
+interface CreateSessionInput{
     userId: string;
     ip: string;
     userAgent: string;

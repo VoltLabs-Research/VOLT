@@ -40,8 +40,3 @@ export interface SceneArtifactProps {
     createdAt: Date;
     updatedAt: Date;
 }
-
-export interface SceneArtifactLike {
-    _id: string;
-    props: SceneArtifactProps;
-}

@@ -73,7 +73,7 @@ export const useTeamStore = create<TeamStore>((set) => ({
     reset: () => set(initialState)
 }));
 
-export const resetTeamDependentStores = (): void => {
+const resetTeamDependentStores = (): void => {
     queryClient.removeQueries({ queryKey: TEAM_QUERY_KEYS.permissions() });
     queryClient.removeQueries({ queryKey: TEAM_MEMBER_QUERY_KEYS.members() });
     queryClient.removeQueries({ queryKey: TEAM_ROLE_QUERY_KEYS.roles() });

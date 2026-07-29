@@ -12,7 +12,7 @@ interface CreatePromiseToastOptionsInput {
     error: string;
 }
 
-export type CrudAction =
+type CrudAction =
     | 'Creating'
     | 'Updating'
     | 'Deleting'

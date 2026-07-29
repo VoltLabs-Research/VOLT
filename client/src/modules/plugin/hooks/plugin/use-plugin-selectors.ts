@@ -21,7 +21,7 @@ export interface RenderableExposure {
     };
 }
 
-export interface ResolvedModifier {
+interface ResolvedModifier {
     plugin: Plugin;
     pluginId: string;
     name: string;

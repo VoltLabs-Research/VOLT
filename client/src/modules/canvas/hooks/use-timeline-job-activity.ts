@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Job } from '@volt/contracts/modules/jobs/domain';
 
 export type TimelineTickTone = 'queued' | 'running' | 'completed';
-export type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';
+type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 

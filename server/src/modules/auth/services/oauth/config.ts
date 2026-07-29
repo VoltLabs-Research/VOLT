@@ -8,17 +8,9 @@ import passport from 'passport';
 export const getConfiguredOAuthProviders = (): OAuthProvider[] => {
     const providers: OAuthProvider[] = [];
 
-    if (process.env.GITHUB_CLIENT_ID) {
-        providers.push(OAuthProvider.GitHub);
-    }
-
-    if (process.env.GOOGLE_CLIENT_ID) {
-        providers.push(OAuthProvider.Google);
-    }
-
-    if (process.env.MICROSOFT_CLIENT_ID) {
-        providers.push(OAuthProvider.Microsoft);
-    }
+    if(process.env.GITHUB_CLIENT_ID) providers.push(OAuthProvider.GitHub);
+    if(process.env.GOOGLE_CLIENT_ID) providers.push(OAuthProvider.Google);
+    if(process.env.MICROSOFT_CLIENT_ID) providers.push(OAuthProvider.Microsoft);
 
     return providers;
 };
@@ -26,24 +18,12 @@ export const getConfiguredOAuthProviders = (): OAuthProvider[] => {
 let configured = false;
 
 export const configureOAuthStrategies = (): void => {
-    if (configured) {
-        return;
-    }
+    if(configured) return;
     configured = true;
 
     const authService = new AuthService();
 
-    if (process.env.GITHUB_CLIENT_ID) {
-        passport.use(new GithubStrategyWrapper(authService).getStrategy());
-    }
-
-    if (process.env.GOOGLE_CLIENT_ID) {
-        passport.use(new GoogleStrategyWrapper(authService).getStrategy());
-    }
-
-    if (process.env.MICROSOFT_CLIENT_ID) {
-        passport.use(new MicrosoftStrategyWrapper(authService).getStrategy());
-    }
+    if(process.env.GITHUB_CLIENT_ID) passport.use(new GithubStrategyWrapper(authService).getStrategy());
+    if(process.env.GOOGLE_CLIENT_ID) passport.use(new GoogleStrategyWrapper(authService).getStrategy());
+    if(process.env.MICROSOFT_CLIENT_ID) passport.use(new MicrosoftStrategyWrapper(authService).getStrategy());
 };
-
-export default configureOAuthStrategies;

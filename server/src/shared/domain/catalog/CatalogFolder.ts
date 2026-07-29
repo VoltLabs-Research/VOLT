@@ -5,7 +5,7 @@ export enum CatalogFolderKind {
     Latex = 'latex'
 }
 
-export interface CatalogFolderProps {
+interface CatalogFolderProps {
     team: string;
     createdBy: string;
     title: string;
@@ -13,9 +13,4 @@ export interface CatalogFolderProps {
     kind?: CatalogFolderKind;
     createdAt: Date;
     updatedAt: Date;
-}
-
-export interface CatalogFolderEntity<TProps extends CatalogFolderProps = CatalogFolderProps> {
-    readonly _id: string;
-    props: TProps;
 }

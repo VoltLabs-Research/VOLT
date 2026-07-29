@@ -1,5 +1,5 @@
 
-export const populatedModelRoutes: Record<string, string> = {
+const populatedModelRoutes: Record<string, string> = {
     User: '/dashboard/my-team',
     TeamCluster: '/dashboard/clusters',
     Trajectory: '/dashboard/trajectories/list',

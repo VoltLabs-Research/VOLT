@@ -35,7 +35,7 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrency
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = createDefaultTeamClusterQueueScopeLimits();
 
-export const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
+const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
 
 export const createDefaultTeamClusterRoleConfig = (
     role: TeamClusterRole = DEFAULT_TEAM_CLUSTER_ROLE
@@ -52,12 +52,12 @@ export const createDefaultTeamClusterRoleConfig = (
     };
 };
 
-export interface GeneratedServiceCredentials {
+interface GeneratedServiceCredentials {
     username: string;
     password: string;
 }
 
-export interface PlaintextTeamClusterServices {
+interface PlaintextTeamClusterServices {
     minio: GeneratedServiceCredentials;
     redis: GeneratedServiceCredentials;
     mongodb: GeneratedServiceCredentials;

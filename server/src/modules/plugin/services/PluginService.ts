@@ -62,7 +62,6 @@ import {
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
@@ -81,7 +80,6 @@ import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGate
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
@@ -128,16 +126,16 @@ export interface DeletePluginByIdInput {
     pluginId: string;
 }
 
-export interface DescribePluginArgumentsInput {
+interface DescribePluginArgumentsInput {
     pluginId: string;
 }
 
-export interface DescribedPluginArgumentOption {
+interface DescribedPluginArgumentOption {
     key: string;
     label: string;
 }
 
-export interface DescribedPluginArgument {
+interface DescribedPluginArgument {
     key: string;
     type: ArgumentType;
     label: string;
@@ -152,7 +150,7 @@ export interface DescribedPluginArgument {
     note?: string;
 }
 
-export interface DescribePluginArgumentsOutput {
+interface DescribePluginArgumentsOutput {
     pluginId: string;
     name: string;
     arguments: DescribedPluginArgument[];
@@ -163,11 +161,11 @@ export interface DownloadPluginBinaryInput {
     pluginId: string;
 }
 
-export interface DownloadPluginBinaryOutput extends DownloadStreamOutput {
+interface DownloadPluginBinaryOutput extends DownloadStreamOutput {
     fileName: string;
 }
 
-export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
+type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export interface PipelineStageInput {
     kind: PipelineStageKind;
@@ -185,7 +183,7 @@ export interface ExecutePipelineInput {
     stages: PipelineStageInput[];
 }
 
-export interface ExecutePipelineOutput {
+interface ExecutePipelineOutput {
     analysisIds: string[];
 }
 
@@ -193,11 +191,11 @@ export interface ExportPluginInput {
     pluginId: string;
 }
 
-export interface ExportPluginOutput extends DownloadStreamOutput {
+interface ExportPluginOutput extends DownloadStreamOutput {
     fileName: string;
 }
 
-export interface GetNodeTypesSchemaOutput {
+interface GetNodeTypesSchemaOutput {
     nodeTypes: Record<string, string[]>;
 }
 
@@ -221,7 +219,7 @@ export interface ListPluginsInput {
     status?: string;
 }
 
-export interface ListPluginsOutput extends PaginatedResult<PluginRecord> {}
+interface ListPluginsOutput extends PaginatedResult<PluginRecord> {}
 
 export interface RegistryInstallPluginInput {
     teamId: string;
@@ -236,7 +234,7 @@ export interface SearchRegistryPluginsInput {
     limit?: number;
 }
 
-export interface SearchRegistryPluginsOutput extends RegistrySearchResult {}
+interface SearchRegistryPluginsOutput extends RegistrySearchResult {}
 
 export interface UpdatePluginByIdInput {
     pluginId: string;
@@ -262,7 +260,7 @@ export interface ValidateWorkflowInput {
     pluginId?: string;
 }
 
-export interface ValidateWorkflowOutput {
+interface ValidateWorkflowOutput {
     validated: boolean;
     errors?: string[];
     modifier?: WorkflowNode;
@@ -273,7 +271,7 @@ export interface GetPluginExposureChartInput {
     artifactId: string;
 }
 
-export type GetPluginExposureChartOutput = DownloadStreamOutput;
+type GetPluginExposureChartOutput = DownloadStreamOutput;
 
 const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 

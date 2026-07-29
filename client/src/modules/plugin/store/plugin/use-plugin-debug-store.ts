@@ -21,7 +21,7 @@ export interface DebugExecutionLogSegment {
     executionPath?: string[];
 }
 
-export interface DebugNodeState {
+interface DebugNodeState {
     status: DebugNodeStatus;
     output?: Record<string, unknown>;
     error?: string;

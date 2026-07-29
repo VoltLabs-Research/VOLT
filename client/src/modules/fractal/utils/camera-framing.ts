@@ -11,7 +11,7 @@ import {
 import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { Camera } from 'three';
 
-export type CameraAnglePreset =
+type CameraAnglePreset =
     | 'current'
     | 'front'
     | 'back'
@@ -22,13 +22,13 @@ export type CameraAnglePreset =
     | 'isometric'
     | 'ground-isometric';
 
-export interface CaptureBounds {
+interface CaptureBounds {
     box: Box3;
     center: Vector3;
     boundingSphere: Sphere;
 }
 
-export interface ViewBasis {
+interface ViewBasis {
     forward: Vector3;
     right: Vector3;
     up: Vector3;
@@ -50,10 +50,10 @@ interface ApplyCameraAnglePresetOptions {
     fallbackDistance?: number;
 }
 
-export const FRAMING_CAPTURE_TARGET_KEY = 'isScreenshotCaptureTarget';
-export const FRAMING_PADDING = 1.15;
+const FRAMING_CAPTURE_TARGET_KEY = 'isScreenshotCaptureTarget';
+const FRAMING_PADDING = 1.15;
 
-export const getAngleDirection = (anglePreset: CameraAnglePreset): Vector3 | null => {
+const getAngleDirection = (anglePreset: CameraAnglePreset): Vector3 | null => {
     switch (anglePreset) {
         case 'front':
             return new Vector3(0, -1, 0);
@@ -77,7 +77,7 @@ export const getAngleDirection = (anglePreset: CameraAnglePreset): Vector3 | nul
     }
 };
 
-export const getAngleUpVector = (anglePreset: CameraAnglePreset, sceneUp: Vector3): Vector3 => {
+const getAngleUpVector = (anglePreset: CameraAnglePreset, sceneUp: Vector3): Vector3 => {
     if (anglePreset === 'top') {
         return new Vector3(0, 1, 0);
     }
@@ -103,7 +103,7 @@ export const getBoxCorners = (box: Box3): Vector3[] => {
     ];
 };
 
-export const resolveViewBasis = (direction: Vector3, preferredUp: Vector3): ViewBasis => {
+const resolveViewBasis = (direction: Vector3, preferredUp: Vector3): ViewBasis => {
     const forward = direction.clone().negate().normalize();
     let up = preferredUp.clone().normalize();
 
@@ -192,7 +192,7 @@ export const getCaptureBounds = (
     };
 };
 
-export const resolvePerspectiveDistance = (
+const resolvePerspectiveDistance = (
     bounds: CaptureBounds,
     basis: ViewBasis,
     camera: PerspectiveCamera,
@@ -227,7 +227,7 @@ export const resolvePerspectiveDistance = (
     );
 };
 
-export const resolveOrthographicFraming = (
+const resolveOrthographicFraming = (
     bounds: CaptureBounds,
     basis: ViewBasis,
     camera: OrthographicCamera,

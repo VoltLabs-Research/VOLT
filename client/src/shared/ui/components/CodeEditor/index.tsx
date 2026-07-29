@@ -2,7 +2,7 @@ import './CodeEditor.css';
 import { useCallback, useId } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
 
-export interface CodeEditorProps {
+interface CodeEditorProps {
     value: string;
     onChange: (value: string) => void;
     id?: string;

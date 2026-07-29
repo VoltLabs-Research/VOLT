@@ -11,7 +11,7 @@ interface TrajectoryPresencePayload extends Record<string, unknown> {
     trajectoryId: string;
 }
 
-export class TrajectoryPresenceSocketModule extends BaseSocketModule {
+class TrajectoryPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TrajectoryPresenceSocketModule';
 
     constructor() {

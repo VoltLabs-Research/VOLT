@@ -1,7 +1,7 @@
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
-export const readUserAgent = (req: AuthenticatedRequest): string => {
+const readUserAgent = (req: AuthenticatedRequest): string => {
     const userAgent = req.headers['user-agent'];
 
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';

@@ -20,7 +20,7 @@ import logger from '@shared/infrastructure/logger';
 import { In, LessThan } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 
-export interface TeamClusterLifecycleUpdatePreconditions {
+interface TeamClusterLifecycleUpdatePreconditions {
     allowedCurrentStatuses?: TeamClusterStatus[];
     requireUpdatedBefore?: Date;
 }

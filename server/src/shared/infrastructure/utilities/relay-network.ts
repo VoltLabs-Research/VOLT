@@ -13,7 +13,7 @@ export const readRelayHostValue = (name: string, fallback: string): string => {
     return rawValue;
 };
 
-export const readOptionalRelayHostValue = (name: string): string | null => {
+const readOptionalRelayHostValue = (name: string): string | null => {
     const rawValue = process.env[name]?.trim();
     if (!rawValue) {
         return null;
@@ -22,7 +22,7 @@ export const readOptionalRelayHostValue = (name: string): string | null => {
     return rawValue;
 };
 
-export const isWildcardRelayHost = (value: string): boolean => {
+const isWildcardRelayHost = (value: string): boolean => {
     return value === '0.0.0.0' || value === '::' || value === '[::]';
 };
 

@@ -78,7 +78,7 @@ export const CAMERA_SUBSECTION_TITLES = {
     transform: 'Transform'
 };
 
-export const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
+const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
     fov: 50,
     near: 0.01,
     far: 10000,
@@ -93,13 +93,13 @@ export const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
     maxBlur: 0.01
 };
 
-export const ORTHOGRAPHIC_DEFAULTS: OrthographicCameraSettings = {
+const ORTHOGRAPHIC_DEFAULTS: OrthographicCameraSettings = {
     near: 0.1,
     far: 10000,
     zoom: 1
 };
 
-export const CAMERA_DEFAULTS: CameraSettings = {
+const CAMERA_DEFAULTS: CameraSettings = {
     type: CameraType.Perspective,
     position: [8, 8, 6],
     up: [0, 0, 1],
@@ -107,7 +107,7 @@ export const CAMERA_DEFAULTS: CameraSettings = {
     orthographic: ORTHOGRAPHIC_DEFAULTS
 };
 
-export const ORBIT_CONTROLS_DEFAULT_SETTINGS: OrbitControlsSettings = {
+const ORBIT_CONTROLS_DEFAULT_SETTINGS: OrbitControlsSettings = {
     enabled: true,
     enableDamping: true,
     dampingFactor: 0.08,

@@ -1,4 +1,4 @@
-export interface ListingItemTitleSource {
+interface ListingItemTitleSource {
     title?: string | null;
     name?: string | null;
 }

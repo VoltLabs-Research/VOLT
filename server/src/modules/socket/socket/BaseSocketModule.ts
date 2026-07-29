@@ -10,7 +10,7 @@ import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 
-export interface SocketErrorEnvelope {
+interface SocketErrorEnvelope {
     code: ErrorCode;
     details?: string;
 }
@@ -23,7 +23,7 @@ const resolveSocketErrorCode = (value: unknown): ErrorCode => {
     return ErrorCodes.INTERNAL_SERVER_ERROR;
 };
 
-export const createSocketErrorEnvelope = (
+const createSocketErrorEnvelope = (
     code: unknown,
     details?: string
 ): SocketErrorEnvelope => {

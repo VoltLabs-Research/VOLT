@@ -118,7 +118,7 @@ const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<st
     }
 };
 
-export class ScriptingJupyterProxyService {
+class ScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();

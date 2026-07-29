@@ -39,7 +39,7 @@ const toFinitePositiveNumber = (value: unknown): number | undefined => {
     return parsedValue;
 };
 
-export const resolvePluginExposureExport = (
+const resolvePluginExposureExport = (
     plugin: Plugin | undefined,
     exposureId: string
 ): IExposureExport | null => {
@@ -51,7 +51,7 @@ export const resolvePluginExposureExport = (
     return exposure?.export ?? null;
 };
 
-export const getExposureLineWidth = (
+const getExposureLineWidth = (
     exposureExport: Pick<ExposureExportLike, 'options'> | null | undefined
 ): number | undefined => {
     return toFinitePositiveNumber(exposureExport?.options?.lineWidth);

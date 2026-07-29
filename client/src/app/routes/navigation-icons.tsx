@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export interface IconPair {
+interface IconPair {
     inactive: LucideIcon;
     active: LucideIcon;
 }
@@ -67,7 +67,7 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     }
 };
 
-export const FALLBACK_NAVIGATION_ICON: LucideIcon = Boxes;
+const FALLBACK_NAVIGATION_ICON: LucideIcon = Boxes;
 
 export const resolveNavigationIcon = (iconKey?: DashboardNavigationIconKey): LucideIcon => {
     if (iconKey && DASHBOARD_NAVIGATION_ICONS[iconKey]) {

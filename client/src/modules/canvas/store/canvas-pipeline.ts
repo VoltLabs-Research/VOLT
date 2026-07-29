@@ -247,7 +247,7 @@ export const useStages = (trajectoryId?: string): PipelineStage[] =>
         return target ? state.byTrajectory[target] ?? EMPTY_STAGES : EMPTY_STAGES;
     });
 
-export const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>([
+const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>([
     'slice-plane',
     'expression-select',
     'analysis-plugin'
@@ -271,7 +271,7 @@ export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | nu
     }
 };
 
-export interface SliceStageEntry {
+interface SliceStageEntry {
     id: string;
     config: SlicePlaneStageConfig;
 }

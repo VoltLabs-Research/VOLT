@@ -99,7 +99,7 @@ type PrepareWorkDirResult =
     | PrepareWorkDirNoEntrypoint
     | PrepareWorkDirNoCompiler;
 
-export const TEX_EXTENSION = '.tex';
+const TEX_EXTENSION = '.tex';
 const LATEX_COMPILE_WORKDIR_PREFIX = 'latex-compile-';
 const WORKDIR_MANIFEST_FILENAME = '.volt-latex-input-manifest.json';
 const WORKDIR_SYNC_CONCURRENCY = 8;

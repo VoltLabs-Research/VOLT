@@ -1,6 +1,6 @@
 import type { Endpoint, HttpMethod } from '@volt/contracts/shared/routing';
 
-export interface RouteDefinition {
+interface RouteDefinition {
     method: HttpMethod;
     path: string;
     handlerName: string | symbol;

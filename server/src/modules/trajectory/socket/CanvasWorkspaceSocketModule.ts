@@ -48,7 +48,7 @@ interface ConnectionContext {
 const LOBBY_PREFIX = 'trajectory-canvas-lobby';
 const WORKSPACE_PREFIX = 'trajectory-canvas-workspace';
 
-export class CanvasWorkspaceSocketModule extends BaseSocketModule {
+class CanvasWorkspaceSocketModule extends BaseSocketModule {
     public readonly name = 'CanvasWorkspaceSocketModule';
 
     private readonly realtimeState = canvasWorkspaceRealtimeStateService;

@@ -12,12 +12,12 @@ export interface ScreenshotRequest extends ScreenshotSettings {
     id: number;
 }
 
-export interface ScreenshotSize {
+interface ScreenshotSize {
     width: number;
     height: number;
 }
 
-export const SCREENSHOT_RESOLUTION_PRESETS: Record<Exclude<ScreenshotResolutionPreset, 'viewport' | 'custom'>, ScreenshotSize> = {
+const SCREENSHOT_RESOLUTION_PRESETS: Record<Exclude<ScreenshotResolutionPreset, 'viewport' | 'custom'>, ScreenshotSize> = {
     hd: {
         width: 1280,
         height: 720

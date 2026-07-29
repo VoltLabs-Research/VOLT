@@ -1,7 +1,7 @@
 import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { SelectOption, StatusBadgeProps } from '@voltstack/bravais';
 
-export interface TeamClusterRoleOption extends SelectOption {
+interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;
 }
 

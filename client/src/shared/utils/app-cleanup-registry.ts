@@ -1,12 +1,12 @@
-export type AppCleanupReason = 'route-change' | 'error-recovery' | 'manual-reset';
+type AppCleanupReason = 'route-change' | 'error-recovery' | 'manual-reset';
 
-export interface AppCleanupContext {
+interface AppCleanupContext {
     reason: AppCleanupReason;
     previousPathname: string | null;
     nextPathname: string | null;
 };
 
-export type AppCleanupHandler = (context: AppCleanupContext) => void;
+type AppCleanupHandler = (context: AppCleanupContext) => void;
 
 const cleanupRegistry: Record<AppCleanupReason, Set<AppCleanupHandler>> = {
     'route-change': new Set<AppCleanupHandler>(),

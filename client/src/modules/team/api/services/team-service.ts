@@ -11,7 +11,7 @@ export interface DeleteInviteCodeInput {
     teamId: string;
 }
 
-export interface DeleteTeamInput {
+interface DeleteTeamInput {
     teamId: string;
 }
 
@@ -19,11 +19,11 @@ export interface GenerateInviteCodeInput {
     teamId: string;
 }
 
-export interface GetTeamPermissionsInput {
+interface GetTeamPermissionsInput {
     teamId: string;
 }
 
-export type GetTeamPermissionsResponse = string[];
+type GetTeamPermissionsResponse = string[];
 
 export type JoinByInviteCodeInput = JoinTeamByCodeInput;
 

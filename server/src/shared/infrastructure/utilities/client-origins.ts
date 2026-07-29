@@ -38,7 +38,7 @@ const expandLoopbackAliases = (origin: string): string[] => {
     return Array.from(aliases);
 };
 
-export const normalizeOrigin = (value: string): string | null => {
+const normalizeOrigin = (value: string): string | null => {
     try {
         const url = new URL(value);
         if (!['http:', 'https:'].includes(url.protocol)) {

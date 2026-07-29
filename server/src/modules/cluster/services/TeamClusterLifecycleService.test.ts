@@ -13,7 +13,6 @@ import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import TeamClusterCredentialService, { hashEnrollmentToken } from '@modules/cluster/services/TeamClusterCredentialService';
 import {
     buildTeamClusterProps,
-    createDaemonPassword,
     createServiceCredentials,
     encryptTeamClusterServices
 } from '@modules/cluster/services/TeamClusterFactory';

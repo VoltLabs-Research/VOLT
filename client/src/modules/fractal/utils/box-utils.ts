@@ -1,13 +1,13 @@
 import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 
-export interface BoxTransforms {
+interface BoxTransforms {
     scale: number;
     position: { x: number; y: number; z: number };
     center: { x: number; y: number; z: number };
     maxDimension: number;
 }
 
-export interface BoxDimensions {
+interface BoxDimensions {
     width: number;
     height: number;
     depth: number;

@@ -93,7 +93,7 @@ export interface NumericColumnStats {
     stddev: number;
 }
 
-export interface CategoricalColumnValue {
+interface CategoricalColumnValue {
     value: string;
     count: number;
 }

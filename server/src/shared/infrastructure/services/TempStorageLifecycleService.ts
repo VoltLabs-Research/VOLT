@@ -151,15 +151,6 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
         await this.cleanupStaleTree(workdirPath, LATEX_WORKDIR_MAX_AGE_MS);
     }
 
-    private async cleanupStaleChildren(parentPath: string, maxAgeMs: number): Promise<void> {
-        const childEntries = await fs.readdir(parentPath, { withFileTypes: true }).catch(() => []);
-
-        for (const childEntry of childEntries) {
-            const childPath = path.join(parentPath, childEntry.name);
-            await this.cleanupStaleTree(childPath, maxAgeMs);
-        }
-    }
-
     private async cleanupStaleTree(targetPath: string, maxAgeMs: number): Promise<void> {
         const newestMtimeMs = await this.getNewestManagedMtimeMs(targetPath);
         if (newestMtimeMs === null || !this.isExpired(newestMtimeMs, maxAgeMs)) {
@@ -234,15 +225,6 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
             });
         } catch {
             logger.warn(`@temp-storage-lifecycle-service: failed to delete temp path targetPath=${targetPath}`);
-            return false;
-        }
-    }
-
-    private async isDirectoryEmpty(directoryPath: string): Promise<boolean> {
-        try {
-            const entries = await fs.readdir(directoryPath);
-            return entries.length === 0;
-        } catch {
             return false;
         }
     }

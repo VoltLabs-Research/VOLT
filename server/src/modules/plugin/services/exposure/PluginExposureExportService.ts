@@ -13,9 +13,9 @@ import { v4 } from 'uuid';
 
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
-export type AnalysisFileType = 'data' | 'chart' | 'model';
+type AnalysisFileType = 'data' | 'chart' | 'model';
 
-export interface AnalysisFileRef {
+interface AnalysisFileRef {
     bucket: string;
     objectName: string;
     type: AnalysisFileType;
@@ -30,7 +30,7 @@ const sortByTimestepAndName = (left: AnalysisFileRef, right: AnalysisFileRef): n
     return left.objectName.localeCompare(right.objectName);
 };
 
-export const groupAnalysisFilesByTimestep = (
+const groupAnalysisFilesByTimestep = (
     files: AnalysisFileRef[]
 ): Map<number, AnalysisFileRef[]> => {
     const groupedFiles = new Map<number, AnalysisFileRef[]>();
@@ -48,7 +48,7 @@ export const groupAnalysisFilesByTimestep = (
     return groupedFiles;
 };
 
-export interface PluginExposureExportParams {
+interface PluginExposureExportParams {
     analysisId: string;
     trajectoryId: string;
     pluginName: string;

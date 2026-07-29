@@ -10,7 +10,7 @@ const INDENT_CLASSES = {
     lg: 'canvas-tree-item--indent-lg'
 } as const;
 
-export type CanvasTreeIndent = keyof typeof INDENT_CLASSES;
+type CanvasTreeIndent = keyof typeof INDENT_CLASSES;
 
 interface CanvasTreeRowProps {
     icon?: ReactNode;

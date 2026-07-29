@@ -16,7 +16,7 @@ import type {
 } from '@/modules/fractal/contracts/scene';
 import type { ColormapName } from '@/modules/fractal/services/colormaps';
 
-export interface UseLineStyleOptions {
+interface UseLineStyleOptions {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
@@ -24,13 +24,13 @@ export interface UseLineStyleOptions {
 
 export type LineColorMode = NonNullable<LineStyleSpec['colorMode']>;
 
-export interface LineEntityProperty {
+interface LineEntityProperty {
     name: string;
     label: string;
     type: 'number' | 'string';
 }
 
-export interface LineCategoryOption {
+interface LineCategoryOption {
     value: string;
     swatch: string;
 }
@@ -42,7 +42,7 @@ export interface LineStyleFilterRow {
     valueInput: string;
 }
 
-export interface InspectedLineEntity {
+interface InspectedLineEntity {
     entityId: number;
     properties: Record<string, unknown>;
 }

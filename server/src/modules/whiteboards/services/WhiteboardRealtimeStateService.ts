@@ -10,21 +10,21 @@ export type WhiteboardRealtimeObjectGateway = Pick<
     'exists' | 'getBuffer' | 'putBuffer'
 >;
 
-export interface WhiteboardRealtimeStateServiceDependencies{
+interface WhiteboardRealtimeStateServiceDependencies{
     objectGatewayClient?: WhiteboardRealtimeObjectGateway;
 }
 
-export type WhiteboardElement = Record<string, unknown>;
-export type WhiteboardAppState = Record<string, unknown>;
+type WhiteboardElement = Record<string, unknown>;
+type WhiteboardAppState = Record<string, unknown>;
 
-export interface WhiteboardSceneSnapshot {
+interface WhiteboardSceneSnapshot {
     whiteboardId: string;
     revision: number;
     elements: WhiteboardElement[];
     appState: WhiteboardAppState;
 }
 
-export interface WhiteboardSceneDelta {
+interface WhiteboardSceneDelta {
     whiteboardId: string;
     revision: number;
     elements: WhiteboardElement[];
@@ -32,7 +32,7 @@ export interface WhiteboardSceneDelta {
     elementOrder?: string[];
 }
 
-export interface MergeSceneResult {
+interface MergeSceneResult {
     changed: boolean;
     revision: number;
     delta?: WhiteboardSceneDelta;

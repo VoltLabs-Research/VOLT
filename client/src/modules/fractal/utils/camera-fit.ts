@@ -3,7 +3,7 @@ import * as THREE from 'three';
 const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
 const DEFAULT_PADDING_MULTIPLIER = 1.2;
 
-export interface PerspectiveCameraFitControls {
+interface PerspectiveCameraFitControls {
     target: THREE.Vector3;
     minDistance: number;
     maxDistance: number;

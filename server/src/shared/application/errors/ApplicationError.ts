@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 
-export interface ApplicationErrorOptions {
+interface ApplicationErrorOptions {
     statusCode?: number;
     headers?: Record<string, string>;
     details?: unknown;

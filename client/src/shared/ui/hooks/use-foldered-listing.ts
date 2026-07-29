@@ -21,7 +21,7 @@ export interface DeleteFolderConfirmConfig {
     cancelText?: string;
 };
 
-export interface FolderedListingBreadcrumb {
+interface FolderedListingBreadcrumb {
     id: string | null;
     title: string;
 };
@@ -46,7 +46,7 @@ export interface UseFolderedListingOptions<TItem, TFolder extends FolderBreadcru
     getDeleteFolderConfirm: (folder: TFolder) => DeleteFolderConfirmConfig;
 };
 
-export interface UseFolderedListingReturn<TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
+interface UseFolderedListingReturn<TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
     breadcrumbs: FolderedListingBreadcrumb[];
     context: FolderedListingContext;
     currentFolder: TFolder | null;

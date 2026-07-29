@@ -118,7 +118,7 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
     }
 });
 
-export class PluginDebugSocketModule extends BaseSocketModule {
+class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
     private readonly pluginDependencyResolverService: PluginDependencyResolverService;

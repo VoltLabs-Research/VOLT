@@ -15,7 +15,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import type {
-    ContainerPortMapping,
     ContainerStats,
     RuntimeContainerInfo
 } from '@shared/contracts/ports/IContainerService';

@@ -14,18 +14,18 @@ export interface DeleteSecretKeyInput {
     secretKeyId: string;
 }
 
-export interface GetSecretKeyTeamMetricsInput {
+interface GetSecretKeyTeamMetricsInput {
     teamId: string;
     days?: number;
 }
 
-export interface GetSecretKeyUsageInput {
+interface GetSecretKeyUsageInput {
     teamId: string;
     secretKeyId: string;
     days?: number;
 }
 
-export interface GetSecretKeysInput {
+interface GetSecretKeysInput {
     teamId: string;
     page?: number;
     limit?: number;

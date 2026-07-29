@@ -37,7 +37,7 @@ export interface NodeTypeConfig {
     allowedConnections: AllowedNodeConnections;
 }
 
-export interface PluginNodeRegistryEntry extends NodeTypeConfig {
+interface PluginNodeRegistryEntry extends NodeTypeConfig {
     createDefaultData: () => INodeData;
 }
 
@@ -320,6 +320,6 @@ export const createNode = (type: NodeType, position: NodePosition): Node<INodeDa
     };
 };
 
-export const getDefaultDataForType = (type: NodeType): INodeData => {
+const getDefaultDataForType = (type: NodeType): INodeData => {
     return NODE_REGISTRY[type]?.createDefaultData() ?? {};
 };

@@ -25,7 +25,7 @@ import { paginate, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PageRequest } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 
-export interface ContainerSearchView{
+interface ContainerSearchView{
     _id: string;
     name: string;
     image: string;
@@ -48,30 +48,30 @@ export interface ContainerSearchView{
     updatedAt?: Date;
 }
 
-export interface ChatSearchView{
+interface ChatSearchView{
     participants: ChatParticipant[];
     lastMessage: string;
     isGroup: boolean;
     groupName: string;
 }
 
-export interface PluginSearchProps{
+interface PluginSearchProps{
     modifier?: { name: string } | null;
     exposures?: Array<{ _id: string; hasListing: boolean }>;
     listingExposures?: { exposures: Array<{ exposureId: string }> } | null;
     workflow?: unknown;
 }
 
-export type PluginSearchRecord = PluginRecord<PluginSearchProps, unknown>;
+type PluginSearchRecord = PluginRecord<PluginSearchProps, unknown>;
 
-export interface GetGlobalSearchInput{
+interface GetGlobalSearchInput{
     teamId: string;
     userId: string;
     query?: string;
     limit?: number;
 }
 
-export interface GetGlobalSearchResult{
+interface GetGlobalSearchResult{
     analyses: GetAnalysesByTeamIdItemView[];
     containers: ListContainersOutput<ContainerSearchView>['data'];
     trajectories: TrajectoryRecord[];

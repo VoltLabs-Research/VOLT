@@ -7,7 +7,7 @@ export interface DetachedTeamPresenceSession {
     userWentOffline: boolean;
 };
 
-export interface AttachTeamPresenceResult {
+interface AttachTeamPresenceResult {
     onlineUserIds: string[];
     userBecameOnline: boolean;
     detachedSession: DetachedTeamPresenceSession | null;

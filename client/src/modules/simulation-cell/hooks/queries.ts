@@ -13,7 +13,7 @@ type SimulationCellQueryKeys = {
 
 const BASE_KEY = 'simulation-cells';
 
-export const KEYS = buildKeys<SimulationCellQueryKeys>(BASE_KEY);
+const KEYS = buildKeys<SimulationCellQueryKeys>(BASE_KEY);
 
 export const simulationCellsQueryKey = KEYS.listing;
 

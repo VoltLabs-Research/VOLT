@@ -76,7 +76,7 @@ const CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS = {
     error: { title: 'Failed to queue transfer jobs' }
 };
 
-export interface ClusterManagementResult {
+interface ClusterManagementResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
     selectedCluster: TeamCluster | null;

@@ -10,7 +10,7 @@ const TEXT_FILE_EXTENSIONS = new Set([
 
 const IMAGE_FILE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp']);
 
-export const normalizeWorkspaceRelativePath = (value: string): string => {
+const normalizeWorkspaceRelativePath = (value: string): string => {
     return value
         .replace(/\\/g, '/')
         .replace(/^\/+/, '')
@@ -52,7 +52,7 @@ export const splitWorkspacePath = (value: string): { path: string; name: string 
     };
 };
 
-export const getWorkspaceFileExtension = (name: string): string => {
+const getWorkspaceFileExtension = (name: string): string => {
     const parts = name.split('.');
     return parts.length > 1 ? parts[parts.length - 1]?.toLowerCase() ?? '' : '';
 };

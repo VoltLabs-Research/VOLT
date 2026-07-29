@@ -17,7 +17,7 @@ export interface GetTeamRolesParams {
     limit: number;
 }
 
-export type GetTeamRolesInput = { teamId: string } & GetTeamRolesParams;
+type GetTeamRolesInput = { teamId: string } & GetTeamRolesParams;
 
 export type UpdateTeamRoleParams = TeamScopedParams & { roleId: string } & UpdateTeamRoleInput;
 

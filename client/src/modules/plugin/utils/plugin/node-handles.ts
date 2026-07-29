@@ -10,7 +10,7 @@ import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
 import { isRecord } from '@/shared/utils/type-guards';
 import type { SelectOption } from '@voltstack/bravais';
 
-export interface NodeHandleDefinition {
+interface NodeHandleDefinition {
     id: string;
     type: 'source' | 'target';
     label: string;

@@ -5,7 +5,7 @@ import type { UseQueryOptions } from '@tanstack/react-query';
 
 export const PLUGIN_CATALOG_ALL_QUERY_KEY = ['plugins', 'all'] as const;
 
-export const fetchAllPlugins = async (): Promise<Plugin[]> => {
+const fetchAllPlugins = async (): Promise<Plugin[]> => {
     const PAGE_SIZE = 100;
     let page = 1;
     const allPlugins: Plugin[] = [];

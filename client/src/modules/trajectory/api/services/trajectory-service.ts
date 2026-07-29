@@ -31,16 +31,16 @@ export interface CreateTrajectoryInput {
 
 export type CreateTrajectoryResponse = Trajectory;
 
-export interface CommitTrajectoryUploadSessionInput {
+interface CommitTrajectoryUploadSessionInput {
     uploadSessionId: string;
     authToken?: string;
 }
 
-export interface DeleteTrajectoryInput {
+interface DeleteTrajectoryInput {
     trajectoryId: string;
 }
 
-export interface DownloadSampleInput {
+interface DownloadSampleInput {
     filename: string;
 }
 
@@ -113,7 +113,7 @@ export interface MoveTrajectoryParams {
     folderId: string | null;
 }
 
-export type UpdateTrajectoryParams = { trajectoryId: string } & UpdateTrajectoryInput;
+type UpdateTrajectoryParams = { trajectoryId: string } & UpdateTrajectoryInput;
 
 interface GetTrajectoryByIdParams {
     trajectoryId: string;

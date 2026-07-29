@@ -141,7 +141,7 @@ const stableStringify = (value: unknown): string => {
     ).join(',')}}`;
 };
 
-export interface PipelineStageHashInput {
+interface PipelineStageHashInput {
     trajectoryId: string;
     selectedTimesteps?: number[];
     upstreamStageHashes: string[];

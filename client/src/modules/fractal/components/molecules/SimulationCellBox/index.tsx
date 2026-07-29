@@ -18,7 +18,7 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
 import type { ReactNode, RefObject } from 'react';
 
-export interface SimulationCellGeometryView {
+interface SimulationCellGeometryView {
     cellVectors?: number[][];
     cellOrigin?: number[];
     pbc?: CellPbc;

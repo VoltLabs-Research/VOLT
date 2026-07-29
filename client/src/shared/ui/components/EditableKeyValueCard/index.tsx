@@ -11,7 +11,7 @@ export interface FieldConfig {
     label?: string;
 };
 
-export interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
+interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
     title?: string;
     titleClassName?: string;
     items: T[];

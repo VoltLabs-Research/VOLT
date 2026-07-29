@@ -5,7 +5,7 @@ export interface PageRequest{
     limit: number;
 }
 
-export interface PageRequestOptions{
+interface PageRequestOptions{
     defaultLimit: number;
     maxLimit?: number;
 }

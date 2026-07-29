@@ -228,7 +228,7 @@ export const coerceArgumentInputValue = (
     return value;
 };
 
-export const resolveArgumentRuntimeValue = (
+const resolveArgumentRuntimeValue = (
     definition: IArgumentDefinition,
     value: unknown
 ): unknown => {

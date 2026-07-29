@@ -1,5 +1,5 @@
 
-export const getTrajectoryModelsPrefix = (trajectoryId: string): string => {
+const getTrajectoryModelsPrefix = (trajectoryId: string): string => {
     return `trajectory-${trajectoryId}/`;
 };
 
@@ -40,7 +40,7 @@ export const parseRasterTimestep = (fileKey: string): number | null => {
     return Number.isInteger(timestep) ? timestep : null;
 };
 
-export interface ParsedAnalysisRasterFrameKey {
+interface ParsedAnalysisRasterFrameKey {
     timestep: number;
     model: string;
 }

@@ -1,11 +1,11 @@
 import { EventEmitter } from 'node:events';
 
-export interface TeamClusterReverseWebSocketMessage {
+interface TeamClusterReverseWebSocketMessage {
     data: Buffer;
     isBinary: boolean;
 }
 
-export interface TeamClusterReverseWebSocketClosePayload {
+interface TeamClusterReverseWebSocketClosePayload {
     code?: number;
     message?: string;
 }

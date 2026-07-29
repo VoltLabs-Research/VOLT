@@ -15,7 +15,7 @@ interface DashboardWorkspaceChromeRegistry {
     entries: Record<string, DashboardWorkspaceChromeRegistryEntry>;
 }
 
-export interface DashboardWorkspaceChromeState {
+interface DashboardWorkspaceChromeState {
     sidebarCollapsed: boolean;
     headerHidden: boolean;
 }

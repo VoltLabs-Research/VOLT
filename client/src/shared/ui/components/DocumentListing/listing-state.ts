@@ -55,6 +55,4 @@ const getListingDisplayState = ({
         shouldShowAccessDeniedState: mode === ListingDisplayMode.AccessDenied
     };
 };
-
-export type { GetListingDisplayStateParams, ListingDisplayState };
 export default getListingDisplayState;

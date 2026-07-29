@@ -7,7 +7,7 @@ export interface ImageDimensions {
 
 const isFinitePositiveNumber = (value: number): boolean => Number.isFinite(value) && value > 0;
 
-export const isSupportedWhiteboardImageFile = (file: File): boolean => file.type.startsWith('image/');
+const isSupportedWhiteboardImageFile = (file: File): boolean => file.type.startsWith('image/');
 
 export const extractWhiteboardImageFiles = (files: ArrayLike<File> | Iterable<File> | null | undefined): File[] => {
     if (!files) {

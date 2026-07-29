@@ -8,7 +8,7 @@ import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-s
 import logger from '@shared/infrastructure/logger';
 import TeamJobsService from './TeamJobsService';
 
-export class TeamJobsSocketModule extends BaseSocketModule {
+class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;
     private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;

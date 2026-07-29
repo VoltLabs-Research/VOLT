@@ -18,7 +18,7 @@ export interface ComputeGlbUrlParams {
     mode?: CanvasAccessMode;
 }
 
-export interface ResolvedGlbResource {
+interface ResolvedGlbResource {
     url: string | null;
     resourceKey: string | null;
 }

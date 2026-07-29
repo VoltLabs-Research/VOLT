@@ -1,5 +1,5 @@
-export type { SimulationCellDims, SimulationCellPeriodicBoundaryConditions, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
-import type { SimulationCellDims, SimulationCellPeriodicBoundaryConditions, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
+export type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
+import type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
 
 export interface SimulationCellTrajectoryReference {
     _id?: string;
@@ -14,9 +14,4 @@ export interface SimulationCellProps {
     timestep: number;
     createdAt?: Date;
     updatedAt?: Date;
-}
-
-export interface SimulationCellLike {
-    readonly _id: string;
-    props: SimulationCellProps;
 }

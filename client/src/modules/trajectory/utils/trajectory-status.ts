@@ -1,6 +1,6 @@
 import type { TrajectoryStatus } from '@volt/contracts/modules/trajectory/domain';
 
-export const PROCESSING_STAGE_LABELS: Record<string, string> = {
+const PROCESSING_STAGE_LABELS: Record<string, string> = {
     idle: '',
     'waiting-for-process': 'Waiting...',
     queued: 'Queued...',

@@ -1,11 +1,11 @@
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
-export type ParamResolver = (req: AuthenticatedRequest, res: Response) => unknown | Promise<unknown>;
+type ParamResolver = (req: AuthenticatedRequest, res: Response) => unknown | Promise<unknown>;
 
 const paramsByHandler = new WeakMap<object, Map<string | symbol, ParamResolver[]>>();
 
-export const createParamDecorator = (resolve: ParamResolver): ParameterDecorator =>
+const createParamDecorator = (resolve: ParamResolver): ParameterDecorator =>
     (target, handlerName, index) => {
         if (handlerName === undefined) return;
         const perCtor = paramsByHandler.get(target.constructor) ?? new Map<string | symbol, ParamResolver[]>();

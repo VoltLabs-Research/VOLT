@@ -5,15 +5,6 @@ import { getEntities } from '@core/bootstrap/entities';
 import logger from '@shared/infrastructure/logger';
 
 let dataSource: DataSource | null = null;
-
-export const getDataSource = (): DataSource => {
-    if(!dataSource){
-        throw new Error('Database has not been initialized');
-    }
-
-    return dataSource;
-};
-
 export const connectDatabase = async (): Promise<void> => {
     if(dataSource?.isInitialized) return;
 

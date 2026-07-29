@@ -1,5 +1,5 @@
 export const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
-export const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
+const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 
 export const jobStatusKey = (jobId: string): string => `${JOB_STATUS_KEY_PREFIX}${jobId}`;
 

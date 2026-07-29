@@ -39,23 +39,23 @@ export interface UpdateWhiteboardParams {
     title?: string;
 }
 
-export interface WhiteboardIdParams {
+interface WhiteboardIdParams {
     whiteboardId: string;
 }
 
-export interface SaveStateParams extends WhiteboardIdParams {
+interface SaveStateParams extends WhiteboardIdParams {
     state: unknown;
 }
 
-export interface UploadAssetParams extends WhiteboardIdParams {
+interface UploadAssetParams extends WhiteboardIdParams {
     file: File;
 }
 
-export interface GetAssetParams extends WhiteboardIdParams {
+interface GetAssetParams extends WhiteboardIdParams {
     assetId: string;
 }
 
-export interface UploadAssetResult {
+interface UploadAssetResult {
     assetId: string;
 }
 

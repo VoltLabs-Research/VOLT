@@ -25,8 +25,6 @@ interface ResolvedRectAreaLightConfig extends ResolvedLightConfig {
     lookAt: [number, number, number];
 }
 
-export { LightingPreset };
-
 interface DynamicLightsProps {
     settings?: LightsState;
     preset?: LightingPreset;

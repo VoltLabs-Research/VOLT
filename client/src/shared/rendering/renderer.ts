@@ -63,7 +63,7 @@ export enum ToneMappingMode {
     Neutral = 'Neutral'
 };
 
-export enum OutputCS {
+enum OutputCS {
     SRGB = 'SRGB',
     LinearSRGB = 'LinearSRGB',
     DisplayP3 = 'DisplayP3',
@@ -77,7 +77,7 @@ export enum ShadowType {
     VSM = 'VSM'
 };
 
-export enum PrecisionType {
+enum PrecisionType {
     High = 'highp',
     Medium = 'mediump',
     Low = 'lowp'
@@ -138,7 +138,7 @@ export const RENDERER_SUBSECTION_TITLES = {
     shadows: 'Shadows'
 };
 
-export const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
+const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
     antialias: true,
     alpha: true,
     depth: true,
@@ -151,7 +151,7 @@ export const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
     powerPreference: PowerPreference.HighPerformance
 };
 
-export const RENDERER_RUNTIME_DEFAULTS: RendererRuntimeSettings = {
+const RENDERER_RUNTIME_DEFAULTS: RendererRuntimeSettings = {
     toneMapping: ToneMappingMode.None,
     toneMappingExposure: 5,
     outputColorSpace: OutputCS.SRGB,

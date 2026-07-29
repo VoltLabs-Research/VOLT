@@ -47,7 +47,7 @@ const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
     whiteboards: [WhiteboardEvents]
 };
 
-export const mountEventGroups = (): void => {
+const mountEventGroups = (): void => {
     const enabled = getEnabledModules();
 
     const mountable = Object.entries(EVENT_GROUPS)

@@ -59,7 +59,7 @@ const buildPluginPropertyUnavailableError = (
     );
 };
 
-export class ColorCodingService {
+class ColorCodingService {
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async getProperties(

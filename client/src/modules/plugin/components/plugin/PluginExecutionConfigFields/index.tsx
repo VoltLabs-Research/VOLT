@@ -6,7 +6,7 @@ import type { SelectOption } from '@voltstack/bravais';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 
-export interface PluginExecutionPreflight {
+interface PluginExecutionPreflight {
     issues: string[];
     action?: {
         label: string;

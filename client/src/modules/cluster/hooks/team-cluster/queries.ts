@@ -56,7 +56,7 @@ const mergeTeamClusterTransferState = (current: TeamCluster | undefined, incomin
     };
 };
 
-export const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (teamId: string) => {
+const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (teamId: string) => {
     const params: ListTeamClustersParams = {
         teamId,
         page: 1,
@@ -74,13 +74,13 @@ export const useTeamClustersQuery = (teamId: string, options?: QueryOptions<List
     });
 };
 
-export const invalidateTeamClustersQuery = (teamId: string) => {
+const invalidateTeamClustersQuery = (teamId: string) => {
     return queryClient.invalidateQueries({
         queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId)
     });
 };
 
-export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamCluster) => {
+const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamCluster) => {
     queryClient.setQueryData<ListTeamClustersResponse>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
         if (!current) {
             return {
@@ -106,7 +106,7 @@ export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamClus
     });
 };
 
-export const removeTeamClusterQueryData = (teamId: string, teamClusterId: string) => {
+const removeTeamClusterQueryData = (teamId: string, teamClusterId: string) => {
     queryClient.setQueryData<ListTeamClustersResponse>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
         if (!current) {
             return current;
@@ -124,7 +124,7 @@ export const removeTeamClusterQueryData = (teamId: string, teamClusterId: string
     });
 };
 
-export const markDemoTeamClusterDeletingQueryData = (teamId: string) => {
+const markDemoTeamClusterDeletingQueryData = (teamId: string) => {
     queryClient.setQueryData<ListTeamClustersResponse>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
         if (!current) {
             return current;
@@ -191,7 +191,7 @@ const transferJobsQuery = createQuery(
     teamClusterService.listTransferJobs
 );
 
-export const invalidateTeamClusterTransferJobsQuery = () => {
+const invalidateTeamClusterTransferJobsQuery = () => {
     return queryClient.invalidateQueries({
         queryKey: [...TEAM_CLUSTER_QUERY_KEYS.prefix(), 'transferJobs']
     });

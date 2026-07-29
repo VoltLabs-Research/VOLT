@@ -9,14 +9,12 @@ import type {
     TeamClusterFailureDetail
 } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type {
     AnalysisDeletedEventPayload,
     TrajectoryDeletedEventPayload
 } from '@shared/contracts/events';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import type TeamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';

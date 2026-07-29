@@ -81,7 +81,7 @@ export interface ContainerConfig {
     mountDockerSocket: boolean;
 }
 
-export interface UseCreateContainerFormReturn {
+interface UseCreateContainerFormReturn {
     config: ContainerConfig;
     selectedTemplate: string | null;
     customImage: string;

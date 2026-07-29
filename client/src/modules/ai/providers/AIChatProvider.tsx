@@ -111,10 +111,4 @@ export const useAIChatContext = (): AIChatContextValue => {
     return context;
 };
 
-export const useOptionalAIChatContext = (): AIChatContextValue | null => {
-    return useContext(AIChatContext);
-};
-
 export { PENDING_MESSAGE_STORAGE_KEY };
-
-export type { AIChatContextValue };

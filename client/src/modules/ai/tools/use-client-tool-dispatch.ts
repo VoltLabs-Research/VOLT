@@ -5,7 +5,7 @@ import { useCanvasBridgeStore } from '@/modules/canvas/store/use-canvas-bridge-s
 import { getClientTool } from '@/modules/ai/tools/registry';
 import type { ClientToolContext, ClientToolResult } from '@/modules/ai/contracts/tools';
 
-export interface ClientToolCall {
+interface ClientToolCall {
     toolCallId: string;
     toolName: string;
     input: unknown;

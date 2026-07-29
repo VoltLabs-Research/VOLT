@@ -1,7 +1,7 @@
 const WINDOWS_DRIVE_PATTERN = /^[a-zA-Z]:\\/;
 const WINDOWS_UNC_PATTERN = /^\\\\/;
 
-export const DEFAULT_TEAM_CLUSTER_INSTALL_ROOT = '/opt/volt/team-clusters';
+const DEFAULT_TEAM_CLUSTER_INSTALL_ROOT = '/opt/volt/team-clusters';
 
 const escapePosixSingleQuotedString = (value: string): string => {
     return value.replace(/'/g, `'"'"'`);
@@ -21,11 +21,11 @@ export const normalizeTeamClusterInstallRoot = (installRoot?: string | null): st
     return normalizedInstallRoot || trimmedInstallRoot;
 };
 
-export const isWindowsInstallRoot = (installRoot: string): boolean => {
+const isWindowsInstallRoot = (installRoot: string): boolean => {
     return WINDOWS_DRIVE_PATTERN.test(installRoot) || WINDOWS_UNC_PATTERN.test(installRoot);
 };
 
-export const buildTeamClusterInstallDirectory = (teamClusterId: string, installRoot?: string | null): string => {
+const buildTeamClusterInstallDirectory = (teamClusterId: string, installRoot?: string | null): string => {
     const normalizedInstallRoot = normalizeTeamClusterInstallRoot(installRoot);
     const pathSeparator = isWindowsInstallRoot(normalizedInstallRoot) ? '\\' : '/';
 

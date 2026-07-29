@@ -56,7 +56,7 @@ const createFolderListParams = (folderId: string | null): FolderedFolderListQuer
 
 const createFolderParams = (folderId: string): FolderedFolderQueryParams => ({ folderId });
 
-export const FOLDER_RESOURCE_TOASTS = {
+const FOLDER_RESOURCE_TOASTS = {
     create: createCrudToastOptions({
         action: 'Creating',
         subject: 'Folder'
@@ -71,7 +71,7 @@ export const FOLDER_RESOURCE_TOASTS = {
     })
 };
 
-export const createFolderedResourceFetchers = <TItem, TFolder>({
+const createFolderedResourceFetchers = <TItem, TFolder>({
     listItems,
     listFolders,
     getFolder,
@@ -83,7 +83,7 @@ export const createFolderedResourceFetchers = <TItem, TFolder>({
     createEmptyResponse: createEmptyPaginatedResponse
 });
 
-export const createFolderResourceDeleteConfirm = <TFolder extends FolderBreadcrumbEntity>({
+const createFolderResourceDeleteConfirm = <TFolder extends FolderBreadcrumbEntity>({
     pluralName,
     singularName,
     getFolderTitle = (folder) => folder.title
@@ -92,28 +92,28 @@ export const createFolderResourceDeleteConfirm = <TFolder extends FolderBreadcru
     description: `This permanently deletes the folder tree and every ${singularName} contained in it.`
 });
 
-export interface FolderedMoveTargetSource {
+interface FolderedMoveTargetSource {
     _id: string;
     folder?: string | null;
     title?: string | null;
     name?: string | null;
 }
 
-export interface FolderedMoveTarget {
+interface FolderedMoveTarget {
     _id: string;
     folder: string | null;
     title?: string | null;
     name?: string | null;
 }
 
-export const pickFolderedMoveTarget = (item: FolderedMoveTargetSource): FolderedMoveTarget => ({
+const pickFolderedMoveTarget = (item: FolderedMoveTargetSource): FolderedMoveTarget => ({
     _id: item._id,
     folder: item.folder ?? null,
     title: item.title,
     name: item.name
 });
 
-export interface FolderedListingResourceCopy {
+interface FolderedListingResourceCopy {
     itemLabel: string;
     newFolderTitle: string;
     newFolderDescription: string;
@@ -121,7 +121,7 @@ export interface FolderedListingResourceCopy {
     renameFolderDescription: string;
 }
 
-export interface FolderedListingModalIds {
+interface FolderedListingModalIds {
     newFolder: string;
     renameFolder: string;
     move: string;

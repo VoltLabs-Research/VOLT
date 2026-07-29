@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export interface TrajectoryUploadProgressItem {
+interface TrajectoryUploadProgressItem {
     id: string;
     name: string;
     fileCount: number;

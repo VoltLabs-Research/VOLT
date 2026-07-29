@@ -4,7 +4,7 @@ import type { EmptyParams } from '@voltstack/voltclient';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 
-export interface ListNotificationsInput {
+interface ListNotificationsInput {
     page?: number;
     limit?: number;
 }

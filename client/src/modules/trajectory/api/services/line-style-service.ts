@@ -4,7 +4,7 @@ import type { LineStyleSpec } from '@/modules/fractal/contracts/scene';
 import type { LineEntityRange } from '@/modules/fractal/contracts/scene-config';
 import type { GetLineEntityPropertiesResponse } from '@volt/contracts/modules/trajectory/domain';
 
-export interface ApplyLineStyleInput {
+interface ApplyLineStyleInput {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
@@ -12,14 +12,14 @@ export interface ApplyLineStyleInput {
     style: LineStyleSpec;
 }
 
-export interface ApplyLineStyleResponse {
+interface ApplyLineStyleResponse {
     objectName: string;
     entitiesRendered: number;
     entitiesTotal: number;
     categoryCounts: Record<string, number>;
 }
 
-export interface GetLineEntityPropertiesInput {
+interface GetLineEntityPropertiesInput {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;

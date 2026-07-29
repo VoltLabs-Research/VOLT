@@ -8,7 +8,7 @@ import {
 import type { MutationOptions } from '@/shared/query';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
-export interface NotificationQueryParams {
+interface NotificationQueryParams {
     limit: number;
 };
 
@@ -49,7 +49,7 @@ export const prependNotificationToInfiniteCache = (
     notificationQuery.cache.upsert(notification);
 };
 
-export const markNotificationsInfiniteCacheAsRead = () => {
+const markNotificationsInfiniteCacheAsRead = () => {
     notificationQuery.cache.patchAllInfiniteLists((current) => ({
         ...current,
         pages: current.pages.map((page) => ({

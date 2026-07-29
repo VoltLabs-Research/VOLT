@@ -3,7 +3,7 @@ import type { DeploymentSettingsProps } from '@modules/system/contracts/domain/d
 
 const SINGLETON_KEY = 'singleton';
 
-export interface DeploymentSettings {
+interface DeploymentSettings {
     _id: string;
     props: DeploymentSettingsProps;
 }

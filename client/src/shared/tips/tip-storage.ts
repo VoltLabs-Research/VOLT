@@ -2,7 +2,7 @@ import type { ContextualTipId } from '@/shared/tips/tip-registry';
 
 const SEEN_CONTEXTUAL_TIPS_KEY = 'volt:seen-contextual-tips';
 
-export const MAX_CONTEXTUAL_TIPS_PER_SESSION = 3;
+const MAX_CONTEXTUAL_TIPS_PER_SESSION = 3;
 
 let cachedSeenTips: Set<string> | null = null;
 let sessionTipCount = 0;
@@ -61,17 +61,17 @@ const persistSeenTips = (tips: Set<string>): void => {
     }
 };
 
-export const hasSeenContextualTip = (tipId: ContextualTipId): boolean => {
+const hasSeenContextualTip = (tipId: ContextualTipId): boolean => {
     return loadSeenTips().has(tipId);
 };
 
-export const markContextualTipSeen = (tipId: ContextualTipId): void => {
+const markContextualTipSeen = (tipId: ContextualTipId): void => {
     const nextTips = new Set(loadSeenTips());
     nextTips.add(tipId);
     persistSeenTips(nextTips);
 };
 
-export const canShowMoreContextualTipsThisSession = (): boolean => {
+const canShowMoreContextualTipsThisSession = (): boolean => {
     return sessionTipCount < MAX_CONTEXTUAL_TIPS_PER_SESSION;
 };
 

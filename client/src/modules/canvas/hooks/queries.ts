@@ -1,10 +1,7 @@
 import canvasService from '../api/services/canvas-service';
-import trajectoryCloneService from '../api/services/trajectory-clone';
-import { buildKeys, createMutation, createQuery } from '@/shared/query';
+import { buildKeys, createQuery } from '@/shared/query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
-import type { CloneTrajectoryOutput } from '@/modules/canvas/api/services/trajectory-clone';
-import type { CloneTrajectoryInput } from '@volt/contracts/modules/trajectory/http';
 import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
@@ -37,10 +34,6 @@ const canvasAnalysesQuery = createQuery<{ trajectoryId: string; page?: number; l
 export const useCanvasBootstrapQuery = bootstrapQuery;
 export const useCanvasTrajectoryQuery = canvasTrajectoryQuery;
 export const useCanvasAnalysesQuery = canvasAnalysesQuery;
-
-export const useCloneTrajectoryMutation = createMutation<CloneTrajectoryOutput, CloneTrajectoryInput>(
-    (input) => trajectoryCloneService.clone(input)
-);
 
 export const CANVAS_QUERY_KEYS = {
     bootstrap: KEYS.bootstrap,

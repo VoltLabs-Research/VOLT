@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export interface DemoCountdownSnapshot {
+interface DemoCountdownSnapshot {
     minutes: number;
     seconds: number;
     totalMs: number;

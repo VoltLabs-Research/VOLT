@@ -10,13 +10,13 @@ import type { ReactNode, ComponentType } from 'react';
 
 const MOBILE_BREAKPOINT = 768;
 
-export interface SidebarTag {
+interface SidebarTag {
     id: string;
     name: string;
     Component: ComponentType;
 };
 
-export interface SidebarProps {
+interface SidebarProps {
     activeTag: string;
     onTagChange?: (tagId: string) => void;
     tags: SidebarTag[];

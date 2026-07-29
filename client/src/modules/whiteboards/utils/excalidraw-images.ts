@@ -14,7 +14,7 @@ import type { ImageDimensions } from './whiteboard-image-files';
 
 const IMAGE_INSERTION_STACK_OFFSET = 40;
 
-export interface WhiteboardImageInsertionPoint {
+interface WhiteboardImageInsertionPoint {
     clientX: number;
     clientY: number;
 };
@@ -23,7 +23,7 @@ export interface PreparedWhiteboardImageAsset extends BinaryFileData {
     id: FileId;
 };
 
-export interface InsertWhiteboardImagesOptions {
+interface InsertWhiteboardImagesOptions {
     api: ExcalidrawImperativeAPI;
     files: File[];
     prepareFile: (file: File) => Promise<PreparedWhiteboardImageAsset | null>;

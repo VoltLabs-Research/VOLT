@@ -23,7 +23,7 @@ import type { QueryOptions } from '@/shared/query';
 
 type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>;
 
-export const KEYS = buildKeys<AuthQueryKeyMap>('auth');
+const KEYS = buildKeys<AuthQueryKeyMap>('auth');
 
 registerPreservedQueryKey(KEYS.currentUser()[0] as string);
 

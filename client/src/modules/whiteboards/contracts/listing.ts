@@ -1,5 +1,5 @@
 import type { Whiteboard, WhiteboardFolder } from '@volt/contracts/modules/whiteboards/domain';
-import type { FolderedFolderRow, FolderedItemRow, FolderedListingRow } from '@/shared/ui/utils/foldered-listing-rows';
+import type { FolderedItemRow, FolderedListingRow } from '@/shared/ui/utils/foldered-listing-rows';
 
 export interface WhiteboardFolderRowExtras {
     lastEditedBy: null;
@@ -10,8 +10,6 @@ export interface WhiteboardFolderRowExtras {
 export interface WhiteboardItemRowExtras {
     hierarchyTitle: string;
 }
-
-export type WhiteboardFolderRow = FolderedFolderRow<WhiteboardFolder, WhiteboardFolderRowExtras>;
 
 export type WhiteboardItemRow = FolderedItemRow<Whiteboard, WhiteboardItemRowExtras>;
 

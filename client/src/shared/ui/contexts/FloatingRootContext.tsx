@@ -1,9 +1,9 @@
 import { createContext, useContext } from 'react';
 
 const FloatingRootContext = createContext<HTMLElement | undefined>(undefined);
-export const TopLayerRootContext = createContext<HTMLElement | undefined>(undefined);
+const TopLayerRootContext = createContext<HTMLElement | undefined>(undefined);
 export const FloatingOwnerIdsContext = createContext<string[]>([]);
-export const FLOATING_OWNER_IDS_ATTRIBUTE = 'data-floating-owner-ids';
+const FLOATING_OWNER_IDS_ATTRIBUTE = 'data-floating-owner-ids';
 
 export const useFloatingRoot = (): HTMLElement | undefined => {
     return useContext(FloatingRootContext);

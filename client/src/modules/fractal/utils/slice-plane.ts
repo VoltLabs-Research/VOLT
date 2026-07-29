@@ -4,7 +4,7 @@ import type { SlicePlaneConfig } from '@/modules/fractal/contracts/scene';
 
 const DEFAULT_PLANE_GEOMETRY_NORMAL = new Vector3(0, 0, 1);
 
-export const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
+const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
     enabled: false,
     distance: 0,
     normal: {
@@ -16,7 +16,7 @@ export const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
     visualizePlane: false
 };
 
-export const DEFAULT_SLICE_PLANE_BOUNDS: ModelWorldBounds = {
+const DEFAULT_SLICE_PLANE_BOUNDS: ModelWorldBounds = {
     min: {
         x: -4,
         y: -4,
@@ -29,7 +29,7 @@ export const DEFAULT_SLICE_PLANE_BOUNDS: ModelWorldBounds = {
     }
 };
 
-export interface SlicePlaneDefinition {
+interface SlicePlaneDefinition {
     plane: Plane;
     point: Vector3;
     normal: Vector3;

@@ -1,5 +1,5 @@
 
-export interface ChatIdentifierValue {
+interface ChatIdentifierValue {
     toString(): string;
 }
 

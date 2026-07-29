@@ -2,7 +2,7 @@ import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/cl
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Response } from 'express';
 
-export const buildFrameAncestorsDirective = (): string => {
+const buildFrameAncestorsDirective = (): string => {
     const frameAncestors = new Set<string>(['\'self\'']);
 
     for (const origin of collectAllowedClientOrigins([process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST])) {
@@ -12,7 +12,7 @@ export const buildFrameAncestorsDirective = (): string => {
     return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
 };
 
-export const rewriteFrameAncestorsDirective = (contentSecurityPolicy?: string): string => {
+const rewriteFrameAncestorsDirective = (contentSecurityPolicy?: string): string => {
     const frameAncestorsDirective = buildFrameAncestorsDirective();
     if (!contentSecurityPolicy?.trim()) {
         return frameAncestorsDirective;

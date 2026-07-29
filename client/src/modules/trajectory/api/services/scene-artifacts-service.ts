@@ -31,7 +31,7 @@ export interface ListSceneArtifactsInput {
     limit?: number;
 }
 
-export interface ListTeamSceneArtifactsInput {
+interface ListTeamSceneArtifactsInput {
     page?: number;
     limit?: number;
     sourceType?: SceneArtifactSourceType;

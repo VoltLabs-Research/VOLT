@@ -20,7 +20,7 @@ export interface RegistrySearchResult {
     total: number;
 }
 
-export interface ResolvedRegistryTarball {
+interface ResolvedRegistryTarball {
     downloadUrl: string;
     sha256: string;
     fileName: string;

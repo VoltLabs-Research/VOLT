@@ -23,7 +23,7 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
 import './SimulationGrid.css';
 
-export type SimulationGridItem = TrajectoryListingRow;
+type SimulationGridItem = TrajectoryListingRow;
 
 export interface PublicSimulationGridSummary {
     team: DiscoverTeamSummary | null;

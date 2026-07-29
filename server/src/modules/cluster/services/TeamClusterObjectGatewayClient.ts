@@ -27,9 +27,9 @@ import type {
     TeamClusterObjectGatewayComposeRequest
 } from '@shared/contracts/types/TeamClusterObjectGateway';
 
-export type DirectAccessRequesterKind = 'daemon' | 'server';
+type DirectAccessRequesterKind = 'daemon' | 'server';
 
-export interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
+interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
     requesterKind: DirectAccessRequesterKind;
     requesterId: string;
     ownerClusterId: string;
@@ -45,7 +45,7 @@ const DIRECT_ACCESS_TOKEN_SIGN_OPTIONS: SignOptions = {
     algorithm: 'HS256'
 };
 
-export class TeamClusterDirectAccessTokenService {
+class TeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
         return jwt.sign(claims, secret as Secret, DIRECT_ACCESS_TOKEN_SIGN_OPTIONS);
     }
@@ -282,7 +282,7 @@ const resolveOperationTimeouts = (operation: ObjectGatewayOperationName): Object
     }
 };
 
-export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
+class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
@@ -808,15 +808,3 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
 }
 
 export default new TeamClusterObjectGatewayClient();
-
-export type {
-    TeamClusterObjectGatewayListRequest,
-    TeamClusterObjectGatewayListEntry,
-    TeamClusterObjectGatewayListResponse,
-    TeamClusterObjectGatewayHeadResponse,
-    TeamClusterObjectGatewayStreamResponse,
-    TeamClusterObjectGatewayPutRequest,
-    TeamClusterObjectGatewayComposeRequest,
-    TeamClusterObjectGatewayPutBufferRequest,
-    TeamClusterObjectGatewayPutStreamRequest
-};

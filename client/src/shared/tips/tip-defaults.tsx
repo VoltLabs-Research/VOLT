@@ -4,7 +4,7 @@ import type { SileoOptions } from 'sileo';
 import type { ContextualTipDefinition } from '@/shared/tips/tip-registry';
 
 export const AUTO_CONTEXTUAL_TIP_DURATION_MS = 6000;
-export const MANUAL_CONTEXTUAL_TIP_DURATION_MS = 2_147_483_647;
+const MANUAL_CONTEXTUAL_TIP_DURATION_MS = 2_147_483_647;
 export const CONTEXTUAL_TIP_RELEASE_BUFFER_MS = 700;
 
 const CONTEXTUAL_TIP_STYLES = {

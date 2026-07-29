@@ -1,6 +1,6 @@
 import type { Identifiable } from '@/shared/contracts/entity';
 
-export enum FolderedListingRowType {
+enum FolderedListingRowType {
     Folder = 'folder',
     Item = 'item'
 }

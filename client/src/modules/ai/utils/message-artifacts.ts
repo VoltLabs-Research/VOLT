@@ -3,7 +3,7 @@ import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
 import { isRecord } from '@/shared/utils/type-guards';
 
-export interface AITabularArtifactPayload {
+interface AITabularArtifactPayload {
     columns: string[];
     rows: Record<string, unknown>[];
 }
@@ -33,7 +33,7 @@ export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArt
     };
 };
 
-export interface AIImageArtifactPayload {
+interface AIImageArtifactPayload {
     url: string;
     mediaType: string;
     summary?: string;

@@ -10,23 +10,23 @@ export enum ClusterLiveMetricsLabel {
     MetricsUnavailable = 'Paused'
 }
 
-export interface ClusterLiveMetricsStatus {
+interface ClusterLiveMetricsStatus {
     label: ClusterLiveMetricsLabel;
     variant: 'success' | 'warning' | 'danger' | 'inactive';
 }
 
-export interface GetClusterLiveMetricsStatusParams {
+interface GetClusterLiveMetricsStatusParams {
     metrics: ClusterMetrics | null;
     isMetricsConnected: boolean;
 }
 
-export interface ClusterMetricsRecoveryState {
+interface ClusterMetricsRecoveryState {
     title: string;
     description: string;
     tone: RecoveryStateTone;
 }
 
-export interface GetClusterMetricsRecoveryStateParams {
+interface GetClusterMetricsRecoveryStateParams {
     clusterName: string;
     isMetricsConnected: boolean;
 }

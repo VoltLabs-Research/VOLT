@@ -13,7 +13,7 @@ import {
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 
-export interface WorkflowValidationPluginReference {
+interface WorkflowValidationPluginReference {
     nodeId: string;
     pluginId: string;
 }
@@ -23,7 +23,7 @@ export enum WorkflowValidationMode {
     Strict = 'strict'
 }
 
-export interface WorkflowValidationResult {
+interface WorkflowValidationResult {
     isValid: boolean;
     errors?: string[];
     modifier?: WorkflowNode;

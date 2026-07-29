@@ -4,8 +4,6 @@ import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/t
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import {
     TeamClusterServiceExposureAccessMode,
-    TeamClusterServiceExposureSourceKind,
-    TeamClusterServiceExposureStatus,
     type TeamClusterDaemonExecutionLogSegment,
     type TeamClusterServiceExposure
 } from '@shared/contracts/types/TeamClusterExposure';
@@ -389,9 +387,7 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonServerEventMessage;
 
 export {
-    TeamClusterServiceExposureAccessMode,
-    TeamClusterServiceExposureSourceKind,
-    TeamClusterServiceExposureStatus
+    TeamClusterServiceExposureAccessMode
 };
 
 export type {
@@ -400,9 +396,7 @@ export type {
 };
 
 export {
-    ChannelCommands,
-    TEAM_CLUSTER_DAEMON_EVENT,
-    TEAM_CLUSTER_EVENT
+    ChannelCommands
 };
 
 export const TEAM_CLUSTER_LIFECYCLE_EVENT = TEAM_CLUSTER_EVENT.lifecycleUpdated;
@@ -418,7 +412,7 @@ export const getTeamClusterRoom = (teamClusterId: string): string => {
 export const TEAM_CLUSTER_METRICS_ALL_EVENT = 'metrics:all';
 export const TEAM_CLUSTER_METRICS_HISTORY_EVENT = 'metrics:history';
 
-export interface TeamClusterClientMetrics extends SystemMetrics {
+interface TeamClusterClientMetrics extends SystemMetrics {
     clusterId: string;
     teamClusterId: string;
     teamClusterName: string;

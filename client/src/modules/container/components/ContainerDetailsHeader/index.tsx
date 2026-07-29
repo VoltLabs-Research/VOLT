@@ -51,7 +51,7 @@ const resolveActiveTab = (pathname: string, basePath: string): ContainerDetailsT
     return 'overview';
 };
 
-export interface ContainerDetailsHeaderProps {
+interface ContainerDetailsHeaderProps {
     container: ContainerEntity;
     onBack: () => void;
     onAction: (action: ContainerAction | 'delete') => void;

@@ -38,7 +38,7 @@ export interface PipelineStageExecutionInput {
     config?: Record<string, unknown>;
 }
 
-export interface RoutePipelineExecutionInput {
+interface RoutePipelineExecutionInput {
     teamClusterId: string;
     teamId: string;
     trajectoryId: string;
@@ -149,12 +149,6 @@ const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
 interface NestedPluginDefinition {
     pluginId: string;
     workflow: WorkflowSerializable;
-}
-
-interface TrajectoryFramePayload {
-    timestep: number;
-    natoms: number;
-    simulationCell: string;
 }
 
 interface PluginDispatchPayload extends Record<string, unknown> {
@@ -298,7 +292,7 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
     };
 };
 
-export class PluginExecutionRouter {
+class PluginExecutionRouter {
     private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 

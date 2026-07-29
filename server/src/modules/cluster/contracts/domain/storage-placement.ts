@@ -24,7 +24,7 @@ export enum StoragePlacementState {
 
 export const DEFAULT_STORAGE_PLACEMENT_STATE: StoragePlacementStateContract = StoragePlacementState.Active;
 
-export const normalizeStoragePlacementBuckets = (
+const normalizeStoragePlacementBuckets = (
     buckets: StoragePlacementBucketRef[]
 ): StoragePlacementBucketRef[] => {
     return buckets

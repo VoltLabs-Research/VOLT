@@ -30,7 +30,7 @@ export const getMinioConfig = (): MinioClientConfig => {
     };
 };
 
-export const createMinioClient = (config: MinioClientConfig): Client => {
+const createMinioClient = (config: MinioClientConfig): Client => {
     const { endPoint, accessKey, port, secretKey, useSSL } = config;
 
     if (!accessKey || !secretKey) {

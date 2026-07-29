@@ -11,13 +11,13 @@ interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     userId: string;
 }
 
-export interface CreateScriptingJupyterAccessTokenInput {
+interface CreateScriptingJupyterAccessTokenInput {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
 }
 
-export interface VerifiedScriptingJupyterAccessToken {
+interface VerifiedScriptingJupyterAccessToken {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;

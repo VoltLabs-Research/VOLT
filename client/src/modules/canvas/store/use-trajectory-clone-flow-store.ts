@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export interface PendingExecutionIntent {
+interface PendingExecutionIntent {
     pluginId: string;
     config: Record<string, unknown>;
     selectedTimesteps?: number[];
@@ -8,7 +8,7 @@ export interface PendingExecutionIntent {
     targetClusterId: string;
 }
 
-export interface CloneFlowEntry {
+interface CloneFlowEntry {
     jobId: string;
     sourceTrajectoryId: string;
     destinationTrajectoryId: string;

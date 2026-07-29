@@ -37,7 +37,7 @@ export interface ListTeamAIIntegrationModelsResponse {
     models: TeamAIModelListItem[];
 }
 
-export interface GetTeamAIIntegrationModelsInput {
+interface GetTeamAIIntegrationModelsInput {
     teamId: string;
 }
 
@@ -47,7 +47,7 @@ export interface ListTeamAIIntegrationsResponse {
     providers: TeamAIProviderCatalogItem[];
 }
 
-export interface GetTeamAIIntegrationsInput {
+interface GetTeamAIIntegrationsInput {
     teamId: string;
 }
 

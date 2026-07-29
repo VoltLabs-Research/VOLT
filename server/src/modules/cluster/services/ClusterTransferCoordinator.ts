@@ -1,6 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import Analysis from '@modules/analysis/models/Analysis';
@@ -31,7 +30,6 @@ import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType

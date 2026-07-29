@@ -113,7 +113,7 @@ interface UploadBinaryCommitApiResponse {
     data: UploadBinaryResponse;
 }
 
-export interface NodeTypesSchemaResponse {
+interface NodeTypesSchemaResponse {
     nodeTypes: Record<string, string[]>;
 }
 

@@ -21,7 +21,7 @@ export const DEFAULT_SCENE: SceneObjectType = {
     source: 'default'
 };
 
-export const isChartScene = (scene: SceneObjectType) => {
+const isChartScene = (scene: SceneObjectType) => {
     if (scene?.source !== 'plugin') return false;
 
     return scene.sceneRenderMetadata?.exportType === 'chart-png';
@@ -32,7 +32,7 @@ export const getRenderableScenes = (scenes: SceneObjectType[], forceDefaultScene
     return scenes.filter((scene) => !isChartScene(scene));
 };
 
-export interface LineSceneSource {
+interface LineSceneSource {
     scene: SceneObjectType;
     analysisId: string;
     exposureId: string;

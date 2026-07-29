@@ -48,7 +48,7 @@ interface ResolveSceneArtifactExecutionContextInput {
     buildClusterRequiredError: () => ApplicationError;
 }
 
-export interface SceneArtifactExecutionContext {
+interface SceneArtifactExecutionContext {
     computeClusterId: string;
     storageClusterId: string;
 }

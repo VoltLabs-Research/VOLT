@@ -40,18 +40,18 @@ const dedupeBucketRefs = (bucketRefs: StoragePlacementBucketRef[]): StoragePlace
     return [...deduped.values()];
 };
 
-export const buildTrajectoryPlacementBuckets = (trajectoryId: string): StoragePlacementBucketRef[] => {
+const buildTrajectoryPlacementBuckets = (trajectoryId: string): StoragePlacementBucketRef[] => {
     return dedupeBucketRefs(getTrajectoryStorageCleanupTargets(trajectoryId));
 };
 
-export const buildAnalysisPlacementBuckets = (
+const buildAnalysisPlacementBuckets = (
     trajectoryId: string,
     analysisId: string
 ): StoragePlacementBucketRef[] => {
     return dedupeBucketRefs(getAnalysisStorageCleanupTargets(trajectoryId, analysisId));
 };
 
-export const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => {
+const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => {
     return [{
         bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
         prefix: `plugin-binaries/${pluginId}/`

@@ -3,7 +3,7 @@ import { cn } from '@/shared/utils/cn';
 import { Box, Heading, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
-export interface SettingsSectionHeaderProps {
+interface SettingsSectionHeaderProps {
     title: string;
     description?: string;
     action?: ReactNode;

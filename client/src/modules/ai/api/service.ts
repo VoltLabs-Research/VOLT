@@ -11,7 +11,7 @@ export interface CreateAIConversationParams {
     message?: string;
 }
 
-export interface CreateAIConversationResult {
+interface CreateAIConversationResult {
     conversation: AIConversation;
     userMessage?: AIConversationMessage;
 }

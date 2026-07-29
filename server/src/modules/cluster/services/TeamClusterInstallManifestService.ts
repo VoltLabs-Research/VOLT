@@ -26,7 +26,7 @@ import { buffer } from 'node:stream/consumers';
 
 const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
 
-export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
+const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     files: TeamClusterInstallManifestFileView[]
 ): Promise<string> => {
     const output = new PassThrough();
@@ -54,7 +54,7 @@ export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     return compressedArchive.toString('base64');
 };
 
-export class TeamClusterInstallManifestService {
+class TeamClusterInstallManifestService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
 
     async generateInstallManifest(

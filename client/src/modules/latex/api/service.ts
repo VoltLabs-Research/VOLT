@@ -38,7 +38,7 @@ export interface DeleteLatexAssetParams {
     assetId: string;
 }
 
-export interface GetLatexAssetContentParams {
+interface GetLatexAssetContentParams {
     documentId: string;
     key: string;
 }

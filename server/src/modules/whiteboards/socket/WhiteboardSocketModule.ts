@@ -43,7 +43,7 @@ const ackError = (error: string): SocketAck<never> => ({
     error
 });
 
-export class WhiteboardSocketModule extends BaseSocketModule {
+class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';
 
     constructor() {

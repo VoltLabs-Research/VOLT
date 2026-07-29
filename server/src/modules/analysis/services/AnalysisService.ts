@@ -51,41 +51,41 @@ const TRAJECTORY_LIST_RELATIONS: readonly AnalysisRelationName[] = [
     AnalysisRelation.Plugin
 ];
 
-export interface GetAnalysesByTeamIdInput{
+interface GetAnalysesByTeamIdInput{
     teamId: string;
     page?: number;
     limit?: number;
     search?: string;
 }
 
-export interface GetAnalysesByTrajectoryIdInput{
+interface GetAnalysesByTrajectoryIdInput{
     trajectoryId: string;
     teamId?: string;
     page?: number;
     limit?: number;
 }
 
-export interface RetryFailedFramesInput{
+interface RetryFailedFramesInput{
     analysisId: string;
     teamId: string;
     userId: string;
 }
 
-export interface RetryFailedFramesResult{
+interface RetryFailedFramesResult{
     message: string;
     retriedFrames: number;
     totalFrames: number;
     failedTimesteps?: number[];
 }
 
-export interface GetAnalysisByIdInput{
+interface GetAnalysisByIdInput{
     teamId?: string;
     analysisId: string;
 }
 
 export type GetAnalysisByIdResult = AnalysisProps & { _id: string };
 
-export interface DeleteAnalysisByIdInput{
+interface DeleteAnalysisByIdInput{
     teamId?: string;
     analysisId: string;
     userId?: string;

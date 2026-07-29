@@ -19,9 +19,9 @@ export interface FilterExpression {
     value: number | string;
 }
 
-export type PerAtomPropertyType = 'number' | 'string';
+type PerAtomPropertyType = 'number' | 'string';
 
-export interface ExposureAtomConfig {
+interface ExposureAtomConfig {
     exposureId: string;
     exposureName: string;
     iterableKey?: string;
@@ -30,12 +30,12 @@ export interface ExposureAtomConfig {
     schemaKeysMap: Map<string, string[]>;
 }
 
-export interface AnalysisAllAtomsResult {
+interface AnalysisAllAtomsResult {
     propertyNames: string[];
     atoms: Record<string, unknown>[];
 }
 
-export class AtomPropertiesService {
+class AtomPropertiesService {
         private readonly daemonClient = teamClusterDaemonClient;
 
     async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {

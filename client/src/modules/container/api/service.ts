@@ -23,7 +23,7 @@ export enum ContainerAction {
     Restart = 'restart'
 }
 
-export interface ContainerRouteParams {
+interface ContainerRouteParams {
     containerId: string;
 }
 
@@ -49,7 +49,7 @@ export interface UpdateContainerFields {
     ports?: PortMapping[];
 }
 
-export interface UpdateContainerParams extends UpdateContainerFields {
+interface UpdateContainerParams extends UpdateContainerFields {
     containerId: string;
 }
 
@@ -75,7 +75,7 @@ export interface ReadContainerFileInput {
     path: string;
 }
 
-export interface CreateContainerPortAccessUrlParams {
+interface CreateContainerPortAccessUrlParams {
     teamId: string;
     containerId: string;
     privatePort: number;

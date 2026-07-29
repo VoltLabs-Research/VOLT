@@ -4,7 +4,7 @@ import logger from '@shared/infrastructure/logger';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 
-export class NotebookRuntimeTerminator {
+class NotebookRuntimeTerminator {
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;

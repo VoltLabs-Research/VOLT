@@ -14,9 +14,7 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { TeamClusterDaemonSemanticCommandResult } from '@modules/cluster/services/TeamClusterDaemonClient';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
 import { JobStatus } from '@shared/contracts/types';
 import type {
@@ -271,7 +269,7 @@ interface ValidProcessDaemonArtifactUploadJobStatusInput extends ProcessDaemonAr
     status: ArtifactUploadJobStatus;
 }
 
-export type ProcessDaemonJobCompletionInput =
+type ProcessDaemonJobCompletionInput =
     | ProcessDaemonAnalysisJobCompletionInput
     | ProcessDaemonAnalysisJobStatusInput
     | ProcessDaemonAnalysisStageStatusInput

@@ -56,7 +56,7 @@ const toSimulationCellEmbed = (cell: SimulationCell): TrajectoryFrameSimulationC
     updatedAt: cell.updatedAt
 });
 
-export const toTrajectoryFrameView = (frame: TrajectoryFrame): TrajectoryFrameView => ({
+const toTrajectoryFrameView = (frame: TrajectoryFrame): TrajectoryFrameView => ({
     timestep: frame.timestep,
     natoms: frame.natoms,
     simulationCell: frame.simulationCellRef
@@ -96,7 +96,7 @@ export const getTrajectoryFrames = async (trajectoryId: string): Promise<Traject
     return frames.map(toTrajectoryFrameView);
 };
 
-export class TrajectoryReader{
+class TrajectoryReader{
     async readPage(
         teamClusterId: string | undefined,
         trajectoryId: string,

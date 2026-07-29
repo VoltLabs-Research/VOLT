@@ -17,7 +17,7 @@ interface RetryFailedJobsInput {
     trajectoryId: string;
 }
 
-export interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
+interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
 
 export default class JobsService {
     #maintenance = teamJobMaintenanceService;

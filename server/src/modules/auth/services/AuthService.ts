@@ -51,7 +51,7 @@ interface RequestContext{
     userAgent: string;
 }
 
-export interface OAuthLoginInput extends RequestContext{
+interface OAuthLoginInput extends RequestContext{
     email: string;
     firstName?: string;
     lastName?: string;

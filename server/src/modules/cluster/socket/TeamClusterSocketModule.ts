@@ -123,7 +123,7 @@ interface DaemonSceneArtifactUpsertBatchStreamPayload {
     items: DaemonSceneArtifactUpsertItem[];
 }
 
-export class TeamClusterSocketModule extends BaseSocketModule {
+class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();

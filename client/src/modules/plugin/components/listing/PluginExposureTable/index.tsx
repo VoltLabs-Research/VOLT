@@ -17,7 +17,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import { useNavigate } from 'react-router-dom';
-export interface PluginExposureTableProps {
+interface PluginExposureTableProps {
     pluginId: string;
     exposureName?: string;
     exposureId?: string;

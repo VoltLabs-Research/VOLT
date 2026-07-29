@@ -4,14 +4,14 @@ import type { Readable } from 'node:stream';
 
 export type GlbContentEncoding = 'zstd' | 'identity';
 
-export interface ResolvedGlbStream {
+interface ResolvedGlbStream {
     stream: Readable;
     objectName: string;
     size?: number;
     contentEncoding: GlbContentEncoding;
 }
 
-export interface GlbStreamRequestContext {
+interface GlbStreamRequestContext {
     acceptEncoding: string | undefined;
 }
 

@@ -6,12 +6,12 @@ import type { SelectOption } from '@voltstack/bravais';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-export interface UseTrajectorySelectorOptions {
+interface UseTrajectorySelectorOptions {
     allowEmpty?: boolean;
     emptyLabel?: string;
 }
 
-export interface UseTrajectorySelectorReturn {
+interface UseTrajectorySelectorReturn {
     options: SelectOption[];
     isLoading: boolean;
     hasMore: boolean;

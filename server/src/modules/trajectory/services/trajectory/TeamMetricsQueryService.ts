@@ -83,7 +83,7 @@ const toMonthChange = (current: number, previous: number): number => {
     return Math.round(((current - previous) / previous) * 100);
 };
 
-export class TeamMetricsQueryService {
+class TeamMetricsQueryService {
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {
         const window = createTimeWindow();
 

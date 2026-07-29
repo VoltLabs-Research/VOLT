@@ -3,7 +3,7 @@ import { Button, CloseButton, Heading, Row, Text } from '@voltstack/bravais';
 import './PanelHeader.css';
 import type { ReactNode } from 'react';
 
-export interface PanelHeaderProps {
+interface PanelHeaderProps {
     title?: string;
     icon?: ReactNode;
     actions?: ReactNode;

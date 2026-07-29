@@ -7,7 +7,7 @@ type SessionQueryKeyMap = Record<string, unknown> & {
     loginActivity: number;
 };
 
-export const SESSION_QUERY_KEYS = buildKeys<SessionQueryKeyMap>('sessions');
+const SESSION_QUERY_KEYS = buildKeys<SessionQueryKeyMap>('sessions');
 
 export const activeSessionsQuery = createQuery(SESSION_QUERY_KEYS.activeSessions, () => service.getActiveSessions({}));
 export const loginActivityQuery = createQuery(SESSION_QUERY_KEYS.loginActivity, (limit) => service.getLoginActivity({ limit }));

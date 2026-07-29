@@ -6,7 +6,7 @@ export interface PrerequisiteStage {
     requires: string[][];
 }
 
-export interface UnsatisfiedPrerequisite {
+interface UnsatisfiedPrerequisite {
     pluginName: string;
     missing: string[][];
 }

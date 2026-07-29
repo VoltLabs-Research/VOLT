@@ -2,7 +2,7 @@ import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
 
 export { TeamInvitationStatus };
 
-export interface TeamInvitationProps{
+interface TeamInvitationProps{
     team: string;
     invitedBy: string;
     invitedUser: string | null;

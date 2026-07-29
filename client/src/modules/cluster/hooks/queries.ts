@@ -11,7 +11,7 @@ type ClusterQueryKeyMap = {
     historyLoaded: string;
 };
 
-export const CLUSTER_QUERY_KEYS = buildKeys<ClusterQueryKeyMap>('cluster');
+const CLUSTER_QUERY_KEYS = buildKeys<ClusterQueryKeyMap>('cluster');
 
 registerPreservedQueryKey(CLUSTER_QUERY_KEYS.metrics()[0] as string);
 
@@ -46,7 +46,7 @@ const mergeClusterMetrics = (
     return [...metricsByClusterId.values()];
 };
 
-export const appendClusterHistoryMetric = (
+const appendClusterHistoryMetric = (
     history: ClusterMetrics[],
     metric: ClusterMetrics
 ): ClusterMetrics[] => {

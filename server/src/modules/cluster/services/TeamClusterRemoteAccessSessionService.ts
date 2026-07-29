@@ -37,7 +37,7 @@ const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
     return getRemoteAccessSessionExpiresAt(session) <= Date.now();
 };
 
-export class TeamClusterRemoteAccessSessionService {
+class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredRemoteAccessSession>({
         getExpiresAt: getRemoteAccessSessionExpiresAt,
         sweepIntervalMs: SESSION_SWEEP_INTERVAL_MS

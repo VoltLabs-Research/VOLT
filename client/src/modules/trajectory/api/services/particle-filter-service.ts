@@ -10,9 +10,9 @@ export interface ParticleFilterCondition {
     exposureId?: string;
 }
 
-export type FilterAction = 'delete' | 'highlight';
+type FilterAction = 'delete' | 'highlight';
 
-export interface ApplyFilterInput {
+interface ApplyFilterInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -25,7 +25,7 @@ export interface ApplyFilterInput {
     conditions?: ParticleFilterCondition[];
 }
 
-export interface ApplyFilterResponse {
+interface ApplyFilterResponse {
     fileId: string;
     atomsResult: number;
     action: string;

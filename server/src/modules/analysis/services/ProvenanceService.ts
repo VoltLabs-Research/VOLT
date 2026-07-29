@@ -22,12 +22,12 @@ export interface RecordProvenanceInput{
     outputArtifactIds: string[];
 }
 
-export interface ProvenanceReproduction{
+interface ProvenanceReproduction{
     command: string;
     provenanceId: string;
 }
 
-export interface QueryProvenanceFilters{
+interface QueryProvenanceFilters{
     pluginName?: string;
     pluginVersion?: string;
     trajectoryId?: string;

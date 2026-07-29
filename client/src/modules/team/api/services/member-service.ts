@@ -10,7 +10,7 @@ export interface GetTeamMembersParams {
     limit: number;
 }
 
-export type GetTeamMembersInput = { teamId: string } & GetTeamMembersParams;
+type GetTeamMembersInput = { teamId: string } & GetTeamMembersParams;
 
 export interface RemoveTeamMemberInput {
     teamId: string;

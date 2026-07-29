@@ -49,7 +49,7 @@ const CONTAINER_TERMINAL_EVENTS = {
     ERROR: 'container:error'
 } as const;
 
-export class ContainerTerminalSocketModule extends BaseSocketModule {
+class ContainerTerminalSocketModule extends BaseSocketModule {
     public readonly name = 'ContainerTerminalSocketModule';
 
     private readonly nextAttachTokenSeed = { value: 0 };

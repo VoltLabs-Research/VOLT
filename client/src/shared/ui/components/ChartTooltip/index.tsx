@@ -1,6 +1,6 @@
 import './ChartTooltip.css';
 
-export interface ChartTooltipItem {
+interface ChartTooltipItem {
     label: string;
     value: string | number;
     color?: string;

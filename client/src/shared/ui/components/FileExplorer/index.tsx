@@ -5,7 +5,7 @@ import './FileExplorer.css';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
-export interface FileExplorerProps {
+interface FileExplorerProps {
     headerLeft?: ReactNode;
     breadcrumb?: ReactNode;
     headerRight?: ReactNode;

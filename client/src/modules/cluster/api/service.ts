@@ -43,7 +43,7 @@ export type UpdateTeamClusterQueueConcurrencyParams = TeamClusterScopedParams & 
 
 export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;
 
-export type GetTeamClusterResourceLimitsParams = TeamClusterScopedParams;
+type GetTeamClusterResourceLimitsParams = TeamClusterScopedParams;
 
 export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
 
@@ -51,7 +51,7 @@ export type ProvisionDemoTeamClusterParams = TeamScopedParams;
 
 export type DeleteDemoTeamClusterParams = TeamScopedParams;
 
-export type GetTeamClusterResourceLimitsResponse = ClusterResourceLimitsResponse;
+type GetTeamClusterResourceLimitsResponse = ClusterResourceLimitsResponse;
 
 export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
 

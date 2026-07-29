@@ -19,7 +19,7 @@ interface SecretKeyEmptyViewProps {
     message: string;
 }
 
-export const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
+const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
     <Box height='vh-max' className='secret-key-page color-primary'>
         <Stack gap='2' width='max' className='secret-key-page-main'>
             {header}

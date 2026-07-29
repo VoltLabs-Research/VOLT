@@ -9,7 +9,7 @@ interface BuildFieldAccessibilityStateInput {
     inputProps: FieldRendererProps['inputProps'];
 }
 
-export interface FieldAccessibilityState {
+interface FieldAccessibilityState {
     labelId: string;
     errorId: string;
     fieldId: string;

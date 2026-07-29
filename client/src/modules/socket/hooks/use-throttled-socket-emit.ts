@@ -2,7 +2,7 @@ import useSocket from './use-socket';
 import { socketErrorReporter } from '../services/socket-error-reporter';
 import { useEffect, useMemo, useRef } from 'react';
 
-export type ThrottledEmitMode = 'leading-throttle' | 'trailing-throttle' | 'debounce';
+type ThrottledEmitMode = 'leading-throttle' | 'trailing-throttle' | 'debounce';
 
 interface UseThrottledSocketEmitOptions {
     intervalMs: number;
@@ -13,7 +13,7 @@ interface UseThrottledSocketEmitOptions {
     flushOnUnmount?: boolean;
 };
 
-export interface ThrottledEmitter<TPayload> {
+interface ThrottledEmitter<TPayload> {
     emit: (payload: TPayload) => void;
     flush: () => void;
     cancel: () => void;

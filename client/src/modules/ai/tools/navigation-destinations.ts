@@ -1,6 +1,6 @@
 import { resolveConfiguredRouteTitle } from '@/app/routes/metadata';
 
-export interface NavigationDestination {
+interface NavigationDestination {
     
     pathTemplate: string;
     
@@ -13,7 +13,7 @@ export interface NavigationDestination {
     description: string;
 }
 
-export const NAVIGATION_DESTINATIONS = {
+const NAVIGATION_DESTINATIONS = {
     dashboard_home: {
         pathTemplate: '/dashboard',
         requiredParams: [],
@@ -181,11 +181,11 @@ export const NAVIGATION_DESTINATIONS = {
     }
 } as const satisfies Record<string, NavigationDestination>;
 
-export type NavigationDestinationKey = keyof typeof NAVIGATION_DESTINATIONS;
+type NavigationDestinationKey = keyof typeof NAVIGATION_DESTINATIONS;
 
-export const NAVIGATION_DESTINATION_KEYS = Object.keys(NAVIGATION_DESTINATIONS) as NavigationDestinationKey[];
+const NAVIGATION_DESTINATION_KEYS = Object.keys(NAVIGATION_DESTINATIONS) as NavigationDestinationKey[];
 
-export interface ResolveDestinationResult {
+interface ResolveDestinationResult {
     ok: boolean;
     path?: string;
     title?: string | null;

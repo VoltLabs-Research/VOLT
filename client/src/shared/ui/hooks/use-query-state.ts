@@ -2,7 +2,7 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect } from 'react';
 
-export interface QueryState<TData> {
+interface QueryState<TData> {
     data?: TData;
     isLoading: boolean;
     isFetching: boolean;

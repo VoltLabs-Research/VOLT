@@ -88,11 +88,11 @@ interface AnalysisExportContext{
     excludedExposures: ExcludedExposureSet;
 }
 
-export const buildAnalysisListingSelectionId = (listingId: string, listingName: string): string => {
+const buildAnalysisListingSelectionId = (listingId: string, listingName: string): string => {
     return `${listingId || 'listing'}::${listingName || listingId || 'listing'}`;
 };
 
-export const buildAnalysisSubListingSelectionId = (
+const buildAnalysisSubListingSelectionId = (
     exposureId: string,
     timestep: number,
     subListingName: string

@@ -9,7 +9,7 @@ interface ParsedUserAgent{
     isMobile: boolean;
 }
 
-export interface SessionView{
+interface SessionView{
     _id: string;
     user: string | null;
     token: null;

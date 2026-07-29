@@ -121,7 +121,7 @@ const resolveProjectedError = (
     return incomingError ?? previousError;
 };
 
-export class TeamJobProjectionService {
+class TeamJobProjectionService {
         private readonly redis = redisClient;
 
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {

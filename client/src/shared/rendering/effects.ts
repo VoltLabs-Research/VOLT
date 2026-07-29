@@ -66,7 +66,7 @@ export interface EffectsSettings {
     sepia: SepiaSettings;
 };
 
-export interface ResolveSSAOSettingsOptions {
+interface ResolveSSAOSettingsOptions {
     isDefectScene?: boolean;
 };
 
@@ -100,13 +100,13 @@ export const EFFECT_SECTION_TITLES: Record<EffectSectionId, string> = {
     [EffectSectionId.Noise]: 'Noise'
 };
 
-export const CHROMATIC_ABERRATION_DEFAULTS: ChromaticAberrationSettings = {
+const CHROMATIC_ABERRATION_DEFAULTS: ChromaticAberrationSettings = {
     enabled: false,
     offset: [0.005, 0.005],
     blendFunction: 0
 };
 
-export const DEPTH_OF_FIELD_DEFAULTS: DepthOfFieldSettings = {
+const DEPTH_OF_FIELD_DEFAULTS: DepthOfFieldSettings = {
     enabled: false,
     focusDistance: 0,
     focalLength: 0.02,
@@ -115,7 +115,7 @@ export const DEPTH_OF_FIELD_DEFAULTS: DepthOfFieldSettings = {
     height: 480
 };
 
-export const BLOOM_EFFECT_DEFAULTS: BloomSettings = {
+const BLOOM_EFFECT_DEFAULTS: BloomSettings = {
     enabled: false,
     intensity: 1.0,
     luminanceThreshold: 0.9,
@@ -124,14 +124,14 @@ export const BLOOM_EFFECT_DEFAULTS: BloomSettings = {
     blendFunction: 0
 };
 
-export const NOISE_EFFECT_DEFAULTS: NoiseSettings = {
+const NOISE_EFFECT_DEFAULTS: NoiseSettings = {
     enabled: false,
     opacity: 0.1,
     blendFunction: 0,
     premultiply: false
 };
 
-export const VIGNETTE_EFFECT_DEFAULTS: VignetteSettings = {
+const VIGNETTE_EFFECT_DEFAULTS: VignetteSettings = {
     enabled: false,
     darkness: 0.5,
     offset: 0.5,
@@ -139,13 +139,13 @@ export const VIGNETTE_EFFECT_DEFAULTS: VignetteSettings = {
     eskil: false
 };
 
-export const SEPIA_EFFECT_DEFAULTS: SepiaSettings = {
+const SEPIA_EFFECT_DEFAULTS: SepiaSettings = {
     enabled: false,
     intensity: 1.0,
     blendFunction: 0
 };
 
-export const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
+const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
     enabled: false,
     samples: 16,
     radius: 0.5,
@@ -158,7 +158,7 @@ export const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
     worldProximityFalloff: 0.1
 };
 
-export const DEFECT_SSAO_EFFECT_PRESET: SSAOEffectSettings = {
+const DEFECT_SSAO_EFFECT_PRESET: SSAOEffectSettings = {
     ...SSAO_EFFECT_DEFAULTS,
     enabled: true,
     samples: 32,
@@ -166,7 +166,7 @@ export const DEFECT_SSAO_EFFECT_PRESET: SSAOEffectSettings = {
     worldProximityFalloff: 0.3
 };
 
-export const getDefaultSSAOEffectSettings = (): SSAOEffectSettings => ({
+const getDefaultSSAOEffectSettings = (): SSAOEffectSettings => ({
     ...SSAO_EFFECT_DEFAULTS
 });
 

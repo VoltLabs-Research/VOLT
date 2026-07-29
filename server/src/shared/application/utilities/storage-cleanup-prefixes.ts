@@ -1,7 +1,7 @@
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
-export interface AnalysisStorageCleanupTarget {
+interface AnalysisStorageCleanupTarget {
     bucket: string;
     prefix: string;
 }

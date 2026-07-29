@@ -12,7 +12,7 @@ import type {
 } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-export interface AnalysisExecutionOverlayRow {
+interface AnalysisExecutionOverlayRow {
     key: string;
     label: string;
     status: AnalysisStageStatus;

@@ -5,41 +5,18 @@ export type {
     IClusterObjectArchiveService,
     ClusterArchiveObjectEntry,
     ClusterArchiveInlineEntry,
-    ClusterArchiveEntry,
-    ClusterArchiveReference,
-    ClusterArchiveDownload,
-    CreateArchiveDownloadInput
+    ClusterArchiveReference
 } from './IClusterObjectArchiveService';
 export type { IClusterObjectSignedUrlService } from './IClusterObjectSignedUrlService';
 export type { IMemberContentCounter, MemberContentCountResult } from './IMemberContentCounter';
 export type { IStoragePlacementService } from './IStoragePlacementService';
 export type {
-    IDaemonAnalysisCompletionService,
-    DaemonJobCompletionInput,
-    DaemonAnalysisJobStatusInput,
-    DaemonAnalysisStageStatusInput,
-    DaemonRasterJobStatusInput,
-    DaemonGlbJobStatusInput,
-    DaemonArtifactUploadJobStatusInput,
-    QueuedJobNotification,
-    QueuedDaemonJobNotification
+    IDaemonAnalysisCompletionService
 } from './IDaemonAnalysisCompletionService';
 export type {
-    ITeamJobMaintenanceService,
-    TeamClusterFailureDetail,
-    RemoveTeamJobsResult,
-    RetryTeamJobsResult,
-    TrajectoryDeletedCleanupInput,
-    AnalysisDeletedCleanupInput
+    ITeamJobMaintenanceService
 } from './ITeamJobMaintenanceService';
 export type {
-    ContainerEnvironmentVariable,
-    ContainerPortMapping,
-    CreateRuntimeContainerOptions,
-    ContainerProcessInfo,
-    ContainerStats,
-    RuntimeContainerInfo,
-    ContainerFileEntry,
     ContainerTerminalSize,
     ContainerTerminalStream,
     ContainerTerminalExec,

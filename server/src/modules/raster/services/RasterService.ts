@@ -15,10 +15,8 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAna
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type {
-    IDaemonAnalysisCompletionService,
     ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import type TeamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 
 interface TriggerRasterizationInput {
     trajectoryId: string;

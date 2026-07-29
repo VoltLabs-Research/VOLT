@@ -1,5 +1,5 @@
 export type { TeamClusterFailureDetail, RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
-import type { TeamClusterFailureDetail, RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
+import type { RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
 
 export interface TrajectoryDeletedCleanupInput {
     teamId: string;

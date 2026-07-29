@@ -6,7 +6,7 @@ import Identicon from 'identicon.js';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 
-export interface AvatarResult {
+interface AvatarResult {
     buffer: Buffer;
     mimeType: string;
     extension: string;

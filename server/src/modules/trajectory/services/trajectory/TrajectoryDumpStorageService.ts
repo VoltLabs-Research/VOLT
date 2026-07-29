@@ -8,7 +8,7 @@ import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/traj
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Readable } from 'node:stream';
 
-export interface TrajectoryDumpStreamResponse {
+interface TrajectoryDumpStreamResponse {
     stream: Readable;
     objectName: string;
     contentLength?: number;

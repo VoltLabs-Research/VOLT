@@ -2,7 +2,7 @@ import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 
-export interface ContainerDeploymentProgressPayload {
+interface ContainerDeploymentProgressPayload {
     operationId: string;
     teamClusterId: string;
     teamId: string;

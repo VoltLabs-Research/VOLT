@@ -29,7 +29,7 @@ interface AnalysisRelationBinding{
     select?: FindOptionsSelect<AnalysisEntity>;
 }
 
-export interface AnalysisRelationOptions{
+interface AnalysisRelationOptions{
     relations?: FindOptionsRelations<AnalysisEntity>;
     select?: FindOptionsSelect<AnalysisEntity>;
 }
@@ -107,7 +107,7 @@ export const toAnalysisLike = (analysis: AnalysisEntity): Analysis => {
     };
 };
 
-export interface AnalysisRuntimeTarget{
+interface AnalysisRuntimeTarget{
     analysisId: string;
     computeClusterId: string | undefined;
 }
@@ -127,7 +127,7 @@ export const findRuntimeTargetsByTrajectoryId = async (trajectoryId: string): Pr
     }));
 };
 
-export interface FindByTeamAndSearchOptions{
+interface FindByTeamAndSearchOptions{
     teamId: string;
     search: string;
     trajectoryIds?: string[];

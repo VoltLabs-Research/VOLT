@@ -7,18 +7,18 @@ export interface DiscoverTeamSummary {
     name: string;
 }
 
-export interface DiscoverTeamTrajectoriesMeta {
+interface DiscoverTeamTrajectoriesMeta {
     team: DiscoverTeamSummary;
 }
 
-export interface ListPublicTeamTrajectoriesInput {
+interface ListPublicTeamTrajectoriesInput {
     teamId: string;
     page: number;
     limit: number;
     search?: string;
 }
 
-export type ListPublicTeamTrajectoriesResponse = PaginatedResponse<Trajectory> & {
+type ListPublicTeamTrajectoriesResponse = PaginatedResponse<Trajectory> & {
     _meta?: DiscoverTeamTrajectoriesMeta;
 };
 

@@ -34,7 +34,7 @@ export interface ScriptingSessionStartInput {
     trajectoryId?: string | null;
 }
 
-export interface ScriptingSessionStartResult {
+interface ScriptingSessionStartResult {
     notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
     accessGrant: ScriptingJupyterAccessGrant;

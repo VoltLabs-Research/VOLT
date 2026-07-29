@@ -12,11 +12,11 @@ export interface CancelInvitationInput {
     invitationId: string;
 }
 
-export interface GetInvitationDetailsInput {
+interface GetInvitationDetailsInput {
     invitationId: string;
 }
 
-export interface GetPendingInvitationsInput {
+interface GetPendingInvitationsInput {
     teamId: string;
 }
 

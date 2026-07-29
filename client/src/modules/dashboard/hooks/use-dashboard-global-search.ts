@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_RESULT_LIMIT = 5;
 
-export interface DashboardGlobalSearchItem {
+interface DashboardGlobalSearchItem {
     id: string;
     title: string;
     subtitle: string;
@@ -31,7 +31,7 @@ export interface DashboardGlobalSearchItem {
     disabled?: boolean;
 }
 
-export interface DashboardGlobalSearchSection {
+interface DashboardGlobalSearchSection {
     key: GlobalSearchSectionKey;
     items: DashboardGlobalSearchItem[];
 }

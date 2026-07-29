@@ -1,6 +1,6 @@
 import { createService, get, post } from '@/app/core/http/utils/create-service';
 
-export interface ColorCodingPayload {
+interface ColorCodingPayload {
     property: string;
     startValue: number;
     endValue: number;
@@ -8,7 +8,7 @@ export interface ColorCodingPayload {
     exposureId?: string;
 }
 
-export interface ApplyColorCodingInput {
+interface ApplyColorCodingInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;

@@ -6,7 +6,7 @@ import { renderExpandedValue } from '@/modules/plugin/components/listing/SubList
 import { inferCellKind, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import './SubListingDetailPanel.css';
 
-export interface SubListingDetailColumn {
+interface SubListingDetailColumn {
     key?: string;
     title?: string;
     label?: string;

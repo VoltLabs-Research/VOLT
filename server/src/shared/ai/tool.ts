@@ -24,7 +24,7 @@ export interface AIToolParameters {
 export type AIToolValidator<TInput> = (input: unknown) => IValidation<TInput>;
 
 /** The three things a model needs to know about a tool, plus the optional approval gate. */
-export interface AIToolMetadata<TInput> {
+interface AIToolMetadata<TInput> {
     name: string;
     description: string;
     parameters: AIToolParameters;
@@ -44,7 +44,7 @@ export interface AIToolDefinition {
 }
 
 /** A tool handler receives the validated input merged with the caller's team/user scope. */
-export type AIToolHandler<TInput> = (input: TInput & AIToolScope) => unknown;
+type AIToolHandler<TInput> = (input: TInput & AIToolScope) => unknown;
 
 const toolsByController = new WeakMap<object, AIToolDefinition[]>();
 

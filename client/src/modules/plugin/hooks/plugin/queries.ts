@@ -76,7 +76,7 @@ const savePlugin = async (input: SavePluginInput): Promise<Plugin> => {
     return pluginService.create({ workflow: input.workflow });
 };
 
-export const buildPluginByIdQueryOptions = (params: GetPluginInput) => {
+const buildPluginByIdQueryOptions = (params: GetPluginInput) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({
         ...DEFAULT_CANVAS_ACCESS_STATE,

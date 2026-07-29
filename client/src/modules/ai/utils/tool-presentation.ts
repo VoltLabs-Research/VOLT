@@ -144,7 +144,7 @@ const extractResultSummary = (result: unknown): string | null => {
     return typeof summary === 'string' && summary.trim().length > 0 ? summary.trim() : null;
 };
 
-export interface ToolCardPresentation {
+interface ToolCardPresentation {
     label: string;
     group: ToolPresentationConfig['group'] | 'unknown';
 }

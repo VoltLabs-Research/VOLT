@@ -35,11 +35,11 @@ export interface UpdateScriptingNotebookParams {
     containerResources?: ScriptingNotebookContainerResources;
 }
 
-export interface ReadNotebookSessionStatusParams {
+interface ReadNotebookSessionStatusParams {
     notebookId: string;
 }
 
-export interface DeleteNotebookSessionParams {
+interface DeleteNotebookSessionParams {
     notebookId: string;
 }
 

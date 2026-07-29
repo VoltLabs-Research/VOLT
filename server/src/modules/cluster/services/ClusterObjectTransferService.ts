@@ -24,18 +24,18 @@ export interface ClusterObjectTransferServiceDependencies {
     objectGatewayClient?: ClusterObjectTransferGateway;
 }
 
-export interface ClusterObjectTransferWriteInput {
+interface ClusterObjectTransferWriteInput {
     stream: NodeReadable;
     contentLength?: number;
     contentType?: string;
     contentEncoding?: string;
 }
 
-export interface ClusterObjectTransferReadOptions {
+interface ClusterObjectTransferReadOptions {
     rangeHeader?: string;
 }
 
-export type ClusterObjectTransferHeadResponse = TeamClusterObjectGatewayHeadResponse;
+type ClusterObjectTransferHeadResponse = TeamClusterObjectGatewayHeadResponse;
 export type ClusterObjectTransferReadResponse = TeamClusterObjectGatewayStreamResponse;
 
 export default class ClusterObjectTransferService {

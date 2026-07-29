@@ -51,11 +51,11 @@ import type {
     GetPreviewResponse
 } from '@/modules/trajectory/api/services/trajectory-service';
 
-export enum PublicCanvasAccessMode {
+enum PublicCanvasAccessMode {
     ReadOnly = 'read-only'
 }
 
-export interface PublicCanvasFrame {
+interface PublicCanvasFrame {
     timestep: number;
     natoms: number;
     simulationCell: string;

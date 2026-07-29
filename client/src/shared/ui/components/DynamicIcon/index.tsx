@@ -29,7 +29,7 @@ const DefaultFallbackIcon: DynamicIconComponent = ({
     </svg>
 );
 
-export type DynamicIconProps = DynamicIconRenderProps & {
+type DynamicIconProps = DynamicIconRenderProps & {
     iconName: string;
     fallback?: DynamicIconComponent;
 };

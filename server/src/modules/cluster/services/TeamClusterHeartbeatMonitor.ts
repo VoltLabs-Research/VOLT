@@ -10,7 +10,7 @@ import { LessThanOrEqual, Not, In } from 'typeorm';
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
-export class TeamClusterHeartbeatMonitor {
+class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
     private readonly demoClusterDeploymentService = demoClusterDeploymentService;

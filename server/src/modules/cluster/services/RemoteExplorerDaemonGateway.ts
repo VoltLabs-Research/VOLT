@@ -13,7 +13,7 @@ interface RemoteExplorerDaemonRequest {
     path: string;
 }
 
-export class RemoteExplorerDaemonGateway {
+class RemoteExplorerDaemonGateway {
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async listEntries(

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export interface PendingPluginExecution {
+interface PendingPluginExecution {
     analysisId: string;
     trajectoryId: string;
     pluginName: string;

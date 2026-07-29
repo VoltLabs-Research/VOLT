@@ -55,12 +55,12 @@ export interface ClusterTransferJob {
     props: ClusterTransferJobProps;
 }
 
-export const createDefaultClusterTransferJobCursor = (): ClusterTransferJobCursor => ({
+const createDefaultClusterTransferJobCursor = (): ClusterTransferJobCursor => ({
     bucketIndex: 0,
     lastObjectKey: null
 });
 
-export const createDefaultClusterTransferJobStats = (): ClusterTransferJobStats => ({
+const createDefaultClusterTransferJobStats = (): ClusterTransferJobStats => ({
     copiedObjects: 0,
     copiedBytes: 0,
     verifiedObjects: 0,

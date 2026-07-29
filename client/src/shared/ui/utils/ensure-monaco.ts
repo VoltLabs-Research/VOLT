@@ -42,7 +42,7 @@ interface MonacoThemeTokens {
     syntaxKey: string;
 };
 
-export enum MonacoThemeName {
+enum MonacoThemeName {
     Light = 'volt-light',
     Dark = 'volt-dark'
 };

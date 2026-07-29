@@ -125,35 +125,3 @@ class GeometryPool {
 }
 
 export const geometryPool = new GeometryPool();
-
-export const SPHERE_RENDER_ATOM_THRESHOLD = 200_000;
-
-export const shouldRenderSpheres = (atomCount: number): boolean =>
-    atomCount > 0 && atomCount <= SPHERE_RENDER_ATOM_THRESHOLD;
-
-const SPHERE_SEGMENTS = 16;
-
-class SphereGeometryPool {
-    private byKey = new Map<string, THREE.SphereGeometry>();
-
-    private keyFor(type: number, radius: number): string {
-        return `${type}:${radius.toFixed(4)}`;
-    }
-
-    get(type: number, radius: number): THREE.SphereGeometry {
-        const key = this.keyFor(type, radius);
-        const existing = this.byKey.get(key);
-        if (existing) return existing;
-
-        const geometry = new THREE.SphereGeometry(radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS);
-        this.byKey.set(key, geometry);
-        return geometry;
-    }
-
-    clear(): void {
-        this.byKey.forEach((geometry) => geometry.dispose());
-        this.byKey.clear();
-    }
-}
-
-export const sphereGeometryPool = new SphereGeometryPool();

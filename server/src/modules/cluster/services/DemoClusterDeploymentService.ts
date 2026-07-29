@@ -60,7 +60,7 @@ const buildResourceLabels = (teamCluster: TeamCluster): Record<string, string> =
     };
 };
 
-export class DemoClusterDeploymentService {
+class DemoClusterDeploymentService {
     private readonly docker: Docker;
 
     constructor() {

@@ -12,7 +12,7 @@ const morton3 = (x: number, y: number, z: number): number => {
     return (part1By2(x) | (part1By2(y) << 1) | (part1By2(z) << 2)) >>> 0;
 };
 
-export interface BoundingBox {
+interface BoundingBox {
     minX: number;
     minY: number;
     minZ: number;

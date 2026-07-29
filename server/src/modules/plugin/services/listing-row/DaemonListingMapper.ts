@@ -25,7 +25,7 @@ export interface DaemonPaginatedResult {
     subListingNames?: string[];
 }
 
-export const SYSTEM_KEYS = new Set([
+const SYSTEM_KEYS = new Set([
     '_id',
     'plugin',
     'team',

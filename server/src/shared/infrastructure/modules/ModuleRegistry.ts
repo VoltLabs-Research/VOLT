@@ -1,6 +1,6 @@
 import type { ModuleManifest } from './types';
 
-export interface ValidationResult {
+interface ValidationResult {
     ok: boolean;
     errors: string[];
 }

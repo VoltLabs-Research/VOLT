@@ -15,7 +15,7 @@ const isFiniteNumericInput = (value: string): value is string => {
     return Number.isFinite(parsed);
 };
 
-export interface UseSlicePlaneReturn {
+interface UseSlicePlaneReturn {
     distanceInput: string;
     normalInputs: Record<SlicePlaneNormalAxis, string>;
     reverseOrientation: boolean;

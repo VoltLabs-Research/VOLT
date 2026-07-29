@@ -1,4 +1,4 @@
-export interface FormattedScientific {
+interface FormattedScientific {
     short: string;
     long: string;
 }

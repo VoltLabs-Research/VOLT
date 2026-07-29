@@ -4,7 +4,6 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import type {
     FrameMetadata,
     LineExportBaseOptions,
-    LineStyleFilterParam,
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
@@ -17,14 +16,6 @@ import type {
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
-
-export type {
-    LineExportBaseOptions,
-    LineStyleFilterParam,
-    LineStyleParams,
-    TrajectoryNativeLineModelResponse,
-    TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -140,7 +131,7 @@ export const resolveTrajectoryNativeClusterContext = async (
     };
 };
 
-export class TrajectoryNativeDaemonService {
+class TrajectoryNativeDaemonService {
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;

@@ -1,14 +1,12 @@
 import { MoreThanOrEqual } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
-import type { ActivityType, DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
-export type { DailyActivityUserSummary };
-import { ErrorCodes } from '@core/constants/error-codes';
+import type { ActivityType, DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DailyActivity from '@modules/daily-activity/models/DailyActivity';
 import type User from '@modules/auth/models/User';
 import logger from '@shared/infrastructure/logger';
 
-export interface DailyActivityRecordView {
+interface DailyActivityRecordView {
     _id: string;
     team: string;
     user: string | DailyActivityUserSummary;
@@ -17,7 +15,7 @@ export interface DailyActivityRecordView {
     minutesOnline: number;
 }
 
-export interface GetTeamActivitySummaryInput {
+interface GetTeamActivitySummaryInput {
     teamId: string;
 
     range?: number;
@@ -25,7 +23,7 @@ export interface GetTeamActivitySummaryInput {
     userId?: string;
 }
 
-export interface GetTeamActivitySummaryResult {
+interface GetTeamActivitySummaryResult {
     range: number;
     records: DailyActivityRecordView[];
 }

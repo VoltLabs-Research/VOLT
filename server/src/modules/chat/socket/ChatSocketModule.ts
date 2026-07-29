@@ -46,7 +46,7 @@ const ackError = (error: string): SocketAck<never> => ({
     error
 });
 
-export class ChatSocketModule extends BaseSocketModule {
+class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';
 
     #service = new ChatService();

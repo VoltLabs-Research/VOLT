@@ -32,7 +32,7 @@ export interface CreateLineStyledModelResult {
     categoryCounts: Record<string, number>;
 }
 
-export interface LineStyleStreamResponse {
+interface LineStyleStreamResponse {
     stream: Readable;
     contentEncoding?: string;
     contentLength?: number;
@@ -78,11 +78,11 @@ const stableStringify = (value: unknown): string => {
     return JSON.stringify(value);
 };
 
-export const hashLineStyle = (style: LineStyleSpec): string => {
+const hashLineStyle = (style: LineStyleSpec): string => {
     return createHash('sha1').update(stableStringify(style)).digest('hex').slice(0, 16);
 };
 
-export class LineStyleService {
+class LineStyleService {
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async createStyledModel(

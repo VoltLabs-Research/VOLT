@@ -46,15 +46,15 @@ interface ContainerPortProxyAccessTokenClaims extends JwtPayload {
     userId: string;
 }
 
-export interface VerifiedContainerPortProxyAccessToken {
+interface VerifiedContainerPortProxyAccessToken {
     containerId: string;
     privatePort: number;
     publicPort: number;
     userId: string;
 }
 
-export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
-export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';
+const CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
+const CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';
 
 const DEFAULT_CONTAINER_PORT_PROXY_SESSION_TTL_MS = 600_000;
 const RELAY_URL_ORIGIN = 'http://volt.local';
@@ -81,7 +81,7 @@ const isClaimsPayload = (value: unknown): value is ContainerPortProxyAccessToken
         && typeof payload.userId === 'string';
 };
 
-export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
+const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
     const configuredProtocol = process.env.TEAM_CLUSTER_APP_PROXY_PROTOCOL?.trim();
     if (configuredProtocol === 'http' || configuredProtocol === 'https') {
         return configuredProtocol;
@@ -102,7 +102,7 @@ export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
     return schema === 'https' ? 'https' : 'http';
 };
 
-export const buildContainerPortProxyRelayUrl = (input: BuildContainerPortProxyRelayUrlInput): string => {
+const buildContainerPortProxyRelayUrl = (input: BuildContainerPortProxyRelayUrlInput): string => {
     const accessToken = input.createAccessToken({
         containerId: input.containerId,
         privatePort: input.privatePort,
@@ -114,12 +114,12 @@ export const buildContainerPortProxyRelayUrl = (input: BuildContainerPortProxyRe
     return relayUrl.toString();
 };
 
-export const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): string | null => {
+const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): string | null => {
     const url = new URL(requestUrl, RELAY_URL_ORIGIN);
     return url.searchParams.get(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM);
 };
 
-export class ContainerPortProxyAccessTokenService {
+class ContainerPortProxyAccessTokenService {
     private readonly secret = getSecretKey();
     private readonly signOptions: ContainerPortProxyAccessTokenSignOptions = {
         expiresIn: Math.ceil(

@@ -1,4 +1,4 @@
-export interface GridThemeDefaults {
+interface GridThemeDefaults {
     sectionColor: string;
     cellColor: string;
 };

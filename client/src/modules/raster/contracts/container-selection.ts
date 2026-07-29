@@ -12,7 +12,7 @@ export interface RasterContainerSelection {
     model?: string;
 };
 
-export const DEFAULT_RASTER_SCENE: DefaultScene = {
+const DEFAULT_RASTER_SCENE: DefaultScene = {
     sceneType: 'trajectory',
     source: 'default'
 };

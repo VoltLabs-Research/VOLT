@@ -4,7 +4,7 @@ import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { Copy } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-export interface FileExplorerRowProps {
+interface FileExplorerRowProps {
     icon: ReactNode;
     name: string;
     type?: string;

@@ -28,7 +28,6 @@ import {
     type TeamClusterDaemonSessionEndPayload,
     type TeamClusterDaemonSessionInputPayload,
     type TeamClusterDaemonSessionResizePayload,
-    type TeamClusterDaemonSocketHeaders,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
     type TeamClusterDaemonSocketStreamStatePayload,
@@ -41,12 +40,9 @@ import {
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     ITeamClusterReverseChannelService,
-    TeamClusterDaemonCommandData,
     TeamClusterDaemonCommandPayload,
     TeamClusterCommandOptions,
     TeamClusterDaemonSocketRegistration,
-    TeamClusterExposureTunnelOpenRequest,
-    TeamClusterDirectTunnelOpenRequest,
     TeamClusterTunnelOpenRequest,
     TeamClusterTunnelOpenOptions,
     TeamClusterReverseChannelStreamAttachment,
@@ -186,7 +182,7 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
 );
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
-export class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
+class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();

@@ -5,7 +5,7 @@ export type DatabaseEntities = MixedList<string | Function | EntitySchema>;
 
 const SQLITE_SCHEME = 'sqlite:';
 
-export const getDatabaseUrl = (): string => {
+const getDatabaseUrl = (): string => {
     const url = process.env.DATABASE_URL;
     if(!url){
         throw new Error('DATABASE_URL environment variable is required');

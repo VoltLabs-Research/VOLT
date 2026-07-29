@@ -5,7 +5,7 @@ export interface ScriptingJupyterAccessGrant {
     maxAgeMs: number;
 }
 
-export interface ScriptingJupyterAccessGrantCarrier {
+interface ScriptingJupyterAccessGrantCarrier {
     readonly accessGrant?: ScriptingJupyterAccessGrant;
 }
 

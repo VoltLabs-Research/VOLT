@@ -1,6 +1,6 @@
 
 
-export const BINARY_ENVELOPE_HEADER_BYTES = 10;
+const BINARY_ENVELOPE_HEADER_BYTES = 10;
 
 export enum EnvelopeKind {
     CommandJson = 1,
@@ -10,7 +10,7 @@ export enum EnvelopeKind {
     Error = 5
 }
 
-export interface DecodedEnvelope {
+interface DecodedEnvelope {
     opId: number;
     kind: EnvelopeKind;
     payload: Uint8Array;

@@ -7,7 +7,7 @@ import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowP
 import { mapPluginToRecord as mapPluginToRecordNeutral } from '@shared/application/utilities/mapPluginToRecord';
 import type { Plugin, PluginProps, PluginRecord } from '@modules/plugin/contracts/domain/plugin';
 
-export const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<string, unknown>): Plugin => {
+const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<string, unknown>): Plugin => {
     const workflow = new Workflow(id, workflowProps);
     const projection = WorkflowProjectionService.project(workflow, id);
 

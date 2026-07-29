@@ -26,7 +26,7 @@ interface ReadSessionWithinDeadlineSuccessResult {
     timedOut: false;
 };
 
-export interface StartAndWaitForReadyScriptingSessionStateLoader {
+interface StartAndWaitForReadyScriptingSessionStateLoader {
     createSession: () => Promise<ScriptingSession>;
     readSession: (session: ScriptingSession) => Promise<ScriptingSession>;
 };

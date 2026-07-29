@@ -1,7 +1,7 @@
 import { Column } from 'typeorm';
 import { ENTITY_ID_LENGTH } from '@shared/infrastructure/persistence/entity-id';
 
-export interface ReferenceColumnOptions{
+interface ReferenceColumnOptions{
     nullable?: boolean;
 }
 

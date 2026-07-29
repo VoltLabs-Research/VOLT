@@ -16,7 +16,7 @@ export interface ClusterArchiveInlineEntry {
     encoding?: BufferEncoding;
 }
 
-export type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
+type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
 
 export interface ClusterArchiveReference {
     teamClusterId: string;

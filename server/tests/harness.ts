@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { BaseEntity, DataSource } from 'typeorm';
 import type { EntitySchema, MixedList } from 'typeorm';
 
-export type HarnessEntities = MixedList<string | Function | EntitySchema>;
+type HarnessEntities = MixedList<string | Function | EntitySchema>;
 
 export const createHarness = async (entities: HarnessEntities): Promise<DataSource> => {
     const dataSource = new DataSource({

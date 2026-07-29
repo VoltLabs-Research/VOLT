@@ -1,7 +1,7 @@
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import clusterRoleAwareSelectionService from './ClusterRoleAwareSelectionService';
 
-export class TeamClusterSelectionService implements ITeamClusterSelectionService {
+class TeamClusterSelectionService implements ITeamClusterSelectionService {
     private readonly clusterRoleAwareSelectionService = clusterRoleAwareSelectionService;
 
     async resolveConnectedClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string> {

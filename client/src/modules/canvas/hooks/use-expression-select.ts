@@ -1,7 +1,7 @@
 import useExpressionEvaluator from './use-expression-evaluator';
 import type { GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 
-export interface UseExpressionSelectResult {
+interface UseExpressionSelectResult {
     matchCount: number | null;
     visibilityMask: Uint8Array | null;
     isValid: boolean;

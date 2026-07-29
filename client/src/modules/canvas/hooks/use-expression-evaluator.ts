@@ -32,7 +32,7 @@ const buildContext = (
     }
 });
 
-export interface UseExpressionEvaluatorResult {
+interface UseExpressionEvaluatorResult {
     isValid: boolean;
     error?: string;
     evaluatedColumn?: Float64Array;

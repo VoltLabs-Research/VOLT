@@ -1,12 +1,12 @@
 import { Box, Row, Sparkline, StatCard, Text } from '@voltstack/bravais';
 import './ContainerMetricTile.css';
 
-export interface MetricSecondaryStat {
+interface MetricSecondaryStat {
     label: string;
     value: string;
 }
 
-export interface ContainerMetricTileProps {
+interface ContainerMetricTileProps {
     label: string;
     value: string;
     badge?: string;

@@ -6,9 +6,9 @@ interface RateLimitOptions {
     message?: string;
 }
 
-export const STANDARD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const STANDARD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
-export const createRateLimiter = (options: RateLimitOptions) => {
+const createRateLimiter = (options: RateLimitOptions) => {
     return rateLimit({
         windowMs: options.windowMs ?? STANDARD_RATE_LIMIT_WINDOW_MS,
         max: options.max,

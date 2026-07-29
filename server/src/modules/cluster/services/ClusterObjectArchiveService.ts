@@ -7,7 +7,7 @@ import objectGatewayClient from './TeamClusterObjectGatewayClient';
 import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
 import type { DownloadStreamOutput } from '@shared/contracts/types';
 
-export interface ClusterArchiveObjectEntry {
+interface ClusterArchiveObjectEntry {
     type: 'object';
     name: string;
     bucket: string;
@@ -16,22 +16,22 @@ export interface ClusterArchiveObjectEntry {
     optional?: boolean;
 }
 
-export interface ClusterArchiveInlineEntry {
+interface ClusterArchiveInlineEntry {
     type: 'inline';
     name: string;
     content: string;
     encoding?: BufferEncoding;
 }
 
-export type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
+type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
 
-export interface ClusterArchiveReference {
+interface ClusterArchiveReference {
     teamClusterId: string;
     bucket: string;
     objectKey: string;
 }
 
-export type ClusterArchiveDownload = DownloadStreamOutput & {
+type ClusterArchiveDownload = DownloadStreamOutput & {
     clusterObject: ClusterArchiveReference;
 };
 

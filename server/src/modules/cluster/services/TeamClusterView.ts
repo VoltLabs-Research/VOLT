@@ -42,7 +42,7 @@ export interface ClusterTransferJobView {
     updatedAt: Date;
 }
 
-export interface TeamClusterServiceView {
+interface TeamClusterServiceView {
     port: number | null;
 }
 

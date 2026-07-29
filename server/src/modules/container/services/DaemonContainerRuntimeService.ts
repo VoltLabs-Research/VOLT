@@ -9,7 +9,7 @@ import type {
 } from '@shared/contracts/ports/IContainerService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
-export interface RuntimeContainerSummary {
+interface RuntimeContainerSummary {
     Id: string;
     State?: string;
     Status?: string;

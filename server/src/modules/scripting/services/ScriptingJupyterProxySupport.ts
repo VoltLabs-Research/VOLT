@@ -20,7 +20,7 @@ export const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
 export const JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 export const JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
 
-export const NOTEBOOK_ID_EXPOSURE_LABEL_KEY = 'volt.notebook.id';
+const NOTEBOOK_ID_EXPOSURE_LABEL_KEY = 'volt.notebook.id';
 
 export const findNotebookExposure = (
     exposures: TeamClusterServiceExposure[],

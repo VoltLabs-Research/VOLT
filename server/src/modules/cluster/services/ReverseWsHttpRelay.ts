@@ -12,9 +12,9 @@ import http from 'node:http';
 import { Duplex, Readable } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 
-export type ReverseWsHttpRelaySettleReason = 'end' | 'close' | 'error' | 'aborted';
+type ReverseWsHttpRelaySettleReason = 'end' | 'close' | 'error' | 'aborted';
 
-export interface ReverseWsHttpProxyOptions {
+interface ReverseWsHttpProxyOptions {
     req: IncomingMessage;
 
     res: ServerResponse;
@@ -34,7 +34,7 @@ export interface ReverseWsHttpProxyOptions {
     onError: (error: Error) => void;
 }
 
-export interface ReverseWsWebSocketUpgradeOptions {
+interface ReverseWsWebSocketUpgradeOptions {
     teamClusterId: string;
     request: IncomingMessage;
     socket: Duplex;

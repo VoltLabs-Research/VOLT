@@ -18,7 +18,7 @@ export const ANALYSIS_LOG_SOCKET_EVENTS = {
 export type AnalysisExecutionLogSegment = TeamClusterDaemonExecutionLogSegment;
 export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
 
-export interface AnalysisFrameLogSnapshot {
+interface AnalysisFrameLogSnapshot {
     analysisId: string;
     teamId: string;
     trajectoryId: string;

@@ -1,5 +1,5 @@
 import { Middleware } from '@shared/http/Controller';
-import { Route, Status } from '@shared/http/route';
+import { Route } from '@shared/http/route';
 import { Req, Res, Param, Query, Body, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';

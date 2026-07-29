@@ -2,7 +2,7 @@ import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
 import Redis from 'ioredis';
 
-export interface RedisClientConfig {
+interface RedisClientConfig {
     host: string;
     port: number;
     username?: string;
@@ -10,7 +10,7 @@ export interface RedisClientConfig {
     db?: number;
 }
 
-export const getRedisConfig = (): RedisClientConfig => {
+const getRedisConfig = (): RedisClientConfig => {
     return {
         host: process.env.REDIS_HOST || 'localhost',
         port: readNumberEnv('REDIS_PORT', 6379),
@@ -20,7 +20,7 @@ export const getRedisConfig = (): RedisClientConfig => {
     };
 };
 
-export const createRedisClientConfig = (config: RedisClientConfig): RedisClientConfig => {
+const createRedisClientConfig = (config: RedisClientConfig): RedisClientConfig => {
     return {
         host: config.host,
         port: config.port,

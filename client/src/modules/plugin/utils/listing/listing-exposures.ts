@@ -1,6 +1,6 @@
 import type { IExposureComputed } from '@volt/contracts/modules/plugin/domain/exposure';
 
-export interface ListingRelevantExposure {
+interface ListingRelevantExposure {
     exposureId: string;
     name: string;
 }

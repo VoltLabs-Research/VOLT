@@ -1,6 +1,6 @@
 import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
 
-export enum ClusterInstallPlatform {
+enum ClusterInstallPlatform {
     Windows = 'windows',
     MacOS = 'macos',
     Linux = 'linux',
@@ -12,7 +12,7 @@ export type SupportedClusterInstallPlatform =
     | ClusterInstallPlatform.Linux
     | ClusterInstallPlatform.MacOS;
 
-export interface ClusterInstallPlatformOption {
+interface ClusterInstallPlatformOption {
     id: SupportedClusterInstallPlatform;
     label: string;
 };

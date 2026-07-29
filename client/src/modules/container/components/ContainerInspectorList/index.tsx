@@ -7,7 +7,7 @@ export interface InspectorRow {
     copyValue?: string;
 }
 
-export interface ContainerInspectorListProps {
+interface ContainerInspectorListProps {
     title?: string;
     rows: InspectorRow[];
     className?: string;

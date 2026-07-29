@@ -16,7 +16,7 @@ import type {
 import type { MutationOptions } from '@/shared/query';
 import type { QueryClient } from '@tanstack/react-query';
 
-export interface TeamJobsMutationContext {
+interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
 };
 
@@ -26,7 +26,7 @@ export const teamJobsGroups = createSocketQuery<void, TrajectoryJobGroup[]>(TEAM
     initialData: []
 });
 
-export const getTeamJobsGroupsQueryData = (client?: QueryClient): TrajectoryJobGroup[] => {
+const getTeamJobsGroupsQueryData = (client?: QueryClient): TrajectoryJobGroup[] => {
     return getActiveQueryClient(client).getQueryData<TrajectoryJobGroup[]>(TEAM_JOBS_QUERY_KEYS.groups()) ?? [];
 };
 
@@ -53,11 +53,11 @@ export const resetTeamJobsGroupsQueryData = (client?: QueryClient): void => {
     setTeamJobsGroupsQueryData([], client);
 };
 
-export const createTeamJobsMutationContext = (client?: QueryClient): TeamJobsMutationContext => ({
+const createTeamJobsMutationContext = (client?: QueryClient): TeamJobsMutationContext => ({
     previousGroups: getTeamJobsGroupsQueryData(client)
 });
 
-export const restoreTeamJobsGroupsQueryData = (
+const restoreTeamJobsGroupsQueryData = (
     context: TeamJobsMutationContext | undefined,
     client?: QueryClient
 ): void => {

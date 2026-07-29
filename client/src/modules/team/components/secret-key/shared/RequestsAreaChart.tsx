@@ -3,7 +3,7 @@ import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
 import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
-export interface RequestsAreaChartDatum {
+interface RequestsAreaChartDatum {
     date: string;
     count: number;
 }

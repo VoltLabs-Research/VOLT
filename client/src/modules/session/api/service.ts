@@ -4,7 +4,7 @@ import type { ActiveSession } from '@volt/contracts/modules/session/domain';
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { GetLoginActivityResponse } from '@volt/contracts/modules/session/domain';
 
-export interface GetLoginActivityInput {
+interface GetLoginActivityInput {
     limit?: number;
 }
 

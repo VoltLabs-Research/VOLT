@@ -14,12 +14,6 @@ export interface LineSceneSettings {
     lineWidth: number;
 }
 
-export interface BondSceneSettings {
-    radius?: number;
-    widthOverride?: number;
-    count?: number;
-}
-
 export interface LineEntityRange {
     id: number;
     triangleStart: number;

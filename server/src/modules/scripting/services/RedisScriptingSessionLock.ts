@@ -12,7 +12,7 @@ end
 return 0
 `;
 
-export class RedisScriptingSessionLock {
+class RedisScriptingSessionLock {
         private readonly redis = redisClient;
 
     async acquire(key: string, ttlMs: number): Promise<ScriptingSessionLockLease | null> {

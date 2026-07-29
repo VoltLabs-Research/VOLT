@@ -1,9 +1,9 @@
 export type EventName = keyof EventMap & string;
 
 /** A group method receives the event's payload directly, already typed by its name. */
-export type EventHandler<K extends EventName> = (payload: EventMap[K]) => unknown;
+type EventHandler<K extends EventName> = (payload: EventMap[K]) => unknown;
 
-export interface EventBinding {
+interface EventBinding {
     event: EventName;
     handlerName: string | symbol;
 }

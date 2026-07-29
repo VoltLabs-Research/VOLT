@@ -1,26 +1,26 @@
-export interface TeamRoleIdentity{
+interface TeamRoleIdentity{
     name: string;
     isSystem: boolean;
 }
 
-export interface TeamRoleMutableInput{
+interface TeamRoleMutableInput{
     name?: string;
     permissions?: string[];
 }
 
-export interface TeamRoleUpdatePayload{
+interface TeamRoleUpdatePayload{
     name?: string;
     permissions?: string[];
 }
 
-export interface TeamRoleCreateInput{
+interface TeamRoleCreateInput{
     teamId: string;
     name: string;
     permissions: string[];
     isSystem: boolean;
 }
 
-export interface TeamRoleCreatePayload{
+interface TeamRoleCreatePayload{
     team: string;
     name: string;
     permissions: string[];

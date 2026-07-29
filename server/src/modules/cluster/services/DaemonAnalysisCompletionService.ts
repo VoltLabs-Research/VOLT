@@ -19,7 +19,6 @@ import { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus 
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import logger from '@shared/infrastructure/logger';
 
 interface DaemonExecutionLogService {

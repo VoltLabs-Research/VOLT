@@ -1,11 +1,8 @@
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import type { EnabledModel } from '@volt/contracts/modules/team/domain';
-
-export type { EnabledModel };
-
 export type TeamAIProvider = AIProvider;
 
-export interface TeamAIIntegrationCreateInput{
+interface TeamAIIntegrationCreateInput{
     teamId: string;
     provider: TeamAIProvider;
     encryptedApiKey: string;
@@ -16,7 +13,7 @@ export interface TeamAIIntegrationCreateInput{
     userId: string;
 }
 
-export interface TeamAIIntegrationCreatePayload{
+interface TeamAIIntegrationCreatePayload{
     team: string;
     provider: TeamAIProvider;
     encryptedApiKey: string;
@@ -27,7 +24,7 @@ export interface TeamAIIntegrationCreatePayload{
     createdBy: string;
 }
 
-export interface TeamAIIntegrationUpdateInput{
+interface TeamAIIntegrationUpdateInput{
     encryptedApiKey: string;
     isEnabled: boolean;
     defaultModel: string;
@@ -35,7 +32,7 @@ export interface TeamAIIntegrationUpdateInput{
     metadata?: Record<string, unknown>;
 }
 
-export interface TeamAIIntegrationUpdatePayload{
+interface TeamAIIntegrationUpdatePayload{
     encryptedApiKey: string;
     isEnabled: boolean;
     defaultModel: string;

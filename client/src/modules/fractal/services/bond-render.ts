@@ -2,13 +2,11 @@ import { geometryBudgetManager } from '@/modules/fractal/services/geometry-budge
 
 import type { LineSceneSettings } from '@/modules/fractal/contracts/scene-config';
 
-export const BOND_EXPORTER_NAME = 'BondExporter';
+const DEFAULT_BOND_RADIUS = 0.15;
 
-export const DEFAULT_BOND_RADIUS = 0.15;
+const BOND_RENDER_COUNT_THRESHOLD = 2_000_000;
 
-export const BOND_RENDER_COUNT_THRESHOLD = 2_000_000;
-
-export interface BondRenderMetadata {
+interface BondRenderMetadata {
     radius?: number;
 }
 
@@ -17,9 +15,6 @@ export const shouldRenderBonds = (bondCount: number): boolean => {
     if (bondCount > BOND_RENDER_COUNT_THRESHOLD) return false;
     return geometryBudgetManager.isWithinBudget('bonds', bondCount);
 };
-
-export const bondDecimationFactor = (bondCount: number): number =>
-    geometryBudgetManager.evaluateDecimation('bonds', bondCount);
 
 export const resolveBondLineSettings = (
     metadata: BondRenderMetadata | undefined,

@@ -17,7 +17,7 @@ import type {
     TeamAIModelListItem
 } from '@volt/contracts/modules/team/domain';
 
-export class TeamAIIntegrationSecretCipher{
+class TeamAIIntegrationSecretCipher{
     async encrypt(value: string): Promise<string>{
         return encrypt(value);
     }

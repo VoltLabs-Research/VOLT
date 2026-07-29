@@ -39,7 +39,7 @@ export interface TeamClusterObjectStoreProxyServiceDependencies {
     findOwnerClusterById?: FindOwnerClusterById;
 }
 
-export interface TeamClusterObjectStoreWriteInput {
+interface TeamClusterObjectStoreWriteInput {
     bucket: string;
     objectKey: string;
     stream: NodeReadable;
@@ -49,18 +49,18 @@ export interface TeamClusterObjectStoreWriteInput {
     metadata: Record<string, string>;
 }
 
-export interface TeamClusterObjectStoreReadOptions {
+interface TeamClusterObjectStoreReadOptions {
     skipMetadata?: boolean;
     rangeHeader?: string;
 }
 
 export type TeamClusterObjectStoreHeadResponse = TeamClusterObjectGatewayHeadResponse;
-export type TeamClusterObjectStoreReadResponse = TeamClusterObjectGatewayStreamResponse;
+type TeamClusterObjectStoreReadResponse = TeamClusterObjectGatewayStreamResponse;
 
 const requesterCredentialsBrand = Symbol('TeamClusterObjectStoreRequesterCredentials');
 const authorizedAccessBrand = Symbol('TeamClusterObjectStoreAuthorizedAccess');
 
-export interface TeamClusterObjectStoreRequesterCredentials {
+interface TeamClusterObjectStoreRequesterCredentials {
     readonly requesterClusterId: string;
     readonly daemonPassword: string;
     readonly [requesterCredentialsBrand]: true;
