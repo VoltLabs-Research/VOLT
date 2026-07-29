@@ -68,14 +68,12 @@ services:
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9100}
       MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
       MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
-      MONGO_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017?authSource=admin
       DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/${POSTGRES_DB:-volt}
       SERVER_PORT: 8000
       SERVER_HOST: 0.0.0.0
       SECRET_KEY: ${SECRET_KEY:-volt-local-secret}
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
     depends_on:
-      volt-mongodb:  { condition: service_healthy }
       volt-postgres: { condition: service_healthy }
       volt-redis:    { condition: service_healthy }
       volt-minio:    { condition: service_started }

@@ -1,5 +1,5 @@
 import redisClient from '@shared/infrastructure/redis/redisClient';
-import type { JobStatusChangedEventPayload } from '@modules/jobs/events/JobStatusChangedEvent';
+import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import {

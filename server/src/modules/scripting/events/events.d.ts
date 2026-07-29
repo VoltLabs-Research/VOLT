@@ -1,4 +1,4 @@
-import type { NotebookDeletedEventPayload } from '@modules/scripting/events/NotebookDeletedEvent';
+import type { NotebookDeletedEventPayload } from '@modules/scripting/contracts/domain/events';
 
 declare global {
     interface EventMap {

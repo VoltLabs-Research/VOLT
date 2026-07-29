@@ -4,9 +4,6 @@ import Container from '@modules/container/models/Container';
 import daemonContainerRuntimeService, { type DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
 import containerPublicPortAllocator, { type ContainerPublicPortAllocator } from '@modules/container/services/ContainerPublicPortAllocator';
 import containerPortProxyRelayService, { type ContainerPortProxyRelayService } from '@modules/container/services/ContainerPortProxyRelayService';
-import ContainerCreatedEvent from '@modules/container/events/ContainerCreatedEvent';
-import ContainerDeletedEvent from '@modules/container/events/ContainerDeletedEvent';
-import ContainerUpdatedEvent from '@modules/container/events/ContainerUpdatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
@@ -108,7 +105,7 @@ export interface ContainerServiceDependencies {
     >;
     systemMetrics?: Pick<typeof systemMetricsRepository, 'getLatestByClusterId'>;
     clusterSelection?: ITeamClusterSelectionService;
-    eventBus?: Pick<IEventBus, 'publish'>;
+    eventBus?: Pick<IEventBus, 'emit'>;
 }
 
 export default class ContainerService{
@@ -117,7 +114,7 @@ export default class ContainerService{
     readonly #relay: NonNullable<ContainerServiceDependencies['relay']>;
     readonly #systemMetrics: NonNullable<ContainerServiceDependencies['systemMetrics']>;
     readonly #clusterSelection: ITeamClusterSelectionService;
-    readonly #eventBus: Pick<IEventBus, 'publish'>;
+    readonly #eventBus: Pick<IEventBus, 'emit'>;
 
     constructor(dependencies: ContainerServiceDependencies = {}){
         this.#runtime = dependencies.runtime ?? daemonContainerRuntimeService;
@@ -219,12 +216,12 @@ export default class ContainerService{
             })));
             this.#portAllocator.commitReservations(reservedPortMappings.reservedPublicPorts);
 
-            await this.#eventBus.publish(new ContainerCreatedEvent({
+            await this.#eventBus.emit('container.created', {
                 containerId: persistedContainerId,
                 teamId,
                 name,
                 userId
-            }));
+            });
 
             return { container };
         }catch(error){
@@ -332,7 +329,7 @@ export default class ContainerService{
                     })));
             }
 
-            await this.#publishContainerUpdatedEvent(containerId, teamId, container.name);
+            await this.#emitContainerUpdatedEvent(containerId, teamId, container.name);
 
             return {
                 container,
@@ -384,7 +381,7 @@ export default class ContainerService{
                 await this.#relay.syncContainerRelays(container.id, nextRelays);
             }
 
-            await this.#publishContainerUpdatedEvent(containerId, teamId, container.name);
+            await this.#emitContainerUpdatedEvent(containerId, teamId, container.name);
 
             return { container };
         }catch(error){
@@ -402,12 +399,12 @@ export default class ContainerService{
         await Container.delete({ id: containerId });
         await this.#relay.stopContainerRelays(container.id);
 
-        await this.#eventBus.publish(new ContainerDeletedEvent({
+        await this.#eventBus.emit('container.deleted', {
             containerId,
             teamId: container.team ?? '',
             userId,
             containerName: container.name ?? ''
-        }));
+        });
 
         return { message: 'Container deleted successfully' };
     }
@@ -842,12 +839,12 @@ export default class ContainerService{
         requestedPublicPorts.add(publicPort);
     }
 
-    async #publishContainerUpdatedEvent(containerId: string, teamId: string, containerName: string): Promise<void>{
-        await this.#eventBus.publish(new ContainerUpdatedEvent({
+    async #emitContainerUpdatedEvent(containerId: string, teamId: string, containerName: string): Promise<void>{
+        await this.#eventBus.emit('container.updated', {
             containerId,
             teamId,
             containerName
-        }));
+        });
     }
 
     #scheduleRuntimeStatusSync(containers: Container[]): void{

@@ -30,10 +30,6 @@ import { PluginExposureExportService } from '@modules/plugin/services/exposure/P
 import { AnalysisListingExportCatalogService } from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
 import { ListingRowsExportService } from '@modules/plugin/services/listing-row/ListingRowsExportService';
 
-import PluginCreatedEvent from '@modules/plugin/events/PluginCreatedEvent';
-import PluginDeletedEvent from '@modules/plugin/events/PluginDeletedEvent';
-import PluginPublishedEvent from '@modules/plugin/events/PluginPublishedEvent';
-
 import WorkflowProjectionService, {
     PluginDisplayNameResolver,
     computeDumpStageHash,
@@ -585,10 +581,10 @@ export default class PluginService {
             input.teamId
         );
 
-        await this.#eventBus.publish(new PluginCreatedEvent({
+        await this.#eventBus.emit('plugin.created', {
             pluginId: data.plugin._id,
             teamId: input.teamId
-        }));
+        });
 
         return mapPluginToRecord(data.plugin);
     }
@@ -629,10 +625,10 @@ export default class PluginService {
             input.teamId
         );
 
-        await this.#eventBus.publish(new PluginCreatedEvent({
+        await this.#eventBus.emit('plugin.created', {
             pluginId: plugin._id,
             teamId: input.teamId
-        }));
+        });
 
         return mapPluginToRecord(plugin);
     }
@@ -678,10 +674,10 @@ export default class PluginService {
         }).save();
         const plugin = toPluginLike(pluginEntity);
 
-        await this.#eventBus.publish(new PluginCreatedEvent({
+        await this.#eventBus.emit('plugin.created', {
             pluginId: plugin._id,
             teamId: input.teamId
-        }));
+        });
 
         return {
             plugin: mapPluginToRecord(plugin)
@@ -831,10 +827,10 @@ export default class PluginService {
         }).save();
         const plugin = toPluginLike(pluginEntity);
 
-        await this.#eventBus.publish(new PluginCreatedEvent({
+        await this.#eventBus.emit('plugin.created', {
             pluginId: plugin._id,
             teamId: input.teamId
-        }));
+        });
 
         return {
             plugin: mapPluginToRecord(plugin)
@@ -938,18 +934,18 @@ export default class PluginService {
                 .find((node) => node.type === WorkflowNodeType.Entrypoint);
             const entrypoint = entrypointNode?.data?.entrypoint;
 
-            await this.#eventBus.publish(new PluginPublishedEvent({
+            await this.#eventBus.emit('plugin.published', {
                 pluginId: updatedPlugin.id,
                 teamId: updatedPlugin.props.team,
                 binaryObjectPath: entrypoint?.binaryObjectPath,
                 requirementsFile: entrypoint?.requirementsFile,
                 entrypointScript: entrypoint?.entrypointScript,
                 binaryHash: entrypoint?.binaryHash
-            })).catch((error: unknown) => {
+            }).catch((error: unknown) => {
                 logger.warn({
                     err: error,
                     pluginId: updatedPlugin.id
-                }, '@plugin-service: failed to publish PluginPublishedEvent');
+                }, '@plugin-service: failed to publish plugin.published');
             });
         }
 
@@ -968,11 +964,11 @@ export default class PluginService {
 
         await pluginEntity.remove();
 
-        await this.#eventBus.publish(new PluginDeletedEvent({
+        await this.#eventBus.emit('plugin.deleted', {
             pluginId: plugin.id,
             teamId: plugin.props.team,
             workflow: plugin.props.workflow
-        }));
+        });
 
         return null;
     }

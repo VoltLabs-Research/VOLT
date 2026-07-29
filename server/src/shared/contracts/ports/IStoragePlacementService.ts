@@ -1,6 +1,6 @@
 
-import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
 import type {
+    PersistedStoragePlacement as StoragePlacement,
     StoragePlacementScopeType,
     StoragePlacementState
 } from '@shared/domain/contracts/team-cluster';

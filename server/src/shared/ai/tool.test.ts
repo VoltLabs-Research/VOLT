@@ -7,7 +7,9 @@ import { AITool, ClientAITool, getAITools } from '@shared/ai/tool';
 import type { AIToolParameters, AIToolValidator } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 
-const scope: AIToolScope = { teamId: 'team-1', userId: 'user-1' };
+const scope: AIToolScope = {
+ teamId: 'team-1', userId: 'user-1' 
+};
 
 // The real controllers get these from `typia.llm.parameters<T>()` and
 // `typia.createValidate<T>()`. The fixtures spell them out by hand so this file
@@ -26,13 +28,17 @@ const validatorFor = <T>(requiredKey: string): AIToolValidator<T> =>
         const value = input as Record<string, unknown>;
 
         if (value && typeof value[requiredKey] === 'string') {
-            return { success: true, data: input as T };
+            return {
+ success: true, data: input as T 
+};
         }
 
         return {
             success: false,
             data: input,
-            errors: [{ path: `$input.${requiredKey}`, expected: 'string', value: value?.[requiredKey] }]
+            errors: [{
+ path: `$input.${requiredKey}`, expected: 'string', value: value?.[requiredKey] 
+}]
         };
     };
 
@@ -45,7 +51,9 @@ interface RemoveInput {
     id: string;
 }
 
-const greetParameters = parametersOf({ name: { type: 'string' }, loud: { type: 'boolean' } }, ['name']);
+const greetParameters = parametersOf({
+ name: { type: 'string' }, loud: { type: 'boolean' } 
+}, ['name']);
 const removeParameters = parametersOf({ id: { type: 'string' } }, ['id']);
 
 class FixtureAIToolController extends AIToolController {
@@ -56,7 +64,9 @@ class FixtureAIToolController extends AIToolController {
         validate: validatorFor<GreetInput>('name')
     })
     greet(input: GreetInput & AIToolScope) {
-        return { greeting: input.loud ? `HI ${input.name}!` : `hi ${input.name}`, teamId: input.teamId };
+        return {
+ greeting: input.loud ? `HI ${input.name}!` : `hi ${input.name}`, teamId: input.teamId 
+};
     }
 
     @AITool({
@@ -101,16 +111,28 @@ test('buildTools: executes the decorated method with input and scope merged into
     const execute = tools.greet.execute;
     assert.ok(execute, 'expected greet to be server-executed');
 
-    const result = await execute({ name: 'ada', loud: true }, { toolCallId: 't1', messages: [] });
-    assert.deepEqual(result, { greeting: 'HI ada!', teamId: 'team-1' });
+    const result = await execute({
+ name: 'ada', loud: true 
+}, {
+ toolCallId: 't1', messages: [] 
+});
+    assert.deepEqual(result, {
+ greeting: 'HI ada!', teamId: 'team-1' 
+});
 });
 
 test('buildTools: keeps the handler bound so private service fields stay reachable', async () => {
     const tools = new FixtureAIToolController().buildTools(scope);
     const { execute } = tools.greet;
     assert.ok(execute);
-    const result = await execute({ name: 'ada', loud: false }, { toolCallId: 't2', messages: [] });
-    assert.deepEqual(result, { greeting: 'hi ada', teamId: 'team-1' });
+    const result = await execute({
+ name: 'ada', loud: false 
+}, {
+ toolCallId: 't2', messages: [] 
+});
+    assert.deepEqual(result, {
+ greeting: 'hi ada', teamId: 'team-1' 
+});
 });
 
 test('buildTools: client-executed tools are advertised without an execute handler', () => {
@@ -131,21 +153,41 @@ test('buildTools: needsApproval is forwarded only when declared', async () => {
 
 test('buildTools: scope is captured per call, so two scopes do not share state', async () => {
     const controller = new FixtureAIToolController();
-    const first = controller.buildTools({ teamId: 'team-a', userId: 'user-a' });
-    const second = controller.buildTools({ teamId: 'team-b', userId: 'user-b' });
+    const first = controller.buildTools({
+ teamId: 'team-a', userId: 'user-a' 
+});
+    const second = controller.buildTools({
+ teamId: 'team-b', userId: 'user-b' 
+});
 
-    const call = { toolCallId: 't3', messages: [] };
-    assert.deepEqual(await first.greet.execute?.({ name: 'x', loud: false }, call), { greeting: 'hi x', teamId: 'team-a' });
-    assert.deepEqual(await second.greet.execute?.({ name: 'x', loud: false }, call), { greeting: 'hi x', teamId: 'team-b' });
+    const call = {
+ toolCallId: 't3', messages: [] 
+};
+    assert.deepEqual(await first.greet.execute?.({
+ name: 'x', loud: false 
+}, call), {
+ greeting: 'hi x', teamId: 'team-a' 
+});
+    assert.deepEqual(await second.greet.execute?.({
+ name: 'x', loud: false 
+}, call), {
+ greeting: 'hi x', teamId: 'team-b' 
+});
 });
 
 test('buildTools: scope wins over model-supplied input, so teamId cannot be spoofed', async () => {
     const tools = new FixtureAIToolController().buildTools(scope);
     const result = await tools.greet.execute?.(
-        { name: 'ada', loud: false, teamId: 'attacker-team' } as never,
-        { toolCallId: 't4', messages: [] }
+        {
+ name: 'ada', loud: false, teamId: 'attacker-team' 
+} as never,
+        {
+ toolCallId: 't4', messages: [] 
+}
     );
-    assert.deepEqual(result, { greeting: 'hi ada', teamId: 'team-1' });
+    assert.deepEqual(result, {
+ greeting: 'hi ada', teamId: 'team-1' 
+});
 });
 
 test('inputSchema validation accepts valid input and reports typia errors on invalid input', async () => {
@@ -171,7 +213,9 @@ test('buildTools: a declared tool with no handler method fails loudly', () => {
         name: 'ghost',
         description: 'x',
         parameters: parametersOf({}, []),
-        validate: (input: unknown): IValidation<unknown> => ({ success: true, data: input })
+        validate: (input: unknown): IValidation<unknown> => ({
+ success: true, data: input 
+})
     })(
         BrokenAIToolController.prototype,
         'missingHandler',

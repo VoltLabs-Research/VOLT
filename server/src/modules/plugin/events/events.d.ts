@@ -1,7 +1,9 @@
-import type { PluginCreatedEventPayload } from '@modules/plugin/events/PluginCreatedEvent';
-import type { PluginDeletedEventPayload } from '@modules/plugin/events/PluginDeletedEvent';
-import type { PluginExecutionRequestPayload } from '@modules/plugin/events/PluginExecutionRequestEvent';
-import type { PluginPublishedEventPayload } from '@modules/plugin/events/PluginPublishedEvent';
+import type {
+    PluginCreatedEventPayload,
+    PluginDeletedEventPayload,
+    PluginExecutionRequestPayload,
+    PluginPublishedEventPayload
+} from '@modules/plugin/contracts/domain/events';
 
 declare global {
     interface EventMap {

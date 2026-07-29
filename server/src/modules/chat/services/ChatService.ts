@@ -7,7 +7,6 @@ import ChatMessage from '@modules/chat/models/ChatMessage';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
-import ChatDeletedEvent from '@modules/chat/events/ChatDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -482,10 +481,10 @@ export default class ChatService{
 
         const teamId = chat.team;
         await chat.remove();
-        await this.#eventBus.publish(new ChatDeletedEvent({
+        await this.#eventBus.emit('chat.deleted', {
             chatId,
             teamId
-        }));
+        });
     }
 
     async #getChatById(chatId: string): Promise<Chat | null>{

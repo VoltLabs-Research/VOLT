@@ -11,7 +11,6 @@ import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRunti
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
-import NotebookDeletedEvent from '@modules/scripting/events/NotebookDeletedEvent';
 import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
@@ -321,10 +320,10 @@ export default class ScriptingService{
             await this.#credential.revokeSecretKey(notebook);
             await ScriptingNotebook.delete({ id: input.notebookId });
 
-            await this.#eventBus.publish(new NotebookDeletedEvent({
+            await this.#eventBus.emit('notebook.deleted', {
                 notebookId: input.notebookId,
                 teamId: input.teamId
-            }));
+            });
 
             return null;
         }catch(error){

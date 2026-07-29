@@ -10,8 +10,6 @@ import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/clus
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
-import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
-import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
@@ -1029,7 +1027,7 @@ export class ClusterTransferCoordinator {
             const projectionContext = await this.resolveTransferJobProjectionContext(job);
             const status = mapTransferStateToJobStatus(job.props.state);
 
-            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
+            await this.eventBus.emit('job.status.changed', {
                 jobId: job.id,
                 teamId: job.props.team,
                 status,
@@ -1056,7 +1054,7 @@ export class ClusterTransferCoordinator {
                 verifiedBytes: job.props.stats.verifiedBytes,
                 deletedObjects: job.props.stats.deletedObjects,
                 ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
-            }));
+            });
         } catch {
             logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
         }

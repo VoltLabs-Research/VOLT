@@ -7,9 +7,6 @@ import LatexFileEntity from '@modules/latex/models/LatexFile';
 import LatexAssetEntity from '@modules/latex/models/LatexAsset';
 import CatalogFolderEntity from '@shared/infrastructure/persistence/models/CatalogFolder';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
-import LatexDocumentCreatedEvent from '@modules/latex/events/LatexDocumentCreatedEvent';
-import LatexDocumentDeletedEvent from '@modules/latex/events/LatexDocumentDeletedEvent';
-import LatexFileContentUpdatedEvent from '@modules/latex/events/LatexFileContentUpdatedEvent';
 import {
     getDocumentCompileWorkDirSegment,
     prepareWorkDir,
@@ -180,12 +177,12 @@ export default class LatexService{
             folder: input.folderId ?? null
         }).save();
 
-        await this.#eventBus.publish(new LatexDocumentCreatedEvent({
+        await this.#eventBus.emit('latex-document.created', {
             documentId: document.id,
             teamId: input.teamId,
             userId: input.userId,
             documentTitle: document.title ?? ''
-        }));
+        });
 
         return toDocumentView(document);
     }
@@ -215,13 +212,13 @@ export default class LatexService{
 
         await LatexDocumentEntity.delete({ id: input.documentId });
 
-        await this.#eventBus.publish(new LatexDocumentDeletedEvent({
+        await this.#eventBus.emit('latex-document.deleted', {
             documentId: input.documentId,
             teamId: input.teamId,
             storageClusterId: document.storageClusterId ?? undefined,
             userId: input.userId ?? '',
             documentTitle: document.title ?? ''
-        }));
+        });
     }
 
     async moveDocument(input: DocumentScoped & { folderId: string | null }): Promise<null>{
@@ -608,12 +605,12 @@ export default class LatexService{
         const updated = await Object.assign(existing, patch).save();
 
         if(input.source === 'ai' && input.content !== undefined){
-            await this.#eventBus.publish(new LatexFileContentUpdatedEvent({
+            await this.#eventBus.emit('latex-file.content.updated', {
                 documentId: input.documentId,
                 teamId: input.teamId,
                 fileId: input.fileId,
                 content: input.content
-            }));
+            });
         }
 
         return toFileView(updated);

@@ -5,7 +5,6 @@ import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
 import { addTeamToUser, removeTeamFromUser } from '@modules/team/services/team/user-team-links';
-import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 
@@ -106,7 +105,7 @@ export default class TeamMembershipService{
         }
 
         if(outcome.teamDeleted){
-            await this.#eventBus.publish(new TeamDeletedEvent({ teamId }));
+            await this.#eventBus.emit('team.deleted', { teamId });
         }
     }
 }

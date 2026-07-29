@@ -9,7 +9,9 @@ const KERNEL_KEYS = ['auth', 'session', 'socket', 'team'] as const;
 const makeRegistry = (...extra: Parameters<ModuleRegistry['register']>[0][]): ModuleRegistry => {
     const registry = new ModuleRegistry();
     for (const key of KERNEL_KEYS) {
-        registry.register(defineModule({ key, tier: 'kernel' }));
+        registry.register(defineModule({
+ key, tier: 'kernel' 
+}));
     }
     for (const manifest of extra) registry.register(manifest);
     return registry;
@@ -17,22 +19,34 @@ const makeRegistry = (...extra: Parameters<ModuleRegistry['register']>[0][]): Mo
 
 test('register: throws on duplicate key', () => {
     const registry = new ModuleRegistry();
-    registry.register(defineModule({ key: 'latex', tier: 'leaf' }));
-    assert.throws(() => registry.register(defineModule({ key: 'latex', tier: 'leaf' })), /already registered/);
+    registry.register(defineModule({
+ key: 'latex', tier: 'leaf' 
+}));
+    assert.throws(() => registry.register(defineModule({
+ key: 'latex', tier: 'leaf' 
+})), /already registered/);
 });
 
 test('kernelKeys: derived from tier', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'system', tier: 'kernel' }),
-        defineModule({ key: 'latex', tier: 'leaf' })
+        defineModule({
+ key: 'system', tier: 'kernel' 
+}),
+        defineModule({
+ key: 'latex', tier: 'leaf' 
+})
     );
     assert.deepEqual(registry.kernelKeys().sort(), ['auth', 'session', 'socket', 'system', 'team']);
 });
 
 test('resolveEnabled: no overrides returns all registered + kernel', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'cluster', tier: 'compute' }),
-        defineModule({ key: 'latex', tier: 'leaf' })
+        defineModule({
+ key: 'cluster', tier: 'compute' 
+}),
+        defineModule({
+ key: 'latex', tier: 'leaf' 
+})
     );
     const enabled = registry.resolveEnabled({});
     for (const key of [...KERNEL_KEYS, 'cluster', 'latex']) {
@@ -43,8 +57,12 @@ test('resolveEnabled: no overrides returns all registered + kernel', () => {
 
 test('resolveEnabled: envOverride seeds the set (kernel still forced)', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'cluster', tier: 'compute' }),
-        defineModule({ key: 'latex', tier: 'leaf' })
+        defineModule({
+ key: 'cluster', tier: 'compute' 
+}),
+        defineModule({
+ key: 'latex', tier: 'leaf' 
+})
     );
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
     assert.ok(enabled.has('latex'), 'envOverride entry should be enabled');
@@ -53,9 +71,15 @@ test('resolveEnabled: envOverride seeds the set (kernel still forced)', () => {
 
 test('resolveEnabled: enabling a leaf auto-includes its hard deps transitively', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'cluster', tier: 'compute', requires: ['container'] }),
-        defineModule({ key: 'container', tier: 'capability' }),
-        defineModule({ key: 'latex', tier: 'leaf', requires: ['cluster'] })
+        defineModule({
+ key: 'cluster', tier: 'compute', requires: ['container'] 
+}),
+        defineModule({
+ key: 'container', tier: 'capability' 
+}),
+        defineModule({
+ key: 'latex', tier: 'leaf', requires: ['cluster'] 
+})
     );
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
     assert.ok(enabled.has('latex'));
@@ -64,7 +88,9 @@ test('resolveEnabled: enabling a leaf auto-includes its hard deps transitively',
 });
 
 test('resolveEnabled: kernel always present even if envOverride omits it', () => {
-    const registry = makeRegistry(defineModule({ key: 'latex', tier: 'leaf' }));
+    const registry = makeRegistry(defineModule({
+ key: 'latex', tier: 'leaf' 
+}));
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
     for (const key of KERNEL_KEYS) {
         assert.ok(enabled.has(key), `kernel module "${key}" must be force-included`);
@@ -73,8 +99,12 @@ test('resolveEnabled: kernel always present even if envOverride omits it', () =>
 
 test('validate: clean set passes', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'cluster', tier: 'compute' }),
-        defineModule({ key: 'latex', tier: 'leaf', requires: ['cluster'] })
+        defineModule({
+ key: 'cluster', tier: 'compute' 
+}),
+        defineModule({
+ key: 'latex', tier: 'leaf', requires: ['cluster'] 
+})
     );
     const result = registry.validate(registry.resolveEnabled({}));
     assert.equal(result.ok, true, result.errors.join('; '));
@@ -83,7 +113,9 @@ test('validate: clean set passes', () => {
 
 test('validate: flags a module requiring an unknown key', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'latex', tier: 'leaf', requires: ['ghost'] })
+        defineModule({
+ key: 'latex', tier: 'leaf', requires: ['ghost'] 
+})
     );
     const enabled = registry.resolveEnabled({});
     const result = registry.validate(enabled);
@@ -93,8 +125,12 @@ test('validate: flags a module requiring an unknown key', () => {
 
 test('validate: flags a requires-cycle', () => {
     const registry = makeRegistry(
-        defineModule({ key: 'a', tier: 'leaf', requires: ['b'] }),
-        defineModule({ key: 'b', tier: 'leaf', requires: ['a'] })
+        defineModule({
+ key: 'a', tier: 'leaf', requires: ['b'] 
+}),
+        defineModule({
+ key: 'b', tier: 'leaf', requires: ['a'] 
+})
     );
     const enabled = registry.resolveEnabled({ envOverride: ['a', 'b'] });
     const result = registry.validate(enabled);
@@ -111,7 +147,9 @@ test('validate: flags an excluded kernel module', () => {
 });
 
 test('isEnabled: reflects set membership', () => {
-    const registry = makeRegistry(defineModule({ key: 'latex', tier: 'leaf' }));
+    const registry = makeRegistry(defineModule({
+ key: 'latex', tier: 'leaf' 
+}));
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
     assert.equal(registry.isEnabled('latex', enabled), true);
     assert.equal(registry.isEnabled('cluster', enabled), false);

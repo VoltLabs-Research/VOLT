@@ -1,4 +1,4 @@
-import type { ChatDeletedEventPayload } from '@modules/chat/events/ChatDeletedEvent';
+import type { ChatDeletedEventPayload } from '@modules/chat/contracts/domain/events';
 
 declare global {
     interface EventMap {

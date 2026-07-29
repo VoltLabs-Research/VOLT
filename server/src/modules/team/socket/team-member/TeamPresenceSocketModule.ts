@@ -10,9 +10,7 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
-import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import logger from '@shared/infrastructure/logger';
 
 export class TeamPresenceSocketModule extends BaseSocketModule {
@@ -109,13 +107,11 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
 
     private async updateUserActivity(teamId: string, userId: string, minutes: number): Promise<void> {
         try {
-            await this.eventBus.publish(
-                new GenericDomainEvent(DOMAIN_EVENTS.UserActivityRecorded, {
-                    teamId,
-                    userId,
-                    minutes
-                })
-            );
+            await this.eventBus.emit('user-activity.recorded', {
+                teamId,
+                userId,
+                minutes
+            });
         } catch (error) {
             logger.error(error, `[TeamPresenceSocketModule] Failed to update activity for user ${userId}`);
         }

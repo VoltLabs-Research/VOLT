@@ -2,7 +2,6 @@ import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import redisClient from '@shared/infrastructure/redis/redisClient';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
-import JobStatusChangedEvent from '@modules/jobs/events/JobStatusChangedEvent';
 import type {
     ITeamJobMaintenanceService,
     RemoveTeamJobsResult,
@@ -693,7 +692,7 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     }
 
     private async publishRetriedDaemonJob(job: TeamJobSummary): Promise<void> {
-        await this.eventBus.publish(new JobStatusChangedEvent({
+        await this.eventBus.emit('job.status.changed', {
             ...job,
             jobId: job.jobId,
             teamId: job.teamId,
@@ -703,7 +702,7 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             backingSource: 'daemon',
             message: undefined,
             error: undefined
-        }));
+        });
     }
 
     private getErrorMessage(error: unknown): string | undefined {

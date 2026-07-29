@@ -1,5 +1,4 @@
 
-export { DOMAIN_EVENTS } from './event-names';
 export type { AnalysisDeletedEventPayload } from './AnalysisDeletedPayload';
 export type { TrajectoryDeletedEventPayload } from './TrajectoryDeletedPayload';
 export type { TrajectoryUpdatedEventPayload } from './TrajectoryUpdatedPayload';

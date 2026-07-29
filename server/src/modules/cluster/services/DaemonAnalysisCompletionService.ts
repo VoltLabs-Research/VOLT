@@ -12,8 +12,6 @@ import type {
 } from '@shared/contracts/types';
 import { JobStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types';
-import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
-import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
@@ -562,12 +560,12 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
             try {
                 await this.updateTrajectoryById(resolved.trajectory._id, { hasPreview: true });
-                await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
+                await this.eventBus.emit('trajectory.updated', {
                     trajectoryId: resolved.trajectory._id,
                     teamId: resolved.teamId,
                     updates: { hasPreview: true },
                     updatedAt: new Date()
-                }));
+                });
             } catch (error: unknown) {
                 logger.warn({
                     err: error,
@@ -680,7 +678,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             childAnalyses?: AnalysisChildAnalysis[];
         } = {}
     ): Promise<void> {
-        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStatusChanged, {
+        await this.eventBus.emit('analysis.status.changed', {
             analysisId,
             trajectoryId: extras.trajectoryId ?? '',
             teamId,
@@ -691,7 +689,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             expectedArtifacts: extras.expectedArtifacts,
             stages: extras.stages,
             childAnalyses: extras.childAnalyses
-        })).catch(swallow('Failed to publish analysis.status.changed', {
+        }).catch(swallow('Failed to publish analysis.status.changed', {
             analysisId,
             status
         }));
@@ -702,7 +700,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         teamId: string,
         trajectoryId: string
     ): Promise<void> {
-        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
+        await this.eventBus.emit('analysis.stage.changed', {
             analysisId: analysis._id,
             trajectoryId,
             teamId,
@@ -710,7 +708,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             expectedArtifacts: analysis.props.expectedArtifacts,
             stages: analysis.props.stages,
             childAnalyses: analysis.props.childAnalyses
-        }));
+        });
     }
 
     private toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
@@ -1015,7 +1013,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             trajectoryContext,
             error
         } = input;
-        const event = new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
+        await this.eventBus.emit('job.status.changed', {
             jobId,
             teamId,
             status,
@@ -1031,8 +1029,6 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             timestep: trajectoryContext.timestep,
             error
         });
-
-        await this.eventBus.publish(event);
     }
 
     private async publishJobStatusChangedBatch(events: ProjectedJobStatusInput[]): Promise<void> {
@@ -1185,12 +1181,12 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
 
     private async setTrajectoryStatus(trajectoryId: string, teamId: string, status: TrajectoryStatus): Promise<void> {
         await this.updateTrajectoryById(trajectoryId, { status });
-        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
+        await this.eventBus.emit('trajectory.updated', {
             trajectoryId,
             teamId,
             updates: { status },
             updatedAt: new Date()
-        }));
+        });
     }
 
     private async finalizeAnalysis(analysisId: string, teamId: string, failedJobs: number): Promise<void> {

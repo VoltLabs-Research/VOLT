@@ -2,8 +2,6 @@ import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
-import { DOMAIN_EVENTS } from '@shared/contracts/events';
-import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import storagePlacementService, { StoragePlacementService } from '@modules/cluster/services/StoragePlacementService';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -324,7 +322,7 @@ export class TrajectoryCloneCoordinator{
                 }
             });
 
-            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
+            await this.eventBus.emit('job.status.changed', {
                 jobId: job.id,
                 teamId: job.team,
                 status: mapCloneStateToJobStatus(job.state),
@@ -345,7 +343,7 @@ export class TrajectoryCloneCoordinator{
                 copiedFrames: job.stats.copiedFrames,
                 copiedBytes: job.stats.copiedBytes,
                 ...(job.errorMessage ? { error: job.errorMessage } : {})
-            }));
+            });
         }catch(error){
             logger.warn({ err: error }, `[TrajectoryCloneCoordinator] Failed to publish projection for job=${job.id}`);
         }

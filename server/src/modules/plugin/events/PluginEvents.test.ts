@@ -20,7 +20,11 @@ import Team from '@modules/team/models/Team';
 import User from '@modules/auth/models/User';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+
+interface EmittedEvent{
+    name: string;
+    payload: unknown;
+}
 
 interface TeamFixture{
     team: Team;
@@ -38,7 +42,7 @@ interface DaemonCall{
 describe('PluginEvents', () => {
     let dataSource: DataSource;
     const events = new PluginEvents();
-    const published: IDomainEvent[] = [];
+    const published: EmittedEvent[] = [];
     const daemonCalls: DaemonCall[] = [];
 
     before(async () => {
@@ -54,8 +58,11 @@ describe('PluginEvents', () => {
             User
         ]);
 
-        eventBus.publish = async (event) => {
-            published.push(event);
+        eventBus.emit = async (name, payload) => {
+            published.push({
+                name,
+                payload
+            });
         };
         teamClusterDaemonClient.command = (async (teamClusterId: string, command: string) => {
             daemonCalls.push({

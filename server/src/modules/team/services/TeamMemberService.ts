@@ -4,7 +4,6 @@ import { isModuleEnabled } from '@core/bootstrap/module-state';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import TeamMemberDeletedEvent from '@modules/team/events/team-member/TeamMemberDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
@@ -121,9 +120,9 @@ export default class TeamMemberService{
             throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'Team member not found');
         }
         await this.#membership.removeMemberFromTeam(teamMemberId, teamId);
-        await this.#eventBus.publish(new TeamMemberDeletedEvent({
+        await this.#eventBus.emit('team-member.deleted', {
             teamMemberId,
             teamId
-        }));
+        });
     }
 }

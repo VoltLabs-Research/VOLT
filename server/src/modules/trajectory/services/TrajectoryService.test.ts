@@ -59,7 +59,7 @@ describe('TrajectoryService', () => {
 
     before(async () => {
         dataSource = await createHarness(ENTITIES);
-        (eventBus as unknown as { publish: () => Promise<void> }).publish = async () => {};
+        (eventBus as unknown as { emit: () => Promise<void> }).emit = async () => {};
     });
 
     after(async () => {

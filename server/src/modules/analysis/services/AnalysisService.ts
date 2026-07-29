@@ -11,7 +11,6 @@ import {
 import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
 import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
-import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
@@ -331,7 +330,7 @@ export default class AnalysisService{
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        await this.#eventBus.publish(new AnalysisDeletedEvent({
+        await this.#eventBus.emit('analysis.deleted', {
             analysisId: input.analysisId,
             trajectoryId: analysis.trajectory ?? '',
             pluginId: analysis.plugin ?? '',
@@ -341,7 +340,7 @@ export default class AnalysisService{
             computeClusterId: resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }),
             userId: input.userId ?? '',
             pluginDisplayName: analysis.pluginDisplayName
-        }));
+        });
 
         return { success: true };
     }

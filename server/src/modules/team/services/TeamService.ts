@@ -9,8 +9,6 @@ import TeamRole from '@modules/team/models/TeamRole';
 import { buildTeamRoleCreatePayload } from '@modules/team/contracts/domain/team-role';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
-import TeamCreatedEvent from '@modules/team/events/team/TeamCreatedEvent';
-import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DeploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
 import { In } from 'typeorm';
@@ -83,10 +81,10 @@ export default class TeamService{
             return createdTeam;
         });
 
-        await this.#eventBus.publish(new TeamCreatedEvent({
+        await this.#eventBus.emit('team.created', {
             ownerId: userId,
             teamId: team.id
-        }));
+        });
 
         return team;
     }
@@ -130,10 +128,10 @@ export default class TeamService{
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
         await team.remove();
-        await this.#eventBus.publish(new TeamDeletedEvent({
+        await this.#eventBus.emit('team.deleted', {
             teamId,
             userId
-        }));
+        });
     }
 
     async setDefaultForNewUsers(teamId: string, enabled: boolean): Promise<{ defaultTeam: string | null; autoJoinNewMembers: boolean }>{

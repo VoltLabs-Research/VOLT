@@ -30,10 +30,6 @@ import trajectoryCloneRunner from '@modules/trajectory/services/trajectory/Traje
 
 import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
 
-import TrajectoryCreatedEvent from '@modules/trajectory/events/trajectory/TrajectoryCreatedEvent';
-import TrajectoryUpdatedEvent from '@modules/trajectory/events/trajectory/TrajectoryUpdatedEvent';
-import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
-
 import {
     buildTrajectoryDumpObjectName,
     buildTrajectoryGlbObjectName
@@ -448,12 +444,12 @@ export default class TrajectoryService {
             expiresAt
         }).save();
 
-        await this.#eventBus.publish(new TrajectoryCreatedEvent({
+        await this.#eventBus.emit('trajectory.created', {
             trajectoryId: trajectory.id,
             trajectoryName: name,
             teamId,
             userId
-        }));
+        });
 
         const filesOutput: TrajectoryUploadSessionFileView[] = sessionFiles.map((file) => ({
             index: file.index,
@@ -569,7 +565,7 @@ export default class TrajectoryService {
                 committedAt: new Date()
             }).save();
 
-            await this.#eventBus.publish(new TrajectoryUpdatedEvent({
+            await this.#eventBus.emit('trajectory.updated', {
                 trajectoryId,
                 teamId: input.teamId,
                 updates: {
@@ -577,7 +573,7 @@ export default class TrajectoryService {
                     stats: result.stats
                 },
                 updatedAt: new Date()
-            }));
+            });
 
             return { trajectoryId };
         } catch (error) {
@@ -587,7 +583,7 @@ export default class TrajectoryService {
             await this.#deleteTrajectoryById(trajectoryId).catch((deleteError) => {
                 logger.warn(deleteError, `[TrajectoryService] Failed to delete orphaned trajectory ${trajectoryId}`);
             });
-            await this.#eventBus.publish(new TrajectoryDeletedEvent({
+            await this.#eventBus.emit('trajectory.deleted', {
                 trajectoryId,
                 teamId: input.teamId,
                 storageClusterId: trajectory ? storageClusterIdOf(trajectory) : undefined,
@@ -595,7 +591,7 @@ export default class TrajectoryService {
                 trajectoryName: trajectory?.name ?? 'Trajectory',
                 analysisIds: [],
                 analysisComputeClusterIds: []
-            })).catch(() => {});
+            }).catch(() => {});
 
             if (isNoValidFramesError(error)) {
                 throw ApplicationError.unprocessableEntity(
@@ -656,7 +652,7 @@ export default class TrajectoryService {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        await this.#eventBus.publish(new TrajectoryDeletedEvent({
+        await this.#eventBus.emit('trajectory.deleted', {
             trajectoryId: input.trajectoryId,
             teamId: input.teamId ?? trajectory.team ?? '',
             storageClusterId: storageClusterIdOf(trajectory),
@@ -670,7 +666,7 @@ export default class TrajectoryService {
                         .filter((value): value is string => typeof value === 'string' && value.length > 0)
                 )
             ]
-        }));
+        });
 
         return { success: true };
     }
@@ -844,12 +840,12 @@ export default class TrajectoryService {
                 logger.warn({ err: error }, '[TrajectoryService] Failed to kick clone runner');
             }
 
-            await this.#eventBus.publish(new TrajectoryCreatedEvent({
+            await this.#eventBus.emit('trajectory.created', {
                 trajectoryId: destinationTrajectory.id,
                 trajectoryName: destinationTrajectory.name,
                 teamId: input.teamId,
                 userId: input.userId
-            }));
+            });
 
             return {
                 trajectoryId: destinationTrajectory.id,

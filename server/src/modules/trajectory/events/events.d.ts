@@ -3,7 +3,7 @@ import type {
     TrajectoryDeletedEventPayload,
     TrajectoryUpdatedEventPayload
 } from '@shared/contracts/events';
-import type { TrajectoryCreatedEventPayload } from '@modules/trajectory/events/trajectory/TrajectoryCreatedEvent';
+import type { TrajectoryCreatedEventPayload } from '@modules/trajectory/contracts/domain/events';
 
 declare global {
     interface EventMap {

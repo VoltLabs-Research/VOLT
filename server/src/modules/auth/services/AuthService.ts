@@ -11,8 +11,6 @@ import type { OAuthProvider } from '@modules/auth/contracts/domain/user';
 import AuthSessionService from '@modules/auth/services/AuthSessionService';
 import AvatarService from '@modules/auth/services/AvatarService';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
-import UserCreatedEvent from '@modules/auth/events/UserCreatedEvent';
-import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
 import { getConfiguredOAuthProviders } from '@modules/auth/services/oauth/config';
 import Session from '@modules/session/models/Session';
 import { SessionActivityType } from '@volt/contracts/modules/session/domain';
@@ -171,10 +169,10 @@ export default class AuthService{
             logger.error(err, '[SignUp] default-team enrollment failed');
         }
 
-        await this.#eventBus.publish(new UserCreatedEvent({
+        await this.#eventBus.emit('user.created', {
             id: newUser.id,
             firstName: newUser.firstName
-        }));
+        });
 
         const token = await this.#authSessionService.createSessionWithToken({
             userId: newUser.id,
@@ -294,7 +292,7 @@ export default class AuthService{
 
         const { affected } = await User.delete({ id: userId });
         if((affected ?? 0) > 0){
-            await this.#eventBus.publish(new UserDeletedEvent({ userId }));
+            await this.#eventBus.emit('user.deleted', { userId });
         }
 
         return { success: true };
@@ -377,10 +375,10 @@ export default class AuthService{
                     analyses: []
                 }).save();
 
-                await this.#eventBus.publish(new UserCreatedEvent({
+                await this.#eventBus.emit('user.created', {
                     id: user.id,
                     firstName: user.firstName
-                }));
+                });
 
                 try{
                     await this.#defaultTeamEnroller.enrollIfConfigured(user.id);

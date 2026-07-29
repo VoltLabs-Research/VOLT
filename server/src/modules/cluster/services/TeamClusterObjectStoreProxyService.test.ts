@@ -24,8 +24,12 @@ const makeDependencies = (requesterTeam = 'team-1', ownerTeam: string | null = '
     const authCalls: Array<[string, string]> = [];
     const ownerLookupCalls: string[] = [];
     const gatewayCalls: Array<{ operation: string; args: unknown[] }> = [];
-    const listResponse = { keys: ['a'], objects: [{ key: 'a' }] };
-    const headResponse = { contentLength: 7, metadata: { source: 'daemon' } };
+    const listResponse = {
+ keys: ['a'], objects: [{ key: 'a' }] 
+};
+    const headResponse = {
+ contentLength: 7, metadata: { source: 'daemon' } 
+};
     const readResponse = {
         ...headResponse,
         headers: { 'content-range': 'bytes 0-6/7' },
@@ -34,15 +38,21 @@ const makeDependencies = (requesterTeam = 'team-1', ownerTeam: string | null = '
 
     const objectGatewayClient = {
         async list(ownerClusterId: string, request: TeamClusterObjectGatewayListRequest) {
-            gatewayCalls.push({ operation: 'list', args: [ownerClusterId, request] });
+            gatewayCalls.push({
+ operation: 'list', args: [ownerClusterId, request] 
+});
             return listResponse;
         },
         async deleteByPrefix(ownerClusterId: string, bucket: string, prefix: string) {
-            gatewayCalls.push({ operation: 'deletePrefix', args: [ownerClusterId, bucket, prefix] });
+            gatewayCalls.push({
+ operation: 'deletePrefix', args: [ownerClusterId, bucket, prefix] 
+});
             return 3;
         },
         async head(ownerClusterId: string, bucket: string, objectKey: string) {
-            gatewayCalls.push({ operation: 'head', args: [ownerClusterId, bucket, objectKey] });
+            gatewayCalls.push({
+ operation: 'head', args: [ownerClusterId, bucket, objectKey] 
+});
             return headResponse;
         },
         async getStream(
@@ -51,14 +61,20 @@ const makeDependencies = (requesterTeam = 'team-1', ownerTeam: string | null = '
             objectKey: string,
             options?: { skipMetadata?: boolean; rangeHeader?: string }
         ) {
-            gatewayCalls.push({ operation: 'openRead', args: [ownerClusterId, bucket, objectKey, options] });
+            gatewayCalls.push({
+ operation: 'openRead', args: [ownerClusterId, bucket, objectKey, options] 
+});
             return readResponse;
         },
         async putStream(ownerClusterId: string, request: TeamClusterObjectGatewayPutStreamRequest) {
-            gatewayCalls.push({ operation: 'write', args: [ownerClusterId, request] });
+            gatewayCalls.push({
+ operation: 'write', args: [ownerClusterId, request] 
+});
         },
         async deleteObject(ownerClusterId: string, bucket: string, objectKey: string) {
-            gatewayCalls.push({ operation: 'delete', args: [ownerClusterId, bucket, objectKey] });
+            gatewayCalls.push({
+ operation: 'delete', args: [ownerClusterId, bucket, objectKey] 
+});
         }
     } satisfies NonNullable<TeamClusterObjectStoreProxyServiceDependencies['objectGatewayClient']>;
 
@@ -161,11 +177,15 @@ test('authorized access delegates list/deletePrefix/head/openRead/write/delete w
     const access = await service.authorizeOwner(credentials, 'owner-1');
     const stream = Readable.from(['payload']);
 
-    assert.equal(await service.list(access, { bucket: 'bucket', prefix: 'jobs/' }), fixture.listResponse);
+    assert.equal(await service.list(access, {
+ bucket: 'bucket', prefix: 'jobs/' 
+}), fixture.listResponse);
     assert.equal(await service.deletePrefix(access, 'bucket', 'jobs/'), 3);
     assert.equal(await service.head(access, 'bucket', 'object'), fixture.headResponse);
     assert.equal(
-        await service.openRead(access, 'bucket', 'object', { skipMetadata: true, rangeHeader: 'bytes=0-6' }),
+        await service.openRead(access, 'bucket', 'object', {
+ skipMetadata: true, rangeHeader: 'bytes=0-6' 
+}),
         fixture.readResponse
     );
     await service.write(access, {

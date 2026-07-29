@@ -19,3 +19,17 @@ export interface StoragePlacement {
     lastVerifiedAt?: Date | string;
     bytesUsed?: number;
 }
+
+export interface StoragePlacementProps extends Omit<StoragePlacement, 'lastVerifiedAt' | 'bytesUsed'> {
+    team: string;
+    lastVerifiedAt: Date | null;
+    bytesUsed: number | null;
+    lastAccessedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface PersistedStoragePlacement {
+    readonly _id: string;
+    props: StoragePlacementProps;
+}

@@ -1,6 +1,6 @@
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import TeamClusterModel from '@modules/cluster/models/TeamClusterModel';
+import TeamCluster from '@modules/cluster/models/TeamCluster';
 
 export interface ContainerDeploymentProgressPayload {
     operationId: string;
@@ -20,14 +20,14 @@ export class ContainerDeploymentProgressService {
     ) {}
 
     async emitToTeam(input: Omit<ContainerDeploymentProgressPayload, 'teamId'>): Promise<void> {
-        const teamCluster = await TeamClusterModel.findById(input.teamClusterId).exec();
+        const teamCluster = await TeamCluster.findOneBy({ id: input.teamClusterId });
         if (!teamCluster) {
             return;
         }
 
         this.socketEmitter.emitToRoom(`team:${teamCluster.team}`, 'container.deploy.progress', {
             ...input,
-            teamId: teamCluster.team.toString()
+            teamId: teamCluster.team
         } satisfies ContainerDeploymentProgressPayload);
     }
 }

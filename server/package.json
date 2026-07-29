@@ -73,7 +73,6 @@
     "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "minio": "^8.0.6",
-    "mongoose": "^8.21.0",
     "multer": "^2.0.1",
     "ollama-ai-provider-v2": "^3.3.1",
     "p-limit": "^3.1.0",

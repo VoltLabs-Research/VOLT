@@ -24,7 +24,11 @@ import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+
+interface EmittedEvent{
+    name: string;
+    payload: unknown;
+}
 
 interface TeamFixture{
     team: Team;
@@ -138,7 +142,7 @@ const draftWorkflow = (
 describe('PluginService', () => {
     let dataSource: DataSource;
     const service = new PluginService();
-    const published: IDomainEvent[] = [];
+    const published: EmittedEvent[] = [];
 
     before(async () => {
         dataSource = await createHarness([
@@ -156,8 +160,11 @@ describe('PluginService', () => {
             User
         ]);
 
-        eventBus.publish = async (event) => {
-            published.push(event);
+        eventBus.emit = async (name, payload) => {
+            published.push({
+                name,
+                payload
+            });
         };
     });
 

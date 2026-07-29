@@ -61,7 +61,9 @@ const makeDependencies = (verifiedClaims: ClusterObjectAccessClaims | null) => {
 
     const objectGatewayClient = {
         async putStream(ownerClusterId, request) {
-            putCalls.push({ ownerClusterId, request });
+            putCalls.push({
+ ownerClusterId, request 
+});
         },
         async head(ownerClusterId, bucket, objectKey) {
             headCalls.push([ownerClusterId, bucket, objectKey]);
@@ -236,6 +238,8 @@ test('head and openRead authorize read claims and forward range streaming option
         'owner-1',
         'artifacts',
         'jobs/result.bin',
-        { skipMetadata: true, rangeHeader: 'bytes=10-19' }
+        {
+ skipMetadata: true, rangeHeader: 'bytes=10-19' 
+}
     ]]);
 });

@@ -17,8 +17,6 @@ import {
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { TeamClusterDaemonSemanticCommandResult } from '@modules/cluster/services/TeamClusterDaemonClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
-import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
 import { JobStatus } from '@shared/contracts/types';
 import type {
@@ -1824,7 +1822,7 @@ export default class ClusterService {
         }
 
         await Promise.all(Array.from(groups.values()).map((group) =>
-            this.#eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.SceneArtifactBatchUpserted, group)).catch((err) => {
+            this.#eventBus.emit('scene-artifact.upserted', group).catch((err) => {
                 logger.warn({
                     err,
                     trajectoryId: group.trajectoryId,
@@ -1864,7 +1862,7 @@ export default class ClusterService {
                 artifactStatus
             }).save();
 
-            await this.#eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
+            await this.#eventBus.emit('analysis.stage.changed', {
                 analysisId,
                 teamId: group[0]!.teamId,
                 trajectoryId: updatedAnalysis.trajectory,
@@ -1872,7 +1870,7 @@ export default class ClusterService {
                 expectedArtifacts: updatedAnalysis.expectedArtifacts,
                 stages: updatedAnalysis.stages,
                 childAnalyses: updatedAnalysis.childAnalyses
-            })).catch((err) => {
+            }).catch((err) => {
                 logger.warn({
                     err,
                     analysisId

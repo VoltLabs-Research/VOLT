@@ -1,6 +1,8 @@
-import type { ContainerCreatedEventPayload } from '@modules/container/events/ContainerCreatedEvent';
-import type { ContainerDeletedEventPayload } from '@modules/container/events/ContainerDeletedEvent';
-import type { ContainerUpdatedEventPayload } from '@modules/container/events/ContainerUpdatedEvent';
+import type {
+    ContainerCreatedEventPayload,
+    ContainerDeletedEventPayload,
+    ContainerUpdatedEventPayload
+} from '@modules/container/contracts/domain/events';
 
 declare global {
     interface EventMap {

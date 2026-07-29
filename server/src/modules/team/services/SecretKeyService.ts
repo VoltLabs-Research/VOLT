@@ -7,8 +7,6 @@ import {
     getKeyUsageAnalytics
 } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
 import SecretKeyUsageMetricsMapper from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
-import SecretKeyCreatedEvent from '@modules/team/events/secret-key/SecretKeyCreatedEvent';
-import SecretKeyDeletedEvent from '@modules/team/events/secret-key/SecretKeyDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -70,12 +68,12 @@ export default class SecretKeyService{
             isActive: true
         }).save();
 
-        await this.#eventBus.publish(new SecretKeyCreatedEvent({
+        await this.#eventBus.emit('secret-key.created', {
             secretKeyId: created.id,
             teamId,
             name: created.name,
             userId
-        }));
+        });
 
         return {
             secretKeyId: created.id,
@@ -186,12 +184,12 @@ export default class SecretKeyService{
 
         await key.remove();
 
-        await this.#eventBus.publish(new SecretKeyDeletedEvent({
+        await this.#eventBus.emit('secret-key.deleted', {
             secretKeyId: deletedKeyId,
             teamId,
             userId,
             secretKeyName: deletedKeyName ?? ''
-        }));
+        });
     }
 
     async teamMetrics(teamId: string, days?: number): Promise<Record<string, unknown>>{

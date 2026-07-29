@@ -3,11 +3,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/contracts/domain/whiteboard';
 import type { WhiteboardLastEditedBy } from '@modules/whiteboards/contracts/domain/whiteboard';
-import WhiteboardCreatedEvent from '@modules/whiteboards/events/WhiteboardCreatedEvent';
-import WhiteboardDeletedEvent from '@modules/whiteboards/events/WhiteboardDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+import type { EventName } from '@shared/events/EventGroup';
 import type {
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
@@ -71,7 +69,7 @@ type WhiteboardObjectGateway = Pick<
 
 type WhiteboardClusterSelection = Pick<ITeamClusterSelectionService, 'resolveStorageClusterId'>;
 
-type WhiteboardEventPublisher = Pick<IEventBus, 'publish'>;
+type WhiteboardEventPublisher = Pick<IEventBus, 'emit'>;
 
 export interface WhiteboardServiceDependencies{
     objectGatewayClient?: WhiteboardObjectGateway;
@@ -145,12 +143,12 @@ export default class WhiteboardService{
 
         await Object.assign(whiteboard, { payloadKey }).save();
 
-        await this.#publish(new WhiteboardCreatedEvent({
+        await this.#emit('whiteboard.created', {
             whiteboardId: whiteboard.id,
             teamId,
             userId,
             whiteboardTitle: whiteboard.title ?? ''
-        }));
+        });
 
         return {
             _id: whiteboard.id,
@@ -222,12 +220,12 @@ export default class WhiteboardService{
         }catch{
         }
 
-        await this.#publish(new WhiteboardDeletedEvent({
+        await this.#emit('whiteboard.deleted', {
             whiteboardId,
             teamId,
             userId,
             whiteboardTitle: whiteboard.title ?? ''
-        }));
+        });
 
         return null;
     }
@@ -406,9 +404,9 @@ export default class WhiteboardService{
         return null;
     }
 
-    async #publish(event: IDomainEvent): Promise<void>{
+    async #emit<K extends EventName>(name: K, payload: EventMap[K]): Promise<void>{
         this.#eventBus ??= (await import('@shared/infrastructure/events/RedisEventBus')).default;
-        await this.#eventBus.publish(event);
+        await this.#eventBus.emit(name, payload);
     }
 
     async #getOwned(teamId: string, whiteboardId: string): Promise<Whiteboard>{

@@ -1,7 +1,9 @@
 import logger from '@shared/infrastructure/logger';
 import { Redis } from 'ioredis';
+import { v4 } from 'uuid';
 import redisClient from '@shared/infrastructure/redis/redisClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { EventName } from '@shared/events/EventGroup';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
@@ -20,10 +22,16 @@ class RedisEventBus implements IEventBus {
         this.initializeSubscriberListener();
     }
 
-    public async publish(event: IDomainEvent): Promise<void> {
-        const payload = JSON.stringify(event);
-        await this.publisher.publish(event.name, payload);
-        logger.info(`@redis-event-bus: Published ${event.name} to Redis`);
+    public async emit<K extends EventName>(name: K, payload: EventMap[K]): Promise<void> {
+        const event: IDomainEvent<EventMap[K]> = {
+            name,
+            payload,
+            eventId: v4(),
+            occurredOn: new Date()
+        };
+
+        await this.publisher.publish(name, JSON.stringify(event));
+        logger.info(`@redis-event-bus: Published ${name} to Redis`);
     }
 
     public async subscribe<T extends IDomainEvent>(

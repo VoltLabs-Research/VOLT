@@ -5,7 +5,6 @@ import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import { StoragePlacementScopeType } from '@modules/cluster/contracts/domain/storage-placement';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
-import TrajectoryUpdatedEvent from '@modules/trajectory/events/trajectory/TrajectoryUpdatedEvent';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import {
@@ -41,12 +40,12 @@ export default class TrajectoryEvents {
             if (trajectory && canTransition) {
                 await Object.assign(trajectory, { status: TrajectoryStatus.Processing }).save();
 
-                await eventBus.publish(new TrajectoryUpdatedEvent({
+                await eventBus.emit('trajectory.updated', {
                     trajectoryId,
                     teamId,
                     updates: { status: TrajectoryStatus.Processing },
                     updatedAt: new Date()
-                }));
+                });
             }
         }
     }

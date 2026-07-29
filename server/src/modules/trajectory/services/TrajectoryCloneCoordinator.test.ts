@@ -41,7 +41,7 @@ describe('TrajectoryCloneCoordinator', () => {
             Team,
             User
         ]);
-        (eventBus as unknown as { publish: () => Promise<void> }).publish = async () => {};
+        (eventBus as unknown as { emit: () => Promise<void> }).emit = async () => {};
     });
 
     after(async () => {

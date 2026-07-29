@@ -13,7 +13,6 @@ import {
     normalizeInvitationEmail
 } from '@modules/team/contracts/domain/team-invitation';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
-import InvitationSentEvent from '@modules/team/events/team-invitation/InvitationSentEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -83,11 +82,11 @@ export default class TeamInvitationService{
             status: TeamInvitationStatus.Pending
         }).save();
 
-        await this.#eventBus.publish(new InvitationSentEvent({
+        await this.#eventBus.emit('invitation.sent', {
             invitationId: invitation.id,
             teamName: team.name,
             invitedUserId: invitation.invitedUser ?? ''
-        }));
+        });
 
         return invitation;
     }

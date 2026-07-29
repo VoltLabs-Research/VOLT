@@ -7,9 +7,6 @@ import {
     buildTeamRoleUpdatePayload,
     canRenameTeamRoleTo
 } from '@modules/team/contracts/domain/team-role';
-import TeamRoleCreatedEvent from '@modules/team/events/team-role/TeamRoleCreatedEvent';
-import TeamRoleUpdatedEvent from '@modules/team/events/team-role/TeamRoleUpdatedEvent';
-import TeamRoleDeletedEvent from '@modules/team/events/team-role/TeamRoleDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -48,12 +45,12 @@ export default class TeamRoleService{
             isSystem: input.isSystem ?? false
         })).save();
 
-        await this.#eventBus.publish(new TeamRoleCreatedEvent({
+        await this.#eventBus.emit('team-role.created', {
             teamRoleId: newRole.id,
             teamId: newRole.team,
             name: newRole.name,
             userId
-        }));
+        });
 
         return newRole;
     }
@@ -74,12 +71,12 @@ export default class TeamRoleService{
         });
         const teamRole = await Object.assign(currentRole, updateData).save();
 
-        await this.#eventBus.publish(new TeamRoleUpdatedEvent({
+        await this.#eventBus.emit('team-role.updated', {
             teamRoleId: teamRole.id,
             teamId: teamRole.team,
             name: teamRole.name,
             permissions: teamRole.permissions ?? []
-        }));
+        });
 
         return teamRole;
     }
@@ -113,12 +110,12 @@ export default class TeamRoleService{
 
         await roleToDelete.remove();
 
-        await this.#eventBus.publish(new TeamRoleDeletedEvent({
+        await this.#eventBus.emit('team-role.deleted', {
             teamRoleId: roleId,
             teamId,
             userId,
             roleName: roleToDelete.name ?? ''
-        }));
+        });
 
         return { success: true };
     }

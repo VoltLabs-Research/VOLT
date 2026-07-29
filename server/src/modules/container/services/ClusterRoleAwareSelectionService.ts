@@ -9,7 +9,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
-import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
 
 type SelectionCapability = 'compute' | 'storage';
 
@@ -204,8 +205,8 @@ export class ClusterRoleAwareSelectionService {
             return null;
         }
 
-        const requestedClusterDocument = await TeamClusterModel.findById(input.requestedTeamClusterId).exec();
-        const requestedCluster = requestedClusterDocument ? toTeamClusterLike(requestedClusterDocument) : null;
+        const requestedClusterEntity = await TeamClusterEntity.findOneBy({ id: input.requestedTeamClusterId });
+        const requestedCluster = requestedClusterEntity ? toTeamClusterLike(requestedClusterEntity) : null;
         if (!requestedCluster || requestedCluster.props.team !== input.teamId) {
             throw ApplicationError.notFound(
                 'TeamCluster::NotFound',
@@ -226,14 +227,15 @@ export class ClusterRoleAwareSelectionService {
     }
 
     private async listConnectedClusters(teamId: string): Promise<TeamClusterLike[]> {
-        const documents = await TeamClusterModel.find({
-            team: teamId,
-            status: TeamClusterStatus.Connected
-        }).sort({
-            createdAt: 1
-        }).exec();
+        const entities = await TeamClusterEntity.find({
+            where: {
+                team: teamId,
+                status: TeamClusterStatus.Connected
+            },
+            order: { createdAt: 'ASC' }
+        });
 
-        return documents.map(toTeamClusterLike);
+        return entities.map(toTeamClusterLike);
     }
 
     private async selectBestCluster(

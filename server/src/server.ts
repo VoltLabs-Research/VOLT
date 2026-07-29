@@ -35,7 +35,6 @@ import mountEventGroups from './core/bootstrap/mount-event-groups';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
-import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import { writeUpgradeError } from './shared/infrastructure/utilities/proxy-relay';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
@@ -174,9 +173,8 @@ const startServer = async () => {
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
         try {
-            const [redisResult, mongoResult, postgresResult, minioResult] = await Promise.allSettled([
+            const [redisResult, postgresResult, minioResult] = await Promise.allSettled([
                 initializeRedis(),
-                mongoConnector(),
                 connectDatabase(),
                 initializeMinio()
             ]);
@@ -186,11 +184,6 @@ const startServer = async () => {
             if (redisResult.status === 'rejected') {
                 logger.error(`@server: Redis init failed: ${redisResult.reason}`);
                 failures.push('Redis');
-            }
-
-            if (mongoResult.status === 'rejected') {
-                logger.error(`@server: MongoDB init failed: ${mongoResult.reason}`);
-                failures.push('MongoDB');
             }
 
             if (postgresResult.status === 'rejected') {

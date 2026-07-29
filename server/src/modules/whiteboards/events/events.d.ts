@@ -1,5 +1,7 @@
-import type { WhiteboardCreatedEventPayload } from '@modules/whiteboards/events/WhiteboardCreatedEvent';
-import type { WhiteboardDeletedEventPayload } from '@modules/whiteboards/events/WhiteboardDeletedEvent';
+import type {
+    WhiteboardCreatedEventPayload,
+    WhiteboardDeletedEventPayload
+} from '@modules/whiteboards/contracts/domain/events';
 
 declare global {
     interface EventMap {

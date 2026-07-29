@@ -1,10 +1,13 @@
 import type StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
 import type {
-    StoragePlacement as StoragePlacementContract,
+    PersistedStoragePlacement,
     StoragePlacementBucketRef,
+    StoragePlacementProps,
     StoragePlacementScopeType as StoragePlacementScopeTypeContract,
     StoragePlacementState as StoragePlacementStateContract
 } from '@shared/domain/contracts/team-cluster';
+
+export type { PersistedStoragePlacement as StoragePlacement, StoragePlacementProps };
 
 export enum StoragePlacementScopeType {
     Trajectory = 'trajectory',
@@ -17,20 +20,6 @@ export enum StoragePlacementState {
     Moving = 'moving',
     ReadOnly = 'read-only',
     Deleting = 'deleting'
-}
-
-export interface StoragePlacementProps extends Omit<StoragePlacementContract, 'lastVerifiedAt' | 'bytesUsed'> {
-    team: string;
-    lastVerifiedAt: Date | null;
-    bytesUsed: number | null;
-    lastAccessedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface StoragePlacement {
-    readonly _id: string;
-    props: StoragePlacementProps;
 }
 
 export const DEFAULT_STORAGE_PLACEMENT_STATE: StoragePlacementStateContract = StoragePlacementState.Active;
@@ -87,7 +76,7 @@ export const createStoragePlacementProps = (
     };
 };
 
-export const toStoragePlacementLike = (entity: StoragePlacementEntity): StoragePlacement => ({
+export const toStoragePlacementLike = (entity: StoragePlacementEntity): PersistedStoragePlacement => ({
     _id: entity.id,
     props: {
         team: entity.team,
