@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/npm-debug.log
+**/*.env
+.git
+.volt-deploy
+desktop
+server/storage

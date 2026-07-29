@@ -6,8 +6,18 @@ interface GroupedCountRow{
     count: number | string;
 }
 
+const COUNT_KEY = 'latexCount';
+
 class LatexMemberContentCounter implements IMemberContentCounter{
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult>{
+        const counts = new Map<string, number>();
+        if(userIds.length === 0){
+            return {
+                key: COUNT_KEY,
+                counts
+            };
+        }
+
         const rows = await LatexDocument.createQueryBuilder('document')
             .select('document.createdBy', 'createdBy')
             .addSelect('COUNT(document.id)', 'count')
@@ -16,13 +26,12 @@ class LatexMemberContentCounter implements IMemberContentCounter{
             .groupBy('document.createdBy')
             .getRawMany<GroupedCountRow>();
 
-        const counts = new Map<string, number>();
         for(const row of rows){
             counts.set(String(row.createdBy), Number(row.count));
         }
 
         return {
-            key: 'latexCount',
+            key: COUNT_KEY,
             counts
         };
     }

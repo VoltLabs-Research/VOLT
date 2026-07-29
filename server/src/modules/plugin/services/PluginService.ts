@@ -1,4 +1,5 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import {
@@ -40,7 +41,7 @@ import {
     buildListingExportColumns,
     enrichDaemonListingRows
 } from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
-import { mapDaemonRow, type DaemonListingRow, type DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
+import { mapDaemonRow, toListingRowId, type DaemonListingRow, type DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
 import {
     resolveListingPagination,
@@ -322,7 +323,7 @@ const matchesExposureParams = (params: SceneArtifactParams | null | undefined, e
 
 const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData => {
     return {
-        _id: row._id || '',
+        _id: toListingRowId(row._id),
         plugin: String(row.plugin || ''),
         exposureId: row.exposureId || '',
         exposureName: row.exposureName || '',
@@ -1301,14 +1302,19 @@ export default class PluginService {
                 );
             }
 
+            if (error instanceof ApplicationError && error.statusCode < HttpStatus.InternalServerError) {
+                throw error;
+            }
+
+            logger.error(error, `Unexpected failure reading plugin exposure GLB teamClusterId=${teamClusterId} objectName=${objectName}`);
+
             throw ApplicationError.internalServerError(
                 'Failed to read plugin exposure GLB from team cluster daemon'
             );
         }
     }
 
-    async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<DownloadStreamOutput> {
-        const artifact = await SceneArtifactEntity.findOneBy({ id: String(input.artifactId) });
+    async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<DownloadStreamOutput> {        const artifact = await SceneArtifactEntity.findOneBy({ id: String(input.artifactId) });
         if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
             throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
@@ -1477,7 +1483,7 @@ export default class PluginService {
         const daemonRows = daemonResult.data || [];
 
         const rows = daemonRows.map((doc) => ({
-            _id: doc._id || '',
+            _id: toListingRowId(doc._id),
             ...((doc.row && typeof doc.row === 'object') ? doc.row : {})
         }));
 

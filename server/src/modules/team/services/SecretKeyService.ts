@@ -48,6 +48,10 @@ export default class SecretKeyService{
     }>{
         const { roleId, name } = input;
 
+        if(!roleId){
+            throw ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'Role ID is required');
+        }
+
         const role = await TeamRole.findOneBy({ id: roleId });
         if(!role || role.team !== teamId){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');

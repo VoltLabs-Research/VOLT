@@ -1,4 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { Readable } from 'node:stream';
 
@@ -28,7 +30,10 @@ export const getClusterGlbStream = async (
     _requestContext: GlbStreamRequestContext
 ): Promise<ResolvedGlbStream> => {
     if (!isZstdObjectName(objectName)) {
-        throw new Error(`Unsupported GLB object key: ${objectName}`);
+        throw ApplicationError.badRequest(
+            ErrorCodes.VALIDATION_INVALID_INPUT,
+            'The requested exposure does not expose a GLB model'
+        );
     }
 
     const response = await objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_BUCKETS.MODELS, objectName);

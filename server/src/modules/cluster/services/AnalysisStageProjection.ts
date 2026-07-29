@@ -15,6 +15,21 @@ import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/
  * artifacts. Decides how a daemon stage report changes the stored analysis
  * without touching persistence or the event bus.
  */
+/**
+ * Stages and child analyses are persisted in a simple-json column, so their
+ * dates come back from the database as ISO strings even though the type says
+ * Date. Optional chaining does not help here: `?.getTime()` still throws on a
+ * string, since the property exists but the method does not.
+ */
+const toEpochMs = (value: Date | string | undefined): number | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
+    return Number.isNaN(time) ? undefined : time;
+};
+
 export default class AnalysisStageProjection{
     toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
         return {
@@ -79,15 +94,19 @@ export default class AnalysisStageProjection{
             return false;
         }
 
-        const previousFinishedAt = previous.finishedAt?.getTime();
-        const nextStartedAt = next.startedAt?.getTime();
+        const previousFinishedAt = toEpochMs(previous.finishedAt);
+        const nextStartedAt = toEpochMs(next.startedAt);
         return typeof previousFinishedAt === 'number'
             && typeof nextStartedAt === 'number'
             && nextStartedAt <= previousFinishedAt;
     }
 
-    #isTerminalStageStatus(status: AnalysisStageStatus): boolean {
-        return status === 'completed' || status === 'failed' || status === 'cached';
+    #elapsedMs(startedAt: Date | string | undefined, finishedAt: Date): number | undefined {
+        const startedAtMs = toEpochMs(startedAt);
+        return startedAtMs === undefined ? undefined : Math.max(0, finishedAt.getTime() - startedAtMs);
+    }
+
+    #isTerminalStageStatus(status: AnalysisStageStatus): boolean {        return status === 'completed' || status === 'failed' || status === 'cached';
     }
 
     updateExpectedArtifactsForStage(
@@ -170,8 +189,8 @@ export default class AnalysisStageProjection{
             return false;
         }
 
-        const previousFinishedAt = previous.finishedAt?.getTime();
-        const nextStartedAt = next.startedAt?.getTime();
+        const previousFinishedAt = toEpochMs(previous.finishedAt);
+        const nextStartedAt = toEpochMs(next.startedAt);
         return typeof previousFinishedAt === 'number'
             && typeof nextStartedAt === 'number'
             && nextStartedAt <= previousFinishedAt;
@@ -250,7 +269,7 @@ export default class AnalysisStageProjection{
                 status: stageStatus,
                 finishedAt,
                 durationMs: stage.durationMs
-                    ?? (stage.startedAt ? Math.max(0, finishedAt.getTime() - stage.startedAt.getTime()) : undefined)
+                    ?? this.#elapsedMs(stage.startedAt, finishedAt)
             };
         });
     }
@@ -275,7 +294,7 @@ export default class AnalysisStageProjection{
                 status: stageStatus,
                 finishedAt,
                 durationMs: child.durationMs
-                    ?? (child.startedAt ? Math.max(0, finishedAt.getTime() - child.startedAt.getTime()) : undefined)
+                    ?? this.#elapsedMs(child.startedAt, finishedAt)
             };
         });
     }

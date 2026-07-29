@@ -279,6 +279,18 @@ const parseLineStyle = (style: string | undefined): LineStyleSpec => {
     }
 };
 
+const requireTimestep = (timestep: string): string => {
+    const value = String(timestep ?? '').trim();
+    if (!value || !Number.isFinite(Number(value))) {
+        throw ApplicationError.badRequest(
+            'Trajectory::InvalidTimestep',
+            'The "timestep" query parameter is required and must be numeric.'
+        );
+    }
+
+    return value;
+};
+
 const USER_SELECTION = {
     id: true,
     firstName: true,
@@ -1094,13 +1106,13 @@ export default class TrajectoryService {
     }
 
     async getColorCodingProperties(input: GetColorCodingPropertiesInput): Promise<GetColorCodingPropertiesOutput> {
-        return this.#runService(() => this.#colorCoding.getProperties(input.trajectoryId, input.timestep, input.analysisId));
+        return this.#runService(() => this.#colorCoding.getProperties(input.trajectoryId, requireTimestep(input.timestep), input.analysisId));
     }
 
     async getColorCodingStats(input: GetColorCodingStatsInput): Promise<GetColorCodingStatsOutput> {
         return this.#runService(() => this.#colorCoding.getStats(
             input.trajectoryId,
-            input.timestep,
+            requireTimestep(input.timestep),
             input.property,
             input.type,
             input.analysisId,
@@ -1137,7 +1149,7 @@ export default class TrajectoryService {
     }
 
     async getParticleFilterProperties(input: GetParticleFilterPropertiesInput): Promise<GetParticleFilterPropertiesOutput> {
-        return this.#runService(() => this.#particleFilter.getProperties(input.trajectoryId, input.timestep, input.analysisId));
+        return this.#runService(() => this.#particleFilter.getProperties(input.trajectoryId, requireTimestep(input.timestep), input.analysisId));
     }
 
     async previewParticleFilter(input: PreviewParticleFilterInput): Promise<PreviewParticleFilterOutput> {
@@ -1174,7 +1186,7 @@ export default class TrajectoryService {
         return this.#runService(async () => {
             const values = await this.#particleFilter.getUniqueValues(
                 input.trajectoryId,
-                input.timestep,
+                requireTimestep(input.timestep),
                 input.property,
                 input.maxValues,
                 input.analysisId,
@@ -1813,7 +1825,7 @@ export default class TrajectoryService {
             .where('frame.trajectoryId IN (:...trajectoryIds)', { trajectoryIds })
             .andWhere(
                 'frame.timestep = (SELECT MIN(earliest.timestep) FROM trajectory_frames earliest'
-                + ' WHERE earliest.trajectoryId = frame.trajectoryId)'
+                + ' WHERE earliest."trajectoryId" = frame.trajectoryId)'
             )
             .getRawMany<{ trajectoryId: string; natoms: string | number }>();
 

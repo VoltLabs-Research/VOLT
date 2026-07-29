@@ -288,6 +288,11 @@ export default class ClusterService {
     #storagePlacementService = storagePlacementService;
 
     async create(input: { teamId: string; userId: string; name: string }): Promise<{ teamCluster: TeamClusterView; enrollmentToken: string }> {
+        const name = input.name?.trim();
+        if (!name) {
+            throw ApplicationError.badRequest('TeamCluster::NameRequired', 'Cluster name is required');
+        }
+
         const user = await this.#userRepository.findById(input.userId);
         if (!user) {
             throw ApplicationError.notFound('TeamCluster::UserNotFound', 'User not found');
@@ -306,7 +311,7 @@ export default class ClusterService {
         });
 
         const teamClusterProps = buildTeamClusterProps({
-            name: input.name.trim(),
+            name,
             teamId: input.teamId,
             createdBy: input.userId,
             enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
@@ -1297,6 +1302,8 @@ export default class ClusterService {
             if (error instanceof ApplicationError) {
                 throw error;
             }
+
+            logger.error(error, `Unexpected failure processing daemon job completion teamClusterId=${input.teamClusterId} jobId=${input.jobId}`);
 
             throw ApplicationError.internalServerError('Failed to process daemon job completion');
         }

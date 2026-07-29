@@ -58,7 +58,7 @@ services:
       retries: 24
       start_period: 30s
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
       CLIENT_HOST: ${CLIENT_HOST:-http://localhost:5273}
       SERVER_ENDPOINT: ${SERVER_ENDPOINT:-http://localhost:8100}
@@ -80,26 +80,29 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${VOLT_SOURCE_DIR}/server:/app
+      - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro
+      - ${CLUSTER_DAEMON_SOURCE_DIR}:/ClusterDaemon:ro
       - volt-server-node-modules:/app/node_modules
     ports: ["${SERVER_PORT:-8100}:8000"]
 
   volt-client:
     build:
-      context: ${VOLT_SOURCE_DIR}/client
+      context: ${VOLT_SOURCE_DIR}
       args:
         VITE_SERVER_ENDPOINT: "${CLIENT_HOST:-http://localhost:5273}"
       dockerfile_inline: |
         FROM node:22-bookworm-slim AS build
-        WORKDIR /app
+        WORKDIR /app/client
         ARG VITE_SERVER_ENDPOINT
         ENV VITE_SERVER_ENDPOINT=$$VITE_SERVER_ENDPOINT
-        COPY package*.json ./
+        COPY client/package*.json ./
         RUN npm ci
-        COPY . .
+        COPY contracts /app/contracts
+        COPY client .
         RUN npm run build
 
         FROM nginx:1.27-alpine AS runtime
-        COPY --from=build /app/dist /usr/share/nginx/html
+        COPY --from=build /app/client/dist /usr/share/nginx/html
         RUN cat > /usr/share/nginx/html/__bootstrap.html <<'BOOT_EOF'
         <!doctype html>
         <html><head><meta charset="utf-8"><title>Volt</title></head>

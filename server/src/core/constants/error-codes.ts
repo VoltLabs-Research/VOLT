@@ -37,6 +37,7 @@ export const ErrorCodes = createErrorCodes({
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
 
     CONTAINER_NOT_FOUND: 'Container::NotFound',
+    CONTAINER_NOT_RUNNING: 'Container::NotRunning',
     CONTAINER_CREATION_FAILED: 'Container::Creation::Failed',
     CONTAINER_START_FAILED: 'Container::Start::Failed',
     CONTAINER_STOP_FAILED: 'Container::Stop::Failed',
@@ -105,6 +106,7 @@ export const ErrorCodes = createErrorCodes({
     RESOURCE_NOT_FOUND: 'Resource::NotFound',
     RESOURCE_LOAD_ERROR: 'Resource::LoadError',
     VALIDATION_MISSING_REQUIRED_FIELDS: 'Validation::MissingRequiredFields',
+    VALIDATION_DUPLICATE_RESOURCE: 'Validation::DuplicateResource',
 
     TEAM_INVITATION_NOT_FOUND: 'TeamInvitation::NotFound',
     TEAM_INVITATION_ALREADY_PROCESSED: 'TeamInvitation::AlreadyProcessed',

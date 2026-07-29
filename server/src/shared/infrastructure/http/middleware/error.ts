@@ -65,6 +65,45 @@ const looksLikeErrorCode = (value: string): boolean => {
     return value.includes('::');
 };
 
+/**
+ * Constraint violations are caused by the request, not by the server, so they
+ * must not surface as 500s carrying the raw driver message (which would also
+ * leak table and column names). Codes that signal a genuine server defect —
+ * undefined column, syntax error — are deliberately absent so they stay 500.
+ */
+const DATABASE_CONSTRAINT_ERRORS: Record<string, Required<NormalizedErrorMetadata>> = {
+    '23502': {
+        code: ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+        message: 'A required field is missing',
+        statusCode: HttpStatus.BadRequest
+    },
+    '23503': {
+        code: ErrorCodes.VALIDATION_INVALID_INPUT,
+        message: 'A referenced resource does not exist',
+        statusCode: HttpStatus.BadRequest
+    },
+    '23505': {
+        code: ErrorCodes.VALIDATION_DUPLICATE_RESOURCE,
+        message: 'A resource with these values already exists',
+        statusCode: HttpStatus.Conflict
+    },
+    '22P02': {
+        code: ErrorCodes.VALIDATION_INVALID_INPUT,
+        message: 'A field has an invalid value format',
+        statusCode: HttpStatus.BadRequest
+    }
+};
+
+const normalizeDatabaseError = (errorRecord: Record<string, unknown>): Required<NormalizedErrorMetadata> | undefined => {
+    if (getStringProperty(errorRecord, 'name') !== 'QueryFailedError') {
+        return undefined;
+    }
+
+    const sqlState = getStringProperty(errorRecord, 'code');
+
+    return sqlState ? DATABASE_CONSTRAINT_ERRORS[sqlState] : undefined;
+};
+
 const normalizeCastError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
     if (getStringProperty(errorRecord, 'name') !== 'CastError') {
         return undefined;
@@ -135,6 +174,12 @@ export const normalizeError = (error: unknown): NormalizedError => {
             code: ErrorCodes.INTERNAL_SERVER_ERROR,
             statusCode: HttpStatus.InternalServerError
         };
+    }
+
+    const databaseError = normalizeDatabaseError(errorRecord);
+
+    if (databaseError) {
+        return databaseError;
     }
 
     const validationError = normalizeCastError(errorRecord) ?? normalizeValidationError(errorRecord);

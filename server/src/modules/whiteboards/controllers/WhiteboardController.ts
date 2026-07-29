@@ -4,8 +4,7 @@ import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import { whiteboardRoutes } from '@volt/contracts/modules/whiteboards/routes';
 import type {
@@ -18,7 +17,6 @@ import type {
 } from '@volt/contracts/modules/whiteboards/http';
 import express from 'express';
 import type { Response } from 'express';
-import type { Readable } from 'node:stream';
 
 const stateBodyParser = express.json({ limit: '10mb' });
 
@@ -140,7 +138,7 @@ export default class WhiteboardController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.#service.getWhiteboardState(teamId, whiteboardId);
-        this.#pipeStream(res, output.stream, {
+        await pipeStreamToResponse(res, output.stream, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
         });
@@ -177,30 +175,9 @@ export default class WhiteboardController extends Controller {
         @Res() res: Response
     ): Promise<void> {
         const output = await this.#service.getWhiteboardAsset(teamId, whiteboardId, assetId);
-        this.#pipeStream(res, output.stream, {
+        await pipeStreamToResponse(res, output.stream, {
             'Content-Type': output.mimetype || 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'
         });
-    }
-
-    #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): void {
-        for (const [name, value] of Object.entries(headers)) {
-            res.setHeader(name, value);
-        }
-
-        res.on('close', () => {
-            stream.destroy();
-        });
-
-        stream.on('error', (error: unknown) => {
-            logger.error(error);
-            if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
-                return;
-            }
-            res.destroy(error instanceof Error ? error : undefined);
-        });
-
-        stream.pipe(res);
     }
 }

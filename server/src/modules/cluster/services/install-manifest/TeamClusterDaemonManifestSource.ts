@@ -1,4 +1,5 @@
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import logger from '@shared/infrastructure/logger';
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -38,6 +39,21 @@ const requireDaemonPackageRoot = async (): Promise<string> => {
     return daemonPackageRoot;
 };
 
+const DAEMON_MANIFEST_SKIPPED_ENTRIES = new Set(['node_modules', 'dist', '.git', '.runtime']);
+
+/**
+ * Manifest files travel as strings, so a file that is not valid UTF-8 cannot be
+ * represented. Decoding it leniently would silently corrupt it, so binary files
+ * are omitted instead and reported.
+ */
+const decodeManifestText = (contents: Buffer): string | null => {
+    try {
+        return new TextDecoder('utf8', { fatal: true }).decode(contents);
+    } catch {
+        return null;
+    }
+};
+
 const walkDaemonManifestFiles = async (daemonRoot: string, currentPath: string): Promise<DaemonManifestFile[]> => {
     const daemonFiles: DaemonManifestFile[] = [];
     const entries = await readdir(currentPath, {
@@ -45,7 +61,7 @@ const walkDaemonManifestFiles = async (daemonRoot: string, currentPath: string):
     });
 
     for (const entry of entries) {
-        if (entry.name === 'node_modules' || entry.name === 'dist') {
+        if (DAEMON_MANIFEST_SKIPPED_ENTRIES.has(entry.name)) {
             continue;
         }
 
@@ -55,9 +71,15 @@ const walkDaemonManifestFiles = async (daemonRoot: string, currentPath: string):
             continue;
         }
 
+        const contents = decodeManifestText(await readFile(absolutePath));
+        if (contents === null) {
+            logger.warn(`@install-manifest: skipped non-UTF-8 file ${path.relative(daemonRoot, absolutePath)}`);
+            continue;
+        }
+
         daemonFiles.push({
             relativePath: path.relative(daemonRoot, absolutePath),
-            contents: await readFile(absolutePath, 'utf8')
+            contents
         });
     }
 

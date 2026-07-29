@@ -34,6 +34,13 @@ export const assertLatexAssetStorageKey = (
     documentId: string,
     storageKey: string
 ): void => {
+    if (!storageKey) {
+        throw ApplicationError.badRequest(
+            'LatexAsset::StorageKeyRequired',
+            'The "key" query parameter is required'
+        );
+    }
+
     if (storageKey.startsWith(buildLatexAssetStoragePrefix(teamId, documentId))) {
         return;
     }

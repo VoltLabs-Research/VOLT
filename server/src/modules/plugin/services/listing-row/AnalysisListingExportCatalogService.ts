@@ -1,7 +1,7 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
-import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
+import { DaemonListingRow, DaemonPaginatedResult, toListingRowId } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 import {
     AnalysisListingExportOptionView,
     AnalysisSubListingExportOptionView,
@@ -369,7 +369,7 @@ export class AnalysisListingExportCatalogService {
         row: SubListingExportRowInput
     ): Record<string, unknown> {
         const baseRow: Record<string, unknown> = {
-            _id: row._id,
+            _id: toListingRowId(row._id),
             pluginId: row.plugin,
             analysisId,
             trajectoryId: row.trajectory,
@@ -415,7 +415,7 @@ export class AnalysisListingExportCatalogService {
 
         for (const doc of rows) {
             const mapped: ListingRowByAnalysisData = {
-                _id: doc._id || '',
+                _id: toListingRowId(doc._id),
                 plugin: String(doc.plugin || ''),
                 exposureId: doc.exposureId || '',
                 exposureName: doc.exposureName || '',
@@ -546,7 +546,7 @@ export class AnalysisListingExportCatalogService {
 
             for (const doc of daemonResult.data || []) {
                 rows.push({
-                    _id: doc._id || '',
+                    _id: toListingRowId(doc._id),
                     plugin: reference.plugin,
                     trajectory: reference.trajectory,
                     exposureId: reference.exposureId,

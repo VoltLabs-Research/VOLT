@@ -90,7 +90,10 @@ export const buildParticleFilterRequest = (
     const conditions = normalizeConditions(input.conditions);
 
     if (conditions.length === 0) {
-        throw new Error('Particle filter requires at least one condition');
+        throw ApplicationError.badRequest(
+            'Trajectory::ParticleFilterConditionsRequired',
+            'A particle filter requires at least one condition.'
+        );
     }
 
     return {

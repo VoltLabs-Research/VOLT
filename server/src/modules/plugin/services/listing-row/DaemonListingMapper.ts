@@ -40,6 +40,25 @@ const SYSTEM_KEYS = new Set([
     'row'
 ]);
 
+/**
+ * Daemon rows come from Mongo, so `_id` arrives as an ObjectId that the reverse
+ * channel has already turned into `{ buffer: { data: [...] } }`. The wire
+ * contract declares a hex string, so the bytes are rebuilt here instead of
+ * leaking a raw buffer to clients.
+ */
+export const toListingRowId = (value: unknown): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    const bytes = (value as { buffer?: { data?: unknown } })?.buffer?.data;
+    if (Array.isArray(bytes)) {
+        return Buffer.from(bytes as number[]).toString('hex');
+    }
+
+    return '';
+};
+
 export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
     const seen = new Set<string>();
 
@@ -82,7 +101,7 @@ export const mapDaemonRow = (row: DaemonListingRow): ListingRowData => {
     }
 
     return {
-        _id: row._id || '',
+        _id: toListingRowId(row._id),
         timestep: row.timestep ?? 0,
         analysisId: String(row.analysis || ''),
         trajectoryId: String(row.trajectory || ''),

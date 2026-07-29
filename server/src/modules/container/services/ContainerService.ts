@@ -465,14 +465,14 @@ export default class ContainerService{
     async getFiles(teamId: string, containerId: string, path?: string): Promise<{ files: ContainerFileEntry[] }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
         const teamClusterId = requireTeamClusterId(clusterId(container));
-        const files = await this.#runtime.getFiles(teamClusterId, container.containerId, path || '/');
+        const files = await this.#runtimeCall(() => this.#runtime.getFiles(teamClusterId, container.containerId, path || '/'));
         return { files };
     }
 
     async getProcesses(teamId: string, containerId: string): Promise<{ processes: ContainerProcessInfo[] }>{
         const container = await this.#getOwnedByTeam(containerId, teamId);
         const teamClusterId = requireTeamClusterId(clusterId(container));
-        const processes = await this.#runtime.getProcesses(teamClusterId, container.containerId);
+        const processes = await this.#runtimeCall(() => this.#runtime.getProcesses(teamClusterId, container.containerId));
         return { processes };
     }
 
@@ -517,11 +517,41 @@ export default class ContainerService{
         };
     }
 
+    /**
+     * Docker answers 409 when the container is not running. That is a state
+     * conflict caused by the request, not a server failure, so it must not
+     * surface as a 500 carrying the raw daemon message.
+     */
+    async #runtimeCall<T>(operation: () => Promise<T>): Promise<T>{
+        try{
+            return await operation();
+        }catch(error){
+            if(error instanceof Error && /is not running|container stopped\/paused/i.test(error.message)){
+                throw ApplicationError.conflict(ErrorCodes.CONTAINER_NOT_RUNNING, 'The container is not running');
+            }
+
+            throw error;
+        }
+    }
+
     async readFile(teamId: string, containerId: string, path: string): Promise<{ content: string }>{
+        if(!path?.trim()){
+            throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'The "path" query parameter is required');
+        }
+
         const container = await this.#getOwnedByTeam(containerId, teamId);
         const teamClusterId = requireTeamClusterId(clusterId(container));
-        const content = await this.#runtime.readFile(teamClusterId, container.containerId, path);
-        return { content };
+
+        try{
+            const content = await this.#runtimeCall(() => this.#runtime.readFile(teamClusterId, container.containerId, path));
+            return { content };
+        }catch(error){
+            if(error instanceof Error && /is a directory/i.test(error.message)){
+                throw ApplicationError.badRequest(ErrorCodes.CONTAINER_FILE_IS_DIRECTORY, 'The requested path is a directory, not a file');
+            }
+
+            throw error;
+        }
     }
 
     async move(teamId: string, containerId: string, folderId: string | null): Promise<null>{
