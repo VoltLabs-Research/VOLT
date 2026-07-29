@@ -68,7 +68,7 @@ interface DaemonNotebookSessionRequest {
     notebook: DaemonNotebookSessionSnapshot;
 }
 
-export class DaemonScriptingSessionOrchestrator {
+class DaemonScriptingSessionOrchestrator {
     private readonly notebookService = new JupyterNotebookService();
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
     private readonly notebookRuntimeTerminator = notebookRuntimeTerminator;

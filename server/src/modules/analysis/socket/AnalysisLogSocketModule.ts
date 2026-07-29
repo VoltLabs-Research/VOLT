@@ -23,7 +23,7 @@ interface UnsubscribePayload{
     timestep: number;
 }
 
-export class AnalysisLogSocketModule extends BaseSocketModule{
+class AnalysisLogSocketModule extends BaseSocketModule{
     public readonly name = 'AnalysisLogSocketModule';
 
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;

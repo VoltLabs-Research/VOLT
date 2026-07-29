@@ -14,7 +14,7 @@ interface ContainerDeploymentProgressPayload {
     timestamp: string;
 }
 
-export class ContainerDeploymentProgressService {
+class ContainerDeploymentProgressService {
     constructor(
         private readonly socketEmitter: SocketIOEmitter
     ) {}

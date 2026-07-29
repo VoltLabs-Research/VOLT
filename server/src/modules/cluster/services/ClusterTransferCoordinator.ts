@@ -188,7 +188,7 @@ interface TransferRequestInput {
     reason?: ClusterTransferJobReason;
 }
 
-export class ClusterTransferCoordinator {
+class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
     private readonly systemMetricsRepository = systemMetricsRepository;
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;

@@ -5,7 +5,7 @@ interface ValidationResult {
     errors: string[];
 }
 
-export class ModuleRegistry {
+class ModuleRegistry {
     private readonly manifests = new Map<string, ModuleManifest>();
 
     register(manifest: ModuleManifest): void {

@@ -6,7 +6,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
 import logger from '@shared/infrastructure/logger';
 
-export class NotebookCredentialService {
+class NotebookCredentialService {
     readonly #secretKeys = new SecretKeyService();
 
     async resolveSecretKey(notebook: ScriptingNotebook, userId: string): Promise<string> {

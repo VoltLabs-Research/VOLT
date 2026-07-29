@@ -217,7 +217,7 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
 }
 
-export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
+class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
         private readonly redis = redisClient;
         private readonly eventBus = eventBus;
     private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;

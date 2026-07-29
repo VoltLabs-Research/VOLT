@@ -93,7 +93,7 @@ interface RuntimeStatusSnapshot {
     teamClusterId?: string;
 }
 
-export interface ContainerServiceDependencies {
+interface ContainerServiceDependencies {
     runtime?: Pick<
         DaemonContainerRuntimeService,
         'createContainer' | 'getContainer' | 'startContainer' | 'stopContainer' | 'restartContainer' | 'removeContainer' | 'listContainers' | 'getFiles' | 'readFile' | 'getProcesses' | 'getStats'

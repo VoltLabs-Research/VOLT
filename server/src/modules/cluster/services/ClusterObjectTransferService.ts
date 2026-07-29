@@ -19,7 +19,7 @@ type ClusterObjectTransferGateway = Pick<
     'putStream' | 'head' | 'getStream'
 >;
 
-export interface ClusterObjectTransferServiceDependencies {
+interface ClusterObjectTransferServiceDependencies {
     signedUrlService?: ClusterObjectSignedUrlVerifier;
     objectGatewayClient?: ClusterObjectTransferGateway;
 }

@@ -64,7 +64,7 @@ interface GlbFrameDescriptor {
     ownerClusterId: string;
 }
 
-export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
+class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     private readonly dumpStorage: MaintenanceTrajectoryDumpStorage = trajectoryDumpStorageService;
 
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;

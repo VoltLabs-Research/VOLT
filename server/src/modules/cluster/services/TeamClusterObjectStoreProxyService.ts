@@ -33,7 +33,7 @@ type TeamClusterObjectStoreGateway = Pick<
 
 type FindOwnerClusterById = (ownerClusterId: string) => Promise<TeamClusterTeamIdentity | null>;
 
-export interface TeamClusterObjectStoreProxyServiceDependencies {
+interface TeamClusterObjectStoreProxyServiceDependencies {
     daemonCredentialGuard?: DaemonCredentialVerifier;
     objectGatewayClient?: TeamClusterObjectStoreGateway;
     findOwnerClusterById?: FindOwnerClusterById;
@@ -66,7 +66,7 @@ interface TeamClusterObjectStoreRequesterCredentials {
     readonly [requesterCredentialsBrand]: true;
 }
 
-export interface AuthorizedTeamClusterObjectStoreAccess {
+interface AuthorizedTeamClusterObjectStoreAccess {
     readonly ownerClusterId: string;
     readonly [authorizedAccessBrand]: true;
 }

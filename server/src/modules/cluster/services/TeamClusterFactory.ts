@@ -8,7 +8,7 @@ import {
 } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
 
-export const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
+const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
     analysis: 8,
     rasterizer: 8,
     glbPreprocessing: 16,
@@ -37,7 +37,7 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimit
 
 const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
 
-export const createDefaultTeamClusterRoleConfig = (
+const createDefaultTeamClusterRoleConfig = (
     role: TeamClusterRole = DEFAULT_TEAM_CLUSTER_ROLE
 ): TeamClusterRuntimeRoleConfigProps => {
     return {

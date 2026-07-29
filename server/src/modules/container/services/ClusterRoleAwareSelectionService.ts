@@ -110,7 +110,7 @@ const supportsCapability = (
     return derivedCapabilities.acceptsComputeJobs;
 };
 
-export class ClusterRoleAwareSelectionService {
+class ClusterRoleAwareSelectionService {
     private readonly systemMetricsRepository = systemMetricsRepository;
 
     async resolveStorageCluster(

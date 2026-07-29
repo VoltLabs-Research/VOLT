@@ -13,7 +13,7 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     storageClusterId?: string;
 }
 
-export interface RasterJobEnqueueResult {
+interface RasterJobEnqueueResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;

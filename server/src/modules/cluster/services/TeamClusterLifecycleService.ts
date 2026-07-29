@@ -132,7 +132,7 @@ interface TeamClusterLifecycleEventPayload {
     timestamp: string;
 }
 
-export class TeamClusterLifecycleService {
+class TeamClusterLifecycleService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
     private readonly socketEmitter = socketIOEmitter;
     private readonly systemMetricsRepository = systemMetricsRepository;

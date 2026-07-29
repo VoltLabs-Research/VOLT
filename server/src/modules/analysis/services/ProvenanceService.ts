@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 
 const QUERY_DEFAULT_LIMIT = 50;
 
-export interface RecordProvenanceInput{
+interface RecordProvenanceInput{
     pluginName: string;
     pluginVersion: string;
     parameters: Record<string, unknown>;

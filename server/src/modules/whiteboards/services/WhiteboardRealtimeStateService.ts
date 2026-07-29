@@ -5,7 +5,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 
-export type WhiteboardRealtimeObjectGateway = Pick<
+type WhiteboardRealtimeObjectGateway = Pick<
     ITeamClusterObjectGatewayClient,
     'exists' | 'getBuffer' | 'putBuffer'
 >;
@@ -173,7 +173,7 @@ const areStringArraysEqual = (left: string[], right: string[]): boolean => {
     return true;
 };
 
-export class WhiteboardRealtimeStateService {
+class WhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 

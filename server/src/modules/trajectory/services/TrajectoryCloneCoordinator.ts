@@ -58,7 +58,7 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
     }
 };
 
-export class TrajectoryCloneCoordinator{
+class TrajectoryCloneCoordinator{
     private readonly storagePlacementService: StoragePlacementService = storagePlacementService;
 
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
