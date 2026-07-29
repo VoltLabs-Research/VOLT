@@ -1,4 +1,4 @@
-import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@volt/contracts/modules/trajectory/domain';
+import type { SceneArtifact, SceneArtifactParticleFilterPropertyCondition } from '@volt/contracts/modules/trajectory/domain';
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',
@@ -11,7 +11,7 @@ const formatArtifactValue = (value: unknown): string => {
     return String(Number(value.toFixed(3)));
 };
 
-const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterCondition | SceneArtifact['params']): string => {
+const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterPropertyCondition | SceneArtifact['params']): string => {
     if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
         return '';
     }

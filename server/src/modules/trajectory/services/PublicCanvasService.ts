@@ -52,7 +52,6 @@ import type {
     GetPublicCanvasGLBInput,
     GetPublicCanvasGLBOutput,
     GetPublicCanvasRasterFrameInput,
-    GetPublicCanvasRasterFrameOutput,
     GetTrajectoryByIdOutput,
     GetTrajectoryPreviewOutput,
     ListTrajectorySceneArtifactsInput,
@@ -130,7 +129,7 @@ export default class PublicCanvasService{
         return preview;
     }
 
-    async rasterFrame(input: GetPublicCanvasRasterFrameInput): Promise<GetPublicCanvasRasterFrameOutput>{
+    async rasterFrame(input: GetPublicCanvasRasterFrameInput): Promise<DownloadStreamOutput>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
         return new RasterService().getRasterFramePNG({
             trajectoryId: input.trajectoryId,

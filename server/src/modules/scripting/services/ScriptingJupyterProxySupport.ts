@@ -2,6 +2,8 @@ import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
 import type { TeamClusterServiceExposure } from '@shared/contracts/types';
 import { TeamClusterServiceExposureStatus } from '@shared/contracts/types';
+import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
+export { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;
@@ -42,16 +44,6 @@ export const findNotebookExposure = (
 
 export const PROXY_URL_ORIGIN = 'http://volt.local';
 
-export const resolveServerBaseUrl = (): string => {
-    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
-    if (configuredServerUrl) {
-        return configuredServerUrl.replace(/\/+$/g, '');
-    }
-
-    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
-    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
-    return `${protocol}://${host}`;
-};
 
 const resolveJupyterUiPath = (): string => {
     const configuredUiPath = process.env.JUPYTER_UI_PATH?.trim() || '/lab';

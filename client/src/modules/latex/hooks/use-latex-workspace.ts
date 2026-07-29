@@ -1,8 +1,10 @@
 import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
-import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
-import { isWorkspaceTextLikeFile, splitWorkspacePath } from '@/modules/latex/utils/workspace';
+import { invalidateLatexFilesQuery, latexDocumentQuery, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import useLatexCompile from '@/modules/latex/hooks/workspace/use-latex-compile';
+import useLatexExport from '@/modules/latex/hooks/workspace/use-latex-export';
+import useLatexWorkspaceUpload from '@/modules/latex/hooks/workspace/use-latex-workspace-upload';
 import type {
     LatexFileEntry,
     LatexWorkspaceSelection,
@@ -10,8 +12,7 @@ import type {
     LatexEditorGroupId,
     LatexEditorGroup,
     FileEditorState,
-    PendingRemoteFileUpdate,
-    WorkspaceUploadEntry
+    PendingRemoteFileUpdate
 } from '@/modules/latex/contracts/workspace';
 import {
     AUTOSAVE_DELAY,
@@ -25,20 +26,13 @@ import {
     createFileEditorState
 } from './workspace/editor-helpers';
 import {
-    EXPORT_TEX_TOAST,
-    EXPORT_ZIP_TOAST,
-    RENAME_TOAST,
-    IMPORT_WORKSPACE_TOAST
+    RENAME_TOAST
 } from './workspace/toasts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { showPromise } from '@/shared/ui/hooks/toast';
-import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import type { ChangeEvent } from 'react';
 import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 
 interface UseLatexWorkspaceInput {
@@ -62,19 +56,14 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const [isEditorSplit, setIsEditorSplit] = useState(false);
     const [fileEditorStates, setFileEditorStates] = useState<Record<string, FileEditorState>>({});
     const [pendingRemoteUpdates, setPendingRemoteUpdates] = useState<Record<string, PendingRemoteFileUpdate>>({});
-    const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
-    const [compiledPdfBlob, setCompiledPdfBlob] = useState<Blob | null>(null);
-    const [compileError, setCompileError] = useState<string | null>(null);
     const [isWorkspaceImportInProgress, setIsWorkspaceImportInProgress] = useState(false);
 
     const fileEditorStatesRef = useRef<Record<string, FileEditorState>>({});
     const sendContentUpdateRef = useRef<((content: string, fileId: string) => void) | null>(null);
     const applyLocalContentChangeRef = useRef<((fileId: string, content: string) => boolean) | null>(null);
-    const compiledPdfUrlRef = useRef<string | null>(null);
     const autosaveTimersRef = useRef<Record<string, number>>({});
     const liveCompileTimerRef = useRef<number | null>(null);
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
-    const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
 
     
@@ -91,13 +80,9 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     useEffect(() => {
         lastTexWorkspaceFingerprintRef.current = null;
-        compileRequestIdRef.current = 0;
     }, [documentId]);
 
     const { mutateAsync: updateDocument } = useUpdateLatexDocumentMutation();
-    const { mutateAsync: exportTex, isPending: isExportingTex } = useExportLatexDocumentTexMutation();
-    const { mutateAsync: exportZip, isPending: isExportingZip } = useExportLatexDocumentZipMutation();
-    const { mutateAsync: compileDocument, isPending: isCompiling } = useCompileLatexDocumentMutation();
 
     const updateEditorGroup = useCallback((
         groupId: LatexEditorGroupId,
@@ -222,6 +207,31 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         [isTexFile, latexFiles]
     );
 
+    const {
+        compileSilently,
+        compiledPdfUrl,
+        compiledPdfBlob,
+        compileError,
+        isCompiling,
+        revokePdfUrl
+    } = useLatexCompile({
+        documentId,
+        hasCompilableTexFile
+    });
+
+    const {
+        isExportingTex,
+        isExportingZip,
+        handleExportTex,
+        handleExportZip,
+        handleExportPdf
+    } = useLatexExport({
+        documentId,
+        documentTitle: latexDocument?.title,
+        compiledPdfBlob,
+        compileSilently
+    });
+
     const texWorkspaceFingerprint = useMemo(
         () => latexFiles
             .filter((file) => isTexFile(file.name))
@@ -229,95 +239,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             .join('|'),
         [isTexFile, latexFiles]
     );
-
-    const revokePdfUrl = (): void => {
-        if (compiledPdfUrlRef.current) {
-            URL.revokeObjectURL(compiledPdfUrlRef.current);
-            compiledPdfUrlRef.current = null;
-        }
-    };
-
-    const compileSilently = useCallback(async (): Promise<Blob | null> => {
-        const requestId = ++compileRequestIdRef.current;
-        const isStale = () => requestId !== compileRequestIdRef.current;
-
-        if (!documentId) return null;
-
-        if (!hasCompilableTexFile) {
-            if (isStale()) return null;
-
-            revokePdfUrl();
-            setCompiledPdfBlob(null);
-            setCompiledPdfUrl(null);
-            setCompileError('Add a .tex file to generate the PDF preview.');
-            return null;
-        }
-
-        setCompileError(null);
-
-        try {
-            const blob = await compileDocument({ documentId });
-
-            if (isStale()) return null;
-
-            revokePdfUrl();
-
-            const pdfUrl = URL.createObjectURL(blob);
-            compiledPdfUrlRef.current = pdfUrl;
-            setCompiledPdfBlob(blob);
-            setCompiledPdfUrl(pdfUrl);
-            return blob;
-        } catch (error) {
-            if (isStale()) return null;
-
-            revokePdfUrl();
-
-            setCompiledPdfBlob(null);
-            setCompiledPdfUrl(null);
-            let message = reportError(error, {
-                surface: ErrorSurface.Silent,
-                fallbackTitle: 'Compilation failed'
-            }).title;
-            const axiosError: unknown = isApiError(error) ? error.originalError : error;
-            const response = typeof axiosError === 'object'
-                && axiosError !== null
-                && 'response' in axiosError
-                && typeof axiosError.response === 'object'
-                && axiosError.response !== null
-                ? axiosError.response
-                : null;
-            const data = response && 'data' in response ? response.data : null;
-
-            if (data instanceof Blob) {
-                try {
-                    const text = await data.text();
-                    let blobMessage = text.trim();
-
-                    try {
-                        const parsed = JSON.parse(text);
-                        if (typeof parsed === 'object' && parsed !== null) {
-                            if ('logs' in parsed && typeof parsed.logs === 'string' && parsed.logs.trim()) {
-                                blobMessage = parsed.logs;
-                            } else if ('message' in parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
-                                blobMessage = parsed.message;
-                            } else if ('error' in parsed && typeof parsed.error === 'string' && parsed.error.trim()) {
-                                blobMessage = parsed.error;
-                            }
-                        }
-                    } catch {
-                    }
-
-                    if (blobMessage) {
-                        message = blobMessage;
-                    }
-                } catch {
-                }
-            }
-
-            setCompileError(message);
-            return null;
-        }
-    }, [compileDocument, documentId, hasCompilableTexFile]);
 
     const scheduleLiveCompile = useCallback((): void => {
         if (liveCompileTimerRef.current) {
@@ -831,41 +752,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, [checkAccessDeniedError, documentId, updateDocument]);
 
-    const handleExportTex = useCallback(async (): Promise<void> => {
-        if (!documentId) return;
-
-        try {
-            const blob = await showPromise(exportTex({ documentId }), EXPORT_TEX_TOAST);
-            const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.tex`;
-            triggerBrowserDownload(blob, downloadName);
-        } catch {
-            return;
-        }
-    }, [documentId, exportTex, latexDocument?.title]);
-
-    const handleExportZip = useCallback(async (): Promise<void> => {
-        if (!documentId) return;
-
-        try {
-            const blob = await showPromise(exportZip({ documentId }), EXPORT_ZIP_TOAST);
-            const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.zip`;
-            triggerBrowserDownload(blob, downloadName);
-        } catch {
-            return;
-        }
-    }, [documentId, exportZip, latexDocument?.title]);
-
-    const handleExportPdf = useCallback(async (): Promise<void> => {
-        const blob = compiledPdfBlob ?? await compileSilently();
-        if (!blob) {
-            sileo.error({ title: 'Failed to export PDF' });
-            return;
-        }
-
-        const downloadName = `${(latexDocument?.title ?? 'document').replace(/[^a-zA-Z0-9._-]+/g, '-')}.pdf`;
-        triggerBrowserDownload(blob, downloadName);
-    }, [compileSilently, compiledPdfBlob, latexDocument?.title]);
-
     const handleSelectFileById = useCallback((fileId: string): void => {
         const file = latexFiles.find((currentFile) => currentFile._id === fileId);
         if (file) {
@@ -1019,58 +905,15 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, []);
 
-    const handleUploadWorkspaceEntries = useCallback(async (entries: WorkspaceUploadEntry[]) => {
-        await showPromise(
-            runWorkspaceImport(async () => {
-                const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
-                const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
-
-                for (const entry of textEntries) {
-                    const { path, name } = splitWorkspacePath(entry.path);
-
-                    await createFileWithoutSelection(name, path || undefined, await entry.file.text());
-                }
-
-                if (binaryEntries.length > 0) {
-                    await uploadEntriesWithoutToast(binaryEntries);
-                }
-            }),
-            IMPORT_WORKSPACE_TOAST
-        );
-    }, [createFileWithoutSelection, runWorkspaceImport, uploadEntriesWithoutToast]);
-
-    const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-        const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) return;
-
-        const entries: WorkspaceUploadEntry[] = Array.from(fileList).map((file) => ({
-            file,
-            path: file.name
-        }));
-
-        event.target.value = '';
-        await handleUploadWorkspaceEntries(entries);
-    }, [handleUploadWorkspaceEntries]);
-
-    const handleWorkspaceFoldersSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-        const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) return;
-
-        const entries: WorkspaceUploadEntry[] = Array.from(fileList).map((file) => {
-            let path = file.name;
-            if ('webkitRelativePath' in file && typeof file.webkitRelativePath === 'string' && file.webkitRelativePath) {
-                path = file.webkitRelativePath;
-            }
-
-            return {
-                file,
-                path
-            };
-        });
-
-        event.target.value = '';
-        await handleUploadWorkspaceEntries(entries);
-    }, [handleUploadWorkspaceEntries]);
+    const {
+        handleUploadWorkspaceEntries,
+        handleWorkspaceFilesSelected,
+        handleWorkspaceFoldersSelected
+    } = useLatexWorkspaceUpload({
+        runWorkspaceImport,
+        createFileWithoutSelection,
+        uploadEntriesWithoutToast
+    });
 
     const files = useMemo<LatexFileEntry[]>(
         () => latexFiles.map((file) => ({

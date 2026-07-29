@@ -87,7 +87,9 @@ import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact'
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureGLBInput, GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
-import type { GetPluginExposureExportInput, GetPluginExposureExportOutput } from '@shared/contracts/operations/GetPluginExposureExport';
+import type {
+    GetPluginExposureExportInput
+} from '@shared/contracts/operations/GetPluginExposureExport';
 import type {
     ExportPluginListingDocumentsInput,
     GetPluginListingDocumentsInput,
@@ -97,6 +99,7 @@ import type {
 import type { GetSubListingInput, GetSubListingOutput, SubListingColumn } from '@shared/contracts/operations/GetSubListing';
 import logger from '@shared/infrastructure/logger';
 import { Readable } from 'node:stream';
+import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
 import type {
     UploadBinaryInput as WireUploadBinaryInput,
     CommitBinaryUploadInput as WireCommitBinaryUploadInput
@@ -128,8 +131,6 @@ export interface DownloadPluginBinaryInput {
 interface DownloadPluginBinaryOutput extends DownloadStreamOutput {
     fileName: string;
 }
-
-type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export interface PipelineStageInput {
     kind: PipelineStageKind;
@@ -233,11 +234,7 @@ interface ValidateWorkflowOutput {
 export interface GetPluginExposureChartInput {
     teamId: string;
     artifactId: string;
-}
-
-type GetPluginExposureChartOutput = DownloadStreamOutput;
-
-const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
+}const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 
 const LIST_PLUGINS_DEFAULT_LIMIT = 100;
 
@@ -449,6 +446,17 @@ interface DaemonSubListingPaginatedResult {
     page: number;
     totalPages: number;
     limit: number;
+}
+
+interface BuildPluginStageParams{
+    stage: PipelineStageInput;
+    input: ExecutePipelineInput;
+    trajectoryName: string;
+    storageClusterId?: string;
+    computeClusterId: string;
+    trajectoryFramePayloads: Array<{ timestep: number; natoms: number; simulationCell: string }>;
+    upstreamStageHashes: string[];
+    selectedTimesteps: number[];
 }
 
 export default class PluginService {
@@ -981,16 +989,16 @@ export default class PluginService {
                     continue;
                 }
 
-                const stageResult = await this.#buildPluginStage(
+                const stageResult = await this.#buildPluginStage({
                     stage,
                     input,
-                    trajectory.name,
+                    trajectoryName: trajectory.name,
                     storageClusterId,
                     computeClusterId,
                     trajectoryFramePayloads,
-                    [...upstreamStageHashes],
-                    resolvedSelectedTimesteps
-                );
+                    upstreamStageHashes: [...upstreamStageHashes],
+                    selectedTimesteps: resolvedSelectedTimesteps
+                });
                 if (stageResult.error) {
                     throw stageResult.error;
                 }
@@ -1035,16 +1043,16 @@ export default class PluginService {
         return { analysisIds };
     }
 
-    async #buildPluginStage(
-        stage: PipelineStageInput,
-        input: ExecutePipelineInput,
-        trajectoryName: string,
-        storageClusterId: string | undefined,
-        computeClusterId: string,
-        trajectoryFramePayloads: Array<{ timestep: number; natoms: number; simulationCell: string }>,
-        upstreamStageHashes: string[],
-        selectedTimesteps: number[]
-    ): Promise<{
+    async #buildPluginStage({
+        stage,
+        input,
+        trajectoryName,
+        storageClusterId,
+        computeClusterId,
+        trajectoryFramePayloads,
+        upstreamStageHashes,
+        selectedTimesteps
+    }: BuildPluginStageParams): Promise<{
         stageHash: string;
         execution: PipelineStageExecutionInput;
         createdAnalysis?: Analysis;
@@ -1299,7 +1307,7 @@ export default class PluginService {
         }
     }
 
-    async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<GetPluginExposureChartOutput> {
+    async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<DownloadStreamOutput> {
         const artifact = await SceneArtifactEntity.findOneBy({ id: String(input.artifactId) });
         if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
             throw ApplicationError.notFound(
@@ -1361,7 +1369,7 @@ export default class PluginService {
         }
     }
 
-    async getPluginExposureExport(input: GetPluginExposureExportInput): Promise<GetPluginExposureExportOutput> {
+    async getPluginExposureExport(input: GetPluginExposureExportInput): Promise<DownloadStreamOutput> {
         const analysis = await AnalysisEntity.findOneBy({ id: String(input.analysisId) });
 
         if (!analysis) {

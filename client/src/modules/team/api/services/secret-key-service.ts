@@ -30,14 +30,10 @@ interface GetSecretKeysInput {
     page?: number;
     limit?: number;
     sort?: string;
-}
-
-export type RevokeSecretKeyInput = DeleteSecretKeyInput;
-
-const endpoints = {
+}const endpoints = {
     listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
     create: post<CreateSecretKeyParams, CreateSecretKeyResponse>('/:teamId/secret-keys'),
-    revokeById: post<RevokeSecretKeyInput, void>(
+    revokeById: post<DeleteSecretKeyInput, void>(
         '/:teamId/secret-keys/:secretKeyId/revocations', { unwrap: 'void' }
     ),
     deleteById: del<DeleteSecretKeyInput>('/:teamId/secret-keys/:secretKeyId'),

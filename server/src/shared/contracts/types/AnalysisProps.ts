@@ -1,3 +1,5 @@
+import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
+export type { AnalysisStageStatus };
 
 
 export type AnalysisConfig = Record<string, unknown>;
@@ -19,8 +21,6 @@ export interface AnalysisExpectedArtifact {
 }
 
 export type AnalysisStageType = 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
-export type AnalysisStageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cached';
-
 export interface AnalysisStage {
     stageKey: string;
     label: string;

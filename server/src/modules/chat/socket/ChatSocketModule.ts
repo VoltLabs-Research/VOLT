@@ -21,7 +21,7 @@ const SOCKET_CHAT_EVENTS = {
     USERS_PRESENCE_INFO: 'users_presence_info'
 } as const;
 
-type PresenceStatus = 'online' | 'offline';
+type ReportedPresence = 'online' | 'offline';
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -114,7 +114,7 @@ class ChatSocketModule extends BaseSocketModule {
             const uniqueUserIds = Array.from(new Set(payload.userIds));
             const onlineUserIds = await this.teamRoomPresenceService.getOnlineUserIds(teamId);
             const onlineUserIdsSet = new Set(onlineUserIds);
-            const presenceMap = uniqueUserIds.reduce<Record<string, PresenceStatus>>((acc, userId) => {
+            const presenceMap = uniqueUserIds.reduce<Record<string, ReportedPresence>>((acc, userId) => {
                 acc[userId] = onlineUserIdsSet.has(userId) ? 'online' : 'offline';
                 return acc;
             }, {});

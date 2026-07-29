@@ -27,11 +27,7 @@ export interface CreateTrajectoryInput {
         size: number;
         type?: string;
     }>;
-}
-
-export type CreateTrajectoryResponse = Trajectory;
-
-interface CommitTrajectoryUploadSessionInput {
+}interface CommitTrajectoryUploadSessionInput {
     uploadSessionId: string;
     authToken?: string;
 }
@@ -211,3 +207,5 @@ export default createService({
         }
     }
 }, endpoints);
+
+export type CreateTrajectoryResponse = Trajectory;

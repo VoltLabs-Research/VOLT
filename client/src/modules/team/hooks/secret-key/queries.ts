@@ -1,6 +1,9 @@
 import secretKeyService from '../../api/services/secret-key-service';
 import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/query';
-import type { CreateSecretKeyParams, DeleteSecretKeyInput, RevokeSecretKeyInput } from '../../api/services/secret-key-service';
+import type {
+    CreateSecretKeyParams,
+    DeleteSecretKeyInput
+} from '../../api/services/secret-key-service';
 import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '@volt/contracts/modules/team/domain';
 
@@ -85,7 +88,7 @@ export const useDeleteSecretKeyMutation = createInvalidatingMutation<void, Delet
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );
 
-export const useRevokeSecretKeyMutation = createInvalidatingMutation<void, RevokeSecretKeyInput>(
+export const useRevokeSecretKeyMutation = createInvalidatingMutation<void, DeleteSecretKeyInput>(
     secretKeyService.revokeById,
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );

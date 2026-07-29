@@ -21,11 +21,7 @@ import type { DiscoverTeamSummary } from '@/modules/trajectory/api/services/disc
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
-import './SimulationGrid.css';
-
-type SimulationGridItem = TrajectoryListingRow;
-
-export interface PublicSimulationGridSummary {
+import './SimulationGrid.css';export interface PublicSimulationGridSummary {
     team: DiscoverTeamSummary | null;
     total: number;
 }
@@ -284,7 +280,7 @@ function DashboardSimulationGrid() {
         openFolder(folderId);
     }, [clearSelection, openFolder]);
 
-    const renderGridItem = useCallback((item: SimulationGridItem) => {
+    const renderGridItem = useCallback((item: TrajectoryListingRow) => {
         if (isTrajectoryFolderRow(item)) {
             return (
                 <SimulationFolderCard
@@ -378,7 +374,7 @@ function DashboardSimulationGrid() {
                 hidden
                 onChange={handlePickerChange}
             />
-            <DocumentListing<SimulationGridItem, { folderId: string | null }>
+            <DocumentListing<TrajectoryListingRow, { folderId: string | null }>
                 title='Trajectories'
                 queryKey={queryKey}
                 view='grid'

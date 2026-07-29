@@ -6,17 +6,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import RasterService from '@modules/raster/services/RasterService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { RenderSceneScreenshotInput } from '@volt/contracts/modules/raster/ai-tools';
+import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 
-const resolveServerBaseUrl = (): string => {
-    const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
-    if (configuredServerUrl) {
-        return configuredServerUrl.replace(/\/+$/g, '');
-    }
-
-    const protocol = process.env.SERVER_SCHEMA?.trim() || 'http';
-    const host = process.env.SERVER_HOSTNAME?.trim() || 'localhost';
-    return `${protocol}://${host}`;
-};
 
 export default class RasterAIToolController extends AIToolController {
     #service = new RasterService();

@@ -2,6 +2,8 @@
 import type Docker from 'dockerode';
 
 import type { EnvVariable, PortMapping, ContainerFile } from '@volt/contracts/modules/container/domain';
+import type { ContainerProcessInfo } from '@volt/contracts/modules/container/domain';
+export type { ContainerProcessInfo };
 
 export type ContainerEnvironmentVariable = EnvVariable;
 export type ContainerPortMapping = PortMapping;
@@ -20,8 +22,6 @@ export interface CreateRuntimeContainerOptions {
     groupAdd?: string[];
     cmd?: string[];
 }
-
-export type ContainerProcessInfo = Record<string, unknown>;
 
 export type ContainerStats = Docker.ContainerStats;
 export type RuntimeContainerInfo = Docker.ContainerInspectInfo;

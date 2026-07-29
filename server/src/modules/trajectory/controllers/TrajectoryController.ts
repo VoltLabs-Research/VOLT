@@ -16,6 +16,7 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))
 export default class TrajectoryController extends TrajectoryControllerBase {
@@ -31,7 +32,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.downloadSamples(this.params(req));
-        await this.pipeStream(res, output.stream, {
+        await pipeStreamToResponse(res, output.stream, {
             'Content-Type': 'application/zip',
             'Content-Disposition': `attachment; filename="${output.filename}"`
         });
@@ -178,7 +179,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.service.downloadTrajectoryAnalyses(this.params(req));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.download)
@@ -188,7 +189,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.service.downloadTrajectory(this.params(req));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.getAtoms)
@@ -272,7 +273,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.getColoredModelStream(this.params(req));
-        await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.colorCodingCreate)
@@ -317,7 +318,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.getFilteredModelStream(this.params(req));
-        await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.particleFilterApply)
@@ -335,7 +336,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.getLineStyledModelStream(this.params(req));
-        await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.lineStyleCreate)
@@ -353,7 +354,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.getLineModelRangesStream(this.params(req));
-        await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
     @Route(trajectoryRoutes.lineStyleEntityProperties)
@@ -371,6 +372,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.service.getOctreeMetadataStream(this.params(req));
-        await this.pipeStream(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 }

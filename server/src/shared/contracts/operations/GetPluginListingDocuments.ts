@@ -1,5 +1,7 @@
 
 import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
+import type { ListingRowData } from '@volt/contracts/modules/plugin/domain/listing';
+export type { ListingRowData };
 
 export interface GetPluginListingDocumentsInput {
     pluginId: string;
@@ -30,16 +32,6 @@ export interface ColumnDef {
     title?: string;
     sortable: boolean;
     width?: number;
-}
-
-export interface ListingRowData {
-    _id: string;
-    timestep: number;
-    analysisId: string;
-    trajectoryId: string;
-    exposureId: string;
-    trajectoryName: string;
-    [key: string]: unknown;
 }
 
 export interface PluginListingDocumentsMeta extends Record<string, unknown> {

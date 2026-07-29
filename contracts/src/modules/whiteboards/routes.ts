@@ -11,7 +11,6 @@ import type {
 import type {
     Whiteboard,
     CreateWhiteboardResponse,
-    GetWhiteboardResponse,
     UpdateWhiteboardResponse,
     UploadWhiteboardAssetResponse,
     WhiteboardFolder
@@ -27,7 +26,7 @@ export const whiteboardRoutes = {
     updateFolder: patch<UpdateWhiteboardFolderInput, WhiteboardFolder>('/api/teams/:teamId/whiteboard-folders/:folderId'),
     removeFolder: del('/api/teams/:teamId/whiteboard-folders/:folderId'),
 
-    get: get<GetWhiteboardResponse>('/api/teams/:teamId/whiteboards/:whiteboardId'),
+    get: get<Whiteboard>('/api/teams/:teamId/whiteboards/:whiteboardId'),
     update: patch<UpdateWhiteboardInput, UpdateWhiteboardResponse>('/api/teams/:teamId/whiteboards/:whiteboardId'),
     remove: del('/api/teams/:teamId/whiteboards/:whiteboardId'),
     move: patch<MoveWhiteboardInput, null>('/api/teams/:teamId/whiteboards/:whiteboardId/folder'),

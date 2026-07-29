@@ -16,6 +16,7 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 
 @Middleware(authenticateOptional)
 export default class CanvasController extends TrajectoryControllerBase {
@@ -71,7 +72,7 @@ export default class CanvasController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.#canvas.dump(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasGlb)
@@ -95,7 +96,7 @@ export default class CanvasController extends TrajectoryControllerBase {
             headers['Content-Length'] = String(output.size);
         }
 
-        await this.pipeStream(res, output.stream, headers);
+        await pipeStreamToResponse(res, output.stream, headers);
     }
 
     @Route(trajectoryRoutes.canvasRasterFrame)
@@ -105,7 +106,7 @@ export default class CanvasController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.#canvas.rasterFrame(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasAtoms)
@@ -165,7 +166,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.#canvas.coloredModelStream(this.params(req, this.withOptionalUserId));
-        await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));
+        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders(output));
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterProperties)
@@ -201,7 +202,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.#canvas.filteredModelStream(this.params(req, this.withOptionalUserId));
-        await this.pipeStream(res, output.stream, this.passthroughModelHeaders(output));
+        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders(output));
     }
 
     @Route(trajectoryRoutes.canvasPlugin)
@@ -237,7 +238,7 @@ export default class CanvasController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.#canvas.pluginExposureGLB(this.params(req, this.withGlbRequestContext));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasFrameLog)

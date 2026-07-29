@@ -4,11 +4,7 @@ import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatMessage, ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessageScopedParams, ChatScopedParams } from '@/modules/chat/contracts/api-params';
-import type { EditMessageInput } from '@volt/contracts/modules/chat/http';
-
-export type DeleteMessageInput = ChatMessageScopedParams;
-
-export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
+import type { EditMessageInput } from '@volt/contracts/modules/chat/http';export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
 
 export interface GetChatMessagesInput extends ChatScopedParams {
     page: number;
@@ -36,7 +32,7 @@ const endpoints = {
     getMessages: paginated<GetChatMessagesInput, PaginatedResponse<ChatMessage>>('/:chatId/messages'),
     sendMessage: post<SendMessageInput, ChatMessage>('/:chatId/messages'),
     editMessage: patch<EditMessageParams, ChatMessage>('/:chatId/messages/:messageId'),
-    deleteMessage: del<DeleteMessageInput>('/:chatId/messages/:messageId'),
+    deleteMessage: del<ChatMessageScopedParams>('/:chatId/messages/:messageId'),
     sendFileMessage: request<SendFileMessageInput, ChatMessage>('POST', '/:chatId/messages/file', {
         body: ({ file }) => buildFileFormData([{
             name: 'file',
@@ -64,3 +60,5 @@ export default createService({
         }
     }
 }, endpoints);
+
+export type DeleteMessageInput = ChatMessageScopedParams;

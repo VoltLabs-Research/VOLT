@@ -23,11 +23,7 @@ interface GetTeamPermissionsInput {
     teamId: string;
 }
 
-type GetTeamPermissionsResponse = string[];
-
-export type JoinByInviteCodeInput = JoinTeamByCodeInput;
-
-export type JoinByInviteCodeResponse = JoinTeamResponse;
+type GetTeamPermissionsResponse = string[];export type JoinByInviteCodeResponse = JoinTeamResponse;
 
 export interface LeaveTeamInput {
     teamId: string;
@@ -49,7 +45,7 @@ const endpoints = {
     generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-codes'),
     deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-codes'),
     previewJoinByCode: get<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/invite-codes/:code'),
-    joinByCode: post<JoinByInviteCodeInput, JoinByInviteCodeResponse>('/invite-codes/:code/memberships'),
+    joinByCode: post<JoinTeamByCodeInput, JoinByInviteCodeResponse>('/invite-codes/:code/memberships'),
     leave: del<LeaveTeamInput>('/:teamId/self/membership', { unwrap: 'void' }),
     getMyPermissions: get<GetTeamPermissionsInput, GetTeamPermissionsResponse>(
         '/:teamId/self/permissions', {
@@ -65,3 +61,5 @@ export default createService({
         }
     }
 }, endpoints);
+
+export type JoinByInviteCodeInput = JoinTeamByCodeInput;

@@ -93,19 +93,13 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToSocket(socketId, event, data);
     }
 
-    protected createErrorEnvelope(
-        code: ErrorCode | string,
-        details?: string
-    ): SocketErrorEnvelope {
-        return createSocketErrorEnvelope(code, details);
-    }
 
     protected emitErrorToSocket(
         socketId: string,
         code: ErrorCode | string,
         details?: string
     ): void {
-        this.emitToSocket(socketId, 'error', this.createErrorEnvelope(code, details));
+        this.emitToSocket(socketId, 'error', createSocketErrorEnvelope(code, details));
     }
 
     protected emitToRoomExcept(

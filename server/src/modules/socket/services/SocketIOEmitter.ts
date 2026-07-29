@@ -13,15 +13,12 @@ export default class SocketIOEmitter {
         this.registerSocket(socket as Socket);
     }
 
-    unregisterConnection(socketId: string): void{
-        this.unregisterSocket(socketId);
-    }
 
     private registerSocket(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
-    private unregisterSocket(socketId: string): void{
+    unregisterConnection(socketId: string): void{
         this.sockets.delete(socketId);
     }
 

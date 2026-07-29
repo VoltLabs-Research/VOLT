@@ -10,10 +10,10 @@ import type {
     CreateContainerResponse,
     GetContainerResponse,
     UpdateContainerResponse,
-    CreateContainerPortAccessUrlResponse,
+    ContainerPortAccessUrl,
     GetContainerFilesResponse,
     GetContainerProcessesResponse,
-    GetContainerStatsResponse,
+    ContainerStatsResponse,
     ReadContainerFileResponse,
     Container,
     ContainerFolder
@@ -33,11 +33,11 @@ export const containerRoutes = {
     update: patch<UpdateContainerInput, UpdateContainerResponse>('/api/teams/:teamId/containers/:containerId'),
     remove: del('/api/teams/:teamId/containers/:containerId'),
 
-    createPortAccessUrl: post<never, CreateContainerPortAccessUrlResponse>('/api/teams/:teamId/containers/:containerId/ports/:privatePort/access-url'),
+    createPortAccessUrl: post<never, ContainerPortAccessUrl>('/api/teams/:teamId/containers/:containerId/ports/:privatePort/access-url'),
     move: patch<MoveContainerInput, null>('/api/teams/:teamId/containers/:containerId/folder'),
 
     getFiles: get<GetContainerFilesResponse>('/api/teams/:teamId/containers/:containerId/files'),
     getProcesses: get<GetContainerProcessesResponse>('/api/teams/:teamId/containers/:containerId/processes'),
-    getStats: get<GetContainerStatsResponse>('/api/teams/:teamId/containers/:containerId/stats'),
+    getStats: get<ContainerStatsResponse>('/api/teams/:teamId/containers/:containerId/stats'),
     readFile: get<ReadContainerFileResponse>('/api/teams/:teamId/containers/:containerId/files/content')
 } as const;

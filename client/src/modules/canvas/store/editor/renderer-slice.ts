@@ -5,14 +5,14 @@ import {
 } from '@/shared/rendering/renderer';
 
 import type { EditorStore } from './types';
-import type { RendererCreateState, RendererRuntimeState, RendererSettingsState, RendererSettingsStore } from '@/shared/rendering/renderer';
+import type { RendererCreateState, RendererRuntimeState, RendererSettings, RendererSettingsStore } from '@/shared/rendering/renderer';
 import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {
     rendererSettings: RendererSettingsStore;
 }
 
-const getInitialRendererSettings = (): RendererSettingsState => ({
+const getInitialRendererSettings = (): RendererSettings => ({
     create: getDefaultRendererCreateSettings(),
     runtime: getDefaultRendererRuntimeSettings()
 });

@@ -7,12 +7,10 @@ import { Resource } from '@core/constants/resources';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
 import LatexService from '@modules/latex/services/LatexService';
 import { latexRoutes } from '@volt/contracts/modules/latex/routes';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
-import type { Readable } from 'node:stream';
 import LatexAssetService from '@modules/latex/services/LatexAssetService';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 import type {
     CreateLatexDocumentInput,
     UpdateLatexDocumentInput,
@@ -160,7 +158,7 @@ export default class LatexController extends Controller {
             headers['Content-Encoding'] = output.contentEncoding;
         }
 
-        await this.#pipeStream(res, output.stream, headers);
+        await pipeStreamToResponse(res, output.stream, headers);
     }
 
     @Route(latexRoutes.uploadAsset)
@@ -218,7 +216,7 @@ export default class LatexController extends Controller {
             documentId
         });
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(latexRoutes.exportDocumentZip)
@@ -232,7 +230,7 @@ export default class LatexController extends Controller {
             documentId
         });
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(latexRoutes.compileDocument)
@@ -246,7 +244,7 @@ export default class LatexController extends Controller {
             documentId
         });
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(latexRoutes.listFiles)
@@ -377,34 +375,4 @@ export default class LatexController extends Controller {
         });
     }
 
-    #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
-        return new Promise<void>((resolve) => {
-            for (const [name, value] of Object.entries(headers)) {
-                res.setHeader(name, value);
-            }
-
-            res.on('close', () => {
-                stream.destroy();
-                resolve();
-            });
-
-            res.on('finish', () => {
-                resolve();
-            });
-
-            stream.on('error', (error: unknown) => {
-                logger.error(error);
-
-                if (!res.headersSent) {
-                    BaseResponse.fromError(res, error);
-                } else {
-                    res.destroy(error instanceof Error ? error : undefined);
-                }
-
-                resolve();
-            });
-
-            stream.pipe(res);
-        });
-    }
 }

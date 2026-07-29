@@ -68,11 +68,7 @@ export interface SceneArtifactParticleFilterPropertyCondition{
     operator: string;
     value: number | string;
     exposureId?: string;
-}
-
-export type SceneArtifactParticleFilterCondition = SceneArtifactParticleFilterPropertyCondition;
-
-export interface SceneArtifactParams{
+}export interface SceneArtifactParams{
     property?: string;
     startValue?: number;
     endValue?: number;
@@ -82,7 +78,7 @@ export interface SceneArtifactParams{
     action?: 'delete' | 'highlight';
     exposureId?: string;
     combinator?: 'AND' | 'OR';
-    conditions?: SceneArtifactParticleFilterCondition[];
+    conditions?: SceneArtifactParticleFilterPropertyCondition[];
     style?: Record<string, unknown>;
 }
 

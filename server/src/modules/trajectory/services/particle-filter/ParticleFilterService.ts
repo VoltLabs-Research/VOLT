@@ -101,16 +101,27 @@ export const buildParticleFilterRequest = (
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
-const buildParticleFilterObjectName = (
-    trajectoryId: string,
-    analysisSegment: string | undefined,
-    timestep: string | number,
-    exposureId: string | undefined,
-    property: string,
-    operator: string,
-    value: number | string,
-    action: string
-): string => {
+interface ParticleFilterObjectNameParams{
+    trajectoryId: string;
+    analysisSegment?: string;
+    timestep: string | number;
+    exposureId?: string;
+    property: string;
+    operator: string;
+    value: number | string;
+    action: string;
+}
+
+const buildParticleFilterObjectName = ({
+    trajectoryId,
+    analysisSegment,
+    timestep,
+    exposureId,
+    property,
+    operator,
+    value,
+    action
+}: ParticleFilterObjectNameParams): string => {
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
     const exposurePart = exposureId ? String(exposureId) : 'dump';
@@ -515,16 +526,16 @@ class ParticleFilterService {
     ): string {
         if (request.conditions.length === 1) {
             const condition = request.conditions[0];
-            return buildParticleFilterObjectName(
+            return buildParticleFilterObjectName({
                 trajectoryId,
-                analysisId,
+                analysisSegment: analysisId,
                 timestep,
-                condition.exposureId,
-                condition.property,
-                condition.operator,
-                condition.value,
+                exposureId: condition.exposureId,
+                property: condition.property,
+                operator: condition.operator,
+                value: condition.value,
                 action
-            );
+            });
         }
 
         const filterHash = createHash('sha1').update(JSON.stringify(request)).digest('hex').slice(0, 12);

@@ -2,11 +2,7 @@ import { tokenStorage } from '@/shared/auth/token-storage';
 import { createInstrumentedHttpClient, DEFAULT_HTTP_TIMEOUT_MS } from './client-instrumentation';
 import { buildBackendUrl } from './backend-origin';
 import { VoltClient, dynamicToken } from '@voltstack/voltclient';
-import type { VoltClientOptions } from '@voltstack/voltclient';
-
-type CreateApiClientOptions = VoltClientOptions;
-
-const getStoredToken = (): string | null => {
+import type { VoltClientOptions } from '@voltstack/voltclient';const getStoredToken = (): string | null => {
     return tokenStorage.getToken();
 };
 
@@ -27,7 +23,7 @@ export const setGetTeamId = (fn: () => string | null): void => {
     globalGetTeamId = fn;
 };
 
-export const createApiClient = (basePath: string, opts?: CreateApiClientOptions): VoltClient => {
+export const createApiClient = (basePath: string, opts?: VoltClientOptions): VoltClient => {
     const getTeamId = opts?.getTeamId ?? globalGetTeamId;
 
     if (!opts && !getTeamId) {

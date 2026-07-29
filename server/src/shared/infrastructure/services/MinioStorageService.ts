@@ -6,7 +6,7 @@ import { stat } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import { pipeline } from 'node:stream/promises';
-import type { FileMetadata, IStorageService, UploadSource } from '@shared/domain/port/IStorageService';
+import type { UploadSource } from '@shared/domain/port/IStorageService';
 import type { MinioClientConfig } from '@core/config/minio';
 
 interface MinioError {
@@ -17,7 +17,7 @@ const isMinioError = (error: unknown): error is MinioError => {
     return typeof error === 'object' && error !== null && 'code' in error;
 };
 
-class MinioStorageService implements IStorageService {
+class MinioStorageService {
     private readonly client: Client;
     private urlBase: string;
 
@@ -80,28 +80,10 @@ class MinioStorageService implements IStorageService {
         return `${this.urlBase}/${bucket}/${objectName}`;
     }
 
-    async getStat(bucket: string, objectName: string): Promise<FileMetadata> {
-        const stat = await this.client.statObject(bucket, objectName);
-        return {
-            size: stat.size,
-            mimetype: stat.metaData['content-type'],
-            etag: stat.etag,
-            lastModified: stat.lastModified,
-            ...stat.metaData
-        };
-    }
-
     async download(bucket: string, objectName: string, destPath: string): Promise<void> {
         const stream = await this.client.getObject(bucket, objectName);
         const writeStream = createWriteStream(destPath);
         await pipeline(stream, writeStream);
-    }
-
-    async *listByPrefix(bucket: string, prefix: string, recursive: boolean = true): AsyncIterable<string> {
-        const stream = this.client.listObjectsV2(bucket, prefix, recursive);
-        for await (const obj of stream) {
-            if (obj.name) yield obj.name;
-        }
     }
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<void> {

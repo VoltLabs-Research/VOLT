@@ -88,7 +88,7 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const jobIds = await this.redis.smembers(this.projectedTeamJobsKey(teamId));
+        const jobIds = await this.redis.smembers(buildProjectedTeamJobsKey(teamId));
         if (jobIds.length === 0) {
             return [];
         }
@@ -112,7 +112,7 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            this.redis.srem(this.projectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
+            this.redis.srem(buildProjectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
                 logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
         }
@@ -292,7 +292,7 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobsRevision(teamId: string): Promise<number> {
-        const revision = await this.redis.get(this.projectedTeamJobsRevisionKey(teamId));
+        const revision = await this.redis.get(buildProjectedTeamJobsRevisionKey(teamId));
         const parsedRevision = Number(revision);
 
         return Number.isFinite(parsedRevision) && parsedRevision >= 0
@@ -300,11 +300,5 @@ export default class TeamJobsService {
             : 0;
     }
 
-    private projectedTeamJobsKey(teamId: string): string {
-        return buildProjectedTeamJobsKey(teamId);
-    }
 
-    private projectedTeamJobsRevisionKey(teamId: string): string {
-        return buildProjectedTeamJobsRevisionKey(teamId);
-    }
 };

@@ -1,4 +1,6 @@
 import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
+import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/domain/listing';
+export type { ListingRowByAnalysisData };
 
 export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
@@ -10,14 +12,11 @@ import type {
     AnalysisSubListingExportOption
 } from '@volt/contracts/modules/plugin/domain/listing';
 
-export type AnalysisListingExportOptionView = AnalysisListingExportOption;
-export type AnalysisSubListingExportOptionView = AnalysisSubListingExportOption;
-
-export interface GetAnalysisListingExportOptionsOutput {
+export type AnalysisListingExportOptionView = AnalysisListingExportOption;export interface GetAnalysisListingExportOptionsOutput {
     analysisId: string;
     hasConfig: boolean;
     listings: AnalysisListingExportOptionView[];
-    subListings: AnalysisSubListingExportOptionView[];
+    subListings: AnalysisSubListingExportOption[];
 }
 
 export interface GetListingRowsByAnalysisIdInput {
@@ -26,17 +25,6 @@ export interface GetListingRowsByAnalysisIdInput {
     page?: number;
     limit?: number;
     sortAsc?: boolean;
-}
-
-export interface ListingRowByAnalysisData {
-    _id: string;
-    plugin: string;
-    exposureId: string;
-    exposureName: string;
-    trajectory: string;
-    trajectoryName: string;
-    timestep: number;
-    row: Record<string, unknown>;
 }
 
 export interface GetListingRowsByAnalysisIdOutput extends PaginatedResult<ListingRowByAnalysisData> {}
@@ -156,3 +144,5 @@ export const resolveListingPagination = ({
         limit: Math.min(MAX_LIMIT, Math.max(1, Number(limit) || DEFAULT_LIMIT))
     };
 };
+
+export type AnalysisSubListingExportOptionView = AnalysisSubListingExportOption;

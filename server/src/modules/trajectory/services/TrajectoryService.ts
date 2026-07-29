@@ -89,6 +89,7 @@ import { access } from 'node:fs/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
+import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
 
 import type {
     CreateTrajectoryOutput,
@@ -101,7 +102,7 @@ import type {
     MoveTrajectoryInput,
     MoveTrajectoryOutput,
     GetTeamMetricsInput,
-    GetTeamMetricsOutput,
+    GetTeamMetricsResult,
     GetTrajectoryPreviewInput,
     GetTrajectoryPreviewOutput,
     PublicTeamDiscoveryView,
@@ -219,15 +220,6 @@ const isNoValidFramesError = (error: unknown): boolean => {
     return /no valid trajectory frames/i.test(message);
 };
 
-const readFilenameFromContentDisposition = (value: string | undefined): string | undefined => {
-    if (!value) return undefined;
-    const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
-    if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1]);
-    const quotedMatch = value.match(/filename="([^"]+)"/i);
-    if (quotedMatch?.[1]) return quotedMatch[1];
-    const bareMatch = value.match(/filename=([^;]+)/i);
-    return bareMatch?.[1]?.trim();
-};
 
 const resolveTrajectoryName = (
     requestedName: string | undefined,
@@ -638,7 +630,7 @@ export default class TrajectoryService {
         return { success: true };
     }
 
-    async getTeamMetrics(input: GetTeamMetricsInput): Promise<GetTeamMetricsOutput> {
+    async getTeamMetrics(input: GetTeamMetricsInput): Promise<GetTeamMetricsResult> {
         return this.#teamMetrics.getTeamMetrics(input.teamId);
     }
 

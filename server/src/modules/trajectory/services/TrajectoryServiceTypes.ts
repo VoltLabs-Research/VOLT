@@ -10,7 +10,6 @@ import type {
 import { ParticleFilterCombinator } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import type { TeamMetricsSnapshot } from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
 import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
-import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
@@ -62,10 +61,7 @@ export type MoveTrajectoryOutput = null;
 
 export interface GetTeamMetricsInput {
     teamId: string;
-}
-
-export type GetTeamMetricsResult = TeamMetricsSnapshot;
-export type GetTeamMetricsOutput = GetTeamMetricsResult;
+}export type GetTeamMetricsResult = TeamMetricsSnapshot;
 
 export interface GetTrajectoryPreviewInput {
     trajectoryId: string;
@@ -336,11 +332,7 @@ export interface CreateLineStyledModelInput {
     analysisId: string;
     exposureId: string;
     style?: LineStyleSpec;
-}
-
-export type CreateLineStyledModelOutput = CreateLineStyledModelResult;
-
-export interface GetLineStyledModelStreamInput {
+}export interface GetLineStyledModelStreamInput {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
@@ -476,11 +468,7 @@ export interface GetPublicCanvasRasterFrameInput {
     analysisId?: string;
     model?: string;
     userId?: string;
-}
-
-export type GetPublicCanvasRasterFrameOutput = DownloadStreamOutput;
-
-export interface GetAtomsColumnarInput {
+}export interface GetAtomsColumnarInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -518,3 +506,5 @@ export interface ParticleFilterConditionInput {
     value: number | string;
     exposureId?: string;
 }
+
+export type CreateLineStyledModelOutput = CreateLineStyledModelResult;

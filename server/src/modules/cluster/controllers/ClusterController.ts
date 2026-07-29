@@ -12,6 +12,7 @@ import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 
 @Middleware(protect, teamScoped(Resource.TEAM))
 export default class ClusterController extends ClusterControllerBase {
@@ -166,7 +167,7 @@ export default class ClusterController extends ClusterControllerBase {
     ): Promise<void>{
         const output = await this.service.downloadRemoteExplorerObject(this.params(req));
         await output.prepare?.();
-        await this.pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(teamClusterRoutes.regenerateEnrollmentToken)

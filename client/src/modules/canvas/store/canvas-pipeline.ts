@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
+export type { PipelineStageKind };
 
 export type StageType =
     | 'slice-plane'
@@ -255,8 +257,6 @@ const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>(
 
 export const isOrderedPipelineStage = (stage: PipelineStage): boolean =>
     ORDERED_PIPELINE_STAGE_TYPES.has(stage.type);
-
-export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | null => {
     switch (type) {

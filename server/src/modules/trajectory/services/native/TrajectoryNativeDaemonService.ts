@@ -49,10 +49,7 @@ interface TrajectoryNativeConditionFilterPreviewRequest extends TrajectoryNative
     operator: string;
     value: number | string;
     externalValues?: Float32Array;
-}
-type TrajectoryNativeFilterPreviewRequest = TrajectoryNativeConditionFilterPreviewRequest;
-
-interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
+}interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
     objectKey: string;
     startValue: number;
     endValue: number;
@@ -171,7 +168,7 @@ class TrajectoryNativeDaemonService {
         });
     }
 
-    async previewFilter(input: TrajectoryNativeFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
+    async previewFilter(input: TrajectoryNativeConditionFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
             ChannelCommands.TrajectoryNativeFilterPreview,

@@ -24,16 +24,27 @@ import { Readable } from 'node:stream';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
-const buildColorCodingObjectName = (
-    trajectoryId: string,
-    analysisSegment: string | undefined,
-    timestep: string | number,
-    exposureId: string | undefined,
-    property: string,
-    startValue: number,
-    endValue: number,
-    gradient: string
-): string => {
+interface ColorCodingObjectNameParams{
+    trajectoryId: string;
+    analysisSegment?: string;
+    timestep: string | number;
+    exposureId?: string;
+    property: string;
+    startValue: number;
+    endValue: number;
+    gradient: string;
+}
+
+const buildColorCodingObjectName = ({
+    trajectoryId,
+    analysisSegment,
+    timestep,
+    exposureId,
+    property,
+    startValue,
+    endValue,
+    gradient
+}: ColorCodingObjectNameParams): string => {
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedStart = formatValueForPath(startValue);
     const formattedEnd = formatValueForPath(endValue);
@@ -206,16 +217,16 @@ class ColorCodingService {
         exposureId?: string
     ): Promise<string> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const objectName = buildColorCodingObjectName(
+        const objectName = buildColorCodingObjectName({
             trajectoryId,
-            resolvedAnalysisId,
+            analysisSegment: resolvedAnalysisId,
             timestep,
             exposureId,
             property,
             startValue,
             endValue,
             gradient
-        );
+        });
         const {
             computeClusterId,
             storageClusterId
@@ -329,16 +340,16 @@ class ColorCodingService {
         const storageClusterId = trajectory
             ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
             : undefined;
-        const objectName = buildColorCodingObjectName(
+        const objectName = buildColorCodingObjectName({
             trajectoryId,
-            normalizeAnalysisId(analysisId),
+            analysisSegment: normalizeAnalysisId(analysisId),
             timestep,
             exposureId,
             property,
             startValue,
             endValue,
             gradient
-        );
+        });
 
         if (storageClusterId) {
             return trajectoryNativeDaemonService.getObjectStreamResponse(

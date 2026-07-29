@@ -29,8 +29,6 @@ export interface SimulationCell extends BaseEntity{
     team: string;
     trajectory: SimulationCellTrajectory;
     timestep: number;
-}
+}export type GetSimulationCellByTrajectoryResponse = SimulationCell | null;
 
 export type GetSimulationCellResponse = SimulationCell;
-
-export type GetSimulationCellByTrajectoryResponse = SimulationCell | null;

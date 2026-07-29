@@ -38,7 +38,6 @@ import {
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
-    ITeamClusterReverseChannelService,
     TeamClusterDaemonCommandPayload,
     TeamClusterCommandOptions,
     TeamClusterDaemonSocketRegistration,
@@ -167,7 +166,7 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
     120_000
 );
 
-class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
+class TeamClusterReverseChannelService {
     private readonly channels = new Map<TeamClusterDaemonSocketChannel, DaemonChannelRegistry>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
     private readonly socketChannelsBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();

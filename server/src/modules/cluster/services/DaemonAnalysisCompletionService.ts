@@ -19,6 +19,7 @@ import analysisExecutionLogService from '@modules/analysis/services/AnalysisExec
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import AnalysisStageProjection from '@modules/cluster/services/AnalysisStageProjection';
+import { toTrajectoryLike } from '@modules/trajectory/contracts/domain/trajectory-like';
 import type {
     DaemonAnalysisStageStatusInput,
     DaemonJobInputBase
@@ -249,29 +250,10 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         return this.toAnalysisLike(await Object.assign(entity, patch).save());
     }
 
-    private toTrajectoryLike(entity: TrajectoryEntity): TrajectoryLike {
-        return {
-            _id: entity.id,
-            props: {
-                name: entity.name,
-                team: entity.team,
-                folder: entity.folder,
-                storageClusterId: entity.storageClusterId,
-                createdBy: entity.createdBy,
-                status: entity.status,
-                isPublic: entity.isPublic,
-                rasterSceneViews: entity.rasterSceneViews,
-                hasPreview: entity.hasPreview,
-                stats: entity.stats,
-                updatedAt: entity.updatedAt,
-                createdAt: entity.createdAt
-            }
-        };
-    }
 
     private async findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
         const entity = await TrajectoryEntity.findOneBy({ id: trajectoryId });
-        return entity ? this.toTrajectoryLike(entity) : null;
+        return entity ? toTrajectoryLike(entity) : null;
     }
 
     private async updateTrajectoryById(trajectoryId: string, data: Partial<{ hasPreview: boolean; status: TrajectoryStatus }>): Promise<void> {

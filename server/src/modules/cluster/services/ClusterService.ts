@@ -121,6 +121,8 @@ import { buildManualTeamClusterUninstallCommand } from '@modules/cluster/service
 import { assertConfirmedPassword } from '@modules/cluster/services/TeamClusterCredentialService';
 
 import type { PaginatedResult } from '@shared/domain/port/persistence';
+import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
+import { toTrajectoryLike } from '@modules/trajectory/contracts/domain/trajectory-like';
 
 const MB_PER_GB = 1024;
 const DEMO_CLUSTER_TTL_MINUTES = readNumberEnv('DEMO_CLUSTER_TTL_MINUTES', 30);
@@ -233,29 +235,10 @@ export default class ClusterService {
 
         #eventBus = eventBus;
 
-    #toTrajectoryLike(trajectory: Trajectory): TrajectoryLike {
-        return {
-            _id: trajectory.id,
-            props: {
-                name: trajectory.name,
-                team: trajectory.team,
-                folder: trajectory.folder,
-                storageClusterId: trajectory.storageClusterId,
-                createdBy: trajectory.createdBy,
-                status: trajectory.status,
-                isPublic: trajectory.isPublic,
-                rasterSceneViews: trajectory.rasterSceneViews,
-                hasPreview: trajectory.hasPreview,
-                stats: trajectory.stats,
-                updatedAt: trajectory.updatedAt,
-                createdAt: trajectory.createdAt
-            }
-        };
-    }
 
     async #findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
         const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
-        return trajectory ? this.#toTrajectoryLike(trajectory) : null;
+        return trajectory ? toTrajectoryLike(trajectory) : null;
     }
 
     async #upsertSceneArtifactsByObjectName(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
@@ -972,7 +955,7 @@ export default class ClusterService {
             const contentLengthHeader = response.headers['content-length'];
             const contentLength = typeof contentLengthHeader === 'string' ? Number(contentLengthHeader) : undefined;
 
-            const filename = this.#readFilenameFromContentDisposition(response.headers['content-disposition'])
+            const filename = readFilenameFromContentDisposition(response.headers['content-disposition'])
                 || this.#deriveRemoteExplorerFallbackFilename(preflight.target, input.path);
 
             return createDownloadStreamResponse({
@@ -1464,24 +1447,6 @@ export default class ClusterService {
         return lastSegment;
     }
 
-    #readFilenameFromContentDisposition(value: string | undefined): string | undefined {
-        if (!value) {
-            return undefined;
-        }
-
-        const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
-        if (utf8Match?.[1]) {
-            return decodeURIComponent(utf8Match[1]);
-        }
-
-        const quotedMatch = value.match(/filename="([^"]+)"/i);
-        if (quotedMatch?.[1]) {
-            return quotedMatch[1];
-        }
-
-        const bareMatch = value.match(/filename=([^;]+)/i);
-        return bareMatch?.[1]?.trim();
-    }
 
     async #publishSceneArtifactBatchUpserted(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
         if (!entries.length) {

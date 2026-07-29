@@ -80,11 +80,7 @@ export interface TeamClusterEffectiveCapabilities{
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
-}
-
-export type ClusterTransferJobScopeType = StoragePlacementScopeType;
-
-export type ClusterTransferJobState =
+}export type ClusterTransferJobState =
     | 'queued'
     | 'freezing'
     | 'copying'
@@ -118,7 +114,7 @@ export interface ClusterTransferJobStats{
 export interface ClusterTransferJob{
     _id: string;
     team: string;
-    scopeType: ClusterTransferJobScopeType;
+    scopeType: StoragePlacementScopeType;
     scopeId: string;
     sourceClusterId: string;
     destinationClusterId: string;

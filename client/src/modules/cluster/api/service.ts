@@ -41,19 +41,11 @@ export type CreateTeamClusterTransferRequestParams = TeamClusterScopedParams & C
 
 export type UpdateTeamClusterQueueConcurrencyParams = TeamClusterScopedParams & UpdateTeamClusterQueueConcurrencyInput;
 
-export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;
-
-type GetTeamClusterResourceLimitsParams = TeamClusterScopedParams;
-
-export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
+export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
 
 export type ProvisionDemoTeamClusterParams = TeamScopedParams;
 
-export type DeleteDemoTeamClusterParams = TeamScopedParams;
-
-type GetTeamClusterResourceLimitsResponse = ClusterResourceLimitsResponse;
-
-export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
+export type DeleteDemoTeamClusterParams = TeamScopedParams;export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
 
 export type ListTeamClustersResponse = PaginatedResponse<TeamCluster>;
 
@@ -74,7 +66,7 @@ const teamClusterEndpoints = {
     create: post<CreateTeamClusterParams, CreateTeamClusterResponse>('/:teamId/clusters'),
     listByTeamId: paginated<ListTeamClustersParams, ListTeamClustersResponse>('/:teamId/clusters'),
     deleteById: post<DeleteTeamClusterParams, DeleteTeamClusterResponse>('/:teamId/clusters/:teamClusterId/delete-requests'),
-    getResourceLimits: get<GetTeamClusterResourceLimitsParams, GetTeamClusterResourceLimitsResponse>(
+    getResourceLimits: get<TeamClusterScopedParams, ClusterResourceLimitsResponse>(
         '/:teamId/clusters/:teamClusterId/resource-limits'
     ),
     revealCredentials: post<RevealTeamClusterCredentialsParams, RevealTeamClusterCredentialsResponse>(

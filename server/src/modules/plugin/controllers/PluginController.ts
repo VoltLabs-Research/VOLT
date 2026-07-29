@@ -11,7 +11,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
 import multer from 'multer';
 
 import type {
@@ -47,7 +46,7 @@ import type {
 import type { GetSubListingInput } from '@shared/contracts/operations/GetSubListing';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { NextFunction, Request, Response } from 'express';
-import type { Readable } from 'node:stream';
+import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 
 const IMPORT_MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -85,36 +84,6 @@ const importUploadSingleFile = (fieldName: string) => (
 export default class PluginController extends Controller {
     #service = new PluginService();
 
-    #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
-        return new Promise<void>((resolve) => {
-            for (const [name, value] of Object.entries(headers)) {
-                res.setHeader(name, value);
-            }
-
-            res.on('close', () => {
-                stream.destroy();
-                resolve();
-            });
-
-            res.on('finish', () => {
-                resolve();
-            });
-
-            stream.on('error', (error: unknown) => {
-                logger.error(error);
-
-                if (!res.headersSent) {
-                    BaseResponse.fromError(res, error);
-                } else {
-                    res.destroy(error instanceof Error ? error : undefined);
-                }
-
-                resolve();
-            });
-
-            stream.pipe(res);
-        });
-    }
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)
     async getListingRowsByAnalysisId(
@@ -144,7 +113,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as ExportListingRowsByAnalysisIdInput;
         const output = await this.#service.exportListingRowsByAnalysisId(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getSubListing)
@@ -165,7 +134,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as ExportPluginListingDocumentsInput;
         const output = await this.#service.exportPluginListingDocuments(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getPluginListingDocuments)
@@ -186,7 +155,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInput;
         const output = await this.#service.getPluginExposureGLB(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getPluginExposureChart)
@@ -197,7 +166,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as GetPluginExposureChartInput;
         const output = await this.#service.getPluginExposureChart(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getPluginExposureExport)
@@ -208,7 +177,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as GetPluginExposureExportInput;
         const output = await this.#service.getPluginExposureExport(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getNodeTypesSchema)
@@ -235,7 +204,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as ExportPluginInput;
         const output = await this.#service.exportPlugin(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.importPlugin)
@@ -307,7 +276,7 @@ export default class PluginController extends Controller {
         const input = buildControllerParams(req) as unknown as DownloadPluginBinaryInput;
         const output = await this.#service.downloadBinary(input);
         await output.prepare?.();
-        await this.#pipeStream(res, output.stream, output.headers);
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.uploadBinary)

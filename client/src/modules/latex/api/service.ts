@@ -15,6 +15,7 @@ import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import type { LatexDocument } from '@volt/contracts/modules/latex/domain';
 import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 import type { LatexFolder } from '@volt/contracts/modules/latex/domain';
+import type { LatexAssetUploadTarget } from '@volt/contracts/modules/latex/domain';
 
 export interface CompileLatexDocumentParams {
     documentId: string;
@@ -63,11 +64,7 @@ export interface GetLatexDocumentParams {
 export interface ImportLatexDocumentParams {
     file: File;
     folderId?: string | null;
-}
-
-export type ImportLatexDocumentResult = LatexDocument;
-
-export interface ListLatexAssetsParams {
+}export interface ListLatexAssetsParams {
     documentId: string;
 }
 
@@ -121,12 +118,6 @@ export interface UploadLatexAssetsResult {
     uploaded: LatexAsset[];
     failedCount: number;
     total: number;
-}
-
-interface LatexAssetUploadTarget extends LatexAsset {
-    uploadIndex: number;
-    uploadUrl: string;
-    expiresAt: string;
 }
 
 interface UploadLatexAssetApiResponse {
@@ -211,7 +202,7 @@ const endpoints = {
     ),
     exportDocumentTex: download<ExportLatexDocumentParams>('GET', '/latex-documents/:documentId/export/tex'),
     exportDocumentZip: download<ExportLatexDocumentParams>('GET', '/latex-documents/:documentId/export/zip'),
-    importDocument: request<ImportLatexDocumentParams, ImportLatexDocumentResult>('POST', '/latex-document-imports', {
+    importDocument: request<ImportLatexDocumentParams, LatexDocument>('POST', '/latex-document-imports', {
         body: ({ file, folderId }) => buildFileFormData(
             [{
                 name: 'file',
@@ -263,3 +254,5 @@ const service = createService({
 }, endpoints);
 
 export default service;
+
+export type ImportLatexDocumentResult = LatexDocument;

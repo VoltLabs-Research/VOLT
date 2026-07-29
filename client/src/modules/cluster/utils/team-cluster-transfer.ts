@@ -1,4 +1,4 @@
-import type { ClusterTransferJob, ClusterTransferJobScopeType, ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
+import type { ClusterTransferJob, StoragePlacementScopeType, ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
 import type { StatusBadgeProps } from '@voltstack/bravais';
 
 const OPEN_CLUSTER_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
@@ -56,7 +56,7 @@ export const getClusterTransferJobStateBadgeVariant = (state: ClusterTransferJob
     }
 };
 
-export const getClusterTransferScopeLabel = (scopeType: ClusterTransferJobScopeType): string => {
+export const getClusterTransferScopeLabel = (scopeType: StoragePlacementScopeType): string => {
     switch (scopeType) {
         case 'trajectory':
             return 'Trajectory';
