@@ -6,7 +6,7 @@ import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import { buildTeamRoleCreatePayload } from '@modules/team/contracts/domain/team-role';
+import { buildTeamRoleCreatePayload } from '@modules/team/contracts/team-role';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/application/errors/ApplicationError';

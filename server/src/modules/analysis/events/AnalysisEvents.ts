@@ -5,7 +5,7 @@ import AnalysisService from '@modules/analysis/services/AnalysisService';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
-import { StoragePlacementScopeType } from '@modules/cluster/contracts/domain/storage-placement';
+import { StoragePlacementScopeType } from '@modules/cluster/contracts/storage-placement';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';

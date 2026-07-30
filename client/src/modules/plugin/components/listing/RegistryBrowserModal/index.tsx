@@ -6,7 +6,7 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Package } from 'lucide-react';
 import semver from 'semver';
-import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/domain/registry';
+import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
 
 export const REGISTRY_BROWSER_MODAL_ID = 'plugin-registry-browser-modal';
 

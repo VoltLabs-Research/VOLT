@@ -1,4 +1,4 @@
-import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type {
     TeamClusterInstallManifestView,

@@ -5,7 +5,7 @@ import Team from '@modules/team/models/Team';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import User from '@modules/auth/models/User';
-import type { ScriptingNotebookContent } from '@modules/scripting/contracts/domain/scripting-notebook';
+import type { ScriptingNotebookContent } from '@modules/scripting/contracts/scripting-notebook';
 import type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
 
 @Entity('scripting_notebooks')

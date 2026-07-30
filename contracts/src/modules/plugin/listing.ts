@@ -1,4 +1,4 @@
-import type { BaseEntity } from '../../../shared/base';
+import type { BaseEntity } from '../../shared/base';
 
 export interface ListingColumnDef{
     key?: string;

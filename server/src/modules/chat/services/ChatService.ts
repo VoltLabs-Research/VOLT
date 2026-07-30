@@ -14,7 +14,7 @@ import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persi
 import logger from '@shared/infrastructure/logger';
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessageMetadata } from '@volt/contracts/modules/chat/domain';
-import type { ChatReactionProps } from '@modules/chat/contracts/domain/chat-message';
+import type { ChatReactionProps } from '@modules/chat/contracts/chat-message';
 import type {
     CreateGroupChatInput,
     UpdateGroupInfoInput,

@@ -17,14 +17,14 @@ import type {
     BinaryUploadResult,
     BinaryUploadTarget,
     ExecutePipelineResponse
-} from './domain/plugin';
-import type { SearchRegistryResponse } from './domain/registry';
+} from './plugin';
+import type { SearchRegistryResponse } from './registry';
 import type {
     ListingRowData,
     ListingRowByAnalysisData,
     SubListingRowData,
     GetAnalysisListingExportOptionsResponse
-} from './domain/listing';
+} from './listing';
 
 export const pluginRoutes = {
     

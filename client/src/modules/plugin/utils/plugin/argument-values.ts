@@ -1,10 +1,10 @@
-import { ArgumentType } from '@volt/contracts/modules/plugin/domain/enums';
+import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import { getVisibleArguments, isArgumentVisible } from '@/modules/plugin/utils/plugin/argument-visibility';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection,
     IPluginReferenceValue
-} from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/workflow';
 import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentObjectValue {

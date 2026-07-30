@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 
 import AnalysisEntity from '@modules/analysis/models/Analysis';
-import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 

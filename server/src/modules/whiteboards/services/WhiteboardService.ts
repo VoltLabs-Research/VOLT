@@ -1,8 +1,8 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
-import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/contracts/domain/whiteboard';
-import type { WhiteboardLastEditedBy } from '@modules/whiteboards/contracts/domain/whiteboard';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/contracts/whiteboard';
+import type { WhiteboardLastEditedBy } from '@modules/whiteboards/contracts/whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { EventName } from '@shared/events/EventGroup';

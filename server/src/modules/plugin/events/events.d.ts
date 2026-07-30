@@ -3,7 +3,7 @@ import type {
     PluginDeletedEventPayload,
     PluginExecutionRequestPayload,
     PluginPublishedEventPayload
-} from '@modules/plugin/contracts/domain/events';
+} from '@modules/plugin/contracts/events';
 
 declare global {
     interface EventMap {

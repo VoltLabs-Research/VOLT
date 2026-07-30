@@ -19,7 +19,7 @@ import {
 } from '../../utils/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
-import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
@@ -46,7 +46,7 @@ import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';

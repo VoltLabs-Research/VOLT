@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
-import type { INodeData } from '@volt/contracts/modules/plugin/domain/workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { INodeData } from '@volt/contracts/modules/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import pluginService from '@/modules/plugin/api/services/plugin-service';

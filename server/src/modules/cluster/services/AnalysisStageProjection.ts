@@ -8,7 +8,7 @@ import type {
     AnalysisStageStatus
 } from '@shared/contracts/types';
 import { JobStatus } from '@shared/contracts/types';
-import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/domain/daemon-analysis-jobs';
+import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/daemon-analysis-jobs';
 
 /**
  * Pure projection rules for analysis stages, child analyses and expected

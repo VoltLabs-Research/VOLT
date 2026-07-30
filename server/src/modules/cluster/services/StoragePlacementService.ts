@@ -12,7 +12,7 @@ import {
     StoragePlacementState as StoragePlacementStateColumn,
     type StoragePlacement,
     type StoragePlacementProps
-} from '@modules/cluster/contracts/domain/storage-placement';
+} from '@modules/cluster/contracts/storage-placement';
 import Analysis from '@modules/analysis/models/Analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import Plugin from '@modules/plugin/models/Plugin';

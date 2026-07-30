@@ -2,7 +2,7 @@ import './ArgumentDefinitionSection.css';
 import {
     ArgumentType,
     ArgumentVisibilityOperator
-} from '@volt/contracts/modules/plugin/domain/enums';
+} from '@volt/contracts/modules/plugin/enums';
 import {
     createDefaultArgumentDefinition,
     isPluginReferenceArgumentType
@@ -37,7 +37,7 @@ import type {
     IArgumentOption,
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
-} from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/workflow';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];

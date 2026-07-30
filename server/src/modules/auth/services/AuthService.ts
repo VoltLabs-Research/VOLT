@@ -6,8 +6,8 @@ import {
     normalizeEmail,
     normalizeName,
     splitFullName
-} from '@modules/auth/contracts/domain/user';
-import type { OAuthProvider } from '@modules/auth/contracts/domain/user';
+} from '@modules/auth/contracts/user';
+import type { OAuthProvider } from '@modules/auth/contracts/user';
 import AuthSessionService from '@modules/auth/services/AuthSessionService';
 import AvatarService from '@modules/auth/services/AvatarService';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';

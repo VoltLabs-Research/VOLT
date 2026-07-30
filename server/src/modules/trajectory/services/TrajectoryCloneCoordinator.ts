@@ -11,7 +11,7 @@ import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialE
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
-import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/domain/trajectory-clone-job';
+import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/trajectory-clone-job';
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
 const CLAIM_TTL_MS = 5 * 60 * 1000;

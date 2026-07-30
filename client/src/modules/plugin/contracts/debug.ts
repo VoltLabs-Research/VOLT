@@ -1,4 +1,4 @@
-import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 
 export interface ArgumentsNodeArguments {
     arguments?: IArgumentDefinition[];

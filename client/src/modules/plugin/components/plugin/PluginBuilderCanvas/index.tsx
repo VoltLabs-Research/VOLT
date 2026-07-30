@@ -1,4 +1,4 @@
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import CanvasEmptyState from '@/modules/plugin/components/plugin/CanvasEmptyState';
 import DebugContextPanel from '@/modules/plugin/components/plugin/DebugContextPanel';
 import DebugToolbar from '@/modules/plugin/components/plugin/DebugToolbar';

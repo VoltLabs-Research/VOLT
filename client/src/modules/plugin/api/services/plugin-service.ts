@@ -2,11 +2,11 @@ import { createService, paginated, get, post, patch, del, download, request, cus
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
-import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/domain/plugin';
-import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/domain/registry';
-import type { IWorkflow } from '@volt/contracts/modules/plugin/domain/workflow';
-import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
+import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/plugin';
+import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 import type {
     CreatePluginInput,
     ExecutePipelineInput,

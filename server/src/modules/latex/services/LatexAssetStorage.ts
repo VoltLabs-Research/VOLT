@@ -1,4 +1,4 @@
-import type { LatexDocumentStorageScope } from '@modules/latex/contracts/domain/latex-document';
+import type { LatexDocumentStorageScope } from '@modules/latex/contracts/latex-document';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import path from 'node:path';
 

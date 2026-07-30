@@ -14,7 +14,7 @@ import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-vie
 import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
-import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import { useNavigate } from 'react-router-dom';
 interface PluginExposureTableProps {

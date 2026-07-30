@@ -1,9 +1,9 @@
-import type { BinaryUploadResult, BinaryUploadTarget } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { BinaryUploadResult, BinaryUploadTarget } from '@volt/contracts/modules/plugin/plugin';
 export type { BinaryUploadResult, BinaryUploadTarget };
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
-import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { Plugin } from '@modules/plugin/contracts/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';

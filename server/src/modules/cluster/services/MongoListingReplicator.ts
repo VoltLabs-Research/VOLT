@@ -1,7 +1,7 @@
 
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import Analysis from '@modules/analysis/models/Analysis';
-import { type ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import { type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type {
     StoragePlacementScopeType

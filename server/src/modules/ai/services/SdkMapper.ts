@@ -5,7 +5,7 @@ import type {
     AIMessageToolCall,
     AIMessageToolResult,
     AIMessageToolStep
-} from '@modules/ai/contracts/domain/ai-message';
+} from '@modules/ai/contracts/ai-message';
 
 interface SdkToolCall{
     toolName: string;

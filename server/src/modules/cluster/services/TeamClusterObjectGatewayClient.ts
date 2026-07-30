@@ -1,5 +1,5 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/domain/team-cluster';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';

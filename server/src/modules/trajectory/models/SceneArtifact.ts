@@ -7,7 +7,7 @@ import Plugin from '@modules/plugin/models/Plugin';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import { SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
-import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/domain/scene-artifact';
+import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/scene-artifact';
 
 @Entity('trajectory_scene_artifacts')
 @Index(['trajectory'])

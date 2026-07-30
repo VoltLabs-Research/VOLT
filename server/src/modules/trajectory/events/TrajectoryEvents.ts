@@ -2,7 +2,7 @@ import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import { cascadeDeleteEach } from '@shared/events/cascadeDeleteEach';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
-import { StoragePlacementScopeType } from '@modules/cluster/contracts/domain/storage-placement';
+import { StoragePlacementScopeType } from '@modules/cluster/contracts/storage-placement';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import Trajectory from '@modules/trajectory/models/Trajectory';

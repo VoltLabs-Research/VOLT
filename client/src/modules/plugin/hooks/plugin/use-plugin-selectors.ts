@@ -1,8 +1,8 @@
 import { useMemo, useCallback } from 'react';
 import { usePluginCatalogQuery } from './catalog-query';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
-import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 
 export interface RenderableExposure {
     pluginId: string;

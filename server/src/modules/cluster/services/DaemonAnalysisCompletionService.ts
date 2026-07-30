@@ -13,17 +13,17 @@ import { TrajectoryStatus } from '@shared/contracts/types';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
-import { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import AnalysisStageProjection from '@modules/cluster/services/AnalysisStageProjection';
-import { toTrajectoryLike } from '@modules/trajectory/contracts/domain/trajectory-like';
+import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
 import type {
     DaemonAnalysisStageStatusInput,
     DaemonJobInputBase
-} from '@modules/cluster/contracts/domain/daemon-analysis-jobs';
+} from '@modules/cluster/contracts/daemon-analysis-jobs';
 
 interface DaemonExecutionLogService {
     markFrameRunning(input: {

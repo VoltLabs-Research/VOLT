@@ -11,7 +11,7 @@ import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';
-import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import type {
     ClusterTransferJobCursor,
     ClusterTransferJobReason,
@@ -21,7 +21,7 @@ import type {
 import { createDefaultTeamClusterQueueScopeLimits, DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/services/TeamClusterFactory';
 import type TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
-import type { ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import type { ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 
 export interface ClusterTransferJobView {
     _id: string;

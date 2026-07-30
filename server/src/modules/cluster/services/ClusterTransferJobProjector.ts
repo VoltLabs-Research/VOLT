@@ -1,7 +1,7 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import Analysis from '@modules/analysis/models/Analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import { type ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import { type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 import { JobStatus } from '@shared/contracts/types';
 import type {
     ClusterTransferJobState

@@ -2,8 +2,8 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
-import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/domain/trajectory-clone-job';
-import type { TrajectoryCloneJobStats } from '@modules/trajectory/contracts/domain/trajectory-clone-job';
+import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/trajectory-clone-job';
+import type { TrajectoryCloneJobStats } from '@modules/trajectory/contracts/trajectory-clone-job';
 
 @Entity('trajectory_clone_jobs')
 @Index(['team'])

@@ -2,7 +2,7 @@ import type { ExportNodeData, ExposureProperty } from '@modules/plugin/models/pl
 import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
-import type { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { PluginRecord as PluginRecordContract } from '@shared/contracts/operations/PluginRecord';
 
 export interface PluginExposureProps{

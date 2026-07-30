@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import NodeEditor from '@/modules/plugin/components/plugin/NodeEditor';

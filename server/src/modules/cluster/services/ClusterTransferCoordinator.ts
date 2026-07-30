@@ -5,9 +5,9 @@ import ClusterTransferJobProjector from '@modules/cluster/services/ClusterTransf
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
-import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
@@ -15,11 +15,11 @@ import {
 } from '@shared/application/utilities/cluster-storage-policy';
 import {
     createClusterTransferJobProps
-} from '@modules/cluster/contracts/domain/cluster-transfer-job';
+} from '@modules/cluster/contracts/cluster-transfer-job';
 import type {
     ClusterTransferJobReason
 } from '@volt/contracts/modules/cluster/domain';
-import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
+import type { StoragePlacement } from '@modules/cluster/contracts/storage-placement';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';

@@ -4,8 +4,8 @@ import AnalysisEntity from '@modules/analysis/models/Analysis';
 import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { isEntityId } from '@shared/infrastructure/persistence/entity-id';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
-import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
+import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 

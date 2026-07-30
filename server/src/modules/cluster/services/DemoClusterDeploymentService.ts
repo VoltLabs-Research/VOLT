@@ -1,4 +1,4 @@
-import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import Docker from 'dockerode';

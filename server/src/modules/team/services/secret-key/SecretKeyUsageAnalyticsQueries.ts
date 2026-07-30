@@ -1,5 +1,5 @@
 import SecretKeyUsageLog from '@modules/team/models/SecretKeyUsageLog';
-import type { SecretKeyUsageLogProps } from '@modules/team/contracts/domain/secret-key-usage-log';
+import type { SecretKeyUsageLogProps } from '@modules/team/contracts/secret-key-usage-log';
 import type {
     KeyUsageAnalytics,
     TeamUsageAnalytics,

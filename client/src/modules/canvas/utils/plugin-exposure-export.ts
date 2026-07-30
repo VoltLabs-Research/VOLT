@@ -1,7 +1,7 @@
-import type { IExposureExport } from '@volt/contracts/modules/plugin/domain/exposure';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { IExposureExport } from '@volt/contracts/modules/plugin/exposure';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { PluginScene, SceneRenderMetadata } from '@/modules/fractal/contracts/scene';
-import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 export const DEFAULT_LINE_WIDTH = 0.08;
 const RENDERABLE_SCENE_EXPORTERS = new Set<string>([

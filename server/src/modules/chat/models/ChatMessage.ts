@@ -5,7 +5,7 @@ import Chat from '@modules/chat/models/Chat';
 import User from '@modules/auth/models/User';
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessageMetadata } from '@volt/contracts/modules/chat/domain';
-import type { ChatReactionProps } from '@modules/chat/contracts/domain/chat-message';
+import type { ChatReactionProps } from '@modules/chat/contracts/chat-message';
 
 @Entity('chat_messages')
 @Index(['chat', 'createdAt'])

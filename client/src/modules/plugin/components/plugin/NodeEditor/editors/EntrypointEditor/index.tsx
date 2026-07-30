@@ -3,7 +3,7 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import { EntrypointType } from '@volt/contracts/modules/plugin/domain/enums';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import Editor from '@monaco-editor/react';

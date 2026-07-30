@@ -1,8 +1,8 @@
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
-import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { Plugin } from '@modules/plugin/contracts/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import {

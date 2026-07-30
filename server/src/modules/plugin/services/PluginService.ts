@@ -6,8 +6,8 @@ import {
     mapPluginToRecord,
     toPluginLike
 } from '@modules/plugin/services/plugin/PluginQueries';
-import type { PluginRecord } from '@modules/plugin/contracts/domain/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { PluginRecord } from '@modules/plugin/contracts/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
     WorkflowNodeType,
@@ -67,7 +67,7 @@ import type {
 } from '@shared/contracts/ports';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
-import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';

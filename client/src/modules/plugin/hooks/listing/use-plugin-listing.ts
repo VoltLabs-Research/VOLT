@@ -7,7 +7,7 @@ import {
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
 import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';

@@ -4,7 +4,7 @@ import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';

@@ -1,5 +1,5 @@
 import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/plugin';
 
 const EXECUTION_CLUSTER_ROLES = new Set<TeamClusterRole>(['cluster', 'compute-node']);
 

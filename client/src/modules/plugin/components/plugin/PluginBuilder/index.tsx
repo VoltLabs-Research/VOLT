@@ -1,8 +1,8 @@
 import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
-import type { IModifierData } from '@volt/contracts/modules/plugin/domain/workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IModifierData } from '@volt/contracts/modules/plugin/workflow';
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';

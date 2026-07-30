@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
 import ProviderRegistry from '@modules/ai/services/ProviderRegistry';
-import type { ResolvedModel } from '@modules/ai/contracts/domain/provider';
+import type { ResolvedModel } from '@modules/ai/contracts/provider';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { decrypt } from '@shared/infrastructure/utilities/crypto';
 

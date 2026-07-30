@@ -1,4 +1,4 @@
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
     getPluginReferenceValue,
@@ -11,7 +11,7 @@ import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
-} from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 
 interface PluginConfigFieldProps {

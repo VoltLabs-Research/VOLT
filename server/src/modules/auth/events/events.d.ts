@@ -1,4 +1,4 @@
-import type { UserCreatedEventPayload, UserDeletedEventPayload } from '@modules/auth/contracts/domain/events';
+import type { UserCreatedEventPayload, UserDeletedEventPayload } from '@modules/auth/contracts/events';
 
 declare global {
     interface EventMap {

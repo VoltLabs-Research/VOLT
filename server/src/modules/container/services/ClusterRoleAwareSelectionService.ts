@@ -10,7 +10,7 @@ import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 
 type SelectionCapability = 'compute' | 'storage';
 

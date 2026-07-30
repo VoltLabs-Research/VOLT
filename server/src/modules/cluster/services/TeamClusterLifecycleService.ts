@@ -4,7 +4,7 @@ import systemMetricsRepository from '@modules/system/services/SystemMetricsRedis
 import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import { TeamClusterView, toTeamClusterView } from '@modules/cluster/services/TeamClusterView';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus

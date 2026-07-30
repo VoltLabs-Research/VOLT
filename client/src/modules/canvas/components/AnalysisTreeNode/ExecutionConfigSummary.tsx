@@ -1,6 +1,6 @@
 import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import { ANALYSIS_EXECUTION_METADATA_KEY } from '@/modules/canvas/utils/selected-timestep-analysis';
-import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type {
@@ -8,8 +8,8 @@ import type {
     IPluginNodeData,
     IPluginReferenceSelection,
     IWorkflowNode
-} from '@volt/contracts/modules/plugin/domain/workflow';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+} from '@volt/contracts/modules/plugin/workflow';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 
 const ACRONYMS = new Set(['id', 'url', 'api', 'ui', 'sdk', 'rdf', 'rms', 'pbc', 'xyz']);
 

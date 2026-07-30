@@ -5,7 +5,7 @@ import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 
 const useSaveWorkflow = () => {
     const [searchParams, setSearchParams] = useSearchParams();

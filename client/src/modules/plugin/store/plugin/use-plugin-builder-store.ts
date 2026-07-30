@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { temporal } from 'zundo';
 import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
-import type { IWorkflow, INodeData } from '@volt/contracts/modules/plugin/domain/workflow';
-import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/domain/enums';
+import type { IWorkflow, INodeData } from '@volt/contracts/modules/plugin/workflow';
+import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
 import { NODE_CONFIGS, createNode } from '@/modules/plugin/utils/plugin/node-registry';
 
 type ValidationResult = {

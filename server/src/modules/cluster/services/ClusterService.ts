@@ -4,7 +4,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import Analysis from '@modules/analysis/models/Analysis';
-import { AnalysisArtifactStatus } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisArtifactStatus } from '@modules/analysis/contracts/analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
@@ -38,7 +38,7 @@ import { ILike, In, Not, QueryFailedError } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
 import {
     isAnalysisJobCompletionInput,
@@ -47,11 +47,11 @@ import {
     isArtifactUploadJobStatusInput,
     isGlbJobStatusInput,
     isRasterJobStatusInput
-} from '@modules/cluster/contracts/domain/daemon-job-completion';
+} from '@modules/cluster/contracts/daemon-job-completion';
 import type {
     ProcessDaemonJobCompletionInput,
     ProcessDaemonJobCompletionOutput
-} from '@modules/cluster/contracts/domain/daemon-job-completion';
+} from '@modules/cluster/contracts/daemon-job-completion';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import type {
     TeamClusterProps,
@@ -66,9 +66,9 @@ import {
 import {
     ClusterTransferJobState as ClusterTransferJobStateColumn,
     type ClusterTransferJob
-} from '@modules/cluster/contracts/domain/cluster-transfer-job';
+} from '@modules/cluster/contracts/cluster-transfer-job';
 import type { ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
-import type { StoragePlacement } from '@modules/cluster/contracts/domain/storage-placement';
+import type { StoragePlacement } from '@modules/cluster/contracts/storage-placement';
 
 import type {
     TeamClusterView,
@@ -122,7 +122,7 @@ import { assertConfirmedPassword } from '@modules/cluster/services/TeamClusterCr
 
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
-import { toTrajectoryLike } from '@modules/trajectory/contracts/domain/trajectory-like';
+import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
 
 const MB_PER_GB = 1024;
 const DEMO_CLUSTER_TTL_MINUTES = readNumberEnv('DEMO_CLUSTER_TTL_MINUTES', 30);

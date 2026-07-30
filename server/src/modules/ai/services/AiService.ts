@@ -2,7 +2,7 @@ import type { FindOptionsWhere } from 'typeorm';
 import { ErrorCodes } from '@core/constants/error-codes';
 import AIConversation from '@modules/ai/models/AIConversation';
 import AIMessage from '@modules/ai/models/AIMessage';
-import { AIConversationMessageRole } from '@modules/ai/contracts/domain/ai-message';
+import { AIConversationMessageRole } from '@modules/ai/contracts/ai-message';
 import type {
     AIConversationMessage,
     AIMessageModelInfo,
@@ -10,12 +10,12 @@ import type {
     AIMessageParts,
     AIMessageTokenUsage,
     AIMessageToolStep
-} from '@modules/ai/contracts/domain/ai-message';
+} from '@modules/ai/contracts/ai-message';
 import type { AIChatFinishEvent, AIChatReplyStream } from '@modules/ai/services/AISDKChatTransport';
 import aiSdkChatTransport from '@modules/ai/services/AISDKChatTransport';
 import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/services/AIResponseMessagePartsMapper';
 import TeamMember from '@modules/team/models/TeamMember';
-import type { TeamAIProvider } from '@modules/team/contracts/domain/team-ai-integration';
+import type { TeamAIProvider } from '@modules/team/contracts/team-ai-integration';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';

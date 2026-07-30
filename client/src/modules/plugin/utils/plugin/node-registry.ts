@@ -7,8 +7,8 @@ import {
     EntrypointType,
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode
-} from '@volt/contracts/modules/plugin/domain/enums';
-import type { INodeData } from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/enums';
+import type { INodeData } from '@volt/contracts/modules/plugin/workflow';
 import { v4 } from 'uuid';
 import type { Node } from '@xyflow/react';
 

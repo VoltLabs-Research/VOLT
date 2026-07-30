@@ -1,6 +1,6 @@
-import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
 import BaseNode from '@/modules/plugin/components/plugin/BaseNode';
-import type { IPluginNodeData } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { IPluginNodeData } from '@volt/contracts/modules/plugin/workflow';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { NodeProps } from '@xyflow/react';
 

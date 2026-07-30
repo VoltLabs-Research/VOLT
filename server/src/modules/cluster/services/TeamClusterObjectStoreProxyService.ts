@@ -1,5 +1,5 @@
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import defaultObjectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import ApplicationError from '@shared/application/errors/ApplicationError';

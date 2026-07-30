@@ -2,8 +2,8 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
-import { ClusterTransferJobReason, ClusterTransferJobState } from '@modules/cluster/contracts/domain/cluster-transfer-job';
-import { StoragePlacementScopeType } from '@modules/cluster/contracts/domain/storage-placement';
+import { ClusterTransferJobReason, ClusterTransferJobState } from '@modules/cluster/contracts/cluster-transfer-job';
+import { StoragePlacementScopeType } from '@modules/cluster/contracts/storage-placement';
 import type { StoragePlacementBucketRef } from '@shared/domain/contracts/team-cluster';
 import type {
     ClusterTransferJobCursor,

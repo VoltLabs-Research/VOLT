@@ -15,7 +15,7 @@ import { useMemo } from 'react';
 import { RiRefreshLine } from 'react-icons/ri';
 import { FlaskConical, ExternalLink } from 'lucide-react';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';

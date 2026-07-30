@@ -6,7 +6,7 @@ import Team from '@modules/team/models/Team';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import Plugin from '@modules/plugin/models/Plugin';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import type {
     AnalysisChildAnalysis,
     AnalysisConfig,

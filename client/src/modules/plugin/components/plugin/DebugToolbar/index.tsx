@@ -1,5 +1,5 @@
 import { Button, Divider, Loader, Row, Stack, StatusDot, Text, Tooltip, Select } from '@voltstack/bravais';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';

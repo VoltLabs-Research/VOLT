@@ -15,7 +15,7 @@ import type { LanguageModel } from 'ai';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ProviderCredentials } from '@modules/ai/contracts/domain/provider';
+import type { ProviderCredentials } from '@modules/ai/contracts/provider';
 
 interface SdkOptions{
     apiKey?: string;

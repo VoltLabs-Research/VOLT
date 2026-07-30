@@ -1,5 +1,5 @@
-import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/domain/enums';
-import type { IArgumentDefinition, IArgumentVisibilityCondition } from '@volt/contracts/modules/plugin/domain/workflow';
+import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition, IArgumentVisibilityCondition } from '@volt/contracts/modules/plugin/workflow';
 
 export const isMultiValueVisibilityOperator = (
     operator?: ArgumentVisibilityOperator

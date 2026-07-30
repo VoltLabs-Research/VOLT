@@ -2,7 +2,7 @@ import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { buildAnalysisRelationOptions } from '@modules/analysis/services/AnalysisQueries';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 
-import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
+import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 

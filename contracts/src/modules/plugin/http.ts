@@ -1,7 +1,7 @@
 
 
-import type { IWorkflow } from './domain/workflow';
-import type { PluginStatus } from './domain/enums';
+import type { IWorkflow } from './workflow';
+import type { PluginStatus } from './enums';
 
 export interface ValidateWorkflowInput{
     workflow: IWorkflow;

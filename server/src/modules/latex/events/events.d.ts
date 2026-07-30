@@ -2,7 +2,7 @@ import type {
     LatexDocumentCreatedEventPayload,
     LatexDocumentDeletedEventPayload,
     LatexFileContentUpdatedEventPayload
-} from '@modules/latex/contracts/domain/events';
+} from '@modules/latex/contracts/events';
 
 declare global {
     interface EventMap {

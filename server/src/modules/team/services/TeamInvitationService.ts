@@ -11,7 +11,7 @@ import {
     isTeamInvitationExpired,
     isTeamInvitationPending,
     normalizeInvitationEmail
-} from '@modules/team/contracts/domain/team-invitation';
+} from '@modules/team/contracts/team-invitation';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';

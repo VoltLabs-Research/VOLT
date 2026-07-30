@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import pluginService from '@/modules/plugin/api/services/plugin-service';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { UseQueryOptions } from '@tanstack/react-query';
 
 export const PLUGIN_CATALOG_ALL_QUERY_KEY = ['plugins', 'all'] as const;

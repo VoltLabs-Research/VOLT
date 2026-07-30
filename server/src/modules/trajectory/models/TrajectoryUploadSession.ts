@@ -4,8 +4,8 @@ import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceCol
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/domain/trajectory-upload-session';
-import type { TrajectoryUploadSessionFileProps } from '@modules/trajectory/contracts/domain/trajectory-upload-session';
+import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/trajectory-upload-session';
+import type { TrajectoryUploadSessionFileProps } from '@modules/trajectory/contracts/trajectory-upload-session';
 
 @Entity('trajectory_upload_sessions')
 @Index(['team'])

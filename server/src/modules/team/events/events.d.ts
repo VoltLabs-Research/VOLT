@@ -8,7 +8,7 @@ import type {
     TeamRoleCreatedEventPayload,
     TeamRoleDeletedEventPayload,
     TeamRoleUpdatedEventPayload
-} from '@modules/team/contracts/domain/events';
+} from '@modules/team/contracts/events';
 
 declare global {
     interface EventMap {

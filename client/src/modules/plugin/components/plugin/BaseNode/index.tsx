@@ -3,7 +3,7 @@ import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 import { Box, Button, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
-import type { INodeData } from '@volt/contracts/modules/plugin/domain/workflow';
+import type { INodeData } from '@volt/contracts/modules/plugin/workflow';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import {
     createReactFlowHandleStyle,
@@ -11,7 +11,7 @@ import {
     resolveNodeHandlePlacement,
     toReactFlowHandlePosition
 } from '@/modules/plugin/utils/plugin/node-handles';
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { Handle, useUpdateNodeInternals } from '@xyflow/react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Database, SkipForward, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

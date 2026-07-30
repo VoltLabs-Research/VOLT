@@ -4,7 +4,7 @@ import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceCol
 import type {
     AnalysisProvenanceInputFrameMetadata,
     AnalysisProvenanceParameters
-} from '@modules/analysis/contracts/domain/analysis-provenance';
+} from '@modules/analysis/contracts/analysis-provenance';
 
 @Entity('analysis_provenances')
 @Index(['pluginName'])

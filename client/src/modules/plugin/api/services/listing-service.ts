@@ -3,9 +3,9 @@ import { mapRawListingResponse } from './listing-response';
 
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import type { RawListingResponse } from './listing-response';
-import type { GetAnalysisListingExportOptionsResponse, SubListingColumn } from '@volt/contracts/modules/plugin/domain/listing';
+import type { GetAnalysisListingExportOptionsResponse, SubListingColumn } from '@volt/contracts/modules/plugin/listing';
 
 export type ExportType = 'json' | 'csv';
 

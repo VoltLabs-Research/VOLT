@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import { useState, useCallback } from 'react';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
-import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '../../store/canvas-pipeline';
 
 interface ExposureChartProps {

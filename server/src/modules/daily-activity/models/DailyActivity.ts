@@ -3,7 +3,7 @@ import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import User from '@modules/auth/models/User';
-import type { DailyActivityEntryProps } from '@modules/daily-activity/contracts/domain/daily-activity';
+import type { DailyActivityEntryProps } from '@modules/daily-activity/contracts/daily-activity';
 
 @Entity('daily_activities')
 @Index(['team'])

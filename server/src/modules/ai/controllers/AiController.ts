@@ -11,7 +11,7 @@ import type {
     UpdateAIConversationInput,
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
-import type { AIConversationMessage } from '@modules/ai/contracts/domain/ai-message';
+import type { AIConversationMessage } from '@modules/ai/contracts/ai-message';
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import express from 'express';
 import type { Response } from 'express';

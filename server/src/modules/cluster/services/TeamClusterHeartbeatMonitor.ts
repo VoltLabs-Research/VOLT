@@ -1,5 +1,5 @@
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import demoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';

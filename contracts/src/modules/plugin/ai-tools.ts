@@ -1,6 +1,6 @@
 import type { tags } from 'typia';
-import type { PluginStatus } from './domain/enums';
-import type { IViewport } from './domain/workflow';
+import type { PluginStatus } from './enums';
+import type { IViewport } from './workflow';
 
 // Free-form key/value bag. Aliased so the generated schema does not inherit the
 // TypeScript standard library's JSDoc for `Record` as a model-facing description.

@@ -1,5 +1,5 @@
-import type { BaseEntity } from '../../../shared/base';
-import type { TeamClusterRole } from '../../cluster/domain';
+import type { BaseEntity } from '../../shared/base';
+import type { TeamClusterRole } from '../cluster/domain';
 import type { IWorkflow, IModifierData } from './workflow';
 import type { PluginStatus } from './enums';
 import type {

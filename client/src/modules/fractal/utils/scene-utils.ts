@@ -1,4 +1,4 @@
-import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 import type { LineStyleSpec, SceneObjectType } from '@/modules/fractal/contracts/scene';
 

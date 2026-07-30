@@ -7,7 +7,7 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     toTeamClusterQueueConcurrencyView,
     toTeamClusterQueueScopeLimitsView

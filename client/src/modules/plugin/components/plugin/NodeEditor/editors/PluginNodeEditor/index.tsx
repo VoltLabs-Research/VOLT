@@ -4,7 +4,7 @@ import {
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode,
     PluginStatus
-} from '@volt/contracts/modules/plugin/domain/enums';
+} from '@volt/contracts/modules/plugin/enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -26,7 +26,7 @@ import { useSearchParams } from 'react-router-dom';
 import type {
     IArgumentDefinition,
     IPluginNodeData
-} from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/workflow';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 

@@ -5,8 +5,8 @@ import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import AnalysisResultSummarizer from '@modules/plugin/services/AnalysisResultSummarizer';
 import PluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
-import type { PluginRecord } from '@modules/plugin/contracts/domain/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
+import type { PluginRecord } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { ExportType } from '@shared/domain/port/persistence';
 import type {

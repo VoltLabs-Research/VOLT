@@ -17,7 +17,7 @@ import type {
     SceneArtifactSourceType,
     SceneArtifactStatus
 } from '@shared/contracts/types/SceneArtifact';
-import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/domain/scene-artifact';
+import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/scene-artifact';
 
 interface RecordSceneArtifactInput {
     objectName: string;

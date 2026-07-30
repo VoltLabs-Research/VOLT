@@ -1,5 +1,5 @@
 import DeploymentSettingsEntity from '@modules/system/models/DeploymentSettings';
-import type { DeploymentSettingsProps } from '@modules/system/contracts/domain/deployment-settings';
+import type { DeploymentSettingsProps } from '@modules/system/contracts/deployment-settings';
 
 const SINGLETON_KEY = 'singleton';
 

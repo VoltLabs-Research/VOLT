@@ -1,7 +1,7 @@
 import type {
     IArgumentDefinition,
     IArgumentVisibilityCondition
-} from '@volt/contracts/modules/plugin/domain/workflow';
+} from '@volt/contracts/modules/plugin/workflow';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;

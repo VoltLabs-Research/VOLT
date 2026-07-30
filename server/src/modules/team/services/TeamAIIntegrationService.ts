@@ -3,7 +3,7 @@ import TeamAIIntegrationEntity from '@modules/team/models/TeamAIIntegration';
 import {
     buildTeamAIIntegrationCreatePayload,
     buildTeamAIIntegrationUpdatePayload
-} from '@modules/team/contracts/domain/team-ai-integration';
+} from '@modules/team/contracts/team-ai-integration';
 import TeamAIProviderCatalog from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';

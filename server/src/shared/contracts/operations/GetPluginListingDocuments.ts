@@ -1,6 +1,6 @@
 
 import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
-import type { ListingRowData } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRowData } from '@volt/contracts/modules/plugin/listing';
 export type { ListingRowData };
 
 export interface GetPluginListingDocumentsInput {

@@ -8,8 +8,8 @@ import {
     findByTeamAndSearch,
     toAnalysisLike
 } from '@modules/analysis/services/AnalysisQueries';
-import { AnalysisRelation } from '@modules/analysis/contracts/domain/analysis';
-import type { AnalysisRelationName } from '@modules/analysis/contracts/domain/analysis';
+import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
+import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';

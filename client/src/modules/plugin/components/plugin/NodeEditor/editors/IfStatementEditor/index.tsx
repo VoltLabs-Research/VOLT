@@ -4,8 +4,8 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import type { ICondition } from '@volt/contracts/modules/plugin/domain/workflow';
-import type { ConditionType, ConditionHandler } from '@volt/contracts/modules/plugin/domain/enums';
+import type { ICondition } from '@volt/contracts/modules/plugin/workflow';
+import type { ConditionType, ConditionHandler } from '@volt/contracts/modules/plugin/enums';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 const CONDITION_TYPE_OPTIONS = [

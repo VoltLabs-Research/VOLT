@@ -7,7 +7,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import type { LineEntityHighlight } from '@/modules/fractal/contracts/scene-config';
-import type { ListingRow } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 
 export const useLineEntityRowSelection = (exposureId: string | null | undefined) => {
     const { activeScenes, selection, toggleLineEntitySelection } = useEditorStore(useShallow((state) => ({

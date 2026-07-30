@@ -1,4 +1,4 @@
-import { ClusterTransferJobState as ClusterTransferJobStateColumn } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import { ClusterTransferJobState as ClusterTransferJobStateColumn } from '@modules/cluster/contracts/cluster-transfer-job';
 
 import type { ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
 

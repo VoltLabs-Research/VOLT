@@ -1,5 +1,5 @@
-import type { TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
-import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/domain/team-cluster';
+import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
 import TeamClusterCredentialService from '@modules/cluster/services/TeamClusterCredentialService';
 import { hashEnrollmentToken } from '@modules/cluster/services/TeamClusterCredentialService';
 import { secureCompare } from '@modules/cluster/services/TeamClusterCredentialService';

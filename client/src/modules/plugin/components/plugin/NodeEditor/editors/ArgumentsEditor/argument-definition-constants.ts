@@ -1,4 +1,4 @@
-import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/domain/enums';
+import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import type { SelectOption } from '@voltstack/bravais';
 

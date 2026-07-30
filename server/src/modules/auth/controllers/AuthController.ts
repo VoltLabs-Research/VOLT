@@ -5,7 +5,7 @@ import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/htt
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import AuthService from '@modules/auth/services/AuthService';
-import { OAuthProvider } from '@modules/auth/contracts/domain/user';
+import { OAuthProvider } from '@modules/auth/contracts/user';
 import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/controllers/oauth-route-helpers';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import type {

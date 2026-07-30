@@ -2,11 +2,11 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
-import type { IListingsWithExposures } from '@volt/contracts/modules/plugin/domain/exposure';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
+import type { IListingsWithExposures } from '@volt/contracts/modules/plugin/exposure';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { ArgumentDefinition, ModifierNodeData } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import type { PluginExposureProps } from '@modules/plugin/contracts/domain/plugin';
+import type { PluginExposureProps } from '@modules/plugin/contracts/plugin';
 
 @Entity('plugins')
 @Index(['team'])

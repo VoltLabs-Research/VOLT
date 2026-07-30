@@ -1,5 +1,5 @@
-import type { Plugin } from '@modules/plugin/contracts/domain/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import type { Plugin } from '@modules/plugin/contracts/plugin';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
     ArgumentType,

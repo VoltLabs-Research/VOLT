@@ -1,5 +1,5 @@
 import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
-import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/domain/listing';
+import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/listing';
 export type { ListingRowByAnalysisData };
 
 export interface GetAnalysisListingExportOptionsInput {
@@ -10,7 +10,7 @@ export interface GetAnalysisListingExportOptionsInput {
 import type {
     AnalysisListingExportOption,
     AnalysisSubListingExportOption
-} from '@volt/contracts/modules/plugin/domain/listing';
+} from '@volt/contracts/modules/plugin/listing';
 
 export type AnalysisListingExportOptionView = AnalysisListingExportOption;export interface GetAnalysisListingExportOptionsOutput {
     analysisId: string;

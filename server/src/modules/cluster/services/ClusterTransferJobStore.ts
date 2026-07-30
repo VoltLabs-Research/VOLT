@@ -1,16 +1,16 @@
 
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
-import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/domain/cluster-transfer-job';
+import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/domain/team-cluster';
+import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     ClusterTransferJobReason as ClusterTransferJobReasonColumn,
     ClusterTransferJobState as ClusterTransferJobStateColumn
-} from '@modules/cluster/contracts/domain/cluster-transfer-job';
+} from '@modules/cluster/contracts/cluster-transfer-job';
 import type {
     ClusterTransferJobState
 } from '@volt/contracts/modules/cluster/domain';
-import { StoragePlacementScopeType as StoragePlacementScopeTypeColumn } from '@modules/cluster/contracts/domain/storage-placement';
+import { StoragePlacementScopeType as StoragePlacementScopeTypeColumn } from '@modules/cluster/contracts/storage-placement';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     StoragePlacementScopeType

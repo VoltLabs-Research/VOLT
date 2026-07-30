@@ -3,7 +3,7 @@ import BondsModelViewer from '@/modules/fractal/components/molecules/BondsModelV
 import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utils/plugin-exposure-export';
 import { resolveBondLineSettings } from '@/modules/fractal/services/bond-render';
-import { Exporter } from '@volt/contracts/modules/plugin/domain/enums';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useState, useRef, useEffect } from 'react';

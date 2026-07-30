@@ -21,11 +21,11 @@ import {
 import { createMutation, createQuery, buildKeys } from '@/shared/query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin-service';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
-import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/domain/registry';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
+import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
 import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
 import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
-import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 

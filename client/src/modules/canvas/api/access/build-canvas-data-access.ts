@@ -32,7 +32,7 @@ import type {
     PreviewFilterInput,
     PreviewFilterResponse
 } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type {
     GetPluginListingInput,
     GetPluginListingResponse

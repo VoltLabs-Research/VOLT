@@ -8,12 +8,12 @@ import type { Response } from 'express';
 import type {
     AIConversationMessage,
     AIMessageToolStep
-} from '@modules/ai/contracts/domain/ai-message';
-import { SYSTEM_PROMPT } from '@modules/ai/contracts/domain/system-prompt';
+} from '@modules/ai/contracts/ai-message';
+import { SYSTEM_PROMPT } from '@modules/ai/contracts/system-prompt';
 import ModelResolver from '@modules/ai/services/ModelResolver';
 import SdkMapper from '@modules/ai/services/SdkMapper';
 import type AIToolServiceType from '@modules/ai/services/AIToolService';
-import type { TeamAIProvider } from '@modules/team/contracts/domain/team-ai-integration';
+import type { TeamAIProvider } from '@modules/team/contracts/team-ai-integration';
 import logger from '@shared/infrastructure/logger';
 
 const MAX_TOOL_STEPS = 12;

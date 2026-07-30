@@ -6,7 +6,7 @@ import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plug
 import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { PluginStatus } from '@volt/contracts/modules/plugin/domain/enums';
+import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import { SOCKET_PLUGIN_EVENTS } from '@/modules/socket/events/plugin';
 import { runAction } from '@/shared/ui/actions/run-action';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
@@ -16,7 +16,7 @@ import { dateColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GetPluginsInput } from '@/modules/plugin/api/services/plugin-service';
-import type { Plugin } from '@volt/contracts/modules/plugin/domain/plugin';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { BaseEntity } from '@volt/contracts/shared/base';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';

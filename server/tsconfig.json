@@ -31,9 +31,6 @@
       "@shared/*": [
         "src/shared/*"
       ],
-      "@tests/*": [
-        "tests/*"
-      ],
       "@volt/contracts/*": [
         "../contracts/src/*"
       ],

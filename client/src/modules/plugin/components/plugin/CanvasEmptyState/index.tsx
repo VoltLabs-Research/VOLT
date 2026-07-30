@@ -1,4 +1,4 @@
-import { NodeType } from '@volt/contracts/modules/plugin/domain/enums';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';

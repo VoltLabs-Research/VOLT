@@ -1,4 +1,4 @@
-import type { IExposureComputed } from '@volt/contracts/modules/plugin/domain/exposure';
+import type { IExposureComputed } from '@volt/contracts/modules/plugin/exposure';
 
 interface ListingRelevantExposure {
     exposureId: string;

@@ -3,7 +3,7 @@ import { inferColumnType, type InferredCellKind, type InferredColumnType } from 
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import type { ColumnConfig as DocumentColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
-import type { SubListingColumn } from '@volt/contracts/modules/plugin/domain/listing';
+import type { SubListingColumn } from '@volt/contracts/modules/plugin/listing';
 
 export interface SubListingColumnSnapshot<TRow extends Record<string, unknown>> {
     columns: DocumentColumnConfig<TRow>[];

@@ -1,4 +1,4 @@
-import type { OAuthProvider } from '@modules/auth/contracts/domain/user';
+import type { OAuthProvider } from '@modules/auth/contracts/user';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type AuthService from '@modules/auth/services/AuthService';
 import type { Request } from 'express';

@@ -6,7 +6,7 @@ import {
     buildTeamRoleCreatePayload,
     buildTeamRoleUpdatePayload,
     canRenameTeamRoleTo
-} from '@modules/team/contracts/domain/team-role';
+} from '@modules/team/contracts/team-role';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
