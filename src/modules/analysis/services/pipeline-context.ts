@@ -3,8 +3,6 @@ import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-wo
 import type { WorkflowDefinition } from '@shared/contracts';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 
-export type { PipelineContext };
-
 export const createPipelineContext = (pipelineTempPath: string): PipelineContext => ({
     sharedExposures: {},
     pipelineTempPath
@@ -35,9 +33,11 @@ export const collectInferFromContextArgumentKeys = (
 ): string[] => {
     const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
     const definitions: WorkflowArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
-    return definitions
-        .filter((definition) => definition.inferFromContext === true && typeof definition.argument === 'string')
-        .map((definition) => definition.argument as string);
+    return definitions.flatMap((definition) => (
+        definition.inferFromContext === true && definition.argument !== undefined
+            ? [definition.argument]
+            : []
+    ));
 };
 
 export const buildInferFromContextArgs = (

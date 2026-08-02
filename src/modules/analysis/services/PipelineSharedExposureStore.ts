@@ -45,14 +45,13 @@ export interface FetchSharedExposureInput {
 export class PipelineSharedExposureStore {
     constructor(private readonly objectStore: ClusterObjectStore) {}
 
-    async persist(input: PersistSharedExposureInput): Promise<{ objectKey: string; ext: string }> {
-        const ext = this.resolveExt(input.sourcePath);
+    async persist(input: PersistSharedExposureInput): Promise<void> {
         const objectKey = sharedExposureKey(
             input.trajectoryId,
             input.analysisId,
             input.exposureId,
             input.timestep,
-            ext
+            this.resolveExt(input.sourcePath)
         );
         const stat = await fs.stat(input.sourcePath);
 
@@ -63,11 +62,6 @@ export class PipelineSharedExposureStore {
             stream: createReadStream(input.sourcePath),
             size: stat.size
         });
-
-        return {
-            objectKey,
-            ext
-        };
     }
 
     async fetch(input: FetchSharedExposureInput): Promise<string | null> {

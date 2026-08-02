@@ -1,5 +1,4 @@
 import {
-    readTimestepDedupeSegment,
     type AuthenticatedMessageContext,
     type AuthenticatedReverseChannelMessage
 } from '@shared/contracts/channel/reverse-channel-messaging';
@@ -63,10 +62,10 @@ export const createRasterJobStatusDedupeKey = (
     payload: Pick<TimedTrajectoryJobEventData, 'jobId' | 'timestep'>,
     status: TimedTrajectoryStatus
 ): string =>
-    `trajectory.raster-job-status:${payload.jobId}:${status}:${readTimestepDedupeSegment(payload.timestep)}`;
+    `trajectory.raster-job-status:${payload.jobId}:${status}:${payload.timestep ?? 'none'}`;
 
 export const createGlbJobStatusDedupeKey = (
     payload: Pick<TimedTrajectoryJobEventData, 'jobId' | 'timestep'>,
     status: TimedTrajectoryStatus
 ): string =>
-    `trajectory.glb-job-status:${payload.jobId}:${status}:${readTimestepDedupeSegment(payload.timestep)}`;
+    `trajectory.glb-job-status:${payload.jobId}:${status}:${payload.timestep ?? 'none'}`;

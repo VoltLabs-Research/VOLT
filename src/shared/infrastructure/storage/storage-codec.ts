@@ -1,6 +1,6 @@
 import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 interface ZstdStreamResult {
     stream: Readable;
@@ -82,7 +82,7 @@ export const createZstdDecompressionStream = (input: Readable): ZstdStreamResult
     return createZstdStream(['-d', '-q', '-c'], input);
 };
 
-export const runZstdCommand = async (args: string[]): Promise<void> => {
+const runZstdCommand = async (args: string[]): Promise<void> => {
     const child = spawn('zstd', args, {
         stdio: ['ignore', 'ignore', 'pipe']
     });
@@ -111,6 +111,19 @@ export const compressFileWithZstd = (sourcePath: string, outputPath: string): Pr
     ]);
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
+
+/**
+ * The trajectory object-key layout, in one place.
+ *
+ * These were hardcoded at 10 call sites across 4 modules, so changing the layout
+ * meant finding every template literal. Keep new keys here next to the parquet
+ * and exposure builders below.
+ */
+export const toTrajectoryFrameDumpObjectKey = (trajectoryId: string, timestep: number): string =>
+    `trajectory-${trajectoryId}/timestep-${timestep}.dump.zst`;
+
+export const toTrajectoryFrameModelObjectKey = (trajectoryId: string, timestep: number): string =>
+    `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
 
 export const toTrajectoryParquetObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/trajectory.parquet`;

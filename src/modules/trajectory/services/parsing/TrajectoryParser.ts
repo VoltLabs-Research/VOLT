@@ -1,13 +1,15 @@
+import { toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
 import { normalizePagination, calculatePaginationOffset } from '@shared/contracts/types/pagination';
 import type {
     TrajectoryFrameData,
+    TrajectoryFrameLookupInput,
     TrajectoryFrameStore,
     TrajectoryElementMetadata
 } from '@shared/contracts/types/trajectory-frame-store';
 import type { ParsedSimulationCell } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
-import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/trajectory-not-found-error';
 import type {
     ColumnDType,
     TypedColumn,
@@ -22,24 +24,13 @@ export interface ParsedTrajectoryMetadata {
     elementTable: ElementTableEntry[];
 }
 
-export interface ParsedTrajectory {
+export interface ParsedTrajectory extends TrajectoryFrameData {
     metadata: ParsedTrajectoryMetadata;
-    positions: Float32Array;
-    types: Uint16Array;
-    ids?: Uint32Array;
-    properties: Record<string, TypedColumn>;
     min: [number, number, number];
     max: [number, number, number];
 }
 
-export interface DumpFileInput {
-    trajectoryId: string;
-    timestep: number;
-    ownerClusterId: string;
-    objectKey?: string;
-}
-
-export interface PropertyStatsInput extends DumpFileInput {
+export interface PropertyStatsInput extends TrajectoryFrameLookupInput {
     property: string;
 }
 
@@ -47,7 +38,7 @@ export interface UniqueValuesInput extends PropertyStatsInput {
     maxValues: number;
 }
 
-export interface AtomsPageInput extends DumpFileInput {
+export interface AtomsPageInput extends TrajectoryFrameLookupInput {
     page: number;
     limit: number;
 }
@@ -106,31 +97,19 @@ const buildSimulationCell = (frame: TrajectoryFrameData): ParsedSimulationCell =
 const frameToParsedTrajectory = (
     frame: TrajectoryFrameData,
     elementMetadata: TrajectoryElementMetadata
-): ParsedTrajectory => {
-    const min: [number, number, number] = [frame.frameBbox[0], frame.frameBbox[1], frame.frameBbox[2]];
-    const max: [number, number, number] = [frame.frameBbox[3], frame.frameBbox[4], frame.frameBbox[5]];
-    const propertyHeaders = Object.keys(frame.properties);
-    return {
-        metadata: {
-            headers: ['id', 'type', 'x', 'y', 'z', ...propertyHeaders],
-            simulationCell: buildSimulationCell(frame),
-            units: elementMetadata.units,
-            elementTable: elementMetadata.elementTable
-        },
-        positions: frame.positions,
-        types: frame.types,
-        ids: frame.ids,
-        properties: frame.properties,
-        min,
-        max
-    };
-};
+): ParsedTrajectory => ({
+    ...frame,
+    metadata: {
+        headers: ['id', 'type', 'x', 'y', 'z', ...Object.keys(frame.properties)],
+        simulationCell: buildSimulationCell(frame),
+        units: elementMetadata.units,
+        elementTable: elementMetadata.elementTable
+    },
+    min: [frame.frameBbox[0], frame.frameBbox[1], frame.frameBbox[2]],
+    max: [frame.frameBbox[3], frame.frameBbox[4], frame.frameBbox[5]]
+});
 
 const computeStats = (values: Int32Array | Float32Array): { min: number; max: number } => {
-    if (values.length === 0) return {
-        min: 0,
-        max: 0
-    };
     let min = Number.POSITIVE_INFINITY;
     let max = Number.NEGATIVE_INFINITY;
     for (let index = 0; index < values.length; index++) {
@@ -161,33 +140,24 @@ const collectUnique = (values: Int32Array | Float32Array, maxValues: number): nu
 export class TrajectoryParser {
     constructor(private readonly trajectoryFrameStore: TrajectoryFrameStore) {}
 
-    public async readFrame(input: DumpFileInput): Promise<ParsedTrajectory> {
+    public async readFrame(input: TrajectoryFrameLookupInput): Promise<ParsedTrajectory> {
         try {
             const [frame, elementMetadata] = await Promise.all([
-                this.trajectoryFrameStore.readFrame({
-                    trajectoryId: input.trajectoryId,
-                    timestep: input.timestep,
-                    ownerClusterId: input.ownerClusterId
-                }),
-                this.trajectoryFrameStore.readElementMetadata({
-                    trajectoryId: input.trajectoryId,
-                    ownerClusterId: input.ownerClusterId
-                })
+                this.trajectoryFrameStore.readFrame(input),
+                this.trajectoryFrameStore.readElementMetadata(input)
             ]);
             return frameToParsedTrajectory(frame, elementMetadata);
         } catch (error) {
-            throw this.rethrowNotFound(error, input);
+            throw toTrajectoryFrameError(error, input);
         }
     }
 
-    public async getTrajectoryMetadata(input: DumpFileInput): Promise<ParsedTrajectoryMetadata> {
-        const parsed = await this.readFrame(input);
-        return parsed.metadata;
+    public async getTrajectoryMetadata(input: TrajectoryFrameLookupInput): Promise<ParsedTrajectoryMetadata> {
+        return (await this.readFrame(input)).metadata;
     }
 
     public async getPropertyStats(input: PropertyStatsInput): Promise<PropertyStatsResult> {
-        const parsed = await this.readFrame(input);
-        const column = this.getPropertyColumn(parsed, input.property);
+        const column = this.getPropertyColumn(await this.readFrame(input), input.property);
         return {
             ...computeStats(column.values),
             dtype: column.dtype
@@ -195,10 +165,9 @@ export class TrajectoryParser {
     }
 
     public async getUniqueValues(input: UniqueValuesInput): Promise<UniqueValuesResult> {
-        const parsed = await this.readFrame(input);
-        const column = this.getPropertyColumn(parsed, input.property);
+        const column = this.getPropertyColumn(await this.readFrame(input), input.property);
         return {
-            values: column.values.length === 0 ? [] : collectUnique(column.values, input.maxValues),
+            values: collectUnique(column.values, input.maxValues),
             dtype: column.dtype
         };
     }
@@ -241,7 +210,7 @@ export class TrajectoryParser {
         };
     }
 
-    public async getAtomIds(input: DumpFileInput): Promise<number[]> {
+    public async getAtomIds(input: TrajectoryFrameLookupInput): Promise<number[]> {
         const parsed = await this.readFrame(input);
         if (!parsed.ids) {
             throw new Error('Trajectory atom ids are required for atom-id lookup');
@@ -251,11 +220,7 @@ export class TrajectoryParser {
 
     public getPropertyColumn(parsed: ParsedTrajectory, property: string): TypedColumn {
         const lowerProperty = property.toLowerCase();
-        const axisIndex = ({
-            x: 0,
-            y: 1,
-            z: 2
-        } as const)[lowerProperty as 'x' | 'y' | 'z'];
+        const axisIndex = ['x', 'y', 'z'].indexOf(lowerProperty);
 
         if (lowerProperty === 'type') {
             return {
@@ -264,7 +229,7 @@ export class TrajectoryParser {
             };
         }
 
-        if (axisIndex !== undefined) {
+        if (axisIndex >= 0) {
             const values = new Float32Array(parsed.positions.length / 3);
             for (let index = 0; index < values.length; index++) {
                 values[index] = parsed.positions[index * 3 + axisIndex];
@@ -290,10 +255,8 @@ export class TrajectoryParser {
     }
 
     public getPropertyValues(parsed: ParsedTrajectory, property: string): Float32Array {
-        const column = this.getPropertyColumn(parsed, property);
-        return column.values instanceof Float32Array
-            ? column.values
-            : Float32Array.from(column.values);
+        const { values } = this.getPropertyColumn(parsed, property);
+        return values instanceof Float32Array ? values : Float32Array.from(values);
     }
 
     public remapExternalValues(parsed: ParsedTrajectory, externalValues: Float32Array): Float32Array {
@@ -308,20 +271,7 @@ export class TrajectoryParser {
     }
 
     public getModelObjectKey(trajectoryId: string, timestep: number): string {
-        return `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
-    }
-
-    private rethrowNotFound(error: unknown, input: DumpFileInput): Error {
-        if (isObjectNotFoundError(error)) {
-            const notFound = new Error(
-                `Parquet trajectory object not found: trajectoryId=${input.trajectoryId}, timestep=${input.timestep}, ` +
-                `ownerClusterId=${input.ownerClusterId}. The trajectory may not have been ingested yet.`
-            );
-            notFound.name = 'ParquetTrajectoryNotFoundError';
-            return notFound;
-        }
-        if (error instanceof Error) return error;
-        return new Error(String(error));
+        return toTrajectoryFrameModelObjectKey(trajectoryId, timestep);
     }
 }
 

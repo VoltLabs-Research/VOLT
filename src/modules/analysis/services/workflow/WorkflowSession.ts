@@ -1,3 +1,4 @@
+import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import type {
     AnalysisExposureDefinition,
     DaemonAnalysisDocument,
@@ -14,7 +15,7 @@ import type {
     WorkflowValueMap
 } from '@shared/contracts/types/workflow.types';
 import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type { PipelineContext } from '@modules/analysis/services/pipeline-context';
+import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 
 export interface WorkflowOutputsSnapshot {
     [nodeId: string]: WorkflowNodeOutput;
@@ -29,7 +30,6 @@ export interface WorkflowSessionParams {
     trajectoryDumpOverrides?: TrajectoryDumpDescriptor[];
     analysis: DaemonAnalysisDocument;
     analysisId: string;
-    generatedFiles?: string[];
     pluginId: string;
     teamId: string;
     selectedFrameOnly?: boolean;
@@ -38,7 +38,6 @@ export interface WorkflowSessionParams {
     workflow: WorkflowGraph;
     execution?: WorkflowExecutionOptions;
     nestedPlugins?: NestedPluginDefinition[];
-    nestedWorkflows?: Map<string, WorkflowDefinition>;
     pipelineContext?: PipelineContext;
 }
 
@@ -82,28 +81,20 @@ const selectDumpFromItems = (
     };
 };
 
-const createNestedWorkflowMap = (
-    nestedPlugins: NestedPluginDefinition[]
-): Map<string, WorkflowDefinition> => new Map(
-    nestedPlugins.map((nestedPlugin) => [nestedPlugin.pluginId, nestedPlugin.workflow])
-);
-
 const createWorkflowContext = (
     params: WorkflowSessionParams
 ): WorkflowExecutionContext => {
     const {
         nestedPlugins = [],
         outputs = new Map<string, WorkflowNodeOutput>(),
-        generatedFiles = [],
-        nestedWorkflows,
         ...context
     } = params;
 
     return {
         ...context,
         outputs,
-        generatedFiles,
-        nestedWorkflows: nestedWorkflows ?? createNestedWorkflowMap(nestedPlugins)
+        generatedFiles: [],
+        nestedWorkflows: new Map(nestedPlugins.map((plugin) => [plugin.pluginId, plugin.workflow]))
     };
 };
 
@@ -156,7 +147,7 @@ export class WorkflowSession {
 
         return selectedFrames.map((frame) => ({
             ...frame,
-            path: `trajectory-${context.trajectoryId}/timestep-${frame.timestep}.dump.zst`
+            path: toTrajectoryFrameDumpObjectKey(context.trajectoryId, frame.timestep)
         }));
     }
 
@@ -219,12 +210,8 @@ export class WorkflowSession {
         };
     }
 
-    static buildExposureMaps(
-        workflowInput: WorkflowDefinition | WorkflowGraph
-    ): WorkflowExposureMaps {
-        const workflow = workflowInput instanceof WorkflowGraph
-            ? workflowInput
-            : new WorkflowGraph(workflowInput);
+    static buildExposureMaps(workflowInput: WorkflowDefinition): WorkflowExposureMaps {
+        const workflow = new WorkflowGraph(workflowInput);
         const exposuresByNodeId = new Map<string, AnalysisExposureDefinition>();
         const exportNodeToExposureNodeId = new Map<string, string>();
 
@@ -254,9 +241,7 @@ export class WorkflowSession {
         };
     }
 
-    static collectExposureDefinitions(
-        workflowInput: WorkflowDefinition | WorkflowGraph
-    ): AnalysisExposureDefinition[] {
+    static collectExposureDefinitions(workflowInput: WorkflowDefinition): AnalysisExposureDefinition[] {
         return Array.from(WorkflowSession.buildExposureMaps(workflowInput).exposuresByNodeId.values());
     }
 
@@ -266,10 +251,6 @@ export class WorkflowSession {
         return this.context.outputs;
     }
 
-    snapshotOutputs(): WorkflowOutputsSnapshot {
-        return WorkflowSession.snapshotOutputs(this.outputs);
-    }
-
     getOutput(nodeId: string): WorkflowNodeOutput | undefined {
         return this.outputs.get(nodeId);
     }
@@ -277,10 +258,6 @@ export class WorkflowSession {
     setOutput(nodeId: string, output: WorkflowNodeOutput): WorkflowNodeOutput {
         this.outputs.set(nodeId, output);
         return output;
-    }
-
-    resolveSelectedDump(): WorkflowDumpSelection | null {
-        return WorkflowSession.resolveSelectedDump(this.context);
     }
 
     setForEachCurrentValue(

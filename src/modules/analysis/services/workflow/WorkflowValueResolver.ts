@@ -10,13 +10,13 @@ import type {
     WorkflowValue
 } from '@shared/contracts/types/workflow.types';
 import { WorkflowNodeType as WorkflowNodeTypeEnum } from '@shared/contracts/types/workflow.types';
-import { stringifyUnknown } from '@shared/application/utilities/serialization';
+import { stringifyWorkflowValue } from '@shared/application/utilities/serialization';
 import { isRecord } from '@shared/domain/utilities/is-record';
 
 interface WorkflowValueResolverOptions {
     outputs: Map<string, WorkflowNodeOutput>;
-    workflow?: WorkflowGraph;
-    context?: WorkflowExecutionContext;
+    workflow: WorkflowGraph;
+    context: WorkflowExecutionContext;
     currentNodeId?: string;
 }
 
@@ -93,9 +93,7 @@ export class WorkflowValueResolver {
         const propertyPath = parts.slice(1);
         const nodeId = this.options.outputs.has(requestedNodeId)
             ? requestedNodeId
-            : this.options.workflow
-                ? this.resolveAliasNodeId(requestedNodeId) ?? requestedNodeId
-                : requestedNodeId;
+            : this.resolveAliasNodeId(requestedNodeId) ?? requestedNodeId;
         const nodeOutput = this.options.outputs.get(nodeId);
 
         if (!nodeOutput) {
@@ -129,26 +127,18 @@ export class WorkflowValueResolver {
         return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref: string) => {
             const value = this.resolveReference(ref);
             return value !== undefined
-                ? stringifyUnknown(value as Parameters<typeof stringifyUnknown>[0])
+                ? stringifyWorkflowValue(value)
                 : '';
         });
     }
 
-    resolveExpressionValue(expression: string): Promise<WorkflowValue> {
-        return this.resolveExpression(expression);
-    }
-
     async resolveComparableString(expression: string): Promise<string> {
-        const resolved = await this.resolveExpression(expression);
-        return stringifyUnknown(resolved as Parameters<typeof stringifyUnknown>[0]);
+        const resolved = await this.resolveExpressionValue(expression);
+        return stringifyWorkflowValue(resolved);
     }
 
     private resolveAliasNodeId(alias: string): string | null {
         const workflow = this.options.workflow;
-        if (!workflow) {
-            return null;
-        }
-
         const targetTypes = WORKFLOW_REFERENCE_ALIASES[alias.toLowerCase()];
         if (!targetTypes) {
             return null;
@@ -220,12 +210,8 @@ export class WorkflowValueResolver {
         return cache;
     }
 
-    private async resolveExpression(expression: string): Promise<WorkflowValue> {
+    async resolveExpressionValue(expression: string): Promise<WorkflowValue> {
         if (expression.startsWith('=')) {
-            if (!this.options.context) {
-                throw new Error('Workflow expression resolution requires an execution context');
-            }
-
             const source = expression.slice(1);
             let compiled = compiledExpressionCache.get(source);
             if (!compiled) {
@@ -233,9 +219,7 @@ export class WorkflowValueResolver {
                 compiledExpressionCache.set(source, compiled);
             }
 
-            return await compiled.evaluate(
-                this.buildExpressionScope(this.options.context)
-            ) as WorkflowValue;
+            return await compiled.evaluate(this.buildExpressionScope()) as WorkflowValue;
         }
 
         return expression.includes('{{')
@@ -243,15 +227,13 @@ export class WorkflowValueResolver {
             : expression;
     }
 
-    private buildExpressionScope(
-        context: WorkflowExecutionContext
-    ): Record<string, unknown> {
+    private buildExpressionScope(): Record<string, unknown> {
         const {
             workflow: _workflow,
             nestedWorkflows,
             outputs,
             ...scope
-        } = context;
+        } = this.options.context;
 
         let nestedWorkflowsScope = nestedWorkflowsScopeByMap.get(nestedWorkflows);
         if (!nestedWorkflowsScope) {

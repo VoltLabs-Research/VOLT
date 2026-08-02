@@ -135,7 +135,7 @@ export enum WorkflowNodeType {
     SwitchCase = 'switch-case'
 }
 
-export const matchesIfBranchHandle = (
+const matchesIfBranchHandle = (
     edgeHandle: string | undefined,
     selectedBranch: string
 ): boolean => {
@@ -334,3 +334,26 @@ export class WorkflowGraph {
             .filter((workflowEdge): workflowEdge is WorkflowEdge => workflowEdge !== undefined);
     }
 };
+
+
+/** A trajectory dump materialised on local disk, ready to be handed to a plugin binary. */
+export interface WorkflowDumpTarget {
+    localPath: string;
+    originalPath?: string;
+    timestep: number;
+    natoms: number;
+    simulationCell: string;
+}
+
+export interface WorkflowProcessLogContext {
+    rootNodeId: string;
+    nodeId: string;
+    nodeType: string;
+    pluginId: string;
+    executionPath: string[];
+    timesteps: number[];
+}
+
+export type WorkflowLogSinkFactory = (
+    context: WorkflowProcessLogContext
+) => ProcessExecutionLogSink | undefined;

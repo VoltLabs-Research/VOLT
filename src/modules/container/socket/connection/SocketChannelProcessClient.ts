@@ -1,7 +1,6 @@
 import { PlaneProcessSupervisor } from '@shared/infrastructure/planes/PlaneProcessSupervisor';
 import { logger } from '@shared/infrastructure/logger';
 import type { ChildProcess } from 'node:child_process';
-import type { DaemonConfig } from '@core/config/daemon';
 
 type MessageListener = (message: unknown) => void;
 type DisconnectedListener = () => void;
@@ -17,14 +16,12 @@ interface ChildEvent {
 const PROCESS_RESTART_DELAY_MS = 2_000;
 
 export class SocketChannelProcessClient extends PlaneProcessSupervisor {
-    private ready = false;
     private readonly messageListeners: MessageListener[] = [];
     private readonly disconnectedListeners: DisconnectedListener[] = [];
     private readonly connectedListeners: ConnectedListener[] = [];
     private readonly errorListeners: ErrorListener[] = [];
 
     constructor(
-        private readonly config: DaemonConfig,
         private readonly channel: string,
         private readonly label: string
     ) {
@@ -79,12 +76,7 @@ export class SocketChannelProcessClient extends PlaneProcessSupervisor {
     }
 
     stop(): void {
-        this.ready = false;
         this.stopProcess();
-    }
-
-    isReady(): boolean {
-        return this.ready;
     }
 
     emitMessage(message: unknown): void {
@@ -146,7 +138,6 @@ export class SocketChannelProcessClient extends PlaneProcessSupervisor {
     }
 
     protected override onProcessExit(): void {
-        this.ready = false;
         if (this.stopping) return;
         this.disconnectedListeners.forEach((listener) => listener());
     }
@@ -155,13 +146,11 @@ export class SocketChannelProcessClient extends PlaneProcessSupervisor {
         if (!message) return;
 
         if (message.type === 'connected') {
-            this.ready = true;
             this.connectedListeners.forEach((listener) => listener());
             return;
         }
 
         if (message.type === 'disconnected') {
-            this.ready = false;
             this.disconnectedListeners.forEach((listener) => listener());
             return;
         }

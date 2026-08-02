@@ -1,3 +1,4 @@
+import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
 import type {
     AnalysisJobMetadata,
@@ -41,7 +42,7 @@ export const buildItemAnalysisJob = (
     timestep: number
 ): AnalysisQueueJobPayload => {
     const timestamp = new Date().toISOString();
-    const inputFile = item.path ?? `trajectory-${context.input.trajectoryId}/timestep-${timestep}.dump.zst`;
+    const inputFile = item.path ?? toTrajectoryFrameDumpObjectKey(context.input.trajectoryId, timestep);
 
     return {
         ...buildCommonJobFields(context, timestamp),

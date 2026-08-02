@@ -6,7 +6,7 @@ import type { AnalysisValueMap } from '@shared/contracts/types/http-analysis';
 
 const DUMP_TRANSFORM_BINARY_NAME = 'volt-dump-transform';
 
-export const resolveDumpTransformBinary = (): string => {
+const resolveDumpTransformBinary = (): string => {
     const override = process.env.VOLT_DUMP_TRANSFORM_BIN;
     if (override && override.length > 0) {
         return override;
@@ -14,8 +14,8 @@ export const resolveDumpTransformBinary = (): string => {
     return path.resolve(__dirname, 'bin', DUMP_TRANSFORM_BINARY_NAME);
 };
 
-const readNumber = (value: unknown): number | undefined => {
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
+const readNumber = (value: AnalysisValueMap[string]): number | undefined => {
+    if (typeof value === 'number') return value;
     if (typeof value === 'string' && value.trim().length > 0) {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : undefined;
@@ -23,14 +23,14 @@ const readNumber = (value: unknown): number | undefined => {
     return undefined;
 };
 
-const readBoolean = (value: unknown): boolean => {
+const readBoolean = (value: AnalysisValueMap[string]): boolean => {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value !== 0;
     if (typeof value === 'string') return value === 'true' || value === '1';
     return false;
 };
 
-export const buildSliceArgs = (config: AnalysisValueMap): string[] => {
+const buildSliceArgs = (config: AnalysisValueMap): string[] => {
     const normal = (config.normal ?? {}) as AnalysisValueMap;
     const nx = readNumber(config.nx) ?? readNumber(normal.x) ?? 0;
     const ny = readNumber(config.ny) ?? readNumber(normal.y) ?? 0;
@@ -41,10 +41,6 @@ export const buildSliceArgs = (config: AnalysisValueMap): string[] => {
     return ['--slice', `${nx},${ny},${nz},${distance},${reverse}`];
 };
 
-export const buildSelectArgs = (expression: string): string[] => ['--select', expression];
-
-export const buildMergeArgs = (propsParquet: string): string[] => ['--merge', propsParquet];
-
 export class DumpTransformService {
     constructor(private readonly binaryExecutorService: BinaryExecutorService) {}
 
@@ -53,11 +49,11 @@ export class DumpTransformService {
     }
 
     async select(workingDump: string, expression: string): Promise<void> {
-        await this.run(workingDump, buildSelectArgs(expression));
+        await this.run(workingDump, ['--select', expression]);
     }
 
     async merge(workingDump: string, propsParquet: string): Promise<void> {
-        await this.run(workingDump, buildMergeArgs(propsParquet));
+        await this.run(workingDump, ['--merge', propsParquet]);
     }
 
     private async run(workingDump: string, operationArgs: string[]): Promise<void> {

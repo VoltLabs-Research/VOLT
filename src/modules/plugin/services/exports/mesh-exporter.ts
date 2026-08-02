@@ -1,5 +1,6 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
+import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
 import type { ExportExecutionInput, ExportMaterial, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
@@ -159,28 +160,6 @@ const DEFAULT_MESH_MATERIAL: ExportMaterial = {
     emissive: [0, 0, 0]
 };
 
-const generateEmptyMeshGLB = (material: ExportMaterial): Buffer => (
-    spatialAssembler.generateMeshGLB(
-        new Float32Array(0),
-        new Float32Array(0),
-        new Uint32Array(0),
-        false,
-        undefined,
-        {
-            minX: 0,
-            minY: 0,
-            minZ: 0,
-            maxX: 0,
-            maxY: 0,
-            maxZ: 0
-        },
-        {
-            ...material,
-            doubleSided: true
-        }
-    )
-);
-
 export const exportMeshArtifact = async (
     input: ExportExecutionInput,
     exportData: MeshInput,
@@ -197,7 +176,7 @@ export const exportMeshArtifact = async (
         await stageExportBufferUpload(input, {
             exporter: 'MeshExporter',
             bucket: ObjectBucketName.Models,
-            buffer: generateEmptyMeshGLB(material),
+            buffer: generateEmptyGlb(material),
             contentType: 'model/gltf-binary',
             objectPath,
             ownerClusterId

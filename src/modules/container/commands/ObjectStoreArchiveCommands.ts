@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { getConfig } from '@core/config/daemon';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
@@ -60,13 +61,15 @@ const normalizeZipEntryName = (value: string): string => {
     return normalized;
 };
 
-interface ArchiverRuntime {
-    ZipArchive?: new (options?: archiver.ArchiverOptions) => archiver.Archiver;
+interface ArchiverModule {
+    ZipArchive: new (options?: archiver.ArchiverOptions) => archiver.Archiver;
 }
 
 const createZipArchive = (options: archiver.ArchiverOptions): archiver.Archiver => {
-    const runtime = archiver as unknown as ArchiverRuntime;
-    return new runtime.ZipArchive!(options);
+    // archiver@8 dropped the callable `archiver(format, options)` factory for named archive
+    // classes, but @types/archiver@7 still declares the v7 shape, so the module has to be re-typed.
+    const { ZipArchive } = archiver as unknown as ArchiverModule;
+    return new ZipArchive(options);
 };
 
 @CommandGroup('object-store')
@@ -79,10 +82,10 @@ export class ObjectStoreArchiveCommands {
 
     @Command('archive.create')
     async create(payload: ArchiveCreatePayload): Promise<ArchiveCreateResult> {
-        if (!payload?.output?.objectKey) {
+        if (!payload.output.objectKey) {
             throw new Error('object-store.archive.create requires output.objectKey');
         }
-        if (!Array.isArray(payload.entries) || payload.entries.length === 0) {
+        if (payload.entries.length === 0) {
             throw new Error('object-store.archive.create requires at least one entry');
         }
 
@@ -94,7 +97,7 @@ export class ObjectStoreArchiveCommands {
             const archive = createZipArchive({ zlib: { level: 5 } });
 
             archive.on('warning', (error) => {
-                logger.warn(`@object-store-archive: ${error instanceof Error ? error.message : String(error)}`);
+                logger.warn(`@object-store-archive: ${errorMessage(error)}`);
             });
             archive.on('error', (error) => {
                 output.destroy(error);

@@ -19,7 +19,7 @@ const truncate = (value: string, max: number): string => {
 };
 
 const serializeOutput = (output: InlineWorkflowTraceNode['output']): string | null => {
-    if (!output || typeof output !== 'object' || Object.keys(output).length === 0) {
+    if (!output || Object.keys(output).length === 0) {
         return null;
     }
 
@@ -61,8 +61,8 @@ export const buildTraceLogSegments = (
             const executionPath = [...ancestry, node.nodeId];
             const indent = '  '.repeat(depth + 1);
             const label = node.label ?? node.nodeType;
-            const duration = Number.isFinite(node.durationMs) ? ` (${node.durationMs}ms)` : '';
-            const status = STATUS_TEXT[node.status] ?? node.status;
+            const duration = ` (${node.durationMs}ms)`;
+            const status = STATUS_TEXT[node.status];
             const suffix = node.status === 'error' && node.error
                 ? ` — ${node.error}`
                 : node.status === 'skipped' && node.reason

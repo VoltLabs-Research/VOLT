@@ -84,7 +84,7 @@ export const resolveExporterEntries = (
     }];
 };
 
-export const buildArtifactReportInput = (
+const buildArtifactReportInput = (
     input: ExportExecutionInput,
     exporter: ExporterName,
     exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,

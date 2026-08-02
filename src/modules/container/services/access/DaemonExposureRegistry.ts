@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
@@ -10,29 +11,25 @@ import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatc
 import { logger } from '@shared/infrastructure/logger';
 import {
     HTTP_PORTS_LABEL_KEY,
-    READINESS_HTTP_PATH_LABEL_KEY,
-    READINESS_HTTP_PORT_LABEL_KEY,
-    READINESS_HTTP_QUERY_LABEL_KEY,
     TEAM_CLUSTER_ID_LABEL_KEY,
     TEAM_ID_LABEL_KEY,
     VOLT_MANAGED_CONTAINER_LABEL_KEY,
     VOLT_MANAGED_CONTAINER_LABEL_VALUE,
     WEBSOCKET_PORTS_LABEL_KEY
 } from '@shared/contracts/types/runtime-container';
-import { isIP } from 'node:net';
+import {
+    readInspectionInternalIp,
+    readPortSet,
+    readPublishedTcpPorts,
+    readReadinessProbe
+} from '@modules/container/services/access/container-inspection';
+import type { ContainerReadinessProbe } from '@modules/container/services/access/container-inspection';
 import type Dockerode from 'dockerode';
 import type { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { ExposureSnapshotUpdatedEvent } from '@modules/container/events/container-events';
 import type { VoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
 
 type ContainerInfo = Dockerode.ContainerInfo;
-type ContainerInspection = Awaited<ReturnType<DockerRuntime['getContainer']>>;
-
-interface ContainerReadinessProbe {
-    path: string;
-    query?: string;
-    port?: number;
-}
 
 interface ContainerExposureContext {
     container: ContainerInfo;
@@ -50,94 +47,13 @@ interface ContainerExposureContext {
 const EXPOSURE_SYNC_INTERVAL_MS = 5_000;
 const READINESS_PROBE_TIMEOUT_MS = 2_000;
 
-const readPortSet = (value: string | undefined): Set<number> => {
-    if (!value) {
-        return new Set();
-    }
-
-    const ports = value
-        .split(',')
-        .map(Number)
-        .filter((entry) => entry > 0);
-
-    return new Set(ports);
-};
-
-const readReadinessProbe = (labels: Record<string, string>): ContainerReadinessProbe | null => {
-    const path = labels[READINESS_HTTP_PATH_LABEL_KEY]?.trim();
-    if (!path) {
-        return null;
-    }
-
-    const rawPort = Number(labels[READINESS_HTTP_PORT_LABEL_KEY]);
-    return {
-        path: path.startsWith('/') ? path : `/${path}`,
-        query: labels[READINESS_HTTP_QUERY_LABEL_KEY]?.trim() || undefined,
-        port: Number.isFinite(rawPort) && rawPort > 0 ? rawPort : undefined
-    };
-};
-
-const readInspectionInternalIp = (inspection: ContainerInspection): string | null => {
-    const networks = Object.values(inspection.NetworkSettings.Networks);
-    let ipv6Address: string | null = null;
-
-    for (const network of networks) {
-        if (isIP(network.IPAddress) !== 0) {
-            return network.IPAddress;
-        }
-
-        if (!ipv6Address && isIP(network.GlobalIPv6Address) !== 0) {
-            ipv6Address = network.GlobalIPv6Address;
-        }
-    }
-
-    if (isIP(inspection.NetworkSettings.IPAddress) !== 0) {
-        return inspection.NetworkSettings.IPAddress;
-    }
-
-    if (ipv6Address) {
-        return ipv6Address;
-    }
-
-    if (isIP(inspection.NetworkSettings.GlobalIPv6Address) !== 0) {
-        return inspection.NetworkSettings.GlobalIPv6Address;
-    }
-
-    return null;
-};
-
-const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
-    const publishedPorts = inspection.NetworkSettings.Ports;
-    const containerPorts: number[] = [];
-
-    for (const [portDefinition, bindings] of Object.entries(publishedPorts)) {
-        const [rawPort, protocol] = portDefinition.split('/');
-        if (protocol !== 'tcp') {
-            continue;
-        }
-
-        if (!bindings || bindings.length === 0) {
-            continue;
-        }
-
-        const containerPort = Number(rawPort);
-        if (containerPort <= 0) {
-            continue;
-        }
-
-        containerPorts.push(containerPort);
-    }
-
-    return containerPorts;
-};
-
 export class DaemonExposureRegistry {
     private syncTimer: NodeJS.Timeout | null = null;
     private exposures = new Map<string, TeamClusterServiceExposure>();
     private readonly daemonExposures = new Map<string, TeamClusterServiceExposure>();
     private lastContainerExposures: TeamClusterServiceExposure[] = [];
     private lastSentSnapshotSignature: string | null = null;
-    private lastCloudConnectionState = false;
+    private lastPublishedGeneration = 0;
     private inFlightSync: Promise<void> | null = null;
     private inFlightSyncStartedAt: number | null = null;
 
@@ -238,7 +154,7 @@ export class DaemonExposureRegistry {
         }
     }
 
-    private publishExposures(containerExposures: TeamClusterServiceExposure[]): TeamClusterServiceExposure[] {
+    private publishExposures(containerExposures: TeamClusterServiceExposure[]): void {
         this.lastContainerExposures = [...containerExposures];
 
         const mergedExposures = [
@@ -255,8 +171,6 @@ export class DaemonExposureRegistry {
 
         this.exposures = new Map(mergedExposures.map((exposure) => [exposure.id, exposure]));
         this.emitSnapshot(mergedExposures, snapshotSignature);
-
-        return mergedExposures;
     }
 
     private async readContainerExposureContext(container: ContainerInfo): Promise<ContainerExposureContext | null> {
@@ -351,7 +265,7 @@ export class DaemonExposureRegistry {
             accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
         }
 
-        const exposure: TeamClusterServiceExposure = {
+        return {
             id: `${context.container.Id}:${containerPort}`,
             teamClusterId: context.teamClusterId,
             teamId: context.teamId,
@@ -366,27 +280,31 @@ export class DaemonExposureRegistry {
             status: context.status,
             labels: context.labels
         };
-
-        return exposure;
     }
 
     private emitSnapshot(exposures: TeamClusterServiceExposure[], snapshotSignature: string): void {
-        const connectedToCloud = this.voltCloudConnection.isConnectedToCloud();
-        const cloudConnectionRestored = connectedToCloud && !this.lastCloudConnectionState;
-        this.lastCloudConnectionState = connectedToCloud;
-
-        if (!connectedToCloud) {
+        if (!this.voltCloudConnection.isConnectedToCloud()) {
             return;
         }
 
-        if (!cloudConnectionRestored && this.lastSentSnapshotSignature === snapshotSignature) {
+        /*
+         * The server keeps the exposure registry in memory, so it loses everything when
+         * it restarts. Re-sending has to be keyed on the connection generation: a
+         * restart can complete between two syncs, and then no poll ever observes the
+         * disconnect and the snapshot is never resent.
+         */
+        const generation = this.voltCloudConnection.getConnectionGeneration();
+        const reconnected = generation !== this.lastPublishedGeneration;
+
+        if (!reconnected && this.lastSentSnapshotSignature === snapshotSignature) {
             return;
         }
 
         this.eventDispatcher.publish(new ExposureSnapshotUpdatedEvent({ exposures })).catch((error) => {
-            logger.warn(`Failed to publish exposure snapshot event: ${error instanceof Error ? error.message : String(error)}`);
+            logger.warn(`Failed to publish exposure snapshot event: ${errorMessage(error)}`);
         });
         this.lastSentSnapshotSignature = snapshotSignature;
+        this.lastPublishedGeneration = generation;
     }
 };
 

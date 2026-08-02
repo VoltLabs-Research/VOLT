@@ -4,27 +4,21 @@ import Bottleneck from 'bottleneck';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type {
     TrajectoryFrameStore,
     TrajectoryFrameStoreIngestResult
 } from '@shared/contracts/types/trajectory-frame-store';
-import { createZstdDecompressionStream, isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import {
+    downloadTrajectoryDumps,
+    type TrajectoryDumpReference
+} from '@modules/trajectory/services/storage/download-trajectory-dumps';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
-import { createWriteStream } from 'node:fs';
-import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
-
-interface TrajectoryParquetIngestCommandFrameInput {
-    timestep: number;
-    objectKey: string;
-}
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 interface TrajectoryParquetIngestCommandPayload {
     trajectoryId: string;
     ownerClusterId: string;
-    frames: TrajectoryParquetIngestCommandFrameInput[];
+    frames: TrajectoryDumpReference[];
     customProperties?: string[];
 }
 
@@ -63,28 +57,12 @@ export class TrajectoryParquetIngestCommand {
 
         return parquetIngestLimiter.schedule(async () => {
             return withNativeProcessingTempDir('trajectory-parquet-ingest-download', async (tempDirectory) => {
-                const localFrames: { timestep: number; dumpPath: string }[] = [];
-
-                for (const frame of payload.frames) {
-                    const response = await this.objectStore.getStream(
-                        payload.ownerClusterId,
-                        ObjectBucketName.Dumps,
-                        frame.objectKey,
-                        { skipMetadata: true }
-                    );
-                    const localPath = path.join(tempDirectory, `timestep-${frame.timestep}.dump`);
-                    if (isZstdObjectKey(frame.objectKey)) {
-                        const decompressed = createZstdDecompressionStream(response.stream);
-                        await pipeline(decompressed.stream, createWriteStream(localPath));
-                        await decompressed.completion;
-                    } else {
-                        await pipeline(response.stream, createWriteStream(localPath));
-                    }
-                    localFrames.push({
-                        timestep: frame.timestep,
-                        dumpPath: localPath
-                    });
-                }
+                const localFrames = await downloadTrajectoryDumps(
+                    this.objectStore,
+                    payload.ownerClusterId,
+                    payload.frames,
+                    tempDirectory
+                );
 
                 logger.info(`@trajectory-parquet-ingest-command: downloaded ${localFrames.length} frames for trajectoryId=${payload.trajectoryId}`);
 

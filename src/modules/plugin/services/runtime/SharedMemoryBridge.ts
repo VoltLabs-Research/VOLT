@@ -11,25 +11,10 @@ const DEFAULT_FRAME_MMAP_ROOT = path.resolve(process.cwd(), 'storage', 'plugin-f
 const FRAME_MMAP_ROOT_ENV = 'PLUGIN_FRAME_MMAP_DIR';
 const FRAME_MMAP_FILE_PREFIX = 'volt-plugin-frame-';
 
-export type { SharedFrameColumn, SharedFramePublishInput };
-
 export interface SharedFrameHandle {
-    id: string;
     path: string | null;
-    mode: 'mmap' | 'inline';
-    size: number;
     bindings: PluginFrameColumnBinding[];
-    inlinePayload?: SharedFrameInlinePayload;
     release(): Promise<void>;
-}
-
-export interface SharedFrameInlinePayload {
-    columns: Array<{
-        name: string;
-        dtype: string;
-        shape: number[];
-        bytes: Buffer;
-    }>;
 }
 
 const toBufferView = (view: ArrayBufferView): Buffer => {
@@ -46,28 +31,24 @@ export class SharedMemoryBridge {
 
     async publishFrame(input: SharedFramePublishInput): Promise<SharedFrameHandle> {
         if (!input.columns.length) {
-            return this.buildInlineHandle(randomUUID(), input);
+            return {
+                path: null,
+                bindings: [],
+                release: async () => {}
+            };
         }
 
         const storageRoot = await this.prepareStorageRoot();
-        const id = randomUUID();
-        const filename = `${FRAME_MMAP_FILE_PREFIX}${id}`;
-        const filePath = path.join(storageRoot, filename);
+        const filePath = path.join(storageRoot, `${FRAME_MMAP_FILE_PREFIX}${randomUUID()}`);
 
         try {
-            const { bindings, totalBytes } = await this.writeColumnsToFile(filePath, input.columns);
-
-            const handle: SharedFrameHandle = {
-                id,
+            return {
                 path: filePath,
-                mode: 'mmap',
-                size: totalBytes,
-                bindings,
+                bindings: await this.writeColumnsToFile(filePath, input.columns),
                 release: async () => {
                     await safeRemovePath(filePath);
                 }
             };
-            return handle;
         } catch (error: unknown) {
             await safeRemovePath(filePath).catch(() => undefined);
             logger.error({
@@ -78,44 +59,14 @@ export class SharedMemoryBridge {
         }
     }
 
-    private buildInlineHandle(id: string, input: SharedFramePublishInput): SharedFrameHandle {
-        const columns = input.columns.map((column) => ({
-            name: column.name,
-            dtype: column.dtype,
-            shape: column.shape,
-            bytes: Buffer.from(toBufferView(column.data))
-        }));
-        const bindings: PluginFrameColumnBinding[] = columns.map((column) => ({
-            name: column.name,
-            dtype: column.dtype,
-            shape: column.shape,
-            binding: {
-                kind: 'inline',
-                dtype: column.dtype,
-                length: column.bytes.byteLength
-            }
-        }));
-        const size = columns.reduce((total, column) => total + column.bytes.byteLength, 0);
-        return {
-            id,
-            path: null,
-            mode: 'inline',
-            size,
-            bindings,
-            inlinePayload: { columns },
-            release: async () => {}
-        };
-    }
-
-    private async writeColumnsToFile(filePath: string, columns: SharedFrameColumn[]): Promise<{
-        bindings: PluginFrameColumnBinding[];
-        totalBytes: number;
-    }> {
+    private async writeColumnsToFile(
+        filePath: string,
+        columns: SharedFrameColumn[]
+    ): Promise<PluginFrameColumnBinding[]> {
         const blocks = columns.map((column) => ({
             column,
             view: toBufferView(column.data)
         }));
-        const totalBytes = blocks.reduce((total, block) => total + block.view.byteLength, 0);
         const bindings: PluginFrameColumnBinding[] = [];
         let cursor = 0;
         const fileHandle = await fs.open(filePath, 'wx', 0o600);
@@ -140,10 +91,7 @@ export class SharedMemoryBridge {
             await fileHandle.close();
         }
 
-        return {
-            bindings,
-            totalBytes
-        };
+        return bindings;
     }
 
     private prepareStorageRoot(): Promise<string> {

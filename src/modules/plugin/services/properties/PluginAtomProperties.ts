@@ -25,7 +25,12 @@ export const normalizeAtomId = (value: AtomId | undefined): number | null => {
     return parsed;
 };
 
+const flattenedRowCache = new WeakMap<AtomProperties, FlatAtomProperties>();
+
 export const flattenAtomProperties = (row: AtomProperties): FlatAtomProperties => {
+    const cached = flattenedRowCache.get(row);
+    if (cached) return cached;
+
     const flattened: FlatAtomProperties = {};
 
     for (const [key, value] of Object.entries(row)) {
@@ -39,30 +44,6 @@ export const flattenAtomProperties = (row: AtomProperties): FlatAtomProperties =
         }
     }
 
+    flattenedRowCache.set(row, flattened);
     return flattened;
-};
-
-export const isColumnarPerAtomData = (value: unknown): value is PerAtomColumnarData => {
-    if (!value || Array.isArray(value) || typeof value !== 'object') {
-        return false;
-    }
-
-    const entries = Object.entries(value);
-    if (entries.length === 0) {
-        return false;
-    }
-
-    let expectedLength: number | null = null;
-    for (const [, column] of entries) {
-        if (!Array.isArray(column)) {
-            return false;
-        }
-
-        expectedLength ??= column.length;
-        if (column.length !== expectedLength) {
-            return false;
-        }
-    }
-
-    return true;
 };

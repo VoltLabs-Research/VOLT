@@ -26,15 +26,17 @@ import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
-import { createZstdDecompressionStream } from '@shared/infrastructure/storage/storage-codec';
+import {
+    downloadTrajectoryDumps,
+    type TrajectoryDumpReference
+} from '@modules/trajectory/services/storage/download-trajectory-dumps';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-codec';
+import { compressFileWithZstd, toTrajectoryFrameDumpObjectKey, toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { dumpParser, dataParser } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const SESSION_KEY_PREFIX = 'trajectory-frame-session';
-const SESSION_TTL_SECONDS = 86400;
 
 export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME;
@@ -91,7 +93,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
 
             await compressFileWithZstd(localRawPath, localCompressedPath);
             const compressedStat = await fs.stat(localCompressedPath);
-            const finalObjectKey = `trajectory-${trajectoryId}/timestep-${timestep}.dump.zst`;
+            const finalObjectKey = toTrajectoryFrameDumpObjectKey(trajectoryId, timestep);
 
             await this.minioService.putObjectStream({
                 bucket,
@@ -150,32 +152,13 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                 return;
             }
 
-            const frames: Array<{ timestep: number; objectKey: string }> = JSON.parse(framesDataRaw);
+            const frames: TrajectoryDumpReference[] = JSON.parse(framesDataRaw);
 
             await withNativeProcessingTempDir('trajectory-parquet-drain', async (tempDirectory) => {
-                const localFrames: Array<{ timestep: number; dumpPath: string }> = [];
-
-                for (const frame of frames) {
-                    const response = await this.objectStore.getStream(
-                        ownerClusterId,
-                        ObjectBucketName.Dumps,
-                        frame.objectKey,
-                        { skipMetadata: true }
-                    );
-                    const localPath = path.join(tempDirectory, `timestep-${frame.timestep}.dump`);
-                    const decompressed = createZstdDecompressionStream(response.stream);
-                    await pipeline(decompressed.stream, createWriteStream(localPath));
-                    await decompressed.completion;
-                    localFrames.push({
-                        timestep: frame.timestep,
-                        dumpPath: localPath
-                    });
-                }
-
                 await this.trajectoryFrameStore.ingest({
                     trajectoryId,
                     ownerClusterId,
-                    frames: localFrames
+                    frames: await downloadTrajectoryDumps(this.objectStore, ownerClusterId, frames, tempDirectory)
                 });
             });
 
@@ -217,7 +200,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         await compressFileWithZstd(glbPath, glbCompressedPath);
         const glbStats = await fs.stat(glbCompressedPath);
 
-        const modelObjectKey = `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
+        const modelObjectKey = toTrajectoryFrameModelObjectKey(trajectoryId, timestep);
         await this.objectStore.putObjectStream({
             ownerClusterId,
             bucket: ObjectBucketName.Models,

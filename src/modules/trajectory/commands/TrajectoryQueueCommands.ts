@@ -13,7 +13,7 @@ import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 const DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_BACKOFF_MS') ?? 2000;

@@ -2,7 +2,7 @@ import type { TrajectoryDumpDescriptor, WorkflowTrajectoryWindowData } from '@sh
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
-import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
+import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
 
 interface WorkflowTrajectoryWindowOutput extends WorkflowNodeOutput {
     frames: TrajectoryDumpDescriptor[];
@@ -19,9 +19,20 @@ export interface TrajectoryWindowPlanItem {
     windowTimesteps: number[];
 }
 
+const findTimestepIndex = (
+    frames: TrajectoryDumpDescriptor[],
+    selectedTimestep: number | undefined
+): number => {
+    if (selectedTimestep === undefined) {
+        return 0;
+    }
+
+    const index = frames.findIndex((frame) => frame.timestep === selectedTimestep);
+    return index >= 0 ? index : 0;
+};
+
 export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.TrajectoryWindow;
-    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.TrajectoryWindow];
 
     static planItems(
         data: WorkflowTrajectoryWindowData,
@@ -76,11 +87,8 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
             throw new Error(`TrajectoryWindow node ${node.id} requires a window mode`);
         }
 
-        const localized = context.windowFrames?.length ? context.windowFrames : null;
-        const frames = localized ?? this.resolvePlanningFrames(data, context);
-        const primaryIndex = context.primaryFrameIndex !== undefined
-            ? Math.max(0, Math.min(context.primaryFrameIndex, frames.length - 1))
-            : this.resolvePrimaryIndex(data, frames, context.selectedTimestep);
+        const frames = this.resolvePlanningFrames(data, context);
+        const primaryIndex = this.resolvePrimaryIndex(data, frames, context.selectedTimestep);
 
         return Promise.resolve({
             frames,
@@ -98,11 +106,12 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
         context: WorkflowExecutionContext
     ): TrajectoryDumpDescriptor[] {
         const dumps = WorkflowSession.resolveContextDumps(context);
-        const timesteps = dumps.map((dump) => dump.timestep);
-        const primaryIndex = this.findPrimaryDumpIndex(dumps, context.selectedTimestep);
-        const slice = WorkflowTrajectoryWindowHandler.windowSliceTimesteps(data, timesteps, primaryIndex);
-        const sliceSet = new Set(slice);
-        return dumps.filter((dump) => sliceSet.has(dump.timestep));
+        const slice = new Set(WorkflowTrajectoryWindowHandler.windowSliceTimesteps(
+            data,
+            dumps.map((dump) => dump.timestep),
+            findTimestepIndex(dumps, context.selectedTimestep)
+        ));
+        return dumps.filter((dump) => slice.has(dump.timestep));
     }
 
     private resolvePrimaryIndex(
@@ -110,28 +119,8 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
         frames: TrajectoryDumpDescriptor[],
         selectedTimestep: number | undefined
     ): number {
-        if (data.mode === 'referencePair') {
-            return Math.max(0, frames.length - 1);
-        }
-
-        if (selectedTimestep !== undefined) {
-            const matched = frames.findIndex((frame) => frame.timestep === selectedTimestep);
-            if (matched >= 0) {
-                return matched;
-            }
-        }
-
-        return 0;
-    }
-
-    private findPrimaryDumpIndex(
-        dumps: TrajectoryDumpDescriptor[],
-        selectedTimestep: number | undefined
-    ): number {
-        if (selectedTimestep === undefined) {
-            return 0;
-        }
-        const index = dumps.findIndex((dump) => dump.timestep === selectedTimestep);
-        return index >= 0 ? index : 0;
+        return data.mode === 'referencePair'
+            ? Math.max(0, frames.length - 1)
+            : findTimestepIndex(frames, selectedTimestep);
     }
 }

@@ -1,4 +1,3 @@
-import { createRedisClient, toRedisConnectionOptions } from '@shared/infrastructure/redis/create-redis-client';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import type { DaemonConfig } from '@core/config/daemon';

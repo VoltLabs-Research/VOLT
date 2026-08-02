@@ -163,9 +163,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
         }
 
         const filename = objectKey.slice(objectKey.lastIndexOf('/') + 1);
-        const contentType = typeof stat.metaData['content-type'] === 'string'
-            ? stat.metaData['content-type']
-            : 'application/octet-stream';
+        const contentType = stat.metaData['content-type'] ?? 'application/octet-stream';
 
         return {
             status: 200,

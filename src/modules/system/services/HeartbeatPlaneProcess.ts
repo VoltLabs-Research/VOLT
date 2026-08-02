@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
@@ -51,7 +52,7 @@ export class HeartbeatPlaneProcess extends PlaneProcessSupervisor {
                 runtimeConfig: this.runtimeRoleCoordinator.getSnapshot()
             });
         } catch (error) {
-            logger.warn(`Failed to publish runtime snapshot to heartbeat plane: ${error instanceof Error ? error.message : String(error)}`);
+            logger.warn(`Failed to publish runtime snapshot to heartbeat plane: ${errorMessage(error)}`);
         }
     }
 

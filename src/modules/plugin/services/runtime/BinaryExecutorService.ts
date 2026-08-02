@@ -6,26 +6,22 @@ import type {
     PersistentPluginInvocationResult
 } from '@shared/contracts/types/plugin-execution';
 import { logger } from '@shared/infrastructure/logger';
-import type {
-    ProcessExecutionLogSink,
-    ProcessExecutionLogStream
-} from '@shared/contracts/types/execution-log';
+import {
+    flushLogSink,
+    forwardLogChunk
+} from '@modules/plugin/services/runtime/process-log-sink';
 import { registerProcess, unregisterProcess } from '@shared/infrastructure/runtime/process-tracker';
-import { buildPluginProcessEnv, PluginProcessPool, resolvePythonStubPath, type PooledProcessSpawnInput, getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
-import { SharedMemoryBridge, type SharedFramePublishInput, getSharedMemoryBridge } from '@modules/plugin/services/runtime/SharedMemoryBridge';
+import { PluginProcessPool, getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
+import type { PooledProcessSpawnInput } from '@modules/plugin/services/runtime/PluginProcessChannel';
+import { buildPluginProcessEnv } from '@modules/plugin/services/runtime/plugin-process-env';
+import { resolvePythonStubPath } from '@modules/plugin/services/runtime/python-stub-path';
+import { SharedMemoryBridge, getSharedMemoryBridge } from '@modules/plugin/services/runtime/SharedMemoryBridge';
+import type { SharedFramePublishInput } from '@shared/contracts/types/shared-frame';
 import type {
     PluginFrameDescriptor,
-    PluginProcessRequest,
-    PluginProcessResponse
+    PluginProcessRequest
 } from '@shared/contracts/types/plugin-batch';
 import { spawn } from 'node:child_process';
-
-export type {
-    ProcessExecutionResult,
-    ProcessExecutionInput,
-    PersistentPluginInvocationInput,
-    PersistentPluginInvocationResult
-};
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
@@ -72,7 +68,7 @@ export class BinaryExecutorService {
                         child.kill('SIGKILL');
                     }, PROCESS_KILL_GRACE_PERIOD_MS);
                     forceKillTimeout.unref();
-                    this.forwardChunk(logSink, 'system', `Process timed out after ${timeoutMs}ms\n`);
+                    forwardLogChunk(logSink, 'system', `Process timed out after ${timeoutMs}ms\n`);
                 }, timeoutMs)
                 : undefined;
             executionTimeout?.unref();
@@ -87,12 +83,12 @@ export class BinaryExecutorService {
 
             child.stdout.on('data', (chunk: Buffer) => {
                 stdoutBytes = this.appendOutputChunk(stdoutChunks, stdoutBytes, chunk);
-                this.forwardChunk(logSink, 'stdout', chunk.toString('utf-8'));
+                forwardLogChunk(logSink, 'stdout', chunk.toString('utf-8'));
             });
 
             child.stderr.on('data', (chunk: Buffer) => {
                 stderrBytes = this.appendOutputChunk(stderrChunks, stderrBytes, chunk);
-                this.forwardChunk(logSink, 'stderr', chunk.toString('utf-8'));
+                forwardLogChunk(logSink, 'stderr', chunk.toString('utf-8'));
             });
 
             child.on('error', async (error) => {
@@ -106,13 +102,13 @@ export class BinaryExecutorService {
                     },
                     'Plugin process failed to spawn or crashed'
                 );
-                await this.flushLogSink(logSink);
+                await flushLogSink(logSink);
                 reject(new Error(`Failed to spawn process: ${error.message}`));
             });
 
             child.on('close', async (code) => {
                 cleanupProcess();
-                await this.flushLogSink(logSink);
+                await flushLogSink(logSink);
                 resolve({
                     code: code ?? 1,
                     stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
@@ -133,18 +129,18 @@ export class BinaryExecutorService {
             env: input.env
         };
 
-        const pooled = await this.pluginProcessPool.acquire(spawnInput);
+        const channel = await this.pluginProcessPool.acquire(spawnInput);
         const releaseables: Array<() => Promise<void>> = [];
 
         try {
             const request = await this.buildProcessRequest(input, releaseables);
-            const response = await pooled.send(request, {
+            const response = await channel.send(request, {
                 timeoutMs: input.timeoutMs,
                 logSink: input.logSink
             });
             return { response };
         } finally {
-            pooled.release();
+            this.pluginProcessPool.release(channel);
             for (const release of releaseables) {
                 try {
                     await release();
@@ -159,29 +155,6 @@ export class BinaryExecutorService {
         input: PersistentPluginInvocationInput,
         releaseables: Array<() => Promise<void>>
     ): Promise<PluginProcessRequest> {
-        const mode = input.mode ?? (input.frames || input.shmFramePublishes ? 'batch' : 'single');
-
-        if (mode === 'batch') {
-            const frames: PluginFrameDescriptor[] = [];
-            if (input.shmFramePublishes?.length) {
-                for (let index = 0; index < input.shmFramePublishes.length; index += 1) {
-                    const publish = input.shmFramePublishes[index]!;
-                    const baseFrame = input.frames?.[index] ?? {
-                        timestep: index,
-                        natoms: 0
-                    };
-                    frames.push(await this.attachPublishedFrame(baseFrame, publish, releaseables));
-                }
-            } else if (input.frames?.length) {
-                frames.push(...input.frames);
-            }
-            return {
-                opcode: 'process_batch',
-                frames,
-                config: input.config
-            };
-        }
-
         let frame = input.frame;
         if (input.shmFramePublish) {
             frame = await this.attachPublishedFrame(
@@ -209,36 +182,13 @@ export class BinaryExecutorService {
         const handle = await this.sharedMemoryBridge.publishFrame(publish);
         releaseables.push(() => handle.release());
 
-        if (handle.mode === 'mmap') {
-            return {
-                ...baseFrame,
-                columns: handle.bindings.map((binding) => ({
-                    ...binding,
-                    binding: {
-                        ...binding.binding,
-                        mmapPath: handle.path ?? undefined
-                    }
-                }))
-            };
-        }
-
-        const inline = handle.inlinePayload;
-        if (!inline) {
-            return baseFrame;
-        }
-
         return {
             ...baseFrame,
-            columns: inline.columns.map((column, index) => ({
-                name: column.name,
-                dtype: column.dtype,
-                shape: column.shape,
+            columns: handle.bindings.map((binding) => ({
+                ...binding,
                 binding: {
-                    kind: 'inline',
-                    dtype: column.dtype,
-                    length: column.bytes.byteLength,
-                    offset: index,
-                    bytes: column.bytes
+                    ...binding.binding,
+                    mmapPath: handle.path ?? undefined
                 }
             }))
         };
@@ -251,32 +201,6 @@ export class BinaryExecutorService {
 
         chunks.push(chunk);
         return bufferedBytes + chunk.length;
-    }
-
-    private forwardChunk(
-        logSink: ProcessExecutionLogSink | undefined,
-        stream: ProcessExecutionLogStream,
-        chunkText: string
-    ): void {
-        if (!logSink || chunkText.length === 0) return;
-
-        Promise.resolve(logSink.handleChunk({
-            stream,
-            text: chunkText,
-            occurredAt: new Date().toISOString()
-        })).catch(() => {
-            logger.warn('Failed to forward process log chunk');
-        });
-    }
-
-    private async flushLogSink(logSink: ProcessExecutionLogSink | undefined): Promise<void> {
-        if (!logSink?.flush) return;
-
-        try {
-            await logSink.flush();
-        } catch {
-            logger.warn('Failed to flush process log sink');
-        }
     }
 }
 

@@ -1,41 +1,23 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@core/constants/reverse-channel';
-import {
-    EnvelopeKind,
-    decodeEnvelope,
-    encodeEnvelope,
-    toUint8Array
-} from '@shared/contracts/channel/binary-envelope';
+import { decodeStreamChunk, encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
+import { createSessionAttachFailureResult, failSessionAttach } from '@modules/container/services/sessions/session-transitions';
 import { WebSocket } from 'ws';
-import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload } from '@shared/contracts';
-import type {
-    BinarySessionDataPayload,
-    BinarySessionInputPayload
-} from '@shared/contracts/channel/binary-messages';
-import type { CommandResult } from '@voltstack/daemon-cluster-client';
+import type { CloseEvent, Data, MessageEvent } from 'ws';
+import type { TeamClusterDaemonSessionAttachPayload } from '@shared/contracts';
+import type { BinarySessionInputPayload, ReverseChannelOutboundMessage } from '@shared/contracts/channel/binary-messages';
+import type { SessionCommandResult, SessionTransitionCoordinator } from '@modules/container/services/sessions/session-transitions';
 
 type WebSocketSessionAttachPayload = TeamClusterDaemonSessionAttachPayload & {
     protocols?: string[];
 };
 
-type SessionCommandResult = CommandResult<object | null>;
-
 type WebSocketSessionStatus = 'connecting' | 'open' | 'closed';
-
-type WebSocketMessageData = string | ArrayBuffer | Blob | ArrayBufferView | Buffer[];
 type PendingWebSocketMessage = Buffer | string;
 
 interface WebSocketMessageResult {
     data: Buffer;
     isBinary: boolean;
-};
-
-interface ReverseChannelMessageEvent {
-    data: WebSocketMessageData;
-};
-
-interface ReverseChannelCloseEvent {
-    code: number;
-    reason: string;
 };
 
 interface ReverseChannelWebSocketState {
@@ -46,28 +28,13 @@ interface ReverseChannelWebSocketState {
     openTimeout: ReturnType<typeof setTimeout> | null;
     pendingMessages: PendingWebSocketMessage[];
     onOpen: () => void;
-    onMessage: (event: ReverseChannelMessageEvent) => void;
+    onMessage: (event: MessageEvent) => void;
     onError: () => void;
-    onClose: (event: ReverseChannelCloseEvent) => void;
-};
-
-interface SessionTransition {
-    sessionId: string;
-    transitionId: number;
+    onClose: (event: CloseEvent) => void;
 };
 
 interface WebSocketSessionManagerOptions {
-    coordinator: WebSocketSessionManagerCoordinator;
-};
-
-interface WebSocketSessionManagerCoordinator {
-    beginSessionTransition(sessionId: string): SessionTransition | null;
-    cleanupInteractiveSession(sessionId: string): void;
-    clearSessionActivityIfUntracked(sessionId: string): void;
-    emitSessionData(payload: BinarySessionDataPayload): void;
-    emitSessionEnd(payload: TeamClusterDaemonSessionEndPayload): void;
-    endSessionTransition(transition: SessionTransition): void;
-    touchSession(sessionId: string): void;
+    coordinator: SessionTransitionCoordinator;
 };
 
 export class WebSocketSessionManager {
@@ -77,31 +44,18 @@ export class WebSocketSessionManager {
 
     async attachSession(payload: WebSocketSessionAttachPayload): Promise<SessionCommandResult> {
         if (!payload.targetUrl) {
-            const message = 'targetUrl is required';
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(400, message);
+            return failSessionAttach(this.options.coordinator, payload.sessionId, 400, 'targetUrl is required');
         }
 
         const sessionTransition = this.options.coordinator.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
-            const message = 'Session attach is already in progress';
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(409, message);
+            return failSessionAttach(this.options.coordinator, payload.sessionId, 409, 'Session attach is already in progress');
         }
 
         try {
             const webSocket = payload.protocols && payload.protocols.length > 0
                 ? new WebSocket(payload.targetUrl, payload.protocols)
                 : new WebSocket(payload.targetUrl);
-            const pendingMessages: PendingWebSocketMessage[] = [];
 
             return await new Promise<SessionCommandResult>((resolve) => {
                 let openTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -113,7 +67,7 @@ export class WebSocketSessionManager {
                     }
 
                     attachSettled = true;
-                    resolve(this.createSessionAttachFailureResult(status, message));
+                    resolve(createSessionAttachFailureResult(status, message));
                 };
 
                 const clearOpenTimeout = (): void => {
@@ -126,12 +80,7 @@ export class WebSocketSessionManager {
                 };
 
                 openTimeout = setTimeout(() => {
-                    this.options.coordinator.emitSessionEnd({
-                        type: 'session-end',
-                        sessionId: payload.sessionId,
-                        error: 'Reverse channel websocket attach timed out'
-                    });
-                    this.cleanupSession(payload.sessionId);
+                    this.endSessionWithError(payload.sessionId, 'Reverse channel websocket attach timed out');
                     resolveAttachFailure(504, 'Reverse channel websocket attach timed out');
                 }, SESSION_ATTACH_TIMEOUT_MS);
 
@@ -184,78 +133,67 @@ export class WebSocketSessionManager {
                     });
                 };
 
-                const onMessage = (event: ReverseChannelMessageEvent) => {
+                const onMessage = (event: MessageEvent) => {
                     this.options.coordinator.touchSession(payload.sessionId);
-                    this.readWebSocketMessage(event.data).then((message) => {
-                        const envelope = encodeEnvelope(
-                            0,
-                            EnvelopeKind.StreamChunk,
-                            message.data instanceof Uint8Array ? message.data : new Uint8Array(message.data)
-                        );
-                        this.options.coordinator.emitSessionData({
+
+                    try {
+                        const message = this.readWebSocketMessage(event.data);
+                        this.options.coordinator.emitMessage({
                             type: 'session-data',
                             sessionId: payload.sessionId,
-                            chunk: envelope,
+                            chunk: encodeStreamChunk(message.data),
                             isBinary: message.isBinary
                         });
-                    }).catch((error: Error) => {
-                        this.options.coordinator.emitSessionEnd({
-                            type: 'session-end',
-                            sessionId: payload.sessionId,
-                            error: error.message
-                        });
-                        this.cleanupSession(payload.sessionId);
-                    });
+                    } catch (error) {
+                        this.endSessionWithError(payload.sessionId, (error as Error).message);
+                    }
+                };
+
+                /** Shared by `error` and `close`: both end the session and fail a still-pending attach. */
+                const finalizeSessionClose = (
+                    endMessage: ReverseChannelOutboundMessage,
+                    attachFailureMessage: string
+                ): void => {
+                    const webSocketState = this.webSocketStates.get(payload.sessionId);
+                    const isOpen = webSocketState?.status === 'open';
+                    if (webSocketState) {
+                        webSocketState.openTimeout = null;
+                        webSocketState.status = 'closed';
+                    }
+
+                    clearOpenTimeout();
+                    this.options.coordinator.endSessionTransition(sessionTransition);
+                    this.options.coordinator.emitMessage(endMessage);
+                    this.cleanupSession(payload.sessionId);
+
+                    if (!isOpen) {
+                        resolveAttachFailure(502, attachFailureMessage);
+                    }
                 };
 
                 const onError = () => {
-                    const webSocketState = this.webSocketStates.get(payload.sessionId);
-                    const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
-                    if (webSocketState) {
-                        webSocketState.openTimeout = null;
-                        webSocketState.status = 'closed';
-                    }
-
-                    clearOpenTimeout();
-                    this.options.coordinator.endSessionTransition(sessionTransition);
-                    this.options.coordinator.emitSessionEnd({
-                        type: 'session-end',
-                        sessionId: payload.sessionId,
-                        error: 'Reverse channel websocket failed'
-                    });
-                    this.cleanupSession(payload.sessionId);
-
-                    if (!isOpen) {
-                        resolveAttachFailure(502, 'Reverse channel websocket failed');
-                    }
+                    finalizeSessionClose(
+                        {
+                            type: 'session-end',
+                            sessionId: payload.sessionId,
+                            error: 'Reverse channel websocket failed'
+                        },
+                        'Reverse channel websocket failed'
+                    );
                 };
 
-                const onClose = (event: ReverseChannelCloseEvent) => {
-                    const webSocketState = this.webSocketStates.get(payload.sessionId);
-                    const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
-                    if (webSocketState) {
-                        webSocketState.openTimeout = null;
-                        webSocketState.status = 'closed';
-                    }
-
-                    clearOpenTimeout();
-                    this.options.coordinator.endSessionTransition(sessionTransition);
-                    this.options.coordinator.emitSessionEnd({
-                        type: 'session-end',
-                        sessionId: payload.sessionId,
-                        code: event.code,
-                        message: event.reason === '' ? undefined : event.reason
-                    });
-                    this.cleanupSession(payload.sessionId);
-
-                    if (!isOpen) {
-                        resolveAttachFailure(
-                            502,
-                            event.reason === ''
-                                ? 'Reverse channel websocket closed before opening'
-                                : event.reason
-                        );
-                    }
+                const onClose = (event: CloseEvent) => {
+                    finalizeSessionClose(
+                        {
+                            type: 'session-end',
+                            sessionId: payload.sessionId,
+                            code: event.code,
+                            message: event.reason === '' ? undefined : event.reason
+                        },
+                        event.reason === ''
+                            ? 'Reverse channel websocket closed before opening'
+                            : event.reason
+                    );
                 };
 
                 webSocket.binaryType = 'arraybuffer';
@@ -270,7 +208,7 @@ export class WebSocketSessionManager {
                     transitionId: sessionTransition.transitionId,
                     socket: webSocket,
                     openTimeout,
-                    pendingMessages,
+                    pendingMessages: [],
                     onOpen,
                     onMessage,
                     onError,
@@ -280,13 +218,7 @@ export class WebSocketSessionManager {
             });
         } catch (error) {
             this.options.coordinator.endSessionTransition(sessionTransition);
-            const message = (error as Error).message;
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(500, message);
+            return failSessionAttach(this.options.coordinator, payload.sessionId, 500, (error as Error).message);
         }
     }
 
@@ -296,23 +228,16 @@ export class WebSocketSessionManager {
             return false;
         }
 
-        let decoded;
+        let rawBuffer: Buffer;
         try {
-            const envelopeBytes = toUint8Array(payload.chunk);
-            decoded = decodeEnvelope(envelopeBytes);
+            rawBuffer = decodeStreamChunk(payload.chunk);
         } catch (error) {
-            this.endSessionWithError(payload.sessionId, `Malformed websocket input envelope: ${error instanceof Error ? error.message : String(error)}`);
-            return true;
-        }
-
-        if (decoded.kind !== EnvelopeKind.StreamChunk) {
-            this.endSessionWithError(payload.sessionId, `Unexpected websocket envelope kind: ${decoded.kind}`);
+            this.endSessionWithError(payload.sessionId, `Malformed websocket input envelope: ${errorMessage(error)}`);
             return true;
         }
 
         this.options.coordinator.touchSession(payload.sessionId);
 
-        const rawBuffer = Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
         const message = payload.isBinary ? rawBuffer : rawBuffer.toString('utf8');
 
         if (webSocketState.socket.readyState === WebSocket.CONNECTING) {
@@ -321,23 +246,12 @@ export class WebSocketSessionManager {
         }
 
         if (webSocketState.socket.readyState !== WebSocket.OPEN) {
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: 'Reverse channel websocket is no longer open'
-            });
-            this.cleanupSession(payload.sessionId);
+            this.endSessionWithError(payload.sessionId, 'Reverse channel websocket is no longer open');
             return true;
         }
 
         const messageBytes = this.getWebSocketMessageSize(message);
-        const canSendMessage = this.ensureWebSocketWithinBufferCap(
-            payload.sessionId,
-            webSocketState.socket,
-            messageBytes
-        );
-
-        if (!canSendMessage) {
+        if (!this.ensureWebSocketWithinBufferCap(payload.sessionId, webSocketState.socket, messageBytes)) {
             return true;
         }
 
@@ -352,7 +266,7 @@ export class WebSocketSessionManager {
             return;
         }
 
-        if (!this.isSessionOpen(webSocketState)) {
+        if (webSocketState.status !== 'open') {
             this.options.coordinator.endSessionTransition({
                 sessionId,
                 transitionId: webSocketState.transitionId
@@ -380,28 +294,16 @@ export class WebSocketSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private createSessionAttachFailureResult(status: number, message: string): SessionCommandResult {
-        return {
-            status,
-            data: {
-                status: 'error',
-                message
-            }
-        };
-    }
-
-    private async readWebSocketMessage(data: WebSocketMessageData): Promise<WebSocketMessageResult> {
+    /**
+     * `binaryType` is pinned to `arraybuffer` at construction, so `ws` only ever hands back a
+     * string (text frames) or an `ArrayBuffer` (binary frames); the view branch covers its
+     * default `nodebuffer` shape.
+     */
+    private readWebSocketMessage(data: Data): WebSocketMessageResult {
         if (typeof data === 'string') {
             return {
                 data: Buffer.from(data, 'utf8'),
                 isBinary: false
-            };
-        }
-
-        if (Array.isArray(data)) {
-            return {
-                data: Buffer.concat(data),
-                isBinary: true
             };
         }
 
@@ -415,13 +317,6 @@ export class WebSocketSessionManager {
         if (ArrayBuffer.isView(data)) {
             return {
                 data: Buffer.from(data.buffer, data.byteOffset, data.byteLength),
-                isBinary: true
-            };
-        }
-
-        if (data instanceof Blob) {
-            return {
-                data: Buffer.from(await data.arrayBuffer()),
                 isBinary: true
             };
         }
@@ -480,15 +375,11 @@ export class WebSocketSessionManager {
     }
 
     private endSessionWithError(sessionId: string, error: string): void {
-        this.options.coordinator.emitSessionEnd({
+        this.options.coordinator.emitMessage({
             type: 'session-end',
             sessionId,
             error
         });
         this.cleanupSession(sessionId);
-    }
-
-    private isSessionOpen(webSocketState: ReverseChannelWebSocketState): boolean {
-        return webSocketState.status === 'open';
     }
 }

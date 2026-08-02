@@ -1,4 +1,5 @@
 import type { FlatAtomProperties, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
+import type { PluginExposureEntityKind } from '@shared/infrastructure/storage/storage-codec';
 
 export interface PluginExposureRequestBase {
     trajectoryId: string;
@@ -30,7 +31,7 @@ export interface PluginAnalysisAllAtomsResponse {
 
 export interface PluginPropertyStoreWriteInput extends PluginModifierAnalysisRequest {
     rows: PerAtomProperties | null | undefined;
-    entityKind?: 'atoms' | 'lines';
+    entityKind?: PluginExposureEntityKind;
 }
 
 export interface PluginPropertyStoreWriteResult {
@@ -54,7 +55,6 @@ export interface PluginPropertyStore {
     writeExposureProperties(input: PluginPropertyStoreWriteInput): Promise<PluginPropertyStoreWriteResult | null>;
     discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]>;
     discoverPerAtomPropertySchemas(request: PluginPropertyNamesRequest): Promise<PluginPropertySchema[]>;
-    getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<FlatAtomProperties[] | null>;
     getModifierValues(request: PluginModifierValuesRequest): Promise<Float32Array | null>;
     getModifierScalarValues(request: PluginModifierValuesRequest): Promise<ModifierScalarValues | null>;
     getModifierStats(request: PluginModifierValuesRequest): Promise<ModifierStats | null>;

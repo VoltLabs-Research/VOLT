@@ -1,18 +1,23 @@
 import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type { WorkflowEdge, WorkflowNode, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
+import type { WorkflowEdge, WorkflowNode, WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
 
 export type WorkflowExecutionStatus = 'executed' | 'pending' | 'failed' | 'skipped';
 
-export type WorkflowRuntimeNodeState = 'active' | 'inactive' | 'unresolved' | 'failed';
+/**
+ * How a node — or the edge that reaches it — stands relative to the run: `active`
+ * usable, `inactive` on a branch that was not taken, `unresolved` still waiting on
+ * a parent, `failed` reachable but poisoned by its parent.
+ */
+type WorkflowRuntimeNodeState = 'active' | 'inactive' | 'unresolved' | 'failed';
 
-export interface WorkflowParentEdgeResolution {
-    resolved: boolean;
-    active: boolean;
+interface WorkflowEdgeResolution {
+    state: WorkflowRuntimeNodeState;
     reason?: string;
 }
 
-interface WorkflowSchedulerState {
-    nodeStateCache: Map<string, WorkflowRuntimeNodeState>;
+/** Memoises node states for one traversal, and detects cycles while doing it. */
+interface WorkflowResolutionCache {
+    stateByNodeId: Map<string, WorkflowRuntimeNodeState>;
     resolvingNodeIds: Set<string>;
 }
 
@@ -21,6 +26,20 @@ export interface WorkflowSchedulerParams {
     outputs: WorkflowOutputs;
     getNodeExecutionStatus: (nodeId: string) => WorkflowExecutionStatus;
 }
+
+const readIfBranch = (output: WorkflowNodeOutput, nodeId: string): 'true' | 'false' => {
+    if (output.branch === 'true' || output.branch === 'false') {
+        return output.branch;
+    }
+
+    throw new Error(`IfStatement node "${nodeId}" produced an invalid branch result`);
+};
+
+const readMatchedCaseId = (output: WorkflowNodeOutput): string | null =>
+    typeof output.matchedCaseId === 'string' ? output.matchedCaseId : null;
+
+const activeUnless = (isActive: boolean, reason: string): WorkflowEdgeResolution =>
+    isActive ? { state: 'active' } : { state: 'inactive', reason };
 
 export class WorkflowScheduler {
     static forVisitedNodes(
@@ -31,131 +50,17 @@ export class WorkflowScheduler {
         return new WorkflowScheduler({
             workflow,
             outputs,
-            getNodeExecutionStatus: (nodeId) => visitedNodeIds.has(nodeId)
-                ? 'executed'
-                : 'pending'
+            getNodeExecutionStatus: (nodeId) => visitedNodeIds.has(nodeId) ? 'executed' : 'pending'
         });
     }
 
     constructor(private readonly params: WorkflowSchedulerParams) {}
 
-    resolveNodeState(
-        nodeId: string,
-        state: WorkflowSchedulerState = this.createState()
-    ): WorkflowRuntimeNodeState {
-        const cachedState = state.nodeStateCache.get(nodeId);
-        if (cachedState) {
-            return cachedState;
-        }
-
-        if (state.resolvingNodeIds.has(nodeId)) {
-            throw new Error(`Workflow contains a cycle near node "${nodeId}"`);
-        }
-
-        state.resolvingNodeIds.add(nodeId);
-        const parentEdges = this.params.workflow.getParentEdges(nodeId);
-        const nodeStatus = this.params.getNodeExecutionStatus(nodeId);
-
-        if (parentEdges.length === 0) {
-            const rootState = WorkflowScheduler.deriveActiveNodeState(nodeStatus);
-            state.nodeStateCache.set(nodeId, rootState);
-            state.resolvingNodeIds.delete(nodeId);
-            return rootState;
-        }
-
-        let hasActiveParent = false;
-        let hasUnresolvedParent = false;
-        let hasFailedParent = false;
-
-        for (const edge of parentEdges) {
-            const edgeState = this.resolveParentEdgeState(edge, nodeId, state);
-
-            if (!edgeState.resolved) {
-                hasUnresolvedParent = true;
-                continue;
-            }
-
-            if (!edgeState.active) {
-                continue;
-            }
-
-            if (edgeState.reason) {
-                hasFailedParent = true;
-                continue;
-            }
-
-            hasActiveParent = true;
-        }
-
-        let nodeState: WorkflowRuntimeNodeState;
-        if (hasActiveParent) {
-            nodeState = WorkflowScheduler.deriveActiveNodeState(nodeStatus);
-        } else if (hasUnresolvedParent) {
-            nodeState = 'unresolved';
-        } else if (hasFailedParent) {
-            nodeState = 'failed';
-        } else {
-            nodeState = 'inactive';
-        }
-        state.nodeStateCache.set(nodeId, nodeState);
-        state.resolvingNodeIds.delete(nodeId);
-
-        return nodeState;
-    }
-
-    private static deriveActiveNodeState(nodeStatus: WorkflowExecutionStatus): WorkflowRuntimeNodeState {
-        if (nodeStatus === 'executed') {
-            return 'active';
-        }
-
-        if (nodeStatus === 'failed' || nodeStatus === 'skipped') {
-            return 'failed';
-        }
-
-        return 'unresolved';
-    }
-
-    resolveParentEdgeState(
-        edge: WorkflowEdge,
-        targetNodeId: string,
-        state: WorkflowSchedulerState = this.createState()
-    ): WorkflowParentEdgeResolution {
-        const parentState = this.resolveNodeState(edge.source, state);
-
-        if (parentState === 'unresolved') {
-            return {
-                resolved: false,
-                active: false,
-                reason: `Parent node "${edge.source}" has not executed`
-            };
-        }
-
-        if (parentState === 'inactive') {
-            return {
-                resolved: true,
-                active: false
-            };
-        }
-
-        if (parentState === 'failed') {
-            const status = this.params.getNodeExecutionStatus(edge.source);
-            return {
-                resolved: true,
-                active: true,
-                reason: status === 'failed'
-                    ? `Parent node "${edge.source}" failed`
-                    : `Parent node "${edge.source}" was skipped`
-            };
-        }
-
-        return this.resolveActiveParentEdgeState(edge, targetNodeId);
-    }
-
     areParentEdgesResolved(nodeId: string): boolean {
-        const state = this.createState();
+        const cache = this.createCache();
 
         return this.params.workflow.getParentEdges(nodeId)
-            .every((edge) => this.resolveParentEdgeState(edge, nodeId, state).resolved);
+            .every((edge) => this.resolveEdge(edge, nodeId, cache).state !== 'unresolved');
     }
 
     isNodeReady(nodeId: string): boolean {
@@ -164,186 +69,184 @@ export class WorkflowScheduler {
             return true;
         }
 
-        const state = this.createState();
+        const cache = this.createCache();
         let hasActiveParent = false;
 
         for (const edge of parentEdges) {
-            const edgeState = this.resolveParentEdgeState(edge, nodeId, state);
-            if (!edgeState.resolved) {
+            const { state } = this.resolveEdge(edge, nodeId, cache);
+            if (state === 'unresolved') {
                 return false;
             }
 
-            if (edgeState.active) {
-                hasActiveParent = true;
-            }
+            hasActiveParent ||= state !== 'inactive';
         }
 
         return hasActiveParent;
     }
 
     getSkipReason(node: WorkflowNode): string | undefined {
-        const parentEdges = this.params.workflow.getParentEdges(node.id);
-        if (parentEdges.length === 0) {
-            return undefined;
-        }
-
-        const state = this.createState();
+        const cache = this.createCache();
         let hasActiveParent = false;
         let inactiveReason: string | undefined;
 
-        for (const parentEdge of parentEdges) {
-            const parentState = this.resolveParentEdgeState(parentEdge, node.id, state);
-            if (!parentState.resolved) {
-                return parentState.reason;
+        for (const parentEdge of this.params.workflow.getParentEdges(node.id)) {
+            const { state, reason } = this.resolveEdge(parentEdge, node.id, cache);
+            if (state === 'unresolved' || state === 'failed') {
+                return reason;
             }
 
-            if (parentState.active) {
-                if (parentState.reason) {
-                    return parentState.reason;
-                }
-
+            if (state === 'active') {
                 hasActiveParent = true;
                 continue;
             }
 
-            inactiveReason ??= parentState.reason;
+            inactiveReason ??= reason;
         }
 
         return hasActiveParent ? undefined : inactiveReason;
     }
 
-    resolveChildNodeIds(node: WorkflowNode, output: Record<string, unknown>): {
+    resolveChildNodeIds(node: WorkflowNode, output: WorkflowNodeOutput): {
         activeNodeIds: string[];
         inactiveNodeIds: string[];
     } {
+        const { workflow } = this.params;
+
         if (node.type === WorkflowNodeType.IfStatement) {
-            const branch = WorkflowScheduler.readIfBranch(output, node.id);
+            const branch = readIfBranch(output, node.id);
 
             return {
-                activeNodeIds: this.params.workflow.getIfBranchChildNodeIds(node.id, branch),
-                inactiveNodeIds: this.params.workflow.getIfInactiveBranchChildNodeIds(node.id, branch)
+                activeNodeIds: workflow.getIfBranchChildNodeIds(node.id, branch),
+                inactiveNodeIds: workflow.getIfInactiveBranchChildNodeIds(node.id, branch)
             };
         }
 
         if (node.type === WorkflowNodeType.SwitchStatement) {
-            const matchedCaseId = typeof output.matchedCaseId === 'string'
-                ? output.matchedCaseId
-                : null;
-
-            return this.params.workflow.getSwitchChildNodeIds(node.id, matchedCaseId);
+            return workflow.getSwitchChildNodeIds(node.id, readMatchedCaseId(output));
         }
 
         return {
-            activeNodeIds: this.params.workflow.getChildNodeIds(node.id),
+            activeNodeIds: workflow.getChildNodeIds(node.id),
             inactiveNodeIds: []
         };
     }
 
-    private createState(): WorkflowSchedulerState {
+    private createCache(): WorkflowResolutionCache {
         return {
-            nodeStateCache: new Map<string, WorkflowRuntimeNodeState>(),
+            stateByNodeId: new Map<string, WorkflowRuntimeNodeState>(),
             resolvingNodeIds: new Set<string>()
         };
     }
 
-    private resolveActiveParentEdgeState(
+    private resolveNodeState(nodeId: string, cache: WorkflowResolutionCache): WorkflowRuntimeNodeState {
+        const cachedState = cache.stateByNodeId.get(nodeId);
+        if (cachedState) {
+            return cachedState;
+        }
+
+        if (cache.resolvingNodeIds.has(nodeId)) {
+            throw new Error(`Workflow contains a cycle near node "${nodeId}"`);
+        }
+
+        cache.resolvingNodeIds.add(nodeId);
+        const nodeState = this.computeNodeState(nodeId, cache);
+        cache.stateByNodeId.set(nodeId, nodeState);
+        cache.resolvingNodeIds.delete(nodeId);
+
+        return nodeState;
+    }
+
+    /** A node inherits `inactive`/`unresolved`/`failed` from its parents; only a reachable node gets judged on its own status. */
+    private computeNodeState(nodeId: string, cache: WorkflowResolutionCache): WorkflowRuntimeNodeState {
+        const parentEdges = this.params.workflow.getParentEdges(nodeId);
+        const parentStates = new Set(parentEdges.map((edge) => this.resolveEdge(edge, nodeId, cache).state));
+
+        if (parentEdges.length > 0 && !parentStates.has('active')) {
+            if (parentStates.has('unresolved')) {
+                return 'unresolved';
+            }
+
+            return parentStates.has('failed') ? 'failed' : 'inactive';
+        }
+
+        const nodeStatus = this.params.getNodeExecutionStatus(nodeId);
+        if (nodeStatus === 'executed') {
+            return 'active';
+        }
+
+        return nodeStatus === 'pending' ? 'unresolved' : 'failed';
+    }
+
+    /** Classifies one inbound edge: first by how its source stands, then by the branch it sits on. */
+    private resolveEdge(
         edge: WorkflowEdge,
-        targetNodeId: string
-    ): WorkflowParentEdgeResolution {
-        const parentNode = this.params.workflow.getNode(edge.source);
-        if (!parentNode) {
-            return {
-                resolved: true,
-                active: false
-            };
+        targetNodeId: string,
+        cache: WorkflowResolutionCache
+    ): WorkflowEdgeResolution {
+        const parentState = this.resolveNodeState(edge.source, cache);
+
+        if (parentState === 'active') {
+            return this.resolveBranchEdge(edge, targetNodeId);
         }
 
-        const parentOutput = this.params.outputs.get(parentNode.id) ?? {};
-
-        if (parentNode.type === WorkflowNodeType.ForEach) {
-            let itemCount = 0;
-            if (typeof parentOutput.count === 'number') {
-                itemCount = parentOutput.count;
-            } else if (Array.isArray(parentOutput.items)) {
-                itemCount = parentOutput.items.length;
-            }
-
-            if (itemCount > 0) {
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
-            return {
-                resolved: true,
-                active: false,
-                reason: `ForEach node "${parentNode.id}" produced no items`
-            };
+        if (parentState === 'inactive') {
+            return { state: 'inactive' };
         }
 
-        if (parentNode.type === WorkflowNodeType.IfStatement) {
-            const branch = WorkflowScheduler.readIfBranch(parentOutput, parentNode.id);
-            const activeNodeIds = new Set(
-                this.params.workflow.getIfBranchChildNodeIds(parentNode.id, branch)
-            );
-
-            if(activeNodeIds.has(targetNodeId)){
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
+        if (parentState === 'unresolved') {
             return {
-                resolved: true,
-                active: false,
-                reason: `Node "${targetNodeId}" is not on the selected "${branch}" branch`
-            };
-        }
-
-        if (parentNode.type === WorkflowNodeType.SwitchStatement) {
-            if (edge.sourceHandle === 'continue') {
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
-            const matchedCaseId = typeof parentOutput.matchedCaseId === 'string'
-                ? parentOutput.matchedCaseId
-                : null;
-
-            if(edge.sourceHandle === 'cases' && matchedCaseId === targetNodeId){
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
-            return {
-                resolved: true,
-                active: false,
-                reason: matchedCaseId
-                    ? `Switch statement "${parentNode.id}" selected case "${matchedCaseId}"`
-                    : `Switch statement "${parentNode.id}" did not match this case`
+                state: 'unresolved',
+                reason: `Parent node "${edge.source}" has not executed`
             };
         }
 
         return {
-            resolved: true,
-            active: true
+            state: 'failed',
+            reason: this.params.getNodeExecutionStatus(edge.source) === 'failed'
+                ? `Parent node "${edge.source}" failed`
+                : `Parent node "${edge.source}" was skipped`
         };
     }
 
-    private static readIfBranch(
-        output: Record<string, unknown>,
-        nodeId: string
-    ): 'true' | 'false' {
-        if (output.branch === 'true' || output.branch === 'false') {
-            return output.branch;
+    /** Decides whether an executed parent actually hands control to this particular child. */
+    private resolveBranchEdge(edge: WorkflowEdge, targetNodeId: string): WorkflowEdgeResolution {
+        const { workflow, outputs } = this.params;
+        const parentNode = workflow.getNode(edge.source);
+        if (!parentNode) {
+            return { state: 'inactive' };
         }
 
-        throw new Error(`IfStatement node "${nodeId}" produced an invalid branch result`);
+        const parentOutput = outputs.get(parentNode.id) ?? {};
+
+        if (parentNode.type === WorkflowNodeType.ForEach) {
+            const itemCount = typeof parentOutput.count === 'number'
+                ? parentOutput.count
+                : Array.isArray(parentOutput.items) ? parentOutput.items.length : 0;
+
+            return activeUnless(itemCount > 0, `ForEach node "${parentNode.id}" produced no items`);
+        }
+
+        if (parentNode.type === WorkflowNodeType.IfStatement) {
+            const branch = readIfBranch(parentOutput, parentNode.id);
+
+            return activeUnless(
+                workflow.getIfBranchChildNodeIds(parentNode.id, branch).includes(targetNodeId),
+                `Node "${targetNodeId}" is not on the selected "${branch}" branch`
+            );
+        }
+
+        if (parentNode.type === WorkflowNodeType.SwitchStatement) {
+            const matchedCaseId = readMatchedCaseId(parentOutput);
+
+            return activeUnless(
+                edge.sourceHandle === 'continue'
+                    || (edge.sourceHandle === 'cases' && matchedCaseId === targetNodeId),
+                matchedCaseId
+                    ? `Switch statement "${parentNode.id}" selected case "${matchedCaseId}"`
+                    : `Switch statement "${parentNode.id}" did not match this case`
+            );
+        }
+
+        return { state: 'active' };
     }
 }

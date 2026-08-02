@@ -1,16 +1,17 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { randomUUID } from 'node:crypto';
 import { PlaneProcessSupervisor } from '@shared/infrastructure/planes/PlaneProcessSupervisor';
-import { logger } from '@shared/infrastructure/logger';
 import type { ChildProcess } from 'node:child_process';
 import type { DaemonConfig } from '@core/config/daemon';
 import type {
     CommandResult,
     HandlerContext,
-    ReverseChannelHandler,
-    TeamClusterDaemonMessage
+    ReverseChannelHandler
 } from '@voltstack/daemon-cluster-client';
-
-type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
+import type {
+    ReverseChannelInboundMessage,
+    ReverseChannelOutboundMessage
+} from '@shared/contracts/channel/binary-messages';
 
 interface PendingSendCommand {
     resolve: (value: unknown) => void;
@@ -35,7 +36,7 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
     private ready = false;
     private connectWaiters: Array<{ resolve: () => void; reject: (error: Error) => void }> = [];
     private readonly handlers = new Map<string, ReverseChannelHandler>();
-    private readonly messageListeners: Array<(message: NonCommandMessage) => void> = [];
+    private readonly messageListeners: Array<(message: ReverseChannelInboundMessage) => void> = [];
     private readonly connectedListeners: Array<() => void> = [];
     private readonly disconnectedListeners: Array<(reason: string) => void> = [];
     private readonly errorListeners: Array<(error: Error) => void> = [];
@@ -96,7 +97,7 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
         });
     }
 
-    emit(message: TeamClusterDaemonMessage): void {
+    emit(message: ReverseChannelOutboundMessage): void {
         const child = this.child;
         if (!child || !child.connected || !this.ready) {
             throw new Error('Control socket is not ready');
@@ -116,12 +117,7 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
         return this;
     }
 
-    unregisterHandler(command: string): this {
-        this.handlers.delete(command);
-        return this;
-    }
-
-    onMessage(cb: (message: NonCommandMessage) => void): this {
+    onMessage(cb: (message: ReverseChannelInboundMessage) => void): this {
         this.messageListeners.push(cb);
         return this;
     }
@@ -187,7 +183,7 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
 
         if (message.type === 'inbound-message') {
             for (const listener of this.messageListeners) {
-                listener(message.message as NonCommandMessage);
+                listener(message.message as ReverseChannelInboundMessage);
             }
             return;
         }
@@ -235,7 +231,7 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
 
             this.sendCommandResponse(ipcRequestId, this.toSocketResponse(String(message.requestId), result));
         } catch (error) {
-            const messageText = error instanceof Error ? error.message : String(error);
+            const messageText = errorMessage(error);
             this.notifyError(new Error(`Handler error for command ${command}: ${messageText}`));
             this.sendCommandResponse(ipcRequestId, {
                 type: 'response',

@@ -1,8 +1,7 @@
 import type { AnalysisStageReportInput, AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type {
     AnalysisStageStatus,
-    AnalysisStageStatusPayload,
-    AnalysisStageType
+    AnalysisStageStatusPayload
 } from '@shared/contracts/channel/reverse-channel-analysis';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@modules/analysis/events/analysis-events';

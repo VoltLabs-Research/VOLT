@@ -12,9 +12,9 @@ import { WorkflowValueResolver } from '@modules/analysis/services/workflow/Workf
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput, WorkflowValue } from '@shared/contracts/types/workflow.types';
 
-export type WorkflowNodePhase = 'planning' | 'runtime';
+type WorkflowNodePhase = 'planning' | 'runtime';
 
-export const WORKFLOW_NODE_PHASE: Record<WorkflowNodeType, WorkflowNodePhase> = {
+const WORKFLOW_NODE_PHASE: Record<WorkflowNodeType, WorkflowNodePhase> = {
     [WorkflowNodeType.Modifier]: 'planning',
     [WorkflowNodeType.Arguments]: 'planning',
     [WorkflowNodeType.Context]: 'planning',
@@ -35,7 +35,6 @@ export const isPlanningNodeType = (type: WorkflowNodeType): boolean => {
 
 export interface WorkflowNodeHandler<TOutput extends object = object> {
     readonly type: WorkflowNodeType;
-    readonly phase: WorkflowNodePhase;
     execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<TOutput>;
 };
 
@@ -57,12 +56,6 @@ export class WorkflowNodeRegistry {
         workflowNodeRegistry.register(new WorkflowSwitchCaseHandler());
 
         return workflowNodeRegistry;
-    }
-
-    constructor(handlers: WorkflowNodeHandler<object>[] = []) {
-        for (const handler of handlers) {
-            this.handlers.set(handler.type, handler);
-        }
     }
 
     register(handler: WorkflowNodeHandler<object>): void {

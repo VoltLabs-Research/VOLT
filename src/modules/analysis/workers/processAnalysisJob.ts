@@ -29,7 +29,7 @@ export interface ProcessAnalysisJobDependencies {
     daemonJobReporter: DaemonJobReporter;
     workflowRuntime: WorkflowRuntime;
     analysisQueueAdmissionController: AnalysisQueueAdmissionController;
-    analysisProvenanceCollector?: AnalysisProvenanceCollector;
+    analysisProvenanceCollector: AnalysisProvenanceCollector;
 }
 
 export interface ProcessAnalysisJobHooks {
@@ -49,10 +49,7 @@ export const processAnalysisJob = async (
 
     const jobStartedAt = Date.now();
 
-    const executionData = await deps.analysisDataStore.resolve({
-        jobId: job.jobId,
-        executionDataReference: job.executionDataReference
-    });
+    const executionData = await deps.analysisDataStore.get(job.executionDataReference, job.jobId);
     const timestep = job.timestep ?? metadata.timestep;
 
     if (timestep === undefined) {
@@ -221,14 +218,12 @@ export const processAnalysisJob = async (
                 await emitExecutionTrace(workflowOutcome.trace, true);
                 await setProgress(70);
 
-                if (deps.analysisProvenanceCollector) {
-                    await deps.analysisProvenanceCollector.recordCompletion({
-                        executionData,
-                        metadata,
-                        startedAt: jobStartedAt,
-                        outputArtifactIds: []
-                    }).catch(logAndSwallow('warn', { jobId: job.jobId }, 'Provenance recording failed'));
-                }
+                await deps.analysisProvenanceCollector.recordCompletion({
+                    executionData,
+                    metadata,
+                    startedAt: jobStartedAt,
+                    outputArtifactIds: []
+                }).catch(logAndSwallow('warn', { jobId: job.jobId }, 'Provenance recording failed'));
 
                 await runStage(
                     {

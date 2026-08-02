@@ -3,11 +3,20 @@ import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/com
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { ANALYSIS_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 
+type DispatchableQueueName =
+    | typeof ANALYSIS_QUEUE_NAME
+    | typeof TRAJECTORY_RASTER_QUEUE_NAME
+    | typeof TRAJECTORY_GLB_QUEUE_NAME;
+
 interface QueueDispatchRequest {
-    queueName: string;
+    queueName: DispatchableQueueName;
     payload: Record<string, unknown>;
 }
 
+/**
+ * Bounds what a remote dispatch may reach: an unknown name would silently create a
+ * new queue, so this stays an authorization check rather than type revalidation.
+ */
 const DISPATCHABLE_QUEUE_NAMES = new Set<string>([
     ANALYSIS_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
@@ -22,13 +31,6 @@ export class QueueCommands {
     async dispatch(payload: QueueDispatchRequest) {
         if (!DISPATCHABLE_QUEUE_NAMES.has(payload.queueName)) {
             throw new Error(`Unsupported queue dispatch target: ${payload.queueName}`);
-        }
-        if (payload.queueName === ANALYSIS_QUEUE_NAME) {
-            const hasExecutionDataReference = typeof payload.payload.executionDataReference === 'object'
-                && payload.payload.executionDataReference !== null;
-            if (!hasExecutionDataReference) {
-                throw new Error('Analysis queue payload requires executionDataReference');
-            }
         }
 
         await this.queueService.enqueue(payload.queueName, payload.payload);

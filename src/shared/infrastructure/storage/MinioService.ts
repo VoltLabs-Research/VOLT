@@ -4,7 +4,7 @@ import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import { Client, CopyDestinationOptions, CopySourceOptions } from 'minio';
 import type { DaemonConfig } from '@core/config/daemon';
-import type { BucketItem } from 'minio';
+import type { Readable } from 'node:stream';
 import type {
     ClusterObjectListEntry,
     ClusterObjectListResponse,
@@ -16,19 +16,13 @@ import type {
     ScopedClusterObjectPutStreamInput
 } from '@shared/contracts/types/cluster-object-store';
 
+const SAFE_LIST_PAGE_SIZE = 200;
+const DELETE_BATCH_SIZE = 1000;
+const MAX_INFLIGHT_DELETE_BATCHES = 4;
+
 export class MinioService implements LocalClusterObjectStoreGateway {
     private readonly client: Client;
     private readonly bucketPrefix: string;
-    private static readonly SAFE_LIST_PAGE_SIZE = 200;
-    readonly ensureBuckets: () => Promise<void>;
-    readonly listBuckets: () => string[];
-    readonly getObjectStream: LocalClusterObjectStoreGateway['getObjectStream'];
-    readonly getObjectRangeStream: LocalClusterObjectStoreGateway['getObjectRangeStream'];
-    readonly statObject: (bucket: string, objectKey: string) => Promise<LocalClusterObjectStat>;
-    readonly putObject: (input: ScopedClusterObjectPutInput) => Promise<void>;
-    readonly putObjectStream: (input: ScopedClusterObjectPutStreamInput) => Promise<void>;
-    readonly composeObject: (input: LocalClusterObjectComposeInput) => Promise<void>;
-    readonly removeObject: (bucket: string, objectKey: string) => Promise<void>;
 
     constructor(
         private readonly config: DaemonConfig
@@ -43,158 +37,140 @@ export class MinioService implements LocalClusterObjectStoreGateway {
         });
 
         this.bucketPrefix = this.config.bucketPrefix ?? '';
-
-        this.listBuckets = () => [...this.config.allowedBuckets];
-        this.ensureBuckets = async () => {
-            for (const bucket of this.listBuckets()) {
-                const resolvedBucket = this.resolveBucket(bucket);
-                const exists = await this.client.bucketExists(resolvedBucket);
-                if (!exists) {
-                    await this.client.makeBucket(resolvedBucket);
-                    logger.info(`Created MinIO bucket: ${resolvedBucket}`);
-                }
-            }
-        };
-        this.getObjectStream = (bucket, objectKey) => this.client.getObject(this.resolveBucket(bucket), objectKey);
-        this.getObjectRangeStream = (bucket, objectKey, offset, length) => (
-            this.client.getPartialObject(this.resolveBucket(bucket), objectKey, offset, length)
-        );
-        this.statObject = (bucket, objectKey) => this.client.statObject(this.resolveBucket(bucket), objectKey);
-        this.putObject = async (input) => {
-            await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.body, input.body.length, input.metadata);
-        };
-        this.putObjectStream = async (input) => {
-            await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.stream, input.size, input.metadata);
-        };
-        this.composeObject = async (input) => {
-            const resolvedBucket = this.resolveBucket(input.bucket);
-            const destination = new CopyDestinationOptions({
-                Bucket: resolvedBucket,
-                Object: input.objectKey,
-                ...(input.metadata ? { UserMetadata: input.metadata } : {})
-            });
-            const sources = input.sourceObjectKeys.map((objectKey) => new CopySourceOptions({
-                Bucket: resolvedBucket,
-                Object: objectKey
-            }));
-
-            await this.client.composeObject(destination, sources);
-        };
-        this.removeObject = async (bucket, objectKey) => {
-            await this.client.removeObject(this.resolveBucket(bucket), objectKey);
-        };
     }
 
+    /** An empty prefix makes `startsWith` trivially true, so unprefixed buckets pass through. */
     private resolveBucket(bucket: string): string {
-        if (!this.bucketPrefix) return bucket;
-        if (bucket.startsWith(this.bucketPrefix)) return bucket;
-        return `${this.bucketPrefix}${bucket}`;
+        return bucket.startsWith(this.bucketPrefix) ? bucket : `${this.bucketPrefix}${bucket}`;
     }
 
-    async listObjects(bucket: string, prefix: string, maxKeys?: number): Promise<string[]> {
-        const keys: string[] = [];
+    listBuckets(): string[] {
+        return [...this.config.allowedBuckets];
+    }
+
+    async ensureBuckets(): Promise<void> {
+        for (const bucket of this.listBuckets()) {
+            const resolvedBucket = this.resolveBucket(bucket);
+            if (!(await this.client.bucketExists(resolvedBucket))) {
+                await this.client.makeBucket(resolvedBucket);
+                logger.info(`Created MinIO bucket: ${resolvedBucket}`);
+            }
+        }
+    }
+
+    getObjectStream(bucket: string, objectKey: string): Promise<Readable> {
+        return this.client.getObject(this.resolveBucket(bucket), objectKey);
+    }
+
+    getObjectRangeStream(bucket: string, objectKey: string, offset: number, length: number): Promise<Readable> {
+        return this.client.getPartialObject(this.resolveBucket(bucket), objectKey, offset, length);
+    }
+
+    statObject(bucket: string, objectKey: string): Promise<LocalClusterObjectStat> {
+        return this.client.statObject(this.resolveBucket(bucket), objectKey);
+    }
+
+    async putObject(input: ScopedClusterObjectPutInput): Promise<void> {
+        await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.body, input.body.length, input.metadata);
+    }
+
+    async putObjectStream(input: ScopedClusterObjectPutStreamInput): Promise<void> {
+        await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.stream, input.size, input.metadata);
+    }
+
+    async composeObject(input: LocalClusterObjectComposeInput): Promise<void> {
+        const resolvedBucket = this.resolveBucket(input.bucket);
+        const destination = new CopyDestinationOptions({
+            Bucket: resolvedBucket,
+            Object: input.objectKey,
+            ...(input.metadata ? { UserMetadata: input.metadata } : {})
+        });
+        const sources = input.sourceObjectKeys.map((objectKey) => new CopySourceOptions({
+            Bucket: resolvedBucket,
+            Object: objectKey
+        }));
+
+        await this.client.composeObject(destination, sources);
+    }
+
+    async removeObject(bucket: string, objectKey: string): Promise<void> {
+        await this.client.removeObject(this.resolveBucket(bucket), objectKey);
+    }
+
+    /** Walks every object under `prefix` in lexicographic order, page by page. */
+    private async *iterateObjects(bucket: string, prefix: string, startAfter = ''): AsyncGenerator<ClusterObjectListEntry> {
+        const resolvedBucket = this.resolveBucket(bucket);
         let continuationToken = '';
+        let cursor = startAfter;
 
         do {
-            const remainingKeys = maxKeys === undefined
-                ? MinioService.SAFE_LIST_PAGE_SIZE
-                : Math.max(0, maxKeys - keys.length);
-            if (maxKeys !== undefined && remainingKeys === 0) {
-                break;
-            }
-
             const result = await this.client.listObjectsV2Query(
-                this.resolveBucket(bucket),
+                resolvedBucket,
                 prefix,
                 continuationToken,
                 '',
-                Math.min(remainingKeys, MinioService.SAFE_LIST_PAGE_SIZE),
-                ''
+                SAFE_LIST_PAGE_SIZE,
+                cursor
             );
 
             for (const item of result.objects) {
-                const listedObject = this.readListItem(item);
-                if (!listedObject) {
+                // A prefix "directory" entry carries no name and is not an object.
+                if (item.name === undefined) {
                     continue;
                 }
 
-                keys.push(listedObject.key);
-                if (maxKeys !== undefined && keys.length >= maxKeys) {
-                    return keys;
-                }
+                yield {
+                    key: item.name,
+                    contentLength: item.size,
+                    etag: item.etag,
+                    lastModified: item.lastModified
+                };
             }
 
+            cursor = '';
             continuationToken = result.isTruncated
                 ? result.nextContinuationToken
                 : '';
         } while (continuationToken);
+    }
 
+    async listObjects(bucket: string, prefix: string): Promise<string[]> {
+        const keys: string[] = [];
+        for await (const object of this.iterateObjects(bucket, prefix)) {
+            keys.push(object.key);
+        }
         return keys;
     }
 
     async listObjectsPage(input: LocalClusterObjectListRequest): Promise<ClusterObjectListResponse> {
-        const requestedLimit = input.limit;
-        const maxKeys = requestedLimit + 1;
-        const collectedObjects: ClusterObjectListEntry[] = [];
-        let continuationToken = '';
-        let startAfter = input.cursor ?? '';
+        const collected: ClusterObjectListEntry[] = [];
 
-        while (collectedObjects.length < maxKeys) {
-            const result = await this.client.listObjectsV2Query(
-                this.resolveBucket(input.bucket),
-                input.prefix,
-                continuationToken,
-                '',
-                Math.min(maxKeys - collectedObjects.length, MinioService.SAFE_LIST_PAGE_SIZE),
-                startAfter
-            );
-
-            for (const item of result.objects) {
-                const listedObject = this.readListItem(item);
-                if (!listedObject) {
-                    continue;
-                }
-
-                collectedObjects.push(listedObject);
-                if (collectedObjects.length >= maxKeys) {
-                    const objects = collectedObjects.slice(0, requestedLimit);
-                    return {
-                        keys: objects.map((object) => object.key),
-                        objects,
-                        nextCursor: objects[requestedLimit - 1].key
-                    };
-                }
-            }
-
-            if (!result.isTruncated) {
+        // One object past the page proves another page exists and names its cursor.
+        for await (const object of this.iterateObjects(input.bucket, input.prefix, input.cursor ?? '')) {
+            collected.push(object);
+            if (collected.length > input.limit) {
                 break;
             }
-
-            continuationToken = result.nextContinuationToken;
-            startAfter = '';
         }
 
+        const objects = collected.slice(0, input.limit);
         return {
-            keys: collectedObjects.map((object) => object.key),
-            objects: collectedObjects
+            keys: objects.map((object) => object.key),
+            objects,
+            nextCursor: collected.length > input.limit
+                ? objects[input.limit - 1].key
+                : undefined
         };
     }
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<number> {
-        const BATCH_SIZE = 1000;
-        const MAX_INFLIGHT_BATCHES = 4;
-        let batch: string[] = [];
-        let deletedCount = 0;
-        let continuationToken = '';
-
-        // Bottleneck admits on first completion, where the previous hand-rolled
-        // `inFlight.shift()` drained head-of-line, so one slow batch stalled the
-        // whole window. The count is also only incremented once the delete has
-        // actually resolved — it used to be added up front, so a failed batch
-        // was still reported as deleted.
-        const limiter = new Bottleneck({ maxConcurrent: MAX_INFLIGHT_BATCHES });
+        // Bottleneck admits on first completion, so one slow batch cannot stall the
+        // window. The count only advances once a delete has actually resolved.
+        const limiter = new Bottleneck({ maxConcurrent: MAX_INFLIGHT_DELETE_BATCHES });
         const resolvedBucket = this.resolveBucket(bucket);
         const inFlight: Promise<void>[] = [];
+        let deletedCount = 0;
+        let batch: string[] = [];
 
         const submitBatch = (keys: string[]): void => {
             inFlight.push(limiter.schedule(async () => {
@@ -203,35 +179,14 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             }));
         };
 
-        do {
-            const result = await this.client.listObjectsV2Query(
-                resolvedBucket,
-                prefix,
-                continuationToken,
-                '',
-                MinioService.SAFE_LIST_PAGE_SIZE,
-                ''
-            );
+        for await (const object of this.iterateObjects(bucket, prefix)) {
+            batch.push(object.key);
 
-            for (const item of result.objects) {
-                const listedObject = this.readListItem(item);
-                if (!listedObject) {
-                    continue;
-                }
-
-                batch.push(listedObject.key);
-
-                if (batch.length >= BATCH_SIZE) {
-                    const toSubmit = batch;
-                    batch = [];
-                    submitBatch(toSubmit);
-                }
+            if (batch.length >= DELETE_BATCH_SIZE) {
+                submitBatch(batch);
+                batch = [];
             }
-
-            continuationToken = result.isTruncated
-                ? result.nextContinuationToken
-                : '';
-        } while (continuationToken);
+        }
 
         if (batch.length > 0) {
             submitBatch(batch);
@@ -239,19 +194,6 @@ export class MinioService implements LocalClusterObjectStoreGateway {
 
         await Promise.all(inFlight);
         return deletedCount;
-    }
-
-    private readListItem(item: BucketItem): ClusterObjectListEntry | null {
-        if (item.name === undefined) {
-            return null;
-        }
-
-        return {
-            key: item.name,
-            contentLength: item.size,
-            etag: item.etag,
-            lastModified: item.lastModified
-        };
     }
 }
 

@@ -1,3 +1,4 @@
+import { toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
@@ -6,7 +7,6 @@ import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { ObjectBucketName } from '@shared/contracts';
 import type { RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@shared/contracts';
-import { isRecord } from '@shared/domain/utilities/is-record';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
@@ -117,7 +117,7 @@ export class TrajectoryRasterQueue {
     }
 
     private readAutoPreviewRasterizationConfig(input: RasterizeTrajectoryRequest): AutoPreviewRasterizationConfig | null {
-        if (!isRecord(input.config) || input.config.autoPreview !== true) {
+        if (!input.config || input.config.autoPreview !== true) {
             return null;
         }
 
@@ -205,7 +205,7 @@ export class TrajectoryRasterQueue {
         const job = buildRasterJobPayload(
             input,
             {
-                modelObjectKey: `trajectory-${input.trajectoryId}/timestep-${config.timestep}.glb.zst`,
+                modelObjectKey: toTrajectoryFrameModelObjectKey(input.trajectoryId, config.timestep),
                 outputObjectKey: `trajectory-${input.trajectoryId}/previews/timestep-${config.timestep}.png`,
                 timestep: config.timestep
             },

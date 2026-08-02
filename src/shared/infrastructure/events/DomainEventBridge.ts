@@ -31,8 +31,15 @@ export type DomainEventTransportMapper<TPayload extends object> = (
     context: DomainEventTransportContext
 ) => TransportMessageEnvelope | readonly TransportMessageEnvelope[] | null;
 
+/**
+ * A mapper that has already closed over the payload type it was registered with. Storing the
+ * adapted form keeps the map homogeneous without claiming a `Mapper<Specific>` *is* a
+ * `Mapper<object>` — which would be unsound, since mapper payloads are contravariant.
+ */
+type BoundDomainEventMapper = DomainEventTransportMapper<object>;
+
 export class DomainEventBridge {
-    private readonly mappers = new Map<string, DomainEventTransportMapper<object>>();
+    private readonly mappers = new Map<string, BoundDomainEventMapper>();
     private messageContext: AuthenticatedMessageContext | null = null;
 
     constructor(private readonly publisher: ClusterDaemonEventPublisher) {}
@@ -45,7 +52,8 @@ export class DomainEventBridge {
             throw new Error(`Domain event already registered with DomainEventBridge: ${eventClass.eventName}`);
         }
 
-        this.mappers.set(eventClass.eventName, mapper as unknown as DomainEventTransportMapper<object>);
+        // The dispatcher routes by event name, so a payload arriving here is this mapper's own.
+        this.mappers.set(eventClass.eventName, (payload, context) => mapper(payload as TPayload, context));
     }
 
     subscribeAll(eventDispatcher: EventDispatcher): void {
@@ -57,7 +65,7 @@ export class DomainEventBridge {
 
     private handle(
         event: IDomainEvent,
-        mapper: DomainEventTransportMapper<object>,
+        mapper: BoundDomainEventMapper,
         context: DomainEventTransportContext
     ): void {
         const result = mapper(event.payload, context);

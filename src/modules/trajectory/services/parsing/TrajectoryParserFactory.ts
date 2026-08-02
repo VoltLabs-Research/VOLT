@@ -34,8 +34,6 @@ interface SimulationCellBounds {
     yz?: number;
 }
 
-export const UNSUPPORTED_TRAJECTORY_FORMAT_MESSAGE = 'Unsupported trajectory format';
-
 const HEADER_LINE_LIMIT = 200;
 
 const createSimulationCell = (periodicBoundaryConditions: { x: boolean; y: boolean; z: boolean }): ParsedSimulationCell => {
@@ -55,39 +53,23 @@ const createSimulationCell = (periodicBoundaryConditions: { x: boolean; y: boole
 
 const applySimulationCellBounds = (simulationCell: ParsedSimulationCell, bounds: SimulationCellBounds): void => {
     const { boundingBox, geometry } = simulationCell;
-
-    if (bounds.xy !== undefined && bounds.xz !== undefined && bounds.yz !== undefined) {
-        const { xy, xz, yz } = bounds;
-        const xlo = bounds.xlo - Math.min(0.0, xy, xz, xy + xz);
-        const xhi = bounds.xhi - Math.max(0.0, xy, xz, xy + xz);
-        const ylo = bounds.ylo - Math.min(0.0, yz);
-        const yhi = bounds.yhi - Math.max(0.0, yz);
-
-        geometry.cell_vectors = [
-            [xhi - xlo, 0, 0],
-            [xy, yhi - ylo, 0],
-            [xz, yz, bounds.zhi - bounds.zlo]
-        ];
-        geometry.cell_origin = [xlo, ylo, bounds.zlo];
-        boundingBox.width = xhi - xlo;
-        boundingBox.length = yhi - ylo;
-        boundingBox.height = bounds.zhi - bounds.zlo;
-        return;
-    }
-
-    const width = bounds.xhi - bounds.xlo;
-    const length = bounds.yhi - bounds.ylo;
-    const height = bounds.zhi - bounds.zlo;
+    const xy = bounds.xy ?? 0;
+    const xz = bounds.xz ?? 0;
+    const yz = bounds.yz ?? 0;
+    const xlo = bounds.xlo - Math.min(0.0, xy, xz, xy + xz);
+    const xhi = bounds.xhi - Math.max(0.0, xy, xz, xy + xz);
+    const ylo = bounds.ylo - Math.min(0.0, yz);
+    const yhi = bounds.yhi - Math.max(0.0, yz);
 
     geometry.cell_vectors = [
-        [width, 0, 0],
-        [0, length, 0],
-        [0, 0, height]
+        [xhi - xlo, 0, 0],
+        [xy, yhi - ylo, 0],
+        [xz, yz, bounds.zhi - bounds.zlo]
     ];
-    geometry.cell_origin = [bounds.xlo, bounds.ylo, bounds.zlo];
-    boundingBox.width = width;
-    boundingBox.length = length;
-    boundingBox.height = height;
+    geometry.cell_origin = [xlo, ylo, bounds.zlo];
+    boundingBox.width = xhi - xlo;
+    boundingBox.length = yhi - ylo;
+    boundingBox.height = bounds.zhi - bounds.zlo;
 };
 
 const readHeaderLines = (filePath: string): Promise<string[]> => (

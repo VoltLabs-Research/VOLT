@@ -1,21 +1,23 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import type { Model } from 'mongoose';
 import { PluginListingRowModel } from '@modules/plugin/models/plugin-listing-row-model';
 import { PluginSubListingRowModel } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
-import { isRecord } from '@shared/domain/utilities/is-record';
 import type { PluginListingRowDocument } from '@modules/plugin/models/plugin-listing-row-model';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
 import type {
+    TeamClusterDaemonPluginMongoDocumentType,
+    TeamClusterDaemonPluginMongoExportPayload,
+    TeamClusterDaemonPluginMongoImportPayload,
+    TeamClusterDaemonPluginMongoPurgePayload
+} from '@shared/contracts';
+import type {
     BulkUpsertOperation,
     ListingPaginatedResult,
     PluginListingFilter,
-    PluginListingRepository,
     PluginMongoRow,
-    PluginMongoRowsExportInput,
     PluginMongoRowsExportResult,
-    PluginMongoRowsImportInput,
-    PluginMongoRowsPurgeInput,
     PluginSubListingFilter,
     ReplaceSubListingRowsInput
 } from '@modules/plugin/models/plugin-listing-repository-contract';
@@ -42,35 +44,27 @@ interface PluginSubListingQuery {
     exposureId?: string;
     timestep?: number;
     subListingName?: string;
-};
+}
 
-interface PagedDocumentsRequest<TDocument> {
+const readPagedDocuments = async <TDocument>(input: {
     page: number;
     limit: number;
     count(): Promise<number>;
     read(skip: number, limit: number): Promise<TDocument[]>;
-};
-
-interface PagedDocumentsResult<TDocument> {
-    documents: TDocument[];
-    page: number;
-    limit: number;
-    total: number;
-};
-
-const readPagedDocuments = async <TDocument>(input: PagedDocumentsRequest<TDocument>): Promise<PagedDocumentsResult<TDocument>> => {
+}): Promise<PaginatedResult<TDocument>> => {
     const pagination = normalizePagination(input.page, input.limit);
     const skip = calculatePaginationOffset(pagination.page, pagination.limit);
-    const [total, documents] = await Promise.all([
+    const [total, data] = await Promise.all([
         input.count(),
         input.read(skip, pagination.limit)
     ]);
 
     return {
-        documents,
+        data,
         page: pagination.page,
         limit: pagination.limit,
-        total
+        total,
+        totalPages: calculateTotalPages(total, pagination.limit)
     };
 };
 
@@ -89,35 +83,31 @@ const SYSTEM_KEYS = new Set([
     'row'
 ]);
 
-const normalizeAnalysisIds = (analysisIds: string[]): string[] => {
-    return [...new Set(analysisIds.filter((analysisId) => analysisId.length > 0))];
-};
+/** Both collections are strict:false open row shapes, so one model type serves the transfer commands. */
+const modelFor = (documentType: TeamClusterDaemonPluginMongoDocumentType): Model<PluginListingRowDocument> =>
+    (documentType === 'listing' ? PluginListingRowModel : PluginSubListingRowModel);
 
-export class MongoPluginListingRepository implements PluginListingRepository {
+const normalizeAnalysisIds = (analysisIds: string[]): string[] =>
+    [...new Set(analysisIds.filter((analysisId) => analysisId.length > 0))];
+
+/** Export, import and purge all address the same set of analyses. */
+const byAnalysisIds = (analysisIds: string[]): { analysis: { $in: string[] } } => ({
+    analysis: {
+        $in: analysisIds
+    }
+});
+
+export class MongoPluginListingRepository {
     async listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult> {
-        const query: PluginListingQuery = {};
+        const query: PluginListingQuery = {
+            ...(filter.pluginId ? { plugin: filter.pluginId } : {}),
+            ...(filter.trajectoryId ? { trajectory: filter.trajectoryId } : {}),
+            ...(filter.analysisId ? { analysis: filter.analysisId } : {}),
+            ...(filter.exposureId ? { exposureId: filter.exposureId } : {}),
+            ...(filter.exposureName ? { exposureName: filter.exposureName } : {})
+        };
 
-        if (filter.pluginId) {
-            query.plugin = filter.pluginId;
-        }
-
-        if (filter.trajectoryId) {
-            query.trajectory = filter.trajectoryId;
-        }
-
-        if (filter.analysisId) {
-            query.analysis = filter.analysisId;
-        }
-
-        if (filter.exposureId) {
-            query.exposureId = filter.exposureId;
-        }
-
-        if (filter.exposureName) {
-            query.exposureName = filter.exposureName;
-        }
-
-        const pageResult = await readPagedDocuments<PluginListingPageDocument>({
+        const page = await readPagedDocuments<PluginListingPageDocument>({
             page: filter.page,
             limit: filter.limit,
             count: () => PluginListingRowModel.countDocuments(query),
@@ -131,23 +121,16 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 .lean<PluginListingPageDocument[]>()
                 .exec()
         });
-        const documents = pageResult.documents;
         const columns = new Set<string>();
         let subListingNames: string[] = [];
 
-        for (const document of documents) {
-            const rowData = document.row;
+        for (const document of page.data) {
+            const rowKeys = document.row
+                ? Object.keys(document.row)
+                : Object.keys(document).filter((key) => !SYSTEM_KEYS.has(key));
 
-            if (isRecord(rowData)) {
-                for (const key of Object.keys(rowData)) {
-                    columns.add(key);
-                }
-            } else {
-                for (const key of Object.keys(document)) {
-                    if (!SYSTEM_KEYS.has(key)) {
-                        columns.add(key);
-                    }
-                }
+            for (const key of rowKeys) {
+                columns.add(key);
             }
 
             if (subListingNames.length === 0 && document.subListingNames?.length) {
@@ -156,36 +139,21 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         }
 
         return {
-            data: documents,
-            page: pageResult.page,
-            limit: pageResult.limit,
-            total: pageResult.total,
-            totalPages: calculateTotalPages(pageResult.total, pageResult.limit),
+            ...page,
             columns: Array.from(columns),
             subListingNames
         };
     }
 
-    async listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>> {
-        const query: PluginSubListingQuery = {};
+    listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>> {
+        const query: PluginSubListingQuery = {
+            ...(filter.analysisId ? { analysis: filter.analysisId } : {}),
+            ...(filter.exposureId ? { exposureId: filter.exposureId } : {}),
+            ...(filter.timestep !== undefined ? { timestep: filter.timestep } : {}),
+            ...(filter.subListingName ? { subListingName: filter.subListingName } : {})
+        };
 
-        if (filter.analysisId) {
-            query.analysis = filter.analysisId;
-        }
-
-        if (filter.exposureId) {
-            query.exposureId = filter.exposureId;
-        }
-
-        if (filter.timestep !== undefined) {
-            query.timestep = filter.timestep;
-        }
-
-        if (filter.subListingName) {
-            query.subListingName = filter.subListingName;
-        }
-
-        const pageResult = await readPagedDocuments<PluginSubListingRowDocument>({
+        return readPagedDocuments<PluginSubListingRowDocument>({
             page: filter.page,
             limit: filter.limit,
             count: () => PluginSubListingRowModel.countDocuments(query),
@@ -199,14 +167,6 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 .lean<PluginSubListingRowDocument[]>()
                 .exec()
         });
-
-        return {
-            data: pageResult.documents,
-            page: pageResult.page,
-            limit: pageResult.limit,
-            total: pageResult.total,
-            totalPages: calculateTotalPages(pageResult.total, pageResult.limit)
-        };
     }
 
     async bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void> {
@@ -239,29 +199,33 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             subListingName: input.subListingName
         })));
 
-        const bulkOperations = inputs.flatMap((input) => input.rows.map((row, index) => ({
-            replaceOne: {
-                filter: {
-                    _id: `${input.analysis}:${input.exposureId}:${input.timestep}:${input.subListingName}:${index}`
-                },
-                replacement: {
-                    _id: `${input.analysis}:${input.exposureId}:${input.timestep}:${input.subListingName}:${index}`,
-                    analysis: input.analysis,
-                    exposureId: input.exposureId,
-                    timestep: input.timestep,
-                    subListingName: input.subListingName,
-                    row
-                },
-                upsert: true
-            }
-        })));
+        const bulkOperations = inputs.flatMap((input) => input.rows.map((row, index) => {
+            const replacement = {
+                _id: `${input.analysis}:${input.exposureId}:${input.timestep}:${input.subListingName}:${index}`,
+                analysis: input.analysis,
+                exposureId: input.exposureId,
+                timestep: input.timestep,
+                subListingName: input.subListingName,
+                row
+            };
+
+            return {
+                replaceOne: {
+                    filter: {
+                        _id: replacement._id
+                    },
+                    replacement,
+                    upsert: true
+                }
+            };
+        }));
 
         if (bulkOperations.length > 0) {
             await PluginSubListingRowModel.bulkWrite(bulkOperations);
         }
     }
 
-    async exportMongoRows(input: PluginMongoRowsExportInput): Promise<PluginMongoRowsExportResult> {
+    async exportMongoRows(input: TeamClusterDaemonPluginMongoExportPayload): Promise<PluginMongoRowsExportResult> {
         const analysisIds = normalizeAnalysisIds(input.analysisIds);
         const skip = Math.max(0, input.skip ?? 0);
         const limit = Math.min(500, Math.max(1, input.limit ?? 200));
@@ -275,35 +239,11 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             };
         }
 
-        const query = {
-            analysis: {
-                $in: analysisIds
-            }
-        };
-
-        if (input.documentType === 'listing') {
-            const [total, rows] = await Promise.all([
-                PluginListingRowModel.countDocuments(query),
-                PluginListingRowModel.find(query)
-                    .sort({
-                        _id: 1
-                    })
-                    .skip(skip)
-                    .limit(limit)
-                    .lean<PluginMongoRow[]>()
-            ]);
-
-            return {
-                rows,
-                total,
-                hasMore: skip + rows.length < total,
-                nextSkip: skip + rows.length
-            };
-        }
-
+        const query = byAnalysisIds(analysisIds);
+        const model = modelFor(input.documentType);
         const [total, rows] = await Promise.all([
-            PluginSubListingRowModel.countDocuments(query),
-            PluginSubListingRowModel.find(query)
+            model.countDocuments(query),
+            model.find(query)
                 .sort({
                     _id: 1
                 })
@@ -320,7 +260,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         };
     }
 
-    async importMongoRows(input: PluginMongoRowsImportInput): Promise<number> {
+    async importMongoRows(input: TeamClusterDaemonPluginMongoImportPayload): Promise<number> {
         const rows = input.rows
             .filter((row): row is ImportableMongoRow => typeof row._id === 'string' && row._id.length > 0)
             .map((row) => ({ ...row }));
@@ -338,35 +278,19 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             }
         }));
 
-        if (input.documentType === 'listing') {
-            await PluginListingRowModel.bulkWrite(bulkOperations);
-            return rows.length;
-        }
-
-        await PluginSubListingRowModel.bulkWrite(bulkOperations);
+        await modelFor(input.documentType).bulkWrite(bulkOperations);
         return rows.length;
     }
 
-    async purgeMongoRows(input: PluginMongoRowsPurgeInput): Promise<number> {
+    async purgeMongoRows(input: TeamClusterDaemonPluginMongoPurgePayload): Promise<number> {
         const analysisIds = normalizeAnalysisIds(input.analysisIds);
         if (analysisIds.length === 0) {
             return 0;
         }
 
-        const query = {
-            analysis: {
-                $in: analysisIds
-            }
-        };
-
-        if (input.documentType === 'listing') {
-            const result = await PluginListingRowModel.deleteMany(query);
-            return result.deletedCount ?? 0;
-        }
-
-        const result = await PluginSubListingRowModel.deleteMany(query);
+        const result = await modelFor(input.documentType).deleteMany(byAnalysisIds(analysisIds));
         return result.deletedCount ?? 0;
     }
 };
 
-export const getPluginListingRepository = singleton((): PluginListingRepository => new MongoPluginListingRepository());
+export const getPluginListingRepository = singleton((): MongoPluginListingRepository => new MongoPluginListingRepository());

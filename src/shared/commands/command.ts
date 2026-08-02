@@ -28,8 +28,8 @@ export interface CommandGroupFactory {
 const namespaces = new WeakMap<CommandGroupClass, string>();
 const commandsByGroup = new WeakMap<CommandGroupClass, CommandMethodMetadata[]>();
 
-export const CommandGroup = (namespace: string): ClassDecorator => (target) => {
-    namespaces.set(target as unknown as CommandGroupClass, namespace);
+export const CommandGroup = (namespace: string) => (target: CommandGroupClass): void => {
+    namespaces.set(target, namespace);
 };
 
 export const Command = (name: string, options: CommandOptions = {}): MethodDecorator => (target, propertyKey, descriptor) => {
@@ -69,6 +69,8 @@ export const commandGroupFactory = <TGroup extends object>(
 
     const factory = (): CommandHandlerMap => {
         instance ??= create();
+        // Irreducible: dispatch is reflective (by string key), and TS cannot express "the keys
+        // @Command recorded are callable" — @Command itself enforces that at decoration time.
         return instance as unknown as CommandHandlerMap;
     };
 

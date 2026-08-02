@@ -18,11 +18,8 @@ import { logAndSwallow } from '@shared/application/utilities/error-message';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@shared/contracts/types/artifact-upload';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
-import type {
-    BaseArtifactUploadEventData,
-    ArtifactUploadFailedEventData
-} from '@modules/plugin/events/plugin-events';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import type { BaseArtifactUploadEventData } from '@modules/plugin/events/plugin-events';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-codec';
 import { mapLimited } from '@shared/application/utilities/map-limited';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
@@ -33,14 +30,6 @@ const DEFAULT_PER_JOB_UPLOAD_CONCURRENCY = 4;
 interface ArtifactUploadReporter {
     flushPendingArtifacts(): Promise<void>;
     reportArtifact(input: ReportArtifactInput): Promise<void>;
-}
-
-interface ArtifactUploadStatusReporter {
-    reportArtifactUploadCompleted(input: BaseArtifactUploadEventData): Promise<void>;
-    reportArtifactUploadFailed(input: ArtifactUploadFailedEventData): Promise<void>;
-    reportArtifactUploadStarted(input: BaseArtifactUploadEventData): Promise<void>;
-    reportAnalysisStageStatus: DaemonJobReporter['reportAnalysisStageStatus'];
-    reportAnalysisLogChunk: DaemonJobReporter['reportAnalysisLogChunk'];
 }
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
@@ -55,7 +44,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly objectStore: ClusterObjectStore,
         private readonly daemonArtifactReporter: ArtifactUploadReporter,
-        private readonly daemonJobReporter: ArtifactUploadStatusReporter
+        private readonly daemonJobReporter: DaemonJobReporter
     ) {
         super({
             queueService,

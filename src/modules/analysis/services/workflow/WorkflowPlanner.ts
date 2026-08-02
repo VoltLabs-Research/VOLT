@@ -4,10 +4,7 @@ import type {
     WorkflowNode,
     WorkflowNodeOutput
 } from '@shared/contracts/types/workflow.types';
-import type {
-    WorkflowNodeExecutionResult,
-    WorkflowNodeExecutor
-} from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
+import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 
 export interface WorkflowPlannerExecutedEvent {
     node: WorkflowNode;
@@ -62,8 +59,6 @@ export interface WorkflowPlannerForEachResult {
 
 export interface WorkflowPlanningOutcome {
 
-    executed: WorkflowNodeExecutionResult[];
-
     forEach?: WorkflowPlannerForEachResult;
 
     contextNodeId?: string;
@@ -80,7 +75,6 @@ export class WorkflowPlanner {
 
     async plan(params: WorkflowPlanParams): Promise<WorkflowPlanningOutcome> {
         const { nodes, context, shouldSkipNode, hooks = {} } = params;
-        const executed: WorkflowNodeExecutionResult[] = [];
         let contextNodeId: string | undefined;
         let forEach: WorkflowPlannerForEachResult | undefined;
         let haltedEarly = false;
@@ -112,12 +106,6 @@ export class WorkflowPlanner {
                 if (transformed !== undefined) {
                     output = transformed;
                 }
-
-                executed.push({
-                    node,
-                    status: 'executed',
-                    output
-                });
 
                 if (node.type === WorkflowNodeType.Context) {
                     contextNodeId = node.id;
@@ -156,7 +144,6 @@ export class WorkflowPlanner {
         }
 
         return {
-            executed,
             forEach,
             contextNodeId,
             haltedEarly

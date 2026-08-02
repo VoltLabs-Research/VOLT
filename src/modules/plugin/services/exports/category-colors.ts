@@ -1,6 +1,6 @@
 const GOLDEN_RATIO = 0.618033988749895;
 
-const hueToRgb = (p: number, q: number, t: number): number => {
+export const hueToRgb = (p: number, q: number, t: number): number => {
     let tt = t;
     if (tt < 0) tt += 1;
     if (tt > 1) tt -= 1;
@@ -10,7 +10,7 @@ const hueToRgb = (p: number, q: number, t: number): number => {
     return p;
 };
 
-export const fallbackCategoryColor = (index: number): [number, number, number, number] => {
+const fallbackCategoryColor = (index: number): [number, number, number, number] => {
     const hue = (index * GOLDEN_RATIO) % 1.0;
     const saturation = 0.65;
     const lightness = 0.55;

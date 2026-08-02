@@ -1,3 +1,4 @@
+import { toError } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { logger } from '@shared/infrastructure/logger';
@@ -62,7 +63,7 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
                 },
                 '@plugin-warmup-worker: warmup failed'
             );
-            throw error instanceof Error ? error : new Error(String(error));
+            throw toError(error);
         }
     }
 }

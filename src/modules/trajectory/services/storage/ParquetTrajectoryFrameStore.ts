@@ -12,14 +12,13 @@ import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/infrastructure/logger';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/trajectory-not-found-error';
 import {
     type ColumnDType,
-    type ElementTableEntry,
-    type LammpsUnits,
     type TrajectoryElementMetadata,
     type TrajectoryFrameData,
     type TrajectoryFrameLookupInput,
+    type TrajectoryFrameSource,
     type TrajectoryFrameStore,
     type TrajectoryFrameStoreIngestInput,
     type TrajectoryFrameStoreIngestResult,
@@ -32,8 +31,7 @@ import {
     toTrajectoryElementTableObjectKey
 } from '@shared/infrastructure/storage/storage-codec';
 
-const BASE_COLUMNS = ['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z'] as const;
-const BASE_COLUMN_SET = new Set<string>(BASE_COLUMNS);
+const BASE_COLUMN_SET = new Set<string>(['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z']);
 const PARQUET_FRAME_CACHE_BYTES = 512 * 1024 * 1024;
 
 const INTEGER_TYPE_IDS = new Set<DuckDBTypeId>([
@@ -47,30 +45,8 @@ const INTEGER_TYPE_IDS = new Set<DuckDBTypeId>([
     DuckDBTypeId.UBIGINT
 ]);
 
-interface CachedFrame {
-    frame: TrajectoryFrameData;
-    bytes: number;
-}
-
 const sqlString = (value: string): string =>
     `'${value.replace(/'/g, "''")}'`;
-
-const normalizeCustomPropertyNames = (properties: string[] | undefined): string[] => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-
-    for (const property of properties ?? []) {
-        const name = property.trim();
-        if (!name || BASE_COLUMN_SET.has(name) || seen.has(name)) continue;
-        seen.add(name);
-        result.push(name);
-    }
-
-    return result;
-};
-
-const hashCacheKey = (ownerClusterId: string, objectKey: string): string =>
-    createHash('sha256').update(`${ownerClusterId}::${objectKey}`).digest('hex');
 
 const computeBbox = (positions: Float32Array): [number, number, number, number, number, number] => {
     if (positions.length === 0) return [0, 0, 0, 0, 0, 0];
@@ -96,37 +72,24 @@ const computeBbox = (positions: Float32Array): [number, number, number, number, 
     return [minX, minY, minZ, maxX, maxY, maxZ];
 };
 
-const getNumericValue = (value: unknown): number => {
-    if (typeof value === 'bigint') return Number(value);
-    if (typeof value === 'number') return value;
-    if (value === null || value === undefined) return 0;
-    return Number(value);
-};
-
-const frameByteLength = (frame: TrajectoryFrameData): number => {
-    let bytes = frame.positions.byteLength + frame.types.byteLength + (frame.ids?.byteLength ?? 0);
-    for (const property of Object.values(frame.properties)) {
-        bytes += property.values.byteLength;
-    }
-    return bytes;
-};
+interface ParquetFrameRow {
+    id: number | null;
+    type: number;
+    x: number;
+    y: number;
+    z: number;
+    [property: string]: number | null;
+}
 
 interface ParquetBuildWorkerInput {
     outputPath: string;
-    frames: Array<{ timestep: number; dumpPath: string }>;
-    customProperties: string[];
-    units?: string;
-}
-
-interface ParquetBuildWorkerResult {
-    columnDtypes: Record<string, ColumnDType>;
-    units: LammpsUnits;
-    elementTable: ElementTableEntry[];
+    frames: TrajectoryFrameSource[];
+    customProperties?: string[];
 }
 
 interface ParquetBuildWorkerMessage {
     ok: boolean;
-    result?: ParquetBuildWorkerResult;
+    result?: TrajectoryElementMetadata;
     error?: {
         name?: string;
         message?: string;
@@ -134,50 +97,35 @@ interface ParquetBuildWorkerMessage {
     };
 }
 
-interface ElementTableSidecar {
-    units: LammpsUnits;
-    elementTable: ElementTableEntry[];
-}
-
-const parquetBuildWorkerPath = (): string => (
-    path.join(__dirname, '..', '..', 'workers', 'parquet-ingest-worker.cjs')
-);
-
-const runParquetBuildWorker = (input: ParquetBuildWorkerInput): Promise<ParquetBuildWorkerResult> => (
+const runParquetBuildWorker = (input: ParquetBuildWorkerInput): Promise<TrajectoryElementMetadata> => (
     new Promise((resolve, reject) => {
-        const worker = new Worker(parquetBuildWorkerPath(), { workerData: input });
-        let settled = false;
-
-        const settle = (fn: () => void): void => {
-            if (settled) return;
-            settled = true;
-            fn();
-        };
+        const worker = new Worker(
+            path.join(__dirname, '..', '..', 'workers', 'parquet-ingest-worker.cjs'),
+            { workerData: input }
+        );
 
         worker.once('message', (message: ParquetBuildWorkerMessage) => {
             if (message.ok && message.result) {
-                settle(() => resolve(message.result as ParquetBuildWorkerResult));
+                resolve(message.result);
                 return;
             }
 
             const error = new Error(message.error?.message ?? 'Parquet ingest worker failed');
             error.name = message.error?.name ?? 'ParquetIngestWorkerError';
             error.stack = message.error?.stack ?? error.stack;
-            settle(() => reject(error));
+            reject(error);
         });
-        worker.once('error', (error) => {
-            settle(() => reject(error));
-        });
+        worker.once('error', reject);
         worker.once('exit', (code) => {
             if (code !== 0) {
-                settle(() => reject(new Error(`Parquet ingest worker exited with code ${code}`)));
+                reject(new Error(`Parquet ingest worker exited with code ${code}`));
             }
         });
     })
 );
 
 export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
-    private readonly frameCache = new Map<string, CachedFrame>();
+    private readonly frameCache = new Map<string, { frame: TrajectoryFrameData; bytes: number }>();
     private frameCacheBytes = 0;
     private readonly localParquetPromises = new Map<string, Promise<string>>();
     private readonly elementMetadataCache = new Map<string, TrajectoryElementMetadata>();
@@ -191,11 +139,10 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
         return withNativeProcessingTempDir('trajectory-parquet-ingest', async (tempDirectory) => {
             const outputPath = path.join(tempDirectory, `${input.trajectoryId}.parquet`);
-            const customProperties = normalizeCustomPropertyNames(input.customProperties);
             const built = await runParquetBuildWorker({
                 outputPath,
-                frames: [...input.frames].sort((a, b) => a.timestep - b.timestep),
-                customProperties
+                frames: input.frames,
+                customProperties: input.customProperties
             });
 
             const stat = await fs.stat(outputPath);
@@ -216,10 +163,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
                 }
             });
 
-            await this.writeElementMetadata(input.ownerClusterId, input.trajectoryId, {
-                units: built.units,
-                elementTable: built.elementTable
-            });
+            await this.writeElementMetadata(input.ownerClusterId, input.trajectoryId, built);
 
             this.invalidateCaches(input.ownerClusterId, input.trajectoryId);
 
@@ -235,13 +179,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 
     public async readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData> {
-        if (input.timestep === null || input.timestep === undefined || !Number.isFinite(Number(input.timestep))) {
-            throw this.rethrowNotFound(
-                new Error(`trajectory frame lookup requires a numeric timestep, got ${String(input.timestep)}`),
-                input
-            );
-        }
-        const cacheKey = this.buildFrameCacheKey(input);
+        const cacheKey = `${input.ownerClusterId}::${input.trajectoryId}::${input.timestep}`;
         const cached = this.frameCache.get(cacheKey);
         if (cached) {
             this.frameCache.delete(cacheKey);
@@ -256,18 +194,17 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ` +
                 'WHERE timestep = $timestep ORDER BY atom_index',
-                { timestep: BigInt(Number(input.timestep)) }
+                { timestep: BigInt(input.timestep) }
             );
-            const rows = reader.getRowObjectsJS();
+            const rows = reader.getRowObjectsJS() as ParquetFrameRow[];
             if (rows.length === 0) {
                 throw new Error(`parquet timestep not present: ${input.timestep}`);
             }
-            const columnDtypes = this.readColumnDtypes(reader);
-            const frame = this.rowsToFrame(input.timestep, rows, columnDtypes);
+            const frame = this.rowsToFrame(input.timestep, rows, reader);
             this.putFrameCache(cacheKey, frame);
             return frame;
         } catch (error) {
-            throw this.rethrowNotFound(error, input);
+            throw toTrajectoryFrameError(error, input);
         } finally {
             connection?.closeSync();
         }
@@ -278,18 +215,17 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         const cached = this.elementMetadataCache.get(cacheKey);
         if (cached) return cached;
 
-        const objectKey = toTrajectoryElementTableObjectKey(input.trajectoryId);
         const response = await this.objectStore.getStream(
             input.ownerClusterId,
             ObjectBucketName.Trajectories,
-            objectKey,
+            toTrajectoryElementTableObjectKey(input.trajectoryId),
             { skipMetadata: true }
         );
         const chunks: Buffer[] = [];
         for await (const chunk of response.stream) {
             chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
         }
-        const sidecar = JSON.parse(Buffer.concat(chunks).toString('utf8')) as ElementTableSidecar;
+        const sidecar = JSON.parse(Buffer.concat(chunks).toString('utf8')) as TrajectoryElementMetadata;
         const metadata: TrajectoryElementMetadata = {
             units: sidecar.units ?? DEFAULT_UNITS,
             elementTable: sidecar.elementTable ?? []
@@ -298,30 +234,24 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         return metadata;
     }
 
-    private readColumnDtypes(reader: { columnCount: number; columnName(i: number): string; columnTypeId(i: number): DuckDBTypeId }): Record<string, ColumnDType> {
-        const dtypes: Record<string, ColumnDType> = {};
-        for (let index = 0; index < reader.columnCount; index++) {
-            const name = reader.columnName(index);
-            if (BASE_COLUMN_SET.has(name)) continue;
-            dtypes[name] = INTEGER_TYPE_IDS.has(reader.columnTypeId(index)) ? 'i32' : 'f32';
-        }
-        return dtypes;
-    }
-
     private rowsToFrame(
         timestep: number,
-        rows: Record<string, unknown>[],
-        columnDtypes: Record<string, ColumnDType>
+        rows: ParquetFrameRow[],
+        reader: { columnCount: number; columnName(i: number): string; columnTypeId(i: number): DuckDBTypeId }
     ): TrajectoryFrameData {
         const atomCount = rows.length;
         const positions = new Float32Array(atomCount * 3);
         const types = new Uint16Array(atomCount);
         const ids = new Uint32Array(atomCount);
         let hasIds = false;
-        const propertyNames = Object.keys(rows[0]).filter((name) => !BASE_COLUMN_SET.has(name));
+        const propertyNames: string[] = [];
         const properties: Record<string, TypedColumn> = {};
-        for (const name of propertyNames) {
-            const dtype = columnDtypes[name] ?? 'f32';
+
+        for (let index = 0; index < reader.columnCount; index++) {
+            const name = reader.columnName(index);
+            if (BASE_COLUMN_SET.has(name)) continue;
+            const dtype: ColumnDType = INTEGER_TYPE_IDS.has(reader.columnTypeId(index)) ? 'i32' : 'f32';
+            propertyNames.push(name);
             properties[name] = {
                 dtype,
                 values: dtype === 'i32' ? new Int32Array(atomCount) : new Float32Array(atomCount)
@@ -330,18 +260,18 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
         for (let index = 0; index < atomCount; index++) {
             const row = rows[index];
-            positions[index * 3] = getNumericValue(row.x);
-            positions[index * 3 + 1] = getNumericValue(row.y);
-            positions[index * 3 + 2] = getNumericValue(row.z);
-            types[index] = getNumericValue(row.type);
+            positions[index * 3] = row.x;
+            positions[index * 3 + 1] = row.y;
+            positions[index * 3 + 2] = row.z;
+            types[index] = row.type;
 
-            if (row.id !== null && row.id !== undefined) {
-                ids[index] = getNumericValue(row.id);
+            if (row.id !== null) {
+                ids[index] = row.id;
                 hasIds = true;
             }
 
             for (const property of propertyNames) {
-                properties[property].values[index] = getNumericValue(row[property]);
+                properties[property].values[index] = row[property] ?? 0;
             }
         }
 
@@ -359,14 +289,13 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     private async writeElementMetadata(
         ownerClusterId: string,
         trajectoryId: string,
-        metadata: ElementTableSidecar
+        metadata: TrajectoryElementMetadata
     ): Promise<void> {
-        const body = Buffer.from(JSON.stringify(metadata), 'utf8');
         await this.objectStore.putObject({
             ownerClusterId,
             bucket: ObjectBucketName.Trajectories,
             objectKey: toTrajectoryElementTableObjectKey(trajectoryId),
-            body,
+            body: Buffer.from(JSON.stringify(metadata), 'utf8'),
             metadata: { 'Content-Type': 'application/json' }
         });
         this.elementMetadataCache.set(`${ownerClusterId}::${trajectoryId}`, metadata);
@@ -389,7 +318,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
     private async downloadParquetIfNeeded(ownerClusterId: string, objectKey: string): Promise<string> {
         await fs.mkdir(DAEMON_PATHS.trajectoryParquetCache, { recursive: true });
-        const cacheId = hashCacheKey(ownerClusterId, objectKey);
+        const cacheId = createHash('sha256').update(`${ownerClusterId}::${objectKey}`).digest('hex');
         const filePath = path.join(DAEMON_PATHS.trajectoryParquetCache, `${cacheId}.parquet`);
         const signaturePath = `${filePath}.signature`;
 
@@ -405,8 +334,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             if (existingSignature === signature) {
                 return filePath;
             }
-        } catch {
-        }
+        } catch { /* no usable cache entry; fall through and re-download */ }
 
         const response = await this.objectStore.getStream(
             ownerClusterId,
@@ -436,12 +364,11 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         }
     }
 
-    private buildFrameCacheKey(input: TrajectoryFrameLookupInput): string {
-        return `${input.ownerClusterId}::${input.trajectoryId}::${input.timestep}`;
-    }
-
     private putFrameCache(key: string, frame: TrajectoryFrameData): void {
-        const bytes = frameByteLength(frame);
+        let bytes = frame.positions.byteLength + frame.types.byteLength + (frame.ids?.byteLength ?? 0);
+        for (const property of Object.values(frame.properties)) {
+            bytes += property.values.byteLength;
+        }
         this.frameCache.set(key, { frame, bytes });
         this.frameCacheBytes += bytes;
 
@@ -452,19 +379,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             this.frameCache.delete(oldest);
             if (evicted) this.frameCacheBytes -= evicted.bytes;
         }
-    }
-
-    private rethrowNotFound(error: unknown, input: TrajectoryFrameLookupInput): Error {
-        if (isObjectNotFoundError(error)) {
-            const notFound = new Error(
-                `Parquet trajectory object not found: trajectoryId=${input.trajectoryId}, timestep=${input.timestep}, ` +
-                `ownerClusterId=${input.ownerClusterId}. The trajectory may not have been ingested yet.`
-            );
-            notFound.name = 'ParquetTrajectoryNotFoundError';
-            return notFound;
-        }
-        if (error instanceof Error) return error;
-        return new Error(String(error));
     }
 }
 

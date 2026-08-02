@@ -1,3 +1,6 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { getConfig } from '@core/config/daemon';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
@@ -8,6 +11,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
@@ -16,16 +20,17 @@ import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
-import { parseTrajectoryMetadata, type ParsedSimulationCell } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
+import { parseTrajectoryMetadata, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { mapLimited } from '@shared/application/utilities/map-limited';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 const INGEST_FRAME_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_INGEST_CONCURRENCY') ?? 8;
 const METADATA_READ_BYTES = readPositiveIntegerEnv('TRAJECTORY_METADATA_READ_BYTES') ?? 4 * 1024 * 1024;
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_FRAME_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_BACKOFF_MS') ?? 2000;
 const SESSION_TTL_SECONDS = 86400;
+const INGEST_BUCKET = ObjectBucketName.Dumps;
 const ZIP_ENTRY_JUNK_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
 interface TrajectoryIngestStagedObject {
@@ -47,11 +52,7 @@ interface TrajectoryIngestPayload {
     stagedObjects: TrajectoryIngestStagedObject[];
 }
 
-interface TrajectoryIngestFrame {
-    timestep: number;
-    natoms: number;
-    headers: string[];
-    simulationCell: ParsedSimulationCell | null;
+interface TrajectoryIngestFrame extends ParsedFrameMetadata {
     size: number;
     objectKey: string;
 }
@@ -61,6 +62,16 @@ interface TrajectoryIngestResult {
     frames: TrajectoryIngestFrame[];
     stats: { totalFiles: number; totalSize: number };
 }
+
+const toIngestFrame = (
+    metadata: ParsedFrameMetadata,
+    size: number,
+    objectKey: string
+): TrajectoryIngestFrame => ({
+    ...metadata,
+    size,
+    objectKey
+});
 
 @CommandGroup('trajectory')
 export class TrajectoryIngestCommand {
@@ -86,20 +97,19 @@ export class TrajectoryIngestCommand {
             `@trajectory-ingest: starting metadata parse for trajectoryId=${trajectoryId}, files=${stagedObjects.length}`
         );
 
-        const ownerClusterId = this.config.teamClusterId;
-        const bucket = ObjectBucketName.Dumps;
-
-        const materializedObjects = await this.materializeStagedObjects(stagedObjects, bucket);
+        await mapLimited(
+            stagedObjects,
+            INGEST_FRAME_CONCURRENCY,
+            (staged) => this.materializeStagedObject(staged)
+        );
 
         const parsedFrames = await withNativeProcessingTempDir(
             'trajectory-ingest',
             async (tempDirectory) => {
                 const frameGroups = await mapLimited(
-                    materializedObjects,
+                    stagedObjects,
                     INGEST_FRAME_CONCURRENCY,
-                    async (staged, index) => {
-                        return this.parseStagedObject(staged, index, trajectoryId, bucket, tempDirectory);
-                    }
+                    (staged, index) => this.parseStagedObject(staged, index, trajectoryId, tempDirectory)
                 );
                 return frameGroups.flat();
             }
@@ -113,13 +123,13 @@ export class TrajectoryIngestCommand {
         const sessionPrefix = `trajectory-frame-session:${trajectoryId}`;
         const framesForParquet = frames.map((f) => ({
             timestep: f.timestep,
-            objectKey: `trajectory-${trajectoryId}/timestep-${f.timestep}.dump.zst`
+            objectKey: toTrajectoryFrameDumpObjectKey(trajectoryId, f.timestep)
         }));
 
         await this.redisConnection.setValueWithTtl(`${sessionPrefix}:remaining`, frames.length.toString(), SESSION_TTL_SECONDS);
         await this.redisConnection.setValueWithTtl(`${sessionPrefix}:frames`, JSON.stringify(framesForParquet), SESSION_TTL_SECONDS);
 
-        await this.enqueueFrameProcessingJobs(trajectoryId, teamId, ownerClusterId, frames);
+        await this.enqueueFrameProcessingJobs(trajectoryId, teamId, this.config.teamClusterId, frames);
 
         const totalSize = frames.reduce((sum, frame) => sum + frame.size, 0);
 
@@ -137,51 +147,57 @@ export class TrajectoryIngestCommand {
         };
     }
 
-    private async materializeStagedObjects(
-        stagedObjects: TrajectoryIngestStagedObject[],
-        bucket: string
-    ): Promise<TrajectoryIngestStagedObject[]> {
-        return mapLimited(
-            stagedObjects,
-            INGEST_FRAME_CONCURRENCY,
-            async (staged) => {
-                await this.materializeStagedObject(staged, bucket);
-                return {
-                    objectKey: staged.objectKey,
-                    originalName: staged.originalName,
-                    size: staged.size
-                };
-            }
-        );
-    }
-
-    private async materializeStagedObject(staged: TrajectoryIngestStagedObject, bucket: string): Promise<void> {
+    /**
+     * Verifies the client actually delivered every staged byte and concatenates the
+     * parts. An incomplete or absent upload is the caller's problem, not ours, so it
+     * has to surface as 422 rather than a daemon-side internal error.
+     */
+    private async materializeStagedObject(staged: TrajectoryIngestStagedObject): Promise<void> {
         const parts = (staged.parts ?? []).slice().sort((left, right) => left.partNumber - right.partNumber);
 
+        const statUploaded = async (objectKey: string, label: string): Promise<number> => {
+            try {
+                return (await this.minioService.statObject(INGEST_BUCKET, objectKey)).size;
+            } catch {
+                throw ApplicationError.unprocessableEntity(
+                    ErrorCodes.TRAJECTORY_UPLOAD_INCOMPLETE,
+                    `${label} was never uploaded`
+                );
+            }
+        };
+
+        const rejectSizeMismatch = (label: string, expected: number, actual: number): never => {
+            throw ApplicationError.unprocessableEntity(
+                ErrorCodes.TRAJECTORY_UPLOAD_SIZE_MISMATCH,
+                `${label} is ${actual} bytes but ${expected} bytes were declared`
+            );
+        };
+
         if (parts.length === 0) {
-            const stat = await this.minioService.statObject(bucket, staged.objectKey);
-            if (stat.size !== staged.size) {
-                throw new Error(`Uploaded object size mismatch for ${staged.originalName}`);
+            const size = await statUploaded(staged.objectKey, staged.originalName);
+            if (size !== staged.size) {
+                rejectSizeMismatch(staged.originalName, staged.size, size);
             }
             return;
         }
 
-        let totalSize = 0;
-        await Promise.all(parts.map(async (part) => {
-            const stat = await this.minioService.statObject(bucket, part.objectKey);
-            if (stat.size !== part.size) {
-                throw new Error(`Uploaded part size mismatch for ${staged.originalName} part ${part.partNumber}`);
+        const partSizes = await Promise.all(parts.map(async (part) => {
+            const label = `${staged.originalName} part ${part.partNumber}`;
+            const size = await statUploaded(part.objectKey, label);
+            if (size !== part.size) {
+                rejectSizeMismatch(label, part.size, size);
             }
-            totalSize += part.size;
+            return size;
         }));
 
+        const totalSize = partSizes.reduce((sum, size) => sum + size, 0);
         if (totalSize !== staged.size) {
-            throw new Error(`Uploaded object size mismatch for ${staged.originalName}`);
+            rejectSizeMismatch(staged.originalName, staged.size, totalSize);
         }
 
         if (parts.length > 1 || parts[0]?.objectKey !== staged.objectKey) {
             await this.minioService.composeObject({
-                bucket,
+                bucket: INGEST_BUCKET,
                 objectKey: staged.objectKey,
                 sourceObjectKeys: parts.map((part) => part.objectKey)
             });
@@ -189,7 +205,7 @@ export class TrajectoryIngestCommand {
 
         await Promise.all(parts
             .filter((part) => part.objectKey !== staged.objectKey)
-            .map((part) => this.minioService.removeObject(bucket, part.objectKey).catch((error) => {
+            .map((part) => this.minioService.removeObject(INGEST_BUCKET, part.objectKey).catch((error) => {
                 logger.debug(`@trajectory-ingest: upload part cleanup failed ${part.objectKey}: ${String(error)}`);
             })));
     }
@@ -197,7 +213,6 @@ export class TrajectoryIngestCommand {
     private async parseFrameMetadata(
         staged: TrajectoryIngestStagedObject,
         index: number,
-        bucket: string,
         tempDirectory: string
     ): Promise<TrajectoryIngestFrame> {
         const safeOriginalName = path.basename(staged.originalName || 'trajectory-frame.dump');
@@ -207,47 +222,37 @@ export class TrajectoryIngestCommand {
             : METADATA_READ_BYTES;
 
         const stream = await this.minioService.getObjectRangeStream(
-            bucket,
+            INGEST_BUCKET,
             staged.objectKey,
             0,
             metadataReadLength
         );
         await pipeline(stream, createWriteStream(localMetadataPath));
 
-        const metadata = await parseTrajectoryMetadata(localMetadataPath);
-
-        return {
-            timestep: metadata.timestep,
-            natoms: metadata.natoms,
-            headers: metadata.headers,
-            simulationCell: metadata.simulationCell ?? null,
-            size: staged.size,
-            objectKey: staged.objectKey
-        };
+        return toIngestFrame(await parseTrajectoryMetadata(localMetadataPath), staged.size, staged.objectKey);
     }
 
     private async parseStagedObject(
         staged: TrajectoryIngestStagedObject,
         index: number,
         trajectoryId: string,
-        bucket: string,
         tempDirectory: string
     ): Promise<TrajectoryIngestFrame[]> {
-        if (this.isZipUpload(staged)) {
-            return this.expandZipAndParseFrames(staged, index, trajectoryId, bucket, tempDirectory);
+        if (staged.originalName.toLowerCase().endsWith('.zip') || staged.objectKey.toLowerCase().endsWith('.zip')) {
+            return this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory);
         }
 
         try {
-            return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
+            return [await this.parseFrameMetadata(staged, index, tempDirectory)];
         } catch (error) {
             logger.warn(
                 {
                     file: staged.originalName,
-                    err: error instanceof Error ? error.message : String(error)
+                    err: errorMessage(error)
                 },
                 '@trajectory-ingest: skipping unparseable staged file'
             );
-            await this.removeIgnoredStagedObject(bucket, staged.objectKey);
+            await this.removeIgnoredStagedObject(staged.objectKey);
             return [];
         }
     }
@@ -256,7 +261,6 @@ export class TrajectoryIngestCommand {
         staged: TrajectoryIngestStagedObject,
         archiveIndex: number,
         trajectoryId: string,
-        bucket: string,
         tempDirectory: string
     ): Promise<TrajectoryIngestFrame[]> {
         const safeArchiveName = path.basename(staged.originalName || `archive-${archiveIndex}.zip`);
@@ -266,7 +270,7 @@ export class TrajectoryIngestCommand {
 
         await fs.mkdir(extractRoot, { recursive: true });
 
-        const archiveStream = await this.minioService.getObjectStream(bucket, staged.objectKey);
+        const archiveStream = await this.minioService.getObjectStream(INGEST_BUCKET, staged.objectKey);
         await pipeline(archiveStream, createWriteStream(archivePath));
 
         const directory = await unzipper.Open.file(archivePath);
@@ -275,8 +279,11 @@ export class TrajectoryIngestCommand {
         for (let entryIndex = 0; entryIndex < directory.files.length; entryIndex += 1) {
             const entry = directory.files[entryIndex];
             const basename = path.basename(entry.path);
+            const isJunkEntry = basename.startsWith('.') ||
+                ZIP_ENTRY_JUNK_BASENAMES.has(basename) ||
+                entry.path.split('/').some((part) => ZIP_ENTRY_JUNK_BASENAMES.has(part));
 
-            if (entry.type === 'Directory' || this.isJunkZipEntry(entry.path, basename)) {
+            if (entry.type === 'Directory' || isJunkEntry) {
                 continue;
             }
 
@@ -301,44 +308,37 @@ export class TrajectoryIngestCommand {
                 continue;
             }
 
-            let metadata;
-            try {
-                metadata = await parseTrajectoryMetadata(resolvedOutputPath);
-            } catch (error) {
+            const metadata = await parseTrajectoryMetadata(resolvedOutputPath).catch((error) => {
                 logger.warn(
                     {
                         entry: entry.path,
-                        err: error instanceof Error ? error.message : String(error)
+                        err: errorMessage(error)
                     },
                     '@trajectory-ingest: skipping unparseable ZIP entry'
                 );
+                return null;
+            });
+            if (!metadata) {
                 continue;
             }
 
             const expandedObjectKey = `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`;
             await this.minioService.putObjectStream({
-                bucket,
+                bucket: INGEST_BUCKET,
                 objectKey: expandedObjectKey,
                 stream: createReadStream(resolvedOutputPath),
                 size: stat.size
             });
 
-            frames.push({
-                timestep: metadata.timestep,
-                natoms: metadata.natoms,
-                headers: metadata.headers,
-                simulationCell: metadata.simulationCell ?? null,
-                size: stat.size,
-                objectKey: expandedObjectKey
-            });
+            frames.push(toIngestFrame(metadata, stat.size, expandedObjectKey));
         }
 
         if (frames.length === 0) {
-            await this.removeIgnoredStagedObject(bucket, staged.objectKey);
+            await this.removeIgnoredStagedObject(staged.objectKey);
             return [];
         }
 
-        await this.minioService.removeObject(bucket, staged.objectKey).catch((error) => {
+        await this.minioService.removeObject(INGEST_BUCKET, staged.objectKey).catch((error) => {
             logger.debug(`@trajectory-ingest: archive staging cleanup failed ${staged.objectKey}: ${String(error)}`);
         });
 
@@ -349,18 +349,8 @@ export class TrajectoryIngestCommand {
         return frames;
     }
 
-    private isZipUpload(staged: TrajectoryIngestStagedObject): boolean {
-        return staged.originalName.toLowerCase().endsWith('.zip') || staged.objectKey.toLowerCase().endsWith('.zip');
-    }
-
-    private isJunkZipEntry(entryPath: string, basename: string): boolean {
-        return basename.startsWith('.') ||
-            ZIP_ENTRY_JUNK_BASENAMES.has(basename) ||
-            entryPath.split('/').some((part) => ZIP_ENTRY_JUNK_BASENAMES.has(part));
-    }
-
-    private async removeIgnoredStagedObject(bucket: string, objectKey: string): Promise<void> {
-        await this.minioService.removeObject(bucket, objectKey).catch(() => undefined);
+    private async removeIgnoredStagedObject(objectKey: string): Promise<void> {
+        await this.minioService.removeObject(INGEST_BUCKET, objectKey).catch(() => undefined);
     }
 
     private async enqueueFrameProcessingJobs(
@@ -387,21 +377,19 @@ export class TrajectoryIngestCommand {
             updatedAt: timestamp
         }));
 
-        if (jobsToEnqueue.length > 0) {
-            try {
-                await this.queueService.enqueueBulk(TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, jobsToEnqueue, {
-                    attempts: DEFAULT_FRAME_JOB_ATTEMPTS,
-                    backoff: {
-                        type: 'exponential',
-                        delay: DEFAULT_FRAME_JOB_BACKOFF_MS
-                    }
-                });
-            } catch (error) {
-                logger.error(
-                    `@trajectory-ingest: frame processing enqueue failed for trajectoryId=${trajectoryId}: ${String(error)}`
-                );
-                throw error;
-            }
+        try {
+            await this.queueService.enqueueBulk(TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, jobsToEnqueue, {
+                attempts: DEFAULT_FRAME_JOB_ATTEMPTS,
+                backoff: {
+                    type: 'exponential',
+                    delay: DEFAULT_FRAME_JOB_BACKOFF_MS
+                }
+            });
+        } catch (error) {
+            logger.error(
+                `@trajectory-ingest: frame processing enqueue failed for trajectoryId=${trajectoryId}: ${String(error)}`
+            );
+            throw error;
         }
     }
 

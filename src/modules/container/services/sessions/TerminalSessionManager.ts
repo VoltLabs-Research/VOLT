@@ -1,21 +1,13 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { withTimeout } from '@shared/infrastructure/observability/daemon-instrumentation';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@core/constants/reverse-channel';
-import {
-    EnvelopeKind,
-    decodeEnvelope,
-    encodeEnvelope,
-    toUint8Array
-} from '@shared/contracts/channel/binary-envelope';
+import { decodeStreamChunk, encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
+import { createSessionAttachFailureResult, failSessionAttach } from '@modules/container/services/sessions/session-transitions';
 import type { RuntimeTerminalAttachment } from '@shared/infrastructure/runtime/DockerRuntime';
-import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionResizePayload } from '@shared/contracts';
-import type {
-    BinarySessionDataPayload,
-    BinarySessionInputPayload
-} from '@shared/contracts/channel/binary-messages';
-import type { CommandResult } from '@voltstack/daemon-cluster-client';
-
-type SessionCommandResult = CommandResult<object | null>;
+import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionResizePayload } from '@shared/contracts';
+import type { BinarySessionInputPayload } from '@shared/contracts/channel/binary-messages';
+import type { SessionCommandResult, SessionTransitionCoordinator } from '@modules/container/services/sessions/session-transitions';
 
 interface ReverseChannelTerminalState {
     attachment: RuntimeTerminalAttachment;
@@ -24,25 +16,9 @@ interface ReverseChannelTerminalState {
     onError: (error: Error) => void;
 };
 
-interface SessionTransition {
-    sessionId: string;
-    transitionId: number;
-};
-
 interface TerminalSessionManagerOptions {
-    dockerRuntime?: DockerRuntime;
-    coordinator: TerminalSessionManagerCoordinator;
-};
-
-interface TerminalSessionManagerCoordinator {
-    beginSessionTransition(sessionId: string): SessionTransition | null;
-    cleanupInteractiveSession(sessionId: string): void;
-    clearSessionActivityIfUntracked(sessionId: string): void;
-    emitSessionData(payload: BinarySessionDataPayload): void;
-    emitSessionEnd(payload: TeamClusterDaemonSessionEndPayload): void;
-    endSessionTransition(transition: SessionTransition): void;
-    touchSession(sessionId: string): void;
-    wasSessionTransitionCancelled(transition: SessionTransition): boolean;
+    dockerRuntime: DockerRuntime;
+    coordinator: SessionTransitionCoordinator;
 };
 
 export class TerminalSessionManager {
@@ -51,14 +27,9 @@ export class TerminalSessionManager {
     constructor(private readonly options: TerminalSessionManagerOptions) {}
 
     async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<SessionCommandResult> {
-        const dockerRuntime = this.options.dockerRuntime;
-        if (!dockerRuntime) {
-            return this.failAttach(payload.sessionId, 503, 'Terminal services are not available');
-        }
-
         const sessionTransition = this.options.coordinator.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
-            return this.failAttach(payload.sessionId, 409, 'Session attach is already in progress');
+            return failSessionAttach(this.options.coordinator, payload.sessionId, 409, 'Session attach is already in progress');
         }
 
         try {
@@ -67,11 +38,11 @@ export class TerminalSessionManager {
             this.options.coordinator.cleanupInteractiveSession(payload.sessionId);
             const containerId = payload.containerId;
             if (!containerId) {
-                return this.failAttach(payload.sessionId, 400, 'containerId is required for container terminal');
+                return failSessionAttach(this.options.coordinator, payload.sessionId, 400, 'containerId is required for container terminal');
             }
 
             attachment = await withTimeout(
-                () => dockerRuntime.attachTerminal(containerId),
+                () => this.options.dockerRuntime.attachTerminal(containerId),
                 {
                     operation: 'reverse-channel.container-terminal.attach',
                     timeoutMs: SESSION_ATTACH_TIMEOUT_MS,
@@ -84,43 +55,23 @@ export class TerminalSessionManager {
 
             if (this.options.coordinator.wasSessionTransitionCancelled(sessionTransition)) {
                 void attachment.close().catch(() => undefined);
-                return {
-                    status: 409,
-                    data: {
-                        status: 'error',
-                        message: 'Session attach was cancelled before terminal was established'
-                    }
-                };
+                return createSessionAttachFailureResult(409, 'Session attach was cancelled before terminal was established');
             }
 
             const onData = (chunk: Buffer) => {
                 this.options.coordinator.touchSession(payload.sessionId);
-                const envelope = encodeEnvelope(
-                    0,
-                    EnvelopeKind.StreamChunk,
-                    chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
-                );
-                this.options.coordinator.emitSessionData({
+                this.options.coordinator.emitMessage({
                     type: 'session-data',
                     sessionId: payload.sessionId,
-                    chunk: envelope,
+                    chunk: encodeStreamChunk(chunk),
                     isBinary: false
                 });
             };
             const onEnd = () => {
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
-                    sessionId: payload.sessionId
-                });
-                this.cleanupSession(payload.sessionId);
+                this.endSession(payload.sessionId);
             };
             const onError = (error: Error) => {
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
-                    sessionId: payload.sessionId,
-                    error: error.message
-                });
-                this.cleanupSession(payload.sessionId);
+                this.endSession(payload.sessionId, error.message);
             };
 
             attachment.stream.on('data', onData);
@@ -141,7 +92,7 @@ export class TerminalSessionManager {
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to attach terminal';
-            return this.failAttach(payload.sessionId, 500, message);
+            return failSessionAttach(this.options.coordinator, payload.sessionId, 500, message);
         } finally {
             this.options.coordinator.endSessionTransition(sessionTransition);
         }
@@ -154,23 +105,15 @@ export class TerminalSessionManager {
         }
 
         try {
-            const envelopeBytes = toUint8Array(payload.chunk);
-            const decoded = decodeEnvelope(envelopeBytes);
-            if (decoded.kind !== EnvelopeKind.StreamChunk) {
-                throw new Error(`Unexpected envelope kind: ${decoded.kind}`);
-            }
+            const chunk = decodeStreamChunk(payload.chunk);
             this.options.coordinator.touchSession(payload.sessionId);
-            terminalState.attachment.stream.write(
-                Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength)
-            );
+            terminalState.attachment.stream.write(chunk);
             return true;
         } catch (error) {
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: `Malformed terminal input envelope: ${error instanceof Error ? error.message : String(error)}`
-            });
-            this.cleanupSession(payload.sessionId);
+            this.endSession(
+                payload.sessionId,
+                `Malformed terminal input envelope: ${errorMessage(error)}`
+            );
             return true;
         }
     }
@@ -204,18 +147,12 @@ export class TerminalSessionManager {
         void terminalState.attachment.close().catch(() => undefined);
     }
 
-    private failAttach(sessionId: string, status: number, message: string): SessionCommandResult {
-        this.options.coordinator.emitSessionEnd({
+    private endSession(sessionId: string, error?: string): void {
+        this.options.coordinator.emitMessage({
             type: 'session-end',
             sessionId,
-            error: message
+            ...(error !== undefined ? { error } : {})
         });
-        return {
-            status,
-            data: {
-                status: 'error',
-                message
-            }
-        };
+        this.cleanupSession(sessionId);
     }
 }

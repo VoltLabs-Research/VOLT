@@ -13,10 +13,6 @@ export interface LODCell {
     childIndices?: number[] | null;
     atomCount: number;
     firstAtomIndex: number;
-    glbKey?: string;
-    screenSpaceBudget?: number;
-    valueMin?: number;
-    valueMax?: number;
 }
 
 export interface FeatureBudget {
@@ -42,7 +38,6 @@ export interface OctreeBuildOptions {
     leafCellMaxAtoms: number;
     maxDepth: number;
     geometryBudget?: GeometryBudget;
-    scalar?: Float32Array | Float64Array | number[];
 }
 
 export const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
@@ -62,29 +57,11 @@ export const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
     }
 };
 
-const MORTON_GRID = (1 << 10) - 1;
-
-const splitBy3 = (a: number): number => {
-    let x = a & MORTON_GRID;
-    x = (x | (x << 16)) & 0x030000ff;
-    x = (x | (x << 8)) & 0x0300f00f;
-    x = (x | (x << 4)) & 0x030c30c3;
-    x = (x | (x << 2)) & 0x09249249;
-    return x;
-};
-
-const mortonEncode = (x: number, y: number, z: number): number => (
-    splitBy3(x) | (splitBy3(y) << 1) | (splitBy3(z) << 2)
-);
-
 interface BuildNode {
     bounds: BoundsCell;
     level: number;
     children: BuildNode[];
-    atomIndices: number[];
     atomCount: number;
-    valueMin: number;
-    valueMax: number;
 }
 
 const emptyBounds = (): BoundsCell => ({
@@ -138,34 +115,6 @@ const octantBounds = (parent: BoundsCell, o: number): BoundsCell => {
     };
 };
 
-const mortonSortLeaf = (positions: Float32Array, bounds: BoundsCell, indices: number[]): void => {
-    if (indices.length < 2) return;
-    const ex = bounds.maxX - bounds.minX;
-    const ey = bounds.maxY - bounds.minY;
-    const ez = bounds.maxZ - bounds.minZ;
-    const quant = (v: number, lo: number, extent: number): number => {
-        if (extent <= 0) return 0;
-        let t = (v - lo) / extent;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        return Math.floor(t * MORTON_GRID);
-    };
-    const keyOf = (i: number): number => {
-        const base = i * 3;
-        return mortonEncode(
-            quant(positions[base], bounds.minX, ex),
-            quant(positions[base + 1], bounds.minY, ey),
-            quant(positions[base + 2], bounds.minZ, ez)
-        );
-    };
-    const keyed = indices.map((i) => ({
-        i,
-        k: keyOf(i)
-    }));
-    keyed.sort((a, b) => a.k - b.k);
-    for (let n = 0; n < keyed.length; n += 1) indices[n] = keyed[n].i;
-};
-
 const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBuildOptions): BuildNode | null => {
     if (atomCount === 0) return null;
     const leafMax = Math.max(1, options.leafCellMaxAtoms);
@@ -178,10 +127,7 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
         bounds: boundsOf(positions, rootIndices),
         level: 0,
         children: [],
-        atomIndices: [],
-        atomCount,
-        valueMin: NaN,
-        valueMax: NaN
+        atomCount
     };
 
     const stack: { node: BuildNode; indices: number[] }[] = [{
@@ -191,10 +137,7 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
 
     while (stack.length > 0) {
         const { node, indices } = stack.pop()!;
-        const subdivide = indices.length > leafMax && node.level < maxDepth;
-        if (!subdivide) {
-            node.atomIndices = indices;
-            mortonSortLeaf(positions, node.bounds, node.atomIndices);
+        if (indices.length <= leafMax || node.level >= maxDepth) {
             continue;
         }
 
@@ -211,10 +154,7 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
                 bounds: bucket.length > 0 ? boundsOf(positions, bucket) : octantBounds(node.bounds, o),
                 level: node.level + 1,
                 children: [],
-                atomIndices: [],
-                atomCount: bucket.length,
-                valueMin: NaN,
-                valueMax: NaN
+                atomCount: bucket.length
             };
             node.children[o] = child;
             if (bucket.length > 0) stack.push({
@@ -224,65 +164,25 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
         }
     }
 
-    const scalar = options.scalar;
-    if (scalar && scalar.length === atomCount) {
-        const reduce = (node: BuildNode): void => {
-            if (node.children.length === 0) {
-                if (node.atomIndices.length === 0) return;
-                let lo = Number.POSITIVE_INFINITY;
-                let hi = Number.NEGATIVE_INFINITY;
-                for (const i of node.atomIndices) {
-                    const v = scalar[i];
-                    if (v < lo) lo = v;
-                    if (v > hi) hi = v;
-                }
-                node.valueMin = lo;
-                node.valueMax = hi;
-                return;
-            }
-            let lo = Number.POSITIVE_INFINITY;
-            let hi = Number.NEGATIVE_INFINITY;
-            let any = false;
-            for (const child of node.children) {
-                reduce(child);
-                if (!Number.isNaN(child.valueMin)) {
-                    if (child.valueMin < lo) lo = child.valueMin;
-                    if (child.valueMax > hi) hi = child.valueMax;
-                    any = true;
-                }
-            }
-            if (any) {
-                node.valueMin = lo;
-                node.valueMax = hi;
-            }
-        };
-        reduce(root);
-    }
-
     return root;
 };
 
-const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: number[] } => {
+/**
+ * Breadth-first flatten. `firstAtomIndex` is the running count of leaf atoms emitted
+ * before this cell, so it only needs the per-node counts, not the atom ids themselves.
+ */
+const flattenOctree = (root: BuildNode | null): LODCell[] => {
     const cells: LODCell[] = [];
-    const atomOrder: number[] = [];
-    if (!root) return {
-        cells,
-        atomOrder
-    };
+    if (!root) return cells;
 
     const pushCell = (node: BuildNode): number => {
-        const cell: LODCell = {
+        cells.push({
             bounds: node.bounds,
             level: node.level,
             atomCount: node.atomCount,
             firstAtomIndex: 0,
             childIndices: null
-        };
-        if (!Number.isNaN(node.valueMin)) {
-            cell.valueMin = node.valueMin;
-            cell.valueMax = node.valueMax;
-        }
-        cells.push(cell);
+        });
         return cells.length - 1;
     };
 
@@ -292,12 +192,13 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
     }];
 
     let head = 0;
+    let atomCursor = 0;
     while (head < queue.length) {
         const { node, cellIndex } = queue[head];
         head += 1;
-        cells[cellIndex].firstAtomIndex = atomOrder.length;
+        cells[cellIndex].firstAtomIndex = atomCursor;
         if (node.children.length === 0) {
-            for (const idx of node.atomIndices) atomOrder.push(idx);
+            atomCursor += node.atomCount;
             continue;
         }
         const childIndices: number[] = [];
@@ -320,24 +221,16 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         if (Number.isFinite(first)) cell.firstAtomIndex = first;
     }
 
-    return {
-        cells,
-        atomOrder
-    };
+    return cells;
 };
 
-interface BuiltOctree {
-    metadata: OctreeMetadata;
-    atomOrder: number[];
-}
-
-export const buildOctree = (
+export const buildOctreeMetadata = (
     positions: Float32Array,
     atomCount: number,
     options: OctreeBuildOptions
-): BuiltOctree => {
+): OctreeMetadata => {
     const root = buildTree(positions, atomCount, options);
-    const { cells, atomOrder } = flattenOctree(root);
+    const cells = flattenOctree(root);
     let maxLevel = 0;
     for (const cell of cells) if (cell.level > maxLevel) maxLevel = cell.level;
     const metadata: OctreeMetadata = {
@@ -354,14 +247,5 @@ export const buildOctree = (
         cells
     };
     if (options.geometryBudget) metadata.geometryBudget = options.geometryBudget;
-    return {
-        metadata,
-        atomOrder
-    };
+    return metadata;
 };
-
-export const buildOctreeMetadata = (
-    positions: Float32Array,
-    atomCount: number,
-    options: OctreeBuildOptions
-): OctreeMetadata => buildOctree(positions, atomCount, options).metadata;

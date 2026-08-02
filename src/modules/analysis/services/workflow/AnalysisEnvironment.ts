@@ -5,16 +5,15 @@ import { dir as createTempDir } from 'tmp-promise';
 
 import { DAEMON_PATHS } from '@core/config/paths';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
-import type { WorkflowDumpTarget } from '@modules/analysis/services/workflow/WorkflowRuntime';
-import type {
-    AnalysisJobExecutionData,
-    AnalysisJobMetadata
-} from '@shared/contracts/types/http-analysis';
-import type { WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
-import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
+import {
+    downloadAnalysisDump,
+    dumpObjectKey,
+    materializeFrameArgumentDumps
+} from '@modules/analysis/services/workflow/analysis-dump-localization';
+import type { TrajectoryDumpDescriptor } from '@shared/contracts';
+import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
+import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
-import { decodeCliArgumentsToken, encodeCliArgumentsToken } from '@shared/application/utilities/serialization';
 
 export interface AnalysisEnvironmentState {
     outputDir: string;
@@ -23,6 +22,17 @@ export interface AnalysisEnvironmentState {
     dumpLocalPaths: string[];
     primaryFrameIndex: number;
 }
+
+/** The only metadata the initial node outputs need: which forEach item this job is. */
+export type AnalysisSeedMetadata = Pick<AnalysisJobMetadata, 'forEachItem' | 'forEachIndex'>;
+
+const createState = (outputDir: string): AnalysisEnvironmentState => ({
+    outputDir,
+    outputs: new Map(),
+    dumpTargets: [],
+    dumpLocalPaths: [],
+    primaryFrameIndex: 0
+});
 
 export class AnalysisEnvironment {
     constructor(private readonly objectStore: ClusterObjectStore) {}
@@ -43,45 +53,27 @@ export class AnalysisEnvironment {
             : [timestep];
 
         const timestepToLocalPath = await this.downloadFrameSet(runtime, executionData, windowTimesteps);
-        runtime.dumpTargets = this.buildFrameSetTargets(executionData, windowTimesteps, timestepToLocalPath);
+        runtime.dumpTargets = windowTimesteps.map((windowTimestep) => this.buildDumpTarget(
+            executionData,
+            windowTimestep,
+            timestepToLocalPath.get(windowTimestep)!
+        ));
         runtime.primaryFrameIndex = Math.max(0, windowTimesteps.indexOf(timestep));
-        runtime.outputs = this.buildOutputs(executionData, metadata, runtime, windowTimesteps);
-        await this.materializeFrameArgumentDumps(runtime, executionData);
-        return runtime;
+        return this.seedOutputs(runtime, executionData, metadata);
     }
 
     async prepareWithDump(
         executionData: AnalysisJobExecutionData,
-        metadata: AnalysisJobMetadata,
+        metadata: AnalysisSeedMetadata,
         timestep: number,
         workingDumpPath: string,
         stageOutputDir: string
     ): Promise<AnalysisEnvironmentState> {
         await fs.mkdir(stageOutputDir, { recursive: true });
-        const runtime: AnalysisEnvironmentState = {
-            outputDir: stageOutputDir,
-            outputs: new Map(),
-            dumpTargets: [],
-            dumpLocalPaths: [],
-            primaryFrameIndex: 0
-        };
+        const runtime = createState(stageOutputDir);
 
-        const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === timestep);
-        if (!frame) {
-            throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${timestep}`);
-        }
-
-        runtime.dumpTargets = [{
-            localPath: workingDumpPath,
-            originalPath: `trajectory-${executionData.identity.trajectoryId}/timestep-${timestep}.dump.zst`,
-            timestep,
-            natoms: frame.natoms,
-            simulationCell: frame.simulationCell
-        }];
-        runtime.primaryFrameIndex = 0;
-        runtime.outputs = this.buildOutputs(executionData, metadata, runtime, [timestep]);
-        await this.materializeFrameArgumentDumps(runtime, executionData);
-        return runtime;
+        runtime.dumpTargets = [this.buildDumpTarget(executionData, timestep, workingDumpPath)];
+        return this.seedOutputs(runtime, executionData, metadata);
     }
 
     async cleanup(runtime: AnalysisEnvironmentState): Promise<void> {
@@ -98,18 +90,31 @@ export class AnalysisEnvironment {
     ): Promise<AnalysisEnvironmentState> {
         await fs.mkdir(DAEMON_PATHS.analysisOutput, { recursive: true });
         const prefixSuffix = metadata.forEachIndex === undefined ? '' : `${metadata.forEachIndex}-`;
-        const outputDir = (await createTempDir({
+
+        return createState((await createTempDir({
             tmpdir: DAEMON_PATHS.analysisOutput,
             prefix: `${executionData.identity.analysisId}-${prefixSuffix}`,
             unsafeCleanup: true
-        })).path;
+        })).path);
+    }
+
+    /** Pairs one already-localized dump with the trajectory frame it belongs to. */
+    private buildDumpTarget(
+        executionData: AnalysisJobExecutionData,
+        timestep: number,
+        localPath: string
+    ): WorkflowDumpTarget {
+        const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === timestep);
+        if (!frame) {
+            throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${timestep}`);
+        }
 
         return {
-            outputDir,
-            outputs: new Map(),
-            dumpTargets: [],
-            dumpLocalPaths: [],
-            primaryFrameIndex: 0
+            localPath,
+            originalPath: dumpObjectKey(executionData.identity.trajectoryId, timestep),
+            timestep,
+            natoms: frame.natoms,
+            simulationCell: frame.simulationCell
         };
     }
 
@@ -118,60 +123,33 @@ export class AnalysisEnvironment {
         executionData: AnalysisJobExecutionData,
         windowTimesteps: number[]
     ): Promise<Map<number, string>> {
-        const { storageClusterId, trajectoryId } = executionData.identity;
-        if (!storageClusterId) {
-            throw new Error(`Analysis ${executionData.identity.analysisId} cannot download dumps without a storage cluster`);
-        }
-
         const timestepToLocalPath = new Map<number, string>();
         for (const windowTimestep of windowTimesteps) {
             if (timestepToLocalPath.has(windowTimestep)) {
                 continue;
             }
 
-            const objectKey = `trajectory-${trajectoryId}/timestep-${windowTimestep}.dump.zst`;
-            const localPath = await downloadCompressedDump(
+            timestepToLocalPath.set(windowTimestep, await downloadAnalysisDump(
                 this.objectStore,
-                objectKey,
-                storageClusterId,
-                DAEMON_PATHS.analysisDumps
-            );
-            timestepToLocalPath.set(windowTimestep, localPath);
-            runtime.dumpLocalPaths.push(localPath);
+                runtime,
+                executionData,
+                windowTimestep,
+                `Analysis ${executionData.identity.analysisId} cannot download dumps without a storage cluster`
+            ));
         }
 
         return timestepToLocalPath;
     }
 
-    private buildFrameSetTargets(
-        executionData: AnalysisJobExecutionData,
-        windowTimesteps: number[],
-        timestepToLocalPath: Map<number, string>
-    ): WorkflowDumpTarget[] {
-        return windowTimesteps.map((windowTimestep) => {
-            const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === windowTimestep);
-            if (!frame) {
-                throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${windowTimestep}`);
-            }
-
-            return {
-                localPath: timestepToLocalPath.get(windowTimestep)!,
-                originalPath: `trajectory-${executionData.identity.trajectoryId}/timestep-${windowTimestep}.dump.zst`,
-                timestep: windowTimestep,
-                natoms: frame.natoms,
-                simulationCell: frame.simulationCell
-            };
-        });
-    }
-
-    private buildOutputs(
-        executionData: AnalysisJobExecutionData,
-        metadata: AnalysisJobMetadata,
+    /** Seeds the node outputs the workflow starts from, rebound to the frames this job localized. */
+    private async seedOutputs(
         runtime: AnalysisEnvironmentState,
-        windowTimesteps: number[]
-    ): Map<string, WorkflowNodeOutput> {
-        const outputs = this.snapshotToOutputs(executionData);
-        const localizedFrames = runtime.dumpTargets.map((target) => ({
+        executionData: AnalysisJobExecutionData,
+        metadata: AnalysisSeedMetadata
+    ): Promise<AnalysisEnvironmentState> {
+        const { forEachNodeId, trajectoryWindowNodeId, nodeOutputSnapshots } = executionData.workflow;
+        const outputs = new Map(Object.entries(nodeOutputSnapshots)) as Map<string, WorkflowNodeOutput>;
+        const frames: TrajectoryDumpDescriptor[] = runtime.dumpTargets.map((target) => ({
             timestep: target.timestep,
             natoms: target.natoms,
             simulationCell: target.simulationCell,
@@ -180,259 +158,40 @@ export class AnalysisEnvironment {
         }));
         const primaryIndex = runtime.primaryFrameIndex;
 
-        this.seedForEachOutput(executionData, metadata, runtime, outputs, localizedFrames, primaryIndex);
-        this.seedTrajectoryWindowOutput(executionData, runtime, outputs, localizedFrames, primaryIndex);
-
-        return outputs;
-    }
-
-    private seedForEachOutput(
-        executionData: AnalysisJobExecutionData,
-        metadata: AnalysisJobMetadata,
-        runtime: AnalysisEnvironmentState,
-        outputs: Map<string, WorkflowNodeOutput>,
-        localizedFrames: WorkflowNodeOutput[],
-        primaryIndex: number
-    ): void {
-        const forEachNodeId = executionData.workflow.forEachNodeId;
-        if (!forEachNodeId) {
-            return;
-        }
-
-        if (!metadata.forEachItem || metadata.forEachIndex === undefined) {
-            throw new Error(`forEach node ${forEachNodeId} requires forEachItem and forEachIndex in metadata`);
-        }
-
-        const primaryFrame = localizedFrames[primaryIndex];
-        outputs.set(forEachNodeId, {
-            ...outputs.get(forEachNodeId),
-            currentValue: {
-                ...metadata.forEachItem,
-                path: (primaryFrame?.path as string | undefined)
-            },
-            currentIndex: metadata.forEachIndex,
-            outputPath: runtime.outputDir
-        });
-    }
-
-    private seedTrajectoryWindowOutput(
-        executionData: AnalysisJobExecutionData,
-        runtime: AnalysisEnvironmentState,
-        outputs: Map<string, WorkflowNodeOutput>,
-        localizedFrames: WorkflowNodeOutput[],
-        primaryIndex: number
-    ): void {
-        const windowNodeId = executionData.workflow.trajectoryWindowNodeId;
-        if (!windowNodeId) {
-            return;
-        }
-
-        outputs.set(windowNodeId, {
-            ...outputs.get(windowNodeId),
-            frames: localizedFrames,
-            count: localizedFrames.length,
-            primaryIndex,
-            primaryValue: localizedFrames[primaryIndex] ?? null,
-            framePaths: localizedFrames.map((frame) => frame.path as string).join(' '),
-            framePathsCsv: localizedFrames.map((frame) => frame.path as string).join(','),
-            outputPath: runtime.outputDir
-        });
-    }
-
-    private snapshotToOutputs(executionData: AnalysisJobExecutionData): Map<string, WorkflowNodeOutput> {
-        return new Map(Object.entries(executionData.workflow.nodeOutputSnapshots)) as Map<string, WorkflowNodeOutput>;
-    }
-
-    private async materializeFrameArgumentDumps(
-        runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
-    ): Promise<void> {
-        const referenceDumpPaths = new Map<number, string>();
-        for (const target of runtime.dumpTargets) {
-            referenceDumpPaths.set(target.timestep, target.localPath);
-        }
-
-        for (const node of executionData.workflow.definition.nodes) {
-            if (node.type !== 'arguments') {
-                continue;
+        if (forEachNodeId) {
+            if (!metadata.forEachItem || metadata.forEachIndex === undefined) {
+                throw new Error(`forEach node ${forEachNodeId} requires forEachItem and forEachIndex in metadata`);
             }
 
-            const definitions = node.data.arguments?.arguments ?? [];
-            if (!this.hasFrameArgument(definitions)) {
-                continue;
-            }
-
-            const output = runtime.outputs.get(node.id);
-            if (!output) {
-                continue;
-            }
-
-            const replacements = new Map<string, string>();
-            for (const definition of definitions) {
-                await this.materializeFrameArgumentDefinition(
-                    definition,
-                    output,
-                    replacements,
-                    referenceDumpPaths,
-                    runtime,
-                    executionData
-                );
-            }
-
-            this.rewriteCliFrameArguments(output, replacements);
-        }
-    }
-
-    private hasFrameArgument(definitions: WorkflowArgumentDefinition[]): boolean {
-        return definitions.some((definition) => {
-            if (definition.type === 'frame') {
-                return true;
-            }
-
-            return definition.listArguments ? this.hasFrameArgument(definition.listArguments) : false;
-        });
-    }
-
-    private async materializeFrameArgumentDefinition(
-        definition: WorkflowArgumentDefinition,
-        values: WorkflowNodeOutput,
-        replacements: Map<string, string>,
-        referenceDumpPaths: Map<number, string>,
-        runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
-    ): Promise<void> {
-        const argumentKey = definition.argument;
-        if (!argumentKey) {
-            return;
+            outputs.set(forEachNodeId, {
+                ...outputs.get(forEachNodeId),
+                currentValue: {
+                    ...metadata.forEachItem,
+                    path: frames[primaryIndex]?.path
+                },
+                currentIndex: metadata.forEachIndex,
+                outputPath: runtime.outputDir
+            });
         }
 
-        if (definition.type === 'frame') {
-            const timestep = this.parseFrameArgumentTimestep(values[argumentKey]);
-            if (timestep === null) {
-                return;
-            }
+        if (trajectoryWindowNodeId) {
+            const framePaths = frames.map((frame) => frame.path);
 
-            const localPath = await this.resolveFrameArgumentDumpPath(
-                timestep,
-                referenceDumpPaths,
-                runtime,
-                executionData
-            );
-            values[argumentKey] = localPath;
-            replacements.set(argumentKey, localPath);
-            return;
+            outputs.set(trajectoryWindowNodeId, {
+                ...outputs.get(trajectoryWindowNodeId),
+                frames,
+                count: frames.length,
+                primaryIndex,
+                primaryValue: frames[primaryIndex] ?? null,
+                framePaths: framePaths.join(' '),
+                framePathsCsv: framePaths.join(','),
+                outputPath: runtime.outputDir
+            });
         }
 
-        if (definition.type !== 'list' || !definition.listArguments?.length) {
-            return;
-        }
-
-        const items = values[argumentKey];
-        if (!Array.isArray(items)) {
-            return;
-        }
-
-        for (const item of items) {
-            if (typeof item !== 'object' || item === null || Array.isArray(item)) {
-                continue;
-            }
-
-            for (const nestedDefinition of definition.listArguments) {
-                await this.materializeFrameArgumentDefinition(
-                    nestedDefinition,
-                    item as WorkflowNodeOutput,
-                    replacements,
-                    referenceDumpPaths,
-                    runtime,
-                    executionData
-                );
-            }
-        }
-    }
-
-    private parseFrameArgumentTimestep(value: WorkflowNodeOutput[string]): number | null {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-            return value;
-        }
-
-        if (typeof value !== 'string') {
-            return null;
-        }
-
-        const trimmed = value.trim();
-        if (!trimmed) {
-            return null;
-        }
-
-        const parsed = Number(trimmed);
-        return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    private async resolveFrameArgumentDumpPath(
-        timestep: number,
-        referenceDumpPaths: Map<number, string>,
-        runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
-    ): Promise<string> {
-        const existingPath = referenceDumpPaths.get(timestep);
-        if (existingPath) {
-            return existingPath;
-        }
-
-        const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === timestep);
-        if (!frame) {
-            throw new Error(`Reference frame ${timestep} is not available for trajectory ${executionData.identity.trajectoryId}`);
-        }
-
-        const storageClusterId = executionData.identity.storageClusterId;
-        if (!storageClusterId) {
-            throw new Error(`Reference frame ${timestep} cannot be downloaded without a storage cluster`);
-        }
-
-        const objectKey = `trajectory-${executionData.identity.trajectoryId}/timestep-${timestep}.dump.zst`;
-        const localPath = await downloadCompressedDump(
-            this.objectStore,
-            objectKey,
-            storageClusterId,
-            DAEMON_PATHS.analysisDumps
-        );
-        referenceDumpPaths.set(timestep, localPath);
-        runtime.dumpLocalPaths.push(localPath);
-        return localPath;
-    }
-
-    private rewriteCliFrameArguments(
-        output: WorkflowNodeOutput,
-        replacements: Map<string, string>
-    ): void {
-        if (replacements.size === 0) {
-            return;
-        }
-
-        const rawArgs = Array.isArray(output.as_array)
-            ? output.as_array
-            : typeof output.as_str === 'string'
-                ? decodeCliArgumentsToken(output.as_str) ?? []
-                : [];
-        const cliArgs = rawArgs.map((entry) => String(entry));
-
-        for (let index = 0; index < cliArgs.length - 1; index += 1) {
-            const token = cliArgs[index];
-            if (!token.startsWith('--')) {
-                continue;
-            }
-
-            const replacement = replacements.get(token.slice(2));
-            if (!replacement) {
-                continue;
-            }
-
-            cliArgs[index + 1] = replacement;
-            index += 1;
-        }
-
-        output.as_array = cliArgs;
-        output.as_str = encodeCliArgumentsToken(cliArgs);
+        runtime.outputs = outputs;
+        await materializeFrameArgumentDumps(this.objectStore, runtime, executionData);
+        return runtime;
     }
 }
 

@@ -38,7 +38,7 @@ export class PipelineCommands {
             stages
         };
 
-        const traceContext = extractDaemonTraceContext(payload as unknown as Record<string, unknown>);
+        const traceContext = extractDaemonTraceContext(payload);
         if (traceContext) {
             request.traceContext = traceContext;
         }

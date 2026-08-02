@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import mongoose from 'mongoose';
 import { getConfig } from '@core/config/daemon';
@@ -79,7 +80,7 @@ export class DaemonLifecycle {
 
         getHeartbeatPlaneProcess().start();
         void getVoltEventChannelConnection().start().catch((error) => {
-            logger.warn(`Daemon event channel did not connect during startup: ${error instanceof Error ? error.message : String(error)}`);
+            logger.warn(`Daemon event channel did not connect during startup: ${errorMessage(error)}`);
         });
 
         await Promise.all([

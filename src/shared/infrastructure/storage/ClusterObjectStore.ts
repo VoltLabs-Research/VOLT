@@ -5,160 +5,14 @@ import { getRemoteClient } from '@shared/infrastructure/storage/DirectObjectStor
 import type { DaemonConfig } from '@core/config/daemon';
 import type {
     ClusterObjectHeadResponse,
-    ClusterObjectListRequest,
-    ClusterObjectListResponse,
-    ClusterObjectPutInput,
-    ClusterObjectPutStreamInput,
-    ClusterObjectReadOptions,
     ClusterObjectStore,
-    ClusterObjectStreamResponse,
     LocalClusterObjectStat,
     LocalClusterObjectStoreGateway,
     RemoteClusterObjectStoreGateway,
     ScopedClusterObjectStore
 } from '@shared/contracts/types/cluster-object-store';
 
-interface ClusterObjectStoreDeps {
-    config: DaemonConfig;
-    minioService: LocalClusterObjectStoreGateway;
-    remoteClient: RemoteClusterObjectStoreGateway;
-}
-
-interface SplitObjectMetadataResult {
-    contentType?: string;
-    contentEncoding?: string;
-    localMetadata: Record<string, string>;
-    remoteMetadata: Record<string, string>;
-}
-
-export type {
-    ClusterObjectHeadResponse,
-    ClusterObjectListRequest,
-    ClusterObjectListResponse,
-    ClusterObjectPutInput,
-    ClusterObjectPutStreamInput,
-    ClusterObjectReadOptions,
-    ClusterObjectStore,
-    ClusterObjectStreamResponse,
-    ScopedClusterObjectStore
-} from '@shared/contracts/types/cluster-object-store';
-
-class DefaultClusterObjectStore implements ClusterObjectStore {
-    public constructor(private readonly deps: ClusterObjectStoreDeps) {}
-
-    public readonly head = async (
-        ownerClusterId: string,
-        bucket: string,
-        objectKey: string
-    ): Promise<ClusterObjectHeadResponse> => {
-        if (!this.isLocalOwner(ownerClusterId)) {
-            return this.deps.remoteClient.head(ownerClusterId, bucket, objectKey);
-        }
-
-        return toHeadResponse(await this.deps.minioService.statObject(bucket, objectKey));
-    };
-
-    public readonly getStream = async (
-        ownerClusterId: string,
-        bucket: string,
-        objectKey: string,
-        options?: ClusterObjectReadOptions
-    ): Promise<ClusterObjectStreamResponse> => {
-        if (this.isLocalOwner(ownerClusterId)) {
-            const range = options?.range;
-            if (options?.skipMetadata) {
-                const stream = range
-                    ? await this.deps.minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
-                    : await this.deps.minioService.getObjectStream(bucket, objectKey);
-                return {
-                    metadata: {},
-                    stream
-                };
-            }
-
-            const [stat, stream] = await Promise.all([
-                this.deps.minioService.statObject(bucket, objectKey),
-                range
-                    ? this.deps.minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
-                    : this.deps.minioService.getObjectStream(bucket, objectKey)
-            ]);
-
-            return {
-                ...toHeadResponse(stat),
-                stream
-            };
-        }
-        return this.deps.remoteClient.getStream(ownerClusterId, bucket, objectKey, options);
-    };
-
-    public async putObject(input: ClusterObjectPutInput): Promise<void> {
-        const metadata = splitObjectMetadata(input.metadata);
-
-        if (this.isLocalOwner(input.ownerClusterId)) {
-            await this.deps.minioService.putObject({
-                bucket: input.bucket,
-                objectKey: input.objectKey,
-                body: input.body,
-                metadata: metadata.localMetadata
-            });
-            return;
-        }
-
-        await this.deps.remoteClient.putBuffer(input.ownerClusterId, {
-            bucket: input.bucket,
-            objectKey: input.objectKey,
-            buffer: input.body,
-            contentType: metadata.contentType,
-            contentEncoding: metadata.contentEncoding,
-            metadata: metadata.remoteMetadata
-        });
-    }
-
-    public async putObjectStream(input: ClusterObjectPutStreamInput): Promise<void> {
-        const metadata = splitObjectMetadata(input.metadata);
-
-        if (this.isLocalOwner(input.ownerClusterId)) {
-            await this.deps.minioService.putObjectStream({
-                bucket: input.bucket,
-                objectKey: input.objectKey,
-                stream: input.stream,
-                size: input.size,
-                metadata: metadata.localMetadata
-            });
-            return;
-        }
-
-        await this.deps.remoteClient.putStream(input.ownerClusterId, {
-            bucket: input.bucket,
-            objectKey: input.objectKey,
-            stream: input.stream,
-            contentLength: input.size,
-            contentType: metadata.contentType,
-            contentEncoding: metadata.contentEncoding,
-            metadata: metadata.remoteMetadata
-        });
-    }
-
-    public readonly list = (
-        ownerClusterId: string,
-        request: ClusterObjectListRequest
-    ): Promise<ClusterObjectListResponse> => {
-        if (this.isLocalOwner(ownerClusterId)) {
-            return this.deps.minioService.listObjectsPage({
-                bucket: request.bucket,
-                prefix: request.prefix,
-                cursor: request.cursor,
-                limit: request.limit ?? 100
-            });
-        }
-
-        return this.deps.remoteClient.list(ownerClusterId, request);
-    };
-
-    private isLocalOwner(ownerClusterId: string): boolean {
-        return ownerClusterId === this.deps.config.teamClusterId;
-    }
-}
+export type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 
 const MINIO_METADATA_PREFIX = 'x-amz-meta-';
 
@@ -183,17 +37,14 @@ const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse
     };
 };
 
-const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMetadataResult => {
+/** Splits caller metadata into minio's `x-amz-meta-*` form and the proxy's plain form. */
+const splitObjectMetadata = (metadata?: Record<string, string>) => {
     const localMetadata: Record<string, string> = {};
     const remoteMetadata: Record<string, string> = {};
     let contentType: string | undefined;
     let contentEncoding: string | undefined;
 
-    if (!metadata) {
-        return { contentType, contentEncoding, localMetadata, remoteMetadata };
-    }
-
-    for (const [key, value] of Object.entries(metadata)) {
+    for (const [key, value] of Object.entries(metadata ?? {})) {
         const normalizedKey = key.toLowerCase();
 
         if (normalizedKey === 'content-type') {
@@ -222,14 +73,115 @@ const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMeta
     };
 };
 
-export const createClusterObjectStore = (deps: ClusterObjectStoreDeps): ClusterObjectStore =>
-    new DefaultClusterObjectStore(deps);
+const createClusterObjectStore = (
+    config: DaemonConfig,
+    minioService: LocalClusterObjectStoreGateway,
+    remoteClient: RemoteClusterObjectStoreGateway
+): ClusterObjectStore => {
+    const isLocalOwner = (ownerClusterId: string): boolean => ownerClusterId === config.teamClusterId;
 
-export const getObjectStore = singleton((): ClusterObjectStore => createClusterObjectStore({
-        config: getConfig(),
-        minioService: getMinioService(),
-        remoteClient: getRemoteClient()
-    }));
+    return {
+        head: async (ownerClusterId, bucket, objectKey) => {
+            if (!isLocalOwner(ownerClusterId)) {
+                return remoteClient.head(ownerClusterId, bucket, objectKey);
+            }
+
+            return toHeadResponse(await minioService.statObject(bucket, objectKey));
+        },
+
+        getStream: async (ownerClusterId, bucket, objectKey, options) => {
+            if (!isLocalOwner(ownerClusterId)) {
+                return remoteClient.getStream(ownerClusterId, bucket, objectKey, options);
+            }
+
+            const range = options?.range;
+            const readStream = () => (range
+                ? minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
+                : minioService.getObjectStream(bucket, objectKey));
+
+            if (options?.skipMetadata) {
+                return {
+                    metadata: {},
+                    stream: await readStream()
+                };
+            }
+
+            const [stat, stream] = await Promise.all([
+                minioService.statObject(bucket, objectKey),
+                readStream()
+            ]);
+
+            return {
+                ...toHeadResponse(stat),
+                stream
+            };
+        },
+
+        putObject: async (input) => {
+            const metadata = splitObjectMetadata(input.metadata);
+
+            if (isLocalOwner(input.ownerClusterId)) {
+                await minioService.putObject({
+                    bucket: input.bucket,
+                    objectKey: input.objectKey,
+                    body: input.body,
+                    metadata: metadata.localMetadata
+                });
+                return;
+            }
+
+            await remoteClient.putBuffer(input.ownerClusterId, {
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                buffer: input.body,
+                contentType: metadata.contentType,
+                contentEncoding: metadata.contentEncoding,
+                metadata: metadata.remoteMetadata
+            });
+        },
+
+        putObjectStream: async (input) => {
+            const metadata = splitObjectMetadata(input.metadata);
+
+            if (isLocalOwner(input.ownerClusterId)) {
+                await minioService.putObjectStream({
+                    bucket: input.bucket,
+                    objectKey: input.objectKey,
+                    stream: input.stream,
+                    size: input.size,
+                    metadata: metadata.localMetadata
+                });
+                return;
+            }
+
+            await remoteClient.putStream(input.ownerClusterId, {
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                stream: input.stream,
+                contentLength: input.size,
+                contentType: metadata.contentType,
+                contentEncoding: metadata.contentEncoding,
+                metadata: metadata.remoteMetadata
+            });
+        },
+
+        list: (ownerClusterId, request) => {
+            if (!isLocalOwner(ownerClusterId)) {
+                return remoteClient.list(ownerClusterId, request);
+            }
+
+            return minioService.listObjectsPage({
+                bucket: request.bucket,
+                prefix: request.prefix,
+                cursor: request.cursor,
+                limit: request.limit ?? 100
+            });
+        }
+    };
+};
+
+export const getObjectStore = singleton((): ClusterObjectStore =>
+    createClusterObjectStore(getConfig(), getMinioService(), getRemoteClient()));
 
 export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,

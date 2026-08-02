@@ -2,7 +2,6 @@ import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/w
 import { DuckDBConnection } from '@duckdb/node-api';
 import type { PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
-import { isRecord } from '@shared/domain/utilities/is-record';
 
 export interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
@@ -12,8 +11,6 @@ export interface WorkflowExposurePayloadReadResult {
     entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
-
-export type { WorkflowExposureInspectionResult };
 
 const PER_ATOM_KEY = 'per-atom-properties';
 const FIXED_ATOM_COLUMNS = new Set(['atom_index', 'id', 'x', 'y', 'z', 'bucket', 'structure_id', 'structure_name']);
@@ -58,38 +55,34 @@ const emptyResult = (): WorkflowExposurePayloadReadResult => ({
 });
 
 const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadResult => {
-    const listing: JsonObject = {};
-    if (isRecord(document.main_listing)) {
-        listing.main_listing = document.main_listing as JsonObject[string];
-    }
+    const mainListing = document.main_listing as JsonObject | undefined;
 
     const exportData: JsonObject = {};
     for (const [key, value] of Object.entries(document)) {
         if (key === 'export' || key.startsWith('export.')) {
-            exportData[key] = value as JsonObject[string];
+            exportData[key] = value;
         }
     }
 
     const subListingNames = new Set<string>();
     const subListingRows = new Map<string, JsonObject[]>();
-    const subListings = document.sub_listings;
-    if (isRecord(subListings)) {
+    const subListings = document.sub_listings as Record<string, JsonObject | JsonObject[]> | undefined;
+    if (subListings) {
         for (const [name, value] of Object.entries(subListings)) {
             if (Array.isArray(value)) {
-                const rows = value.filter(isRecord) as JsonObject[];
-                if (rows.length > 0) {
+                if (value.length > 0) {
                     subListingNames.add(name);
-                    subListingRows.set(name, rows);
+                    subListingRows.set(name, value);
                 }
-            } else if (isRecord(value) && Object.keys(value).length > 0) {
+            } else if (Object.keys(value).length > 0) {
                 subListingNames.add(name);
-                subListingRows.set(name, [value as JsonObject]);
+                subListingRows.set(name, [value]);
             }
         }
     }
 
     return {
-        listing: Object.keys(listing).length > 0 ? listing : null,
+        listing: mainListing ? { main_listing: mainListing } : null,
         subListingNames: Array.from(subListingNames),
         subListings: Object.fromEntries(subListingRows),
         perAtomProperties: (document[PER_ATOM_KEY] as PerAtomProperties | null | undefined) ?? null,
@@ -98,58 +91,43 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
     };
 };
 
-const reconstructFromBondTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
-    const bonds: JsonObject[] = [];
-    const propertyRows: JsonObject[] = [];
-
-    for (const row of rows) {
-        const { points, ...properties } = row;
-        const bondPoints = Array.isArray(points) ? points : [];
-        bonds.push({
-            ...properties,
-            points: bondPoints as JsonObject[string]
-        });
-        propertyRows.push(properties);
-    }
-
-    return {
-        listing: { main_listing: { bonds: rows.length } },
-        subListingNames: propertyRows.length > 0 ? ['bonds'] : [],
-        subListings: propertyRows.length > 0 ? { bonds: propertyRows } : {},
-        perAtomProperties: propertyRows as unknown as PerAtomProperties,
-        entityKind: 'lines',
-        exportData: { export: { BondExporter: { bonds } } }
-    };
-};
-
-const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
-    const lines: JsonObject[] = [];
+/**
+ * Bond and line tables share a shape: a `points` column plus per-entity properties.
+ * Only the listing counters and the exporter key differ.
+ */
+const reconstructFromPointsTable = (
+    rows: JsonObject[],
+    kind: 'bonds' | 'lines',
+    exporter: 'BondExporter' | 'LineExporter'
+): WorkflowExposurePayloadReadResult => {
+    const entities: JsonObject[] = [];
     const propertyRows: JsonObject[] = [];
     let totalPoints = 0;
 
     for (const row of rows) {
         const { points, ...properties } = row;
-        const linePoints = Array.isArray(points) ? points : [];
-        totalPoints += linePoints.length;
-        lines.push({
+        totalPoints += Array.isArray(points) ? points.length : 0;
+        entities.push({
             ...properties,
-            points: linePoints as JsonObject[string]
+            points
         });
         propertyRows.push(properties);
     }
 
     return {
         listing: {
-            main_listing: {
-                lines: rows.length,
-                total_points: totalPoints
-            }
+            main_listing: kind === 'lines'
+                ? {
+                    lines: rows.length,
+                    total_points: totalPoints
+                }
+                : { bonds: rows.length }
         },
-        subListingNames: propertyRows.length > 0 ? ['lines'] : [],
-        subListings: propertyRows.length > 0 ? { lines: propertyRows } : {},
-        perAtomProperties: propertyRows as unknown as PerAtomProperties,
+        subListingNames: propertyRows.length > 0 ? [kind] : [],
+        subListings: propertyRows.length > 0 ? { [kind]: propertyRows } : {},
+        perAtomProperties: propertyRows as PerAtomProperties,
         entityKind: 'lines',
-        exportData: { export: { LineExporter: { lines } } }
+        exportData: { export: { [exporter]: { [kind]: entities } } }
     };
 };
 
@@ -159,21 +137,21 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
 
     for (const rawRow of rows) {
         const row = normalizeParquetRow(rawRow);
-        const bucket = typeof row.bucket === 'string' ? row.bucket : 'All';
-        const structureId = typeof row.structure_id === 'number' ? row.structure_id : 0;
+        const bucket = (row.bucket as string | undefined) ?? 'All';
+        const structureId = (row.structure_id as number | undefined) ?? 0;
         const atom: JsonObject = {
             id: row.id,
             pos: [row.x ?? 0, row.y ?? 0, row.z ?? 0],
             structure_id: structureId,
-            structure_name: typeof row.structure_name === 'string' ? row.structure_name : bucket
+            structure_name: (row.structure_name as string | undefined) ?? bucket
         };
         const propertyRow: JsonObject = {};
         for (const [key, value] of Object.entries(row)) {
             if (!FIXED_ATOM_COLUMNS.has(key)) {
-                atom[key] = value as JsonObject[string];
+                atom[key] = value;
             }
             if (!NON_PROPERTY_COLUMNS.has(key) && !isCosmeticColorColumn(key)) {
-                propertyRow[key] = value as JsonObject[string];
+                propertyRow[key] = value;
             }
         }
         const entry = buckets.get(bucket) ?? {
@@ -188,7 +166,7 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
     const atomisticExporter: JsonObject = {};
     const structures: JsonObject[] = [];
     for (const [name, { structureId, atoms }] of buckets.entries()) {
-        atomisticExporter[name] = atoms as JsonObject[string];
+        atomisticExporter[name] = atoms;
         structures.push({
             structure_id: structureId,
             structure_name: name,
@@ -205,7 +183,7 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
         },
         subListingNames: structures.length > 0 ? ['structures'] : [],
         subListings: structures.length > 0 ? { structures } : {},
-        perAtomProperties: propertyRows as unknown as PerAtomProperties,
+        perAtomProperties: propertyRows as PerAtomProperties,
         entityKind: 'atoms',
         exportData: { export: { AtomisticExporter: atomisticExporter } }
     };
@@ -226,12 +204,11 @@ export const readWorkflowExposurePayload = async (
                 `SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1`
             );
             const payloadRows = reader.getRowObjects();
-            const payload = payloadRows.length > 0 ? payloadRows[0].payload : undefined;
-            if (typeof payload !== 'string') {
+            const payload = payloadRows[0]?.payload as string | undefined;
+            if (payload === undefined) {
                 return emptyResult();
             }
-            const document = JSON.parse(payload) as unknown;
-            return isRecord(document) ? extractFromDocument(document as JsonObject) : emptyResult();
+            return extractFromDocument(JSON.parse(payload) as JsonObject);
         }
 
         if (
@@ -243,22 +220,22 @@ export const readWorkflowExposurePayload = async (
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY id`
             );
-            const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
-            return reconstructFromBondTable(rows);
+            const rows = (reader.getRowObjects() as JsonObject[]).map(normalizeParquetRow);
+            return reconstructFromPointsTable(rows, 'bonds', 'BondExporter');
         }
 
         if (columnNames.includes('points') && columnNames.includes('id')) {
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY id`
             );
-            const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
-            return reconstructFromLineTable(rows);
+            const rows = (reader.getRowObjects() as JsonObject[]).map(normalizeParquetRow);
+            return reconstructFromPointsTable(rows, 'lines', 'LineExporter');
         }
 
         const reader = await connection.runAndReadAll(
             `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY atom_index`
         );
-        const rows = reader.getRowObjects() as unknown as JsonObject[];
+        const rows = reader.getRowObjects() as JsonObject[];
         return reconstructFromColumnarAtoms(rows);
     } finally {
         connection.closeSync();
@@ -281,11 +258,11 @@ export const inspectWorkflowExposureOutput = async (
     }
 
     const { listing, subListingNames, exportData } = await readWorkflowExposurePayload(outputFilePath);
-    const mainListing = listing?.main_listing;
+    const mainListing = listing?.main_listing as JsonObject | undefined;
 
     return {
         outputFilePath,
-        listingRowCount: isRecord(mainListing) ? Object.keys(mainListing).length : 0,
+        listingRowCount: mainListing ? Object.keys(mainListing).length : 0,
         subListingNames,
         exportPayload: exportData
     };

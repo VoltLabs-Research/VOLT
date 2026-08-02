@@ -19,7 +19,7 @@ import type {
     RemoteClusterObjectPutStreamRequest,
     RemoteClusterObjectStoreGateway
 } from '@shared/contracts/types/cluster-object-store';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { Readable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 
@@ -65,12 +65,17 @@ const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): Clust
     };
 };
 
+/** The proxy answers errors with a JSON envelope, but a bare-text body is always possible. */
+const parseErrorPayload = (payloadText: string): ObjectStoreErrorPayload | null => {
+    try {
+        const parsed = JSON.parse(payloadText) as ObjectStoreErrorPayload;
+        return typeof parsed?.message === 'string' ? parsed : null;
+    } catch {
+        return null;
+    }
+};
+
 const parseHeadResponse = (headers: Headers): ClusterObjectHeadResponse => {
-    const contentLengthHeader = headers.get('content-length');
-    const contentType = headers.get('content-type');
-    const contentEncoding = headers.get('content-encoding');
-    const etag = headers.get('etag');
-    const lastModified = headers.get('last-modified');
     const metadata: Record<string, string> = {};
 
     headers.forEach((headerValue, headerName) => {
@@ -81,32 +86,18 @@ const parseHeadResponse = (headers: Headers): ClusterObjectHeadResponse => {
         metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue;
     });
 
-    const response: ClusterObjectHeadResponse = { metadata };
+    const contentLengthHeader = headers.get('content-length');
+    const lastModified = headers.get('last-modified');
 
-    if (contentLengthHeader) {
-        response.contentLength = Number(contentLengthHeader);
-    }
-
-    if (contentType !== null) {
-        response.contentType = contentType;
-    }
-
-    if (contentEncoding !== null) {
-        response.contentEncoding = contentEncoding;
-    }
-
-    if (etag !== null) {
-        response.etag = etag;
-    }
-
-    if (lastModified) {
-        response.lastModified = new Date(lastModified);
-    }
-
-    return response;
+    return {
+        contentLength: contentLengthHeader ? Number(contentLengthHeader) : undefined,
+        contentType: headers.get('content-type') ?? undefined,
+        contentEncoding: headers.get('content-encoding') ?? undefined,
+        etag: headers.get('etag') ?? undefined,
+        lastModified: lastModified ? new Date(lastModified) : undefined,
+        metadata
+    };
 };
-
-const GET_REQUEST_INIT: DirectObjectStoreRequestInit = { method: 'GET' };
 
 export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway {
     constructor(
@@ -194,13 +185,14 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
 
     private async fetch(
         path: string,
-        init: DirectObjectStoreRequestInit = GET_REQUEST_INIT,
+        init: DirectObjectStoreRequestInit,
         timeoutMs = OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS
     ): Promise<Response> {
         const headers = new Headers(init.headers);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, this.config.teamClusterId);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER, this.config.daemonPassword);
 
+        const timeoutMessage = `Object store proxy request timed out after ${timeoutMs}ms`;
         const requestInit: DirectObjectStoreFetchInit = {
             method: init.method,
             headers,
@@ -213,7 +205,7 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
 
         const controller = new AbortController();
         const timeout = setTimeout(() => {
-            controller.abort(new Error(`Object store proxy request timed out after ${timeoutMs}ms`));
+            controller.abort(new Error(timeoutMessage));
         }, timeoutMs);
         timeout.unref();
         requestInit.signal = controller.signal;
@@ -223,13 +215,10 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
             response = await fetch(new URL(path, this.config.voltCloudUrl), requestInit);
         } catch (error) {
             if (controller.signal.aborted) {
-                throw Object.assign(
-                    new Error(`Object store proxy request timed out after ${timeoutMs}ms`),
-                    {
-                        name: 'ObjectStoreProxyTimeoutError',
-                        statusCode: 504
-                    }
-                );
+                throw Object.assign(new Error(timeoutMessage), {
+                    name: 'ObjectStoreProxyTimeoutError',
+                    statusCode: 504
+                });
             }
 
             throw error;
@@ -241,26 +230,15 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
             return response;
         }
 
-        const payloadText = await response.text();
-        let parsedPayload: ObjectStoreErrorPayload | null = null;
-        try {
-            parsedPayload = JSON.parse(payloadText) as ObjectStoreErrorPayload;
-        } catch {
-            parsedPayload = null;
-        }
-
-        if (parsedPayload && typeof parsedPayload.message === 'string') {
-            throw Object.assign(new Error(parsedPayload.message), {
+        const payload = parseErrorPayload(await response.text());
+        throw Object.assign(
+            new Error(payload?.message ?? `Object store proxy request failed with status ${response.status}`),
+            {
                 name: 'ObjectStoreProxyError',
                 statusCode: response.status,
-                code: parsedPayload.code
-            });
-        }
-
-        throw Object.assign(new Error(`Object store proxy request failed with status ${response.status}`), {
-            name: 'ObjectStoreProxyError',
-            statusCode: response.status
-        });
+                code: payload?.code
+            }
+        );
     }
 
     private buildCollectionPath(ownerClusterId: string, bucket: string, query?: URLSearchParams): string {

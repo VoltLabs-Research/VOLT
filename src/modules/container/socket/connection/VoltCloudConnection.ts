@@ -1,9 +1,10 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { TeamClusterDaemonRuntimeConfig } from '@shared/contracts/types/team-cluster-runtime';
-import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
+import type { ReverseChannelOutboundMessage } from '@shared/contracts/channel/binary-messages';
 import { ControlPlaneProcessClient } from '@modules/container/socket/connection/ControlPlaneProcessClient';
 import { TeamClusterStatus } from '@shared/contracts/types/container-types';
 
@@ -13,22 +14,22 @@ interface RuntimeLifecycleUpdateRequest {
     status: TeamClusterStatus;
 };
 
-type CommandlessTeamClusterDaemonMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
-
 export class VoltCloudConnection {
     private connectedToCloud = false;
     private heartbeatFailureCount = 0;
+    private connectionGeneration = 0;
 
     public readonly client: ControlPlaneProcessClient;
 
     constructor(
-        private readonly config: DaemonConfig
+        config: DaemonConfig
     ) {
         this.client = new ControlPlaneProcessClient(config);
 
         this.client
             .onConnected(() => {
                 this.connectedToCloud = true;
+                this.connectionGeneration += 1;
                 this.heartbeatFailureCount = 0;
                 logger.info('Connected to VoltCloud');
             })
@@ -60,11 +61,20 @@ export class VoltCloudConnection {
         return this.connectedToCloud;
     }
 
-    emitMessage(message: CommandlessTeamClusterDaemonMessage): void {
+    /**
+     * Increments on every successful (re)connect. Callers that cache what they
+     * already sent to the cloud compare generations instead of watching for a
+     * transient disconnect, which a poll can miss entirely.
+     */
+    getConnectionGeneration(): number {
+        return this.connectionGeneration;
+    }
+
+    emitMessage(message: ReverseChannelOutboundMessage): void {
         try {
-            this.client.emit(message as unknown as TeamClusterDaemonMessage);
+            this.client.emit(message);
         } catch (err) {
-            logger.warn(`Failed to emit message to VoltCloud: ${err instanceof Error ? err.message : String(err)}`);
+            logger.warn(`Failed to emit message to VoltCloud: ${errorMessage(err)}`);
         }
     }
 
@@ -79,16 +89,12 @@ export class VoltCloudConnection {
             } satisfies RuntimeLifecycleUpdateRequest);
             logger.info(`Reported daemon lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}`);
         } catch (error) {
-            logger.warn(`Failed to send lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}, error=${error instanceof Error ? error.message : String(error)}`);
+            logger.warn(`Failed to send lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}, error=${errorMessage(error)}`);
         }
     }
 
-    sendServerCommand<TResponse = object>(command: string, payload: object): Promise<TResponse | undefined> {
-        return this.client.sendCommand<TResponse>(command, payload);
-    }
-
     async getRuntimeConfig(): Promise<TeamClusterDaemonRuntimeConfig> {
-        const runtimeConfig = await this.sendServerCommand<TeamClusterDaemonRuntimeConfig>(
+        const runtimeConfig = await this.client.sendCommand<TeamClusterDaemonRuntimeConfig>(
             'runtime.config.get',
             {}
         );

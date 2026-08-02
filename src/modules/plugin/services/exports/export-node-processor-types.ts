@@ -43,14 +43,8 @@ export interface LineExportData {
     lines: LineEntity[];
 }
 
-export interface BondEntity {
-    id: number;
-    points: [number, number, number][];
-    [property: string]: unknown;
-}
-
 export interface BondExportData {
-    bonds: BondEntity[];
+    bonds: LineEntity[];
 }
 
 export interface AtomisticAtom {

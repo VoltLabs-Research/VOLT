@@ -1,3 +1,5 @@
+import type { ErrorCode } from '@core/constants/error-codes';
+
 export interface ApplicationErrorOptions {
     statusCode?: number;
     details?: unknown;
@@ -32,7 +34,7 @@ export default class ApplicationError extends Error {
     public readonly cause?: unknown;
 
     constructor(
-        public readonly code: string,
+        public readonly code: ErrorCode,
         public readonly message: string,
         input: ApplicationErrorInput = 500
     ) {
@@ -47,7 +49,7 @@ export default class ApplicationError extends Error {
     }
 
     static badRequest(
-        code: string,
+        code: ErrorCode,
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
@@ -58,7 +60,7 @@ export default class ApplicationError extends Error {
     }
 
     static notFound(
-        code: string,
+        code: ErrorCode,
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
@@ -69,7 +71,7 @@ export default class ApplicationError extends Error {
     }
 
     static unprocessableEntity(
-        code: string,
+        code: ErrorCode,
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {

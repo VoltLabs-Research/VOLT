@@ -8,10 +8,6 @@ export interface QueuePayload {
     jobId?: string;
 }
 
-type QueueWorkerOptions = {
-    concurrency?: number;
-};
-
 type EnqueueOptions = {
     preserveExistingJob?: boolean;
     removeOnComplete?: number | boolean;
@@ -23,8 +19,6 @@ type EnqueueOptions = {
     };
 };
 
-type PreservedJobState = Extract<JobState, 'active' | 'waiting' | 'delayed'>;
-
 const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
     PIPELINE_QUEUE_NAME,
@@ -35,45 +29,52 @@ const KNOWN_QUEUE_NAMES = [
     TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME
 ] as const;
 
-const PRESERVED_JOB_STATES = new Set<PreservedJobState>([
+const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
+
+/** A job in one of these states is still owned by the queue, so re-enqueueing must not disturb it. */
+const PRESERVED_JOB_STATES = new Set<JobState | 'unknown'>([
     'active',
     'waiting',
     'delayed'
 ]);
 
-const isPreservedJobState = (state: JobState): state is PreservedJobState => {
-    return PRESERVED_JOB_STATES.has(state as PreservedJobState);
+const assertKnownQueue = (queueName: string): void => {
+    if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
+        throw new Error(`Unsupported queue: ${queueName}`);
+    }
 };
 
-const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
-
-const JOB_QUEUE_AFFINITY_MAX = 50_000;
-const JOB_QUEUE_AFFINITY_TTL_MS = 86_400_000;
+const toJobOptions = (jobId: string | undefined, options: EnqueueOptions) => ({
+    jobId,
+    attempts: options.attempts,
+    backoff: options.backoff,
+    removeOnComplete: options.removeOnComplete ?? 1000,
+    removeOnFail: options.removeOnFail ?? 1000
+});
 
 export class QueueService {
     private readonly queues = new Map<string, Queue<QueuePayload>>();
     private readonly enqueueLocks = new Map<string, Promise<unknown>>();
+    /** Remembers which queue a job id landed in for a day, so lookups skip the fan-out scan. */
     private readonly jobQueueAffinity = new TTLCache<string, string>({
-        max: JOB_QUEUE_AFFINITY_MAX,
-        ttl: JOB_QUEUE_AFFINITY_TTL_MS
+        max: 50_000,
+        ttl: 86_400_000
     });
 
-    constructor(
-        private readonly redisConnection: RedisConnection
-    ) {}
+    constructor(private readonly redisConnection: RedisConnection) {}
 
     async close(): Promise<void> {
         await Promise.all([...this.queues.values()].map((queue) => queue.close()));
         this.queues.clear();
-    };
+    }
 
     async enqueue<T extends QueuePayload>(queueName: string, payload: T, options: EnqueueOptions = {}): Promise<boolean> {
         const jobId = payload.jobId;
-
         if (!jobId || !options.preserveExistingJob) {
             return this.doEnqueue(queueName, payload, options);
         }
 
+        // Serialised per job id only, so unrelated jobs still admit in parallel.
         return this.runExclusive(`${queueName}:${jobId}`, () => this.doEnqueue(queueName, payload, options));
     }
 
@@ -83,11 +84,8 @@ export class QueueService {
 
         if (jobId && options.preserveExistingJob) {
             const existingJob = await queue.getJob(jobId);
-
             if (existingJob) {
-                const existingState = await existingJob.getState();
-
-                if (existingState !== 'unknown' && isPreservedJobState(existingState)) {
+                if (PRESERVED_JOB_STATES.has(await existingJob.getState())) {
                     return false;
                 }
 
@@ -95,13 +93,7 @@ export class QueueService {
             }
         }
 
-        await queue.add(queueName, payload, {
-            jobId,
-            attempts: options.attempts,
-            backoff: options.backoff,
-            removeOnComplete: options.removeOnComplete ?? 1000,
-            removeOnFail: options.removeOnFail ?? 1000
-        });
+        await queue.add(queueName, payload, toJobOptions(jobId, options));
 
         if (jobId) {
             this.jobQueueAffinity.set(jobId, queueName);
@@ -132,13 +124,7 @@ export class QueueService {
         await queue.addBulk(payloads.map((payload) => ({
             name: queueName,
             data: payload,
-            opts: {
-                jobId: payload.jobId,
-                attempts: options.attempts,
-                backoff: options.backoff,
-                removeOnComplete: options.removeOnComplete ?? 1000,
-                removeOnFail: options.removeOnFail ?? 1000
-            }
+            opts: toJobOptions(payload.jobId, options)
         })));
 
         for (const payload of payloads) {
@@ -151,12 +137,9 @@ export class QueueService {
     createWorker = <T extends QueuePayload>(
         queueName: string,
         processor: (payload: T, job: Job<T>) => Promise<void>,
-        options: QueueWorkerOptions = {}
+        options: { concurrency?: number } = {}
     ): Worker<T> => {
-        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
-            throw new Error(`Unsupported queue: ${queueName}`);
-        }
-
+        assertKnownQueue(queueName);
         return new Worker<T>(
             queueName,
             (job) => processor(job.data, job),
@@ -171,10 +154,7 @@ export class QueueService {
 
     async retryJobById(jobId: string): Promise<boolean> {
         const job = await this.findJob(jobId);
-        if (!job) return false;
-
-        const state = await job.getState();
-        if (state !== 'failed') {
+        if (!job || (await job.getState()) !== 'failed') {
             return false;
         }
 
@@ -190,7 +170,7 @@ export class QueueService {
         return true;
     }
 
-    async findJob(jobId: string): Promise<Job<QueuePayload> | null> {
+    private async findJob(jobId: string): Promise<Job<QueuePayload> | null> {
         const affineQueueName = this.jobQueueAffinity.get(jobId);
         if (affineQueueName) {
             const job = await this.getQueue(affineQueueName).getJob(jobId);
@@ -205,8 +185,7 @@ export class QueueService {
     }
 
     async getJobCounts(queueName: string): Promise<{ waiting: number; active: number; delayed: number; completed: number; failed: number; }> {
-        const queue = this.getQueue(queueName);
-        const counts = await queue.getJobCounts('waiting', 'active', 'delayed', 'completed', 'failed');
+        const counts = await this.getQueue(queueName).getJobCounts('waiting', 'active', 'delayed', 'completed', 'failed');
         return {
             waiting: counts.waiting ?? 0,
             active: counts.active ?? 0,
@@ -221,10 +200,7 @@ export class QueueService {
     }
 
     private getQueue(queueName: string): Queue<QueuePayload> {
-        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
-            throw new Error(`Unsupported queue: ${queueName}`);
-        }
-
+        assertKnownQueue(queueName);
         const existingQueue = this.queues.get(queueName);
         if (existingQueue) return existingQueue;
 

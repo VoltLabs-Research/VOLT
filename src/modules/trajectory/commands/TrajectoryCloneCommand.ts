@@ -1,9 +1,12 @@
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { mapLimited } from '@shared/application/utilities/map-limited';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 interface TrajectoryCloneFramePayload {
     timestep: number | string;
@@ -25,9 +28,22 @@ interface TrajectoryCloneResult {
 
 const TRAJECTORY_CLONE_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_CLONE_CONCURRENCY') ?? 8;
 
-const buildTrajectoryDumpObjectName = (trajectoryId: string, timestep: string | number): string => (
-    `trajectory-${trajectoryId}/timestep-${timestep}.dump.zst`
-);
+/**
+ * The cloud may send a timestep as a JSON string, so it is normalized once here
+ * rather than letting a `string | number` leak into the object-key builder.
+ */
+const readFrameTimestep = (frame: TrajectoryCloneFramePayload): number => {
+    const timestep = typeof frame.timestep === 'string' ? Number(frame.timestep) : frame.timestep;
+
+    if (!Number.isInteger(timestep)) {
+        throw ApplicationError.badRequest(
+            ErrorCodes.TRAJECTORY_CLONE_INVALID_TIMESTEP,
+            `Clone frame timestep must be an integer, received "${String(frame.timestep)}"`
+        );
+    }
+
+    return timestep;
+};
 
 @CommandGroup('trajectory')
 export class TrajectoryCloneCommand {
@@ -43,9 +59,6 @@ export class TrajectoryCloneCommand {
         if (!payload.sourceClusterId || !payload.destinationClusterId) {
             throw new Error('trajectory.clone requires sourceClusterId and destinationClusterId');
         }
-        if (!Array.isArray(payload.frames)) {
-            throw new Error('trajectory.clone requires frames');
-        }
 
         const results = await mapLimited(
             payload.frames,
@@ -60,8 +73,9 @@ export class TrajectoryCloneCommand {
     }
 
     private async copyFrame(payload: TrajectoryClonePayload, frame: TrajectoryCloneFramePayload): Promise<number> {
-        const sourceObjectKey = buildTrajectoryDumpObjectName(payload.sourceTrajectoryId, frame.timestep);
-        const destinationObjectKey = buildTrajectoryDumpObjectName(payload.destinationTrajectoryId, frame.timestep);
+        const timestep = readFrameTimestep(frame);
+        const sourceObjectKey = toTrajectoryFrameDumpObjectKey(payload.sourceTrajectoryId, timestep);
+        const destinationObjectKey = toTrajectoryFrameDumpObjectKey(payload.destinationTrajectoryId, timestep);
         const source = await this.objectStore.getStream(
             payload.sourceClusterId,
             ObjectBucketName.Dumps,

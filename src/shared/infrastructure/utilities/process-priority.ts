@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import os from 'node:os';
 
 import { logger } from '@shared/infrastructure/logger';
@@ -45,7 +46,7 @@ export const applyPreferredPlaneProcessPriority = (
 
         warnedLabels.add(label);
         logger.warn(
-            `Failed to raise process priority for ${label} pid=${pid}: ${error instanceof Error ? error.message : String(error)}`
+            `Failed to raise process priority for ${label} pid=${pid}: ${errorMessage(error)}`
         );
     }
 };

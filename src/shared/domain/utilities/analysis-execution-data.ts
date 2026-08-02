@@ -10,7 +10,7 @@ export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecuti
 export const compressSerializedAnalysisExecutionData = (serializedValue: string): Promise<string> =>
     deflateJsonToBase64Gzip(serializedValue);
 
-export const inflateAnalysisExecutionData = (compressedValue: string): Promise<AnalysisJobExecutionData> =>
+const inflateAnalysisExecutionData = (compressedValue: string): Promise<AnalysisJobExecutionData> =>
     inflateBase64GzipJson<AnalysisJobExecutionData>(compressedValue);
 
 export const parseStoredAnalysisExecutionData = async (storedValue: string): Promise<AnalysisJobExecutionData> => {

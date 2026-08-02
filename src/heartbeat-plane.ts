@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { type Socket } from 'socket.io-client';
 import http from 'node:http';
 import https from 'node:https';
@@ -42,7 +43,7 @@ const scheduleHeartbeat = (immediate = false): void => {
     heartbeatTimer = setTimeout(() => {
         sendHeartbeat()
             .catch((error) => {
-                logger.warn(`Heartbeat plane failed: ${error instanceof Error ? error.message : String(error)}`);
+                logger.warn(`Heartbeat plane failed: ${errorMessage(error)}`);
             })
             .finally(() => {
                 if (isRegistered()) {

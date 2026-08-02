@@ -13,7 +13,6 @@ import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastruc
 import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 import { ObjectBucketName, type RasterQueueJobPayload } from '@shared/contracts';
-import { isRecord } from '@shared/domain/utilities/is-record';
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import type { Rasterizer } from '@modules/trajectory/services/raster/Rasterizer';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
@@ -52,7 +51,7 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
                 shouldReportTerminal: () => isFinalAttempt(bullJob),
                 progress: (value) => bullJob.updateProgress(value),
                 cleanup: async ({ reachedTerminal }) => {
-                    if (reachedTerminal && isRecord(payload.metadata) && payload.metadata.autoPreview === true) {
+                    if (reachedTerminal && payload.metadata.autoPreview) {
                         await this.trajectoryAutoPreviewClaimStore
                             .releaseRasterization(payload.trajectoryId)
                             .catch(logAndSwallow('error',

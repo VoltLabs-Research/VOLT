@@ -51,7 +51,7 @@ export class AnalysisCommands {
         request.nestedPlugins = nestedPlugins;
         request.pluginReferenceExecutions = pluginReferenceExecutions;
 
-        const traceContext = extractDaemonTraceContext(payload as unknown as Record<string, unknown>);
+        const traceContext = extractDaemonTraceContext(payload);
         if (traceContext) {
             request.traceContext = traceContext;
         }

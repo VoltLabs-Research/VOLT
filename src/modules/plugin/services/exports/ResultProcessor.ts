@@ -6,15 +6,16 @@ import {
     createWorkflowExposureOutputFilePath,
     readWorkflowExposurePayload
 } from '@modules/analysis/services/workflow/exposure-payload-reader';
-import type { JsonObject } from '@shared/contracts/types/json';
-import { isRecord } from '@shared/domain/utilities/is-record';
-import type { PluginListingRepository } from '@modules/plugin/models/plugin-listing-repository-contract';
+import {
+    precomputeListingRows,
+    precomputeSubListingRows
+} from '@modules/plugin/services/exports/listing-row-precompute';
 import { processExportNode } from '@modules/plugin/services/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
-import type { PluginMongoRow, PluginMongoValue } from '@modules/plugin/models/plugin-listing-repository-contract';
+import type { MongoPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
 
@@ -23,7 +24,7 @@ const isParquetExposure = (resultsFileName: string): boolean =>
 
 export class DefaultResultProcessor implements ResultProcessorService {
     constructor(
-        private readonly pluginListingRepository: PluginListingRepository,
+        private readonly pluginListingRepository: MongoPluginListingRepository,
         private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 
@@ -38,7 +39,20 @@ export class DefaultResultProcessor implements ResultProcessorService {
     ): Promise<void> {
         const outputFilePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
         const startedAt = Date.now();
-        const stageKey = `${executionData.identity.analysisId}:${timestep}:exposure:${exposure.nodeId}`;
+        const reportStage = (
+            stageStatus: 'running' | 'completed' | 'failed',
+            detail?: string
+        ): Promise<void> | undefined => stageReporter?.report({
+            stageKey: `${executionData.identity.analysisId}:${timestep}:exposure:${exposure.nodeId}`,
+            label: `Process ${exposure.name}`,
+            stageType: 'exposure',
+            stageStatus,
+            timestep,
+            pluginId: executionData.identity.pluginId,
+            nodeId: exposure.nodeId,
+            exposureId: exposure.nodeId,
+            detail
+        });
 
         try {
             await fs.access(outputFilePath);
@@ -69,16 +83,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
             throw new Error(`Missing storage owner cluster for analysis ${analysisId}`);
         }
 
-        await stageReporter?.report({
-            stageKey,
-            label: `Process ${exposure.name}`,
-            stageType: 'exposure',
-            stageStatus: 'running',
-            timestep,
-            pluginId,
-            nodeId: exposure.nodeId,
-            exposureId: exposure.nodeId
-        });
+        await reportStage('running');
 
         try {
             let {
@@ -151,117 +156,14 @@ export class DefaultResultProcessor implements ResultProcessorService {
 
             exportPayload = null;
 
-            await stageReporter?.report({
-                stageKey,
-                label: `Process ${exposure.name}`,
-                stageType: 'exposure',
-                stageStatus: 'completed',
-                timestep,
-                pluginId,
-                nodeId: exposure.nodeId,
-                exposureId: exposure.nodeId
-            });
+            await reportStage('completed');
         } catch (error) {
-            await stageReporter?.report({
-                stageKey,
-                label: `Process ${exposure.name}`,
-                stageType: 'exposure',
-                stageStatus: 'failed',
-                timestep,
-                pluginId,
-                nodeId: exposure.nodeId,
-                exposureId: exposure.nodeId,
-                detail: error instanceof Error ? error.message : undefined
-            });
+            await reportStage('failed', error instanceof Error ? error.message : undefined);
             throw error;
         }
 
         logger.info(`Finished exposure result processing: analysisId=${analysisId}, exposure=${exposure.name}, durationMs=${Date.now() - startedAt}, timestep=${timestep}`);
     }
-}
-
-async function precomputeListingRows(
-    pluginListingRepository: PluginListingRepository,
-    executionData: AnalysisJobExecutionData,
-    exposure: AnalysisExposureDefinition,
-    decoded: JsonObject | null,
-    subListingNames: string[],
-    objectKey: string | undefined,
-    propertyOwnerClusterId: string,
-    timestep: number,
-    teamId: string
-): Promise<void> {
-    if (!decoded) {
-        logger.debug(`Exposure output has no listing payload for objectKey=${objectKey}`);
-        return;
-    }
-
-    const mainListing = decoded.main_listing;
-    if (!isRecord(mainListing) || Object.keys(mainListing).length === 0) {
-        logger.debug(`No main_listing in decoded payload for objectKey=${objectKey}`);
-        return;
-    }
-
-    const cleanedMainListing: PluginMongoRow = {};
-    for (const [key, entryValue] of Object.entries(mainListing)) {
-        if (
-            Array.isArray(entryValue)
-            || (typeof entryValue === 'object' && entryValue !== null)
-        ) {
-            continue;
-        }
-
-        cleanedMainListing[key] = entryValue as PluginMongoValue;
-    }
-    if (Object.keys(cleanedMainListing).length === 0) {
-        logger.warn(`main_listing only contained filtered values, skipping persistence for objectKey=${objectKey}`);
-        return;
-    }
-
-    const { analysisId, trajectoryId, pluginId } = executionData.identity;
-    await pluginListingRepository.bulkUpsertListingRows([{
-        filter: {
-            analysis: analysisId,
-            exposureId: exposure.nodeId,
-            timestep
-        },
-        update: {
-            plugin: pluginId,
-            team: teamId,
-            trajectory: trajectoryId,
-            analysis: analysisId,
-            exposureName: exposure.name,
-            exposureId: exposure.nodeId,
-            timestep,
-            row: cleanedMainListing,
-            ...(objectKey ? {
-                propertyObjectKey: objectKey,
-                propertyOwnerClusterId
-            } : {}),
-            subListingNames
-        }
-    }]);
-}
-
-async function precomputeSubListingRows(
-    pluginListingRepository: PluginListingRepository,
-    executionData: AnalysisJobExecutionData,
-    exposure: AnalysisExposureDefinition,
-    subListings: Record<string, JsonObject[]>,
-    timestep: number
-): Promise<void> {
-    const { analysisId } = executionData.identity;
-    const inputs = Object.entries(subListings)
-        .filter(([, rows]) => rows.length > 0)
-        .map(([subListingName, rows]) => ({
-            analysis: analysisId,
-            exposureId: exposure.nodeId,
-            timestep,
-            subListingName,
-            rows: rows as PluginMongoRow[]
-        }));
-
-    await pluginListingRepository.replaceSubListingRows(inputs);
 }
 
 export const getResultProcessor = singleton((): DefaultResultProcessor => new DefaultResultProcessor(getPluginListingRepository(), getPluginPropertyStore()));

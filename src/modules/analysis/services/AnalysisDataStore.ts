@@ -8,11 +8,6 @@ import type { DaemonConfig } from '@core/config/daemon';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts';
 import type { RedisConnectionOptions } from '@shared/contracts/types/redis-connection';
 
-interface AnalysisExecutionDataPayload {
-    jobId: string;
-    executionDataReference: AnalysisExecutionDataReference;
-}
-
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
@@ -70,10 +65,6 @@ export class AnalysisDataStore {
             storedAt,
             ttlSeconds: ANALYSIS_EXECUTION_DATA_TTL_SECONDS
         };
-    }
-
-    async resolve(payload: AnalysisExecutionDataPayload): Promise<AnalysisJobExecutionData> {
-        return this.get(payload.executionDataReference, payload.jobId);
     }
 
     async get(reference: AnalysisExecutionDataReference, jobId?: string): Promise<AnalysisJobExecutionData> {

@@ -1,4 +1,3 @@
-import { singleton } from '@shared/application/utilities/singleton';
 import { TTLCache } from '@isaacs/ttlcache';
 import type { DiskUsageSnapshot, MetricsSnapshot } from '@shared/contracts/types/metrics';
 import * as os from 'node:os';
@@ -106,4 +105,3 @@ export class MetricsService {
     }
 }
 
-export const getMetricsService = singleton((): MetricsService => new MetricsService());

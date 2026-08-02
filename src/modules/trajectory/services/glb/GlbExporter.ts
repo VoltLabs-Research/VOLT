@@ -15,9 +15,21 @@ import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-cod
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
+/**
+ * What a GLB export needs, whatever queues it. Both entry points — the
+ * `trajectory.native preprocess` command from the cloud and the GLB conversion
+ * worker — satisfy this, so the boundary is typed instead of `any`.
+ */
+export interface PreprocessTrajectoryInput {
+    trajectoryId: string;
+    timestep: number;
+    ownerClusterId: string;
+    teamId: string;
+}
+
 const queueAutoPreviewRasterization = async (
     trajectoryRasterQueue: TrajectoryRasterQueue,
-    input: any
+    input: PreprocessTrajectoryInput
 ): Promise<void> => {
     const { ownerClusterId, teamId } = input;
 
@@ -42,7 +54,7 @@ export class GlbExporter {
         private readonly trajectoryRasterQueue: TrajectoryRasterQueue
     ) {}
 
-    async preprocessTrajectory(input: any): Promise<void> {
+    async preprocessTrajectory(input: PreprocessTrajectoryInput): Promise<void> {
         await withNativeProcessingTempDir('trajectory-glb', async (tempDirectory) => {
             const tempGlbPath = path.join(tempDirectory, 'model.glb');
             const tempCompressedGlbPath = `${tempGlbPath}.zst`;

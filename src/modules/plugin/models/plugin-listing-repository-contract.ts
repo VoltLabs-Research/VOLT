@@ -1,9 +1,7 @@
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
 import type { PluginListingRowDocument } from '@modules/plugin/models/plugin-listing-row-model';
-import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
-import type { JsonObject, JsonValue } from '@shared/contracts/types/json';
+import type { JsonObject } from '@shared/contracts/types/json';
 
-export type PluginMongoValue = JsonValue;
 export type PluginMongoRow = JsonObject;
 
 export interface PluginListingFilter {
@@ -59,40 +57,9 @@ export interface ListingPaginatedResult extends PaginatedResult<PluginListingRow
     subListingNames: string[];
 }
 
-export type PluginDocumentType = 'listing' | 'sub-listing';
-
-interface PluginMongoScopedInput {
-    documentType: PluginDocumentType;
-}
-
-interface PluginMongoAnalysisScopedInput extends PluginMongoScopedInput {
-    analysisIds: string[];
-}
-
-export type PluginMongoRowsExportInput = PluginMongoAnalysisScopedInput & {
-    skip?: number;
-    limit?: number;
-};
-
 export interface PluginMongoRowsExportResult {
     rows: PluginMongoRow[];
     total: number;
     hasMore: boolean;
     nextSkip: number;
-}
-
-export type PluginMongoRowsImportInput = PluginMongoScopedInput & {
-    rows: PluginMongoRow[];
-};
-
-export type PluginMongoRowsPurgeInput = PluginMongoAnalysisScopedInput;
-
-export interface PluginListingRepository {
-    listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult>;
-    listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>>;
-    bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void>;
-    replaceSubListingRows(inputs: ReplaceSubListingRowsInput[]): Promise<void>;
-    exportMongoRows(input: PluginMongoRowsExportInput): Promise<PluginMongoRowsExportResult>;
-    importMongoRows(input: PluginMongoRowsImportInput): Promise<number>;
-    purgeMongoRows(input: PluginMongoRowsPurgeInput): Promise<number>;
 }

@@ -1,5 +1,5 @@
 import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-analysis';
-import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
+import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
 import {
     createWorkflowExposureOutputFilePath,
     inspectWorkflowExposureOutput
@@ -34,7 +34,6 @@ const resolveExportDescendant = (workflow: WorkflowGraph, nodeId: string): Workf
 
 export class WorkflowExposureHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Exposure;
-    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.Exposure];
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const execution = context.execution?.exposure;

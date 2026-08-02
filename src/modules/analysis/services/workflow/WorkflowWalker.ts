@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type {
     WorkflowExecutionContext,
@@ -37,7 +38,7 @@ export interface WorkflowTraceDetails {
     trace: InlineWorkflowTraceNode[];
 }
 
-export const WORKFLOW_TRACE_ERROR_CODE = 'Workflow::Trace';
+export const WORKFLOW_TRACE_ERROR_CODE = ErrorCodes.WORKFLOW_TRACE;
 
 export const createWorkflowTraceFailure = (
     message: string,
@@ -57,7 +58,7 @@ export const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | u
     }
 
     const details = error.details as WorkflowTraceDetails | undefined;
-    return Array.isArray(details?.trace) ? details.trace : undefined;
+    return details?.trace;
 };
 
 export const MAX_TRACE_STRING_LENGTH = 8 * 1024;
@@ -95,7 +96,7 @@ const sanitizeTraceValue = (value: WorkflowValue, key: string | undefined): Work
     return value;
 };
 
-export const sanitizeTraceOutput = (
+const sanitizeTraceOutput = (
     output: WorkflowNodeOutput | undefined
 ): WorkflowNodeOutput | undefined => {
     if (output === undefined) {
@@ -137,8 +138,6 @@ export interface WorkflowWalkerOptions {
     delegate: WorkflowWalkerDelegate;
 
     pluginId?: string;
-
-    traceCounter?: WorkflowTraceCounter;
 }
 
 type WorkflowWalkerTraceEntry = Omit<InlineWorkflowTraceNode, 'traceId' | 'nodeId' | 'nodeType' | 'pluginId'>;
@@ -151,7 +150,7 @@ export class WorkflowWalker {
     private readonly visitedNodeIds: Set<string>;
     private readonly delegate: WorkflowWalkerDelegate;
     private readonly pluginId?: string;
-    private readonly traceCounter: WorkflowTraceCounter;
+    private readonly traceCounter: WorkflowTraceCounter = { value: 0 };
     private readonly trace: InlineWorkflowTraceNode[] = [];
 
     constructor(options: WorkflowWalkerOptions) {
@@ -162,7 +161,6 @@ export class WorkflowWalker {
         this.visitedNodeIds = options.visitedNodeIds;
         this.delegate = options.delegate;
         this.pluginId = options.pluginId;
-        this.traceCounter = options.traceCounter ?? { value: 0 };
     }
 
     getTrace(): InlineWorkflowTraceNode[] {

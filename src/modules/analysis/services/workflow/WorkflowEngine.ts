@@ -2,7 +2,7 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
-import { WORKFLOW_NODE_PHASE, WorkflowNodeRegistry, getWorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
+import { WorkflowNodeRegistry, getWorkflowNodeRegistry, isPlanningNodeType } from '@modules/analysis/services/workflow/NodeRegistry';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { WorkflowTrajectoryWindowHandler } from '@modules/analysis/services/workflow/nodes/TrajectoryWindowHandler';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
@@ -70,7 +70,7 @@ const createContextItemsPlan = (
 
     return {
         items: dumps,
-        nodeOutputSnapshots: session.snapshotOutputs()
+        nodeOutputSnapshots: WorkflowSession.snapshotOutputs(session.outputs)
     };
 };
 
@@ -107,7 +107,7 @@ const createTrajectoryWindowPlan = (
     return {
         items,
         trajectoryWindowNodeId: windowNodeId,
-        nodeOutputSnapshots: session.snapshotOutputs()
+        nodeOutputSnapshots: WorkflowSession.snapshotOutputs(session.outputs)
     };
 };
 
@@ -135,7 +135,7 @@ export class WorkflowEngine {
         const outcome = await this.planner.plan({
             nodes: executionOrder,
             context: session.context,
-            shouldSkipNode: (node) => WORKFLOW_NODE_PHASE[node.type] === 'runtime'
+            shouldSkipNode: (node) => !isPlanningNodeType(node.type)
                 && !PLANNING_EVALUATED_RUNTIME_NODE_TYPES.has(node.type)
         });
 
@@ -143,7 +143,7 @@ export class WorkflowEngine {
             return {
                 items: outcome.forEach.items,
                 forEachNodeId: outcome.forEach.node.id,
-                nodeOutputSnapshots: session.snapshotOutputs()
+                nodeOutputSnapshots: WorkflowSession.snapshotOutputs(session.outputs)
             };
         }
 

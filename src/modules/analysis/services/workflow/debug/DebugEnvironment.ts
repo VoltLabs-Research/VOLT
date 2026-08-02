@@ -33,9 +33,7 @@ export class DebugEnvironment {
         context: WorkflowExecutionContext,
         storageClusterId: string
     ): Promise<DebugEnvironmentState> {
-        const workflowSession = new WorkflowSession(context);
-
-        const selectedDump = workflowSession.resolveSelectedDump();
+        const selectedDump = WorkflowSession.resolveSelectedDump(context);
         if (!selectedDump) {
             throw new Error('No selected trajectory dump is available for debug execution');
         }
@@ -53,7 +51,7 @@ export class DebugEnvironment {
             unsafeCleanup: true
         })).path;
 
-        workflowSession.applyLocalizedDumpSelection(selectedDump, dumpPath, outputDir);
+        new WorkflowSession(context).applyLocalizedDumpSelection(selectedDump, dumpPath, outputDir);
 
         return {
             selectedDump: selectedDump.dump,

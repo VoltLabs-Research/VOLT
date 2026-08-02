@@ -4,8 +4,7 @@ import { buildObjectPath, resolveExporterEntries } from '@modules/plugin/service
 import { exportAtomisticArtifact } from '@modules/plugin/services/exports/atomistic-exporter';
 import { exportChartArtifact } from '@modules/plugin/services/exports/chart-exporter';
 import { exportConfigurationArtifact } from '@modules/plugin/services/exports/configuration-exporter';
-import { exportLineArtifact } from '@modules/plugin/services/exports/line-exporter';
-import { exportBondArtifact } from '@modules/plugin/services/exports/bond-exporter';
+import { exportBondArtifact, exportLineArtifact } from '@modules/plugin/services/exports/tube-artifact-exporter';
 import { exportMeshArtifact } from '@modules/plugin/services/exports/mesh-exporter';
 import type {
     AtomisticExportData,
@@ -23,70 +22,41 @@ import type {
     OctreeExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject } from '@shared/contracts/types/json';
+import { isRecord } from '@shared/domain/utilities/is-record';
 
-const CHART_TYPES = new Set(['line', 'bar', 'scatter', 'area']);
-const CONFIGURATION_FORMATS = new Set<ConfigurationExportFormat>(['lammps-dump', 'lammps-data', 'extxyz', 'poscar', 'cif']);
+const CHART_TYPES: ReadonlySet<string> = new Set<ChartExportOptions['chartType']>(['line', 'bar', 'scatter', 'area']);
+const CONFIGURATION_FORMATS: ReadonlySet<string> = new Set<ConfigurationExportFormat>(['lammps-dump', 'lammps-data', 'extxyz', 'poscar', 'cif']);
 
-const narrowConfigurationExporterOptions = (options: Record<string, unknown>): ConfigurationExporterOptions | null => {
-    const fmt = options.format;
-    if (typeof fmt !== 'string' || !CONFIGURATION_FORMATS.has(fmt as ConfigurationExportFormat)) {
-        return null;
-    }
-    const cm = options.columnMapping;
-    if (typeof cm !== 'object' || cm === null || Array.isArray(cm)) {
-        return null;
-    }
-    return {
-        format: fmt as ConfigurationExportFormat,
-        columnMapping: cm as Record<string, string>,
-        aseWriteKwargs: typeof options.aseWriteKwargs === 'object' && options.aseWriteKwargs !== null
-            ? options.aseWriteKwargs as Record<string, unknown>
-            : undefined
-    };
-};
+type NarrowedOptions<TOptions> = Record<string, unknown> & TOptions;
 
-const narrowOctreeOptions = (raw: unknown): OctreeExportOptions | undefined => {
-    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-        return undefined;
-    }
-    const o = raw as Record<string, unknown>;
-    if (o.enabled !== true) {
-        return undefined;
-    }
-    return {
-        enabled: true,
-        leafCellMaxAtoms: typeof o.leafCellMaxAtoms === 'number' ? o.leafCellMaxAtoms : undefined,
-        maxDepth: typeof o.maxDepth === 'number' ? o.maxDepth : undefined,
-        minAtomsForOctree: typeof o.minAtomsForOctree === 'number' ? o.minAtomsForOctree : undefined,
-        geometryBudget: typeof o.geometryBudget === 'object' && o.geometryBudget !== null && !Array.isArray(o.geometryBudget)
-            ? (o.geometryBudget as OctreeExportOptions['geometryBudget'])
-            : undefined
-    };
-};
+const isConfigurationExporterOptions = (
+    options: Record<string, unknown>
+): options is NarrowedOptions<ConfigurationExporterOptions> => (
+    typeof options.format === 'string'
+    && CONFIGURATION_FORMATS.has(options.format)
+    && Boolean(options.columnMapping)
+);
 
-const narrowChartOptions = (options: Record<string, unknown>): ChartExportOptions | null => {
-    if (
-        typeof options.xAxisKey !== 'string'
-        || typeof options.yAxisKey !== 'string'
-        || typeof options.chartType !== 'string'
-        || !CHART_TYPES.has(options.chartType)
-    ) {
-        return null;
-    }
+const isChartExportOptions = (
+    options: Record<string, unknown>
+): options is NarrowedOptions<ChartExportOptions> => (
+    typeof options.chartType === 'string' && CHART_TYPES.has(options.chartType)
+);
 
-    return options as unknown as ChartExportOptions;
-};
+const isEnabledOctreeOptions = (value: unknown): value is OctreeExportOptions =>
+    isRecord(value) && value.enabled === true;
 
-const runEntries = async (
+const runEntries = async <TExportData>(
     input: ExportExecutionInput,
     exporter: ExporterName,
     type: string,
-    run: (exportData: JsonObject, objectPath: string) => Promise<unknown>
+    run: (exportData: TExportData, objectPath: string) => Promise<unknown>
 ): Promise<void> => {
     const entries = resolveExporterEntries(input.decodedPayload, exporter);
     for (const { exportData, arrayIndex } of entries) {
         const objectPath = buildObjectPath(input, exporter, type, arrayIndex);
-        await run(exportData, objectPath);
+        // Exposure payloads are plugin-authored JSON; each exporter declares the shape it reads.
+        await run(exportData as TExportData, objectPath);
     }
 };
 
@@ -106,49 +76,47 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<vo
 
     switch (exporter) {
         case 'ChartExporter': {
-            const chartOptions = narrowChartOptions(options);
-            if (!chartOptions) {
+            if (!isChartExportOptions(options)) {
                 return;
             }
 
-            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            await runEntries<JsonObject>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportChartArtifact({
                     ...input,
                     decodedPayload: exportData
-                }, objectPath, ownerClusterId, chartOptions)
+                }, objectPath, ownerClusterId, options)
             ));
             return;
         }
         case 'AtomisticExporter': {
-            const octreeOptions = narrowOctreeOptions(options.octree);
-            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportAtomisticArtifact(input, exportData as unknown as AtomisticExportData, objectPath, ownerClusterId, octreeOptions)
+            const octreeOptions = isEnabledOctreeOptions(options.octree) ? options.octree : undefined;
+            await runEntries<AtomisticExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportAtomisticArtifact(input, exportData, objectPath, ownerClusterId, octreeOptions)
             ));
             return;
         }
         case 'MeshExporter':
-            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportMeshArtifact(input, exportData as unknown as MeshInput, objectPath, ownerClusterId, options as MeshExportOptions)
+            await runEntries<MeshInput>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportMeshArtifact(input, exportData, objectPath, ownerClusterId, options as MeshExportOptions)
             ));
             return;
         case 'LineExporter':
-            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportLineArtifact(input, exportData as unknown as LineExportData, objectPath, ownerClusterId, options as LineExportOptions)
+            await runEntries<LineExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportLineArtifact(input, exportData, objectPath, ownerClusterId, options as LineExportOptions)
             ));
             return;
         case 'BondExporter':
-            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportBondArtifact(input, exportData as unknown as BondExportData, objectPath, ownerClusterId, options as BondExportOptions)
+            await runEntries<BondExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportBondArtifact(input, exportData, objectPath, ownerClusterId, options as BondExportOptions)
             ));
             return;
         case 'ConfigurationExporter': {
-            const cfgOpts = narrowConfigurationExporterOptions(options);
-            if (!cfgOpts) {
+            if (!isConfigurationExporterOptions(options)) {
                 logger.warn({ analysisId: input.executionData.analysisId }, 'ConfigurationExporter: invalid or missing options');
                 return;
             }
             const objectPath = buildObjectPath(input, exporter, exportConfig.type, undefined);
-            await exportConfigurationArtifact(input, cfgOpts, objectPath, ownerClusterId);
+            await exportConfigurationArtifact(input, options, objectPath, ownerClusterId);
             return;
         }
         default:

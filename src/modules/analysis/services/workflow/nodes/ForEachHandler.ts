@@ -1,6 +1,6 @@
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler, type WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
+import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 
 interface WorkflowForEachOutput {
     items: WorkflowNodeOutput[];
@@ -11,7 +11,6 @@ interface WorkflowForEachOutput {
 
 export class WorkflowForEachHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.ForEach;
-    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.ForEach];
 
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
@@ -31,7 +30,7 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
         }
 
         return Promise.resolve({
-            items: items as WorkflowNodeOutput[],
+            items,
             count: items.length,
             currentValue: null,
             currentIndex: -1

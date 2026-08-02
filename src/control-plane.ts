@@ -1,17 +1,34 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { randomUUID } from 'node:crypto';
 import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@core/config/daemon';
-import { logger } from '@shared/infrastructure/logger';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     connectPlaneSocket,
     registerSignalHandlers,
     sendToParent
 } from '@shared/infrastructure/planes/plane-shared';
+import type {
+    TeamClusterDaemonCommandMessage,
+    TeamClusterDaemonSocketResponsePayload
+} from '@voltstack/daemon-cluster-client';
+import type { ReverseChannelInboundMessage } from '@shared/contracts/channel/binary-messages';
 
 const CONTROL_CHANNEL = 'control';
 const DEFAULT_COMMAND_TIMEOUT_MS = 180_000;
+
+/** Command results are wrapped by the VOLT server as `{ status, data }`. */
+type SocketResponse = TeamClusterDaemonSocketResponsePayload<{ status?: string; data?: unknown }>;
+
+/**
+ * Everything the control socket can deliver: an inbound command to forward to the
+ * daemon, a response to a command we sent, or any other frame the daemon handles.
+ */
+type InboundControlMessage =
+    | TeamClusterDaemonCommandMessage
+    | SocketResponse
+    | Exclude<ReverseChannelInboundMessage, { type: 'response' }>;
 
 interface EmitMessage {
     type: 'emit';
@@ -29,23 +46,7 @@ interface SendCommandMessage {
 interface CommandResponseMessage {
     type: 'command-response';
     ipcRequestId: string;
-    response: unknown;
-}
-
-interface SocketResponse {
-    type: 'response';
-    requestId: string;
-    ok: boolean;
-    status: number;
-    message?: string;
-    headers?: Record<string, string>;
-    data?: { status?: string; data?: unknown } | unknown;
-    bodyBase64?: string;
-    streamId?: string;
-}
-
-interface PendingInboundCommand {
-    requestId: string;
+    response: SocketResponse;
 }
 
 interface PendingCommand {
@@ -60,15 +61,9 @@ type ParentMessage = EmitMessage | SendCommandMessage | CommandResponseMessage;
 const config = loadConfig();
 let socket: Socket | null = null;
 let isRegistered = (): boolean => false;
-const pendingInboundCommands = new Map<string, PendingInboundCommand>();
+/** ipcRequestId -> the socket requestId the response has to be addressed to. */
+const pendingInboundCommands = new Map<string, string>();
 const pendingCommands = new Map<string, PendingCommand>();
-
-const emitSocketResponse = (requestId: string, response: SocketResponse): void => {
-    socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-        ...response,
-        requestId
-    });
-};
 
 const sendCommand = (
     command: string,
@@ -81,13 +76,12 @@ const sendCommand = (
     }
 
     const requestId = randomUUID();
-    const effectiveTimeout = timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS;
 
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
             pendingCommands.delete(requestId);
             reject(new Error(`Timed out waiting for response to command "${command}"`));
-        }, effectiveTimeout);
+        }, timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS);
         timeout.unref();
 
         pendingCommands.set(requestId, {
@@ -119,8 +113,8 @@ const resolvePendingCommand = (response: SocketResponse): void => {
         return;
     }
 
-    const data = response.data as { data?: unknown } | undefined;
-    pending.resolve(data && 'data' in data ? data.data : response.data);
+    const data = response.data;
+    pending.resolve(data && 'data' in data ? data.data : data);
 };
 
 const start = (): void => {
@@ -137,30 +131,23 @@ const start = (): void => {
     socket = connection.socket;
     isRegistered = connection.isRegistered;
 
-    connection.socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: unknown) => {
-        if (!message || typeof message !== 'object' || Array.isArray(message)) {
-            return;
-        }
-
-        const typed = message as { type?: string; requestId?: string; command?: string; payload?: unknown; responseType?: string };
-        if (typed.type === 'command') {
+    connection.socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: InboundControlMessage) => {
+        if (message.type === 'command') {
             const ipcRequestId = randomUUID();
-            pendingInboundCommands.set(ipcRequestId, {
-                requestId: String(typed.requestId)
-            });
+            pendingInboundCommands.set(ipcRequestId, message.requestId);
             sendToParent({
                 type: 'inbound-command',
                 ipcRequestId,
-                requestId: typed.requestId,
-                command: typed.command,
-                responseType: typed.responseType,
-                payload: typed.payload
+                requestId: message.requestId,
+                command: message.command,
+                responseType: message.responseType,
+                payload: message.payload
             });
             return;
         }
 
-        if (typed.type === 'response') {
-            resolvePendingCommand(message as SocketResponse);
+        if (message.type === 'response') {
+            resolvePendingCommand(message);
             return;
         }
 
@@ -180,8 +167,6 @@ const stop = (): void => {
 };
 
 process.on('message', (message: ParentMessage) => {
-    if (!message) return;
-
     if (message.type === 'emit') {
         socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message.message);
         return;
@@ -197,23 +182,24 @@ process.on('message', (message: ParentMessage) => {
                     data
                 });
             })
-            .catch((error) => {
+            .catch((error: unknown) => {
                 sendToParent({
                     type: 'send-command-result',
                     ipcRequestId: message.ipcRequestId,
                     ok: false,
-                    message: error instanceof Error ? error.message : String(error)
+                    message: errorMessage(error)
                 });
             });
         return;
     }
 
-    if (message.type === 'command-response') {
-        const pending = pendingInboundCommands.get(message.ipcRequestId);
-        if (!pending) return;
-        pendingInboundCommands.delete(message.ipcRequestId);
-        emitSocketResponse(pending.requestId, message.response as SocketResponse);
-    }
+    const requestId = pendingInboundCommands.get(message.ipcRequestId);
+    if (requestId === undefined) return;
+    pendingInboundCommands.delete(message.ipcRequestId);
+    socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+        ...message.response,
+        requestId
+    });
 });
 
 registerSignalHandlers(stop);

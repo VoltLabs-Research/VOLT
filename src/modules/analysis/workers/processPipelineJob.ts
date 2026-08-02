@@ -1,3 +1,4 @@
+import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
@@ -11,22 +12,20 @@ import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterO
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
-import { AnalysisEnvironment } from '@modules/analysis/services/workflow/AnalysisEnvironment';
+import { AnalysisEnvironment, type AnalysisSeedMetadata } from '@modules/analysis/services/workflow/AnalysisEnvironment';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { createWorkflowExposureOutputFilePath } from '@modules/analysis/services/workflow/exposure-payload-reader';
 import {
     createPipelineContext,
     registerSharedExposure,
-    resolveSharedExposure,
-    type PipelineContext
+    resolveSharedExposure
 } from '@modules/analysis/services/pipeline-context';
+import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 import type { DumpTransformService } from '@modules/analysis/services/dump-transform';
 import type { PipelineSharedExposureStore } from '@modules/analysis/services/PipelineSharedExposureStore';
 import type {
-    AnalysisExposureDefinition,
     AnalysisJobExecutionData,
-    AnalysisJobMetadata,
     AnalysisValueMap,
     PipelinePlannedStage,
     PipelineQueueJobPayload
@@ -51,7 +50,19 @@ export interface ProcessPipelineJobHooks {
     updateProgress?: (value: number) => Promise<void> | void;
 }
 
+/** Everything the stages of one pipeline job share: the job, its services and the dump they pass along. */
+interface PipelineStageRun {
+    payload: PipelineQueueJobPayload;
+    deps: ProcessPipelineJobDependencies;
+    context: PipelineContext;
+    storageClusterId: string;
+    workingDump: string;
+    reportedAnalysisIds: Set<string>;
+}
+
 const ATOMS_PARQUET_SUFFIX = 'atoms.parquet';
+
+const ANNOTATED_DUMP_SUFFIX = 'annotated.dump';
 
 const WORKING_DUMP_EXPOSURE_ID = '__working_dump__';
 
@@ -60,8 +71,7 @@ export const processPipelineJob = async (
     deps: ProcessPipelineJobDependencies,
     hooks: ProcessPipelineJobHooks = {}
 ): Promise<void> => {
-    const { timestep } = payload;
-    const storageClusterId = payload.storageClusterId;
+    const { timestep, storageClusterId } = payload;
     if (!storageClusterId) {
         throw new Error(`Pipeline job ${payload.jobId} is missing a storage cluster`);
     }
@@ -73,18 +83,18 @@ export const processPipelineJob = async (
         unsafeCleanup: true
     });
     const pipelineTempPath = pipelineTemp.path;
-    const context = createPipelineContext(pipelineTempPath);
-
-    const reportedAnalysisIds = new Set<string>();
-    const computeAnalysisIds = payload.stages
-        .filter((stage): stage is PipelinePlannedStage & { analysisId: string } =>
-            stage.kind === 'plugin' && !stage.cacheHit && typeof stage.analysisId === 'string')
-        .map((stage) => stage.analysisId);
+    const run: PipelineStageRun = {
+        payload,
+        deps,
+        context: createPipelineContext(pipelineTempPath),
+        storageClusterId,
+        workingDump: path.join(pipelineTempPath, 'working.dump'),
+        reportedAnalysisIds: new Set<string>()
+    };
 
     const setProgress = async (value: number): Promise<void> => {
-        if (!hooks.updateProgress) return;
         try {
-            await hooks.updateProgress(value);
+            await hooks.updateProgress?.(value);
         } catch (error) {
             logger.warn({
                 err: error,
@@ -96,12 +106,11 @@ export const processPipelineJob = async (
     try {
         const downloadedDump = await downloadCompressedDump(
             deps.objectStore,
-            `trajectory-${payload.trajectoryId}/timestep-${timestep}.dump.zst`,
+            toTrajectoryFrameDumpObjectKey(payload.trajectoryId, timestep),
             storageClusterId,
             DAEMON_PATHS.analysisDumps
         );
-        const workingDump = path.join(pipelineTempPath, 'working.dump');
-        await fs.copyFile(downloadedDump, workingDump);
+        await fs.copyFile(downloadedDump, run.workingDump);
         await safeRemovePath(downloadedDump);
         await setProgress(10);
 
@@ -111,17 +120,15 @@ export const processPipelineJob = async (
 
             switch (stage.kind) {
                 case 'slice':
-                    await deps.dumpTransformService.slice(workingDump, stage.config ?? {});
+                    await deps.dumpTransformService.slice(run.workingDump, stage.config ?? {});
                     break;
                 case 'expression':
-                    await deps.dumpTransformService.select(workingDump, readExpression(stage.config));
+                    await deps.dumpTransformService.select(run.workingDump, readExpression(stage.config));
                     break;
                 case 'plugin':
-                    if (stage.cacheHit) {
-                        await runCacheHitStage(payload, deps, context, stage, index, storageClusterId, workingDump, stageDir);
-                    } else {
-                        await runComputeStage(payload, deps, context, stage, workingDump, stageDir, reportedAnalysisIds);
-                    }
+                    await (stage.cacheHit
+                        ? runCacheHitStage(run, stage, index, stageDir)
+                        : runComputeStage(run, stage, stageDir));
                     break;
             }
         }
@@ -129,15 +136,15 @@ export const processPipelineJob = async (
         await setProgress(95);
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Pipeline stage failed';
-        for (const analysisId of computeAnalysisIds) {
-            if (reportedAnalysisIds.has(analysisId)) continue;
+        for (const stage of payload.stages) {
+            const analysisId = stage.analysisId;
+            if (stage.kind !== 'plugin' || stage.cacheHit || analysisId === undefined
+                || run.reportedAnalysisIds.has(analysisId)) {
+                continue;
+            }
+
             await deps.daemonJobReporter.reportAnalysisFailed({
-                jobId: `${payload.jobId}:${analysisId}`,
-                name: payload.name,
-                analysisId,
-                teamId: payload.teamId,
-                trajectoryId: payload.trajectoryId,
-                timestep,
+                ...buildStatusPayload(payload, analysisId, `${payload.jobId}:${analysisId}`),
                 error: message
             }).catch(logAndSwallow('warn', {
                 jobId: payload.jobId,
@@ -160,36 +167,35 @@ const readExpression = (config: AnalysisValueMap | undefined): string => {
     return expression;
 };
 
+/**
+ * Restores a stage that a previous analysis already computed: its shared exposures come
+ * back from the store, and the working dump either comes back with them or is rebuilt by
+ * merging the per-atom exposures back in.
+ */
 const runCacheHitStage = async (
-    payload: PipelineQueueJobPayload,
-    deps: ProcessPipelineJobDependencies,
-    context: PipelineContext,
+    run: PipelineStageRun,
     stage: PipelinePlannedStage,
     stageIndex: number,
-    storageClusterId: string,
-    workingDump: string,
     stageDir: string
 ): Promise<void> => {
+    const { payload, deps, context, storageClusterId, workingDump } = run;
     const sourceAnalysisId = stage.cacheSourceAnalysisId;
     if (!sourceAnalysisId) {
         throw new Error('Pipeline cache-hit stage is missing cacheSourceAnalysisId');
     }
 
     await fs.mkdir(stageDir, { recursive: true });
-    const stageReporter = createAnalysisStageReporter(
-        deps.daemonJobReporter,
-        buildStatusPayload(payload, sourceAnalysisId)
-    );
+    const fetchShared = (exposureId: string): Promise<string | null> => deps.pipelineSharedExposureStore.fetch({
+        ownerClusterId: storageClusterId,
+        trajectoryId: payload.trajectoryId,
+        analysisId: sourceAnalysisId,
+        exposureId,
+        timestep: payload.timestep,
+        destinationDir: stageDir
+    });
 
     for (const exposureId of stage.sharedExposureIds ?? []) {
-        const localPath = await deps.pipelineSharedExposureStore.fetch({
-            ownerClusterId: storageClusterId,
-            trajectoryId: payload.trajectoryId,
-            analysisId: sourceAnalysisId,
-            exposureId,
-            timestep: payload.timestep,
-            destinationDir: stageDir
-        });
+        const localPath = await fetchShared(exposureId);
         if (!localPath) {
             throw new Error(
                 `Pipeline cache hit for analysis ${sourceAnalysisId} has no persisted shared exposure "${exposureId}" at timestep ${payload.timestep}`
@@ -198,14 +204,7 @@ const runCacheHitStage = async (
         registerSharedExposure(context, exposureId, localPath);
     }
 
-    const restoredDump = await deps.pipelineSharedExposureStore.fetch({
-        ownerClusterId: storageClusterId,
-        trajectoryId: payload.trajectoryId,
-        analysisId: sourceAnalysisId,
-        exposureId: WORKING_DUMP_EXPOSURE_ID,
-        timestep: payload.timestep,
-        destinationDir: stageDir
-    });
+    const restoredDump = await fetchShared(WORKING_DUMP_EXPOSURE_ID);
     if (restoredDump) {
         await fs.copyFile(restoredDump, workingDump);
     } else {
@@ -217,7 +216,10 @@ const runCacheHitStage = async (
         }
     }
 
-    await stageReporter.report({
+    await createAnalysisStageReporter(
+        deps.daemonJobReporter,
+        buildStatusPayload(payload, sourceAnalysisId)
+    ).report({
         stageKey: `${payload.jobId}:stage-${stageIndex}:cache`,
         label: stage.pluginDisplayName ?? stage.pluginId ?? 'Cached stage',
         stageType: 'system',
@@ -229,21 +231,17 @@ const runCacheHitStage = async (
 };
 
 const runComputeStage = async (
-    payload: PipelineQueueJobPayload,
-    deps: ProcessPipelineJobDependencies,
-    context: PipelineContext,
+    run: PipelineStageRun,
     stage: PipelinePlannedStage,
-    workingDump: string,
-    stageDir: string,
-    reportedAnalysisIds: Set<string>
+    stageDir: string
 ): Promise<void> => {
+    const { payload, deps, context } = run;
     if (!stage.executionDataReference || !stage.analysisId) {
         throw new Error('Pipeline compute stage is missing its executionData reference');
     }
     const analysisId = stage.analysisId;
 
     const executionData = await deps.analysisDataStore.get(stage.executionDataReference, payload.jobId);
-    const storageClusterId = executionData.identity.storageClusterId;
     const stageJobId = `${payload.jobId}:${analysisId}`;
     const statusPayload = buildStatusPayload(payload, analysisId, stageJobId, stage.pluginDisplayName);
 
@@ -266,14 +264,7 @@ const runComputeStage = async (
         timestep: payload.timestep
     });
 
-    const metadata: AnalysisJobMetadata = {
-        trajectoryId: payload.trajectoryId,
-        analysisId,
-        name: statusPayload.name,
-        config: {},
-        plugin: executionData.identity.pluginId,
-        totalItems: 1,
-        timestep: payload.timestep,
+    const metadata: AnalysisSeedMetadata = {
         forEachItem: { timestep: payload.timestep },
         forEachIndex: 0
     };
@@ -285,7 +276,7 @@ const runComputeStage = async (
                 if (status === 'failed') {
                     logger.error(`Pipeline compute stage failed for jobId=${stageJobId}: ${error ?? 'Unknown error'}`);
                 }
-                reportedAnalysisIds.add(analysisId);
+                run.reportedAnalysisIds.add(analysisId);
                 reportAnalysisStatus(status, error);
             },
             cleanup: async () => {
@@ -299,7 +290,7 @@ const runComputeStage = async (
                 executionData,
                 metadata,
                 payload.timestep,
-                workingDump,
+                run.workingDump,
                 stageDir
             );
 
@@ -330,26 +321,39 @@ const runComputeStage = async (
                 })
             });
 
-            await registerStageExposures(deps, context, executionData, analysisId, runtime.outputDir, payload.timestep, storageClusterId, workingDump);
-
+            await registerStageExposures(run, executionData, analysisId, runtime.outputDir);
             await artifactUploadBatch.enqueue();
         }
     );
 };
 
-const ANNOTATED_DUMP_SUFFIX = 'annotated.dump';
-
+/**
+ * Publishes what the stage produced to the rest of the pipeline: shared exposures by id,
+ * and the working dump advanced either from the annotated dump the plugin wrote or by
+ * merging its per-atom property tables back in.
+ */
 const registerStageExposures = async (
-    deps: ProcessPipelineJobDependencies,
-    context: PipelineContext,
+    run: PipelineStageRun,
     executionData: AnalysisJobExecutionData,
     analysisId: string,
-    outputDir: string,
-    timestep: number,
-    storageClusterId: string | undefined,
-    workingDump: string
+    outputDir: string
 ): Promise<void> => {
-    for (const exposure of executionData.workflow.exposures) {
+    const { payload, deps, context, workingDump } = run;
+    const { exposures } = executionData.workflow;
+    const { storageClusterId, trajectoryId } = executionData.identity;
+    const persistShared = (exposureId: string, sourcePath: string): Promise<void> | undefined =>
+        storageClusterId === undefined
+            ? undefined
+            : deps.pipelineSharedExposureStore.persist({
+                ownerClusterId: storageClusterId,
+                trajectoryId,
+                analysisId,
+                exposureId,
+                timestep: payload.timestep,
+                sourcePath
+            });
+
+    for (const exposure of exposures) {
         if (!exposure.id || exposure.id.length === 0) {
             continue;
         }
@@ -360,17 +364,7 @@ const registerStageExposures = async (
             continue;
         }
         registerSharedExposure(context, exposure.id, filePath);
-
-        if (storageClusterId) {
-            await deps.pipelineSharedExposureStore.persist({
-                ownerClusterId: storageClusterId,
-                trajectoryId: executionData.identity.trajectoryId,
-                analysisId,
-                exposureId: exposure.id,
-                timestep,
-                sourcePath: filePath
-            });
-        }
+        await persistShared(exposure.id, filePath);
     }
 
     const annotatedDump = `${outputDir}_${ANNOTATED_DUMP_SUFFIX}`;
@@ -384,8 +378,8 @@ const registerStageExposures = async (
 
     if (!advancedFromAnnotatedDump) {
         const mergedPaths = new Set<string>();
-        for (const exposure of executionData.workflow.exposures) {
-            if (!isPerAtomPropertiesExposure(exposure)) {
+        for (const exposure of exposures) {
+            if (!exposure.results.endsWith(ATOMS_PARQUET_SUFFIX)) {
                 continue;
             }
             const filePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
@@ -401,20 +395,8 @@ const registerStageExposures = async (
         }
     }
 
-    if (storageClusterId) {
-        await deps.pipelineSharedExposureStore.persist({
-            ownerClusterId: storageClusterId,
-            trajectoryId: executionData.identity.trajectoryId,
-            analysisId,
-            exposureId: WORKING_DUMP_EXPOSURE_ID,
-            timestep,
-            sourcePath: workingDump
-        });
-    }
+    await persistShared(WORKING_DUMP_EXPOSURE_ID, workingDump);
 };
-
-const isPerAtomPropertiesExposure = (exposure: AnalysisExposureDefinition): boolean =>
-    typeof exposure.results === 'string' && exposure.results.endsWith(ATOMS_PARQUET_SUFFIX);
 
 const buildStatusPayload = (
     payload: PipelineQueueJobPayload,

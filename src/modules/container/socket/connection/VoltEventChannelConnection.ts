@@ -1,21 +1,16 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
-import { getConfig } from '@core/config/daemon';
 import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
 import { logger } from '@shared/infrastructure/logger';
-import {
-    EnvelopeKind,
-    encodeEnvelope
-} from '@shared/contracts/channel/binary-envelope';
+import { encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
 import type { BinaryStreamPayload } from '@shared/contracts/channel/binary-messages';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type { RuntimeProgressMessage } from '@shared/contracts/types/reverse-channel-runtime';
-import type { DaemonConfig } from '@core/config/daemon';
 import type { ExposureSnapshotMessage } from '@shared/contracts/types/container-types';
 import type { VoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
 import type { ControlPlaneProcessClient } from '@modules/container/socket/connection/ControlPlaneProcessClient';
 import { SocketChannelProcessClient } from '@modules/container/socket/connection/SocketChannelProcessClient';
 import { BufferedDedupeQueue } from '@modules/container/socket/connection/BufferedDedupeQueue';
-import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 
 interface BufferedEventOptions {
     dedupeKey?: string;
@@ -48,7 +43,6 @@ export class VoltEventChannelConnection {
     private readonly bufferedEvents = new BufferedDedupeQueue<TeamClusterDaemonServerEventMessage>(8192);
 
     constructor(
-        private readonly config: DaemonConfig,
         private readonly voltCloudConnection: VoltCloudConnection
     ) {}
 
@@ -62,7 +56,6 @@ export class VoltEventChannelConnection {
         }
 
         const channelClient = new SocketChannelProcessClient(
-            this.config,
             EVENTS_CHANNEL,
             'Daemon event channel'
         );
@@ -108,7 +101,7 @@ export class VoltEventChannelConnection {
                 this.emitBufferedMessage(message);
                 return;
             }
-            logger.warn(`Failed to emit event to VoltCloud: ${err instanceof Error ? err.message : String(err)}`);
+            logger.warn(`Failed to emit event to VoltCloud: ${errorMessage(err)}`);
         }
     }
 
@@ -134,7 +127,7 @@ export class VoltEventChannelConnection {
             this.emitEventMessage(queuedMessage);
         });
         if (!drainResult.ok && drainResult.failedItem) {
-            logger.warn(`Failed to flush buffered daemon event type=${drainResult.failedItem.type}: ${drainResult.error instanceof Error ? drainResult.error.message : String(drainResult.error)}`);
+            logger.warn(`Failed to flush buffered daemon event type=${drainResult.failedItem.type}: ${errorMessage(drainResult.error)}`);
         }
     }
 
@@ -144,7 +137,7 @@ export class VoltEventChannelConnection {
             return;
         }
 
-        this.channelClient?.emitMessage(message as unknown as TeamClusterDaemonMessage);
+        this.channelClient?.emitMessage(message);
     }
 
     private emitServerEventStream(message: StreamTransportedServerEventMessage): void {
@@ -153,10 +146,10 @@ export class VoltEventChannelConnection {
             type: 'stream',
             requestId: `daemon-event-stream:${message.type}`,
             streamId: message.type,
-            chunk: encodeEnvelope(0, EnvelopeKind.StreamChunk, serialized)
+            chunk: encodeStreamChunk(serialized)
         };
 
-        this.channelClient?.emitMessage(streamPayload as unknown as TeamClusterDaemonMessage);
+        this.channelClient?.emitMessage(streamPayload);
     }
 
     private isStreamTransportedServerEventMessage(
@@ -166,4 +159,4 @@ export class VoltEventChannelConnection {
     }
 }
 
-export const getVoltEventChannelConnection = singleton((): VoltEventChannelConnection => new VoltEventChannelConnection(getConfig(), getVoltCloudConnection()));
+export const getVoltEventChannelConnection = singleton((): VoltEventChannelConnection => new VoltEventChannelConnection(getVoltCloudConnection()));

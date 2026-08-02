@@ -10,22 +10,12 @@ interface AnalysisExecutionLogReporter {
     reportAnalysisLogChunk(input: AnalysisExecutionLogChunkReport): Promise<void>;
 }
 
-interface DebugExecutionLogReporter {
-    reportDebugLogChunk(input: DebugExecutionLogChunkReport): Promise<void>;
-}
-
 interface AnalysisExecutionLogChunkReport {
     jobId: string;
     analysisId: string;
     teamId: string;
     trajectoryId: string;
     timestep: number;
-    segments: ExecutionLogSegment[];
-}
-
-interface DebugExecutionLogChunkReport {
-    sessionId: string;
-    nodeId: string;
     segments: ExecutionLogSegment[];
 }
 
@@ -43,15 +33,6 @@ interface AnalysisExecutionLogSinkOptions {
     teamId: string;
     trajectoryId: string;
     timesteps: number[];
-    metadata?: ExecutionLogSegmentMetadata;
-    flushIntervalMs?: number;
-    maxBufferedBytes?: number;
-}
-
-interface DebugExecutionLogSinkOptions {
-    reporter: DebugExecutionLogReporter;
-    sessionId: string;
-    nodeId: string;
     metadata?: ExecutionLogSegmentMetadata;
     flushIntervalMs?: number;
     maxBufferedBytes?: number;
@@ -155,25 +136,6 @@ export const createAnalysisExecutionLogSink = (
                 timestep,
                 segments
             })));
-        }
-    });
-};
-
-export const createDebugExecutionLogSink = (
-    options: DebugExecutionLogSinkOptions
-): ProcessExecutionLogSink => {
-    const { reporter, sessionId, nodeId, metadata, flushIntervalMs, maxBufferedBytes } = options;
-
-    return createBufferedExecutionLogSink({
-        metadata,
-        flushIntervalMs,
-        maxBufferedBytes,
-        flushSegments: async (segments) => {
-            await reporter.reportDebugLogChunk({
-                sessionId,
-                nodeId,
-                segments
-            });
         }
     });
 };

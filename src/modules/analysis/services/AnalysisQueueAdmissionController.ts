@@ -4,7 +4,7 @@ import { QueueService, getQueueService } from '@shared/infrastructure/queues/Que
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
 import { RedisConnection, getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import type { AnalysisQueueJobPayload } from '@shared/contracts/types/http-analysis';
-import { readPositiveIntegerEnv } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 const ANALYSIS_QUEUE_ADMISSION_TTL_SECONDS = 86_400;
 const DEFAULT_ANALYSIS_QUEUE_ADMISSION_WINDOW = readPositiveIntegerEnv('ANALYSIS_QUEUE_ADMISSION_WINDOW') ?? 64;

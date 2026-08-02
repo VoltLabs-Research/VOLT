@@ -49,12 +49,11 @@ export class DebugCommands {
     async step(payload: DebugSessionPayload) {
         const result = await this.debugSessionManager.executeCurrentNode(payload.sessionId);
         const nextNode = this.debugSessionManager.getCurrentNodeInfo(payload.sessionId);
-        const hasMore = this.debugSessionManager.hasMoreNodes(payload.sessionId);
 
         return {
             result,
             nextNode,
-            hasMore
+            hasMore: nextNode !== null
         };
     }
 

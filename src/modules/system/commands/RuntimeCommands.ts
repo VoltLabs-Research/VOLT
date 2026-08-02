@@ -1,3 +1,4 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import { getConfig } from '@core/config/daemon';
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
@@ -101,7 +102,7 @@ export class RuntimeCommands {
 
                 process.exit(0);
             } catch (error) {
-                const details = `Runtime uninstall failed: ${error instanceof Error ? error.message : String(error)}`;
+                const details = `Runtime uninstall failed: ${errorMessage(error)}`;
 
                 await this.voltCloudConnection.reportDeleteFailed(details);
                 process.exit(1);

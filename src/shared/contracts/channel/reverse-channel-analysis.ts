@@ -1,5 +1,4 @@
 import {
-    readTimestepDedupeSegment,
     type AuthenticatedMessageContext,
     type AuthenticatedReverseChannelMessage
 } from '@shared/contracts/channel/reverse-channel-messaging';
@@ -89,7 +88,7 @@ export const createAnalysisJobStatusMessage = (
 export const createAnalysisJobStatusDedupeKey = (
     payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'>
 ): string => {
-    return `analysis.job-status:${payload.jobId}:running:${readTimestepDedupeSegment(payload.timestep)}`;
+    return `analysis.job-status:${payload.jobId}:running:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisJobCompletionMessage = (
@@ -115,13 +114,13 @@ export const createAnalysisStageStatusMessage = (
 export const createAnalysisStageStatusDedupeKey = (
     payload: Pick<AnalysisStageStatusPayload, 'jobId' | 'stageKey' | 'stageStatus' | 'timestep'>
 ): string => {
-    return `analysis.stage-status:${payload.jobId}:${payload.stageKey}:${payload.stageStatus}:${readTimestepDedupeSegment(payload.timestep)}`;
+    return `analysis.stage-status:${payload.jobId}:${payload.stageKey}:${payload.stageStatus}:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisJobCompletionDedupeKey = (
     payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'> & { error?: string }
 ): string => {
-    return `analysis.job-completion:${payload.jobId}:${payload.error ? 'failed' : 'completed'}:${readTimestepDedupeSegment(payload.timestep)}`;
+    return `analysis.job-completion:${payload.jobId}:${payload.error ? 'failed' : 'completed'}:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisLogChunkMessage = (

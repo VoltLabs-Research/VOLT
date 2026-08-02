@@ -1,3 +1,7 @@
+import stringify from 'safe-stable-stringify';
+
+import type { WorkflowValue } from '@shared/contracts/types/workflow.types';
+
 const CLI_ARGUMENTS_TOKEN_PREFIX = '__volt_cli_args__:';
 
 export const encodeCliArgumentsToken = (argumentsArray: string[]): string => {
@@ -29,39 +33,10 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
     }
 };
 
-export const stringifyUnknown = (value: unknown): string => {
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-        return `${value}`;
-    }
-
-    if (value instanceof Date) {
-        return value.toISOString();
-    }
-
-    if (value === null) {
-        return 'null';
-    }
-
-    if (typeof value === 'undefined') {
-        return '';
-    }
-
-    if (typeof value === 'symbol' || typeof value === 'function') {
-        return value.toString();
-    }
-
-    try {
-        const serializedValue = JSON.stringify(value);
-        if (serializedValue === undefined) {
-            return '';
-        }
-
-        return serializedValue;
-    } catch {
-        return '';
-    }
-};
+/**
+ * Renders a WorkflowValue as a CLI/template-safe string. Strings pass through
+ * verbatim; everything else is delegated to safe-stable-stringify, which is
+ * cycle-safe and key-order deterministic.
+ */
+export const stringifyWorkflowValue = (value: WorkflowValue): string =>
+    typeof value === 'string' ? value : stringify(value) ?? '';

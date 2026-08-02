@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
@@ -14,8 +15,6 @@ import type {
     PlannedExecutionItem
 } from '@shared/contracts/types/http-analysis';
 
-type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
-
 export interface PlanAnalysisWorkflowInput {
     input: AnalysisStartRequestWithTrace;
     workflowEngine: WorkflowEngine;
@@ -25,7 +24,6 @@ export interface PlanAnalysisWorkflowInput {
 export interface PlanAnalysisWorkflowResult {
     executionData: AnalysisJobExecutionData;
     jobs: AnalysisQueueJobPayload[];
-    plan: WorkflowPlanResult;
 }
 
 export const planAnalysisWorkflow = async (
@@ -37,7 +35,7 @@ export const planAnalysisWorkflow = async (
 
     if (!entrypoint?.binaryObjectPath || !entrypoint.arguments) {
         throw ApplicationError.badRequest(
-            'Analysis::Start::InvalidEntrypoint',
+            ErrorCodes.ANALYSIS_START_INVALID_ENTRYPOINT,
             'Daemon workflow entrypoint is invalid'
         );
     }
@@ -51,7 +49,7 @@ export const planAnalysisWorkflow = async (
 
     if (!plan || plan.items.length === 0) {
         throw ApplicationError.unprocessableEntity(
-            'Analysis::Start::EmptyExecutionPlan',
+            ErrorCodes.ANALYSIS_START_EMPTY_EXECUTION_PLAN,
             'No items after daemon workflow planning'
         );
     }
@@ -68,7 +66,7 @@ export const planAnalysisWorkflow = async (
         const timestep = item.timestep ?? item.frame;
         if (timestep === undefined) {
             throw ApplicationError.unprocessableEntity(
-                'Analysis::Start::MissingTimestep',
+                ErrorCodes.ANALYSIS_START_MISSING_TIMESTEP,
                 `Missing timestep for analysis job ${input.analysisId}-${index}`
             );
         }
@@ -108,7 +106,6 @@ export const planAnalysisWorkflow = async (
 
     return {
         executionData,
-        jobs,
-        plan
+        jobs
     };
 };

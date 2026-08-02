@@ -5,22 +5,11 @@ import { logAndSwallow } from '@shared/application/utilities/error-message';
 import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/analysis-events';
 import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
-import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
-import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
+import type { AnalysisJobExecutionData, AnalysisJobMetadata, AnalysisValueMap } from '@shared/contracts/types/http-analysis';
 
 const CORETOOLKIT_VERSION = '2.0.0';
 
-const computeFileHash = async (filePath: string): Promise<string> => {
-    try {
-        const buf = await fs.readFile(filePath);
-        return crypto.createHash('sha256').update(buf).digest('hex');
-    } catch {
-        return '';
-    }
-};
-
-const extractRngSeed = (config: Record<string, unknown>): number | undefined => {
+const extractRngSeed = (config: AnalysisValueMap): number | undefined => {
     const candidates = ['rng_seed', 'seed', 'random_seed'];
     for (const key of candidates) {
         const value = config[key];
@@ -39,25 +28,16 @@ export class AnalysisProvenanceCollector {
         metadata: AnalysisJobMetadata;
         startedAt: number;
         outputArtifactIds: string[];
-        inputParquetPath?: string;
     }): Promise<void> {
-        const { executionData, metadata, startedAt, outputArtifactIds, inputParquetPath } = input;
+        const { executionData, metadata, startedAt, outputArtifactIds } = input;
         const { identity } = executionData;
-
-        const inputFrameContentHash = inputParquetPath
-            ? await computeFileHash(inputParquetPath)
-            : '';
-
-        const config: Record<string, unknown> =
-            typeof metadata.config === 'object' && metadata.config !== null
-                ? metadata.config as Record<string, unknown>
-                : {};
+        const config = metadata.config;
 
         const provenance: AnalysisProvenance = {
             pluginName: metadata.plugin,
             pluginVersion: '1.0.0',
             parameters: config,
-            inputFrameContentHash,
+            inputFrameContentHash: '',
             atomCount: 0,
             frameIndex: metadata.timestep ?? 0,
             trajectoryId: identity.trajectoryId,

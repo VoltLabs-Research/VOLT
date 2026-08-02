@@ -1,22 +1,14 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { exportOctreeMetadata } from '@modules/plugin/services/exports/octree-exporter';
-import type { AtomisticExportData, ExportExecutionInput, OctreeExportOptions } from '@modules/plugin/services/exports/export-node-processor-types';
+import { hueToRgb } from '@modules/plugin/services/exports/category-colors';
+import type { AtomisticAtom, AtomisticExportData, ExportExecutionInput, OctreeExportOptions } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
     if (s === 0) {
         return [l, l, l];
     }
-
-    const hueToRgb = (p: number, q: number, t: number): number => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-        return p;
-    };
 
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
@@ -100,26 +92,21 @@ const colorForType = (typeName: string, typeIndex: number): [number, number, num
     return generateColor(typeIndex);
 };
 
-const normalizeExplicitColor = (value: unknown): [number, number, number] | null => {
-    if (!Array.isArray(value) || value.length < 3) {
+const normalizeExplicitColor = (value: AtomisticAtom['color']): [number, number, number] | null => {
+    if (!value) {
         return null;
     }
 
-    const rgb = value.slice(0, 3).map((component) => Number(component));
-    if (rgb.some((component) => !Number.isFinite(component))) {
-        return null;
-    }
-
-    const scale = rgb.some((component) => component > 1) ? 255 : 1;
+    const scale = value[0] > 1 || value[1] > 1 || value[2] > 1 ? 255 : 1;
     return [
-        Math.min(1, Math.max(0, rgb[0] / scale)),
-        Math.min(1, Math.max(0, rgb[1] / scale)),
-        Math.min(1, Math.max(0, rgb[2] / scale))
+        Math.min(1, Math.max(0, value[0] / scale)),
+        Math.min(1, Math.max(0, value[1] / scale)),
+        Math.min(1, Math.max(0, value[2] / scale))
     ];
 };
 
 const colorForAtom = (
-    atom: AtomisticExportData[string][number],
+    atom: AtomisticAtom,
     fallback: [number, number, number]
 ): [number, number, number] => {
     return normalizeExplicitColor(atom.color)

@@ -14,7 +14,7 @@ const DEFAULT_LEAF_CELL_MAX_ATOMS = 50_000;
 const DEFAULT_MAX_DEPTH = 10;
 const DEFAULT_MIN_ATOMS_FOR_OCTREE = 100_000;
 
-export const buildOctreeMetadataSidecarKey = (glbObjectKey: string): string => (
+const buildOctreeMetadataSidecarKey = (glbObjectKey: string): string => (
     `${glbObjectKey.replace(/\.zst$/, '')}.octree.json`
 );
 

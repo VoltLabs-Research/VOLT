@@ -1,12 +1,14 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
-import type { DaemonConfig } from '@core/config/daemon';
 import { SocketChannelProcessClient } from '@modules/container/socket/connection/SocketChannelProcessClient';
+import type {
+    ReverseChannelInboundMessage,
+    ReverseChannelOutboundMessage
+} from '@shared/contracts/channel/binary-messages';
 
 const OBJECT_GATEWAY_CHANNEL = 'object-gateway';
 
-type MessageListener = (message: unknown) => void;
+type MessageListener = (message: ReverseChannelInboundMessage) => void;
 type DisconnectedListener = () => void;
 
 export class VoltObjectGatewayConnection {
@@ -15,15 +17,12 @@ export class VoltObjectGatewayConnection {
     private readonly messageListeners: MessageListener[] = [];
     private readonly disconnectedListeners: DisconnectedListener[] = [];
 
-    constructor(private readonly config: DaemonConfig) {}
-
     async start(): Promise<void> {
         if (this.channelClient) {
             return;
         }
 
         const channelClient = new SocketChannelProcessClient(
-            this.config,
             OBJECT_GATEWAY_CHANNEL,
             'Object gateway data channel'
         );
@@ -43,9 +42,9 @@ export class VoltObjectGatewayConnection {
         channelClient.onError((error) => {
             logger.warn(`Object gateway data channel connection error: ${error.message}`);
         });
-        channelClient.onMessage((message: unknown) => {
+        channelClient.onMessage((message) => {
             for (const listener of this.messageListeners) {
-                listener(message);
+                listener(message as ReverseChannelInboundMessage);
             }
         });
 
@@ -58,7 +57,7 @@ export class VoltObjectGatewayConnection {
         this.channelClient = null;
     }
 
-    emitMessage(message: object): void {
+    emitMessage(message: ReverseChannelOutboundMessage): void {
         if (!this.channelClient || !this.registered) {
             logger.warn('Object gateway data channel is not connected; dropping reverse-channel message');
             return;
@@ -78,4 +77,4 @@ export class VoltObjectGatewayConnection {
     }
 }
 
-export const getVoltObjectGatewayConnection = singleton((): VoltObjectGatewayConnection => new VoltObjectGatewayConnection(getConfig()));
+export const getVoltObjectGatewayConnection = singleton((): VoltObjectGatewayConnection => new VoltObjectGatewayConnection());
