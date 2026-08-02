@@ -11,33 +11,15 @@ export const createConversationStreamTransport = ({
     conversationId,
     getModelSelection
 }: CreateConversationStreamTransportParams): CreateConversationStreamTransportResult => {
-    if (!teamId || !conversationId) {
-        throw new Error('teamId and conversationId are required to create a stream transport');
-    }
-
     const api = buildBackendUrl(`/api/teams/${teamId}/ai-conversations/${conversationId}/messages`);
 
     return new DefaultChatTransport({
         api,
-        headers: () => {
+        headers: (): Record<string, string> => {
             const token = tokenStorage.getToken();
-            if (!token) {
-                const requestHeaders: Record<string, string> = {};
-                return requestHeaders;
-            }
-
-            return {
-                Authorization: `Bearer ${token}`
-            };
+            return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => {
-            const { provider, model } = getModelSelection();
-
-            return {
-                provider,
-                model
-            };
-        },
+        body: getModelSelection,
         prepareSendMessagesRequest: ({ api: requestApi, body, credentials, headers, messages }) => {
             return {
                 api: requestApi,
@@ -46,8 +28,7 @@ export const createConversationStreamTransport = ({
                 body: {
                     messages,
                     provider: body?.provider,
-                    model: body?.model,
-                    title: typeof body?.title === 'string' ? body.title : undefined
+                    model: body?.model
                 }
             };
         }

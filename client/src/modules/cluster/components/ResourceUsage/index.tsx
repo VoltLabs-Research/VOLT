@@ -1,5 +1,6 @@
 import MetricBar from '../MetricBar';
 import './ResourceUsage.css';
+import { getClusterCpuUsage } from '@/modules/cluster/utils/cluster-cpu-usage';
 import { Box, Heading, Row, Skeleton, Stack, Text } from '@voltstack/bravais';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
@@ -13,69 +14,28 @@ interface ResourceItem {
     isAvailableSpace: boolean;
 }
 
-const getLoadColor = (value: number): string => {
-    if(value >= 80) return 'var(--status-error)';
-    if(value >= 60) return 'var(--status-warning)';
+const getResourceColor = ({ value, isAvailableSpace }: ResourceItem): string => {
+    if (isAvailableSpace) {
+        if (value <= 20) return 'var(--status-error)';
+        if (value <= 40) return 'var(--status-warning)';
+        return 'var(--status-success)';
+    }
+
+    if (value >= 80) return 'var(--status-error)';
+    if (value >= 60) return 'var(--status-warning)';
     return 'var(--status-success)';
 };
 
-const getLoadGlow = (value: number): string => {
-    if(value >= 80) return '0 0 20px color-mix(in srgb, var(--status-error) 40%, transparent)';
-    if(value >= 60) return '0 0 20px color-mix(in srgb, var(--status-warning) 40%, transparent)';
-    return '0 0 20px color-mix(in srgb, var(--status-success) 40%, transparent)';
-};
-
-const getAvailableSpaceColor = (value: number): string => {
-    if(value <= 20) return 'var(--status-error)';
-    if(value <= 40) return 'var(--status-warning)';
-    return 'var(--status-success)';
-};
-
-const getAvailableSpaceGlow = (value: number): string => {
-    if(value <= 20) return '0 0 20px color-mix(in srgb, var(--status-error) 40%, transparent)';
-    if(value <= 40) return '0 0 20px color-mix(in srgb, var(--status-warning) 40%, transparent)';
-    return '0 0 20px color-mix(in srgb, var(--status-success) 40%, transparent)';
-};
-
-const getCpuLoad = (metrics: ClusterMetrics): number => {
-    let cpuLoad = Math.round(metrics.cpu.usage);
-
-    if (metrics.cpu.coresUsage?.length > 0) {
-        cpuLoad = Math.round(metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length);
-    }
-
-    return cpuLoad;
-};
-
-const getResourceColor = (resource: ResourceItem): string => {
-    let color = getLoadColor(resource.value);
-
-    if (resource.isAvailableSpace) {
-        color = getAvailableSpaceColor(resource.value);
-    }
-
-    return color;
-};
-
-const getResourceGlow = (resource: ResourceItem): string => {
-    let glow = getLoadGlow(resource.value);
-
-    if (resource.isAvailableSpace) {
-        glow = getAvailableSpaceGlow(resource.value);
-    }
-
-    return glow;
+const buildResourceGlow = (color: string): string => {
+    return `0 0 20px color-mix(in srgb, ${color} 40%, transparent)`;
 };
 
 const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
-    const isLoading = !metrics;
-    const resources: ResourceItem[] = [];
-
-    if (metrics) {
-        resources.push(
+    const resources: ResourceItem[] = metrics
+        ? [
             {
                 name: 'CPU Load',
-                value: getCpuLoad(metrics),
+                value: Math.round(getClusterCpuUsage(metrics.cpu)),
                 isAvailableSpace: false
             },
             {
@@ -93,12 +53,11 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
                 value: Math.min(100, Math.round((metrics.network.outgoing / 1024) * 10)),
                 isAvailableSpace: false
             }
-        );
-    }
+        ]
+        : [];
 
     const renderResourceItem = (resource: ResourceItem) => {
         const color = getResourceColor(resource);
-        const glow = getResourceGlow(resource);
 
         return (
             <Stack key={resource.name} className='resource-usage-item'>
@@ -108,35 +67,29 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
                         {resource.value}%
                     </Text>
                 </Row>
-                <MetricBar value={resource.value} color={color} glow={glow} />
+                <MetricBar value={resource.value} color={color} glow={buildResourceGlow(color)} />
             </Stack>
         );
     };
 
-    let content = (
+    const content = (
         <Stack gap='1-5' flex='1' className='resource-usage-list'>
-            {[...Array(4)].map((_, i) => (
-                <Box key={i} className='resource-usage-item'>
-                    <Row justify='between' className='resource-usage-item-header'>
-                        <Skeleton variant='text' width={80} height={20} />
-                        <Skeleton variant='text' width={40} height={20} />
-                    </Row>
-                    <Skeleton variant='rectangular' width='100%' height={8} style={{
-                        borderRadius: 4,
-                        marginTop: 8
-                    }} />
-                </Box>
-            ))}
+            {metrics
+                ? resources.map(renderResourceItem)
+                : [...Array(4)].map((_, i) => (
+                    <Box key={i} className='resource-usage-item'>
+                        <Row justify='between' className='resource-usage-item-header'>
+                            <Skeleton variant='text' width={80} height={20} />
+                            <Skeleton variant='text' width={40} height={20} />
+                        </Row>
+                        <Skeleton variant='rectangular' width='100%' height={8} style={{
+                            borderRadius: 4,
+                            marginTop: 8
+                        }} />
+                    </Box>
+                ))}
         </Stack>
     );
-
-    if (!isLoading) {
-        content = (
-            <Stack gap='1-5' flex='1' className='resource-usage-list'>
-                {resources.map(renderResourceItem)}
-            </Stack>
-        );
-    }
 
     return (
         <Stack height='max' p='1-5' radius='lg' className='resource-usage'>

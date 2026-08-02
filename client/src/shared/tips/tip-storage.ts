@@ -58,6 +58,7 @@ const persistSeenTips = (tips: Set<string>): void => {
     try {
         storage.setItem(SEEN_CONTEXTUAL_TIPS_KEY, JSON.stringify(Array.from(tips).sort()));
     } catch {
+        // Tips are a convenience: losing the "seen" flag only reshows a tip.
     }
 };
 

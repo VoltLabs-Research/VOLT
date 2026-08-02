@@ -5,7 +5,7 @@ import type {
     TeamClusterRemoteExplorerEntryView,
     TeamClusterRemoteExplorerNodeView
 } from '@modules/cluster/services/TeamClusterRemoteAccess';
-import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelTypes';
+import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/reverse-channel-protocol';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;

@@ -11,14 +11,12 @@ const useSaveWorkflow = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const getWorkflow = usePluginBuilderStore((state) => state.getWorkflow);
     const setSaving = usePluginBuilderStore((state) => state.setSaving);
-    const setSaveError = usePluginBuilderStore((state) => state.setSaveError);
 
     const savePluginMutationResult = useSavePluginMutation();
 
     const saveWorkflow = useCallback(async (): Promise<Plugin | null> => {
         const currentPluginId = searchParams.get('id') ?? null;
         setSaving(true);
-        setSaveError(null);
 
         try {
             const workflow = getWorkflow();
@@ -43,15 +41,12 @@ const useSaveWorkflow = () => {
             return plugin;
         } catch (error) {
             if (isAccessDeniedError(error)) {
-                const userError = reportError(error, {
+                reportError(error, {
                     surface: ErrorSurface.Toast,
                     fallbackTitle: 'You do not have permission to save this workflow'
                 });
-                setSaveError(userError.title || 'You do not have permission to save this workflow');
-                return null;
             }
-            const message = error instanceof Error ? error.message : 'Failed to save workflow';
-            setSaveError(message);
+
             return null;
         } finally {
             setSaving(false);
@@ -60,7 +55,6 @@ const useSaveWorkflow = () => {
         getWorkflow,
         savePluginMutationResult,
         setSaving,
-        setSaveError,
         searchParams,
         setSearchParams
     ]);

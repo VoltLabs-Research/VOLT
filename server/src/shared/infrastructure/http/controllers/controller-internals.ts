@@ -1,4 +1,4 @@
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 const readUserAgent = (req: AuthenticatedRequest): string => {
@@ -47,7 +47,7 @@ export const buildControllerParams = (
     // `req.body` is `any` and genuinely arbitrary (a JSON array/scalar body is
     // legal), so it stays behind the record guard. `params` and `query` are
     // always objects per Express' own types.
-    const bodyPayload = asRecord(req.body) ?? {};
+    const bodyPayload = isRecord(req.body) ? req.body : {};
     const paramsPayload = coerceNumericKeys(req.params);
     const queryPayload = coerceNumericKeys(req.query);
     const baseParams: Record<string, unknown> = {

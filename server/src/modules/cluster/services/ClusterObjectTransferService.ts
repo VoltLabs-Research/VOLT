@@ -1,8 +1,9 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import defaultObjectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import type { IClusterObjectSignedUrlService, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation
@@ -13,17 +14,6 @@ import type {
 } from '@shared/contracts/types/TeamClusterObjectGateway';
 import type { Readable as NodeReadable } from 'node:stream';
 
-type ClusterObjectSignedUrlVerifier = Pick<IClusterObjectSignedUrlService, 'verify'>;
-type ClusterObjectTransferGateway = Pick<
-    ITeamClusterObjectGatewayClient,
-    'putStream' | 'head' | 'getStream'
->;
-
-interface ClusterObjectTransferServiceDependencies {
-    signedUrlService?: ClusterObjectSignedUrlVerifier;
-    objectGatewayClient?: ClusterObjectTransferGateway;
-}
-
 interface ClusterObjectTransferWriteInput {
     stream: NodeReadable;
     contentLength?: number;
@@ -31,21 +21,15 @@ interface ClusterObjectTransferWriteInput {
     contentEncoding?: string;
 }
 
+/* Kept as an options bag only because ClusterObjectController (outside this
+   module) passes `{ rangeHeader }`; it carries a single optional field. */
 interface ClusterObjectTransferReadOptions {
     rangeHeader?: string;
 }
 
-type ClusterObjectTransferHeadResponse = TeamClusterObjectGatewayHeadResponse;
-export type ClusterObjectTransferReadResponse = TeamClusterObjectGatewayStreamResponse;
-
 export default class ClusterObjectTransferService {
-    readonly #signedUrlService: ClusterObjectSignedUrlVerifier;
-    readonly #objectGatewayClient: ClusterObjectTransferGateway;
-
-    constructor(dependencies: ClusterObjectTransferServiceDependencies = {}) {
-        this.#signedUrlService = dependencies.signedUrlService ?? new ClusterObjectSignedUrlService();
-        this.#objectGatewayClient = dependencies.objectGatewayClient ?? defaultObjectGatewayClient;
-    }
+    readonly #signedUrlService = new ClusterObjectSignedUrlService();
+    readonly #objectGatewayClient: ITeamClusterObjectGatewayClient = defaultObjectGatewayClient;
 
     async write(
         teamId: string | undefined,
@@ -57,7 +41,7 @@ export default class ClusterObjectTransferService {
 
         if (claims.contentLength !== undefined && claims.contentLength !== contentLength) {
             throw ApplicationError.badRequest(
-                'ClusterObject::ContentLengthMismatch',
+                ErrorCodes.CLUSTER_OBJECT_CONTENT_LENGTH_MISMATCH,
                 'Uploaded object size does not match the signed URL'
             );
         }
@@ -76,7 +60,7 @@ export default class ClusterObjectTransferService {
     async head(
         teamId: string | undefined,
         token: string | undefined
-    ): Promise<ClusterObjectTransferHeadResponse> {
+    ): Promise<TeamClusterObjectGatewayHeadResponse> {
         const claims = this.#resolveClaims(teamId, token, 'read');
         return this.#objectGatewayClient.head(
             claims.ownerClusterId,
@@ -89,7 +73,7 @@ export default class ClusterObjectTransferService {
         teamId: string | undefined,
         token: string | undefined,
         options: ClusterObjectTransferReadOptions = {}
-    ): Promise<ClusterObjectTransferReadResponse> {
+    ): Promise<TeamClusterObjectGatewayStreamResponse> {
         const claims = this.#resolveClaims(teamId, token, 'read');
         return this.#objectGatewayClient.getStream(
             claims.ownerClusterId,
@@ -111,7 +95,7 @@ export default class ClusterObjectTransferService {
 
         if (!claims || claims.operation !== operation || claims.teamId !== teamId) {
             throw ApplicationError.unauthorized(
-                'ClusterObject::InvalidSignedUrl',
+                ErrorCodes.CLUSTER_OBJECT_INVALID_SIGNED_URL,
                 'Object URL is invalid or expired'
             );
         }
@@ -120,13 +104,13 @@ export default class ClusterObjectTransferService {
     }
 
     #requireContentLength(contentLength: number | undefined): number {
-        if (!Number.isInteger(contentLength) || contentLength! < 0) {
+        if (contentLength === undefined || !Number.isInteger(contentLength) || contentLength < 0) {
             throw ApplicationError.badRequest(
-                'ClusterObject::ContentLengthRequired',
+                ErrorCodes.CLUSTER_OBJECT_CONTENT_LENGTH_REQUIRED,
                 'content-length header is required for object uploads'
             );
         }
 
-        return contentLength!;
+        return contentLength;
     }
 }

@@ -2,15 +2,11 @@ import { createService, get, post } from '@/app/core/http/utils/create-service';
 
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
-
-export interface GetOrCreateChatInput {
-    teamId: string;
-    participantId: string;
-}
+import type { GetOrCreateDirectChatInput } from '@volt/contracts/modules/chat/http';
 
 const endpoints = {
     getAll: get<EmptyParams, Chat[]>('/'),
-    getOrCreate: post<GetOrCreateChatInput, Chat>('/direct')
+    getOrCreate: post<GetOrCreateDirectChatInput, Chat>('/direct')
 };
 
 export default createService({

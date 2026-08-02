@@ -1,23 +1,17 @@
 import { createEntityCacheResource } from '@/shared/api/query-resources';
 import { buildKeys, createMutation, createQuery } from '@/shared/query';
 import chatService from '../../api/services/chat-service';
-import type { QueryClient } from '@tanstack/react-query';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
-import type { GetOrCreateChatInput } from '../../api/services/chat-service';
+import type { GetOrCreateDirectChatInput } from '@volt/contracts/modules/chat/http';
 
 type ChatQueryKeyMap = {
     chats: void;
     detail: string;
-}; 
+};
 
 const KEYS = buildKeys<ChatQueryKeyMap>('chat');
 
-export const CHAT_QUERY_KEYS = {
-    chats: KEYS.chats,
-    detail: KEYS.detail
-};
-
-export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateChatInput>(chatService.getOrCreate);
+export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateDirectChatInput>(chatService.getOrCreate);
 
 export const chatsQuery = createQuery(KEYS.chats, () => chatService.getAll({}));
 
@@ -27,29 +21,26 @@ const chatEntityCache = createEntityCacheResource<Chat>({
     rootKey: () => ['chat']
 });
 
-export const addChatToCache = (queryClient: QueryClient, chat: Chat) => {
-    chatEntityCache.upsert(chat, {
-        client: queryClient,
-        replaceExisting: false
-    });
+export const addChatToCache = (chat: Chat) => {
+    chatEntityCache.upsert(chat, { replaceExisting: false });
 };
 
-export const replaceChatInCache = (queryClient: QueryClient, chat: Chat) => {
-    chatEntityCache.upsert(chat, { client: queryClient });
+export const replaceChatInCache = (chat: Chat) => {
+    chatEntityCache.upsert(chat);
 };
 
-export const updateChatInCache = (queryClient: QueryClient, chatId: string, updates: Partial<Chat>) => {
-    chatEntityCache.merge(chatId, updates, queryClient);
+export const updateChatInCache = (chatId: string, updates: Partial<Chat>) => {
+    chatEntityCache.merge(chatId, updates);
 };
 
-export const removeChatFromCache = (queryClient: QueryClient, chatId: string) => {
-    chatEntityCache.remove(chatId, queryClient);
+export const removeChatFromCache = (chatId: string) => {
+    chatEntityCache.remove(chatId);
 };
 
-export const invalidateChatsQuery = (queryClient: QueryClient) => {
-    return chatEntityCache.invalidateList(queryClient);
+export const invalidateChatsQuery = () => {
+    return chatEntityCache.invalidateList();
 };
 
-export const resetChatQueries = (queryClient: QueryClient) => {
-    chatEntityCache.clearRoot(queryClient);
+export const resetChatQueries = () => {
+    chatEntityCache.clearRoot();
 };

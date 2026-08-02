@@ -8,17 +8,11 @@ export interface GetDailyActivityParams {
 }
 
 const endpoints = {
-    getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/daily-activities', {
-        query: (params) => {
-            if (!params) {
-                return undefined;
-            }
-
-            return {
-                ...(params.range ? { range: params.range } : {}),
-                ...(params.scope ? { scope: params.scope } : {})
-            };
-        }
+    getDailyActivity: get<GetDailyActivityParams, DailyActivity[]>('/daily-activities', {
+        query: ({ range, scope }) => ({
+            ...(range ? { range } : {}),
+            ...(scope ? { scope } : {})
+        })
     })
 };
 

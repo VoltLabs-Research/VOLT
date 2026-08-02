@@ -285,19 +285,6 @@
     transition: border-color 0.2s ease;
 }
 
-.ai-action-request-card.is-approved {
-    border-left-color: var(--status-success);
-}
-
-.ai-action-request-card.is-rejected,
-.ai-action-request-card.is-failed {
-    border-left-color: var(--status-error);
-}
-
-.ai-action-request-card.is-executing {
-    border-left-color: var(--status-warning);
-}
-
 .ai-action-request-header {
     line-height: 1.35;
 }

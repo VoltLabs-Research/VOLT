@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sileo';
 import type { DevModeState, DeploymentState } from '@/services/AppConfig';
 import Titlebar from '@/renderer/src/components/Titlebar';
@@ -35,7 +35,7 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 };
 
 const App = () => {
-    const { state, phases, phaseState, logs, preflight, busy, reset, recheck, run, start } = useDeploy({ autoStart: false });
+    const { state, phases, phaseState, logs, preflight, busy, reset, run, start } = useDeploy({ autoStart: false });
     const [mode, setMode] = useState<Mode>('loading');
     const [deployment, setDeployment] = useState<DeploymentState | null>(null);
     const [devModeOpen, setDevModeOpen] = useState(false);
@@ -48,11 +48,12 @@ const App = () => {
     const openedRef = useRef(false);
 
     
-    const openClient = () => {
+    /** Idempotent by design, so it is safe as a stable effect dependency. */
+    const openClient = useCallback(() => {
         if(openedRef.current) return;
         openedRef.current = true;
         void window.volt.app.openClient();
-    };
+    }, []);
 
     const resetBoot = () => {
         reset();
@@ -112,10 +113,7 @@ const App = () => {
 
     const switchDeployment = () => {
         void window.volt.deployment.reset();
-        reset();
-        openedRef.current = false;
-        setPaused(false);
-        setBootError(null);
+        resetBoot();
         setDeployment(null);
         setMode('choose');
     };
@@ -189,8 +187,7 @@ const App = () => {
     
     useEffect(() => {
         if(mode === 'local' && state === 'up') openClient();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode, state]);
+    }, [mode, state, openClient]);
 
     const isLocal = mode === 'local';
     const deploymentSummary = isLocal
@@ -256,7 +253,7 @@ const App = () => {
                 {!paused && isLocal && preflight && (
                     <DockerGate
                         result={preflight}
-                        onRecheck={recheck}
+                        onRecheck={start}
                         onOpenUrl={(target) => window.volt.shell.openExternal(target)}
                     />
                 )}

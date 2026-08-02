@@ -24,48 +24,50 @@ interface HealthzResponse{
     clientHost?: string | null;
 }
 
-export default class RemoteProbe{
-    async probe(rawEndpoint: string): Promise<RemoteProbeResult>{
-        const origins = candidateOrigins(rawEndpoint);
-        if(origins.length === 0) return {
-            ok: false,
-            reason: 'invalid-url'
-        };
+/**
+ * The endpoint is a user-typed address that may not be a VOLT server at all, so
+ * every field of the response stays validated.
+ */
+export const probeRemoteEndpoint = async (rawEndpoint: string): Promise<RemoteProbeResult> => {
+    const origins = candidateOrigins(rawEndpoint);
+    if(origins.length === 0) return {
+        ok: false,
+        reason: 'invalid-url'
+    };
 
-        let reachedServer = false;
+    let reachedServer = false;
 
-        for(const origin of origins){
-            let res: Response;
-            try{
-                res = await fetch(`${origin}/healthz`, { signal: AbortSignal.timeout(PROBE_TIMEOUT) });
-            }catch{
-                continue; 
-            }
-
-            if(!res.ok) continue;
-
-            let body: HealthzResponse | null = null;
-            try{ body = await res.json() as HealthzResponse; }catch{ /* non-JSON body */ }
-
-            if(body?.status !== 'ok'){
-                reachedServer = true; 
-                continue;
-            }
-
-            if(!body.clientHost) return {
-                ok: false,
-                reason: 'no-client-host'
-            };
-            return {
-                ok: true,
-                serverEndpoint: origin,
-                clientUrl: body.clientHost
-            };
+    for(const origin of origins){
+        let res: Response;
+        try{
+            res = await fetch(`${origin}/healthz`, { signal: AbortSignal.timeout(PROBE_TIMEOUT) });
+        }catch{
+            continue;
         }
 
-        return {
+        if(!res.ok) continue;
+
+        let body: HealthzResponse | null = null;
+        try{ body = await res.json() as HealthzResponse; }catch{ /* non-JSON body */ }
+
+        if(body?.status !== 'ok'){
+            reachedServer = true;
+            continue;
+        }
+
+        if(!body.clientHost) return {
             ok: false,
-            reason: reachedServer ? 'not-volt' : 'unreachable'
+            reason: 'no-client-host'
+        };
+        return {
+            ok: true,
+            serverEndpoint: origin,
+            clientUrl: body.clientHost
         };
     }
+
+    return {
+        ok: false,
+        reason: reachedServer ? 'not-volt' : 'unreachable'
+    };
 };

@@ -1,12 +1,10 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
+    buildClusterRequiredError,
     recordSceneArtifact,
     resolveSceneArtifactExecutionContext
 } from '@modules/trajectory/services/SceneArtifactService';
@@ -16,11 +14,10 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
-import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import trajectoryNativeDaemonService, {
     resolveTrajectoryNativeClusterContext
 } from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
-import { Readable } from 'node:stream';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
@@ -51,28 +48,7 @@ const buildColorCodingObjectName = ({
     return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
 };
 
-const buildClusterRequiredError = (): ApplicationError => {
-    return new ApplicationError(
-        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
-        'This operation requires a team cluster. No local native modules available.',
-        501
-    );
-};
-
-const buildPluginPropertyUnavailableError = (
-    exposureId: string,
-    property: string,
-    timestep: string
-): ApplicationError => {
-    return ApplicationError.badRequest(
-        ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNAVAILABLE,
-        `Plugin per-atom property "${property}" is not available for exposure "${exposureId}" at timestep ${timestep}`
-    );
-};
-
 class ColorCodingService {
-    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
-
     async getProperties(
         trajectoryId: string,
         timestep: string | number,
@@ -83,10 +59,7 @@ class ColorCodingService {
         modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
     }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const clusterContext = await resolveTrajectoryNativeClusterContext({
-            trajectoryId: String(trajectoryId),
-            teamClusterSelectionService: this.teamClusterSelectionService
-        });
+        const clusterContext = await resolveTrajectoryNativeClusterContext(trajectoryId);
 
         if (!clusterContext) {
             throw buildClusterRequiredError();
@@ -94,18 +67,17 @@ class ColorCodingService {
 
         const metadata = await trajectoryNativeDaemonService.getTrajectoryMetadata({
             teamClusterId: clusterContext.computeClusterId,
-            trajectoryId: String(trajectoryId),
+            trajectoryId,
             timestep: Number(timestep),
-            objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
+            objectKey: buildTrajectoryDumpObjectName(trajectoryId, timestep),
             ownerClusterId: clusterContext.storageClusterId
         });
-        const headers = metadata.headers || [];
 
         const modifierProps: Record<string, string[]> = {};
         const modifierTypes: Record<string, Record<string, 'number' | 'string'>> = {};
         if (resolvedAnalysisId) {
             const configs = await atomPropertiesService.getAnalysisExposureAtomConfigs(
-                String(resolvedAnalysisId),
+                resolvedAnalysisId,
                 String(timestep)
             );
             for (const config of configs) {
@@ -116,7 +88,7 @@ class ColorCodingService {
         }
 
         return {
-            base: headers,
+            base: metadata.headers,
             modifiers: modifierProps,
             modifierTypes
         };
@@ -142,16 +114,16 @@ class ColorCodingService {
                 );
             }
 
-            await this.resolveRemoteModifierSource(
-                String(resolvedAnalysisId),
-                String(exposureId),
+            await atomPropertiesService.assertExposurePublishesProperty(
+                resolvedAnalysisId,
+                exposureId,
                 String(timestep),
                 property
             );
             const stats = await atomPropertiesService.getModifierStats(
-                String(trajectoryId),
-                String(resolvedAnalysisId),
-                String(exposureId),
+                trajectoryId,
+                resolvedAnalysisId,
+                exposureId,
                 String(timestep),
                 property
             );
@@ -160,10 +132,7 @@ class ColorCodingService {
                 max = stats.max;
             }
         } else {
-            const clusterContext = await resolveTrajectoryNativeClusterContext({
-                trajectoryId: String(trajectoryId),
-                teamClusterSelectionService: this.teamClusterSelectionService
-            });
+            const clusterContext = await resolveTrajectoryNativeClusterContext(trajectoryId);
 
             if (!clusterContext) {
                 throw buildClusterRequiredError();
@@ -171,20 +140,19 @@ class ColorCodingService {
 
             const metadata = await trajectoryNativeDaemonService.getTrajectoryMetadata({
                 teamClusterId: clusterContext.computeClusterId,
-                trajectoryId: String(trajectoryId),
+                trajectoryId,
                 timestep: Number(timestep),
-                objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
+                objectKey: buildTrajectoryDumpObjectName(trajectoryId, timestep),
                 ownerClusterId: clusterContext.storageClusterId
             });
-            const headers = metadata.headers || [];
-            const propIdx = headers.indexOf(property.toLowerCase());
+            const propIdx = metadata.headers.indexOf(property.toLowerCase());
 
             if (propIdx !== -1) {
                 const stats = await trajectoryNativeDaemonService.getPropertyStats({
                     teamClusterId: clusterContext.computeClusterId,
-                    trajectoryId: String(trajectoryId),
+                    trajectoryId,
                     timestep: Number(timestep),
-                    objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
+                    objectKey: buildTrajectoryDumpObjectName(trajectoryId, timestep),
                     ownerClusterId: clusterContext.storageClusterId,
                     property
                 });
@@ -231,48 +199,52 @@ class ColorCodingService {
             computeClusterId,
             storageClusterId
         } = await resolveSceneArtifactExecutionContext({
-            trajectoryId: String(trajectoryId),
+            trajectoryId,
             timestep: String(timestep),
-            analysisId: resolvedAnalysisId,
-            teamClusterSelectionService: this.teamClusterSelectionService,
-            dumpStorage: trajectoryDumpStorageService,
-            buildClusterRequiredError
+            analysisId: resolvedAnalysisId
         });
 
         const modifierSource = exposureId && resolvedAnalysisId
-            ? await this.resolveRemoteModifierSource(
-                String(resolvedAnalysisId),
-                String(exposureId),
-                String(timestep),
-                String(property)
-            )
+            ? {
+                analysisId: resolvedAnalysisId,
+                exposureId
+            }
             : undefined;
+
+        if (modifierSource) {
+            await atomPropertiesService.assertExposurePublishesProperty(
+                modifierSource.analysisId,
+                modifierSource.exposureId,
+                String(timestep),
+                property
+            );
+        }
 
         await trajectoryNativeDaemonService.exportColoredModel({
             teamClusterId: computeClusterId,
-            trajectoryId: String(trajectoryId),
+            trajectoryId,
             timestep: Number(timestep),
-            property: String(property),
-            startValue: Number(startValue),
-            endValue: Number(endValue),
-            gradient: String(gradient),
+            property,
+            startValue,
+            endValue,
+            gradient,
             objectKey: objectName,
             ownerClusterId: storageClusterId,
             ...(modifierSource ?? {})
         });
 
         await recordSceneArtifact({
-            trajectory: String(trajectoryId),
+            trajectory: trajectoryId,
             storageClusterId,
             analysis: resolvedAnalysisId,
             sourceType: SceneArtifactSourceType.ColorCoding,
             timestep: Number(timestep),
             objectName,
             params: {
-                property: String(property),
-                startValue: Number(startValue),
-                endValue: Number(endValue),
-                gradient: String(gradient),
+                property,
+                startValue,
+                endValue,
+                gradient,
                 exposureId
             } as SceneArtifactParams,
             displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
@@ -285,47 +257,6 @@ class ColorCodingService {
         return objectName;
     }
 
-    private async resolveRemoteModifierSource(
-        analysisId: string,
-        exposureId: string,
-        timestep: string,
-        property: string
-    ): Promise<{ analysisId: string; exposureId: string; }> {
-        const exposureConfigs = await atomPropertiesService.getAnalysisExposureAtomConfigs(analysisId, timestep);
-        const exposureConfig = exposureConfigs.find((config) => config.exposureId === exposureId);
-
-        if (!exposureConfig || !exposureConfig.perAtomProperties.includes(property)) {
-            throw buildPluginPropertyUnavailableError(exposureId, property, timestep);
-        }
-
-        return {
-            analysisId,
-            exposureId
-        };
-    }
-
-    async getModelStream(
-        trajectoryId: string,
-        timestep: string | number,
-        property: string,
-        startValue: number,
-        endValue: number,
-        gradient: string,
-        analysisId?: string,
-        exposureId?: string
-    ): Promise<Readable> {
-        return (await this.getModelStreamResponse(
-            trajectoryId,
-            timestep,
-            property,
-            startValue,
-            endValue,
-            gradient,
-            analysisId,
-            exposureId
-        )).stream;
-    }
-
     async getModelStreamResponse(
         trajectoryId: string,
         timestep: string | number,
@@ -336,10 +267,12 @@ class ColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<TrajectoryNativeObjectStreamResponse> {
-        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
-            : undefined;
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
+
+        if (!trajectory) {
+            throw buildClusterRequiredError();
+        }
+
         const objectName = buildColorCodingObjectName({
             trajectoryId,
             analysisSegment: normalizeAnalysisId(analysisId),
@@ -351,15 +284,11 @@ class ColorCodingService {
             gradient
         });
 
-        if (storageClusterId) {
-            return trajectoryNativeDaemonService.getObjectStreamResponse(
-                storageClusterId,
-                TEAM_CLUSTER_BUCKETS.MODELS,
-                objectName
-            );
-        }
-
-        throw buildClusterRequiredError();
+        return trajectoryNativeDaemonService.getObjectStreamResponse(
+            trajectory.storageClusterId,
+            TEAM_CLUSTER_BUCKETS.MODELS,
+            objectName
+        );
     }
 }
 

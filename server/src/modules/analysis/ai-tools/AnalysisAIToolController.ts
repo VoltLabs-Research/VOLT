@@ -1,5 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
@@ -21,6 +22,7 @@ interface ConfigDelta {
     unchangedKeys: string[];
 }
 
+@AIToolProvider()
 export default class AnalysisAIToolController extends AIToolController {
     #service = new AnalysisService();
 
@@ -82,7 +84,7 @@ export default class AnalysisAIToolController extends AIToolController {
             if (input.status && analysis.status !== input.status) {
                 return false;
             }
-            const config = analysis.config ?? {};
+            const config = analysis.config;
             for (const key of configFilterKeys) {
                 if (JSON.stringify(config[key]) !== JSON.stringify(configFilter[key])) {
                     return false;
@@ -278,10 +280,10 @@ export default class AnalysisAIToolController extends AIToolController {
         const changed: Record<string, { a: unknown; b: unknown }> = {};
         const unchangedKeys: string[] = [];
 
-        const keys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+        const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
         for (const key of keys) {
-            const hasA = Object.prototype.hasOwnProperty.call(a ?? {}, key);
-            const hasB = Object.prototype.hasOwnProperty.call(b ?? {}, key);
+            const hasA = Object.prototype.hasOwnProperty.call(a, key);
+            const hasB = Object.prototype.hasOwnProperty.call(b, key);
             if (hasA && !hasB) {
                 removed[key] = a[key];
             } else if (!hasA && hasB) {

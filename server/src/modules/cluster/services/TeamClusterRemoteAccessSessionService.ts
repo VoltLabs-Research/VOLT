@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import {
     TeamClusterRemoteAccessSessionView,
     TeamClusterRemoteAccessTarget
@@ -33,10 +34,6 @@ const getRemoteAccessSessionExpiresAt = (session: StoredRemoteAccessSession): nu
     return new Date(session.expiresAt).getTime();
 };
 
-const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
-    return getRemoteAccessSessionExpiresAt(session) <= Date.now();
-};
-
 class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredRemoteAccessSession>({
         getExpiresAt: getRemoteAccessSessionExpiresAt,
@@ -44,8 +41,6 @@ class TeamClusterRemoteAccessSessionService {
     });
 
     createSession(params: CreateRemoteAccessSessionParams): TeamClusterRemoteAccessSessionView {
-        this.cleanupExpiredSessions();
-
         const createdAt = new Date();
         const expiresAt = new Date(createdAt.getTime() + REMOTE_ACCESS_SESSION_TTL_MS);
         const session: StoredRemoteAccessSession = {
@@ -64,49 +59,47 @@ class TeamClusterRemoteAccessSessionService {
     }
 
     validateSession(params: ValidateRemoteAccessSessionParams): StoredRemoteAccessSession | ApplicationError {
-        this.cleanupExpiredSessions();
-
         const session = this.sessions.get(params.sessionId);
         if (!session) {
             return ApplicationError.notFound(
-                'TeamCluster::RemoteAccessSessionNotFound',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_NOT_FOUND,
                 'Remote access session not found or expired'
             );
         }
 
-        if (isExpiredSession(session)) {
+        if (this.sessions.isExpired(session)) {
             this.sessions.delete(params.sessionId);
 
             return ApplicationError.notFound(
-                'TeamCluster::RemoteAccessSessionExpired',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_EXPIRED,
                 'Remote access session expired'
             );
         }
 
         if (session.userId !== params.userId) {
             return ApplicationError.forbidden(
-                'TeamCluster::RemoteAccessSessionForbidden',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_FORBIDDEN,
                 'Remote access session does not belong to this user'
             );
         }
 
         if (params.teamId && session.teamId !== params.teamId) {
             return ApplicationError.forbidden(
-                'TeamCluster::RemoteAccessSessionTeamMismatch',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_TEAM_MISMATCH,
                 'Remote access session does not belong to this team'
             );
         }
 
         if (params.teamClusterId && session.teamClusterId !== params.teamClusterId) {
             return ApplicationError.forbidden(
-                'TeamCluster::RemoteAccessSessionClusterMismatch',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_CLUSTER_MISMATCH,
                 'Remote access session does not belong to this cluster'
             );
         }
 
         if (params.target && session.target !== params.target) {
             return ApplicationError.forbidden(
-                'TeamCluster::RemoteAccessSessionTargetMismatch',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_ACCESS_SESSION_TARGET_MISMATCH,
                 'Remote access session does not match this action'
             );
         }

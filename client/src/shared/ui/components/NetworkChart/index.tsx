@@ -2,7 +2,7 @@ import ChartContainer from '@/shared/ui/components/ChartContainer';
 import type { ChartStat } from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { Activity } from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { TooltipContentProps } from 'recharts';
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
@@ -129,26 +129,30 @@ const NetworkChart = ({
     height = 250
 }: NetworkChartProps) => {
     const [history, setHistory] = useState<NetworkDataPoint[]>([]);
-    const [prevData, setPrevData] = useState<NetworkData | null>(null);
+    // A ref, not state: the previous sample is bookkeeping for the delta
+    // computation, and storing it in state made the effect skip a render and
+    // silently drop the first delta.
+    const prevDataRef = useRef<NetworkData | null>(null);
     const gradientId = useId();
 
     useEffect(() => {
-        if(!data) return;
+        if (!data) return;
 
         let rxValue = data.rx;
         let txValue = data.tx;
 
-        if(calculateDelta){
-            if(prevData){
-                rxValue = Math.max(0, data.rx - prevData.rx);
-                txValue = Math.max(0, data.tx - prevData.tx);
-            }else{
-                setPrevData(data);
+        if (calculateDelta) {
+            const prevData = prevDataRef.current;
+            if (!prevData) {
+                prevDataRef.current = data;
                 return;
             }
+
+            rxValue = Math.max(0, data.rx - prevData.rx);
+            txValue = Math.max(0, data.tx - prevData.tx);
         }
 
-        setPrevData(data);
+        prevDataRef.current = data;
 
         const newPoint: NetworkDataPoint = {
             time: formatTime(new Date()),

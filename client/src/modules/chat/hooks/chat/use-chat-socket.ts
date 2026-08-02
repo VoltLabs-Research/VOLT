@@ -1,79 +1,58 @@
 import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
-import { CHAT_QUERY_KEYS, invalidateChatsQuery, updateChatInCache } from './queries';
+import { invalidateChatsQuery, updateChatInCache } from './queries';
+import { addMessageToCache, updateMessageInCache } from '../message/queries';
 import { useChatPresenceStore } from '../../store/chat/use-chat-presence-store';
-import { useQueryClient } from '@tanstack/react-query';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import type { ChatLastMessage } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import type { TypingUser } from '@volt/contracts/modules/chat/domain';
 
-interface NewMessageEvent {
+interface ChatMessageEvent {
     chatId: string;
     message: ChatMessage;
 }
 
-interface MessageEditedEvent {
-    chatId: string;
-    message: ChatMessage;
-}
+const useChatListRefreshOn = (event: string): void => {
+    useSocketEvent(event, () => {
+        invalidateChatsQuery().catch(() => undefined);
+    });
+};
 
-interface MessageDeletedEvent {
-    chatId: string;
-    messageId: string;
-}
-
-interface ReactionUpdatedEvent {
-    chatId: string;
-    message: ChatMessage;
-}
-
-interface GroupChatEvent {
-    chatId: string;
-}
-
-interface UseChatSocketOptions {
-    currentChatId?: string;
-    addMessage: (message: ChatMessage) => void;
-    updateMessage: (_id: string, updates: Partial<ChatMessage>) => void;
-}
-
-const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSocketOptions): void => {
-    const queryClient = useQueryClient();
+const useChatSocket = (currentChatId: string | null): void => {
     const setTypingUser = useChatPresenceStore((state) => state.setTypingUser);
     const setUsersPresence = useChatPresenceStore((state) => state.setUsersPresence);
-    const buildLastMessage = (message: ChatMessage): ChatLastMessage => ({
-        _id: message._id,
-        content: message.content,
-        sender: message.sender,
-        createdAt: message.createdAt
-    });
 
-    useSocketEvent<NewMessageEvent>(SOCKET_CHAT_EVENTS.NEW_MESSAGE, ({ chatId, message }) => {
+    useSocketEvent<ChatMessageEvent>(SOCKET_CHAT_EVENTS.NEW_MESSAGE, ({ chatId, message }) => {
         if (chatId === currentChatId) {
-            addMessage(message);
+            addMessageToCache(chatId, message);
         }
-        updateChatInCache(queryClient, chatId, {
-            lastMessage: buildLastMessage(message),
+
+        updateChatInCache(chatId, {
+            lastMessage: {
+                _id: message._id,
+                content: message.content,
+                sender: message.sender,
+                createdAt: message.createdAt
+            },
             lastMessageAt: message.createdAt
         });
     });
 
-    useSocketEvent<MessageEditedEvent>(SOCKET_CHAT_EVENTS.MESSAGE_EDITED, ({ chatId, message }) => {
+    useSocketEvent<ChatMessageEvent>(SOCKET_CHAT_EVENTS.MESSAGE_EDITED, ({ chatId, message }) => {
         if (chatId === currentChatId) {
-            updateMessage(message._id, message);
+            updateMessageInCache(chatId, message._id, message);
         }
     });
 
-    useSocketEvent<MessageDeletedEvent>(SOCKET_CHAT_EVENTS.MESSAGE_DELETED, ({ chatId, messageId }) => {
+    useSocketEvent<{ chatId: string; messageId: string }>(SOCKET_CHAT_EVENTS.MESSAGE_DELETED, ({ chatId, messageId }) => {
         if (chatId === currentChatId) {
-            updateMessage(messageId, { deleted: true });
+            updateMessageInCache(chatId, messageId, { deleted: true });
         }
     });
 
-    useSocketEvent<ReactionUpdatedEvent>(SOCKET_CHAT_EVENTS.REACTION_UPDATED, ({ chatId, message }) => {
+    useSocketEvent<ChatMessageEvent>(SOCKET_CHAT_EVENTS.REACTION_UPDATED, ({ chatId, message }) => {
         if (chatId === currentChatId) {
-            updateMessage(message._id, { reactions: message.reactions });
+            updateMessageInCache(chatId, message._id, { reactions: message.reactions });
         }
     });
 
@@ -85,34 +64,14 @@ const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSock
 
     useSocketEvent<Record<string, PresenceStatus.Online | PresenceStatus.Offline>>(
         SOCKET_CHAT_EVENTS.USERS_PRESENCE_INFO,
-        (presenceMap) => {
-            setUsersPresence(presenceMap);
-        }
+        setUsersPresence
     );
 
-    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.GROUP_CREATED, () => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-    });
-
-    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USERS_ADDED_TO_GROUP, ({ chatId }) => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
-    });
-
-    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USERS_REMOVED_FROM_GROUP, ({ chatId }) => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
-    });
-
-    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.GROUP_INFO_UPDATED, ({ chatId }) => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
-    });
-
-    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USER_LEFT_GROUP, ({ chatId }) => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
-    });
+    useChatListRefreshOn(SOCKET_CHAT_EVENTS.GROUP_CREATED);
+    useChatListRefreshOn(SOCKET_CHAT_EVENTS.USERS_ADDED_TO_GROUP);
+    useChatListRefreshOn(SOCKET_CHAT_EVENTS.USERS_REMOVED_FROM_GROUP);
+    useChatListRefreshOn(SOCKET_CHAT_EVENTS.GROUP_INFO_UPDATED);
+    useChatListRefreshOn(SOCKET_CHAT_EVENTS.USER_LEFT_GROUP);
 };
 
 export default useChatSocket;

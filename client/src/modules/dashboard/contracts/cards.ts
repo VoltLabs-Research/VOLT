@@ -1,12 +1,10 @@
-export type MetricKey = 'trajectories' | 'analysis' | string;
-
 export interface DashboardCardYDomain{
     min: number;
     max: number;
 }
 
 export interface DashboardCard{
-    key: MetricKey;
+    key: string;
     name: string;
     listingUrl?: string;
     count: string;

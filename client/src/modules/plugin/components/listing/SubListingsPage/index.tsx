@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
 import SubListingDetailPanel from '@/modules/plugin/components/listing/SubListingDetailPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import listingService from '@/modules/plugin/api/services/listing-service';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
+import { resolvePersistenceKey } from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { GetSubListingResponse } from '@/modules/plugin/api/services/listing-service';
 import './SubListingsPage.css';
 
 interface SubListingRow extends Record<string, unknown> {
@@ -27,25 +27,6 @@ const parseNames = (raw: string | null): string[] => {
     return raw.split(',').map((entry) => entry.trim()).filter(Boolean);
 };
 
-const hashString = (value: string): string => {
-    let hash = 0;
-    for(let i = 0; i < value.length; i++){
-        hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
-    }
-    return Math.abs(hash).toString(36);
-};
-
-const resolvePersistenceKey = (queryKey: unknown[]): string => {
-    return `list-${hashString(JSON.stringify(queryKey))}`;
-};
-
-const buildTabs = (names: string[]): DocumentListingTab[] => {
-    return names.map((name) => ({
-        id: name,
-        label: formatSnakeCaseToTitle(name)
-    }));
-};
-
 const SubListingsPage = () => {
     const params = useParams();
     const [searchParams] = useSearchParams();
@@ -55,23 +36,24 @@ const SubListingsPage = () => {
     const timestepRaw = searchParams.get('timestep');
     const timestep = timestepRaw !== null ? Number(timestepRaw) : Number.NaN;
     const namesRaw = searchParams.get('names') ?? '';
+    // Identity is load-bearing: `names` is a dependency of the tab-reset effect.
     const names = useMemo(() => parseNames(namesRaw), [namesRaw]);
 
     const queryKey = useMemo(() => (
         [...LISTING_QUERY_KEYS.subListingInfinite(), 'page', analysisId, exposureId, timestep]
     ), [analysisId, exposureId, timestep]);
 
-    const persistedTabKey = `${resolvePersistenceKey(queryKey)}-tab`;
-    const persistedTab = searchParams.get(persistedTabKey);
-    const tabFromUrl = searchParams.get('tab');
-
-    const initialTab = useMemo(() => {
+    const [activeTab, setActiveTab] = useState(() => {
+        // `DocumentListing` persists the selected tab under this exact param, so
+        // the initial tab has to be read back through the same key it writes.
+        const persistedTab = searchParams.get(`${resolvePersistenceKey(queryKey)}-tab`);
         if(persistedTab && names.includes(persistedTab)) return persistedTab;
-        if(tabFromUrl && names.includes(tabFromUrl)) return tabFromUrl;
-        return names[0] ?? '';
-    }, [names, persistedTab, tabFromUrl]);
 
-    const [activeTab, setActiveTab] = useState(initialTab);
+        const tabFromUrl = searchParams.get('tab');
+        if(tabFromUrl && names.includes(tabFromUrl)) return tabFromUrl;
+
+        return names[0] ?? '';
+    });
     const [snapshotsByTab, setSnapshotsByTab] = useState<Record<string, SubListingColumnSnapshot<SubListingRow>>>({});
     const [selectedRow, setSelectedRow] = useState<SubListingRow | null>(null);
 
@@ -94,9 +76,11 @@ const SubListingsPage = () => {
 
     const paramsValid = missingParams.length === 0;
     const hasNames = names.length > 0;
-    const isEnabled = paramsValid && hasNames && Boolean(activeTab);
 
-    const tabs = useMemo(() => buildTabs(names), [names]);
+    const tabs = useMemo(() => names.map((name) => ({
+        id: name,
+        label: formatSnakeCaseToTitle(name)
+    })), [names]);
 
     const context = useMemo<SubListingFetchContext>(() => ({
         subListingName: activeTab,
@@ -105,30 +89,18 @@ const SubListingsPage = () => {
         timestep
     }), [activeTab, analysisId, exposureId, timestep]);
 
+    // Kept stable: `DocumentListing` treats this as the identity of its data source.
     const fetchData = useCallback(async (requestParams: {
         page: number;
         limit: number;
-        subListingName: string;
-        analysisId: string;
-        exposureId: string;
-        timestep: number;
-    }): Promise<PaginatedResponse<SubListingRow>> => {
-        const response: GetSubListingResponse = await listingService.getSubListing({
-            analysisId: requestParams.analysisId,
-            exposureId: requestParams.exposureId,
-            timestep: requestParams.timestep,
-            subListingName: requestParams.subListingName,
-            page: requestParams.page,
-            limit: requestParams.limit
-        });
-
-        const rows = (response.rows ?? []) as SubListingRow[];
+    } & SubListingFetchContext): Promise<PaginatedResponse<SubListingRow>> => {
+        const response = await listingService.getSubListing(requestParams);
+        const rows = response.rows as SubListingRow[];
 
         if(response.page === 1){
-            const snapshot = buildDocumentSubListingColumnSnapshot(response.columns ?? [], rows);
             setSnapshotsByTab((previous) => ({
                 ...previous,
-                [requestParams.subListingName]: snapshot
+                [requestParams.subListingName]: buildDocumentSubListingColumnSnapshot(response.columns, rows)
             }));
         }
 
@@ -145,24 +117,15 @@ const SubListingsPage = () => {
         };
     }, []);
 
-    const currentSnapshot = snapshotsByTab[activeTab];
-    const columns = currentSnapshot?.columns ?? [];
+    const columns = snapshotsByTab[activeTab]?.columns ?? [];
 
-    const handleTabChange = useCallback((tabId: string) => {
-        setActiveTab(tabId);
-    }, []);
-
-    const handleItemClick = useCallback((item: SubListingRow) => {
+    const handleItemClick = (item: SubListingRow) => {
         setSelectedRow((current) => {
             if(!current) return item;
             return current._id === item._id ? null : item;
         });
         return true;
-    }, []);
-
-    const handleDetailClose = useCallback(() => {
-        setSelectedRow(null);
-    }, []);
+    };
 
     if(!paramsValid){
         return (
@@ -187,24 +150,21 @@ const SubListingsPage = () => {
         );
     }
 
-    const title = activeTab ? formatSnakeCaseToTitle(activeTab) : 'Sub-Listings';
-    const description = `Timestep ${timestep}`;
-
     return (
         <div className='plugin-sub-listings-page'>
             <div className='plugin-sub-listings-page__listing'>
                 <DocumentListing<SubListingRow, SubListingFetchContext>
-                    title={title}
-                    description={description}
+                    title={activeTab ? formatSnakeCaseToTitle(activeTab) : 'Sub-Listings'}
+                    description={`Timestep ${timestep}`}
                     queryKey={queryKey}
                     fetchData={fetchData}
                     context={context}
                     columns={columns}
                     tabs={tabs}
                     defaultTabId={activeTab || undefined}
-                    onTabChange={handleTabChange}
+                    onTabChange={setActiveTab}
                     onItemClick={handleItemClick}
-                    enabled={isEnabled}
+                    enabled={paramsValid && hasNames && Boolean(activeTab)}
                     hideTabs={tabs.length <= 1}
                     emptyMessage='No rows to display for this sub-listing.'
                 />
@@ -214,7 +174,7 @@ const SubListingsPage = () => {
                     <SubListingDetailPanel
                         row={selectedRow}
                         columns={columns}
-                        onClose={handleDetailClose}
+                        onClose={() => setSelectedRow(null)}
                     />
                 </div>
             )}

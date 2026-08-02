@@ -37,22 +37,13 @@ const getPresenceUserName = (user: PresenceUser): string => {
     return fullName || 'A collaborator';
 };
 
-const isPresencePayload = (value: unknown): value is PresenceUser[] => {
-    return Array.isArray(value);
-};
-
 const useWhiteboardPresence = ({ whiteboardId, enabled = true }: UseWhiteboardPresenceProps) => {
     const previousUsersRef = useRef<PresenceUser[]>([]);
 
     const users = usePresenceStore((state) => state.users);
     const announcement = usePresenceStore((state) => state.announcement);
 
-    useSocketEvent<unknown>(SOCKET_WHITEBOARD_EVENTS.USERS_UPDATE, (incomingUsers) => {
-        if (!isPresencePayload(incomingUsers)) {
-            return;
-        }
-
-        const nextUsers = incomingUsers;
+    useSocketEvent<PresenceUser[]>(SOCKET_WHITEBOARD_EVENTS.USERS_UPDATE, (nextUsers) => {
         const previousUsers = previousUsersRef.current;
         const previousIds = new Set(previousUsers.map((user) => user.id));
         const nextIds = new Set(nextUsers.map((user) => user.id));

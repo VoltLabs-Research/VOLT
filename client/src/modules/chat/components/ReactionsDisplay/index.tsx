@@ -11,13 +11,11 @@ interface ReactionsDisplayProps {
 }
 
 const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: ReactionsDisplayProps) => {
-    const validReactions = reactions.filter((r) => (r.users?.length ?? 0) > 0);
-    
-    if (validReactions.length === 0) return null;
+    if (reactions.length === 0) return null;
 
     return (
         <Box display='flex' wrap gap='025' className='chat-reactions-display'>
-            {validReactions.map((reaction) => (
+            {reactions.map((reaction) => (
                 <Button
                     key={reaction.emoji}
                     variant='outline'

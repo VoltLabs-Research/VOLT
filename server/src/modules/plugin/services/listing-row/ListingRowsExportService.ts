@@ -18,6 +18,7 @@ import type {
     AnalysisSubListingExportData,
     ExportListingRowsByAnalysisIdOutput
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
+import { LISTING_COLUMNS } from '@modules/plugin/services/listing-row/ListingTableAggregation';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 const titleCaseName = (name: string): string => {
@@ -42,7 +43,7 @@ export class ListingRowsExportService {
             listingId: 'listing',
             listingName: 'listing',
             rows: [],
-            columns: ['_id', 'pluginId', 'analysisId', 'trajectoryId', 'trajectoryName', 'timestep']
+            columns: [...LISTING_COLUMNS]
         };
     }
 
@@ -94,14 +95,10 @@ export class ListingRowsExportService {
         };
     }
 
-    private hasConfig(config: Record<string, unknown> | undefined): config is Record<string, unknown> {
-        return config !== undefined && Object.keys(config).length > 0;
-    }
-
     private buildArchiveEntries(payload: ExportListingRowsByAnalysisIdOutput): ClusterArchiveInlineEntry[] {
         const entries: ClusterArchiveInlineEntry[] = [];
 
-        if (this.hasConfig(payload.config)) {
+        if (payload.config !== undefined) {
             entries.push(this.createConfigCsvEntry(payload.analysisId, payload.config));
         }
 
@@ -126,10 +123,9 @@ export class ListingRowsExportService {
         });
     }
 
+    /** The catalogue never emits an empty config object, so its presence is the whole test. */
     async present(payload: ExportListingRowsByAnalysisIdOutput): Promise<DownloadStreamOutput> {
-        const hasConfig = this.hasConfig(payload.config);
-
-        if (payload.listings.length <= 1 && payload.subListings.length === 0 && !hasConfig) {
+        if (payload.listings.length <= 1 && payload.subListings.length === 0 && payload.config === undefined) {
             const listing = payload.listings[0] || this.getEmptyListing();
             const listingName = sanitizeDownloadName(listing.listingName, 'listing');
 

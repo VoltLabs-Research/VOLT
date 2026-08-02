@@ -5,7 +5,6 @@ import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 
 interface UseLatexFilesInput {
     documentId: string;
-    onFileSelected?: (file: LatexFile) => void;
 }
 
 const CREATE_FILE_TOAST = {
@@ -32,13 +31,16 @@ const RENAME_FILE_TOAST = {
     error: { title: 'Failed to rename file' }
 };
 
-const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
+/** Shared so the loading state does not hand out a fresh array identity each render. */
+const NO_FILES: LatexFile[] = [];
+
+const useLatexFiles = ({ documentId }: UseLatexFilesInput) => {
     const filesQueryResult = latexFilesQuery(
         { documentId },
         { enabled: !!documentId }
     );
 
-    const files = filesQueryResult.data ?? [];
+    const files = filesQueryResult.data ?? NO_FILES;
     const isLoading = filesQueryResult.isLoading;
 
     const { mutateAsync: createFile } = useCreateLatexFileMutation();
@@ -71,12 +73,8 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
             CREATE_FILE_TOAST
         );
 
-        if (created) {
-            onFileSelected?.(created);
-        }
-
         return created ?? null;
-    }, [createFileWithoutSelection, onFileSelected]);
+    }, [createFileWithoutSelection]);
 
     const handleDeleteFile = useCallback(async (fileId: string): Promise<void> => {
         await showPromise(

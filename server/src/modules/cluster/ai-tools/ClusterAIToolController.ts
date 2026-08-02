@@ -1,8 +1,13 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
+import clusterDaemonLifecycleService from '@modules/cluster/services/ClusterDaemonLifecycleService';
+import clusterDemoService from '@modules/cluster/services/ClusterDemoService';
+import clusterRemoteExplorerService from '@modules/cluster/services/ClusterRemoteExplorerService';
+import clusterRuntimeSettingsService from '@modules/cluster/services/ClusterRuntimeSettingsService';
 import type {
     ClusterRefInput,
     GenerateClusterInstallManifestInput,
@@ -17,6 +22,7 @@ import type {
 
 const MASKED = '••••••••';
 
+@AIToolProvider()
 export default class ClusterAIToolController extends AIToolController {
     #service = new ClusterService();
 
@@ -63,7 +69,7 @@ export default class ClusterAIToolController extends AIToolController {
     async getClusterHealthSummary(input: ClusterRefInput & AIToolScope) {
         const [{ teamCluster }, snapshot] = await Promise.all([
             this.#service.getById(input),
-            this.#service.getRuntimeSnapshot(input)
+            clusterRuntimeSettingsService.getRuntimeSnapshot(input)
         ]);
 
         return {
@@ -92,7 +98,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ClusterRefInput>()
     })
     async getClusterResourceLimits(input: ClusterRefInput & AIToolScope) {
-        const { resourceLimits } = await this.#service.getResourceLimits(input);
+        const { resourceLimits } = await clusterRuntimeSettingsService.getResourceLimits(input);
         return {
             summary: `Cluster limits: ${resourceLimits.maxCpus ?? 'unknown'} CPUs, ${resourceLimits.maxMemoryMB ?? 'unknown'} MB.`,
             data: resourceLimits
@@ -106,7 +112,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ClusterRefInput>()
     })
     async getClusterRuntimeSnapshot(input: ClusterRefInput & AIToolScope) {
-        const snapshot = await this.#service.getRuntimeSnapshot(input);
+        const snapshot = await clusterRuntimeSettingsService.getRuntimeSnapshot(input);
         return {
             summary: `Captured ${snapshot.daemonQueues.length} daemon queues at ${snapshot.capturedAt}.`,
             data: snapshot
@@ -138,7 +144,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ListRemoteClusterFilesInput>()
     })
     async listRemoteClusterFiles(input: ListRemoteClusterFilesInput & AIToolScope) {
-        const result = await this.#service.listRemoteExplorerEntries(input);
+        const result = await clusterRemoteExplorerService.listRemoteExplorerEntries(input);
         return {
             summary: `Found ${result.entries.length} entr${result.entries.length === 1 ? 'y' : 'ies'} at "${result.path || '/'}" in ${result.target}.`,
             data: result
@@ -152,7 +158,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateClusterRoleInput>()
     })
     async updateClusterRole(input: UpdateClusterRoleInput & AIToolScope) {
-        return this.#service.updateRole(input);
+        return clusterRuntimeSettingsService.updateRole(input);
     }
 
     @AITool({
@@ -162,7 +168,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateClusterQueueConcurrencyInput>()
     })
     async updateClusterQueueConcurrency(input: UpdateClusterQueueConcurrencyInput & AIToolScope) {
-        return this.#service.updateQueueConcurrency(input);
+        return clusterRuntimeSettingsService.updateQueueConcurrency(input);
     }
 
     @AITool({
@@ -172,7 +178,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<GenerateClusterInstallManifestInput>()
     })
     async generateClusterInstallManifest(input: GenerateClusterInstallManifestInput) {
-        const { manifest } = await this.#service.generateInstallManifest(input);
+        const { manifest } = await clusterDaemonLifecycleService.generateInstallManifest(input);
         return {
             summary: `Generated install manifest v${manifest.manifestVersion} (${manifest.files.length} files) for project "${manifest.composeProjectName}".`,
             data: manifest
@@ -243,7 +249,7 @@ export default class ClusterAIToolController extends AIToolController {
     })
     async manageDemoCluster(input: ManageDemoClusterInput & AIToolScope) {
         if (input.action === 'provision') {
-            const result = await this.#service.provisionDemo(input);
+            const result = await clusterDemoService.provisionDemo(input);
             return {
                 summary: `Demo cluster "${result.teamCluster.name}" provisioned.`,
                 data: result
@@ -251,14 +257,14 @@ export default class ClusterAIToolController extends AIToolController {
         }
 
         if (input.action === 'delete') {
-            const result = await this.#service.deleteDemo(input);
+            const result = await clusterDemoService.deleteDemo(input);
             return {
                 summary: result.teardownScheduled ? 'Demo cluster teardown scheduled.' : 'No active demo cluster to delete.',
                 data: result
             };
         }
 
-        const result = await this.#service.getDemoStatus(input);
+        const result = await clusterDemoService.getDemoStatus(input);
         return {
             summary: result.hasActiveDemo
                 ? `Active demo cluster${result.remainingMs !== null ? ` (${Math.max(0, Math.round(result.remainingMs / 60000))} min remaining)` : ''}.`

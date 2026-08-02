@@ -25,7 +25,6 @@ const buildContextKey = (context: SocketErrorContext): string => {
 
 const extractMessage = (error: unknown): string => {
     if (error instanceof Error) return error.message;
-    if (typeof error === 'string') return error;
     return String(error ?? 'unknown');
 };
 
@@ -60,6 +59,7 @@ class SocketErrorReporterImpl {
         try {
             this.logger(report);
         } catch {
+            // The error reporter must never throw: it is the last line of defence.
         }
     }
 };

@@ -1,10 +1,9 @@
 import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { RasterFrameScope } from '@volt/contracts/modules/raster/domain';
-import { isApiError } from '@/shared/errors/core';
+import { isAbortError, isApiError } from '@/shared/errors/core';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ApiError } from '@voltstack/voltclient';
-import type { RasterSceneFrame } from '@/modules/raster/contracts/scene-frame';
 
 interface UseRasterFrameParams {
     trajectoryId?: string;
@@ -12,51 +11,14 @@ interface UseRasterFrameParams {
     analysisId?: string;
     model?: string;
     scope: RasterFrameScope;
-    enabled?: boolean;
     requestKey?: number;
 };
 
 interface UseRasterFrameResult {
-    frame: RasterSceneFrame | null;
+    imageUrl: string | null;
     isLoading: boolean;
     error: ApiError | Error | null;
     isMissing: boolean;
-};
-
-type RasterFrameQueryKey = readonly [
-    'raster',
-    'frame',
-    RasterFrameScope,
-    string | undefined,
-    number | undefined,
-    string | undefined,
-    string | undefined,
-    number | undefined
-];
-
-const buildRasterFrameQueryKey = (
-    params: Pick<UseRasterFrameParams, 'scope' | 'trajectoryId' | 'timestep' | 'analysisId' | 'model' | 'requestKey'>
-): RasterFrameQueryKey => [
-    'raster',
-    'frame',
-    params.scope,
-    params.trajectoryId,
-    params.timestep,
-    params.analysisId,
-    params.model,
-    params.requestKey
-];
-
-const resolveRasterFrameError = (error: unknown): ApiError | Error => {
-    if (error instanceof Error || isApiError(error)) {
-        return error;
-    }
-
-    return new Error('Failed to load raster frame');
-};
-
-const isAbortError = (error: unknown): error is DOMException => {
-    return error instanceof DOMException && error.name === 'AbortError';
 };
 
 export const useRasterFrame = ({
@@ -65,41 +27,25 @@ export const useRasterFrame = ({
     analysisId,
     model,
     scope,
-    enabled = true,
     requestKey
 }: UseRasterFrameParams): UseRasterFrameResult => {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const requiresAnalysisFrame = scope === RasterFrameScope.Analysis;
-    const canFetchFrame = enabled
-        && Boolean(trajectoryId)
+    const canFetchFrame = Boolean(trajectoryId)
         && timestep !== undefined
         && (!requiresAnalysisFrame || Boolean(analysisId && model));
 
     const frameQuery = useQuery<Blob, ApiError | Error>({
-        queryKey: buildRasterFrameQueryKey({
-            scope,
-            trajectoryId,
-            timestep,
-            analysisId,
-            model,
-            requestKey
-        }),
+        queryKey: ['raster', 'frame', scope, trajectoryId, timestep, analysisId, model, requestKey],
         enabled: canFetchFrame,
         retry: false,
-        queryFn: async () => {
-            const blob = await canvasService.getRasterFrame({
-                trajectoryId: trajectoryId!,
-                timestep: timestep!,
-                analysisId: requiresAnalysisFrame ? analysisId : undefined,
-                model: requiresAnalysisFrame ? model : undefined
-            });
-
-            return blob;
-        },
         throwOnError: false,
-        meta: {
-            requestKey
-        }
+        queryFn: () => canvasService.getRasterFrame({
+            trajectoryId: trajectoryId!,
+            timestep: timestep!,
+            analysisId: requiresAnalysisFrame ? analysisId : undefined,
+            model: requiresAnalysisFrame ? model : undefined
+        })
     });
 
     useEffect(() => {
@@ -117,32 +63,13 @@ export const useRasterFrame = ({
     }, [frameQuery.data]);
 
     const error = canFetchFrame && frameQuery.error && !isAbortError(frameQuery.error)
-        ? resolveRasterFrameError(frameQuery.error)
+        ? frameQuery.error
         : null;
-    const isMissing = Boolean(error && isApiError(error) && error.status === 404);
-
-    const frame = useMemo<RasterSceneFrame | null>(() => {
-        if (!canFetchFrame) {
-            return null;
-        }
-
-        if (!frameQuery.data && !error) {
-            return null;
-        }
-
-        return {
-            frame: timestep!,
-            model: model ?? null,
-            analysisId: analysisId ?? null,
-            scope,
-            imageUrl
-        };
-    }, [analysisId, canFetchFrame, error, frameQuery.data, imageUrl, model, scope, timestep]);
 
     return {
-        frame,
+        imageUrl: canFetchFrame ? imageUrl : null,
         isLoading: frameQuery.isLoading || frameQuery.isFetching,
         error,
-        isMissing
+        isMissing: Boolean(error && isApiError(error) && error.status === 404)
     };
 };

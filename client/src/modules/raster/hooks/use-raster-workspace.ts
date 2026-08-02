@@ -1,29 +1,18 @@
 import { RasterFrameScope } from '@volt/contracts/modules/raster/domain';
 import { useRasterFrame } from '@/modules/raster/hooks/use-raster-frame';
 import { rasterMetadataQuery } from '@/modules/raster/hooks/queries';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
-import { isApiError } from '@/shared/errors/core';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { RasterAnalysisMetadata } from '@volt/contracts/modules/raster/domain';
-import type { RasterSceneFrame } from '@/modules/raster/contracts/scene-frame';
-import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-
-interface RasterModelOption {
-    value: string;
-    title: string;
-};
 
 interface RasterWorkspaceSource {
     scope: RasterFrameScope;
     analysis: RasterAnalysisMetadata | null;
-    title: string;
     description: string | null;
 };
 
 interface UseRasterWorkspaceParams {
     trajectoryId?: string;
-    trajectory: Trajectory | null | undefined;
     analysisId?: string;
     currentTimestep?: number;
     model?: string;
@@ -31,9 +20,7 @@ interface UseRasterWorkspaceParams {
 };
 
 interface UseRasterWorkspaceResult {
-    frame: RasterSceneFrame | null;
-    modelOptions: RasterModelOption[];
-    selectedModel: string | null;
+    imageUrl: string | null;
     displayTimestep?: number;
     sourceDescription: string | null;
     isAnalysisSource: boolean;
@@ -46,23 +33,7 @@ interface UseRasterWorkspaceResult {
     refetchMetadata: () => Promise<unknown>;
 };
 
-const getAnalysisTitle = (analysis: RasterAnalysisMetadata, trajectory: Trajectory | null | undefined): string => {
-    const matchingAnalysis = trajectory?.analysis?.find((entry) => entry._id === analysis.analysisId);
-    if (matchingAnalysis?.plugin) {
-        return matchingAnalysis.plugin;
-    }
-
-    return analysis.analysisId;
-};
-
-const getModelTitle = (model: string): string => {
-    return model
-        .split('_')
-        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-        .join(' ');
-};
-
-const getModelOptions = (analysis: RasterAnalysisMetadata | null): RasterModelOption[] => {
+const getAvailableModels = (analysis: RasterAnalysisMetadata | null): string[] => {
     if (!analysis) {
         return [];
     }
@@ -74,29 +45,11 @@ const getModelOptions = (analysis: RasterAnalysisMetadata | null): RasterModelOp
         });
     });
 
-    return Array.from(models)
-        .sort((leftModel, rightModel) => leftModel.localeCompare(rightModel))
-        .map((model) => ({
-            value: model,
-            title: getModelTitle(model)
-        }));
-};
-
-const getAvailableTimesteps = (source: RasterWorkspaceSource | null, metadataTrajectoryTimesteps: number[]): number[] => {
-    if (!source) {
-        return [];
-    }
-
-    if (source.scope === RasterFrameScope.Analysis) {
-        return source.analysis?.availableTimesteps ?? [];
-    }
-
-    return metadataTrajectoryTimesteps;
+    return Array.from(models).sort((leftModel, rightModel) => leftModel.localeCompare(rightModel));
 };
 
 export const useRasterWorkspace = ({
     trajectoryId,
-    trajectory,
     analysisId,
     currentTimestep,
     model,
@@ -111,21 +64,15 @@ export const useRasterWorkspace = ({
     const analyses = metadataQuery.data?.metadata?.analyses ?? [];
     const hasTrajectoryRaster = Boolean(metadataQuery.data?.metadata?.trajectory);
     const trajectoryAvailableTimesteps = metadataQuery.data?.metadata?.trajectory?.availableTimesteps ?? [];
-
-    const selectedAnalysis = useMemo(() => {
-        if (!analysisId) {
-            return null;
-        }
-
-        return analyses.find((entry) => entry.analysisId === analysisId) ?? null;
-    }, [analyses, analysisId]);
+    const selectedAnalysis = analysisId
+        ? analyses.find((entry) => entry.analysisId === analysisId) ?? null
+        : null;
 
     const source = useMemo<RasterWorkspaceSource | null>(() => {
         if (selectedAnalysis) {
             return {
                 scope: RasterFrameScope.Analysis,
                 analysis: selectedAnalysis,
-                title: getAnalysisTitle(selectedAnalysis, trajectory),
                 description: null
             };
         }
@@ -134,7 +81,6 @@ export const useRasterWorkspace = ({
             return {
                 scope: RasterFrameScope.Trajectory,
                 analysis: null,
-                title: 'Trajectory raster',
                 description: analysisId
                     ? 'Showing trajectory raster because the selected analysis does not have raster output yet.'
                     : null
@@ -142,55 +88,27 @@ export const useRasterWorkspace = ({
         }
 
         return null;
-    }, [analysisId, hasTrajectoryRaster, selectedAnalysis, trajectory]);
+    }, [analysisId, hasTrajectoryRaster, selectedAnalysis]);
 
-    const modelOptions = useMemo(() => {
-        return getModelOptions(source?.analysis ?? null);
-    }, [source]);
-
-    const availableTimesteps = useMemo(() => {
-        return getAvailableTimesteps(source, trajectoryAvailableTimesteps);
-    }, [source, trajectoryAvailableTimesteps]);
+    const isAnalysisSource = source?.scope === RasterFrameScope.Analysis;
+    const availableModels = useMemo(() => getAvailableModels(source?.analysis ?? null), [source]);
+    const availableTimesteps = (isAnalysisSource ? source?.analysis?.availableTimesteps : trajectoryAvailableTimesteps) ?? [];
+    const displayTimestep = currentTimestep !== undefined && availableTimesteps.includes(currentTimestep)
+        ? currentTimestep
+        : availableTimesteps[0];
 
     const isSourceUnavailable = hasResolvedMetadata && Boolean(analysisId) && !selectedAnalysis;
-    const isModelUnavailable = useMemo(() => {
-        if (!hasResolvedMetadata || source?.scope !== RasterFrameScope.Analysis || !model) {
-            return false;
-        }
-
-        return !modelOptions.some((option) => option.value === model);
-    }, [hasResolvedMetadata, model, modelOptions, source]);
-
-    const displayTimestep = useMemo(() => {
-        if (currentTimestep !== undefined && availableTimesteps.includes(currentTimestep)) {
-            return currentTimestep;
-        }
-
-        return availableTimesteps[0];
-    }, [availableTimesteps, currentTimestep]);
-
-    const selectedModel = useMemo(() => {
-        if (source?.scope !== RasterFrameScope.Analysis || !modelOptions.length) {
-            return null;
-        }
-
-        if (isModelUnavailable) {
-            return null;
-        }
-
-        if (model && modelOptions.some((option) => option.value === model)) {
-            return model;
-        }
-
-        return modelOptions[0].value;
-    }, [isModelUnavailable, model, modelOptions, source]);
+    const isModelUnavailable = hasResolvedMetadata && isAnalysisSource && !!model && !availableModels.includes(model);
+    const selectedModel = !isAnalysisSource || isModelUnavailable || !availableModels.length
+        ? null
+        : model && availableModels.includes(model) ? model : availableModels[0];
 
     useEffect(() => {
         if (isSourceUnavailable || isModelUnavailable) {
             return;
         }
 
-        if (source?.scope !== RasterFrameScope.Analysis || !selectedModel) {
+        if (!isAnalysisSource || !selectedModel) {
             if (model) {
                 onModelChange?.(undefined);
             }
@@ -201,14 +119,7 @@ export const useRasterWorkspace = ({
         if (selectedModel !== model) {
             onModelChange?.(selectedModel);
         }
-    }, [isModelUnavailable, isSourceUnavailable, model, onModelChange, selectedModel, source]);
-
-    const isFrameEnabled = Boolean(
-        trajectoryId
-        && source
-        && displayTimestep !== undefined
-        && (source.scope === RasterFrameScope.Trajectory || (source.analysis?.analysisId && selectedModel))
-    );
+    }, [isAnalysisSource, isModelUnavailable, isSourceUnavailable, model, onModelChange, selectedModel]);
 
     const frameQuery = useRasterFrame({
         trajectoryId,
@@ -216,42 +127,23 @@ export const useRasterWorkspace = ({
         analysisId: source?.analysis?.analysisId,
         model: selectedModel ?? undefined,
         scope: source?.scope ?? RasterFrameScope.Trajectory,
-        enabled: isFrameEnabled,
         requestKey
     });
 
-    const refetchMetadata = useCallback(async () => {
-        setRequestKey((currentValue) => currentValue + 1);
-        return metadataQuery.refetch();
-    }, [metadataQuery]);
-
-    const hasRasterData = hasTrajectoryRaster || analyses.length > 0;
-    const isSelectionUnavailable = isSourceUnavailable;
-
-    let error: Error | null = null;
-    if (metadataQuery.error instanceof Error) {
-        error = metadataQuery.error;
-    } else if (!frameQuery.isMissing && frameQuery.error instanceof Error) {
-        error = frameQuery.error;
-    } else if (isApiError(metadataQuery.error)) {
-        error = metadataQuery.error;
-    } else if (!frameQuery.isMissing && isApiError(frameQuery.error)) {
-        error = frameQuery.error;
-    }
-
     return {
-        frame: frameQuery.frame,
-        modelOptions,
-        selectedModel,
+        imageUrl: frameQuery.imageUrl,
         displayTimestep,
         sourceDescription: source?.description ?? null,
-        isAnalysisSource: source?.scope === RasterFrameScope.Analysis,
+        isAnalysisSource,
         isLoading: metadataQuery.isLoading || frameQuery.isLoading,
-        error,
-        hasRasterData,
+        error: metadataQuery.error ?? (frameQuery.isMissing ? null : frameQuery.error),
+        hasRasterData: hasTrajectoryRaster || analyses.length > 0,
         isFrameMissing: frameQuery.isMissing,
-        isSelectionUnavailable,
+        isSelectionUnavailable: isSourceUnavailable,
         isModelUnavailable,
-        refetchMetadata
+        refetchMetadata: () => {
+            setRequestKey((currentValue) => currentValue + 1);
+            return metadataQuery.refetch();
+        }
     };
 };

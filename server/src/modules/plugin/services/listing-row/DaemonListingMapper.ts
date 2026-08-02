@@ -1,4 +1,5 @@
 import type { ColumnDef, ListingRowData } from '@shared/contracts/operations/GetPluginListingDocuments';
+import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/listing';
 
 export interface DaemonListingRow {
     _id: string;
@@ -15,14 +16,20 @@ export interface DaemonListingRow {
     [key: string]: unknown;
 }
 
-export interface DaemonPaginatedResult {
-    data: DaemonListingRow[];
+export interface DaemonPaginatedResult<TRow = DaemonListingRow> {
+    data: TRow[];
     total: number;
     page: number;
     totalPages: number;
     limit: number;
     columns?: string[];
     subListingNames?: string[];
+}
+
+export interface DaemonSubListingRow {
+    _id: string;
+    row?: Record<string, unknown>;
+    [key: string]: unknown;
 }
 
 const SYSTEM_KEYS = new Set([
@@ -59,21 +66,26 @@ export const toListingRowId = (value: unknown): string => {
     return '';
 };
 
+/**
+ * A daemon row either nests its payload under `row` or spreads it next to the
+ * system columns, depending on which daemon version produced it.
+ */
+const readRowFields = (row: DaemonListingRow): Record<string, unknown> => {
+    if (row.row) {
+        return row.row;
+    }
+
+    return Object.fromEntries(
+        Object.entries(row).filter(([key]) => !SYSTEM_KEYS.has(key))
+    );
+};
+
 export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
     const seen = new Set<string>();
 
     for (const row of rows) {
-        const nestedRow = row.row;
-        if (nestedRow && typeof nestedRow === 'object' && !Array.isArray(nestedRow)) {
-            for (const key of Object.keys(nestedRow)) {
-                seen.add(key);
-            }
-        } else {
-            for (const key of Object.keys(row)) {
-                if (!SYSTEM_KEYS.has(key)) {
-                    seen.add(key);
-                }
-            }
+        for (const key of Object.keys(readRowFields(row))) {
+            seen.add(key);
         }
     }
 
@@ -85,28 +97,27 @@ export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
 };
 
 export const mapDaemonRow = (row: DaemonListingRow): ListingRowData => {
-    const nestedRow = row.row;
-    const rowFields: Record<string, unknown> = {};
-
-    if (nestedRow && typeof nestedRow === 'object' && !Array.isArray(nestedRow)) {
-        for (const [key, value] of Object.entries(nestedRow)) {
-            rowFields[key] = value;
-        }
-    } else {
-        for (const [key, value] of Object.entries(row)) {
-            if (!SYSTEM_KEYS.has(key)) {
-                rowFields[key] = value;
-            }
-        }
-    }
-
     return {
         _id: toListingRowId(row._id),
         timestep: row.timestep ?? 0,
-        analysisId: String(row.analysis || ''),
-        trajectoryId: String(row.trajectory || ''),
+        analysisId: row.analysis || '',
+        trajectoryId: row.trajectory || '',
         exposureId: row.exposureId || '',
         trajectoryName: row.trajectoryName as string,
-        ...rowFields
+        ...readRowFields(row)
+    };
+};
+
+/** The same daemon row, keyed for the by-analysis listing views. */
+export const mapDaemonRowByAnalysis = (row: DaemonListingRow): ListingRowByAnalysisData => {
+    return {
+        _id: toListingRowId(row._id),
+        plugin: row.plugin || '',
+        exposureId: row.exposureId || '',
+        exposureName: row.exposureName || '',
+        trajectory: row.trajectory || '',
+        trajectoryName: row.trajectoryName as string,
+        timestep: row.timestep ?? 0,
+        row: row.row ?? {}
     };
 };

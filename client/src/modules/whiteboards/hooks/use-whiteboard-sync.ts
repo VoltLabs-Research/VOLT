@@ -10,54 +10,39 @@ import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
 import type { SocketAck } from '@/modules/socket/contracts/socket-service';
-import type { WhiteboardAppState, WhiteboardElement } from '@/modules/whiteboards/contracts/excalidraw';
+import type {
+    WhiteboardAppState,
+    WhiteboardElements,
+    WhiteboardScene,
+    WhiteboardScenePayload
+} from '@/modules/whiteboards/contracts/excalidraw';
 import { useCallback, useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import { v4 as uuidv4 } from 'uuid';
 
-interface WhiteboardPatchPayload {
+interface WhiteboardPatchPayload extends WhiteboardScene {
     whiteboardId: string;
     clientId: string;
     baseRevision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
     elementOrder?: string[];
-};
-
-interface WhiteboardStatePayload {
-    whiteboardId: string;
-    revision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
-    elementOrder?: string[];
-    senderId?: string;
-    clientId?: string;
-    baseRevision?: number;
 };
 
 interface WhiteboardSubscribeAck {
-    snapshot?: WhiteboardStatePayload | null;
+    snapshot?: WhiteboardScenePayload | null;
 };
 
 interface WhiteboardPatchAck {
     accepted: boolean;
     revision: number;
-    delta?: WhiteboardStatePayload;
-    snapshot?: WhiteboardStatePayload;
-};
-
-interface WhiteboardSceneState {
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
+    snapshot?: WhiteboardScenePayload;
 };
 
 interface UseWhiteboardSyncProps {
     whiteboardId?: string;
     enabled?: boolean;
     onRemoteState?: (
-        elements: WhiteboardElement[],
+        elements: WhiteboardElements,
         appState: WhiteboardAppState,
-        revision: number,
         elementOrder?: string[]
     ) => Promise<void> | void;
 };
@@ -65,6 +50,14 @@ interface UseWhiteboardSyncProps {
 const DELTA_DEBOUNCE_MS = 80;
 
 const CONFLICT_TOAST_THROTTLE_MS = 5000;
+
+const readAckData = <TData,>(ack: SocketAck<TData>, fallbackMessage: string): TData => {
+    if (!ack.ok || !ack.data) {
+        throw new Error(ack.error ?? fallbackMessage);
+    }
+
+    return ack.data;
+};
 
 const useWhiteboardSync = ({
     whiteboardId,
@@ -78,29 +71,21 @@ const useWhiteboardSync = ({
     const isSubscribedRef = useRef(false);
     const isSendingPatchRef = useRef(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const queuedStateRef = useRef<WhiteboardSceneState | null>(null);
+    const queuedStateRef = useRef<WhiteboardScene | null>(null);
     const remoteApplyChainRef = useRef(Promise.resolve());
     const lastConflictToastAtRef = useRef(0);
     const applyRemoteStateRef = useRef<(
-        payload: WhiteboardStatePayload | undefined,
+        payload: WhiteboardScenePayload,
         mode: 'snapshot' | 'delta'
     ) => void>(() => undefined);
-    const syncedSceneRef = useRef<WhiteboardSceneState>({
+    const syncedSceneRef = useRef<WhiteboardScene>({
         elements: [],
         appState: {}
     });
 
     const subscriptionEnabled = enabled && !!whiteboardId;
 
-    const readAckData = useCallback(<TData,>(ack: SocketAck<TData> | undefined, fallbackMessage: string): TData => {
-        if (!ack?.ok || !ack.data) {
-            throw new Error(ack?.error ?? fallbackMessage);
-        }
-
-        return ack.data;
-    }, []);
-
-    const applyPatchAck = useCallback((ack: WhiteboardPatchAck, sentState: WhiteboardSceneState) => {
+    const applyPatchAck = useCallback((ack: WhiteboardPatchAck, sentState: WhiteboardScene) => {
         if (ack.snapshot) {
             return;
         }
@@ -118,7 +103,6 @@ const useWhiteboardSync = ({
         }
     }, []);
 
-    
     const notifyConflictSync = useCallback(() => {
         const now = Date.now();
         if (now - lastConflictToastAtRef.current < CONFLICT_TOAST_THROTTLE_MS) {
@@ -188,9 +172,9 @@ const useWhiteboardSync = ({
                 isSendingPatchRef.current = false;
                 flushQueuedState();
             });
-    }, [applyPatchAck, enabled, notifyConflictSync, readAckData, whiteboardId, socketService]);
+    }, [applyPatchAck, enabled, notifyConflictSync, whiteboardId, socketService]);
 
-    const sendDelta = useCallback((elements: WhiteboardElement[], appState: WhiteboardAppState) => {
+    const sendDelta = useCallback((elements: WhiteboardElements, appState: WhiteboardAppState) => {
         if (!enabled || !whiteboardId) {
             return;
         }
@@ -211,10 +195,10 @@ const useWhiteboardSync = ({
     }, [enabled, flushQueuedState, whiteboardId]);
 
     const applyRemoteState = useCallback((
-        payload: WhiteboardStatePayload | undefined,
+        payload: WhiteboardScenePayload,
         mode: 'snapshot' | 'delta'
     ) => {
-        if (!payload || payload.whiteboardId !== whiteboardId) {
+        if (payload.whiteboardId !== whiteboardId) {
             return;
         }
 
@@ -256,17 +240,10 @@ const useWhiteboardSync = ({
                 }
 
                 const resolvedElementOrder = mode === 'snapshot'
-                    ? payload.elements
-                        .map((element) => element.id)
-                        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+                    ? payload.elements.map((element) => element.id)
                     : payload.elementOrder;
 
-                await onRemoteState?.(
-                    payload.elements,
-                    payload.appState,
-                    payload.revision,
-                    resolvedElementOrder
-                );
+                await onRemoteState?.(payload.elements, payload.appState, resolvedElementOrder);
             })
             .finally(() => {
                 flushQueuedState();
@@ -275,13 +252,7 @@ const useWhiteboardSync = ({
 
     applyRemoteStateRef.current = applyRemoteState;
 
-    useSocketEvent<WhiteboardStatePayload | undefined>(
-        SOCKET_WHITEBOARD_EVENTS.SYNC_STATE,
-        (payload) => applyRemoteState(payload, 'snapshot'),
-        { enabled: subscriptionEnabled }
-    );
-
-    useSocketEvent<WhiteboardStatePayload | undefined>(
+    useSocketEvent<WhiteboardScenePayload>(
         SOCKET_WHITEBOARD_EVENTS.APPLY_DELTA,
         (payload) => applyRemoteState(payload, 'delta'),
         { enabled: subscriptionEnabled }
@@ -342,7 +313,7 @@ const useWhiteboardSync = ({
                 socketService.emitWithoutAck(SOCKET_WHITEBOARD_EVENTS.UNSUBSCRIBE, { whiteboardId });
             }
         };
-    }, [applyRemoteState, flushQueuedState, readAckData, socketService, subscriptionEnabled, whiteboardId]);
+    }, [applyRemoteState, flushQueuedState, socketService, subscriptionEnabled, whiteboardId]);
 
     useEffect(() => {
         if (!subscriptionEnabled) return;
@@ -362,10 +333,7 @@ const useWhiteboardSync = ({
         };
     }, [subscriptionEnabled, whiteboardId]);
 
-    return {
-        sendDelta,
-        clientId: clientIdRef.current
-    };
+    return { sendDelta };
 };
 
 export default useWhiteboardSync;

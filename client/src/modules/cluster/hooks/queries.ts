@@ -1,9 +1,9 @@
-import { buildKeys, createSocketQuery } from '@/shared/query';
+import { buildKeys, createSocketQuery, queryClient } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
-import type { QueryClient } from '@tanstack/react-query';
 import type { ClusterHistoryMetric, ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
-import { MAX_HISTORY_POINTS } from '../utils/history';
 import { resolveClusterMetricId } from '../utils/resolve-cluster-metric-id';
+
+const MAX_HISTORY_POINTS = 60;
 
 type ClusterQueryKeyMap = {
     metrics: void;
@@ -20,13 +20,9 @@ export const clusterHistoryQuery = createSocketQuery<string, ClusterMetrics[]>(C
 export const clusterHistoryLoadedQuery = createSocketQuery<string, boolean>(CLUSTER_QUERY_KEYS.historyLoaded, { initialData: false });
 
 const trimHistory = (history: ClusterMetrics[]): ClusterMetrics[] => {
-    let nextHistory = history;
-
-    if (history.length > MAX_HISTORY_POINTS) {
-        nextHistory = history.slice(history.length - MAX_HISTORY_POINTS);
-    }
-
-    return nextHistory;
+    return history.length > MAX_HISTORY_POINTS
+        ? history.slice(-MAX_HISTORY_POINTS)
+        : history;
 };
 
 const mergeClusterMetrics = (
@@ -96,14 +92,8 @@ export const setClusterHistoryQueryData = (
     }
 };
 
-export const resetClusterHistoryQuery = (_queryClient: QueryClient, clusterId?: string) => {
-    if (clusterId) {
-        clusterHistoryQuery.set(clusterId, []);
-        clusterHistoryLoadedQuery.set(clusterId, false);
-        return;
-    }
-
-    _queryClient.removeQueries({ queryKey: ['cluster', 'history'] });
-    _queryClient.removeQueries({ queryKey: ['cluster', 'historyLoaded'] });
+export const resetClusterHistoryQuery = () => {
+    queryClient.removeQueries({ queryKey: ['cluster', 'history'] });
+    queryClient.removeQueries({ queryKey: ['cluster', 'historyLoaded'] });
 };
 

@@ -1,18 +1,12 @@
 import { resolveDestination } from '@/modules/ai/tools/navigation-destinations';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface NavigateToInput {
-    destination?: string;
-    params?: Record<string, string>;
-    query?: Record<string, string>;
-}
+import type { NavigateToInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const navigateTo: ClientToolHandler<NavigateToInput> = {
     name: 'navigate_to',
 
     run(input, ctx): ClientToolResult {
-        const destination = typeof input.destination === 'string' ? input.destination : '';
-        const resolved = resolveDestination(destination, input.params ?? {}, input.query ?? {});
+        const resolved = resolveDestination(input.destination, input.params ?? {}, input.query ?? {});
 
         if (!resolved.ok || !resolved.path) {
             return {

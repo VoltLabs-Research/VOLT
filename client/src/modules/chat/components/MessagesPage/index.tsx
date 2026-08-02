@@ -10,11 +10,8 @@ import { useParams } from 'react-router-dom';
 import useTip from '@/shared/tips/use-tip';
 import './MessagesPage.css';
 
-type MessagesPageRouteParam = 'chatId';
-
 const MessagesPage = () => {
-    const { chatId } = useParams<MessagesPageRouteParam>();
-
+    const { chatId } = useParams<'chatId'>();
     const {
         currentChat,
         chats,
@@ -37,7 +34,7 @@ const MessagesPage = () => {
         handleSendFiles,
         handleUpdateGroupInfo,
         handleUpdateAdmins,
-        handleInfoClick,
+        toggleDetails,
         closeDetails,
         sendMessage,
         isSendingMessage,
@@ -89,7 +86,7 @@ const MessagesPage = () => {
                 onDeleteMessage={deleteMessage}
                 onSetReaction={setReaction}
                 onRemoveReaction={removeReaction}
-                onInfoClick={handleInfoClick}
+                onInfoClick={toggleDetails}
                 isDetailsOpen={showDetails}
             />
 

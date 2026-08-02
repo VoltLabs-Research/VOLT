@@ -1,5 +1,5 @@
-import { processFileSystemEntry } from '@/shared/utils/file';
 import './FileUploaderContainer.css';
+import { describeSkippedEntries, processFileSystemEntry } from '@/shared/utils/file';
 import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sileo } from 'sileo';
@@ -18,6 +18,7 @@ interface FileUploaderContainerProps {
 interface ProcessedDropEntry {
     files: FileWithPath[];
     folderName: string | null;
+    skippedPaths: string[];
     isDirectory: boolean;
 };
 
@@ -114,6 +115,17 @@ const FileUploaderContainer = ({
             const results = (await Promise.all(processPromises)).filter(
                 (result): result is ProcessedDropEntry => result !== null
             );
+
+            const skippedNotice = describeSkippedEntries(
+                results.flatMap((result) => result.skippedPaths)
+            );
+            if (skippedNotice) {
+                sileo.error({
+                    title: 'Some dropped items were skipped',
+                    description: skippedNotice
+                });
+            }
+
             const uploads = buildDropUploads(results);
 
             if (uploads.length === 0) {

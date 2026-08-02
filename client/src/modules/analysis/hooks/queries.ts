@@ -1,5 +1,5 @@
 import service from '../api/service';
-import { patchPaginatedPage, removeEntityFromList } from '@/shared/query/cache-utils';
+import { removeEntityFromList } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
 import {
     buildKeys,
@@ -29,23 +29,20 @@ const BASE_KEY = 'analysis';
 
 export const KEYS = buildKeys<AnalysisQueryKeys>(BASE_KEY);
 
-const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean => {
-    return queryKey.some((entry) => entry === BASE_KEY)
-        && queryKey.some((entry) => entry === 'byTrajectory');
+// `byTrajectory` queries are keyed through `withAccessMode`, so their keys are prefixed with
+// the canvas access segments and can only be reached by matching segments, not by key prefix.
+export const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return queryKey.includes(BASE_KEY) && queryKey.includes('byTrajectory');
 };
 
-const patchAnalysisByTrajectoryQueries = (
+export const patchAnalysisByTrajectoryQueries = (
     updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
 ): void => {
     queryClient.setQueriesData<PaginatedResponse<Analysis>>(
         {
-            predicate: (query) => Array.isArray(query.queryKey)
-                && isAnalysisByTrajectoryQueryKey(query.queryKey)
+            predicate: (query) => isAnalysisByTrajectoryQueryKey(query.queryKey)
         },
-        (current) => {
-            if (!current || !Array.isArray(current.data)) return current;
-            return updater(current);
-        }
+        (current) => current ? updater(current) : current
     );
 };
 
@@ -57,9 +54,7 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
         delete: (id) => service.delete({ analysisId: id })
     },
     onRemove: (id) => {
-        const removeFromPage = (page: PaginatedResponse<Analysis>) => removeEntityFromList(page, id);
-        patchPaginatedPage<Analysis>(KEYS.byTrajectory(), removeFromPage);
-        patchAnalysisByTrajectoryQueries(removeFromPage);
+        patchAnalysisByTrajectoryQueries((page) => removeEntityFromList(page, id));
     }
 });
 

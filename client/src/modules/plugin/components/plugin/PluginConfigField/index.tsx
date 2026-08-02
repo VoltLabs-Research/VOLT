@@ -1,5 +1,4 @@
-import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import usePluginSelectors, { toPluginSelectOption } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
     getPluginReferenceValue,
     getUserConfigurableArguments
@@ -7,7 +6,7 @@ import {
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import { CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
@@ -68,65 +67,59 @@ const PluginConfigField = ({
         const allowedPluginIds = new Set(argument.pluginReferenceFilter ?? []);
         const allowedPluginKeys = new Set(argument.pluginReferenceFilterKeys ?? []);
 
+        if (allowedPluginIds.size === 0 && allowedPluginKeys.size === 0) {
+            return publishedPlugins.map(toPluginSelectOption);
+        }
+
         return publishedPlugins
             .filter((plugin) => {
-                if (plugin.status !== PluginStatus.PUBLISHED) {
-                    return false;
-                }
-
-                if (allowedPluginIds.size === 0 && allowedPluginKeys.size === 0) {
-                    return true;
-                }
-
                 const pluginKey = plugin.modifier?.key?.trim();
                 return allowedPluginIds.has(plugin._id)
                     || (pluginKey ? allowedPluginKeys.has(pluginKey) : false);
             })
-            .map((plugin) => ({
-                value: plugin._id,
-                title: plugin.modifier?.name?.trim() || plugin._id
-            }));
+            .map(toPluginSelectOption);
     }, [argument.pluginReferenceFilter, argument.pluginReferenceFilterKeys, publishedPlugins]);
 
-    const selectedPluginIds = useMemo(() => {
-        return pluginReferenceValue.selections.map((selection) => selection.pluginId);
-    }, [pluginReferenceValue.selections]);
+    const selectedPluginIds = pluginReferenceValue.selections.map((selection) => selection.pluginId);
 
     const selectionArguments = useMemo(() => {
-        return Object.fromEntries(pluginReferenceValue.selections.map((selection) => [
-            selection.pluginId,
-            getUserConfigurableArguments(getPluginArguments(selection.pluginId)).filter((definition) => {
-                const pluginKey = publishedPlugins.find((plugin) => plugin._id === selection.pluginId)?.modifier?.key?.trim() ?? '';
-                return !getMappedTargetArguments(argument, selection.pluginId, pluginKey).has(definition.argument);
-            })
-        ]));
+        return Object.fromEntries(pluginReferenceValue.selections.map((selection) => {
+            const pluginKey = publishedPlugins.find((plugin) => plugin._id === selection.pluginId)?.modifier?.key?.trim() ?? '';
+            const mappedArguments = getMappedTargetArguments(argument, selection.pluginId, pluginKey);
+
+            return [
+                selection.pluginId,
+                getUserConfigurableArguments(getPluginArguments(selection.pluginId))
+                    .filter((definition) => !mappedArguments.has(definition.argument))
+            ];
+        }));
     }, [argument, getPluginArguments, pluginReferenceValue.selections, publishedPlugins]);
 
-    const updateSelections = useCallback((nextSelections: IPluginReferenceSelection[]) => {
+    const updateSelections = (nextSelections: IPluginReferenceSelection[]) => {
         onChange(argument.argument, {
             selections: nextSelections
         });
-    }, [argument.argument, onChange]);
+    };
 
-    const handleSinglePluginChange = useCallback((nextValue: string) => {
+    const handleSinglePluginChange = (nextValue: string) => {
         const nextPluginId = nextValue.trim();
         updateSelections(nextPluginId ? [{
             pluginId: nextPluginId,
             config: {}
         }] : []);
-    }, [updateSelections]);
+    };
 
-    const handleMultiPluginChange = useCallback((nextPluginIds: string[]) => {
+    const handleMultiPluginChange = (nextPluginIds: string[]) => {
         const existingSelections = new Map(pluginReferenceValue.selections.map((selection) => [selection.pluginId, selection]));
         updateSelections(nextPluginIds.map((pluginId) => existingSelections.get(pluginId) ?? {
             pluginId,
             config: {}
         }));
-    }, [pluginReferenceValue.selections, updateSelections]);
+    };
 
-    const createConfigFieldChangeHandler = useCallback((pluginId: string) => {
+    const createConfigFieldChangeHandler = (pluginId: string) => {
         return (configKey: string, configValue: unknown) => {
-            const nextSelections = pluginReferenceValue.selections.map((selection) => {
+            updateSelections(pluginReferenceValue.selections.map((selection) => {
                 if (selection.pluginId !== pluginId) {
                     return selection;
                 }
@@ -138,11 +131,9 @@ const PluginConfigField = ({
                         [configKey]: configValue
                     }
                 };
-            });
-
-            updateSelections(nextSelections);
+            }));
         };
-    }, [pluginReferenceValue.selections, updateSelections]);
+    };
 
     return (
         <Stack gap='05'>

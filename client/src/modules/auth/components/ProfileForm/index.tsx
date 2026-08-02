@@ -18,7 +18,6 @@ interface ProfileFormProps {
 }
 
 const AUTO_SAVE_DELAY = 1000;
-const PROFILE_FORM_FIELDS: Array<keyof ProfileFormType> = ['fullName', 'email'];
 
 const ProfileForm = ({
     initialValues,
@@ -33,7 +32,6 @@ const ProfileForm = ({
     const performAutoSaveRef = useRef<() => Promise<void>>(async () => {});
     const isSavingRef = useRef(false);
     const initialValuesRef = useRef(initialValues);
-    const onUpdateRef = useRef(onUpdate);
     const [saveState, setSaveState] = useState(ProfileSaveState.Idle);
 
     const clearPendingAutoSave = useCallback(() => {
@@ -43,13 +41,10 @@ const ProfileForm = ({
         }
     }, []);
 
-    const hasProfileChanges = useCallback((values: ProfileFormType) => {
-        return PROFILE_FORM_FIELDS.some((key) => values[key] !== initialValuesRef.current[key]);
-    }, []);
-
-    useEffect(() => {
-        onUpdateRef.current = onUpdate;
-    }, [onUpdate]);
+    const hasProfileChanges = useCallback((values: ProfileFormType) => (
+        values.fullName !== initialValuesRef.current.fullName
+        || values.email !== initialValuesRef.current.email
+    ), []);
 
     useEffect(() => {
         initialValuesRef.current = initialValues;
@@ -64,14 +59,13 @@ const ProfileForm = ({
             if (!formState.isValid) return;
 
             const currentValues = getValues();
-            const hasChanged = hasProfileChanges(currentValues);
 
-            if (!hasChanged) return;
+            if (!hasProfileChanges(currentValues)) return;
 
             try {
                 isSavingRef.current = true;
                 setSaveState(ProfileSaveState.Saving);
-                await onUpdateRef.current(currentValues);
+                await onUpdate(currentValues);
                 initialValuesRef.current = currentValues;
                 setSaveState(ProfileSaveState.Saved);
             } catch {
@@ -79,8 +73,7 @@ const ProfileForm = ({
             } finally {
                 isSavingRef.current = false;
 
-                const latestValues = getValues();
-                if (hasProfileChanges(latestValues)) {
+                if (hasProfileChanges(getValues())) {
                     clearPendingAutoSave();
                     autoSaveTimerRef.current = setTimeout(() => {
                         autoSaveTimerRef.current = null;
@@ -89,25 +82,22 @@ const ProfileForm = ({
                 }
             }
         };
-    }, [clearPendingAutoSave, formState.isValid, getValues, hasProfileChanges]);
+    }, [clearPendingAutoSave, formState.isValid, getValues, hasProfileChanges, onUpdate]);
 
     useEffect(() => {
         const subscription = watch((values) => {
+            setSaveState((currentState) => currentState === ProfileSaveState.Saving ? currentState : ProfileSaveState.Idle);
+            clearPendingAutoSave();
+
             const currentValues: ProfileFormType = {
                 fullName: values.fullName ?? '',
                 email: values.email ?? ''
             };
 
             if (!hasProfileChanges(currentValues)) {
-                clearPendingAutoSave();
-                setSaveState((currentState) => currentState === ProfileSaveState.Saving ? currentState : ProfileSaveState.Idle);
-
                 return;
             }
 
-            setSaveState((currentState) => currentState === ProfileSaveState.Saving ? currentState : ProfileSaveState.Idle);
-
-            clearPendingAutoSave();
             autoSaveTimerRef.current = setTimeout(() => {
                 autoSaveTimerRef.current = null;
                 performAutoSaveRef.current();

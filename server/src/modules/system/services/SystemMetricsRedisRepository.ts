@@ -3,26 +3,8 @@ import { redis } from '@core/config/redis';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import logger from '@shared/infrastructure/logger';
 
-const readIdentityEnv = (key: string): string | null => {
-    const value = process.env[key]?.trim();
-    return value ? value : null;
-};
-
-const resolveSystemMetricsIdentity = (): string => {
-    const teamClusterId = readIdentityEnv('TEAM_CLUSTER_ID');
-    const serverId = readIdentityEnv('CLUSTER_ID') ?? os.hostname();
-
-    return teamClusterId ?? serverId;
-};
-
-type SerializedSystemMetrics = Omit<SystemMetrics, 'timestamp'> & {
-    timestamp: string;
-};
-
-const serializeSystemMetrics = (metrics: SystemMetrics): string => JSON.stringify(metrics);
-
 const deserializeSystemMetrics = (payload: string): SystemMetrics => {
-    const parsed = JSON.parse(payload) as SerializedSystemMetrics;
+    const parsed = JSON.parse(payload) as Omit<SystemMetrics, 'timestamp'> & { timestamp: string };
     return {
         ...parsed,
         timestamp: new Date(parsed.timestamp)
@@ -30,15 +12,12 @@ const deserializeSystemMetrics = (payload: string): SystemMetrics => {
 };
 
 class SystemMetricsRedisRepository {
-    private readonly metricsHistoryKey = 'metrics-history';
-    private readonly clusterId: string;
+    private readonly clusterId = process.env.TEAM_CLUSTER_ID?.trim()
+        || process.env.CLUSTER_ID?.trim()
+        || os.hostname();
 
-    constructor() {
-        this.clusterId = resolveSystemMetricsIdentity();
-    }
-
-    private getMetricsKey(clusterId: string = this.clusterId): string {
-        return `${clusterId}/${this.metricsHistoryKey}`;
+    private getMetricsKey(clusterId: string): string {
+        return `${clusterId}/metrics-history`;
     }
 
     async save(metrics: SystemMetrics): Promise<void> {
@@ -48,11 +27,11 @@ class SystemMetricsRedisRepository {
                 return;
             }
 
-            const timestamp = metrics.timestamp.getTime();
-            const metricsJson = serializeSystemMetrics(metrics);
-            const clusterId = metrics.teamClusterId ?? this.clusterId;
-
-            await redis.zadd(this.getMetricsKey(clusterId), timestamp, metricsJson);
+            await redis.zadd(
+                this.getMetricsKey(metrics.teamClusterId ?? this.clusterId),
+                metrics.timestamp.getTime(),
+                JSON.stringify(metrics)
+            );
         } catch (error: unknown) {
             logger.error(`Error saving to Redis: ${error}`);
         }
@@ -79,12 +58,9 @@ class SystemMetricsRedisRepository {
         try {
             if (!redis) return null;
 
-            const metrics = await redis.zrevrange(this.getMetricsKey(clusterId), 0, 0);
-            if (metrics.length > 0) {
-                return deserializeSystemMetrics(metrics[0]);
-            }
+            const [metrics] = await redis.zrevrange(this.getMetricsKey(clusterId), 0, 0);
 
-            return null;
+            return metrics ? deserializeSystemMetrics(metrics) : null;
         } catch (error: unknown) {
             logger.error(`Error reading cluster metrics from Redis: ${error}`);
             return null;

@@ -127,7 +127,7 @@ export const row = (
     min: base.min,
     max: base.max,
     step: base.step,
-    format: (value: number) => typeof base.decimals === 'number' ? value.toFixed(base.decimals) : String(value),
+    format: (value: number) => base.decimals !== undefined ? value.toFixed(base.decimals) : String(value),
     className: base.className,
     get,
     set
@@ -138,7 +138,7 @@ export const valueRow = (def: ValueRowDef) => ({
     min: def.min,
     max: def.max,
     step: def.step,
-    format: (value: number) => typeof def.decimals === 'number' ? value.toFixed(def.decimals) : String(value),
+    format: (value: number) => def.decimals !== undefined ? value.toFixed(def.decimals) : String(value),
     className: def.className,
     value: def.value,
     onChange: def.onChange

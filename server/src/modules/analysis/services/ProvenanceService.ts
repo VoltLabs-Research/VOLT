@@ -1,4 +1,6 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import AnalysisProvenanceEntity from '@modules/analysis/models/AnalysisProvenance';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
@@ -35,13 +37,6 @@ interface QueryProvenanceFilters{
     toDate?: Date;
     limit?: number;
     skip?: number;
-}
-
-export class ProvenanceNotFoundError extends Error{
-    constructor(){
-        super('Provenance record not found');
-        this.name = 'ProvenanceNotFoundError';
-    }
 }
 
 export class ProvenanceService{
@@ -81,13 +76,11 @@ export class ProvenanceService{
         return provenance;
     }
 
-    async getProvenance(id: string): Promise<AnalysisProvenanceEntity | null>{
-        return AnalysisProvenanceEntity.findOneBy({ id });
-    }
-
     async getRequired(id: string): Promise<AnalysisProvenanceEntity>{
-        const record = await this.getProvenance(id);
-        if(!record) throw new ProvenanceNotFoundError();
+        const record = await AnalysisProvenanceEntity.findOneBy({ id });
+        if(!record){
+            throw ApplicationError.notFound(ErrorCodes.ANALYSIS_PROVENANCE_NOT_FOUND, 'Provenance record not found');
+        }
         return record;
     }
 

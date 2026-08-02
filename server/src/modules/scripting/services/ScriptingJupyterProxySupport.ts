@@ -2,8 +2,8 @@ import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
 import type { TeamClusterServiceExposure } from '@shared/contracts/types';
 import { TeamClusterServiceExposureStatus } from '@shared/contracts/types';
+import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
-export { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;
@@ -29,7 +29,7 @@ export const findNotebookExposure = (
     runtimeNotebookId: string
 ): { exposure: TeamClusterServiceExposure; ready: boolean } | null => {
     const exposure = exposures.find(
-        (candidate) => candidate.labels?.[NOTEBOOK_ID_EXPOSURE_LABEL_KEY] === runtimeNotebookId
+        (candidate) => candidate.labels[NOTEBOOK_ID_EXPOSURE_LABEL_KEY] === runtimeNotebookId
     );
 
     if (!exposure) {
@@ -52,13 +52,9 @@ const resolveJupyterUiPath = (): string => {
     return normalizedUiPath === '/doc' ? '/lab' : normalizedUiPath;
 };
 
-const normalizeJupyterProxyTargetPath = (value: string): string => {
-    return value.startsWith('/') ? value : `/${value}`;
-};
-
 const resolveJupyterProxyTargetPath = (input: BuildJupyterProxyUrlInput): string => {
     if (input.daemonPath) {
-        return normalizeJupyterProxyTargetPath(input.daemonPath);
+        return input.daemonPath.startsWith('/') ? input.daemonPath : `/${input.daemonPath}`;
     }
 
     if (!input.notebookPath) {
@@ -106,9 +102,7 @@ const isSecureRequest = (req: Request): boolean => {
     }
 
     const forwardedProtoHeader = req.headers['x-forwarded-proto'];
-    const forwardedProto = Array.isArray(forwardedProtoHeader)
-        ? forwardedProtoHeader[0]
-        : forwardedProtoHeader;
+    const forwardedProto = Array.isArray(forwardedProtoHeader) ? forwardedProtoHeader[0] : forwardedProtoHeader;
 
     return forwardedProto?.split(',')[0]?.trim()?.toLowerCase() === 'https';
 };
@@ -116,30 +110,23 @@ const isSecureRequest = (req: Request): boolean => {
 const buildJupyterProxyAccessCookieOptions = (
     req: Request,
     teamId: string,
-    runtimeNotebookId: string,
-    maxAgeMs: number
+    runtimeNotebookId: string
 ): CookieOptions => ({
     httpOnly: true,
     sameSite: 'lax',
     secure: isSecureRequest(req),
-    maxAge: maxAgeMs,
     path: buildJupyterProxyBasePath(teamId, runtimeNotebookId)
 });
 
 export const setJupyterProxyAccessCookie = (
     req: Request,
     res: Response,
-    accessToken: string,
-    teamId: string,
-    runtimeNotebookId: string,
-    maxAgeMs: number
+    accessGrant: ScriptingJupyterAccessGrant
 ): void => {
-    res.cookie(JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, buildJupyterProxyAccessCookieOptions(
-        req,
-        teamId,
-        runtimeNotebookId,
-        maxAgeMs
-    ));
+    res.cookie(JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessGrant.token, {
+        ...buildJupyterProxyAccessCookieOptions(req, accessGrant.teamId, accessGrant.runtimeNotebookId),
+        maxAge: accessGrant.maxAgeMs
+    });
 };
 
 export const clearJupyterProxyAccessCookie = (
@@ -148,10 +135,8 @@ export const clearJupyterProxyAccessCookie = (
     teamId: string,
     runtimeNotebookId: string
 ): void => {
-    res.clearCookie(JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: isSecureRequest(req),
-        path: buildJupyterProxyBasePath(teamId, runtimeNotebookId)
-    });
+    res.clearCookie(
+        JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME,
+        buildJupyterProxyAccessCookieOptions(req, teamId, runtimeNotebookId)
+    );
 };

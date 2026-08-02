@@ -3,7 +3,12 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCallback } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import type { ComponentType } from 'react';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
+
+interface NamedEntity {
+    name: string;
+};
 
 export interface ActionConfig<T = unknown> {
     label?: string;
@@ -37,16 +42,7 @@ const capitalize = (str: string): string => {
 };
 
 const getItemId = (item: unknown): string | undefined => {
-    if (typeof item !== 'object' || item === null || !('_id' in item)) {
-        return undefined;
-    }
-
-    const itemId = item._id;
-    if (typeof itemId !== 'string' || itemId.length === 0) {
-        return undefined;
-    }
-
-    return itemId;
+    return (item as Partial<Identifiable>)._id;
 };
 
 const getActionIcon = <T,>(actionKey: string, actionConfig: ActionConfig<T>): ComponentType<MenuIconProps> | null => {
@@ -77,17 +73,7 @@ const getActionTargets = <T,>(item: T, selectedItems: T[], scope: 'item' | 'sele
 };
 
 const getConfirmItemName = (item: unknown): string => {
-    if (
-        typeof item === 'object'
-        && item !== null
-        && 'name' in item
-        && typeof item.name === 'string'
-        && item.name.length > 0
-    ) {
-        return item.name;
-    }
-
-    return 'this item';
+    return (item as Partial<NamedEntity>).name || 'this item';
 };
 
 const shouldConfirm = async <T,>(actionConfig: ActionConfig<T>, item: T, selectedItems: T[]): Promise<boolean> => {

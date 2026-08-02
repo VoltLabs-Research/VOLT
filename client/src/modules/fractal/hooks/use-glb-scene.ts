@@ -20,12 +20,10 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         position: params.position,
         rotation: params.rotation,
         scale: params.scale,
-        updateThrottle: params.updateThrottle,
         disableAutoTransform: params.disableAutoTransform,
         useFixedReference: params.useFixedReference,
         onEmptyData: params.onEmptyData,
         sceneKey: params.sceneKey,
-        boxBounds: params.boxBounds,
         pointCloudSettings: params.pointCloudSettings,
         lineSettings: params.lineSettings,
         lineHighlight: params.lineHighlight
@@ -249,7 +247,6 @@ export default function useGlbScene(
         loadError: loadingState.error,
         deselect: interaction.deselect,
         setSelectedObject: interaction.setSelectedObject,
-        onHoverChange: interaction.onHoverChange,
-        engineRef
+        onHoverChange: interaction.onHoverChange
     };
 }

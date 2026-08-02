@@ -114,7 +114,7 @@ const getRasterizationJobStatusCounts = (
 ): RasterizationJobStatusCounts => {
     let pending = 0;
 
-    for (const group of groups ?? []) {
+    for (const group of groups) {
         if (group.trajectoryId !== trajectoryId) {
             continue;
         }

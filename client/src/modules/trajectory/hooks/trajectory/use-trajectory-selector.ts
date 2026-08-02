@@ -3,7 +3,6 @@ import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { SelectOption } from '@voltstack/bravais';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface UseTrajectorySelectorOptions {
@@ -31,20 +30,10 @@ export default function useTrajectorySelector(options: UseTrajectorySelectorOpti
         hasNextPage,
         fetchNextPage,
         error
-    } = useTrajectoriesInfiniteQuery(
-        {
-            page: 1,
-            limit: DEFAULT_LIMIT
-        },
-        {
-            getNextPageParam: (lastPage: PaginatedResponse<Trajectory>) => {
-                if (lastPage.pagination.hasMore) {
-                    return lastPage.pagination.page + 1;
-                }
-                return undefined;
-            }
-        }
-    );
+    } = useTrajectoriesInfiniteQuery({
+        page: 1,
+        limit: DEFAULT_LIMIT
+    });
 
     useEffect(() => {
         if (error && !checkAccessDeniedError(error)) {

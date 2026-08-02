@@ -1,11 +1,10 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
 import StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
 import {
-    DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps,
     toStoragePlacementLike,
     StoragePlacementScopeType as StoragePlacementScopeTypeColumn,
@@ -19,6 +18,7 @@ import Plugin from '@modules/plugin/models/Plugin';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { isUniqueViolation } from '@shared/infrastructure/persistence/unique-violation';
 import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType,
@@ -27,36 +27,10 @@ import type {
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import { In } from 'typeorm';
 
-const dedupeBucketRefs = (bucketRefs: StoragePlacementBucketRef[]): StoragePlacementBucketRef[] => {
-    const deduped = new Map<string, StoragePlacementBucketRef>();
-
-    for(const bucketRef of bucketRefs){
-        const key = `${bucketRef.bucket}:${bucketRef.prefix}`;
-        if(!deduped.has(key)){
-            deduped.set(key, bucketRef);
-        }
-    }
-
-    return [...deduped.values()];
-};
-
-const buildTrajectoryPlacementBuckets = (trajectoryId: string): StoragePlacementBucketRef[] => {
-    return dedupeBucketRefs(getTrajectoryStorageCleanupTargets(trajectoryId));
-};
-
-const buildAnalysisPlacementBuckets = (
-    trajectoryId: string,
-    analysisId: string
-): StoragePlacementBucketRef[] => {
-    return dedupeBucketRefs(getAnalysisStorageCleanupTargets(trajectoryId, analysisId));
-};
-
-const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => {
-    return [{
-        bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
-        prefix: `plugin-binaries/${pluginId}/`
-    }];
-};
+const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => [{
+    bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+    prefix: `plugin-binaries/${pluginId}/`
+}];
 
 interface ResolvedPlacementDefinition{
     team: string;
@@ -71,22 +45,6 @@ class StoragePlacementService implements IStoragePlacementService{
         scopeType: StoragePlacementScopeType,
         scopeId: string
     ): Promise<StoragePlacement | null>{
-        return this.findPlacementByScope(scopeType, scopeId);
-    }
-
-    async ensurePlacement(
-        scopeType: StoragePlacementScopeType,
-        scopeId: string
-    ): Promise<StoragePlacement>{
-        const existingPlacement = await this.findPlacementByScope(scopeType, scopeId);
-        const resolved = await this.resolvePlacementDefinition(scopeType, scopeId);
-        return this.persistResolvedPlacement(scopeType, scopeId, existingPlacement, resolved);
-    }
-
-    private async findPlacementByScope(
-        scopeType: StoragePlacementScopeType,
-        scopeId: string
-    ): Promise<StoragePlacement | null>{
         const entity = await StoragePlacementEntity.findOneBy({
             scopeType: scopeType as StoragePlacementScopeTypeColumn,
             scopeId
@@ -95,6 +53,20 @@ class StoragePlacementService implements IStoragePlacementService{
         return entity ? toStoragePlacementLike(entity) : null;
     }
 
+    async ensurePlacement(
+        scopeType: StoragePlacementScopeType,
+        scopeId: string
+    ): Promise<StoragePlacement>{
+        return this.persistResolvedPlacement(
+            scopeType,
+            scopeId,
+            await this.findByScope(scopeType, scopeId),
+            await this.resolvePlacementDefinition(scopeType, scopeId)
+        );
+    }
+
+    /* Whitelist rather than a blind spread: createdAt/updatedAt are owned by the
+       entity, so props must never patch them. */
     private toEntityPatch(data: Partial<StoragePlacementProps>): Partial<StoragePlacementEntity>{
         const patch: Partial<StoragePlacementEntity> = {};
 
@@ -112,52 +84,64 @@ class StoragePlacementService implements IStoragePlacementService{
         return patch;
     }
 
+    /**
+     * Reads the current row and writes the merged patch. `findOneBy` followed by an
+     * insert is not atomic, so a concurrent caller can win the race between them:
+     * the unique index on (scopeType, scopeId) is what actually enforces
+     * uniqueness, and losing that race means the row now exists and has to be
+     * patched instead. Plugin-binary placements share a scopeId across every
+     * concurrent execution of the plugin, so this collides routinely.
+     */
     private async upsertPlacementByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         data: Partial<StoragePlacementProps>
     ): Promise<StoragePlacement>{
         const patch = this.toEntityPatch(data);
-        const existing = await StoragePlacementEntity.findOneBy({
+        const scopeKey = {
             scopeType: scopeType as StoragePlacementScopeTypeColumn,
             scopeId
-        });
+        };
 
+        const existing = await StoragePlacementEntity.findOneBy(scopeKey);
         if(existing){
             return toStoragePlacementLike(await Object.assign(existing, patch).save());
         }
 
-        const created = await StoragePlacementEntity.create({
-            ...patch,
-            scopeType: scopeType as StoragePlacementScopeTypeColumn,
-            scopeId
-        }).save();
+        try{
+            return toStoragePlacementLike(await StoragePlacementEntity.create({
+                ...patch,
+                ...scopeKey
+            }).save());
+        }catch(error: unknown){
+            if(!isUniqueViolation(error)) throw error;
 
-        return toStoragePlacementLike(created);
+            const winner = await StoragePlacementEntity.findOneBy(scopeKey);
+            if(!winner) throw error;
+
+            return toStoragePlacementLike(await Object.assign(winner, patch).save());
+        }
     }
 
+    /**
+     * Refreshes the bucket list from the current cleanup prefixes while leaving
+     * every ownership field of an existing placement untouched.
+     */
     private async persistResolvedPlacement(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         existingPlacement: StoragePlacement | null,
         resolved: ResolvedPlacementDefinition
     ): Promise<StoragePlacement>{
-        const nextPlacementProps = createStoragePlacementProps({
+        return this.upsertPlacementByScope(scopeType, scopeId, createStoragePlacementProps({
+            ...existingPlacement?.props,
             team: existingPlacement?.props.team ?? resolved.team,
             scopeType,
             scopeId,
             primaryClusterId: existingPlacement?.props.primaryClusterId ?? resolved.primaryClusterId,
-            replicaClusterIds: existingPlacement?.props.replicaClusterIds ?? [],
             buckets: resolved.buckets,
-            state: existingPlacement?.props.state ?? DEFAULT_STORAGE_PLACEMENT_STATE,
-            lastVerifiedAt: existingPlacement?.props.lastVerifiedAt ?? null,
-            bytesUsed: existingPlacement?.props.bytesUsed ?? null,
-            lastAccessedAt: existingPlacement?.props.lastAccessedAt ?? null,
-            createdAt: existingPlacement?.props.createdAt,
             updatedAt: new Date()
-        });
-
-        return this.upsertPlacementByScope(scopeType, scopeId, nextPlacementProps);
+        }));
     }
 
     async assignPluginBinaryPlacement(
@@ -189,15 +173,13 @@ class StoragePlacementService implements IStoragePlacementService{
     ): Promise<StoragePlacement>{
         const placement = await this.ensurePlacement(scopeType, scopeId);
 
-        return this.upsertPlacementByScope(scopeType, scopeId, {
-            ...placement.props,
+        return this.applyPlacementPatch(placement, {
             primaryClusterId,
             replicaClusterIds: options.replicaClusterIds ?? placement.props.replicaClusterIds,
             state: options.state ?? placement.props.state,
             lastVerifiedAt: options.lastVerifiedAt ?? placement.props.lastVerifiedAt,
             bytesUsed: options.bytesUsed ?? placement.props.bytesUsed,
-            lastAccessedAt: options.lastAccessedAt ?? placement.props.lastAccessedAt,
-            updatedAt: new Date()
+            lastAccessedAt: options.lastAccessedAt ?? placement.props.lastAccessedAt
         });
     }
 
@@ -206,11 +188,16 @@ class StoragePlacementService implements IStoragePlacementService{
         scopeId: string,
         state: StoragePlacementState
     ): Promise<StoragePlacement>{
-        const placement = await this.ensurePlacement(scopeType, scopeId);
+        return this.applyPlacementPatch(await this.ensurePlacement(scopeType, scopeId), { state });
+    }
 
-        return this.upsertPlacementByScope(scopeType, scopeId, {
+    private async applyPlacementPatch(
+        placement: StoragePlacement,
+        patch: Partial<StoragePlacementProps>
+    ): Promise<StoragePlacement>{
+        return this.upsertPlacementByScope(placement.props.scopeType, placement.props.scopeId, {
             ...placement.props,
-            state,
+            ...patch,
             updatedAt: new Date()
         });
     }
@@ -231,7 +218,7 @@ class StoragePlacementService implements IStoragePlacementService{
                 Analysis.update({ trajectory: scopeId }, { storageClusterId }),
                 SceneArtifact.update({ trajectory: scopeId }, { storageClusterId })
             ]);
-            await this.synchronizeAnalysisPlacementsForTrajectory(scopeId, analyses, storageClusterId);
+            await this.synchronizeAnalysisPlacements(analyses, storageClusterId);
             return;
         }
 
@@ -240,7 +227,6 @@ class StoragePlacementService implements IStoragePlacementService{
                 Analysis.update({ id: scopeId }, { storageClusterId }),
                 SceneArtifact.update({ analysis: scopeId }, { storageClusterId })
             ]);
-            return;
         }
     }
 
@@ -256,10 +242,11 @@ class StoragePlacementService implements IStoragePlacementService{
         return entities.map(toStoragePlacementLike);
     }
 
+    /**
+     * A trajectory transfer already carries its analyses, so an analysis only
+     * needs its own placement when its trajectory is not moving with it.
+     */
     async resolveTransferPlacementsForCluster(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]>{
-        const plannedPlacements = new Map<string, StoragePlacement>();
-        const trajectoryTransferIds = new Set<string>();
-
         const trajectories = await Trajectory.find({
             where: {
                 team: teamId,
@@ -267,27 +254,13 @@ class StoragePlacementService implements IStoragePlacementService{
             },
             order: { createdAt: 'ASC' }
         });
-
-        const trajectoryPlacements = await this.loadPlacementsByScope(
+        const trajectoryPlacements = await this.collectOwnedPlacements(
             'trajectory',
-            trajectories.map((trajectory) => trajectory.id)
+            trajectories,
+            primaryClusterId,
+            (trajectory) => this.resolveTrajectoryPlacementDefinition(trajectory)
         );
-
-        for(const trajectory of trajectories){
-            const trajectoryId = trajectory.id;
-            const placement = await this.persistResolvedPlacement(
-                'trajectory',
-                trajectoryId,
-                trajectoryPlacements.get(trajectoryId) ?? null,
-                this.resolveTrajectoryPlacementDefinition(trajectory)
-            );
-            if(placement.props.primaryClusterId !== primaryClusterId){
-                continue;
-            }
-
-            plannedPlacements.set(this.buildPlacementKey(placement.props.scopeType, placement.props.scopeId), placement);
-            trajectoryTransferIds.add(trajectoryId);
-        }
+        const movingTrajectoryIds = new Set(trajectoryPlacements.map((placement) => placement.props.scopeId));
 
         const analyses = await Analysis.find({
             where: {
@@ -296,32 +269,39 @@ class StoragePlacementService implements IStoragePlacementService{
             },
             order: { createdAt: 'ASC' }
         });
-
-        const candidateAnalyses = analyses.filter(
-            (analysis) => !trajectoryTransferIds.has(analysis.trajectory)
-        );
-
-        const analysisPlacements = await this.loadPlacementsByScope(
+        const analysisPlacements = await this.collectOwnedPlacements(
             'analysis',
-            candidateAnalyses.map((analysis) => analysis.id)
+            analyses.filter((analysis) => !movingTrajectoryIds.has(analysis.trajectory)),
+            primaryClusterId,
+            (analysis) => this.resolveAnalysisPlacementDefinition(analysis)
         );
 
-        for(const analysis of candidateAnalyses){
-            const analysisId = analysis.id;
-            const placement = await this.persistResolvedPlacement(
-                'analysis',
-                analysisId,
-                analysisPlacements.get(analysisId) ?? null,
-                this.resolveAnalysisPlacementDefinition(analysis)
-            );
-            if(placement.props.primaryClusterId !== primaryClusterId){
-                continue;
-            }
+        return [...trajectoryPlacements, ...analysisPlacements];
+    }
 
-            plannedPlacements.set(this.buildPlacementKey(placement.props.scopeType, placement.props.scopeId), placement);
+    /** Keeps only the scopes the cluster still owns after their placement is refreshed. */
+    private async collectOwnedPlacements<TScope extends { id: string; }>(
+        scopeType: StoragePlacementScopeType,
+        scopes: TScope[],
+        primaryClusterId: string,
+        resolveDefinition: (scope: TScope) => ResolvedPlacementDefinition
+    ): Promise<StoragePlacement[]>{
+        const existingPlacements = await this.loadPlacementsByScope(scopeType, scopes.map((scope) => scope.id));
+        const ownedPlacements: StoragePlacement[] = [];
+
+        for(const scope of scopes){
+            const placement = await this.persistResolvedPlacement(
+                scopeType,
+                scope.id,
+                existingPlacements.get(scope.id) ?? null,
+                resolveDefinition(scope)
+            );
+            if(placement.props.primaryClusterId === primaryClusterId){
+                ownedPlacements.push(placement);
+            }
         }
 
-        return [...plannedPlacements.values()];
+        return ownedPlacements;
     }
 
     private async loadPlacementsByScope(
@@ -336,9 +316,11 @@ class StoragePlacementService implements IStoragePlacementService{
             scopeType: scopeType as StoragePlacementScopeTypeColumn,
             scopeId: In(scopeIds)
         });
-        const placements = entities.map(toStoragePlacementLike);
 
-        return new Map(placements.map((placement) => [placement.props.scopeId, placement]));
+        return new Map(entities.map((entity) => {
+            const placement = toStoragePlacementLike(entity);
+            return [placement.props.scopeId, placement];
+        }));
     }
 
     private async resolvePlacementDefinition(
@@ -348,7 +330,7 @@ class StoragePlacementService implements IStoragePlacementService{
         if(scopeType === 'trajectory'){
             const trajectory = await Trajectory.findOneBy({ id: scopeId });
             if(!trajectory){
-                throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found for storage placement');
+                throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found for storage placement');
             }
 
             return this.resolveTrajectoryPlacementDefinition(trajectory);
@@ -357,7 +339,7 @@ class StoragePlacementService implements IStoragePlacementService{
         if(scopeType === 'analysis'){
             const analysis = await Analysis.findOneBy({ id: scopeId });
             if(!analysis){
-                throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
+                throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found for storage placement');
             }
 
             return this.resolveAnalysisPlacementDefinition(analysis);
@@ -371,15 +353,12 @@ class StoragePlacementService implements IStoragePlacementService{
             }
         });
         if(!plugin){
-            throw ApplicationError.notFound('Plugin::NotFound', 'Plugin not found for storage placement');
+            throw ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, 'Plugin not found for storage placement');
         }
 
-        const pluginTeamId = plugin.team;
-        const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(pluginTeamId);
-
         return {
-            team: pluginTeamId,
-            primaryClusterId: storageClusterId,
+            team: plugin.team,
+            primaryClusterId: await this.teamClusterSelectionService.resolveStorageClusterId(plugin.team),
             buckets: buildPluginBinaryPlacementBuckets(scopeId)
         };
     }
@@ -388,7 +367,7 @@ class StoragePlacementService implements IStoragePlacementService{
         const storageClusterId = trajectory.storageClusterId;
         if(!storageClusterId){
             throw ApplicationError.conflict(
-                'StoragePlacement::TrajectoryStorageClusterRequired',
+                ErrorCodes.STORAGE_PLACEMENT_TRAJECTORY_STORAGE_CLUSTER_REQUIRED,
                 'Trajectory storage cluster is required before creating a storage placement'
             );
         }
@@ -396,15 +375,15 @@ class StoragePlacementService implements IStoragePlacementService{
         return {
             team: trajectory.team,
             primaryClusterId: storageClusterId,
-            buckets: buildTrajectoryPlacementBuckets(trajectory.id)
+            buckets: getTrajectoryStorageCleanupTargets(trajectory.id)
         };
     }
 
     private resolveAnalysisPlacementDefinition(analysis: Analysis): ResolvedPlacementDefinition{
-        const storageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined });
+        const storageClusterId = analysis.storageClusterId;
         if(!storageClusterId){
             throw ApplicationError.conflict(
-                'StoragePlacement::AnalysisStorageClusterRequired',
+                ErrorCodes.STORAGE_PLACEMENT_ANALYSIS_STORAGE_CLUSTER_REQUIRED,
                 'Analysis storage cluster is required before creating a storage placement'
             );
         }
@@ -412,41 +391,36 @@ class StoragePlacementService implements IStoragePlacementService{
         return {
             team: analysis.team,
             primaryClusterId: storageClusterId,
-            buckets: buildAnalysisPlacementBuckets(analysis.trajectory, analysis.id)
+            buckets: getAnalysisStorageCleanupTargets(analysis.trajectory, analysis.id)
         };
     }
 
-    private async synchronizeAnalysisPlacementsForTrajectory(
-        trajectoryId: string,
+    /**
+     * Analyses follow their trajectory's storage owner, and the previous owner is
+     * dropped from the replica set because it no longer holds a usable copy.
+     */
+    private async synchronizeAnalysisPlacements(
         analyses: Analysis[],
         storageClusterId: string
     ): Promise<void>{
         for(const analysis of analyses){
-            const analysisId = analysis.id;
-            const existingPlacement = await this.findPlacementByScope('analysis', analysisId);
-            const existingPrimaryClusterId = existingPlacement?.props.primaryClusterId;
+            const existingPlacement = await this.findByScope('analysis', analysis.id);
+            const staleClusterIds = new Set([storageClusterId, existingPlacement?.props.primaryClusterId]);
 
-            await this.upsertPlacementByScope('analysis', analysisId, createStoragePlacementProps({
+            await this.upsertPlacementByScope('analysis', analysis.id, createStoragePlacementProps({
+                ...existingPlacement?.props,
                 team: analysis.team,
                 scopeType: 'analysis',
-                scopeId: analysisId,
+                scopeId: analysis.id,
                 primaryClusterId: storageClusterId,
-                replicaClusterIds: existingPlacement?.props.replicaClusterIds.filter((clusterId) => {
-                    return clusterId !== storageClusterId && clusterId !== existingPrimaryClusterId;
-                }) ?? [],
-                buckets: buildAnalysisPlacementBuckets(trajectoryId, analysisId),
+                replicaClusterIds: existingPlacement?.props.replicaClusterIds.filter(
+                    (clusterId) => !staleClusterIds.has(clusterId)
+                ) ?? [],
+                buckets: getAnalysisStorageCleanupTargets(analysis.trajectory, analysis.id),
                 state: 'active',
-                lastVerifiedAt: existingPlacement?.props.lastVerifiedAt ?? null,
-                bytesUsed: existingPlacement?.props.bytesUsed ?? null,
-                lastAccessedAt: existingPlacement?.props.lastAccessedAt ?? null,
-                createdAt: existingPlacement?.props.createdAt,
                 updatedAt: new Date()
             }));
         }
-    }
-
-    private buildPlacementKey(scopeType: StoragePlacementScopeType, scopeId: string): string{
-        return `${scopeType}:${scopeId}`;
     }
 }
 

@@ -54,12 +54,11 @@ const SignInTemplate = () => {
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
     const signUp = useSignUpMutation();
-    const oauthProvidersQuery = useOAuthProvidersQuery();
-    const availableProviders = oauthProvidersQuery.data?.providers ?? [];
+    const availableProviders = useOAuthProvidersQuery().data?.providers ?? [];
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { control, getValues, trigger, formState } = useForm<SignInForm>({
+    const { control, getValues, trigger } = useForm<SignInForm>({
         defaultValues: {
             email: '',
             fullName: '',
@@ -70,27 +69,20 @@ const SignInTemplate = () => {
     });
 
     const getNextDestination = (): string => {
-        const params = new URLSearchParams(window.location.search);
-        const queryNext = params.get('next');
-
         return resolvePostAuthDestination({
-            queryNext
+            queryNext: new URLSearchParams(window.location.search).get('next')
         });
     };
 
     const handleOAuthRedirect = (provider: OAuthProviderId) => {
-        const next = getNextDestination();
         const callbackUrl = new URL(buildBackendUrl(`/api/auth/${provider}`));
-        callbackUrl.searchParams.set('next', next);
+        callbackUrl.searchParams.set('next', getNextDestination());
         window.location.href = callbackUrl.toString();
     };
 
     const finalizeAuth = () => {
-        const next = getNextDestination();
-        const redirectPath = getPostAuthRedirectPath(next);
-
         clearPostAuthDestination();
-        navigate(redirectPath);
+        navigate(getPostAuthRedirectPath(getNextDestination()));
     };
 
     const handleEmailStep = async () => {
@@ -172,8 +164,7 @@ const SignInTemplate = () => {
                 email: values.email,
                 firstName,
                 lastName,
-                password: values.password,
-                passwordConfirm: values.passwordConfirm
+                password: values.password
             });
             sileo.success({
                 title: 'Account created',
@@ -209,47 +200,42 @@ const SignInTemplate = () => {
     };
 
     const { title, subtitle } = stepTitles[step];
-    const canChangeServer = !isEndpointPinnedByEnv();
 
     const goBack = () => {
         goTo(SignInStep.Email);
     };
 
-    const steps = [{
+    const signInSteps = [{
         key: SignInStep.Email,
         content: (
             <EmailStep
                 control={control}
-                isLoading={isSubmitting || formState.isSubmitting}
+                isLoading={isSubmitting}
                 onSubmit={handleSubmit}
                 onOAuth={handleOAuthRedirect}
                 availableProviders={availableProviders} />
-            )
-    }, {
-        key: SignInStep.Password,
-        content: (
-            <PasswordStep
-                email={getValues('email')}
-                control={control}
-                isLoading={isSubmitting || formState.isSubmitting}
-                onSubmit={handleSubmit}
-                onBack={goBack} />
         )
-    }, {
+    }, step === SignInStep.Register ? {
         key: SignInStep.Register,
         content: (
             <RegisterStep
                 email={getValues('email')}
                 control={control}
-                isLoading={isSubmitting || formState.isSubmitting}
+                isLoading={isSubmitting}
                 onSubmit={handleSubmit}
                 onBack={goBack} />
-            )
+        )
+    } : {
+        key: SignInStep.Password,
+        content: (
+            <PasswordStep
+                email={getValues('email')}
+                control={control}
+                isLoading={isSubmitting}
+                onSubmit={handleSubmit}
+                onBack={goBack} />
+        )
     }];
-
-    const signInSteps = step === SignInStep.Register
-        ? [steps[0], steps[2]]
-        : [steps[0], steps[1]];
 
     return (
         <main className='sign-in-page screen-vh'>
@@ -270,7 +256,7 @@ const SignInTemplate = () => {
                         <Text as='span' className='sign-in-legal-text'>Privacy Policy</Text>.
                     </Text>
 
-                    {canChangeServer && (
+                    {!isEndpointPinnedByEnv() && (
                         <Button
                             variant='ghost'
                             intent='neutral'

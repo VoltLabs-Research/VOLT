@@ -119,7 +119,7 @@ export function userColumn<TRow = unknown>(
 
             const user = resolvePopulatedUser((row as Record<string, unknown>)[key]);
             return (
-                <PopulatedCellPopover document={user as Record<string, unknown> | null} modelName='User'>
+                <PopulatedCellPopover document={user} modelName='User'>
                     <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>
                 </PopulatedCellPopover>
             );

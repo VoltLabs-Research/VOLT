@@ -5,9 +5,13 @@ import {
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 type ArgumentValueMap = Record<string, unknown>;
-type VisibilityComparableValue = string | number | boolean;
 
-const getConditionValues = (condition: ArgumentVisibilityCondition): VisibilityComparableValue[] => {
+/**
+ * Widened to `unknown[]` on purpose: the value being compared comes out of an
+ * untyped config bag, so keeping the condition list at `unknown` lets
+ * `includes`/`===` accept it without a cast at every comparison.
+ */
+const getConditionValues = (condition: ArgumentVisibilityCondition): unknown[] => {
     return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
 };
 
@@ -48,18 +52,18 @@ const matchesVisibilityCondition = (
 
     if (condition.operator === 'in') {
         if (Array.isArray(currentValue)) {
-            return currentValue.some((entry) => comparisonValues.includes(entry as VisibilityComparableValue));
+            return currentValue.some((entry) => comparisonValues.includes(entry));
         }
 
-        return comparisonValues.includes(currentValue as VisibilityComparableValue);
+        return comparisonValues.includes(currentValue);
     }
 
     if (condition.operator === 'notIn') {
         if (Array.isArray(currentValue)) {
-            return currentValue.every((entry) => !comparisonValues.includes(entry as VisibilityComparableValue));
+            return currentValue.every((entry) => !comparisonValues.includes(entry));
         }
 
-        return !comparisonValues.includes(currentValue as VisibilityComparableValue);
+        return !comparisonValues.includes(currentValue);
     }
 
     return true;
@@ -103,7 +107,7 @@ export const sanitizeVisibleArgumentConfig = (
             continue;
         }
 
-        if (definition.type === ArgumentType.List && Array.isArray(value)) {
+        if (definition.type === ArgumentType.LIST && Array.isArray(value)) {
             sanitizedValues[definition.argument] = value.map((entry) => {
                 return sanitizeVisibleArgumentConfig(definition.listArguments ?? [], entry as ArgumentValueMap);
             });

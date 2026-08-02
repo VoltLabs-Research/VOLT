@@ -1,158 +1,52 @@
-import {
-    AlertCircle,
-    Atom,
-    ChevronDown,
-    ChevronRight,
-    Clock3,
-    Download,
-    LoaderCircle,
-    MousePointerClick,
-    Trash2,
-    UploadCloud
-} from 'lucide-react';
-import {
-    DEFAULT_LINE_WIDTH,
-    buildPluginScene,
-    buildSceneRenderMetadata,
-    isRenderableSceneExport,
-    isRenderableSceneExporter
-} from '../../utils/plugin-exposure-export';
-import { isSameScene } from '@/modules/canvas/utils/scene-identity';
-import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
-import { Exporter } from '@volt/contracts/modules/plugin/enums';
+import { ChevronDown, ChevronRight, Download, MousePointerClick, Trash2 } from 'lucide-react';
 import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
-    CanvasTreeRow,
     CanvasTreeSkeletonRows,
     MaybeContextMenu
 } from '../CanvasTree';
-import {
-    buildAddRemoveOption,
-    buildLineWidthSubmenu,
-    buildColorSubmenu,
-    buildTransparencySubmenu,
-    colorOption,
-    lineSettingsOption,
-    transparencyOption
-} from '../../utils/tree-menus';
 import { Box, Button, Tooltip } from '@voltstack/bravais';
-import ExecutionConfigSummary from './ExecutionConfigSummary';
-import { ANALYSIS_EXECUTION_METADATA_KEY } from '../../utils/selected-timestep-analysis';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { buildArtifactRows } from './artifact-rows';
+import { hasPluginWorkflowNodes } from './config-columns';
+import { toInlineConfigSummary } from './config-values';
+import ExecutionConfigSummary from './ExecutionConfigSummary';
+import ExposureRow from './ExposureRow';
+import PendingArtifactRow from './PendingArtifactRow';
+import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
 
+import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
-import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
-import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
-import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
-import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { MenuOption } from '@/shared/contracts/menu';
+import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
+import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
+import type { SceneRowActions } from './ExposureRow';
 
-interface AnalysisTreeNodeProps {
+interface AnalysisTreeNodeProps extends SceneRowActions {
     section: AnalysisSectionData;
     status?: CanvasAnalysisStatus;
     tone?: AnalysisActivityTone;
     isExpanded: boolean;
     onToggle: (id: string) => void;
-    onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
-    isSceneActive: (scene: SceneObjectType) => boolean;
-    onAddScene: (scene: SceneObjectType) => void;
-    onRemoveScene: (scene: SceneObjectType) => void;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
     onDownloadAnalysis: (analysisId: string) => void | Promise<void>;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
     onRetryLoadExposures?: (analysisId: string) => void;
-    sceneVisualOverrides: SceneVisualOverrides;
-    setSceneOpacity: (sceneKey: string, opacity: number) => void;
-    setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
-    setSceneColor: (sceneKey: string, color: string | undefined) => void;
-    resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
     plugin?: Plugin;
     pluginsById?: Record<string, Plugin>;
     selectionMode?: 'default' | 'raster';
-    selectedScene?: RasterSelectableScene | null;
-    onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
     tourTargetId?: string;
     firstExposureTourTargetId?: string;
 }
 
-const SCENE_ICON_COLOR = 'var(--accent-blue)';
-const READY_ARTIFACT_HIGHLIGHT_MS = 1400;
-
-const getArtifactIcon = (artifact: AnalysisExpectedArtifact) => {
-    if (artifact.status === 'failed') return <AlertCircle style={{
-        width: 12,
-        height: 12
-    }} />;
-    if (artifact.status === 'ready') return <Atom style={{
-        width: 12,
-        height: 12,
-        color: SCENE_ICON_COLOR
-    }} />;
-    if (artifact.status === 'uploading') return <UploadCloud style={{
-        width: 12,
-        height: 12
-    }} />;
-    if (artifact.status === 'generating') return <LoaderCircle style={{
-        width: 12,
-        height: 12
-    }} />;
-    return <Clock3 style={{
-        width: 12,
-        height: 12
-    }} />;
+const TRAJECTORY_SCENE: SceneObjectType = {
+    sceneType: 'trajectory',
+    source: 'default'
 };
 
-const buildArtifactRows = (
-    expectedArtifacts: AnalysisExpectedArtifact[] | undefined,
-    exposures: RenderableExposure[]
-): Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> => {
-    const renderableExpectedArtifacts = (expectedArtifacts ?? [])
-        .filter((artifact) => isRenderableSceneExporter(artifact.exporter));
-    const renderableExposures = exposures
-        .filter((exposure) => isRenderableSceneExport(exposure.export));
-    const exposureById = new Map(renderableExposures.map((exposure) => [exposure.exposureId, exposure]));
-    const rows: Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> = renderableExpectedArtifacts.map((artifact) => ({
-        key: artifact.exposureId,
-        artifact,
-        exposure: exposureById.get(artifact.exposureId)
-    }));
-    const expectedIds = new Set(renderableExpectedArtifacts.map((artifact) => artifact.exposureId));
-    for (const exposure of renderableExposures) {
-        if (!expectedIds.has(exposure.exposureId)) {
-            rows.push({
-                key: exposure.exposureId,
-                artifact: undefined,
-                exposure
-            });
-        }
-    }
-    return rows;
-};
-
-const buildArtifactNameClassName = (
-    artifact: AnalysisExpectedArtifact | undefined,
-    isRecentlyReady: boolean
-): string => {
-    const classes = ['canvas-tree-artifact-label'];
-
-    if (isRecentlyReady) {
-        classes.push('canvas-tree-artifact-label--ready-recent');
-    } else if (artifact && artifact.status !== 'ready') {
-        classes.push(`canvas-tree-artifact-label--${artifact.status}`);
-    }
-
-    return classes.join(' ');
+const CHEVRON_STYLE = {
+    width: 13,
+    height: 13
 };
 
 const AnalysisTreeNode = ({
@@ -161,185 +55,66 @@ const AnalysisTreeNode = ({
     tone,
     isExpanded,
     onToggle,
-    onSelectScene,
-    isSceneActive,
-    onAddScene,
-    onRemoveScene,
     onDeleteAnalysis,
     onDownloadAnalysis,
-    onDownloadExposureListing,
     onRetryLoadExposures,
-    sceneVisualOverrides,
-    setSceneOpacity,
-    setSceneLineWidth,
-    setSceneColor,
-    resolveSceneRenderMetadata,
     plugin,
     pluginsById,
     selectionMode = 'default',
-    selectedScene,
-    onSelectRasterScene,
     tourTargetId,
-    firstExposureTourTargetId
+    firstExposureTourTargetId,
+    ...sceneActions
 }: AnalysisTreeNodeProps) => {
-    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
+    const { analysis, entry, isCurrentAnalysis } = section;
+    const { onSelectScene, selectedScene } = sceneActions;
     const isRasterSelectionMode = selectionMode === 'raster';
-    const expectedArtifacts = analysis.expectedArtifacts ?? [];
-    const artifactRows = buildArtifactRows(expectedArtifacts, entry.exposures);
-    const hasArtifactRows = artifactRows.length > 0;
+    const artifactRows = buildArtifactRows(analysis.expectedArtifacts, entry.exposures);
     const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
-    const [recentReadyArtifactIds, setRecentReadyArtifactIds] = useState<Set<string>>(() => new Set());
-    const previousArtifactStatusesRef = useRef<Map<string, AnalysisExpectedArtifact['status']>>(new Map());
-    const readyArtifactTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-    const fallbackStatus = normalizeCanvasAnalysisStatus(analysis.status);
-    const resolvedStatus = status ?? fallbackStatus;
+    const recentlyReadyArtifactIds = useRecentlyReadyArtifacts(analysis.expectedArtifacts);
+    const resolvedStatus = status ?? normalizeCanvasAnalysisStatus(analysis.status);
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
-    const canDownloadAnalysis = resolvedStatus === CanvasAnalysisStatusEnum.Completed;
     const isSelectedAnalysis = isRasterSelectionMode
-        ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
+        ? selectedScene?.source === 'plugin' && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;
 
-    const hasConfig = useMemo(() => Object.keys(userConfig ?? {}).length > 0, [userConfig]);
-    const hasWorkflowPluginNodes = useMemo(() => {
-        return plugin?.workflow?.nodes?.some((node) => node.type === 'plugin-node' || Boolean(node.data.pluginNode)) ?? false;
-    }, [plugin]);
+    const hasConfig = Object.keys(analysis.config).length > 0;
+    const hasWorkflowPluginNodes = hasPluginWorkflowNodes(plugin);
+    const inlineSummary = toInlineConfigSummary(analysis.config);
 
-    const inlineSummary = useMemo(() => {
-        if (!userConfig) return null;
-        const parts: string[] = [];
-        for (const [key, value] of Object.entries(userConfig)) {
-            if (key === ANALYSIS_EXECUTION_METADATA_KEY) continue;
-            if (parts.length >= 3) break;
-            if (typeof value === 'string' && value) parts.push(value);
-            else if (typeof value === 'number') parts.push(String(value));
-            else if (typeof value === 'boolean') parts.push(value ? 'Yes' : 'No');
-        }
-        return parts.length > 0 ? parts.join(' · ') : null;
-    }, [userConfig]);
-
-    useEffect(() => {
-        const previousStatuses = previousArtifactStatusesRef.current;
-        const currentStatuses = new Map<string, AnalysisExpectedArtifact['status']>();
-        let shouldRemoveReadyIds = false;
-        const staleReadyIds = new Set<string>();
-
-        expectedArtifacts.forEach((artifact) => {
-            const artifactId = artifact.exposureId;
-            const previousStatus = previousStatuses.get(artifactId);
-            currentStatuses.set(artifactId, artifact.status);
-
-            if (artifact.status === 'ready' && previousStatus && previousStatus !== 'ready') {
-                setRecentReadyArtifactIds((current) => {
-                    const next = new Set(current);
-                    next.add(artifactId);
-                    return next;
-                });
-
-                const existingTimer = readyArtifactTimersRef.current.get(artifactId);
-                if (existingTimer) {
-                    clearTimeout(existingTimer);
-                }
-
-                const timer = setTimeout(() => {
-                    setRecentReadyArtifactIds((current) => {
-                        if (!current.has(artifactId)) return current;
-                        const next = new Set(current);
-                        next.delete(artifactId);
-                        return next;
-                    });
-                    readyArtifactTimersRef.current.delete(artifactId);
-                }, READY_ARTIFACT_HIGHLIGHT_MS);
-                readyArtifactTimersRef.current.set(artifactId, timer);
-                return;
-            }
-
-            if (artifact.status !== 'ready') {
-                const existingTimer = readyArtifactTimersRef.current.get(artifactId);
-                if (existingTimer) {
-                    clearTimeout(existingTimer);
-                    readyArtifactTimersRef.current.delete(artifactId);
-                }
-                staleReadyIds.add(artifactId);
-                shouldRemoveReadyIds = true;
-            }
-        });
-
-        readyArtifactTimersRef.current.forEach((timer, artifactId) => {
-            if (currentStatuses.has(artifactId)) {
-                return;
-            }
-            clearTimeout(timer);
-            readyArtifactTimersRef.current.delete(artifactId);
-            staleReadyIds.add(artifactId);
-            shouldRemoveReadyIds = true;
-        });
-
-        if (shouldRemoveReadyIds) {
-            setRecentReadyArtifactIds((current) => {
-                const next = new Set(current);
-                staleReadyIds.forEach((artifactId) => next.delete(artifactId));
-                return next.size === current.size ? current : next;
-            });
-        }
-
-        previousArtifactStatusesRef.current = currentStatuses;
-    }, [expectedArtifacts]);
-
-    useEffect(() => {
-        return () => {
-            readyArtifactTimersRef.current.forEach(clearTimeout);
-            readyArtifactTimersRef.current.clear();
-        };
-    }, []);
-
-    const tooltipContent = useMemo(() => {
-        if (!isAnalysisInProgress && !hasConfig && !hasWorkflowPluginNodes) return null;
-
-        return (
-            <div className='canvas-tree-config-tooltip__content'>
-                {isAnalysisInProgress && (
-                    <div className='canvas-tree-config-tooltip__warning'>
-                        Analysis still running. Some options will be disabled until it finishes.
-                    </div>
-                )}
-                <div className='canvas-tree-config-tooltip__body'>
-                    {hasConfig || hasWorkflowPluginNodes ? (
-                        <ExecutionConfigSummary
-                            config={userConfig ?? {}}
-                            plugin={plugin}
-                            pluginsById={pluginsById}
-                        />
-                    ) : (
-                        <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
-                    )}
+    const tooltipContent = isAnalysisInProgress || hasConfig || hasWorkflowPluginNodes ? (
+        <div className='canvas-tree-config-tooltip__content'>
+            {isAnalysisInProgress && (
+                <div className='canvas-tree-config-tooltip__warning'>
+                    Analysis still running. Some options will be disabled until it finishes.
                 </div>
+            )}
+            <div className='canvas-tree-config-tooltip__body'>
+                {hasConfig || hasWorkflowPluginNodes ? (
+                    <ExecutionConfigSummary
+                        config={analysis.config}
+                        plugin={plugin}
+                        pluginsById={pluginsById}
+                    />
+                ) : (
+                    <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
+                )}
             </div>
-        );
-    }, [hasConfig, hasWorkflowPluginNodes, isAnalysisInProgress, plugin, pluginsById, userConfig]);
+        </div>
+    ) : null;
 
     const handleSelectAnalysis = () => {
-        if (isRasterSelectionMode) {
-            onToggle(analysis._id);
-            return;
-        }
-
-        if (isAnalysisInProgress) {
+        if (isRasterSelectionMode || isAnalysisInProgress) {
             onToggle(analysis._id);
             return;
         }
 
         if (isSelectedAnalysis) {
-            onSelectScene({
-                sceneType: 'trajectory',
-                source: 'default' as const
-            });
-        } else {
-            onToggle(analysis._id);
-            onSelectScene({
-                sceneType: 'trajectory',
-                source: 'default' as const
-            }, analysis);
+            onSelectScene(TRAJECTORY_SCENE);
+            return;
         }
+
+        onToggle(analysis._id);
+        onSelectScene(TRAJECTORY_SCENE, analysis);
     };
 
     const analysisMenuOptions: MenuOption[] = [
@@ -353,7 +128,7 @@ const AnalysisTreeNode = ({
             label: 'Download',
             icon: Download,
             onClick: () => onDownloadAnalysis(analysis._id),
-            disabled: !canDownloadAnalysis
+            disabled: resolvedStatus !== CanvasAnalysisStatusEnum.Completed
         },
         {
             label: 'Delete',
@@ -370,51 +145,6 @@ const AnalysisTreeNode = ({
         tone ? `canvas-tree-analysis-name--${tone}` : ''
     ].filter(Boolean).join(' ');
 
-    const analysisRow = (
-        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
-            <span className="canvas-tree-analysis-label-group">
-                <span className={nameClassName} title={pluginDisplayName}>
-                    {pluginDisplayName}
-                </span>
-                {inlineSummary && (
-                    <span className="canvas-tree-analysis-config-hint truncate" title={inlineSummary}>
-                        {inlineSummary}
-                    </span>
-                )}
-            </span>
-            <Box as='span' flex='1' />
-            <Button
-                variant='ghost'
-                intent='neutral'
-                iconOnly
-                size='sm'
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onToggle(analysis._id);
-                }}
-                className="canvas-tree-toggle b-none p-0"
-                aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            >
-                {isExpanded
-                    ? <ChevronDown style={{
-                        width: 13,
-                        height: 13
-                    }} />
-                    : <ChevronRight style={{
-                        width: 13,
-                        height: 13
-                    }} />
-                }
-            </Button>
-        </div>
-    );
-
-    const analysisTrigger = (
-        <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-            {analysisRow}
-        </Tooltip>
-    );
-
     return (
         <>
             <MaybeContextMenu
@@ -422,10 +152,41 @@ const AnalysisTreeNode = ({
                 id={`canvas-ctx-analysis-${analysis._id}`}
                 options={analysisMenuOptions}
             >
-                {analysisTrigger}
+                <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
+                    <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
+                        <span className="canvas-tree-analysis-label-group">
+                            <span className={nameClassName} title={analysis.pluginDisplayName}>
+                                {analysis.pluginDisplayName}
+                            </span>
+                            {inlineSummary && (
+                                <span className="canvas-tree-analysis-config-hint truncate" title={inlineSummary}>
+                                    {inlineSummary}
+                                </span>
+                            )}
+                        </span>
+                        <Box as='span' flex='1' />
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggle(analysis._id);
+                            }}
+                            className="canvas-tree-toggle b-none p-0"
+                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                        >
+                            {isExpanded
+                                ? <ChevronDown style={CHEVRON_STYLE} />
+                                : <ChevronRight style={CHEVRON_STYLE} />
+                            }
+                        </Button>
+                    </div>
+                </Tooltip>
             </MaybeContextMenu>
 
-            {isExpanded && entry.state === 'loading' && expectedArtifacts.length === 0 && (
+            {isExpanded && entry.state === 'loading' && !analysis.expectedArtifacts?.length && (
                 <CanvasTreeSkeletonRows count={1} compact indent='lg' />
             )}
 
@@ -433,107 +194,32 @@ const AnalysisTreeNode = ({
                 <AnalysisTreeRetryRow onRetry={() => onRetryLoadExposures(analysis._id)} />
             )}
 
-            {isExpanded && hasArtifactRows && artifactRows.map(({ key, artifact, exposure }) => {
-                const artifactNameClassName = buildArtifactNameClassName(
-                    artifact,
-                    artifact ? recentReadyArtifactIds.has(artifact.exposureId) : false
-                );
+            {isExpanded && artifactRows.map(({ key, artifact, exposure }) => {
+                const isRecentlyReady = artifact ? recentlyReadyArtifactIds.has(artifact.exposureId) : false;
 
                 if (!exposure) {
                     return (
-                        <CanvasTreeRow
+                        <PendingArtifactRow
                             key={key}
-                            indent='lg'
-                            disabled
-                            icon={<span className={`canvas-tree-artifact-icon canvas-tree-artifact-icon--${artifact?.status ?? 'pending'}`} title={artifact?.status ?? 'pending'}>{artifact ? getArtifactIcon(artifact) : <Clock3 style={{
-                                width: 12,
-                                height: 12
-                            }} />}</span>}
-                            label={(
-                                <span className={artifactNameClassName}>
-                                    <span className="truncate">{artifact?.name ?? key}</span>
-                                </span>
-                            )}
+                            artifact={artifact}
+                            fallbackName={key}
+                            isRecentlyReady={isRecentlyReady}
                         />
                     );
                 }
 
-                const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
-                    ?? resolveSceneRenderMetadata?.(section.pluginId, exposure.exposureId);
-                const scene = buildPluginScene({
-                    analysisId: exposure.analysisId,
-                    exposureId: exposure.exposureId,
-                    sceneRenderMetadata
-                });
-                const isActive = isRasterSelectionMode
-                    ? isSameScene(selectedScene, scene)
-                    : isSceneActive(scene);
-                const sceneKey = getSceneKey(scene);
-                const sceneOverride = sceneVisualOverrides[sceneKey];
-                const currentOpacity = sceneOverride?.opacity ?? 1;
-                const isLineExposure = sceneRenderMetadata?.exporter === Exporter.LINE;
-                const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_LINE_WIDTH;
-                const currentLineWidth = sceneOverride?.lineWidth ?? defaultLineWidth;
-
-                const exposureMenuOptions: MenuOption[] = [
-                    buildAddRemoveOption({
-                        isActive,
-                        onAdd: () => onAddScene(scene),
-                        onRemove: () => onRemoveScene(scene)
-                    }),
-                    {
-                        label: 'Download',
-                        icon: Download,
-                        onClick: () => {
-                            onDownloadExposureListing?.({
-                                pluginId: section.pluginId,
-                                exposureId: exposure.exposureId,
-                                analysisId: analysis._id,
-                                exposureName: exposure.name
-                            });
-                        }
-                    },
-                    transparencyOption(buildTransparencySubmenu(exposure.name, currentOpacity, (value) => setSceneOpacity(sceneKey, value))),
-                    colorOption(buildColorSubmenu(sceneOverride?.color, (value) => setSceneColor(sceneKey, value))),
-                    ...(isLineExposure
-                        ? [lineSettingsOption(buildLineWidthSubmenu(exposure.name, currentLineWidth, defaultLineWidth, (value) => setSceneLineWidth(sceneKey, value)))]
-                        : [])
-                ];
-
-                const exposureTrigger = (
-                    <CanvasTreeRow
-                        indent='lg'
-                        isActive={isActive}
-                        icon={<Atom style={{
-                            width: 12,
-                            height: 12,
-                            color: SCENE_ICON_COLOR
-                        }} />}
-                        label={(
-                            <span className={artifactNameClassName}>
-                                <span className="truncate">{exposure.name}</span>
-                            </span>
-                        )}
-                        onClick={() => {
-                            if (isRasterSelectionMode) {
-                                onSelectRasterScene?.(scene, exposure.name);
-                                return;
-                            }
-                            onSelectScene(scene, analysis);
-                        }}
+                return (
+                    <ExposureRow
+                        key={key}
+                        {...sceneActions}
+                        analysis={analysis}
+                        artifact={artifact}
+                        exposure={exposure}
+                        pluginId={analysis.plugin}
+                        isRecentlyReady={isRecentlyReady}
+                        isRasterSelectionMode={isRasterSelectionMode}
                         tourTargetId={key === firstExposureRowKey ? firstExposureTourTargetId : undefined}
                     />
-                );
-
-                return (
-                    <MaybeContextMenu
-                        key={exposure.exposureId}
-                        enabled={!isRasterSelectionMode}
-                        id={`canvas-ctx-exposure-${exposure.analysisId}-${exposure.exposureId}`}
-                        options={exposureMenuOptions}
-                    >
-                        {exposureTrigger}
-                    </MaybeContextMenu>
                 );
             })}
 

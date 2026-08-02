@@ -18,14 +18,15 @@ import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
+    getJupyterStartErrorMessage,
     startAndWaitForReadyScriptingSession
 } from '../utils/jupyter-session';
+import { renderNotebookStartupTab } from '../utils/notebook-startup-tab';
 import {
     getDeleteConfirmationMessage,
-    hasNotebookDeploymentConfiguration,
-    getTrajectoryIds
+    getNotebookTeamClusterId,
+    getNotebookTrajectoryId
 } from '../utils/notebooks';
-import { getJupyterStartErrorMessage } from '../utils/workspace';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -45,14 +46,8 @@ export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
 };
 
-interface NotebookStartupWindowState {
-    title: string;
-    description: string;
-};
-
 export const RENAME_SCRIPTING_NOTEBOOK_MODAL_ID = 'rename-scripting-notebook-modal';
 
-const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
 const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
@@ -87,52 +82,6 @@ const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({
     success: 'Notebook deployment saved successfully'
 });
 
-const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
-    return scope || DEFAULT_NOTEBOOK_SCOPE;
-};
-
-const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWindowState): void => {
-    if (notebookTab.closed) {
-        return;
-    }
-
-    const { document } = notebookTab;
-    document.title = state.title;
-    if (!document.body) {
-        return;
-    }
-
-    document.body.replaceChildren();
-    document.body.style.margin = '0';
-    document.body.style.minHeight = '100dvh';
-    document.body.style.display = 'flex';
-    document.body.style.alignItems = 'center';
-    document.body.style.justifyContent = 'center';
-    document.body.style.background = 'Canvas';
-    document.body.style.color = 'CanvasText';
-    document.body.style.fontFamily = '"Inter Variable", Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
-
-    const container = document.createElement('main');
-    container.style.maxWidth = '480px';
-    container.style.padding = '32px';
-    container.style.textAlign = 'center';
-
-    const title = document.createElement('h1');
-    title.textContent = state.title;
-    title.style.margin = '0 0 12px';
-    title.style.fontSize = '24px';
-
-    const description = document.createElement('p');
-    description.textContent = state.description;
-    description.style.margin = '0';
-    description.style.fontSize = '14px';
-    description.style.lineHeight = '1.5';
-    description.style.color = 'GrayText';
-
-    container.append(title, description);
-    document.body.append(container);
-};
-
 const useNotebooksListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
@@ -153,7 +102,7 @@ const useNotebooksListing = () => {
             return await service.listNotebooks({
                 page: params.page,
                 limit: params.limit,
-                scope: resolveScope(params.scope)
+                scope: params.scope
             });
         } catch (error) {
             if (isAccessDeniedError(error)) {
@@ -274,7 +223,7 @@ const useNotebooksListing = () => {
     });
 
     const handleOpenInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
-        const trajectoryId = getTrajectoryIds(notebook)[0];
+        const trajectoryId = getNotebookTrajectoryId(notebook);
 
         if (trajectoryId) {
             navigate(`/canvas/${trajectoryId}?workspace=scripting&notebook=${encodeURIComponent(notebook._id)}`);
@@ -285,7 +234,7 @@ const useNotebooksListing = () => {
             return;
         }
 
-        if (!hasNotebookDeploymentConfiguration(notebook)) {
+        if (!getNotebookTeamClusterId(notebook)) {
             openDeploymentModal({
                 teamId,
                 notebook,

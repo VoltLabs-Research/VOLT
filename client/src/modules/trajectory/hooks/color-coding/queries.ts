@@ -20,11 +20,6 @@ const KEYS = buildKeys<{
     colorCodingStats: GetColorCodingStatsInput;
 }>(BASE_KEY);
 
-export const COLOR_CODING_QUERY_KEYS = {
-    colorCodingProperties: KEYS.colorCodingProperties,
-    colorCodingStats: KEYS.colorCodingStats
-} as const;
-
 const getColorCodingPropertiesKey = (params: GetColorCodingPropertiesInput) =>
     currentAccessKey(KEYS.colorCodingProperties(params));
 

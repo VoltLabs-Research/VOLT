@@ -1,6 +1,7 @@
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
+import clusterDaemonLifecycleService from '@modules/cluster/services/ClusterDaemonLifecycleService';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { clusterLifecycleRoutes } from '@volt/contracts/modules/cluster/routes';
@@ -14,7 +15,7 @@ export default class ClusterLifecycleController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.processHealthcheck(this.params(req));
+        const value = await clusterDaemonLifecycleService.processHealthcheck(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -23,7 +24,7 @@ export default class ClusterLifecycleController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.generateInstallManifest(this.params(req));
+        const value = await clusterDaemonLifecycleService.generateInstallManifest(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 }

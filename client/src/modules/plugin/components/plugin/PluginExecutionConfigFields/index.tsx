@@ -15,9 +15,10 @@ interface PluginExecutionPreflight {
 }
 
 interface PluginExecutionConfigFieldsProps {
-    argumentsDefinitions: IArgumentDefinition[];
-    configValues: Record<string, unknown>;
-    onConfigChange: (key: string, value: unknown) => void;
+    /** Omitted by callers that have no inline arguments to configure. */
+    argumentsDefinitions?: IArgumentDefinition[];
+    configValues?: Record<string, unknown>;
+    onConfigChange?: (key: string, value: unknown) => void;
     availableTimesteps: number[];
     selectedTimesteps?: number[];
     onSelectedTimestepsChange: (selectedTimesteps?: number[]) => void;
@@ -32,9 +33,9 @@ interface PluginExecutionConfigFieldsProps {
 }
 
 const PluginExecutionConfigFields = ({
-    argumentsDefinitions,
-    configValues,
-    onConfigChange,
+    argumentsDefinitions = [],
+    configValues = {},
+    onConfigChange = () => {},
     availableTimesteps,
     selectedTimesteps,
     onSelectedTimestepsChange,
@@ -89,17 +90,14 @@ const PluginExecutionConfigFields = ({
                     </Stack>
                 </Callout>
             )}
-            {argumentsDefinitions.length > 0 && (
-                <ArgumentFieldsRenderer
-                    arguments={argumentsDefinitions}
-                    values={configValues}
-                    onChange={onConfigChange}
-                    frameOptions={frameOptions}
-                    emptyMessage='No arguments configured.'
-                    autocompleteOptions={autocompleteOptions}
-                    allowTemplateReferenceMode={allowTemplateReferenceMode}
-                />
-            )}
+            <ArgumentFieldsRenderer
+                arguments={argumentsDefinitions}
+                values={configValues}
+                onChange={onConfigChange}
+                frameOptions={frameOptions}
+                autocompleteOptions={autocompleteOptions}
+                allowTemplateReferenceMode={allowTemplateReferenceMode}
+            />
             {clusterField}
             <SelectedTimestepsField
                 availableTimesteps={availableTimesteps}

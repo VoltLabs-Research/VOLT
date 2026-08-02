@@ -112,7 +112,7 @@ const DashboardBottomBar = () => {
     const presenceCounts = useMemo(() => {
         let online = 0;
         for (const member of members) {
-            if (member.user._id && resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot)) {
+            if (resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot)) {
                 online += 1;
             }
         }

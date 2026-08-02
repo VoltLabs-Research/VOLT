@@ -1,4 +1,5 @@
-import { createInvalidatingMutation, createQuery } from './create-paginated-query';
+import { createInvalidatingMutation } from './create-mutation';
+import { createQuery } from './create-query';
 import queryClient from './query-client';
 import type { QueryKey } from '@tanstack/react-query';
 

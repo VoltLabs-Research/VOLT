@@ -1,19 +1,10 @@
 
-import PluginEntity from '@modules/plugin/models/Plugin';
-import {
-    toPluginLike
-} from '@modules/plugin/services/plugin/PluginQueries';
+import { requirePlugin } from '@modules/plugin/services/plugin/PluginQueries';
 import {
     ArgumentType,
     type ArgumentDefinition
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-
-
-interface DescribePluginArgumentsInput {
-    pluginId: string;
-}
+import type { PluginRefInput } from '@volt/contracts/modules/plugin/ai-tools';
 
 interface DescribedPluginArgumentOption {
     key: string;
@@ -43,16 +34,8 @@ interface DescribePluginArgumentsOutput {
 
 export default class PluginArgumentDescriber{
 
-    async describePluginArguments(input: DescribePluginArgumentsInput): Promise<DescribePluginArgumentsOutput> {
-        const pluginEntity = await PluginEntity.findOneBy({ id: input.pluginId });
-        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
-        if (!plugin) {
-            throw ApplicationError.notFound(
-                ErrorCodes.PLUGIN_NOT_FOUND,
-                'Plugin not found'
-            );
-        }
-
+    async describePluginArguments(input: PluginRefInput): Promise<DescribePluginArgumentsOutput> {
+        const plugin = await requirePlugin(input.pluginId);
         const definitions = plugin.props.arguments ?? [];
 
         return {
@@ -109,15 +92,15 @@ export default class PluginArgumentDescriber{
         if (definition.inferFromContext === true) {
             notes.push(`Do NOT set this in config — its value is injected from an upstream pipeline stage that produces the "${definition.argument}" exposure. Put a stage that produces it earlier in the pipeline.`);
         }
-        if (definition.type === ArgumentType.List && definition.listArguments?.length) {
+        if (definition.type === ArgumentType.LIST && definition.listArguments?.length) {
             const itemKeys = definition.listArguments.map((item) => item.argument).join(', ');
             notes.push(`List of items; each item has: ${itemKeys}.`);
         }
-        if (definition.type === ArgumentType.Tuple && definition.listArguments?.length) {
+        if (definition.type === ArgumentType.TUPLE && definition.listArguments?.length) {
             const componentKeys = definition.listArguments.map((item) => item.argument).join(', ');
             notes.push(`Single fixed-shape object with fields: ${componentKeys}.`);
         }
-        if (definition.type === ArgumentType.PluginReference) {
+        if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
             notes.push('References another plugin; pass that plugin\'s id/key as the value.');
         }
         if (definition.optionsFromArguments?.length || definition.optionsFromPluginReference) {

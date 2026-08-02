@@ -13,11 +13,6 @@ import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis'
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
-import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
-import {
-    resolveAnalysisComputeClusterId,
-    resolveAnalysisStorageClusterId
-} from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
 import Trajectory from '@modules/trajectory/models/Trajectory';
@@ -107,15 +102,10 @@ export default class AnalysisService{
     #eventBus = eventBus;
 
     async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]>{
-        const normalizedSearch = search.trim();
-        if(!normalizedSearch){
-            return [];
-        }
-
         const trajectories = await Trajectory.find({
             where: {
                 team: teamId,
-                name: ILike(`%${escapeLikePattern(normalizedSearch)}%`)
+                name: ILike(`%${escapeLikePattern(search)}%`)
             },
             select: { id: true }
         });
@@ -141,20 +131,18 @@ export default class AnalysisService{
     async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemView>>{
         const { teamId } = input;
         const normalizedSearch = input.search?.trim();
-        const hasSearch = Boolean(normalizedSearch);
-        const where: FindOptionsWhere<AnalysisEntity> = { team: teamId };
 
-        const results = hasSearch
+        const results = normalizedSearch
             ? await findByTeamAndSearch({
                 teamId,
-                search: normalizedSearch!,
-                trajectoryIds: await this.#searchTrajectoryIdsByTeamAndName(teamId, normalizedSearch!),
+                search: normalizedSearch,
+                trajectoryIds: await this.#searchTrajectoryIdsByTeamAndName(teamId, normalizedSearch),
                 relations: LIST_RELATIONS,
                 limit: input.limit,
                 page: input.page
             })
             : await this.#findAllAnalyses({
-                where,
+                where: { team: teamId },
                 relations: LIST_RELATIONS,
                 order: NEWEST_FIRST,
                 limit: input.limit,
@@ -162,20 +150,12 @@ export default class AnalysisService{
             });
 
         const mappedData = results.data.map((analysis: Analysis) => {
-            const props = { ...analysis.props };
-            const pluginId = extractPluginId(props.plugin);
-            const trajectoryValue = props.trajectory as { name?: string } | string;
-            const trajectoryName = typeof trajectoryValue === 'string' ? undefined : trajectoryValue?.name;
+            const trajectory = analysis.props.trajectory as { name?: string } | string;
 
             return {
-                ...props,
+                ...analysis.props,
                 _id: analysis._id,
-                plugin: pluginId,
-                trajectory: props.trajectory,
-                computeClusterId: props.computeClusterId,
-                storageClusterId: props.storageClusterId,
-                createdBy: props.createdBy,
-                trajectoryName
+                trajectoryName: typeof trajectory === 'string' ? undefined : trajectory?.name
             };
         });
 
@@ -200,14 +180,10 @@ export default class AnalysisService{
             order: NEWEST_FIRST
         });
 
-        const data = analyses.data.map((analysis) => {
-            const props = { ...analysis.props };
-            return {
-                ...props,
-                _id: analysis._id,
-                plugin: extractPluginId(props.plugin)
-            };
-        });
+        const data = analyses.data.map((analysis) => ({
+            ...analysis.props,
+            _id: analysis._id
+        }));
 
         return {
             ...analyses,
@@ -308,8 +284,7 @@ export default class AnalysisService{
 
         return {
             ...persisted.props,
-            _id: persisted._id,
-            plugin: extractPluginId(persisted.props.plugin)
+            _id: persisted._id
         };
     }
 
@@ -335,9 +310,9 @@ export default class AnalysisService{
             trajectoryId: analysis.trajectory ?? '',
             pluginId: analysis.plugin ?? '',
             teamId: analysis.team ?? '',
-            teamClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined }),
-            storageClusterId: resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined }),
-            computeClusterId: resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }),
+            teamClusterId: analysis.storageClusterId ?? undefined,
+            storageClusterId: analysis.storageClusterId ?? undefined,
+            computeClusterId: analysis.computeClusterId ?? undefined,
             userId: input.userId ?? '',
             pluginDisplayName: analysis.pluginDisplayName
         });

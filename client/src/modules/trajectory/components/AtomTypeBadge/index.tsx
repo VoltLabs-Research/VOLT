@@ -23,7 +23,7 @@ const typeToColor = (t: number): string => {
 };
 
 export default function AtomTypeBadge({ type }: AtomTypeBadgeProps) {
-    const typeNumber = typeof type === 'number' ? type : Number(type);
+    const typeNumber = Number(type);
 
     return (
         <StatusBadge variant='neutral'>

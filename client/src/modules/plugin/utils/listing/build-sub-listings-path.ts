@@ -4,7 +4,7 @@ interface BuildSubListingsPathParams {
     exposureId: string;
     timestep: number;
     subListingNames: string[];
-    activeSubListingName?: string;
+    activeSubListingName: string;
 }
 
 export const buildSubListingsPath = ({
@@ -18,12 +18,9 @@ export const buildSubListingsPath = ({
     const searchParams = new URLSearchParams({
         exposureId,
         timestep: String(timestep),
-        names: subListingNames.join(',')
+        names: subListingNames.join(','),
+        tab: activeSubListingName
     });
-
-    if(activeSubListingName && subListingNames.includes(activeSubListingName)){
-        searchParams.set('tab', activeSubListingName);
-    }
 
     return `/dashboard/trajectory/${trajectoryId}/analysis/${analysisId}/sub-listings?${searchParams.toString()}`;
 };

@@ -3,13 +3,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import Analysis from '@modules/analysis/models/Analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import type { TrajectoryDumpStorageService } from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import {
-    resolveAnalysisStorageClusterId,
-    resolveTrajectoryStorageClusterId
-} from '@shared/application/utilities/cluster-location';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import type {
@@ -43,15 +39,25 @@ interface ResolveSceneArtifactExecutionContextInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
-    teamClusterSelectionService: ITeamClusterSelectionService;
-    dumpStorage: TrajectoryDumpStorageService;
-    buildClusterRequiredError: () => ApplicationError;
 }
 
 interface SceneArtifactExecutionContext {
     computeClusterId: string;
     storageClusterId: string;
 }
+
+/**
+ * Raised whenever an operation needs a team cluster to run on and none could be
+ * resolved. Shared by every scene-artifact producer (color coding, particle
+ * filter, line style) so the three of them report the same failure.
+ */
+export const buildClusterRequiredError = (): ApplicationError => {
+    return new ApplicationError(
+        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
+        'This operation requires a team cluster. No local native modules available.',
+        501
+    );
+};
 
 const RECORDED_COLUMNS = [
     'trajectory',
@@ -112,23 +118,20 @@ export const resolveSceneArtifactStorageCluster = async (
     if (input.analysisId) {
         const analysis = await Analysis.findOneBy({ id: input.analysisId });
         if (analysis) {
-            return resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId ?? undefined });
+            return analysis.storageClusterId ?? undefined;
         }
     }
 
     const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
     return trajectory
-        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
+        ? trajectory.storageClusterId
         : undefined;
 };
 
 export const resolveSceneArtifactExecutionContext = async ({
     trajectoryId,
     timestep,
-    analysisId,
-    teamClusterSelectionService,
-    dumpStorage,
-    buildClusterRequiredError
+    analysisId
 }: ResolveSceneArtifactExecutionContextInput): Promise<SceneArtifactExecutionContext> => {
     const storageClusterId = await resolveSceneArtifactStorageCluster({
         trajectoryId,
@@ -146,7 +149,7 @@ export const resolveSceneArtifactExecutionContext = async ({
         storageClusterId
     );
 
-    if (!await dumpStorage.existsDump(trajectoryId, timestep)) {
+    if (!await trajectoryDumpStorageService.existsDump(trajectoryId, timestep)) {
         throw ApplicationError.notFound(
             ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND,
             `Trajectory dump for timestep ${timestep} not found`

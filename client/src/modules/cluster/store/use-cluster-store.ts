@@ -1,25 +1,16 @@
 import { create } from 'zustand';
 
-interface ClusterState {
+interface ClusterStore {
     selectedClusterId: string | null;
     isConnected: boolean;
-}
-
-interface ClusterActions {
     setSelectedClusterId: (id: string | null) => void;
     setConnected: (connected: boolean) => void;
     reset: () => void;
 }
 
-type ClusterStore = ClusterState & ClusterActions;
-
-const initialState: ClusterState = {
-    selectedClusterId: null,
-    isConnected: false
-};
-
 export const useClusterStore = create<ClusterStore>((set) => ({
-    ...initialState,
+    selectedClusterId: null,
+    isConnected: false,
 
     setSelectedClusterId: (id) => set({ selectedClusterId: id }),
 

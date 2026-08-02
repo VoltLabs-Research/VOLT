@@ -1,347 +1,128 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type {
-    ContainerTerminalAttachment,
-    ContainerTerminalSize
-} from '@shared/contracts/ports';
+import type { ContainerTerminalAttachment } from '@shared/contracts/ports';
 import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/services/TeamClusterReverseTerminal';
-import {
-    TeamClusterReverseTunnelStream,
-    type TeamClusterTunnelStream
-} from '@modules/cluster/services/TeamClusterReverseTunnelStream';
-import { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
+import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/TeamClusterReverseTunnelStream';
+import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TeamClusterDaemonResponseType,
-    TeamClusterDaemonSessionKind,
-    TeamClusterServiceExposureAccessMode,
-    TeamClusterTunnelSessionStatus,
-    type TeamClusterDaemonExposureSnapshotPayload,
     type TeamClusterDaemonMessage,
     type TeamClusterDaemonRuntimeProgressPayload,
-    type TeamClusterDaemonSessionAttachPayload,
-    type TeamClusterDaemonSessionDataPayload,
-    type TeamClusterDaemonSessionDetachPayload,
-    type TeamClusterDaemonSessionEndPayload,
-    type TeamClusterDaemonSessionInputPayload,
-    type TeamClusterDaemonSessionResizePayload,
+    type TeamClusterDaemonSocketChannel,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
-    type TeamClusterDaemonSocketStreamStatePayload,
-    type TeamClusterDaemonSocketChannel,
-    type TeamClusterDaemonTunnelClosePayload,
-    type TeamClusterDaemonTunnelDataPayload,
-    type TeamClusterDaemonTunnelDrainPayload,
-    type TeamClusterDaemonTunnelStatePayload
+    type TeamClusterDaemonSocketStreamStatePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type {
-    TeamClusterDaemonCommandPayload,
-    TeamClusterCommandOptions,
-    TeamClusterDaemonSocketRegistration,
-    TeamClusterTunnelOpenRequest,
-    TeamClusterTunnelOpenOptions,
-    TeamClusterReverseChannelStreamAttachment,
-    TeamClusterDaemonInboundStreamPayload,
-    TeamClusterDaemonInboundStreamConsumer
-} from '@modules/cluster/services/TeamClusterReverseChannelTypes';
-import DaemonChannelRegistry from '@modules/cluster/services/DaemonChannelRegistry';
+import TeamClusterDaemonConnectionRegistry, {
+    type ReleasedDaemonConnection
+} from '@modules/cluster/services/TeamClusterDaemonConnectionRegistry';
+import TeamClusterReverseAttachedSessions from '@modules/cluster/services/TeamClusterReverseAttachedSessions';
+import TeamClusterReverseInboundStreams from '@modules/cluster/services/TeamClusterReverseInboundStreams';
+import TeamClusterReverseTunnelSessions from '@modules/cluster/services/TeamClusterReverseTunnelSessions';
+import ReverseChannelPendingEntries, {
+    createBufferedStream,
+    type PendingStreamEntry
+} from '@modules/cluster/services/reverse-channel-pending';
 import {
     clearPendingTimeout,
     createCommandMessage,
-    createTunnelOpenPayload,
-    describeBinaryCarrier,
-    resolveTunnelChannel,
     unwrapEnvelopeBuffer,
-    wrapEnvelopeBuffer
+    type TeamClusterCommandOptions,
+    type TeamClusterDaemonCommandPayload,
+    type TeamClusterDaemonInboundStreamConsumer,
+    type TeamClusterReverseChannelStreamAttachment,
+    type TeamClusterTunnelOpenOptions,
+    type TeamClusterTunnelOpenRequest
 } from '@modules/cluster/services/reverse-channel-protocol';
 import logger from '@shared/infrastructure/logger';
 import { randomUUID } from 'node:crypto';
-import { PassThrough } from 'node:stream';
-import teamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
+import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 
-interface BasePendingEntry {
-    socketId: string;
-    timeout: NodeJS.Timeout | null;
-}
+const REQUEST_TIMEOUT_MS = 30_000;
+const DAEMON_CONNECTION_WAIT_TIMEOUT_MS = 30_000;
 
-interface PendingResponseEntry extends BasePendingEntry {
-    type: 'response';
-    resolve: (payload: TeamClusterDaemonSocketResponsePayload) => void;
-    reject: (error: Error) => void;
-}
-
-interface PendingStreamEntry extends BasePendingEntry {
-    type: 'stream';
-    stream: PassThrough;
-    resolve: (attachment: TeamClusterReverseChannelStreamAttachment) => void;
-    reject: (error: Error) => void;
-    streamId?: string;
-}
-
-interface PendingTerminalEntry extends BasePendingEntry {
-    type: 'terminal';
-    stream: PassThrough;
-    resolve: (attachment: ContainerTerminalAttachment) => void;
-    reject: (error: Error) => void;
-}
-
-interface PendingWebSocketEntry extends BasePendingEntry {
-    type: 'websocket';
-    stream: TeamClusterReverseWebSocketStream;
-    resolve: (stream: TeamClusterReverseWebSocketStream) => void;
-    reject: (error: Error) => void;
-}
-
-interface WebSocketAttachSuccessPayload {
-    status?: unknown;
-    data?: {
-        attached?: unknown;
-        selectedProtocol?: unknown;
-    };
-}
-
-interface PendingTunnelEntry extends BasePendingEntry {
-    type: 'tunnel';
-    stream: TeamClusterTunnelStream;
-    resolve: (stream: TeamClusterTunnelStream) => void;
-    reject: (error: Error) => void;
-    nextWriteSequence: number;
-    pendingWriteAcks: Map<number, PendingTunnelWriteAck>;
-    pendingWriteBytes: number;
-    blockedWriteCallback?: (error?: Error | null) => void;
-}
-
-interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
-    correlationId: string;
-    entryType: PendingEntry['type'];
-    timeoutMs: number;
-    timeoutMessage: string;
-    createEntry: (resolve: (value: TResult) => void, reject: (error: Error) => void, timeout: NodeJS.Timeout | null) => TEntry;
-    emitMessage: () => void;
-}
-
-interface PendingTunnelWriteAck {
-    bytes: number;
-    timeout: NodeJS.Timeout;
-}
-
-type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
-
-type DaemonContainerCreateProgressPayload = {
-    operationId?: string;
-    step?: string;
-    image?: string;
-    containerName?: string;
-    containerId?: string;
-};
-
-const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => {
-    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-        return undefined;
-    }
-
-    const candidate = payload as WebSocketAttachSuccessPayload;
-    if (candidate.status !== 'success') {
-        return undefined;
-    }
-
-    const selectedProtocol = candidate.data?.selectedProtocol;
-    return typeof selectedProtocol === 'string' && selectedProtocol.trim().length > 0
-        ? selectedProtocol.trim()
-        : undefined;
-};
-
-const readPositiveIntegerEnv = (name: string, fallback: number): number => {
-    const value = Number(process.env[name]);
-    return Number.isFinite(value) && value > 0
-        ? Math.floor(value)
-        : fallback;
-};
-
-const TUNNEL_FLOW_CONTROL_WINDOW_BYTES = readPositiveIntegerEnv(
-    'TEAM_CLUSTER_REVERSE_TUNNEL_WINDOW_BYTES',
-    8 * 1024 * 1024
-);
-const TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES = Math.max(
-    64 * 1024,
-    Math.floor(TUNNEL_FLOW_CONTROL_WINDOW_BYTES / 2)
-);
-const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
-    'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
-    120_000
-);
-
+/**
+ * The daemon reverse channel: a cluster daemon dials us, and every subsequent
+ * control-plane request rides back out over that socket. This service owns the
+ * socket bookkeeping and the frame router, and delegates each frame family to the
+ * collaborator that owns its state.
+ */
 class TeamClusterReverseChannelService {
-    private readonly channels = new Map<TeamClusterDaemonSocketChannel, DaemonChannelRegistry>();
-    private readonly teamClusterIdsBySocketId = new Map<string, string>();
-    private readonly socketChannelsBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();
-    private readonly pendingEntries = new Map<string, PendingEntry>();
-    private readonly inboundStreamConsumers = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
-    private readonly requestTimeoutMs = 30_000;
-    private readonly terminalTimeoutMs = 15_000;
-    private readonly daemonConnectionWaitTimeoutMs = 30_000;
+    readonly #connections = new TeamClusterDaemonConnectionRegistry();
+    readonly #pending = new ReverseChannelPendingEntries();
+    readonly #inboundStreams = new TeamClusterReverseInboundStreams();
 
-    private readonly sessionIdleTtlMs = 10 * 60 * 1000;
-    private readonly sessionSweepIntervalMs = 60 * 1000;
+    readonly #sessions = new TeamClusterReverseAttachedSessions({
+        pending: this.#pending,
+        requireSocketId: (teamClusterId) => this.#requireDaemonSocketId(teamClusterId),
+        emitToDaemon: (socketId, payload) => {
+            this.#emitToDaemon(socketId, payload);
+        },
+        emitCommand: (socketId, requestId, command, payload) => {
+            this.#emitCommand(socketId, requestId, {
+                command,
+                payload,
+                responseType: TeamClusterDaemonResponseType.Json
+            });
+        }
+    });
 
-    private readonly sessionActivity = new Map<string, number>();
-    private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
-
-    private readonly streamHighWaterMark = 256 * 1024;
-
-    private readonly socketEmitter = socketIOEmitter;
-    private readonly exposureRegistryService = teamClusterExposureRegistryService;
-    private readonly containerDeploymentProgressService = containerDeploymentProgressService;
-
-    constructor() {
-        this.startIdleSweep();
-    }
-
-    private touchSession(sessionId: string): void {
-        this.sessionActivity.set(sessionId, Date.now());
-    }
-
-    private untouchSession(sessionId: string): void {
-        this.sessionActivity.delete(sessionId);
-    }
-
-    private startIdleSweep(): void {
-        if (this.idleSweepTimer) return;
-
-        this.idleSweepTimer = setInterval(() => {
-            const now = Date.now();
-            for (const [sessionId, lastActive] of this.sessionActivity) {
-                if (now - lastActive > this.sessionIdleTtlMs) {
-                    const entry = this.pendingEntries.get(sessionId);
-                    if (!entry) {
-                        this.sessionActivity.delete(sessionId);
-                        continue;
-                    }
-
-                    logger.warn(`[ReverseChannel] Session idle TTL expired — cleaning up sessionId=${sessionId} type=${entry.type}`);
-
-                    if (entry.type === 'terminal') {
-                        entry.stream.destroy();
-                    } else if (entry.type === 'websocket') {
-                        entry.stream.destroy();
-                    } else if (entry.type === 'tunnel') {
-                        this.failPendingTunnelWrites(entry, new Error('Tunnel session idle TTL expired'));
-                        entry.stream.closeRemote();
-                    } else if (entry.type === 'stream') {
-                        entry.stream.destroy();
-                    }
-
-                    this.pendingEntries.delete(sessionId);
-                    this.sessionActivity.delete(sessionId);
-                }
-            }
-        }, this.sessionSweepIntervalMs);
-        this.idleSweepTimer.unref();
-    }
+    readonly #tunnels = new TeamClusterReverseTunnelSessions({
+        pending: this.#pending,
+        requireSocketId: (teamClusterId, channel) => this.#requireDaemonSocketId(teamClusterId, channel),
+        emitToDaemon: (socketId, payload) => {
+            this.#emitToDaemon(socketId, payload);
+        }
+    });
 
     registerDaemonConnection(
         socketId: string,
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): void {
-        const registry = this.registryFor(channel);
-        const previousSocketId = registry.socketIdFor(teamClusterId);
+        const previousSocketId = this.#connections.socketIdFor(teamClusterId, channel);
         if (previousSocketId && previousSocketId !== socketId) {
             this.unregisterDaemonConnection(previousSocketId);
         }
 
-        registry.bind(teamClusterId, socketId);
-        this.teamClusterIdsBySocketId.set(socketId, teamClusterId);
-        this.socketChannelsBySocketId.set(socketId, channel);
-
-        registry.resolveWaiters(teamClusterId, socketId);
+        this.#connections.bind(socketId, teamClusterId, channel);
     }
 
-    unregisterDaemonConnection(socketId: string): TeamClusterDaemonSocketRegistration | null {
-        const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
-        const channel = this.socketChannelsBySocketId.get(socketId);
-        if (teamClusterId && channel) {
-            const registry = this.registryFor(channel);
-            if (registry.socketIdFor(teamClusterId) === socketId) {
-                registry.release(teamClusterId);
-                if (channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
-                    this.exposureRegistryService.clearTeamCluster(teamClusterId);
-                }
-                logger.warn(`[ReverseChannel] Daemon ${channel} connection unregistered socketId=${socketId} teamClusterId=${teamClusterId}`);
+    unregisterDaemonConnection(socketId: string): ReleasedDaemonConnection | null {
+        const released = this.#connections.release(socketId);
+
+        if (released?.wasBound) {
+            if (released.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
+                teamClusterExposureRegistryService.clearTeamCluster(released.teamClusterId);
             }
+            logger.warn(`[ReverseChannel] Daemon ${released.channel} connection unregistered socketId=${socketId} teamClusterId=${released.teamClusterId}`);
         }
 
-        this.teamClusterIdsBySocketId.delete(socketId);
-        this.socketChannelsBySocketId.delete(socketId);
+        this.#pending.rejectSocket(socketId, new Error('Team cluster daemon connection was lost'));
 
-        for (const [correlationId, entry] of this.pendingEntries.entries()) {
-            if (entry.socketId !== socketId) {
-                continue;
-            }
-
-            this.rejectPendingEntry(correlationId, entry, new Error('Team cluster daemon connection was lost'));
-        }
-
-        return teamClusterId && channel ? {
-            teamClusterId,
-            channel
-        } : null;
+        return released;
     }
 
     isRegisteredDaemonSocket(socketId: string): boolean {
-        return this.teamClusterIdsBySocketId.has(socketId);
+        return this.#connections.isRegistered(socketId);
     }
 
     getRegisteredTeamClusterId(socketId: string): string | null {
-        return this.teamClusterIdsBySocketId.get(socketId) ?? null;
+        return this.#connections.teamClusterIdFor(socketId) ?? null;
     }
 
     hasDaemonConnection(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): boolean {
-        return this.registryFor(channel).has(teamClusterId);
-    }
-
-    private registryFor(channel: TeamClusterDaemonSocketChannel): DaemonChannelRegistry {
-        const existing = this.channels.get(channel);
-        if (existing) {
-            return existing;
-        }
-
-        const registry = new DaemonChannelRegistry();
-        this.channels.set(channel, registry);
-        return registry;
+        return this.#connections.hasConnection(teamClusterId, channel);
     }
 
     registerInboundStreamConsumer(
         streamId: string,
         consumer: TeamClusterDaemonInboundStreamConsumer
     ): () => void {
-        const normalizedStreamId = streamId.trim();
-        if (!normalizedStreamId) {
-            throw new Error('Inbound stream id is required');
-        }
-
-        let consumers = this.inboundStreamConsumers.get(normalizedStreamId);
-        if (!consumers) {
-            consumers = new Set<TeamClusterDaemonInboundStreamConsumer>();
-            this.inboundStreamConsumers.set(normalizedStreamId, consumers);
-        }
-
-        consumers.add(consumer);
-
-        return () => {
-            const activeConsumers = this.inboundStreamConsumers.get(normalizedStreamId);
-            if (!activeConsumers) {
-                return;
-            }
-
-            activeConsumers.delete(consumer);
-            if (activeConsumers.size === 0) {
-                this.inboundStreamConsumers.delete(normalizedStreamId);
-            }
-        };
+        return this.#inboundStreams.register(streamId, consumer);
     }
 
     async command(
@@ -349,13 +130,13 @@ class TeamClusterReverseChannelService {
         payload: TeamClusterDaemonCommandPayload,
         options?: TeamClusterCommandOptions
     ): Promise<TeamClusterDaemonSocketResponsePayload> {
-        const socketId = await this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.#requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
 
-        return this.createPendingPromise({
+        return this.#pending.create({
             correlationId: requestId,
             entryType: 'response',
-            timeoutMs: options?.timeoutMs ?? this.requestTimeoutMs,
+            timeoutMs: options?.timeoutMs ?? REQUEST_TIMEOUT_MS,
             timeoutMessage: 'Timed out waiting for daemon response',
             createEntry: (resolve, reject, timeout) => ({
                 type: 'response',
@@ -365,25 +146,23 @@ class TeamClusterReverseChannelService {
                 reject
             }),
             emitMessage: () => {
-                this.emitCommand(socketId, requestId, payload);
+                this.#emitCommand(socketId, requestId, payload);
             }
         });
     }
 
-    async openStream(teamClusterId: string, payload: TeamClusterDaemonCommandPayload): Promise<PassThrough> {
-        const attachment = await this.openCommandStream(teamClusterId, payload);
-        return attachment.stream;
-    }
-
-    async openCommandStream(teamClusterId: string, payload: TeamClusterDaemonCommandPayload): Promise<TeamClusterReverseChannelStreamAttachment> {
-        const socketId = await this.requireDaemonSocketId(teamClusterId);
+    async openCommandStream(
+        teamClusterId: string,
+        payload: TeamClusterDaemonCommandPayload
+    ): Promise<TeamClusterReverseChannelStreamAttachment> {
+        const socketId = await this.#requireDaemonSocketId(teamClusterId);
         const requestId = randomUUID();
-        const stream = this.createBufferedStream();
+        const stream = createBufferedStream();
 
-        return this.createPendingPromise({
+        return this.#pending.create({
             correlationId: requestId,
             entryType: 'stream',
-            timeoutMs: this.requestTimeoutMs,
+            timeoutMs: REQUEST_TIMEOUT_MS,
             timeoutMessage: 'Timed out waiting for daemon stream response',
             createEntry: (resolve, reject, timeout) => ({
                 type: 'stream',
@@ -394,7 +173,7 @@ class TeamClusterReverseChannelService {
                 reject
             }),
             emitMessage: () => {
-                this.emitCommand(socketId, requestId, {
+                this.#emitCommand(socketId, requestId, {
                     command: payload.command,
                     payload: payload.payload,
                     responseType: TeamClusterDaemonResponseType.Stream
@@ -403,198 +182,75 @@ class TeamClusterReverseChannelService {
         });
     }
 
+    async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
+        return this.#sessions.attachTerminal(teamClusterId, containerId);
+    }
+
     async attachWebSocket(
         teamClusterId: string,
         targetUrl: string,
         protocols?: string[]
     ): Promise<TeamClusterReverseWebSocketStream> {
-        const socketId = await this.requireDaemonSocketId(teamClusterId);
-        const sessionId = randomUUID();
-        const stream = new TeamClusterReverseWebSocketStream((message) => {
-            this.emitSessionInput(socketId, sessionId, message.data, message.isBinary);
-        }, () => {
-            this.detachSession(sessionId);
-        });
-
-        return this.createPendingPromise({
-            correlationId: sessionId,
-            entryType: 'websocket',
-            timeoutMs: this.terminalTimeoutMs,
-            timeoutMessage: 'Timed out waiting for daemon websocket attachment',
-            createEntry: (resolve, reject, timeout) => ({
-                type: 'websocket',
-                socketId,
-                timeout,
-                stream,
-                resolve,
-                reject
-            }),
-            emitMessage: () => {
-                this.emitSessionAttachCommand(socketId, sessionId, {
-                    sessionId,
-                    kind: TeamClusterDaemonSessionKind.WebSocket,
-                    targetUrl,
-                    ...(protocols && protocols.length > 0 ? { protocols } : {})
-                });
-            }
-        });
+        return this.#sessions.attachWebSocket(teamClusterId, targetUrl, protocols);
     }
-
-    async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        return this.attachTerminalSession(teamClusterId, 'Timed out waiting for daemon terminal attachment', {
-            kind: TeamClusterDaemonSessionKind.Terminal,
-            containerId
-        });
-    }
-
-    async openTunnel(
-        teamClusterId: string,
-        exposureId: string,
-        accessMode: TeamClusterServiceExposureAccessMode,
-        options?: TeamClusterTunnelOpenOptions
-    ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
         request: TeamClusterTunnelOpenRequest,
         options?: TeamClusterTunnelOpenOptions
-    ): Promise<TeamClusterTunnelStream>;
-
-    async openTunnel(
-        teamClusterId: string,
-        target: string | TeamClusterTunnelOpenRequest,
-        accessModeOrOptions?: TeamClusterServiceExposureAccessMode | TeamClusterTunnelOpenOptions,
-        options?: TeamClusterTunnelOpenOptions
-    ): Promise<TeamClusterTunnelStream> {
-        const socketId = await this.requireDaemonSocketId(
-            teamClusterId,
-            resolveTunnelChannel(target)
-        );
-        const sessionId = randomUUID();
-        const tunnelOptions = typeof target === 'string'
-            ? options
-            : accessModeOrOptions as TeamClusterTunnelOpenOptions | undefined;
-        const accessMode = typeof target === 'string'
-            ? accessModeOrOptions as TeamClusterServiceExposureAccessMode | undefined
-            : undefined;
-        const openPayload = createTunnelOpenPayload(sessionId, target, accessMode);
-
-        const stream = new TeamClusterReverseTunnelStream({
-            onWrite: (chunk, callback) => {
-                this.emitTunnelData(socketId, sessionId, chunk.data, chunk.isBinary, callback);
-            },
-            onClose: () => {
-                this.closeTunnel(sessionId);
-            }
-        });
-
-        return this.createPendingPromise({
-            correlationId: sessionId,
-            entryType: 'tunnel',
-            timeoutMs: tunnelOptions?.timeoutMs ?? this.terminalTimeoutMs,
-            timeoutMessage: tunnelOptions?.timeoutMessage ?? 'Timed out waiting for daemon tunnel attachment',
-            createEntry: (resolve, reject, timeout) => ({
-                type: 'tunnel',
-                socketId,
-                timeout,
-                stream,
-                resolve,
-                reject,
-                nextWriteSequence: 0,
-                pendingWriteAcks: new Map(),
-                pendingWriteBytes: 0
-            }),
-            emitMessage: () => {
-                this.emitToDaemon(socketId, openPayload);
-            }
-        });
-    }
-
-    private async attachTerminalSession(
-        teamClusterId: string,
-        timeoutMessage: string,
-        attachPayload: Omit<TeamClusterDaemonSessionAttachPayload, 'sessionId'>
-    ): Promise<ContainerTerminalAttachment> {
-        const socketId = await this.requireDaemonSocketId(teamClusterId);
-        const sessionId = randomUUID();
-        const stream = this.createBufferedStream();
-
-        return this.createPendingPromise({
-            correlationId: sessionId,
-            entryType: 'terminal',
-            timeoutMs: this.terminalTimeoutMs,
-            timeoutMessage,
-            createEntry: (resolve, reject, timeout) => ({
-                type: 'terminal',
-                socketId,
-                timeout,
-                stream,
-                resolve,
-                reject
-            }),
-            emitMessage: () => {
-                this.emitSessionAttachCommand(socketId, sessionId, {
-                    sessionId,
-                    ...attachPayload
-                });
-            }
-        });
+    ): Promise<TeamClusterReverseTunnelStream> {
+        return this.#tunnels.open(teamClusterId, request, options);
     }
 
     handleMessage(socketId: string, payload: TeamClusterDaemonMessage): void {
-        if (!this.isRegisteredDaemonSocket(socketId)) {
+        const teamClusterId = this.#connections.teamClusterIdFor(socketId);
+        if (!teamClusterId) {
             return;
         }
 
         switch (payload.type) {
-            case 'exposure-snapshot': {
-                const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
-                if (!teamClusterId) {
-                    return;
-                }
-
-                this.handleExposureSnapshotPayload(teamClusterId, payload);
+            case 'exposure-snapshot':
+                teamClusterExposureRegistryService.replaceTeamClusterExposures(teamClusterId, payload.exposures);
                 return;
-            }
 
             case 'response':
-                this.handleResponsePayload(payload);
+                this.#handleResponse(payload);
                 return;
 
             case 'stream':
-                this.handleStreamChunkPayload(socketId, payload);
+                this.#handleStreamChunk(socketId, teamClusterId, payload);
                 return;
 
             case 'stream-end':
-                this.handleStreamStatePayload(socketId, payload);
+                this.#handleStreamEnd(payload);
                 return;
 
             case 'session-data':
-                this.handleSessionDataPayload(payload);
+                this.#sessions.handleData(payload);
                 return;
 
             case 'session-end':
-                this.handleSessionEndPayload(payload);
+                this.#sessions.handleEnd(payload);
                 return;
 
             case 'tunnel-state':
-                this.handleTunnelStatePayload(payload);
+                this.#tunnels.handleState(payload);
                 return;
 
             case 'tunnel-data':
-                this.handleTunnelDataPayload(payload);
+                this.#tunnels.handleData(payload);
                 return;
 
             case 'tunnel-drain':
-                this.handleTunnelDrainPayload(payload);
+                this.#tunnels.handleDrain(payload);
                 return;
 
             case 'tunnel-close':
-                this.handleTunnelClosePayload(payload);
+                this.#tunnels.handleClose(payload);
                 return;
 
             case 'runtime-progress':
-                this.handleRuntimeProgressPayload(socketId, payload).catch(() => {
+                this.#handleRuntimeProgress(teamClusterId, payload).catch(() => {
                     logger.error(`[ReverseChannel] Runtime progress handling failed socketId=${socketId}`);
                 });
                 return;
@@ -604,26 +260,16 @@ class TeamClusterReverseChannelService {
         }
     }
 
-    private async handleRuntimeProgressPayload(
-        socketId: string,
+    async #handleRuntimeProgress(
+        teamClusterId: string,
         payload: TeamClusterDaemonRuntimeProgressPayload
     ): Promise<void> {
-        const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
-        if (!teamClusterId) {
+        const progress = payload.payload;
+        if (payload.action !== 'container-create' || !progress) {
             return;
         }
 
-        if (payload.action !== 'container-create') {
-            return;
-        }
-
-        const progress = payload.payload as DaemonContainerCreateProgressPayload | undefined;
-
-        if (!progress?.operationId) {
-            return;
-        }
-
-        await this.containerDeploymentProgressService.emitToTeam({
+        await containerDeploymentProgressService.emitToTeam({
             operationId: progress.operationId,
             teamClusterId,
             stage: payload.stage,
@@ -635,61 +281,23 @@ class TeamClusterReverseChannelService {
         });
     }
 
-    private detachSession(sessionId: string): void {
-        const entry = this.pendingEntries.get(sessionId);
-        if (!entry || (entry.type !== 'terminal' && entry.type !== 'websocket')) {
-            return;
-        }
+    #handleResponse(payload: TeamClusterDaemonSocketResponsePayload): void {
+        const entry = this.#pending.get(payload.requestId);
 
-        const detachPayload: TeamClusterDaemonSessionDetachPayload = {
-            type: 'session-detach',
-            sessionId
-        };
-        this.emitToDaemon(entry.socketId, detachPayload);
-
-        if (entry.type === 'terminal') {
-            entry.stream.destroy();
-        }
-        this.pendingEntries.delete(sessionId);
-        this.untouchSession(sessionId);
-    }
-
-    private closeTunnel(sessionId: string): void {
-        const entry = this.pendingEntries.get(sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            return;
-        }
-
-        const closePayload: TeamClusterDaemonTunnelClosePayload = {
-            type: 'tunnel-close',
-            sessionId
-        };
-        this.emitToDaemon(entry.socketId, closePayload);
-        this.failPendingTunnelWrites(entry, new Error('Tunnel session closed'));
-        this.pendingEntries.delete(sessionId);
-        this.untouchSession(sessionId);
-    }
-
-    private handleResponsePayload(payload: TeamClusterDaemonSocketResponsePayload): void {
-        const entry = this.pendingEntries.get(payload.requestId);
-        if (!entry) {
-            return;
-        }
-
-        switch (entry.type) {
+        switch (entry?.type) {
             case 'response':
-                this.pendingEntries.delete(payload.requestId);
+                this.#pending.delete(payload.requestId);
                 clearPendingTimeout(entry.timeout);
                 entry.resolve(payload);
                 return;
 
             case 'stream':
-                this.handleStreamOpenResponse(payload, entry);
+                this.#handleStreamOpenResponse(payload, entry);
                 return;
 
             case 'terminal':
             case 'websocket':
-                this.handleSessionAttachResponse(payload, entry);
+                this.#sessions.handleAttachResponse(payload, entry);
                 return;
 
             default:
@@ -697,7 +305,7 @@ class TeamClusterReverseChannelService {
         }
     }
 
-    private handleStreamOpenResponse(
+    #handleStreamOpenResponse(
         payload: TeamClusterDaemonSocketResponsePayload,
         entry: PendingStreamEntry
     ): void {
@@ -705,8 +313,7 @@ class TeamClusterReverseChannelService {
         entry.timeout = null;
 
         if (!payload.ok) {
-            this.pendingEntries.delete(payload.requestId);
-            this.untouchSession(payload.requestId);
+            this.#pending.delete(payload.requestId);
             entry.reject(new ApplicationError(
                 ErrorCodes.TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED,
                 payload.message || 'Daemon stream request failed',
@@ -719,7 +326,7 @@ class TeamClusterReverseChannelService {
         }
 
         entry.streamId = payload.streamId || payload.requestId;
-        this.touchSession(payload.requestId);
+        this.#pending.touch(payload.requestId);
         entry.resolve({
             status: payload.status,
             headers: payload.headers || {},
@@ -727,42 +334,15 @@ class TeamClusterReverseChannelService {
         });
     }
 
-    private handleSessionAttachResponse(
-        payload: TeamClusterDaemonSocketResponsePayload,
-        entry: PendingTerminalEntry | PendingWebSocketEntry
+    /** A chunk nobody is awaiting belongs to a stream the daemon opened on its own. */
+    #handleStreamChunk(
+        socketId: string,
+        teamClusterId: string,
+        payload: TeamClusterDaemonSocketStreamPayload
     ): void {
-        if (!entry.timeout) {
-            return;
-        }
-
-        if (!payload.ok) {
-            this.rejectPendingEntry(
-                payload.requestId,
-                entry,
-                new Error(payload.message || 'Daemon session attach failed')
-            );
-
-            return;
-        }
-
-        clearPendingTimeout(entry.timeout);
-        entry.timeout = null;
-
-        if (entry.type === 'terminal') {
-            this.touchSession(payload.requestId);
-            entry.resolve(this.createTerminalAttachment(entry, payload.requestId));
-            return;
-        }
-
-        this.touchSession(payload.requestId);
-        entry.stream.protocol = readSelectedWebSocketProtocol(payload.data);
-        entry.resolve(entry.stream);
-    }
-
-    private handleStreamChunkPayload(socketId: string, payload: TeamClusterDaemonSocketStreamPayload): void {
-        const entry = this.pendingEntries.get(payload.requestId);
-        if (!entry || entry.type !== 'stream') {
-            this.dispatchInboundStreamChunk(socketId, payload);
+        const entry = this.#pending.get(payload.requestId);
+        if (entry?.type !== 'stream') {
+            this.#inboundStreams.dispatchChunk(socketId, teamClusterId, payload);
             return;
         }
 
@@ -770,17 +350,16 @@ class TeamClusterReverseChannelService {
             return;
         }
 
-        this.touchSession(payload.requestId);
-        const chunk = unwrapEnvelopeBuffer(payload.chunk);
-        if (!entry.stream.write(chunk)) {
+        this.#pending.touch(payload.requestId);
+        if (!entry.stream.write(unwrapEnvelopeBuffer(payload.chunk))) {
             logger.debug(`[ReverseChannel] Stream backpressure hit requestId=${payload.requestId}`);
         }
     }
 
-    private handleStreamStatePayload(socketId: string, payload: TeamClusterDaemonSocketStreamStatePayload): void {
-        const entry = this.pendingEntries.get(payload.requestId);
-        if (!entry || entry.type !== 'stream') {
-            this.dispatchInboundStreamEnd(socketId, payload);
+    #handleStreamEnd(payload: TeamClusterDaemonSocketStreamStatePayload): void {
+        const entry = this.#pending.get(payload.requestId);
+        if (entry?.type !== 'stream') {
+            this.#inboundStreams.dispatchEnd(payload);
             return;
         }
 
@@ -789,533 +368,22 @@ class TeamClusterReverseChannelService {
         }
 
         entry.stream.end();
-        this.pendingEntries.delete(payload.requestId);
-        this.untouchSession(payload.requestId);
+        this.#pending.delete(payload.requestId);
     }
 
-    private dispatchInboundStreamChunk(socketId: string, payload: TeamClusterDaemonSocketStreamPayload): void {
-        const consumers = this.inboundStreamConsumers.get(payload.streamId);
-        if (!consumers || consumers.size === 0) {
-            return;
-        }
-
-        const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
-        if (!teamClusterId) {
-            return;
-        }
-
-        let chunk: Buffer;
-        try {
-            chunk = unwrapEnvelopeBuffer(payload.chunk);
-        } catch (error) {
-            logger.warn(
-                error,
-                `[ReverseChannel] Failed to decode inbound stream chunk streamId=${payload.streamId} requestId=${payload.requestId}`
-            );
-            return;
-        }
-        const streamPayload: TeamClusterDaemonInboundStreamPayload = {
-            socketId,
-            teamClusterId,
-            requestId: payload.requestId,
-            streamId: payload.streamId,
-            chunk
-        };
-
-        for (const consumer of consumers) {
-            Promise.resolve(consumer(streamPayload)).catch((error) => {
-                logger.warn(
-                    error,
-                    `[ReverseChannel] Inbound stream consumer failed streamId=${payload.streamId} requestId=${payload.requestId}`
-                );
-            });
-        }
+    #emitToDaemon(socketId: string, payload: TeamClusterDaemonMessage): void {
+        socketIOEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
     }
 
-    private dispatchInboundStreamEnd(socketId: string, payload: TeamClusterDaemonSocketStreamStatePayload): void {
-        const hasConsumer = this.inboundStreamConsumers.has(payload.streamId);
-        if (!hasConsumer) {
-            return;
-        }
-
-        if (!this.teamClusterIdsBySocketId.has(socketId)) {
-            return;
-        }
-
-        if (payload.message) {
-            logger.warn(
-                `[ReverseChannel] Inbound stream ended with message streamId=${payload.streamId} requestId=${payload.requestId} message=${payload.message}`
-            );
-        }
+    #emitCommand(socketId: string, requestId: string, payload: TeamClusterDaemonCommandPayload): void {
+        this.#emitToDaemon(socketId, createCommandMessage(requestId, payload));
     }
 
-    private handleExposureSnapshotPayload(teamClusterId: string, payload: TeamClusterDaemonExposureSnapshotPayload): void {
-        this.exposureRegistryService.replaceTeamClusterExposures(teamClusterId, payload.exposures);
-    }
-
-    private handleSessionDataPayload(payload: TeamClusterDaemonSessionDataPayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry) {
-            return;
-        }
-
-        this.touchSession(payload.sessionId);
-        const chunk = unwrapEnvelopeBuffer(payload.chunk);
-
-        if (entry.type === 'terminal') {
-            entry.stream.write(chunk);
-            return;
-        }
-
-        if (entry.type === 'websocket') {
-            entry.stream.emitData({
-                data: chunk,
-                isBinary: payload.isBinary
-            });
-            return;
-        }
-    }
-
-    private handleSessionEndPayload(payload: TeamClusterDaemonSessionEndPayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry) {
-            return;
-        }
-
-        const error = payload.error ? new Error(payload.error) : undefined;
-
-        switch (entry.type) {
-            case 'terminal':
-                this.handleTerminalSessionEnd(payload, entry, error);
-                return;
-
-            case 'websocket':
-                this.handleWebSocketSessionEnd(payload, entry, error);
-                return;
-
-            default:
-                return;
-        }
-    }
-
-    private handleTerminalSessionEnd(
-        payload: TeamClusterDaemonSessionEndPayload,
-        entry: PendingTerminalEntry,
-        error?: Error
-    ): void {
-        if (entry.timeout) {
-            this.rejectPendingEntry(
-                payload.sessionId,
-                entry,
-                error || new Error(payload.message || 'Daemon terminal session ended before attachment completed')
-            );
-
-            return;
-        }
-
-        if (error) {
-            entry.stream.emit('error', error);
-        }
-
-        entry.stream.end();
-        this.pendingEntries.delete(payload.sessionId);
-        this.untouchSession(payload.sessionId);
-    }
-
-    private handleWebSocketSessionEnd(
-        payload: TeamClusterDaemonSessionEndPayload,
-        entry: PendingWebSocketEntry,
-        error?: Error
-    ): void {
-        if (entry.timeout) {
-            this.rejectPendingEntry(
-                payload.sessionId,
-                entry,
-                error || new Error(payload.message || 'Daemon websocket session ended before attachment completed')
-            );
-
-            return;
-        }
-
-        if (error) {
-            entry.stream.emitError(error);
-        } else {
-            entry.stream.emitEnd({
-                code: payload.code,
-                message: payload.message
-            });
-        }
-
-        this.pendingEntries.delete(payload.sessionId);
-        this.untouchSession(payload.sessionId);
-    }
-
-    private createTerminalAttachment(entry: PendingTerminalEntry, sessionId: string): ContainerTerminalAttachment {
-        return {
-            exec: new TeamClusterReverseTerminalExec((size) => {
-                this.emitSessionResize(entry.socketId, sessionId, size);
-            }),
-            stream: new TeamClusterReverseTerminalStream(entry.stream, (input) => {
-                this.emitSessionInput(entry.socketId, sessionId, Buffer.from(input, 'utf8'), false);
-            }, () => {
-                this.detachSession(sessionId);
-            }),
-            close: async () => {
-                this.detachSession(sessionId);
-            }
-        };
-    }
-
-    private handleTunnelStatePayload(payload: TeamClusterDaemonTunnelStatePayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            return;
-        }
-
-        if (payload.status === TeamClusterTunnelSessionStatus.Opening) {
-            return;
-        }
-
-        const error = payload.error ? new Error(payload.error) : undefined;
-        if (entry.timeout) {
-            clearPendingTimeout(entry.timeout);
-            entry.timeout = null;
-
-            if (payload.status !== TeamClusterTunnelSessionStatus.Open || error) {
-                this.failPendingTunnelWrites(entry, error || new Error(payload.message || 'Failed to open daemon tunnel'));
-                this.pendingEntries.delete(payload.sessionId);
-                this.untouchSession(payload.sessionId);
-                entry.reject(error || new Error(payload.message || 'Failed to open daemon tunnel'));
-                return;
-            }
-
-            entry.resolve(entry.stream);
-            this.touchSession(payload.sessionId);
-            return;
-        }
-
-        if (error) {
-            this.failPendingTunnelWrites(entry, error);
-            entry.stream.fail(error);
-        } else if (payload.status === TeamClusterTunnelSessionStatus.Closed) {
-            this.failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
-            entry.stream.closeRemote();
-        }
-
-        this.pendingEntries.delete(payload.sessionId);
-        this.untouchSession(payload.sessionId);
-    }
-
-    private handleTunnelDataPayload(payload: TeamClusterDaemonTunnelDataPayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            return;
-        }
-
-        this.touchSession(payload.sessionId);
-        let chunk: Buffer;
-        try {
-            chunk = unwrapEnvelopeBuffer(payload.chunk);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            logger.warn(`[ReverseChannel] tunnel-data decode failed sessionId=${payload.sessionId} chunkShape=${describeBinaryCarrier(payload.chunk)} error=${message}`);
-            this.failPendingTunnelWrites(entry, error instanceof Error ? error : new Error(message));
-            entry.stream.fail(error instanceof Error ? error : new Error(message));
-            this.pendingEntries.delete(payload.sessionId);
-            this.untouchSession(payload.sessionId);
-            return;
-        }
-        const sequence = payload.sequence;
-        if (payload.requiresAck && sequence !== undefined) {
-            entry.stream.pushChunk(chunk, () => {
-                this.emitTunnelDrain(entry.socketId, payload.sessionId, sequence);
-            });
-            return;
-        }
-
-        entry.stream.pushChunk(chunk);
-    }
-
-    private handleTunnelDrainPayload(payload: TeamClusterDaemonTunnelDrainPayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            return;
-        }
-
-        const pendingAck = entry.pendingWriteAcks.get(payload.sequence);
-        if (!pendingAck) {
-            return;
-        }
-
-        this.touchSession(payload.sessionId);
-        clearTimeout(pendingAck.timeout);
-        entry.pendingWriteAcks.delete(payload.sequence);
-        entry.pendingWriteBytes = Math.max(0, entry.pendingWriteBytes - pendingAck.bytes);
-
-        if (entry.blockedWriteCallback && entry.pendingWriteBytes <= TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES) {
-            const callback = entry.blockedWriteCallback;
-            entry.blockedWriteCallback = undefined;
-            callback();
-        }
-    }
-
-    private handleTunnelClosePayload(payload: TeamClusterDaemonTunnelClosePayload): void {
-        const entry = this.pendingEntries.get(payload.sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            return;
-        }
-
-        this.failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
-        entry.stream.closeRemote();
-        this.pendingEntries.delete(payload.sessionId);
-        this.untouchSession(payload.sessionId);
-    }
-
-    private createBufferedStream(): PassThrough {
-        return new PassThrough({ highWaterMark: this.streamHighWaterMark });
-    }
-
-    private createPendingPromise<TResult, TEntry extends PendingEntry>(options: PendingPromiseOptions<TResult, TEntry>): Promise<TResult> {
-        return new Promise((resolve, reject) => {
-            const timeout = this.createPendingTimeout(
-                options.correlationId,
-                options.entryType,
-                options.timeoutMs,
-                options.timeoutMessage
-            );
-
-            this.pendingEntries.set(
-                options.correlationId,
-                options.createEntry(resolve, reject, timeout)
-            );
-
-            options.emitMessage();
-        });
-    }
-
-    private createPendingTimeout(
-        correlationId: string,
-        entryType: PendingEntry['type'],
-        timeoutMs: number,
-        timeoutMessage: string
-    ): NodeJS.Timeout | null {
-        if (timeoutMs <= 0) {
-            return null;
-        }
-
-        return setTimeout(() => {
-            const entry = this.pendingEntries.get(correlationId);
-            if (!entry || entry.type !== entryType) {
-                return;
-            }
-
-            this.rejectPendingEntry(correlationId, entry, new Error(timeoutMessage));
-        }, timeoutMs);
-    }
-
-    private emitToDaemon(socketId: string, payload: TeamClusterDaemonMessage): void {
-        this.socketEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
-    }
-
-    private emitCommand(socketId: string, requestId: string, payload: TeamClusterDaemonCommandPayload): void {
-        this.emitToDaemon(socketId, createCommandMessage(requestId, payload));
-    }
-
-    private emitSessionAttachCommand(
-        socketId: string,
-        sessionId: string,
-        payload: TeamClusterDaemonSessionAttachPayload
-    ): void {
-        this.emitCommand(socketId, sessionId, {
-            command: 'session.attach',
-            responseType: TeamClusterDaemonResponseType.Json,
-            payload
-        });
-    }
-
-    private emitSessionInput(
-        socketId: string,
-        sessionId: string,
-        chunk: Buffer,
-        isBinary: boolean
-    ): void {
-        const payload: TeamClusterDaemonSessionInputPayload = {
-            type: 'session-input',
-            sessionId,
-            chunk: wrapEnvelopeBuffer(chunk),
-            isBinary
-        };
-
-        this.emitToDaemon(socketId, payload);
-    }
-
-    private emitSessionResize(socketId: string, sessionId: string, size: ContainerTerminalSize): void {
-        const payload: TeamClusterDaemonSessionResizePayload = {
-            type: 'session-resize',
-            sessionId,
-            rows: size.rows,
-            cols: size.cols
-        };
-
-        this.emitToDaemon(socketId, payload);
-    }
-
-    private emitTunnelData(
-        socketId: string,
-        sessionId: string,
-        chunk: Buffer,
-        isBinary: boolean,
-        callback: (error?: Error | null) => void
-    ): void {
-        const entry = this.pendingEntries.get(sessionId);
-        if (!entry || entry.type !== 'tunnel') {
-            callback(new Error('Tunnel session is not open'));
-            return;
-        }
-
-        const sequence = ++entry.nextWriteSequence;
-        const bytes = chunk.byteLength;
-        const timeout = setTimeout(() => {
-            const activeEntry = this.pendingEntries.get(sessionId);
-            if (!activeEntry || activeEntry.type !== 'tunnel') {
-                return;
-            }
-
-            const pendingAck = activeEntry.pendingWriteAcks.get(sequence);
-            if (!pendingAck) {
-                return;
-            }
-
-            activeEntry.pendingWriteAcks.delete(sequence);
-            activeEntry.pendingWriteBytes = Math.max(0, activeEntry.pendingWriteBytes - pendingAck.bytes);
-            const error = new Error(`Timed out waiting for tunnel drain acknowledgement after ${TUNNEL_DRAIN_TIMEOUT_MS}ms`);
-            this.failPendingTunnelWrites(activeEntry, error);
-            activeEntry.stream.fail(error);
-            this.closeTunnel(sessionId);
-        }, TUNNEL_DRAIN_TIMEOUT_MS);
-        timeout.unref();
-
-        entry.pendingWriteAcks.set(sequence, {
-            bytes,
-            timeout
-        });
-        entry.pendingWriteBytes += bytes;
-
-        const payload: TeamClusterDaemonTunnelDataPayload = {
-            type: 'tunnel-data',
-            sessionId,
-            chunk: wrapEnvelopeBuffer(chunk),
-            isBinary,
-            sequence,
-            requiresAck: true
-        };
-
-        this.emitToDaemon(socketId, payload);
-
-        if (entry.pendingWriteBytes <= TUNNEL_FLOW_CONTROL_WINDOW_BYTES) {
-            callback();
-            return;
-        }
-
-        entry.blockedWriteCallback = callback;
-    }
-
-    private emitTunnelDrain(socketId: string, sessionId: string, sequence: number): void {
-        const payload: TeamClusterDaemonTunnelDrainPayload = {
-            type: 'tunnel-drain',
-            sessionId,
-            sequence
-        };
-
-        this.emitToDaemon(socketId, payload);
-    }
-
-    private async requireDaemonSocketId(
+    #requireDaemonSocketId(
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): Promise<string> {
-        const registry = this.registryFor(channel);
-        const socketId = registry.socketIdFor(teamClusterId);
-        if (socketId) {
-            return socketId;
-        }
-
-        logger.info(`[ReverseChannel] Waiting for daemon ${channel} reconnection: cluster=${teamClusterId}`);
-        return new Promise<string>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                registry.removeWaiter(teamClusterId, onConnected);
-
-                reject(ApplicationError.conflict(
-                    'TeamCluster::DaemonUnavailable',
-                    `Team cluster daemon ${channel} reverse channel is not connected`
-                ));
-            }, this.daemonConnectionWaitTimeoutMs);
-
-            const onConnected = (nextSocketId: string) => {
-                clearTimeout(timeout);
-                resolve(nextSocketId);
-            };
-
-            registry.addWaiter(teamClusterId, onConnected);
-        });
-    }
-
-    private failPendingTunnelWrites(entry: PendingTunnelEntry, error: Error): void {
-        for (const pendingAck of entry.pendingWriteAcks.values()) {
-            clearTimeout(pendingAck.timeout);
-        }
-
-        entry.pendingWriteAcks.clear();
-        entry.pendingWriteBytes = 0;
-
-        if (!entry.blockedWriteCallback) {
-            return;
-        }
-
-        const callback = entry.blockedWriteCallback;
-        entry.blockedWriteCallback = undefined;
-        callback(error);
-    }
-
-    private rejectPendingEntry(correlationId: string, entry: PendingEntry, error: Error): void {
-        this.pendingEntries.delete(correlationId);
-        this.untouchSession(correlationId);
-        clearPendingTimeout(entry.timeout);
-
-        if (entry.timeout) {
-            entry.reject(error);
-            return;
-        }
-
-        switch (entry.type) {
-            case 'response':
-                entry.reject(error);
-                return;
-
-            case 'terminal':
-                entry.stream.emit('error', error);
-                entry.stream.destroy();
-                return;
-
-            case 'websocket':
-                entry.stream.emitError(error);
-                entry.stream.destroy();
-                return;
-
-            case 'tunnel':
-                this.failPendingTunnelWrites(entry, error);
-                entry.stream.fail(error);
-                return;
-
-            case 'stream':
-                entry.stream.emit('error', error);
-                entry.stream.destroy();
-                entry.reject(error);
-                return;
-
-            default:
-                return;
-        }
+        return this.#connections.requireSocketId(teamClusterId, channel, DAEMON_CONNECTION_WAIT_TIMEOUT_MS);
     }
 }
 

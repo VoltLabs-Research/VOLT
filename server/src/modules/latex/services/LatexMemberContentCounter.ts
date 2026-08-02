@@ -27,7 +27,7 @@ class LatexMemberContentCounter implements IMemberContentCounter{
             .getRawMany<GroupedCountRow>();
 
         for(const row of rows){
-            counts.set(String(row.createdBy), Number(row.count));
+            counts.set(row.createdBy, Number(row.count));
         }
 
         return {

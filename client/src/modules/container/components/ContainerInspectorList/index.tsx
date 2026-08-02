@@ -14,9 +14,7 @@ interface ContainerInspectorListProps {
 }
 
 const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspectorListProps) => {
-    const visibleRows = rows.filter((row) => row.value !== null && row.value !== undefined && row.value !== '');
-
-    if (visibleRows.length === 0) {
+    if (rows.length === 0) {
         return null;
     }
 
@@ -28,7 +26,7 @@ const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspec
                 </Heading>
             )}
             <KeyValueList>
-                {visibleRows.map((row) => (
+                {rows.map((row) => (
                     <KeyValueRow
                         key={row.label}
                         label={row.label}

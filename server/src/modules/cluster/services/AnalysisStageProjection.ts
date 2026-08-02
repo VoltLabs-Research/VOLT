@@ -8,13 +8,8 @@ import type {
     AnalysisStageStatus
 } from '@shared/contracts/types';
 import { JobStatus } from '@shared/contracts/types';
-import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/daemon-analysis-jobs';
+import type { DaemonAnalysisStageStatusInput } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 
-/**
- * Pure projection rules for analysis stages, child analyses and expected
- * artifacts. Decides how a daemon stage report changes the stored analysis
- * without touching persistence or the event bus.
- */
 /**
  * Stages and child analyses are persisted in a simple-json column, so their
  * dates come back from the database as ISO strings even though the type says
@@ -30,7 +25,26 @@ const toEpochMs = (value: Date | string | undefined): number | undefined => {
     return Number.isNaN(time) ? undefined : time;
 };
 
-export default class AnalysisStageProjection{
+const isTerminalStageStatus = (status: AnalysisStageStatus): boolean => {
+    return status === 'completed' || status === 'failed' || status === 'cached';
+};
+
+/**
+ * The progress fields shared by stages and child analyses, which advance under
+ * the same staleness rule.
+ */
+interface StageProgress {
+    status: AnalysisStageStatus;
+    startedAt?: Date;
+    finishedAt?: Date;
+}
+
+/**
+ * Pure projection rules for analysis stages, child analyses and expected
+ * artifacts. Decides how a daemon stage report changes the stored analysis
+ * without touching persistence or the event bus.
+ */
+export default class AnalysisStageProjection {
     toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
         return {
             stageKey: input.stageKey,
@@ -58,7 +72,7 @@ export default class AnalysisStageProjection{
         }
 
         const previous = stages[index];
-        if (previous && this.shouldIgnoreStageUpdate(previous, stage)) {
+        if (previous && this.shouldIgnoreStaleUpdate(previous, stage)) {
             return stages;
         }
 
@@ -78,8 +92,12 @@ export default class AnalysisStageProjection{
             && left.timestep === right.timestep;
     }
 
-    shouldIgnoreStageUpdate(previous: AnalysisStage, next: AnalysisStage): boolean {
-        if (!this.#isTerminalStageStatus(previous.status) || this.#isTerminalStageStatus(next.status)) {
+    /**
+     * A terminal stage must not be reopened by a report that started before it
+     * finished, which happens when out-of-order frames land on the same key.
+     */
+    shouldIgnoreStaleUpdate(previous: StageProgress, next: StageProgress): boolean {
+        if (!isTerminalStageStatus(previous.status) || isTerminalStageStatus(next.status)) {
             return false;
         }
 
@@ -93,9 +111,6 @@ export default class AnalysisStageProjection{
     #elapsedMs(startedAt: Date | string | undefined, finishedAt: Date): number | undefined {
         const startedAtMs = toEpochMs(startedAt);
         return startedAtMs === undefined ? undefined : Math.max(0, finishedAt.getTime() - startedAtMs);
-    }
-
-    #isTerminalStageStatus(status: AnalysisStageStatus): boolean {        return status === 'completed' || status === 'failed' || status === 'cached';
     }
 
     updateExpectedArtifactsForStage(
@@ -154,7 +169,7 @@ export default class AnalysisStageProjection{
         }
 
         const next = [...childAnalyses];
-        if (this.#shouldIgnoreChildAnalysisUpdate(next[index]!, child)) {
+        if (this.shouldIgnoreStaleUpdate(next[index]!, child)) {
             return childAnalyses;
         }
 
@@ -171,18 +186,6 @@ export default class AnalysisStageProjection{
     #isSameChildAnalysisIdentity(left: AnalysisChildAnalysis, right: AnalysisChildAnalysis): boolean {
         return left.id === right.id
             && left.timestep === right.timestep;
-    }
-
-    #shouldIgnoreChildAnalysisUpdate(previous: AnalysisChildAnalysis, next: AnalysisChildAnalysis): boolean {
-        if (!this.#isTerminalStageStatus(previous.status) || this.#isTerminalStageStatus(next.status)) {
-            return false;
-        }
-
-        const previousFinishedAt = toEpochMs(previous.finishedAt);
-        const nextStartedAt = toEpochMs(next.startedAt);
-        return previousFinishedAt !== undefined
-            && nextStartedAt !== undefined
-            && nextStartedAt <= previousFinishedAt;
     }
 
     resolveArtifactStatusForStage(

@@ -1,4 +1,5 @@
 import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utils/format-network';
+import { getClusterCpuUsage } from '@/modules/cluster/utils/cluster-cpu-usage';
 import './MetricsCards.css';
 import { Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { Box, Row, StatCard, Text } from '@voltstack/bravais';
@@ -19,18 +20,8 @@ interface MetricCardItem {
     subtitle: string;
 }
 
-const renderTrendIcon = (trendUp: boolean) => {
-    if (trendUp) {
-        return <TrendingUp size={14} />;
-    }
-
-    return <TrendingDown size={14} />;
-};
-
 const MetricsCards = ({ metrics }: MetricsCardsProps) => {
-    const isLoading = !metrics;
-
-    if(isLoading){
+    if(!metrics){
         return (
             <Box gap='1' className='metrics-cards'>
                 {[...Array(4)].map((_, i) => (
@@ -44,12 +35,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
         );
     }
 
-    let cpuUsage = metrics.cpu.usage;
-
-    if (metrics.cpu.coresUsage?.length > 0) {
-        cpuUsage = metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length;
-    }
-
+    const cpuUsage = getClusterCpuUsage(metrics.cpu);
     const networkTotal = metrics.network.incoming + metrics.network.outgoing;
     const networkFormatted = formatNetworkSpeedWithUnit(networkTotal);
     const outgoingFormatted = formatNetworkSpeedWithUnit(metrics.network.outgoing);
@@ -95,7 +81,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                         <Row align='center' justify='between' gap='05'>
                             <Text as='span' size='sm' tone='secondary'>{card.subtitle}</Text>
                             <Row as='span' align='center' gap='025' className={`font-size-1 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
-                                {renderTrendIcon(card.trendUp)}
+                                {card.trendUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {card.trend}
                             </Row>
                         </Row>

@@ -9,7 +9,6 @@ import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-featur
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utils/resolve-onboarding-step';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
@@ -19,23 +18,17 @@ import { Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import type { FormEvent, ReactNode } from 'react';
-
-const useNextDestination = (): string => {
-    const location = useLocation();
-    const params = new URLSearchParams(location.search);
-    return resolvePostAuthDestination({
-        queryNext: params.get('next')
-    });
-};
+import type { FormEvent } from 'react';
 
 const PostAuthOnboarding = () => {
     const navigate = useNavigate();
-    const next = useNextDestination();
+    const location = useLocation();
+    const next = resolvePostAuthDestination({
+        queryNext: new URLSearchParams(location.search).get('next')
+    });
     const user = useCurrentUser();
-    const defaultTeamName = user ? `${user.firstName} ${user.lastName} team's` : "My team's";
 
-    const [teamName, setTeamName] = useState(defaultTeamName);
+    const [teamName, setTeamName] = useState(user ? `${user.firstName} ${user.lastName} team's` : "My team's");
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
@@ -52,35 +45,21 @@ const PostAuthOnboarding = () => {
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
     const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
+    const clusterDestination = isDemoClusterFeatureEnabled()
+        ? '/onboarding/cluster/choice'
+        : getClusterOnboardingRedirectPath(next);
 
     if (teamClustersQuery.isError && selectedTeamId) {
         throw teamClustersQuery.error;
     }
 
-    if (!isLoading && (!selectedTeamId || teamClustersQuery.isSuccess)) {
-        const step = resolveOnboardingStep({
-            hasTeam,
-            hasConnectedCluster
-        });
-
-        if (step === OnboardingStep.Done) {
-            return <Navigate to={next} replace />;
-        }
-
-        if (step === OnboardingStep.Cluster) {
-            if (isDemoClusterFeatureEnabled()) {
-                return <Navigate to='/onboarding/cluster/choice' replace />;
-            }
-            return <Navigate to={getClusterOnboardingRedirectPath(next)} replace />;
-        }
+    if (!isLoading && (!selectedTeamId || teamClustersQuery.isSuccess) && hasTeam) {
+        return <Navigate to={hasConnectedCluster ? next : clusterDestination} replace />;
     }
 
-    const stepState = {
-        title: "Let's create a team for you!",
-        description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later."
-    };
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
 
-    const handleCreateTeam = async () => {
         if (!teamName.trim()) {
             setNameError('Team name is required');
             return;
@@ -100,9 +79,6 @@ const PostAuthOnboarding = () => {
             });
 
             switchSelectedTeam(newTeam._id);
-            const clusterDestination = isDemoClusterFeatureEnabled()
-                ? '/onboarding/cluster/choice'
-                : getClusterOnboardingRedirectPath(next);
             navigate(clusterDestination, { replace: true });
         } catch (err: unknown) {
             reportError(err, {
@@ -115,68 +91,57 @@ const PostAuthOnboarding = () => {
         }
     };
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        await handleCreateTeam();
-    };
-
-    let content: ReactNode = (
-        <Stack gap='2' className='post-auth-onboarding-shell'>
-            <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
-                <Stack gap='1' textAlign='center'>
-                    <Heading level={1} size='3xl' weight='bold'>
-                        {stepState.title}
-                    </Heading>
-                    <Text as='p' tone='secondary' className='post-auth-onboarding-description'>
-                        {stepState.description}
-                    </Text>
-                </Stack>
-
-                <Stack gap='1'>
-                    <FormFieldRHF
-                        label='Team name'
-                        placeholder='e.g., Research Lab'
-                        value={teamName}
-                        error={nameError}
-                        onChange={(event) => {
-                            setTeamName(event.target.value);
-                            if (nameError) {
-                                setNameError(undefined);
-                            }
-                        }}
-                    />
-                </Stack>
-
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='lg'
-                    shape='pill'
-                    block
-                    type='submit'
-                    isLoading={isSubmitting}
-                >
-                    Create Team & Continue
-                </Button>
-            </form>
-        </Stack>
-    );
-
-    if (isLoading) {
-        content = (
-            <Stack align='center' justify='center' gap='1' className='post-auth-onboarding-loading'>
-                <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
-            </Stack>
-        );
-    }
-
     return (
         <OnboardingLayout
             onSettingsClick={handleSettingsClick}
             onSignOut={handleSignOut}
             isSigningOut={isSigningOut}
         >
-            {content}
+            {isLoading ? (
+                <Stack align='center' justify='center' gap='1' className='post-auth-onboarding-loading'>
+                    <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
+                </Stack>
+            ) : (
+                <Stack gap='2' className='post-auth-onboarding-shell'>
+                    <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
+                        <Stack gap='1' textAlign='center'>
+                            <Heading level={1} size='3xl' weight='bold'>
+                                Let&apos;s create a team for you!
+                            </Heading>
+                            <Text as='p' tone='secondary' className='post-auth-onboarding-description'>
+                                Invite other users to collaborate or join existing teams. You&apos;ll have the option to create new teams later.
+                            </Text>
+                        </Stack>
+
+                        <Stack gap='1'>
+                            <FormFieldRHF
+                                label='Team name'
+                                placeholder='e.g., Research Lab'
+                                value={teamName}
+                                error={nameError}
+                                onChange={(event) => {
+                                    setTeamName(event.target.value);
+                                    if (nameError) {
+                                        setNameError(undefined);
+                                    }
+                                }}
+                            />
+                        </Stack>
+
+                        <Button
+                            variant='solid'
+                            intent='brand'
+                            size='lg'
+                            shape='pill'
+                            block
+                            type='submit'
+                            isLoading={isSubmitting}
+                        >
+                            Create Team & Continue
+                        </Button>
+                    </form>
+                </Stack>
+            )}
         </OnboardingLayout>
     );
 };

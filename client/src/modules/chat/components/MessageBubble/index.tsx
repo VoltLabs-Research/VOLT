@@ -28,7 +28,6 @@ const MessageBubble = ({
     const showAvatar = isGroupChat && !isOwn;
     const isFile = message.messageType === ChatMessageType.File;
     const isDeleted = message.deleted;
-    const handleToggleReaction = onToggleReaction ?? (() => undefined);
     let messageContent: ReactNode;
 
     if (isDeleted) {
@@ -88,7 +87,7 @@ const MessageBubble = ({
                     <ReactionsDisplay
                         reactions={message.reactions}
                         currentUserId={currentUserId}
-                        onToggle={handleToggleReaction}
+                        onToggle={onToggleReaction ?? (() => undefined)}
                     />
                 )}
             </Stack>

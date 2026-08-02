@@ -1,6 +1,6 @@
 import useFrameProperties from './use-frame-properties';
 import { buildPropertyOptions, resolvePropertySelection } from './use-property-selector.utils';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 import type { PropertyOption } from './use-property-selector.utils';
 
@@ -31,10 +31,7 @@ const findDefaultPropertyOption = (propertyOptions: PropertyOption[]): PropertyO
 
 export default function usePropertySelector(params: UsePropertySelectorParams): UsePropertySelectorResult {
     const { trajectoryId, analysisId, timestep } = params;
-    const [selectedProperty, setSelectedProperty] = useState<string>('');
     const [selectedPropertyValue, setSelectedPropertyValue] = useState<string>('');
-    const [selectedExposureId, setSelectedExposureId] = useState<string | null>(null);
-    const [selectedPropertyType, setSelectedPropertyType] = useState<'number' | 'string'>('number');
 
     const { properties, isLoading } = useFrameProperties({
         trajectoryId,
@@ -47,64 +44,20 @@ export default function usePropertySelector(params: UsePropertySelectorParams): 
     }, [properties]);
 
     useEffect(() => {
-        setSelectedProperty('');
         setSelectedPropertyValue('');
-        setSelectedExposureId(null);
     }, [analysisId]);
 
-    useEffect(() => {
-        const selectedOption = propertyOptions.find((option) => option.value === selectedPropertyValue);
-        if (selectedOption) {
-            if (selectedProperty !== selectedOption.property) {
-                setSelectedProperty(selectedOption.property);
-            }
-            if (selectedExposureId !== selectedOption.exposureId) {
-                setSelectedExposureId(selectedOption.exposureId);
-            }
-            if (selectedPropertyType !== selectedOption.type) {
-                setSelectedPropertyType(selectedOption.type);
-            }
-            return;
-        }
-
-        const defaultOption = findDefaultPropertyOption(propertyOptions);
-        if (!defaultOption) {
-            if (selectedProperty !== '') {
-                setSelectedProperty('');
-            }
-            if (selectedPropertyValue !== '') {
-                setSelectedPropertyValue('');
-            }
-            if (selectedExposureId !== null) {
-                setSelectedExposureId(null);
-            }
-            if (selectedPropertyType !== 'number') {
-                setSelectedPropertyType('number');
-            }
-            return;
-        }
-
-        setSelectedProperty(defaultOption.property);
-        setSelectedPropertyValue(defaultOption.value);
-        setSelectedExposureId(defaultOption.exposureId);
-        setSelectedPropertyType(defaultOption.type);
-    }, [propertyOptions, selectedExposureId, selectedProperty, selectedPropertyType, selectedPropertyValue]);
-
-    const handlePropertyChange = useCallback((value: string) => {
-        const selection = resolvePropertySelection(propertyOptions, value);
-        setSelectedProperty(selection.property);
-        setSelectedPropertyValue(value);
-        setSelectedExposureId(selection.exposureId);
-        setSelectedPropertyType(selection.type);
-    }, [propertyOptions]);
+    const activePropertyValue = (propertyOptions.find((option) => option.value === selectedPropertyValue)
+        ?? findDefaultPropertyOption(propertyOptions))?.value ?? '';
+    const selection = resolvePropertySelection(propertyOptions, activePropertyValue);
 
     return {
-        property: selectedProperty,
-        propertyValue: selectedPropertyValue,
-        exposureId: selectedExposureId,
-        propertyType: selectedPropertyType,
+        property: selection.property,
+        propertyValue: activePropertyValue,
+        exposureId: selection.exposureId,
+        propertyType: selection.type,
         propertyOptions,
         isLoading,
-        handlePropertyChange
+        handlePropertyChange: setSelectedPropertyValue
     };
 }

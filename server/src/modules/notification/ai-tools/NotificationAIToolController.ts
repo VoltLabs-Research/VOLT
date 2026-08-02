@@ -1,10 +1,12 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import NotificationService from '@modules/notification/services/NotificationService';
 import type { GetNotificationsInput } from '@volt/contracts/modules/notification/ai-tools';
 
+@AIToolProvider()
 export default class NotificationAIToolController extends AIToolController {
     #service = new NotificationService();
 

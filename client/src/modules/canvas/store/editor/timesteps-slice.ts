@@ -1,6 +1,7 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
 import { useCanvasAccessStore } from '@/modules/canvas/api/access';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
+import { isAbortError, reportError } from '@/shared/errors/core';
 
 import type { EditorStore } from './types';
 import type { TimestepStore } from '@/modules/fractal/contracts/editor/scene-types';
@@ -40,6 +41,7 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
         }
 
         let loadedCount = 0;
+        let failedCount = 0;
 
         const promises = targetTimesteps.map(async (timestep: number) => {
             if (signal?.aborted) {
@@ -56,25 +58,29 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
             };
 
             try {
-                if (signal?.aborted) {
-                    return;
-                }
-
                 await preloadFractalSceneAsset(assetParams, { signal });
-            } catch {
-            } finally {
-                if (signal?.aborted) {
-                    return;
-                }
-
-                loadedCount++;
-                if (onProgress) {
-                    onProgress(loadedCount / total, { bps: 0 });
-                }
+            } catch (error) {
+                if (isAbortError(error)) return;
+                failedCount++;
             }
+
+            // Progress still advances on failure so the bar cannot stall, but the
+            // failure is counted and reported rather than silently swallowed.
+            if (signal?.aborted) return;
+
+            loadedCount++;
+            onProgress?.(loadedCount / total, { bps: 0 });
         });
 
         await Promise.all(promises);
+
+        if (failedCount > 0 && !signal?.aborted) {
+            reportError(
+                new Error(`${failedCount} of ${total} frames could not be preloaded.`),
+                { fallbackTitle: 'Some frames could not be preloaded' }
+            );
+        }
+
         return {};
     }
 });

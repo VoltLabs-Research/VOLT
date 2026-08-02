@@ -9,19 +9,8 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { TeamCluster, TeamClusterCredentialServices } from '@volt/contracts/modules/cluster/domain';
-interface SidebarClustersResult {
-    clusters: TeamCluster[];
-    selectedTeamId: string | null;
-    isOnClustersRoute: boolean;
-    credentialsCluster: TeamCluster | null;
-    credentials: TeamClusterCredentialServices | null;
-    handleMonitor: (cluster: TeamCluster) => void;
-    handleRevealCredentials: (cluster: TeamCluster) => void;
-    revealCredentials: (password: string) => Promise<void>;
-    setCredentialsCluster: (cluster: TeamCluster | null) => void;
-}
 
-const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClustersResult => {
+const useSidebarClusters = (setSidebarOpen: (open: boolean) => void) => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const selectedTeamId = useSelectedTeamId();
@@ -40,10 +29,6 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         navigate(`/dashboard/clusters/${cluster._id}`);
         setSidebarOpen(false);
     }, [navigate, setSidebarOpen]);
-
-    const handleMonitor = useCallback((cluster: TeamCluster) => {
-        navigateToCluster(cluster);
-    }, [navigateToCluster]);
 
     const handleRevealCredentials = useCallback((cluster: TeamCluster) => {
         if (isOnClustersRoute) {
@@ -83,7 +68,7 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         isOnClustersRoute,
         credentialsCluster,
         credentials,
-        handleMonitor,
+        handleMonitor: navigateToCluster,
         handleRevealCredentials,
         revealCredentials,
         setCredentialsCluster: (cluster: TeamCluster | null) => {

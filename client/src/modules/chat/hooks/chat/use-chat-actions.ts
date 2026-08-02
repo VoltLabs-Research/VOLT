@@ -1,5 +1,3 @@
-import { useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useGetOrCreateChatMutation, addChatToCache } from './queries';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -7,10 +5,9 @@ import { useNavigate } from 'react-router-dom';
 
 const useChatActions = () => {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
     const getOrCreateChatMutationResult = useGetOrCreateChatMutation();
 
-    const getOrCreateChat = useCallback(async (teamId: string, participantId: string) => {
+    const getOrCreateChat = async (teamId: string, participantId: string) => {
         return runAction({
             action: () => getOrCreateChatMutationResult.mutateAsync({
                 teamId,
@@ -22,11 +19,11 @@ const useChatActions = () => {
                 error: 'Failed to open chat'
             }),
             afterSuccess: (chat) => {
-                addChatToCache(queryClient, chat);
+                addChatToCache(chat);
                 navigate(`/dashboard/messages/${chat._id}`);
             }
         });
-    }, [getOrCreateChatMutationResult, navigate, queryClient]);
+    };
 
     return {
         getOrCreateChat

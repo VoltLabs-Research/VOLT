@@ -1,10 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import Analysis from '@modules/analysis/models/Analysis';
-import analysisExecutionLogService, {
+import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
+import {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
     type AnalysisLogChunkEventPayload
-} from '@modules/analysis/services/AnalysisExecutionLogService';
+} from '@modules/analysis/socket/AnalysisLogSocketProtocol';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';

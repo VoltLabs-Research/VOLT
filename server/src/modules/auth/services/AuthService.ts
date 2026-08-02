@@ -26,26 +26,6 @@ import type {
 } from '@volt/contracts/modules/auth/http';
 import crypto from 'node:crypto';
 
-const PASSWORD_MIN_LENGTH = 8;
-
-const validatePassword = (password: unknown): ApplicationError | null => {
-    if(typeof password !== 'string' || password.length === 0){
-        return ApplicationError.badRequest(
-            ErrorCodes.AUTH_PASSWORD_REQUIRED,
-            'Password is required'
-        );
-    }
-
-    if([...password].length < PASSWORD_MIN_LENGTH){
-        return ApplicationError.badRequest(
-            ErrorCodes.AUTH_PASSWORD_TOO_SHORT,
-            `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
-        );
-    }
-
-    return null;
-};
-
 interface RequestContext{
     ip: string;
     userAgent: string;
@@ -128,20 +108,6 @@ export default class AuthService{
     }
 
     async signUp(input: SignUpInput, context: RequestContext): Promise<AuthSessionResult>{
-        if(typeof input.email !== 'string' || input.email.trim().length === 0){
-            throw ApplicationError.badRequest(ErrorCodes.AUTH_EMAIL_REQUIRED, 'Email is required');
-        }
-
-        if(typeof input.firstName !== 'string' || input.firstName.trim().length === 0
-            || typeof input.lastName !== 'string'){
-            throw ApplicationError.badRequest(ErrorCodes.AUTH_NAME_REQUIRED, 'First and last name are required');
-        }
-
-        const passwordError = validatePassword(input.password);
-        if(passwordError){
-            throw passwordError;
-        }
-
         const email = normalizeEmail(input.email);
 
         if(await this.#emailExists(email)){
@@ -231,11 +197,6 @@ export default class AuthService{
     }
 
     async updatePassword(userId: string, input: UpdatePasswordInput, context: RequestContext): Promise<AuthSessionResult>{
-        const passwordError = validatePassword(input.password);
-        if(passwordError){
-            throw passwordError;
-        }
-
         const user = await User.findOneBy({ id: userId });
         if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'User not found');

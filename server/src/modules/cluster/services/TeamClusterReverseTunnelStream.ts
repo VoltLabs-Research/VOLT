@@ -10,18 +10,11 @@ interface TeamClusterReverseTunnelStreamOptions {
     onClose: () => void;
 }
 
-export interface TeamClusterTunnelStream extends Duplex {
-    pushChunk(chunk: Buffer, onReadyForMore?: () => void): void;
-    closeRemote(): void;
-    fail(error: Error): void;
-    setTimeout(): this;
-    setNoDelay(): this;
-    setKeepAlive(): this;
-    ref(): this;
-    unref(): this;
-}
-
-export class TeamClusterReverseTunnelStream extends Duplex implements TeamClusterTunnelStream {
+/**
+ * A Duplex that also answers the `net.Socket` surface Node's HTTP agent pokes at,
+ * so a reverse-channel tunnel can back an `http.Agent` connection.
+ */
+export class TeamClusterReverseTunnelStream extends Duplex {
     private readonly pendingReadableCallbacks: Array<() => void> = [];
     private remoteClosed = false;
     private remoteCloseDestroyTimer: NodeJS.Timeout | null = null;

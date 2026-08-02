@@ -1,15 +1,12 @@
 import { switchSelectedTeam, useTeamStore } from '@/modules/team/store/team/use-team-store';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface SwitchTeamInput {
-    teamId?: string;
-}
+import type { SwitchTeamInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const switchTeam: ClientToolHandler<SwitchTeamInput> = {
     name: 'switch_team',
 
     run(input, ctx): ClientToolResult {
-        const teamId = typeof input.teamId === 'string' ? input.teamId.trim() : '';
+        const teamId = input.teamId.trim();
 
         if (!teamId) {
             return {

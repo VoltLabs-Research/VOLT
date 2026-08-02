@@ -8,14 +8,16 @@ import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-p
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
+
+const renderSecondaryText = (value: unknown) => <Text size='md' tone='secondary'>{String(value)}</Text>;
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     {
         key: 'displayName',
         title: 'Display Name',
         sortable: true,
-        render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
+        render: renderSecondaryText,
         skeleton: {
             variant: 'text',
             width: 180
@@ -30,7 +32,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         key: 'timestep',
         title: 'Timestep',
         sortable: true,
-        render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
+        render: renderSecondaryText,
         skeleton: {
             variant: 'text',
             width: 80
@@ -48,7 +50,6 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
 
 const TrajectoryArtifactsListing = () => {
     const teamId = useSelectedTeamId();
-    const queryKey = useMemo(() => ['trajectory', 'team-scene-artifacts', teamId] as const, [teamId]);
 
     const fetchArtifacts = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<SceneArtifact>> => {
         if (!teamId) {
@@ -64,7 +65,7 @@ const TrajectoryArtifactsListing = () => {
     return (
         <DocumentListing<SceneArtifact>
             title='Trajectory Artifacts'
-            queryKey={queryKey}
+            queryKey={['trajectory', 'team-scene-artifacts', teamId]}
             columns={COLUMNS}
             fetchData={fetchArtifacts}
             defaultLimit={20}

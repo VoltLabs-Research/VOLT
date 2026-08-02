@@ -2,10 +2,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdir } from 'node:fs/promises';
 import AppConfig from '@/services/AppConfig';
-import { createSourceResolver } from '@/services/sources';
-import DockerPreflight from '@/services/DockerPreflight';
+import SourceResolver from '@/services/SourceResolver';
 import Deploy from '@/services/Deploy';
 import bus from '@/services/EventBus';
+import { LOCAL_DEFAULTS } from '@/services/localDefaults';
 
 const moduleDir = typeof __dirname !== 'undefined'
     ? __dirname
@@ -32,14 +32,13 @@ const main = async () => {
     const deploy = new Deploy({
         composeFile,
         appConfig,
-        sources: createSourceResolver(appConfig, downloadDir),
-        docker: new DockerPreflight(),
+        sources: new SourceResolver({
+            appConfig,
+            downloadDir
+        }),
         account: {
+            ...LOCAL_DEFAULTS,
             fullName: 'Local Admin',
-            email: 'local@volt.local',
-            password: 'volt-local-desktop',
-            teamName: 'Local',
-            clusterName: 'Local Cluster',
             autoJoinNewUsers: false
         },
         withCluster

@@ -211,15 +211,11 @@ const useTrajectoriesListing = () => {
         folderedListing.currentFolderId
     );
 
-    const handleCreate = useCallback(() => {
-        openFilePicker();
-    }, [openFilePicker]);
-
     return {
         ...folderedListing,
         canCreate,
         fileInputRef,
-        handleCreate,
+        handleCreate: openFilePicker,
         handlePickerChange,
         isUploading,
         queryKey: trajectoryQuery.QUERY_KEYS.lists(),

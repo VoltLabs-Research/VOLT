@@ -21,7 +21,7 @@ export interface DebugExecutionLogSegment {
     executionPath?: string[];
 }
 
-interface DebugNodeState {
+export interface DebugNodeState {
     status: DebugNodeStatus;
     output?: Record<string, unknown>;
     error?: string;
@@ -118,6 +118,18 @@ const initialState: PluginDebugState = {
     sessionError: null
 };
 
+const patchNodeState = (
+    state: PluginDebugState,
+    nodeId: string,
+    patch: Partial<DebugNodeState>
+): Record<string, DebugNodeState> => ({
+    ...state.nodeStates,
+    [nodeId]: {
+        ...state.nodeStates[nodeId],
+        ...patch
+    }
+});
+
 export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
     ...initialState,
 
@@ -152,98 +164,66 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
         });
     },
 
-    onNodeStarted: (nodeId, index, total) => set((state) => {
-        return {
-            currentNodeId: nodeId,
-            currentNodeIndex: index,
-            totalNodes: total,
-            isPaused: true,
-            inspectedNodeId: nodeId,
-            nodeStates: {
-                ...state.nodeStates,
-                [nodeId]: {
-                    ...state.nodeStates[nodeId],
-                    status: DebugNodeStatus.Running
-                }
-            }
-        };
-    }),
+    onNodeStarted: (nodeId, index, total) => set((state) => ({
+        currentNodeId: nodeId,
+        currentNodeIndex: index,
+        totalNodes: total,
+        isPaused: true,
+        inspectedNodeId: nodeId,
+        nodeStates: patchNodeState(state, nodeId, { status: DebugNodeStatus.Running })
+    })),
 
     onNodeLogChunk: (nodeId, segments) => set((state) => ({
-        nodeStates: {
-            ...state.nodeStates,
-            [nodeId]: {
-                ...state.nodeStates[nodeId],
-                logSegments: (state.nodeStates[nodeId]?.logSegments ?? []).concat(segments)
-            }
-        }
+        nodeStates: patchNodeState(state, nodeId, {
+            logSegments: (state.nodeStates[nodeId]?.logSegments ?? []).concat(segments)
+        })
     })),
 
-    onNodeCompleted: (nodeId, output, durationMs, contextSnapshot, nestedTrace) => set((state) => {
-        return {
-            isPaused: false,
-            contextSnapshot: contextSnapshot ?? state.contextSnapshot,
-            nodeStates: {
-                ...state.nodeStates,
-                [nodeId]: {
-                    ...state.nodeStates[nodeId],
-                    status: DebugNodeStatus.Completed,
-                    output,
-                    durationMs,
-                    nestedTrace
-                }
-            }
-        };
-    }),
+    onNodeCompleted: (nodeId, output, durationMs, contextSnapshot, nestedTrace) => set((state) => ({
+        isPaused: false,
+        contextSnapshot,
+        nodeStates: patchNodeState(state, nodeId, {
+            status: DebugNodeStatus.Completed,
+            output,
+            durationMs,
+            nestedTrace
+        })
+    })),
 
     onNodeSkipped: (nodeId, reason, nestedTrace) => set((state) => ({
-        nodeStates: {
-            ...state.nodeStates,
-            [nodeId]: {
-                ...state.nodeStates[nodeId],
-                status: DebugNodeStatus.Skipped,
-                reason,
-                nestedTrace
-            }
-        }
+        nodeStates: patchNodeState(state, nodeId, {
+            status: DebugNodeStatus.Skipped,
+            reason,
+            nestedTrace
+        })
     })),
 
-    onNodeError: (nodeId, error, stack, nestedTrace) => set((state) => {
-        return {
-            isPaused: false,
-            isDebugging: false,
-            totalDuration: state.totalDuration ?? -1,
-            nodeStates: {
-                ...state.nodeStates,
-                [nodeId]: {
-                    ...state.nodeStates[nodeId],
-                    status: DebugNodeStatus.Failed,
-                    error,
-                    stack,
-                    nestedTrace
-                }
-            }
-        };
+    onNodeError: (nodeId, error, stack, nestedTrace) => set((state) => ({
+        isPaused: false,
+        isDebugging: false,
+        totalDuration: state.totalDuration ?? -1,
+        nodeStates: patchNodeState(state, nodeId, {
+            status: DebugNodeStatus.Failed,
+            error,
+            stack,
+            nestedTrace
+        })
+    })),
+
+    onSessionCompleted: (totalDuration) => set({
+        isDebugging: false,
+        isPaused: false,
+        currentNodeId: null,
+        totalDuration
     }),
 
-    onSessionCompleted: (totalDuration) => {
-        set({
-            isDebugging: false,
-            isPaused: false,
-            currentNodeId: null,
-            totalDuration
-        });
-    },
-
-    onSessionError: (error) => set((state) => {
-        return {
-            isDebugging: false,
-            isPaused: false,
-            isStarting: false,
-            sessionError: error,
-            totalDuration: state.totalDuration ?? (Object.keys(state.contextSnapshot).length > 0 ? -1 : null)
-        };
-    }),
+    onSessionError: (error) => set((state) => ({
+        isDebugging: false,
+        isPaused: false,
+        isStarting: false,
+        sessionError: error,
+        totalDuration: state.totalDuration ?? (Object.keys(state.contextSnapshot).length > 0 ? -1 : null)
+    })),
 
     setInspectedNode: (nodeId) => set({ inspectedNodeId: nodeId }),
 

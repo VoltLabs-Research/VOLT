@@ -6,7 +6,7 @@ import {
     getTeamUsageAnalytics,
     getKeyUsageAnalytics
 } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
-import SecretKeyUsageMetricsMapper from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
+import { toKeyMetrics, toTeamMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -16,26 +16,12 @@ import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 const MAX_KEYS_PER_TEAM = 500;
 const DEFAULT_SECRET_KEY_LIMIT = 50;
 const MAX_SECRET_KEY_LIMIT = 200;
+const DEFAULT_METRICS_DAYS = 30;
 const UNKNOWN_ROLE_NAME = 'Unknown';
-
-interface EnrichedSecretKeyMetric{
-    secretKeyId: string;
-    name: string;
-    keyPrefix: string;
-    roleName: string;
-    isActive: boolean;
-    totalRequests: number;
-    successRequests: number;
-    avgResponseTime: number;
-    lastRequestAt: Date | null;
-}
 
 const roleNameOf = (secretKey: SecretKey): string => secretKey.roleRef?.name ?? UNKNOWN_ROLE_NAME;
 
 export default class SecretKeyService{
-    #metricsMapper = new SecretKeyUsageMetricsMapper();
-    #eventBus = eventBus;
-
     async create(teamId: string, userId: string, input: CreateSecretKeyInput): Promise<{
         secretKeyId: string;
         teamId: string;
@@ -48,31 +34,23 @@ export default class SecretKeyService{
     }>{
         const { roleId, name } = input;
 
-        if(!roleId){
-            throw ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'Role ID is required');
-        }
-
         const role = await TeamRole.findOneBy({ id: roleId });
         if(!role || role.team !== teamId){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
 
-        const tokenSuffix = crypto.randomBytes(32).toString('hex');
-        const secretKey = `vsk_${tokenSuffix}`;
-        const keyPrefix = secretKey.slice(0, 14);
-        const keyHash = crypto.createHash('sha256').update(secretKey).digest('hex');
-
+        const secretKey = `vsk_${crypto.randomBytes(32).toString('hex')}`;
         const created = await SecretKey.create({
             team: teamId,
             role: roleId,
             name,
-            keyPrefix,
-            keyHash,
+            keyPrefix: secretKey.slice(0, 14),
+            keyHash: crypto.createHash('sha256').update(secretKey).digest('hex'),
             createdBy: userId,
             isActive: true
         }).save();
 
-        await this.#eventBus.emit('secret-key.created', {
+        await eventBus.emit('secret-key.created', {
             secretKeyId: created.id,
             teamId,
             name: created.name,
@@ -101,18 +79,7 @@ export default class SecretKeyService{
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_INVALID, 'Secret key not found');
         }
 
-        return {
-            _id: secretKey.id,
-            team: secretKey.team,
-            role: secretKey.role,
-            createdBy: secretKey.createdBy,
-            name: secretKey.name,
-            keyPrefix: secretKey.keyPrefix,
-            isActive: secretKey.isActive,
-            lastUsedAt: secretKey.lastUsedAt,
-            createdAt: secretKey.createdAt,
-            updatedAt: secretKey.updatedAt
-        };
+        return secretKey.toJSON();
     }
 
     async listByTeamId(teamId: string, page?: number, limit?: number): Promise<PaginatedResult<Record<string, unknown>>>{
@@ -139,7 +106,7 @@ export default class SecretKeyService{
             roleName: roleNameOf(secretKey),
             name: secretKey.name,
             keyPrefix: secretKey.keyPrefix,
-            createdBy: secretKey.createdByRef === undefined || secretKey.createdByRef === null
+            createdBy: !secretKey.createdByRef
                 ? secretKey.createdBy
                 : {
                     _id: secretKey.createdByRef.id,
@@ -152,7 +119,7 @@ export default class SecretKeyService{
             lastUsedAt: secretKey.lastUsedAt,
             createdAt: secretKey.createdAt,
             updatedAt: secretKey.updatedAt
-        } as Record<string, unknown>));
+        }));
 
         return paginate([data, total], pageRequest);
     }
@@ -174,10 +141,6 @@ export default class SecretKeyService{
     }
 
     async deleteById(teamId: string, secretKeyId: string, userId: string): Promise<void>{
-        if(!userId){
-            throw ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'User ID is required');
-        }
-
         const key = await SecretKey.findOneBy({ id: secretKeyId });
         if(!key || key.team !== teamId){
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
@@ -188,7 +151,7 @@ export default class SecretKeyService{
 
         await key.remove();
 
-        await this.#eventBus.emit('secret-key.deleted', {
+        await eventBus.emit('secret-key.deleted', {
             secretKeyId: deletedKeyId,
             teamId,
             userId,
@@ -197,11 +160,7 @@ export default class SecretKeyService{
     }
 
     async teamMetrics(teamId: string, days?: number): Promise<Record<string, unknown>>{
-        const resolvedDays = days !== undefined ? Number(days) : 30;
-
-        const metrics = this.#metricsMapper.toTeamMetrics(
-            await getTeamUsageAnalytics(teamId, resolvedDays)
-        );
+        const metrics = toTeamMetrics(await getTeamUsageAnalytics(teamId, days ?? DEFAULT_METRICS_DAYS));
 
         const allKeys = await SecretKey.find({
             where: { team: teamId },
@@ -209,13 +168,10 @@ export default class SecretKeyService{
             relations: { roleRef: true }
         });
 
-        const totalKeys = allKeys.length;
         const activeKeys = allKeys.filter((key) => key.isActive).length;
-        const revokedKeys = totalKeys - activeKeys;
-
         const usageMap = new Map(metrics.perKey.map((perKey) => [perKey.secretKeyId, perKey]));
 
-        const enrichedPerKey: EnrichedSecretKeyMetric[] = allKeys.map((key) => {
+        const enrichedPerKey = allKeys.map((key) => {
             const usage = usageMap.get(key.id);
             return {
                 secretKeyId: key.id,
@@ -234,16 +190,14 @@ export default class SecretKeyService{
 
         return {
             ...metrics,
-            totalKeys,
+            totalKeys: allKeys.length,
             activeKeys,
-            revokedKeys,
+            revokedKeys: allKeys.length - activeKeys,
             perKey: enrichedPerKey
         };
     }
 
     async keyUsage(teamId: string, secretKeyId: string, days?: number): Promise<Record<string, unknown>>{
-        const resolvedDays = days !== undefined ? Number(days) : 30;
-
         const secretKey = await SecretKey.findOne({
             where: { id: secretKeyId },
             relations: { roleRef: true }
@@ -251,10 +205,6 @@ export default class SecretKeyService{
         if(!secretKey || secretKey.team !== teamId){
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
-
-        const metrics = this.#metricsMapper.toKeyMetrics(
-            await getKeyUsageAnalytics(secretKeyId, resolvedDays)
-        );
 
         return {
             key: {
@@ -266,7 +216,7 @@ export default class SecretKeyService{
                 createdAt: secretKey.createdAt,
                 lastUsedAt: secretKey.lastUsedAt || null
             },
-            ...metrics
+            ...toKeyMetrics(await getKeyUsageAnalytics(secretKeyId, days ?? DEFAULT_METRICS_DAYS))
         };
     }
 }

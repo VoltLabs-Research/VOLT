@@ -48,7 +48,7 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
     useEffect(() => {
         if(!open) return;
         window.volt.config.get().then((config) => {
-            const dev = config.devMode ?? {};
+            const dev = (config.devMode ?? {}) as Partial<DevModeState>;
             setEnabled(Boolean(dev.enabled));
             setVoltPath(dev.voltPath ?? '');
             setClusterDaemonPath(dev.clusterDaemonPath ?? '');

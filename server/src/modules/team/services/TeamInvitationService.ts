@@ -6,12 +6,7 @@ import Team from '@modules/team/models/Team';
 import TeamInvitation from '@modules/team/models/TeamInvitation';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import {
-    TeamInvitationStatus,
-    isTeamInvitationExpired,
-    isTeamInvitationPending,
-    normalizeInvitationEmail
-} from '@modules/team/contracts/team-invitation';
+import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
@@ -24,12 +19,17 @@ import type {
 } from '@volt/contracts/modules/team/http';
 
 const DEFAULT_INVITATION_LIMIT = 10;
+const INVITATION_TTL_MS = 24 * 60 * 60 * 1000;
+
+const assertInvitedUser = (invitation: TeamInvitation, userId: string): void => {
+    if(invitation.invitedUser !== userId){
+        throw ApplicationError.forbidden(ErrorCodes.TEAM_INVITATION_INVALID_USER, 'This invitation was not sent to you');
+    }
+};
 
 export default class TeamInvitationService{
-    #eventBus = eventBus;
-
     async send(teamId: string, userId: string, input: SendTeamInvitationInput): Promise<TeamInvitation>{
-        const normalizedEmail = normalizeInvitationEmail(input.email);
+        const normalizedEmail = input.email.trim().toLowerCase();
 
         const team = await Team.findOneBy({ id: teamId });
         if(!team){
@@ -68,21 +68,18 @@ export default class TeamInvitationService{
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
 
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
         const invitation = await TeamInvitation.create({
             team: teamId,
             invitedBy: userId,
             invitedUser: user.id,
             email: normalizedEmail,
-            token,
+            token: crypto.randomBytes(32).toString('hex'),
             role: role.id,
-            expiresAt,
+            expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
             status: TeamInvitationStatus.Pending
         }).save();
 
-        await this.#eventBus.emit('invitation.sent', {
+        await eventBus.emit('invitation.sent', {
             invitationId: invitation.id,
             teamName: team.name,
             invitedUserId: invitation.invitedUser ?? ''
@@ -108,17 +105,16 @@ export default class TeamInvitationService{
     }
 
     async deleteById(teamId: string, invitationId: string): Promise<void>{
-        const invitation = await TeamInvitation.findOneBy({
-            id: invitationId,
-            team: teamId
-        });
-        if(!invitation){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'TeamInvitation not found');
-        }
+        const invitation = await this.#requireInvitation(teamId, invitationId);
         await invitation.remove();
     }
 
     async updateById(teamId: string, invitationId: string, data: UpdateTeamInvitationInput): Promise<TeamInvitation>{
+        const invitation = await this.#requireInvitation(teamId, invitationId);
+        return Object.assign(invitation, data as Partial<TeamInvitation>).save();
+    }
+
+    async #requireInvitation(teamId: string, invitationId: string): Promise<TeamInvitation>{
         const invitation = await TeamInvitation.findOneBy({
             id: invitationId,
             team: teamId
@@ -126,7 +122,7 @@ export default class TeamInvitationService{
         if(!invitation){
             throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'TeamInvitation not found');
         }
-        return Object.assign(invitation, data as Partial<TeamInvitation>).save();
+        return invitation;
     }
 
     async getByIdPublic(invitationId: string): Promise<Record<string, unknown>>{
@@ -167,46 +163,33 @@ export default class TeamInvitationService{
         input: TeamInvitationStatusInput,
         teamId?: string
     ): Promise<{ message: string }>{
-        if(input?.status === 'accepted'){
-            return this.accept(invitationId, userId, teamId);
-        }
-        if(input?.status === 'rejected'){
-            return this.reject(invitationId, userId, teamId);
-        }
-        throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Invalid status. Must be "accepted" or "rejected".');
+        return input.status === 'accepted'
+            ? this.accept(invitationId, userId, teamId)
+            : this.reject(invitationId, userId, teamId);
     }
 
     async accept(invitationId: string, userId: string, teamId?: string): Promise<{ message: string }>{
-        const invitation = await this.#findInvitation(invitationId, teamId);
-        if(!invitation){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'Invitation not found');
-        }
-        if(!isTeamInvitationPending(invitation)){
-            throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 'Invitation has already been processed');
-        }
-        if(isTeamInvitationExpired(invitation)){
+        const invitation = await this.#findPendingInvitation(invitationId, teamId);
+        if(invitation.expiresAt < new Date()){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITATION_EXPIRED, 'Invitation has expired');
         }
-        if(invitation.invitedUser !== userId){
-            throw ApplicationError.forbidden(ErrorCodes.TEAM_INVITATION_INVALID_USER, 'This invitation was not sent to you');
-        }
+        assertInvitedUser(invitation, userId);
 
-        const invitationTeamId = invitation.team;
         const ownerRole = await TeamRole.findOneBy({
             name: SystemRoleNames.OWNER,
-            team: invitationTeamId
+            team: invitation.team
         });
         if(!ownerRole){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Owner role not found');
         }
 
         await TeamMember.create({
-            team: invitationTeamId,
+            team: invitation.team,
             user: userId,
             role: ownerRole.id,
             joinedAt: new Date()
         }).save();
-        await addTeamToUser(userId, invitationTeamId);
+        await addTeamToUser(userId, invitation.team);
         await Object.assign(invitation, {
             status: TeamInvitationStatus.Accepted,
             acceptedAt: new Date()
@@ -216,30 +199,27 @@ export default class TeamInvitationService{
     }
 
     async reject(invitationId: string, userId: string, teamId?: string): Promise<{ message: string }>{
-        const invitation = await this.#findInvitation(invitationId, teamId);
-        if(!invitation){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'Invitation not found');
-        }
-        if(!isTeamInvitationPending(invitation)){
-            throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 'Invitation has already been processed');
-        }
-        if(invitation.invitedUser !== userId){
-            throw ApplicationError.forbidden(ErrorCodes.TEAM_INVITATION_INVALID_USER, 'This invitation was not sent to you');
-        }
-
+        const invitation = await this.#findPendingInvitation(invitationId, teamId);
+        assertInvitedUser(invitation, userId);
         await Object.assign(invitation, { status: TeamInvitationStatus.Rejected }).save();
 
         return { message: 'Invitation rejected successfully' };
     }
 
-    async #findInvitation(invitationId: string, teamId?: string): Promise<TeamInvitation | null>{
-        if(teamId === undefined){
-            return TeamInvitation.findOneBy({ id: invitationId });
+    async #findPendingInvitation(invitationId: string, teamId?: string): Promise<TeamInvitation>{
+        const invitation = await TeamInvitation.findOneBy(teamId === undefined
+            ? { id: invitationId }
+            : {
+                id: invitationId,
+                team: teamId
+            });
+        if(!invitation){
+            throw ApplicationError.notFound(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 'Invitation not found');
+        }
+        if(invitation.status !== TeamInvitationStatus.Pending){
+            throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 'Invitation has already been processed');
         }
 
-        return TeamInvitation.findOneBy({
-            id: invitationId,
-            team: teamId
-        });
+        return invitation;
     }
 }

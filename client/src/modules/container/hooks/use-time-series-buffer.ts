@@ -1,22 +1,10 @@
 import { useCallback, useState } from 'react';
 
-interface UseTimeSeriesBufferOptions {
-    maxPoints: number;
-}
+/** Rolling window of the most recent `maxPoints` metric samples. */
+const useTimeSeriesBuffer = (maxPoints: number) => {
+    const [history, setHistory] = useState<number[]>([]);
 
-interface UseTimeSeriesBufferReturn<T> {
-    history: T[];
-    pushPoint: (point: T) => void;
-    reset: () => void;
-}
-
-const useTimeSeriesBuffer = <T extends object>(
-    options: UseTimeSeriesBufferOptions
-): UseTimeSeriesBufferReturn<T> => {
-    const { maxPoints } = options;
-    const [history, setHistory] = useState<T[]>([]);
-
-    const pushPoint = useCallback((point: T) => {
+    const pushPoint = useCallback((point: number) => {
         setHistory((previousHistory) => {
             const nextHistory = [...previousHistory, point];
 
@@ -28,14 +16,9 @@ const useTimeSeriesBuffer = <T extends object>(
         });
     }, [maxPoints]);
 
-    const reset = useCallback(() => {
-        setHistory([]);
-    }, []);
-
     return {
         history,
-        pushPoint,
-        reset
+        pushPoint
     };
 };
 

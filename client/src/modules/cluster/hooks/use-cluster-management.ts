@@ -14,24 +14,13 @@ import { showPromise } from '@/shared/ui/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type { CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, TeamClusterQueueConcurrency, TeamClusterQueueScopeLimits, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
+import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type { CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, TeamClusterQueueConcurrency, TeamClusterQueueScopeLimits } from '@volt/contracts/modules/cluster/domain';
 
 interface ClusterCreateToastOptions {
     loading: { title: string };
     success: { title: string };
     error: { title: string };
-}
-
-interface DeleteClusterToastOptions {
-    loading: { title: string };
-    success: (result: DeleteTeamClusterResponse) => {
-        title: string;
-        description: string;
-    };
-    error: {
-        title: string;
-    };
 }
 
 const CREATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
@@ -46,9 +35,9 @@ const REVEAL_CREDENTIALS_TOAST_OPTIONS: ClusterCreateToastOptions = {
     error: { title: 'Failed to reveal credentials' }
 };
 
-const DELETE_CLUSTER_TOAST_OPTIONS: DeleteClusterToastOptions = {
+const DELETE_CLUSTER_TOAST_OPTIONS = {
     loading: { title: 'Deleting cluster...' },
-    success: (result) => ({
+    success: (result: DeleteTeamClusterResponse) => ({
         title: result.deleted ? 'Cluster deleted' : 'Remote uninstall requested',
         description: result.message
     }),
@@ -76,33 +65,7 @@ const CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS = {
     error: { title: 'Failed to queue transfer jobs' }
 };
 
-interface ClusterManagementResult {
-    clusters: TeamCluster[];
-    selectedTeamId: string | null;
-    selectedCluster: TeamCluster | null;
-    selectedClusterId: string | null;
-    setSelectedClusterId: (clusterId: string | null) => void;
-    isLoading: boolean;
-    error: Error | null;
-    createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
-    revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
-    deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterResponse>;
-    updateQueueConcurrency: (
-        teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrency,
-        queueScopeLimits: TeamClusterQueueScopeLimits
-    ) => Promise<UpdateTeamClusterQueueConcurrencyResponse>;
-    updateRole: (
-        teamClusterId: string,
-        role: TeamClusterRole
-    ) => Promise<UpdateTeamClusterRoleResponse>;
-    createTransferRequest: (
-        teamClusterId: string,
-        destinationClusterId: string
-    ) => Promise<CreateTeamClusterTransferRequestResponse>;
-}
-
-const useClusterManagement = (): ClusterManagementResult => {
+const useClusterManagement = () => {
     const selectedTeamId = useSelectedTeamId();
     const requireSelectedTeamId = useRequiredSelectedTeamId();
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);

@@ -10,7 +10,6 @@ import {
     setClusterHistoryQueryData,
     setClusterMetricsQueryData
 } from '@/modules/cluster/hooks/queries';
-import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { ClusterMetrics, ClusterHistoryMetric } from '@volt/contracts/modules/cluster/domain';
 
@@ -20,7 +19,6 @@ interface ClusterMetricsHistoryEvent {
 }
 
 export default function useTeamClusterMetricsSync(): void {
-    const queryClient = useQueryClient();
     const selectedTeamId = useSelectedTeamId();
     const setConnected = useClusterStore((state) => state.setConnected);
 
@@ -39,7 +37,7 @@ export default function useTeamClusterMetricsSync(): void {
     useSocketConnectionEffect((connected) => {
         setConnected(connected);
         if (!connected) {
-            resetClusterHistoryQuery(queryClient);
+            resetClusterHistoryQuery();
         }
     }, { runOnMount: true });
 

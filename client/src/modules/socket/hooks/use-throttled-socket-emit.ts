@@ -78,7 +78,7 @@ const useThrottledSocketEmit = <TPayload>(
             trailingTimerRef.current = setTimeout(() => {
                 trailingTimerRef.current = null;
                 const queued = pendingPayloadRef.current;
-                if (queued === null || queued === undefined) return;
+                if (queued === null) return;
 
                 pendingPayloadRef.current = null;
                 lastEmitAtRef.current = Date.now();
@@ -111,7 +111,7 @@ const useThrottledSocketEmit = <TPayload>(
             flush() {
                 clearTrailingTimer();
                 const queued = pendingPayloadRef.current;
-                if (queued === null || queued === undefined) return;
+                if (queued === null) return;
 
                 pendingPayloadRef.current = null;
                 lastEmitAtRef.current = Date.now();

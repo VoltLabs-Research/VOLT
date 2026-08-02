@@ -6,6 +6,7 @@ import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
 import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import WhiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
 import { whiteboardRoutes } from '@volt/contracts/modules/whiteboards/routes';
 import type {
     CreateWhiteboardInput,
@@ -13,16 +14,24 @@ import type {
     MoveWhiteboardInput,
     CreateWhiteboardFolderInput,
     UpdateWhiteboardFolderInput,
-    UploadWhiteboardAssetInput
+    UploadWhiteboardAssetInput,
+    SaveWhiteboardStateInput
 } from '@volt/contracts/modules/whiteboards/http';
 import express from 'express';
 import type { Response } from 'express';
 
 const stateBodyParser = express.json({ limit: '10mb' });
 
+const readPage = (query: Record<string, string>) => ({
+    page: query.page !== undefined ? Number(query.page) : undefined,
+    limit: query.limit !== undefined ? Number(query.limit) : undefined
+});
+
 @Middleware(protect, teamScoped(Resource.WHITEBOARD))
 export default class WhiteboardController extends Controller {
     #service = new WhiteboardService();
+
+    #folders = new WhiteboardFolderService();
 
     @Route(whiteboardRoutes.create)
     @Status(201)
@@ -41,8 +50,7 @@ export default class WhiteboardController extends Controller {
     ){
         return this.#service.listWhiteboards(teamId, {
             folderId: query.folderId,
-            page: query.page !== undefined ? Number(query.page) : undefined,
-            limit: query.limit !== undefined ? Number(query.limit) : undefined
+            ...readPage(query)
         });
     }
 
@@ -51,10 +59,9 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#service.listFolders(teamId, {
+        return this.#folders.listFolders(teamId, {
             parentId: query.parentId,
-            page: query.page !== undefined ? Number(query.page) : undefined,
-            limit: query.limit !== undefined ? Number(query.limit) : undefined
+            ...readPage(query)
         });
     }
 
@@ -63,7 +70,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string
     ){
-        return this.#service.getFolder(teamId, folderId);
+        return this.#folders.getFolder(teamId, folderId);
     }
 
     @Route(whiteboardRoutes.createFolder)
@@ -73,7 +80,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateWhiteboardFolderInput
     ){
-        return this.#service.createFolder(teamId, userId, body);
+        return this.#folders.createFolder(teamId, userId, body);
     }
 
     @Route(whiteboardRoutes.updateFolder)
@@ -82,16 +89,16 @@ export default class WhiteboardController extends Controller {
         @Param('folderId') folderId: string,
         @Body() body: UpdateWhiteboardFolderInput
     ){
-        return this.#service.updateFolder(teamId, folderId, body);
+        return this.#folders.updateFolder(teamId, folderId, body);
     }
 
     @Route(whiteboardRoutes.removeFolder)
-    async removeFolder(
+    removeFolder(
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteFolder(teamId, folderId, userId);
+        return this.#folders.deleteFolder(teamId, folderId, userId);
     }
 
     @Route(whiteboardRoutes.get)
@@ -113,17 +120,17 @@ export default class WhiteboardController extends Controller {
     }
 
     @Route(whiteboardRoutes.remove)
-    async deleteWhiteboard(
+    deleteWhiteboard(
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteWhiteboard(teamId, whiteboardId, userId);
+        return this.#service.deleteWhiteboard(teamId, whiteboardId, userId);
     }
 
     @Route(whiteboardRoutes.move)
     @Status(200)
-    async moveWhiteboard(
+    moveWhiteboard(
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @Body() body: MoveWhiteboardInput
@@ -137,8 +144,8 @@ export default class WhiteboardController extends Controller {
         @Param('whiteboardId') whiteboardId: string,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#service.getWhiteboardState(teamId, whiteboardId);
-        await pipeStreamToResponse(res, output.stream, {
+        const stream = await this.#service.getWhiteboardState(teamId, whiteboardId);
+        await pipeStreamToResponse(res, stream, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
         });
@@ -146,14 +153,13 @@ export default class WhiteboardController extends Controller {
 
     @Route(whiteboardRoutes.saveState)
     @Middleware(stateBodyParser)
-    async saveWhiteboardState(
+    saveWhiteboardState(
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string,
-        @Body() body: unknown
+        @Body() body: SaveWhiteboardStateInput
     ) {
-        const stateBuffer = Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
-        await this.#service.saveWhiteboardState(teamId, whiteboardId, userId, stateBuffer);
+        return this.#service.saveWhiteboardState(teamId, whiteboardId, userId, Buffer.from(JSON.stringify(body)));
     }
 
     @Route(whiteboardRoutes.uploadAsset)

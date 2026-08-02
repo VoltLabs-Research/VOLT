@@ -1,6 +1,5 @@
 import trajectoryService from '../../api/services/trajectory-service';
 import canvasService from '@/modules/canvas/api/services/canvas-service';
-import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared/query-keys';
 import {
     buildKeys,
     createInfiniteQuery,
@@ -28,21 +27,16 @@ import {
     currentAccessKey
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { CreateTrajectoryInput, CreateTrajectoryResponse, DownloadTrajectoryAnalysesInput, DownloadTrajectoryInput, GetAtomsInput, GetAtomsResponse, GetPreviewInput, GetTrajectoriesInput } from '../../api/services/trajectory-service';
+import type { CreateTrajectoryInput, DownloadTrajectoryAnalysesInput, DownloadTrajectoryInput, GetAtomsInput, GetAtomsResponse, GetPreviewInput, GetTrajectoriesInput } from '../../api/services/trajectory-service';
 import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
 import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryFolder } from '@volt/contracts/modules/trajectory/domain';
-import type { InfiniteQueryOptions, QueryOptions } from '@/shared/query';
 
 const BASE_KEY = 'trajectory';
 
 interface TrajectoryQueryOptions {
     enabled?: boolean;
-}
-
-interface TrajectoryByIdParams {
-    trajectoryId: string;
 }
 
 interface TrajectoryAtomsInfiniteParams extends Omit<GetAtomsInput, 'page'> {
@@ -70,7 +64,7 @@ export const trajectoryQuery = createPaginatedQuery<
     GetTrajectoriesInput,
     CreateTrajectoryInput,
     Partial<Trajectory>,
-    CreateTrajectoryResponse
+    Trajectory
 >({
     baseKey: BASE_KEY,
     detailKey: KEYS.detail,
@@ -91,11 +85,7 @@ export const trajectoryQuery = createPaginatedQuery<
         queryClient.removeQueries({
             queryKey: KEYS.preview(),
             predicate: (query) => {
-                const params = query.queryKey[2];
-                if (typeof params !== 'object' || params === null || !('trajectoryId' in params)) {
-                    return false;
-                }
-
+                const params = query.queryKey[2] as GetPreviewInput | undefined;
                 return params?.trajectoryId === id;
             }
         });
@@ -120,7 +110,7 @@ export const createTrajectoryUploadSessionMutation = createMutation<
         ]);
 });
 
-const trajectoryDetailQuery = createQuery(KEYS.detail, (trajectoryId) => trajectoryService.getById({ trajectoryId }));
+export const useTrajectoryByIdQuery = createQuery(KEYS.detail, (trajectoryId) => trajectoryService.getById({ trajectoryId }));
 export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<Trajectory[]> => {
     const result = await trajectoryService.getAll({
         page: 1,
@@ -129,7 +119,7 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
 
     return result.data.filter(
         (trajectory: Trajectory) => trajectory.status === 'completed'
-            && Array.isArray(trajectory.frames) && trajectory.frames.length > 0
+            && trajectory.frames.length > 0
     );
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
@@ -172,7 +162,7 @@ export const useMoveTrajectoryMutation = createInvalidatingMutation<void, MoveTr
     [trajectoryQuery.QUERY_KEYS.lists()]
 );
 
-const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInput, Trajectory>(
+export const useTrajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInput, Trajectory>(
     (params) => [...trajectoryQuery.QUERY_KEYS.infiniteLists(), stripTrajectoryPage(params)],
     (params, { page, limit }) => trajectoryService.getAll({
         ...params,
@@ -184,40 +174,16 @@ const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInput, Traj
 
 export const TRAJECTORY_QUERY_KEYS = {
     trajectories: trajectoryQuery.QUERY_KEYS.lists,
-    trajectoriesInfinite: trajectoryQuery.QUERY_KEYS.infiniteLists,
-    trajectoriesList: trajectoryQuery.QUERY_KEYS.list,
-    debugTrajectories: KEYS.debug,
     simulationGrid: KEYS.simulationGrid,
     trajectory: KEYS.detail,
     preview: KEYS.preview,
-    publicPreview: KEYS.publicPreview,
-    atoms: KEYS.atoms,
-    perAtom: KEYS.perAtom,
-    ...TRAJECTORY_MODULE_QUERY_KEYS
+    perAtom: KEYS.perAtom
 } as const;
 
 export const fetchTrajectoryAtoms = trajectoryAtomsQuery.fetch;
 export const fetchTrajectorySamples = () => trajectorySamplesQuery.fetch(undefined);
 export const useDownloadTrajectoryAnalysesMutation = createMutation<Blob, DownloadTrajectoryAnalysesInput>(trajectoryService.downloadAnalyses);
 export const useDownloadTrajectoryMutation = createMutation<Blob, DownloadTrajectoryInput>(trajectoryService.download);
-
-export const useTrajectoriesInfiniteQuery = (
-    params: GetTrajectoriesInput,
-    options?: InfiniteQueryOptions<PaginatedResponse<Trajectory>> & {
-        getNextPageParam?: (lastPage: PaginatedResponse<Trajectory>, allPages: PaginatedResponse<Trajectory>[]) => number | undefined;
-    }
-) => {
-    const { getNextPageParam: _getNextPageParam, ...queryOptions } = options ?? {};
-
-    return trajectoriesInfiniteQuery(params, queryOptions);
-};
-
-export const useTrajectoryByIdQuery = (
-    params: TrajectoryByIdParams,
-    options?: QueryOptions<Trajectory>
-) => {
-    return trajectoryDetailQuery(params.trajectoryId, options);
-};
 
 export const useTrajectoryAtomsInfiniteQuery = (
     params: TrajectoryAtomsInfiniteParams,

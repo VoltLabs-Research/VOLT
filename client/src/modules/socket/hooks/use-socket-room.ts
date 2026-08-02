@@ -43,7 +43,7 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
         const performJoin = (): void => {
             if (cancelled || isJoined) return;
             const payload = buildJoinPayloadRef.current();
-            if (payload === null || payload === undefined) return;
+            if (payload === null) return;
 
             isJoined = true;
 
@@ -96,12 +96,14 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
 
             const leavePayloadBuilder = buildLeavePayloadRef.current ?? buildJoinPayloadRef.current;
             const leavePayload = leavePayloadBuilder();
-            if (leavePayload === null || leavePayload === undefined) return;
+            if (leavePayload === null) return;
 
             if (fireAndForget) {
                 try {
                     socketService.emitWithoutAck(leaveEvent, leavePayload);
                 } catch {
+                    // Leaving a room is fire-and-forget: the server drops the
+                    // membership on disconnect anyway.
                 }
                 return;
             }

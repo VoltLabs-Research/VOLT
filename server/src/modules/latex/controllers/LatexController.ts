@@ -5,12 +5,21 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
-import LatexService from '@modules/latex/services/LatexService';
+import LatexDocumentService from '@modules/latex/services/LatexDocumentService';
+import LatexDownloadService from '@modules/latex/services/LatexDownloadService';
+import LatexFileService from '@modules/latex/services/LatexFileService';
 import { latexRoutes } from '@volt/contracts/modules/latex/routes';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 import LatexAssetService from '@modules/latex/services/LatexAssetService';
+import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
+import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
+import type { DownloadStreamOutput } from '@shared/contracts/types';
+import type {
+    LatexDocumentQuery,
+    LatexFolderQuery
+} from '@modules/latex/contracts/queries';
 import type {
     CreateLatexDocumentInput,
     UpdateLatexDocumentInput,
@@ -25,15 +34,18 @@ import type {
 
 @Middleware(protect, teamScoped(Resource.LATEX))
 export default class LatexController extends Controller {
-    #service = new LatexService();
+    #documents = new LatexDocumentService();
+    #files = new LatexFileService();
+    #downloads = new LatexDownloadService();
     #assets = new LatexAssetService();
+    #folders = new CatalogFolderService(CatalogFolderKind.Latex);
 
     @Route(latexRoutes.listDocuments)
     listDocuments(
         @Param('teamId') teamId: string,
-        @Query() query: Record<string, string>
+        @Query() query: LatexDocumentQuery
     ){
-        return this.#service.listDocuments({
+        return this.#documents.listDocuments({
             teamId,
             ...query
         });
@@ -46,7 +58,7 @@ export default class LatexController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateLatexDocumentInput
     ){
-        return this.#service.createDocument({
+        return this.#documents.createDocument({
             teamId,
             userId,
             ...body
@@ -62,7 +74,7 @@ export default class LatexController extends Controller {
         @Req() req: AuthenticatedRequest
     ){
         const body = (req.body ?? {}) as { folderId?: string | null };
-        return this.#service.importDocument({
+        return this.#documents.importDocument({
             teamId,
             userId,
             file: req.file as Express.Multer.File,
@@ -75,7 +87,7 @@ export default class LatexController extends Controller {
         @Param('teamId') teamId: string,
         @Param('documentId') documentId: string
     ){
-        return this.#service.getDocument({
+        return this.#documents.getDocument({
             teamId,
             documentId
         });
@@ -87,7 +99,7 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteDocument({
+        await this.#documents.deleteDocument({
             teamId,
             documentId,
             userId
@@ -101,7 +113,7 @@ export default class LatexController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: UpdateLatexDocumentInput
     ) {
-        return this.#service.updateDocument({
+        return this.#documents.updateDocument({
             teamId,
             documentId,
             userId,
@@ -116,7 +128,7 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Body() body: MoveLatexDocumentInput
     ){
-        return this.#service.moveDocument({
+        return this.#documents.moveDocument({
             teamId,
             documentId,
             folderId: body.folderId
@@ -141,24 +153,11 @@ export default class LatexController extends Controller {
         @Query('key') key: string,
         @Res() res: Response
     ): Promise<void> {
-        const output = await this.#assets.getAssetContent({
+        await this.#sendDownload(res, await this.#assets.getAssetContent({
             teamId,
             documentId,
             key
-        });
-
-        const headers: Record<string, string> = {
-            'Content-Type': output.contentType || 'application/octet-stream',
-            'Cache-Control': 'private, max-age=300'
-        };
-        if (output.contentLength !== undefined) {
-            headers['Content-Length'] = String(output.contentLength);
-        }
-        if (output.contentEncoding) {
-            headers['Content-Encoding'] = output.contentEncoding;
-        }
-
-        await pipeStreamToResponse(res, output.stream, headers);
+        }));
     }
 
     @Route(latexRoutes.uploadAsset)
@@ -211,12 +210,10 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#service.exportDocumentTex({
+        await this.#sendDownload(res, await this.#downloads.exportDocumentTex({
             teamId,
             documentId
-        });
-        await output.prepare?.();
-        await pipeStreamToResponse(res, output.stream, output.headers);
+        }));
     }
 
     @Route(latexRoutes.exportDocumentZip)
@@ -225,12 +222,10 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#service.exportDocumentZip({
+        await this.#sendDownload(res, await this.#downloads.exportDocumentZip({
             teamId,
             documentId
-        });
-        await output.prepare?.();
-        await pipeStreamToResponse(res, output.stream, output.headers);
+        }));
     }
 
     @Route(latexRoutes.compileDocument)
@@ -239,12 +234,10 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#service.compileDocument({
+        await this.#sendDownload(res, await this.#downloads.compileDocument({
             teamId,
             documentId
-        });
-        await output.prepare?.();
-        await pipeStreamToResponse(res, output.stream, output.headers);
+        }));
     }
 
     @Route(latexRoutes.listFiles)
@@ -252,7 +245,7 @@ export default class LatexController extends Controller {
         @Param('teamId') teamId: string,
         @Param('documentId') documentId: string
     ){
-        return this.#service.listFiles({
+        return this.#files.listFiles({
             teamId,
             documentId
         });
@@ -266,7 +259,7 @@ export default class LatexController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateLatexFileInput
     ) {
-        return this.#service.createFile({
+        return this.#files.createFile({
             teamId,
             documentId,
             userId,
@@ -281,7 +274,7 @@ export default class LatexController extends Controller {
         @Param('fileId') fileId: string,
         @Body() body: UpdateLatexFileInput
     ) {
-        return this.#service.updateFile({
+        return this.#files.updateFile({
             teamId,
             documentId,
             fileId,
@@ -295,7 +288,7 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Param('fileId') fileId: string
     ){
-        await this.#service.deleteFile({
+        await this.#files.deleteFile({
             teamId,
             documentId,
             fileId
@@ -308,7 +301,7 @@ export default class LatexController extends Controller {
         @Param('documentId') documentId: string,
         @Param('fileId') fileId: string
     ){
-        return this.#service.setFileEntrypoint({
+        return this.#files.setFileEntrypoint({
             teamId,
             documentId,
             fileId
@@ -318,12 +311,9 @@ export default class LatexController extends Controller {
     @Route(latexRoutes.listFolders)
     listFolders(
         @Param('teamId') teamId: string,
-        @Query() query: Record<string, string>
+        @Query() query: LatexFolderQuery
     ){
-        return this.#service.listFolders({
-            teamId,
-            ...query
-        });
+        return this.#folders.list(teamId, query);
     }
 
     @Route(latexRoutes.getFolder)
@@ -331,10 +321,7 @@ export default class LatexController extends Controller {
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string
     ){
-        return this.#service.getFolder({
-            teamId,
-            folderId
-        });
+        return this.#folders.get(teamId, folderId, 'LaTeX folder not found');
     }
 
     @Route(latexRoutes.createFolder)
@@ -344,11 +331,7 @@ export default class LatexController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateLatexFolderInput
     ){
-        return this.#service.createFolder({
-            teamId,
-            userId,
-            ...body
-        });
+        return this.#folders.create(teamId, userId, body);
     }
 
     @Route(latexRoutes.updateFolder)
@@ -357,11 +340,7 @@ export default class LatexController extends Controller {
         @Param('folderId') folderId: string,
         @Body() body: UpdateLatexFolderInput
     ){
-        return this.#service.updateFolder({
-            teamId,
-            folderId,
-            ...body
-        });
+        return this.#folders.update(teamId, folderId, body.title);
     }
 
     @Route(latexRoutes.removeFolder)
@@ -369,10 +348,15 @@ export default class LatexController extends Controller {
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string
     ){
-        await this.#service.deleteFolder({
+        await this.#documents.deleteFolder({
             teamId,
             folderId
         });
+    }
+
+    async #sendDownload(res: Response, output: DownloadStreamOutput): Promise<void>{
+        await output.prepare?.();
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
 }

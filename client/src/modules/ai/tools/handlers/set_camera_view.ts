@@ -1,12 +1,7 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { SetCameraViewInput } from '@volt/contracts/modules/ai/ai-tools';
 import type { Vec3 } from '@/shared/contracts/geometry';
-
-type CameraView = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric';
-
-interface SetCameraViewInput {
-    view?: CameraView;
-}
 
 const VIEW_DISTANCE = 12;
 
@@ -17,7 +12,7 @@ interface CameraViewPose {
     up: Vec3;
 }
 
-const VIEWS: Record<CameraView, CameraViewPose> = {
+const VIEWS: Record<SetCameraViewInput['view'], CameraViewPose> = {
     front: {
         position: [0, -VIEW_DISTANCE, 0],
         up: [0, 0, 1]
@@ -48,25 +43,12 @@ const VIEWS: Record<CameraView, CameraViewPose> = {
     }
 };
 
-const isCameraView = (value: unknown): value is CameraView =>
-    typeof value === 'string' && Object.prototype.hasOwnProperty.call(VIEWS, value);
-
 const setCameraView: ClientToolHandler<SetCameraViewInput> = {
     name: 'set_camera_view',
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const view = input.view;
-
-        if (!isCameraView(view)) {
-            return {
-                ok: false,
-                summary: 'Could not change the camera view.',
-                reason: 'invalid_view',
-                hint: 'view must be one of: front, back, left, right, top, bottom, isometric.'
-            };
-        }
-
+        const { view } = input;
         const { position, up } = VIEWS[view];
 
         ctx.markViewerActing();
@@ -87,15 +69,9 @@ const setCameraView: ClientToolHandler<SetCameraViewInput> = {
         };
     },
 
-    describeEffect(input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Camera view unchanged',
-                icon: 'camera'
-            };
-        }
+    describeEffect(input) {
         return {
-            label: `Set ${input.view ?? ''} view`.trim(),
+            label: `Set ${input.view} view`,
             icon: 'camera'
         };
     }

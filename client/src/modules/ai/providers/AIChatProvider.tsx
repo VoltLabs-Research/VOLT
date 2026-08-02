@@ -2,7 +2,7 @@ import useAIPage from '@/modules/ai/hooks/use-ai-page';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
+export const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
 
 type AIPageState = ReturnType<typeof useAIPage>;
 
@@ -11,10 +11,7 @@ interface AIChatContextValue extends AIPageState {
     setActiveConversationId: (conversationId?: string) => void;
     messageDraft: string;
     setMessageDraft: (draft: string) => void;
-    
     handleSend: () => Promise<void>;
-    
-    sendPrompt: (prompt: string) => Promise<void>;
 }
 
 const AIChatContext = createContext<AIChatContextValue | null>(null);
@@ -67,34 +64,14 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [activeConversationId, handleCreateConversation, handleSendMessage, messageDraft]);
 
-    const sendPrompt = useCallback(async (prompt: string) => {
-        const text = prompt.trim();
-        if (!text) {
-            return;
-        }
-
-        try {
-            if (!activeConversationId) {
-                sessionStorage.setItem(PENDING_MESSAGE_STORAGE_KEY, text);
-                await handleCreateConversation(text);
-                return;
-            }
-
-            await handleSendMessage(text);
-        } catch {
-            setMessageDraft(text);
-        }
-    }, [activeConversationId, handleCreateConversation, handleSendMessage]);
-
     const value = useMemo<AIChatContextValue>(() => ({
         ...pageState,
         activeConversationId,
         setActiveConversationId,
         messageDraft,
         setMessageDraft,
-        handleSend,
-        sendPrompt
-    }), [pageState, activeConversationId, messageDraft, handleSend, sendPrompt]);
+        handleSend
+    }), [pageState, activeConversationId, messageDraft, handleSend]);
 
     return (
         <AIChatContext.Provider value={value}>
@@ -110,5 +87,3 @@ export const useAIChatContext = (): AIChatContextValue => {
     }
     return context;
 };
-
-export { PENDING_MESSAGE_STORAGE_KEY };

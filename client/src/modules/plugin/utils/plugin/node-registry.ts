@@ -22,11 +22,6 @@ interface NodeOption<TValue> {
     label: string;
 }
 
-export interface AllowedNodeConnections {
-    from: NodeType[];
-    to: NodeType[];
-}
-
 export interface NodeTypeConfig {
     type: NodeType;
     label: string;
@@ -34,7 +29,10 @@ export interface NodeTypeConfig {
     description: string;
     inputs: number;
     outputs: number;
-    allowedConnections: AllowedNodeConnections;
+    allowedConnections: {
+        from: NodeType[];
+        to: NodeType[];
+    };
 }
 
 interface PluginNodeRegistryEntry extends NodeTypeConfig {

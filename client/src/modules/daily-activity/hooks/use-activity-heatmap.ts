@@ -1,36 +1,23 @@
 import { addDays, format, subDays } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import type { FocusEvent, MouseEvent } from 'react';
 import type { HeatmapValue } from 'react-calendar-heatmap';
 import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
 
-interface ActivityHeatmapDayData {
-    activity: DailyActivityHeatmapDetailEntry[];
-    minutesOnline: number;
-};
-
 export interface ActivityHeatmapChartDataItem extends HeatmapValue {
     date: string;
     count: number;
     level: number;
-    data?: ActivityHeatmapDayData;
-};
-
-interface ActivityHeatmapLegendItem {
-    label: string;
-    className: string;
+    data?: {
+        activity: DailyActivityHeatmapDetailEntry[];
+        minutesOnline: number;
+    };
 };
 
 interface UseActivityHeatmapParams {
     data: DailyActivity[];
     range: number;
-};
-
-interface TooltipPosition {
-    x: number;
-    y: number;
 };
 
 interface TooltipState {
@@ -40,7 +27,7 @@ interface TooltipState {
     score: number;
 };
 
-const ACTIVITY_HEATMAP_LEGEND: ActivityHeatmapLegendItem[] = [
+const ACTIVITY_HEATMAP_LEGEND = [
     {
         label: 'No activity',
         className: 'color-empty'
@@ -87,32 +74,12 @@ const getDayAriaLabel = (value: ActivityHeatmapChartDataItem | null): string => 
     return `${dateLabel}: ${actionsCount} activities and ${minutesOnline.toLocaleString()} minutes online.`;
 };
 
-const getUserId = (user: DailyActivity['user']): string => {
-    return typeof user === 'string' ? user : user._id;
-};
-
 const getUserDisplayName = (user: DailyActivity['user']): string => {
     if (typeof user === 'string') {
         return 'Unknown user';
     }
 
     return `${user.firstName} ${user.lastName}`.trim();
-};
-
-const toHeatmapDetailEntry = (
-    activityItem: DailyActivity['activity'][number],
-    user: DailyActivity['user'],
-    currentUserId: string | undefined
-): DailyActivityHeatmapDetailEntry => {
-    const userId = getUserId(user);
-
-    return {
-        ...activityItem,
-        isCurrentUser: userId === currentUserId,
-        user,
-        userDisplayName: getUserDisplayName(user),
-        userId
-    };
 };
 
 const createTooltipState = (value: ActivityHeatmapChartDataItem | null): TooltipState => {
@@ -127,8 +94,7 @@ const createTooltipState = (value: ActivityHeatmapChartDataItem | null): Tooltip
 const buildChartData = (
     data: DailyActivity[],
     range: number,
-    startDate: Date,
-    currentUserId: string | undefined
+    startDate: Date
 ): ActivityHeatmapChartDataItem[] => {
     const dataMap = new Map<string, DailyActivity[]>();
 
@@ -154,9 +120,10 @@ const buildChartData = (
         const dayData = items.length > 0
             ? {
                 activity: items.flatMap((item) => {
-                    return item.activity.map((activityItem) => {
-                        return toHeatmapDetailEntry(activityItem, item.user, currentUserId);
-                    });
+                    return item.activity.map((activityItem) => ({
+                        ...activityItem,
+                        userDisplayName: getUserDisplayName(item.user)
+                    }));
                 }),
                 minutesOnline: items.reduce((total, item) => total + item.minutesOnline, 0)
             }
@@ -176,40 +143,32 @@ const buildChartData = (
         });
     }
 
-    return days.map((day) => {
-        if(day.count === 0 || maxScore === 0){
-            return day;
+    days.forEach((day) => {
+        if(!day.count || !maxScore){
+            return;
         }
 
         const ratio = day.count / maxScore;
-        let level = 1;
-
-        if(ratio > 0.75) level = 4;
-        else if(ratio > 0.5) level = 3;
-        else if(ratio > 0.25) level = 2;
-
-        return {
-            ...day,
-            level
-        };
+        day.level = ratio > 0.75 ? 4 : ratio > 0.5 ? 3 : ratio > 0.25 ? 2 : 1;
     });
+
+    return days;
 };
 
 const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
-    const currentUser = useCurrentUser();
     const today = useMemo(() => new Date(), []);
     const startDate = useMemo(() => subDays(today, range), [today, range]);
 
     const [tooltipOpen, setTooltipOpen] = useState(false);
-    const [tooltipPos, setTooltipPos] = useState<TooltipPosition>({
+    const [tooltipPos, setTooltipPos] = useState({
         x: 0,
         y: 0
     });
     const [tooltipState, setTooltipState] = useState<TooltipState>(() => createTooltipState(null));
 
     const chartData = useMemo(
-        () => buildChartData(data, range, startDate, currentUser?._id),
-        [currentUser?._id, data, range, startDate]
+        () => buildChartData(data, range, startDate),
+        [data, range, startDate]
     );
 
     const handleDayActivate = (
@@ -245,8 +204,7 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
         tooltipPos,
         tooltipState,
         getDayAriaLabel,
-        handleMouseEnter: handleDayActivate,
-        handleDayFocus: handleDayActivate,
+        handleDayActivate,
         handleMouseLeave,
         handleMouseMove
     };

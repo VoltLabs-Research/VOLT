@@ -7,31 +7,22 @@ interface UseTeamClusterResourceSelectionInput {
     teamId: string | null | undefined;
     selectedTeamClusterId: string | null;
     onSelectedTeamClusterIdChange: (teamClusterId: string | null) => void;
-    autoSelectFirstCluster?: boolean;
     includeResourceLimits?: boolean;
 }
-
-const toTeamClusterOptions = (teamClusters: Array<{ _id: string; name: string; status: string }>): TeamClusterOption[] => {
-    return teamClusters.map((teamCluster) => ({
-        _id: teamCluster._id,
-        name: teamCluster.name,
-        status: teamCluster.status
-    }));
-};
 
 const useTeamClusterResourceSelection = ({
     teamId,
     selectedTeamClusterId,
     onSelectedTeamClusterIdChange,
-    autoSelectFirstCluster = true,
     includeResourceLimits = true
 }: UseTeamClusterResourceSelectionInput) => {
     const teamClustersQuery = useTeamClustersQuery(teamId ?? '', {
         enabled: Boolean(teamId)
     });
 
-    const teamClusters = useMemo(() => {
-        return toTeamClusterOptions(teamClustersQuery.data?.data ?? []);
+    // Memoised for identity, not for cost: the selection effect below depends on it.
+    const teamClusters = useMemo<TeamClusterOption[]>(() => {
+        return teamClustersQuery.data?.data ?? [];
     }, [teamClustersQuery.data?.data]);
 
     useEffect(() => {
@@ -46,16 +37,8 @@ const useTeamClusterResourceSelection = ({
             return;
         }
 
-        if (!autoSelectFirstCluster) {
-            if (selectedTeamClusterId !== null) {
-                onSelectedTeamClusterIdChange(null);
-            }
-            return;
-        }
-
         onSelectedTeamClusterIdChange(teamClusters[0]?._id ?? null);
     }, [
-        autoSelectFirstCluster,
         onSelectedTeamClusterIdChange,
         selectedTeamClusterId,
         teamClusters,

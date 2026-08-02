@@ -6,19 +6,14 @@ import authService from '@/modules/auth/api/service';
 import systemService from '@/modules/system/api/service';
 import { create } from 'zustand';
 
-interface AuthState{
+interface AuthStore{
     isLoading: boolean;
     isInitialized: boolean;
     hasToken: boolean;
-}
-
-interface AuthActions{
     initializeAuth: () => Promise<void>;
     markAuthenticated: (token: string | null) => void;
     signOut: () => void;
 }
-
-type AuthStore = AuthState & AuthActions;
 
 const tryLocalAutoLogin = async (): Promise<string | null> => {
     try{
@@ -27,114 +22,108 @@ const tryLocalAutoLogin = async (): Promise<string | null> => {
             return null;
         }
         const { token } = await authService.localSignIn({});
-        return token ?? null;
+        return token;
     }catch{
         return null;
     }
 };
 
-export const useAuthStore = create<AuthStore>((set) => ({
-    isLoading: false,
-    isInitialized: false,
-    hasToken: false,
+export const useAuthStore = create<AuthStore>((set) => {
+    const markSignedIn = () => set({
+        isInitialized: true,
+        isLoading: false,
+        hasToken: true
+    });
 
-    initializeAuth: async () => {
-        let token = tokenStorage.getToken();
-
-        
-        
-        if(!token){
-            const localToken = await tryLocalAutoLogin();
-            if(localToken){
-                tokenStorage.setToken(localToken);
-                token = localToken;
-            }
-        }
-
-        updateSocketAuthToken(token);
-
-        if(!token){
-            resetTeamSessionState();
-            clearSocketSession();
-            await clearCurrentUserQueryData();
-            set({
-                isInitialized: true,
-                isLoading: false,
-                hasToken: false
-            });
-            return;
-        }
-
-        set({
-            isLoading: true,
-            hasToken: true
-        });
-
-        try{
-            await fetchCurrentUser();
-            set({
-                isInitialized: true,
-                isLoading: false,
-                hasToken: true
-            });
-        }catch{
-            
-            
-            tokenStorage.removeToken();
-            const localToken = await tryLocalAutoLogin();
-            if(localToken){
-                tokenStorage.setToken(localToken);
-                updateSocketAuthToken(localToken);
-                try{
-                    await fetchCurrentUser();
-                    set({
-                        isInitialized: true,
-                        isLoading: false,
-                        hasToken: true
-                    });
-                    return;
-                }catch{
-                    tokenStorage.removeToken();
-                }
-            }
-
-            clearSocketSession();
-            resetTeamSessionState();
-            await clearCurrentUserQueryData();
-            set({
-                isInitialized: true,
-                isLoading: false,
-                hasToken: false
-            });
-        }
-    },
-
-    markAuthenticated: (token) => {
-        if (token) {
-            tokenStorage.setToken(token);
-        } else {
-            tokenStorage.removeToken();
-        }
-
-        updateSocketAuthToken(token);
-
+    const markSignedOut = async () => {
+        clearSocketSession();
+        resetTeamSessionState();
+        await clearCurrentUserQueryData();
         set({
             isInitialized: true,
             isLoading: false,
-            hasToken: Boolean(token)
-        });
-    },
-
-    signOut: () => {
-        tokenStorage.removeToken();
-        clearSocketSession();
-        resetTeamSessionState();
-        clearCurrentUserQueryData().catch(() => undefined);
-        set({
-            isInitialized: false,
-            isLoading: false,
             hasToken: false
         });
-        window.location.href = '/auth/sign-in';
-    }
-}));
+    };
+
+    return {
+        isLoading: false,
+        isInitialized: false,
+        hasToken: false,
+
+        initializeAuth: async () => {
+            let token = tokenStorage.getToken();
+
+            if(!token){
+                const localToken = await tryLocalAutoLogin();
+                if(localToken){
+                    tokenStorage.setToken(localToken);
+                    token = localToken;
+                }
+            }
+
+            updateSocketAuthToken(token);
+
+            if(!token){
+                await markSignedOut();
+                return;
+            }
+
+            set({
+                isLoading: true,
+                hasToken: true
+            });
+
+            try{
+                await fetchCurrentUser();
+                markSignedIn();
+            }catch{
+                // The stored token was rejected: drop it and retry local auto-login once.
+                tokenStorage.removeToken();
+                const localToken = await tryLocalAutoLogin();
+                if(localToken){
+                    tokenStorage.setToken(localToken);
+                    updateSocketAuthToken(localToken);
+                    try{
+                        await fetchCurrentUser();
+                        markSignedIn();
+                        return;
+                    }catch{
+                        tokenStorage.removeToken();
+                    }
+                }
+
+                await markSignedOut();
+            }
+        },
+
+        markAuthenticated: (token) => {
+            if (token) {
+                tokenStorage.setToken(token);
+            } else {
+                tokenStorage.removeToken();
+            }
+
+            updateSocketAuthToken(token);
+
+            set({
+                isInitialized: true,
+                isLoading: false,
+                hasToken: Boolean(token)
+            });
+        },
+
+        signOut: () => {
+            tokenStorage.removeToken();
+            clearSocketSession();
+            resetTeamSessionState();
+            clearCurrentUserQueryData().catch(() => undefined);
+            set({
+                isInitialized: false,
+                isLoading: false,
+                hasToken: false
+            });
+            window.location.href = '/auth/sign-in';
+        }
+    };
+});

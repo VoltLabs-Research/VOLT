@@ -2,18 +2,13 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IconPicker from '@/shared/ui/components/IconPicker';
 import { Controller } from 'react-hook-form';
-import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
+import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import { EXPOSURE_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ExposureEditorFormValues } from './schema';
 
-const useExposureEditorForm = createNodeEditorForm<ExposureEditorFormValues, 'exposure'>({
-    defaults: EXPOSURE_EDITOR_DEFAULT_VALUES,
-    dataKey: 'exposure'
-});
-
 const ExposureEditor = ({ node }: EditorProps) => {
-    const form = useExposureEditorForm(node);
+    const form = useNodeEditorForm<ExposureEditorFormValues>(node, 'exposure', EXPOSURE_EDITOR_DEFAULT_VALUES);
 
     return (
         <>

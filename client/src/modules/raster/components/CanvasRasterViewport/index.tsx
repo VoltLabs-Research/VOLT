@@ -5,7 +5,7 @@ import PanelHeader from '@/shared/ui/components/PanelHeader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { ImageOff } from 'lucide-react';
 import { sileo } from 'sileo';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/contracts/container-selection';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -20,31 +20,22 @@ interface CanvasRasterViewportProps {
     onUpdateContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 };
 
-const createSelectionMap = (containerSelections?: RasterContainerSelection[]) => {
-    const fallbackSelections = createInitialRasterContainerSelections();
-    const resolvedSelections = containerSelections?.length ? containerSelections : fallbackSelections;
-
-    return new Map<RasterContainerId, RasterContainerSelection>(resolvedSelections.map((selection) => [selection.id, selection]));
+interface RasterViewportPanelProps extends Pick<CanvasRasterViewportProps, 'trajectoryId' | 'currentTimestep' | 'onUpdateContainerSelection'> {
+    selection: RasterContainerSelection;
 };
+
+const CONTAINER_ORDER: RasterContainerId[] = ['container-1', 'container-2'];
 
 const RasterViewportPanel = ({
     selection,
     trajectoryId,
-    trajectory,
     currentTimestep,
     onUpdateContainerSelection
-}: {
-    selection: RasterContainerSelection;
-    trajectoryId?: string;
-    trajectory: Trajectory | null | undefined;
-    currentTimestep?: number;
-    onUpdateContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
-}) => {
+}: RasterViewportPanelProps) => {
     const handledUnavailableSelectionKeyRef = useRef<string | null>(null);
     const analysisId = selection.scene.source === 'plugin' ? selection.scene.analysisId : undefined;
     const vm = useRasterWorkspace({
         trajectoryId,
-        trajectory,
         analysisId,
         currentTimestep,
         model: selection.model,
@@ -52,36 +43,32 @@ const RasterViewportPanel = ({
     });
 
     useEffect(() => {
-        let warningKey: string | null = null;
-        let warningTitle = '';
-        let warningDescription = '';
+        const warning = !analysisId ? null : vm.isSelectionUnavailable ? {
+            key: `selection:${selection.id}:${analysisId}`,
+            title: 'Raster selection unavailable',
+            description: 'The selected raster output is no longer available. This panel was reset to trajectory.'
+        } : vm.isModelUnavailable ? {
+            key: `model:${selection.id}:${analysisId}:${selection.model ?? 'unknown'}`,
+            title: 'Raster model unavailable',
+            description: 'The selected raster model is no longer available. This panel was reset to trajectory.'
+        } : null;
 
-        if (vm.isSelectionUnavailable && selection.scene.source === 'plugin') {
-            warningKey = `selection:${selection.id}:${selection.scene.analysisId}`;
-            warningTitle = 'Raster selection unavailable';
-            warningDescription = 'The selected raster output is no longer available. This panel was reset to trajectory.';
-        } else if (vm.isModelUnavailable && selection.scene.source === 'plugin') {
-            warningKey = `model:${selection.id}:${selection.scene.analysisId}:${selection.model ?? 'unknown'}`;
-            warningTitle = 'Raster model unavailable';
-            warningDescription = 'The selected raster model is no longer available. This panel was reset to trajectory.';
-        }
-
-        if (!warningKey) {
+        if (!warning) {
             handledUnavailableSelectionKeyRef.current = null;
             return;
         }
 
-        if (handledUnavailableSelectionKeyRef.current === warningKey) {
+        if (handledUnavailableSelectionKeyRef.current === warning.key) {
             return;
         }
 
-        handledUnavailableSelectionKeyRef.current = warningKey;
+        handledUnavailableSelectionKeyRef.current = warning.key;
         sileo.warning({
-            title: warningTitle,
-            description: warningDescription
+            title: warning.title,
+            description: warning.description
         });
         onUpdateContainerSelection?.(selection.id, createDefaultRasterContainerSelection(selection.id));
-    }, [onUpdateContainerSelection, selection.id, selection.model, selection.scene, vm.isModelUnavailable, vm.isSelectionUnavailable]);
+    }, [analysisId, onUpdateContainerSelection, selection.id, selection.model, vm.isModelUnavailable, vm.isSelectionUnavailable]);
 
     const headerActions = (
         <Row gap='075' className='canvas-raster-viewport__header-actions'>
@@ -91,8 +78,7 @@ const RasterViewportPanel = ({
         </Row>
     );
 
-    const resolvedTimestep = vm.displayTimestep;
-    const isShowingFallbackTimestep = currentTimestep !== undefined && resolvedTimestep !== undefined && currentTimestep !== resolvedTimestep;
+    const isShowingFallbackTimestep = currentTimestep !== undefined && vm.displayTimestep !== undefined && currentTimestep !== vm.displayTimestep;
 
     const frameUnavailableDescription = vm.isAnalysisSource
         ? 'This timestep is not available for the selected raster model.'
@@ -109,7 +95,7 @@ const RasterViewportPanel = ({
                 )}
                 {isShowingFallbackTimestep && (
                     <Text as='p' size='xs' tone='secondary' className='canvas-raster-viewport__hint'>
-                        Showing frame {resolvedTimestep} because the current timestep is not available for this selection.
+                        Showing frame {vm.displayTimestep} because the current timestep is not available for this selection.
                     </Text>
                 )}
                 {vm.isLoading ? (
@@ -133,7 +119,7 @@ const RasterViewportPanel = ({
                             description='The selected analysis does not have raster output yet. Choose another source in Scene Collection or run rasterization.'
                         />
                     </Row>
-                ) : vm.isFrameMissing || !vm.frame?.imageUrl ? (
+                ) : vm.isFrameMissing || !vm.imageUrl ? (
                     <Row justify='center' flex='1' minH='0' className='canvas-raster-viewport__frame'>
                         <EmptyState
                             icon={<ImageOff size={24} />}
@@ -145,8 +131,8 @@ const RasterViewportPanel = ({
                     <Row justify='center' flex='1' minH='0' overflow='hidden' className='canvas-raster-viewport__frame'>
                         <img
                             className='canvas-raster-viewport__image'
-                            src={vm.frame.imageUrl}
-                            alt={`${selection.title} raster timestep ${resolvedTimestep ?? 0}`}
+                            src={vm.imageUrl}
+                            alt={`${selection.title} raster timestep ${vm.displayTimestep ?? 0}`}
                         />
                     </Row>
                 )}
@@ -157,27 +143,18 @@ const RasterViewportPanel = ({
 
 const CanvasRasterViewport = ({
     trajectoryId,
-    trajectory,
     currentTimestep,
     containerSelections,
     onUpdateContainerSelection
 }: CanvasRasterViewportProps) => {
-    const [selectionMap, setSelectionMap] = useState<Map<RasterContainerId, RasterContainerSelection>>(() => createSelectionMap(containerSelections));
-
-    useEffect(() => {
-        setSelectionMap(createSelectionMap(containerSelections));
-    }, [containerSelections]);
-
     const orderedSelections = useMemo(() => {
-        return (['container-1', 'container-2'] as RasterContainerId[])
-            .map((id) => selectionMap.get(id))
-            .filter((selection): selection is RasterContainerSelection => Boolean(selection));
-    }, [selectionMap]);
+        const selections = containerSelections?.length ? containerSelections : createInitialRasterContainerSelections();
+        return CONTAINER_ORDER.flatMap((containerId) => selections.find((selection) => selection.id === containerId) ?? []);
+    }, [containerSelections]);
 
     const firstAnalysisSelection = orderedSelections.find((selection) => selection.scene.source === 'plugin');
     const metadataVm = useRasterWorkspace({
         trajectoryId,
-        trajectory,
         analysisId: firstAnalysisSelection?.scene.source === 'plugin' ? firstAnalysisSelection.scene.analysisId : undefined,
         currentTimestep
     });
@@ -214,7 +191,6 @@ const CanvasRasterViewport = ({
                     key={selection.id}
                     selection={selection}
                     trajectoryId={trajectoryId}
-                    trajectory={trajectory}
                     currentTimestep={currentTimestep}
                     onUpdateContainerSelection={onUpdateContainerSelection}
                 />

@@ -14,7 +14,6 @@ import {
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -45,7 +44,7 @@ export default class AnalysisResultSummarizer{
 
         const status = analysis.status || 'pending';
         const pluginDisplayName = analysis.pluginDisplayName || analysis.plugin;
-        const teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined });
+        const teamClusterId = analysis.computeClusterId ?? undefined;
 
         if (!teamClusterId) {
             return this.#summarizeEmptyResult(input.analysisId, pluginDisplayName, status,

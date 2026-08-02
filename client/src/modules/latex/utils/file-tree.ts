@@ -1,4 +1,4 @@
-import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
+import type { LatexFileEntry } from '@/modules/latex/contracts/workspace';
 import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import { getAssetDisplayName, isFolderPlaceholderAsset } from '@/modules/latex/utils/workspace';
 
@@ -13,17 +13,29 @@ const fileTreeNameCollator = new Intl.Collator(undefined, {
     sensitivity: 'base'
 });
 
-export interface FileTreeNode {
-    
+interface FileTreeNodeBase {
     id: string;
-    
     name: string;
-    type: 'folder' | 'file' | 'asset';
-    
+    /** For a folder its own path, for a leaf the path of the folder holding it. */
     folderPath: string;
-    data?: LatexFileEntry | LatexAsset;
     children: FileTreeNode[];
 }
+
+export interface FileTreeFolderNode extends FileTreeNodeBase {
+    type: 'folder';
+}
+
+export interface FileTreeFileNode extends FileTreeNodeBase {
+    type: 'file';
+    data: LatexFileEntry;
+}
+
+export interface FileTreeAssetNode extends FileTreeNodeBase {
+    type: 'asset';
+    data: LatexAsset;
+}
+
+export type FileTreeNode = FileTreeFolderNode | FileTreeFileNode | FileTreeAssetNode;
 
 const sortTreeNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
     nodes.sort((left, right) => {
@@ -63,7 +75,7 @@ const ancestorFolders = (folderPath: string): string[] => {
 };
 
 const ensureFolder = (
-    folderMap: Map<string, FileTreeNode>,
+    folderMap: Map<string, FileTreeFolderNode>,
     folderPath: string
 ): void => {
     for (const ancestor of ancestorFolders(folderPath)) {
@@ -86,7 +98,7 @@ export const buildFileTree = (
     folderPaths: string[] = []
 ): FileTreeNode[] => {
     const visibleAssets = assets.filter((asset) => !isFolderPlaceholderAsset(asset));
-    const folderMap = new Map<string, FileTreeNode>();
+    const folderMap = new Map<string, FileTreeFolderNode>();
 
     for (const folderPath of folderPaths) {
         if (folderPath) {
@@ -124,7 +136,7 @@ export const buildFileTree = (
     }
 
     for (const file of files) {
-        const fileNode: FileTreeNode = {
+        const fileNode: FileTreeFileNode = {
             id: `file:${file._id}`,
             name: file.name,
             type: 'file',
@@ -142,7 +154,7 @@ export const buildFileTree = (
 
     for (const asset of visibleAssets) {
         const fp = assetFolderPath(asset);
-        const assetNode: FileTreeNode = {
+        const assetNode: FileTreeAssetNode = {
             id: `asset:${asset._id}`,
             name: getAssetDisplayName(asset),
             type: 'asset',

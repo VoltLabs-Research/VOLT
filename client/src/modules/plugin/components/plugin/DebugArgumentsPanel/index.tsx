@@ -1,5 +1,4 @@
 import { Box, Button, IconButton, Row, Stack, Text } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -10,8 +9,7 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utils/plugin/argument-values';
 import { X, Play, Settings2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo } from 'react';
-import type { ArgumentsNodeData } from '@/modules/plugin/contracts/debug';
+import { useEffect, useMemo } from 'react';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {
@@ -33,15 +31,10 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
 
     const { selectedTrajectory } = useDebugTrajectorySelector();
 
+    // Memoised: identity is load-bearing as a dependency of the defaults effect below.
     const configurableArgs = useMemo(() => {
-        const argsNode = nodes.find((n) => n.type === NodeType.ARGUMENTS);
-        if (!argsNode) return [];
-
-        const argsNodeData = argsNode.data as ArgumentsNodeData;
-        const argsDef = argsNodeData.arguments?.arguments;
-        if (!argsDef) return [];
-
-        return getUserConfigurableArguments(argsDef);
+        const argsDefinitions = nodes.find((n) => n.type === NodeType.ARGUMENTS)?.data.arguments?.arguments;
+        return argsDefinitions ? getUserConfigurableArguments(argsDefinitions) : [];
     }, [nodes]);
 
     useEffect(() => {
@@ -63,29 +56,12 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
         }
     }, [configurableArgs, debugConfig, setDebugConfig]);
 
-    const handleFieldChange = useCallback((key: string, value: unknown) => {
-        setDebugConfigField(key, value);
-    }, [setDebugConfigField]);
-
-    const handleStartClick = useCallback(() => {
+    const handleStartClick = () => {
         setShowArgumentsPanel(false);
         onStart();
-    }, [onStart, setShowArgumentsPanel]);
+    };
 
-    const handleClose = useCallback(() => {
-        setShowArgumentsPanel(false);
-    }, [setShowArgumentsPanel]);
-
-    const frameOptions = useMemo<SelectOption[]>(() => {
-        return (selectedTrajectory?.frames ?? []).map((frame, index) => ({
-            value: String(frame.timestep),
-            title: `Frame ${index + 1} (t=${frame.timestep})`
-        }));
-    }, [selectedTrajectory]);
-
-    if (configurableArgs.length === 0) return null;
-
-    if (!showArgumentsPanel) return null;
+    if (configurableArgs.length === 0 || !showArgumentsPanel) return null;
 
     return (
         <Stack position='absolute' zIndex='10' radius='md' className='center-x panel-floating overflow-hidden debug-arguments-panel glass-bg'>
@@ -99,7 +75,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 <IconButton
                     variant='ghost'
                     size='sm'
-                    onClick={handleClose}
+                    onClick={() => setShowArgumentsPanel(false)}
                 >
                     <X size={14} />
                 </IconButton>
@@ -109,9 +85,11 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
-                    onChange={handleFieldChange}
-                    frameOptions={frameOptions}
-                    emptyMessage='No arguments configured.'
+                    onChange={setDebugConfigField}
+                    frameOptions={(selectedTrajectory?.frames ?? []).map((frame, index) => ({
+                        value: String(frame.timestep),
+                        title: `Frame ${index + 1} (t=${frame.timestep})`
+                    }))}
                 />
             </Stack>
 

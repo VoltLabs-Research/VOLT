@@ -8,9 +8,7 @@ export const DASHBOARD_DRAWER_IDS = {
 } as const;
 
 interface JobsDrawerState {
-    
     trajectoryId: string | null;
-    
     trajectoryName: string | null;
     setScope: (scope: { trajectoryId: string | null; trajectoryName?: string | null }) => void;
 }

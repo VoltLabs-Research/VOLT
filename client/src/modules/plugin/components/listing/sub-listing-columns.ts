@@ -34,10 +34,6 @@ const inferColumnFromRows = (
     return inferColumnType(rows.slice(0, COLUMN_SAMPLE_LIMIT).map((row) => row[key]));
 };
 
-const getColumnWidth = (inferred: InferredColumnType): number => {
-    return MIN_WIDTH_BY_KIND[inferred.kind] ?? MIN_WIDTH_BY_KIND.mixed;
-};
-
 export const buildCompactSubListingColumns = (
     columns: SubListingColumn[],
     rows: Record<string, unknown>[]
@@ -49,7 +45,7 @@ export const buildCompactSubListingColumns = (
         return {
             key,
             title: formatSnakeCaseToTitle(key),
-            width: getColumnWidth(inferred),
+            width: MIN_WIDTH_BY_KIND[inferred.kind],
             render: (value: unknown) => renderInferredCell(value, inferred)
         };
     });
@@ -69,7 +65,7 @@ export const buildDocumentSubListingColumnSnapshot = <TRow extends Record<string
             key,
             title: formatSnakeCaseToTitle(key),
             sortable: column.sortable,
-            minWidth: getColumnWidth(inferred),
+            minWidth: MIN_WIDTH_BY_KIND[inferred.kind],
             render: (value: unknown) => renderInferredCell(value, inferred)
         };
     });

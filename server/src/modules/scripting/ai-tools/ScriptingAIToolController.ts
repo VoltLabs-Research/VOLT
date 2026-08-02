@@ -1,8 +1,10 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
+import ScriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
 import type {
     CreateScriptingNotebookInput,
     ListScriptingNotebooksInput,
@@ -11,8 +13,10 @@ import type {
     UpdateScriptingNotebookInput
 } from '@volt/contracts/modules/scripting/ai-tools';
 
+@AIToolProvider()
 export default class ScriptingAIToolController extends AIToolController {
     #service = new ScriptingService();
+    #sessions = new ScriptingSessionService();
 
     @AITool({
         name: 'create_scripting_notebook',
@@ -65,7 +69,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<StartScriptingJupyterSessionInput>()
     })
     async startScriptingJupyterSession(input: StartScriptingJupyterSessionInput & AIToolScope) {
-        const session = await this.#service.createJupyterSession(input);
+        const session = await this.#sessions.createJupyterSession(input);
         return {
             summary: `Jupyter session started for notebook ${session.notebookId}.`,
             data: session
@@ -79,7 +83,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<NotebookRefInput>()
     })
     async getScriptingSessionStatus(input: NotebookRefInput & AIToolScope) {
-        const session = await this.#service.getSessionStatus(input);
+        const session = await this.#sessions.getSessionStatus(input);
         return {
             summary: `Session ${session.jupyter.ready ? 'ready' : 'not ready'} for notebook ${session.notebookId}.`,
             data: session
@@ -93,7 +97,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<NotebookRefInput>()
     })
     async stopScriptingSession(input: NotebookRefInput & AIToolScope) {
-        const session = await this.#service.deleteSession(input);
+        const session = await this.#sessions.deleteSession(input);
         return {
             summary: `Session ${session.deleted ? 'stopped' : 'not running'} for notebook ${session.notebookId}.`,
             data: session

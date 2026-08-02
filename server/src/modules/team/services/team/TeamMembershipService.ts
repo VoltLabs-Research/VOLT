@@ -13,12 +13,7 @@ interface RemoveMemberOutcome{
     teamDeleted: boolean;
 }
 
-const logMembershipWarning = (context: Record<string, string>, message: string) => {
-    logger.warn(context, `[TeamMembershipService] ${message}`);
-};
-
 export default class TeamMembershipService{
-    #eventBus = eventBus;
 
     async addMemberToTeam(userId: string, teamId: string, roleName: string = SystemRoleNames.MEMBER): Promise<void>{
         const existing = await TeamMember.findOneBy({
@@ -96,16 +91,16 @@ export default class TeamMembershipService{
         });
 
         if(outcome.warningCode !== undefined){
-            logMembershipWarning({
+            logger.warn({
                 teamId,
                 memberId,
                 code: outcome.warningCode
-            }, 'Team leave operation ignored');
+            }, '[TeamMembershipService] Team leave operation ignored');
             return;
         }
 
         if(outcome.teamDeleted){
-            await this.#eventBus.emit('team.deleted', { teamId });
+            await eventBus.emit('team.deleted', { teamId });
         }
     }
 }

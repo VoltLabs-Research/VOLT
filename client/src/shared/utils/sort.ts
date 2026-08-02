@@ -1,3 +1,5 @@
+import { getValueByPath } from '@voltstack/bravais';
+
 export type SortDirection = 'asc' | 'desc';
 
 export interface SortConfig {
@@ -5,107 +7,40 @@ export interface SortConfig {
     direction: SortDirection;
 }
 
-const PREFERRED_KEYS = ['name', 'title', '_id'];
-
-const isPrimitive = (value: unknown): boolean => {
-    const type = typeof value;
-    return type === 'string' || type === 'number' || type === 'boolean';
-};
-
-const extractPreferredProperties = (obj: Record<string, unknown>): string[] => {
-    const parts: string[] = [];
-    
-    for(const key of PREFERRED_KEYS){
-        if(key in obj && obj[key] != null){
-            parts.push(String(obj[key]));
-        }
-    }
-    
-    return parts;
-};
-
-const convertToSearchString = (value: unknown): string => {
+/**
+ * Listing columns are addressed by a runtime string path, so a cell value can be
+ * any JSON shape the server produced. Arrays are flattened because plugin
+ * listings expose vector columns.
+ */
+const toComparableString = (value: unknown): string => {
     if(value == null) return '';
-    
-    if(isPrimitive(value)) return String(value);
-    
-    if(Array.isArray(value)){
-        return value.map(convertToSearchString).join(' ');
-    }
-    
-    if(typeof value === 'object'){
-        try{
-            const obj = value as Record<string, unknown>;
-            const preferredParts = extractPreferredProperties(obj);
-            
-            if(preferredParts.length > 0){
-                return preferredParts.join(' ');
-            }
-            
-            return Object.values(obj).map(convertToSearchString).join(' ');
-        }catch{
-            return '';
-        }
-    }
-    
-    return '';
+    if(Array.isArray(value)) return value.map(toComparableString).join(' ');
+
+    return String(value);
 };
 
-const parseNumericValue = (str: string): { value: number; isNumeric: boolean } => {
-    const numValue = Number(str);
-    const isNumeric = !Number.isNaN(numValue);
-    
-    return {
-        value: numValue,
-        isNumeric
-    };
-};
-
-const compareNumericValues = (a: number, b: number, direction: SortDirection): number => {
-    return direction === 'asc' ? a - b : b - a;
-};
-
-const compareStringValues = (a: string, b: string, direction: SortDirection): number => {
-    return direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
-};
-
-const compareValues = (
-    aValue: unknown, 
-    bValue: unknown, 
-    direction: SortDirection
-): number => {
+const compareValues = (aValue: unknown, bValue: unknown, direction: SortDirection): number => {
     if(aValue == null && bValue == null) return 0;
     if(aValue == null) return direction === 'asc' ? -1 : 1;
     if(bValue == null) return direction === 'asc' ? 1 : -1;
-    
-    const aString = convertToSearchString(aValue);
-    const bString = convertToSearchString(bValue);
-    
-    const aNumeric = parseNumericValue(aString);
-    const bNumeric = parseNumericValue(bString);
-    
-    if(aNumeric.isNumeric && bNumeric.isNumeric){
-        return compareNumericValues(aNumeric.value, bNumeric.value, direction);
-    }
-    
-    return compareStringValues(aString, bString, direction);
+
+    const aString = toComparableString(aValue);
+    const bString = toComparableString(bValue);
+    const aNumber = Number(aString);
+    const bNumber = Number(bString);
+    const comparison = Number.isNaN(aNumber) || Number.isNaN(bNumber)
+        ? aString.localeCompare(bString)
+        : aNumber - bNumber;
+
+    return direction === 'asc' ? comparison : -comparison;
 };
 
-export const sortData = <T>(
-    data: T[], 
-    sortConfig: SortConfig | null, 
-    getValueByPath: (obj: unknown, path: string) => unknown
-): T[] => {
+export const sortData = <T>(data: T[], sortConfig: SortConfig | null): T[] => {
     if(!sortConfig) return data;
-    
-    const sortedData = [...data];
-    
-    sortedData.sort((a, b) => {
-        const aValue = getValueByPath(a, sortConfig.key);
-        const bValue = getValueByPath(b, sortConfig.key);
-        
-        return compareValues(aValue, bValue, sortConfig.direction);
-    });
-    
-    return sortedData;
+
+    return [...data].sort((a, b) => compareValues(
+        getValueByPath(a, sortConfig.key),
+        getValueByPath(b, sortConfig.key),
+        sortConfig.direction
+    ));
 };

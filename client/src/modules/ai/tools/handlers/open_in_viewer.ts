@@ -1,16 +1,11 @@
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface OpenInViewerInput {
-    trajectoryId?: string;
-    analysisId?: string;
-    ownerId?: string;
-}
+import type { OpenInViewerInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const openInViewer: ClientToolHandler<OpenInViewerInput> = {
     name: 'open_in_viewer',
 
     run(input, ctx): ClientToolResult {
-        const trajectoryId = typeof input.trajectoryId === 'string' ? input.trajectoryId.trim() : '';
+        const trajectoryId = input.trajectoryId.trim();
 
         if (!trajectoryId) {
             return {
@@ -21,11 +16,10 @@ const openInViewer: ClientToolHandler<OpenInViewerInput> = {
             };
         }
 
-        const encodedTrajectoryId = encodeURIComponent(trajectoryId);
-        const ownerId = typeof input.ownerId === 'string' ? input.ownerId.trim() : '';
-        const analysisId = typeof input.analysisId === 'string' ? input.analysisId.trim() : '';
+        const ownerId = input.ownerId?.trim();
+        const analysisId = input.analysisId?.trim();
 
-        let path = `/canvas/${encodedTrajectoryId}`;
+        let path = `/canvas/${encodeURIComponent(trajectoryId)}`;
 
         if (ownerId) {
             path += `/workspace/${encodeURIComponent(ownerId)}`;

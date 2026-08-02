@@ -2,8 +2,8 @@ import redisClient from '@shared/infrastructure/redis/redisClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import {
     JOB_STATUS_KEY_PREFIX,
-    projectedTeamJobsKey as buildProjectedTeamJobsKey,
-    projectedTeamJobsRevisionKey as buildProjectedTeamJobsRevisionKey
+    projectedTeamJobsKey,
+    projectedTeamJobsRevisionKey
 } from '@modules/jobs/services/JobRedisKeys';
 import type { TeamJobSnapshot, TeamJobStatus } from '@shared/contracts/types/TeamJobSnapshot';
 import logger from '@shared/infrastructure/logger';
@@ -11,6 +11,16 @@ import logger from '@shared/infrastructure/logger';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const UNGROUPED_TIMESTEP = -1;
 const MAX_INITIAL_SNAPSHOT_ATTEMPTS = 5;
+
+const parseTimestamp = (timestamp?: string): number | undefined => {
+    if (!timestamp || timestamp.trim().length === 0) {
+        return undefined;
+    }
+
+    const parsedTimestamp = Date.parse(timestamp);
+
+    return Number.isFinite(parsedTimestamp) ? parsedTimestamp : undefined;
+};
 
 const compareFrameTimesteps = (left: number, right: number): number => {
     if (left === UNGROUPED_TIMESTEP && right === UNGROUPED_TIMESTEP) {
@@ -29,11 +39,6 @@ const compareFrameTimesteps = (left: number, right: number): number => {
 };
 
 export type TeamJobSummary = TeamJobSnapshot;
-
-interface GroupedTeamJobSummary extends TeamJobSummary {
-    trajectoryId: string;
-    trajectoryName: string;
-};
 
 interface TrajectoryJobGroup {
     trajectoryId: string;
@@ -57,8 +62,6 @@ export interface TeamJobsInitialPayload {
 };
 
 export default class TeamJobsService {
-        private readonly redis = redisClient;
-
     private async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
     }
@@ -88,12 +91,12 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const jobIds = await this.redis.smembers(buildProjectedTeamJobsKey(teamId));
+        const jobIds = await redisClient.smembers(projectedTeamJobsKey(teamId));
         if (jobIds.length === 0) {
             return [];
         }
 
-        const records = await this.redis.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
+        const records = await redisClient.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
         const jobs: TeamJobSummary[] = [];
         const staleJobIds: string[] = [];
 
@@ -112,7 +115,7 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            this.redis.srem(buildProjectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
+            redisClient.srem(projectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
                 logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
         }
@@ -121,7 +124,7 @@ export default class TeamJobsService {
     }
 
     private groupJobsByTrajectory(jobs: TeamJobSummary[]): TrajectoryJobGroup[] {
-        const trajectoryMap = new Map<string, GroupedTeamJobSummary[]>();
+        const trajectoryMap = new Map<string, TeamJobSummary[]>();
 
         for (const job of jobs) {
             const trajectoryId = job.trajectoryId;
@@ -129,72 +132,56 @@ export default class TeamJobsService {
             if (!trajectoryId) {
                 continue;
             }
-            const trajectoryName = job.trajectoryName as string;
 
-            if (!trajectoryMap.has(trajectoryId)) {
-                trajectoryMap.set(trajectoryId, []);
+            const trajectoryJobs = trajectoryMap.get(trajectoryId);
+            if (trajectoryJobs) {
+                trajectoryJobs.push(job);
+                continue;
             }
-
-            trajectoryMap.get(trajectoryId)?.push({
-                ...job,
-                trajectoryId,
-                trajectoryName
-            });
+            trajectoryMap.set(trajectoryId, [job]);
         }
 
         const groups: TrajectoryJobGroup[] = [];
 
         for (const [trajectoryId, trajectoryJobs] of trajectoryMap.entries()) {
-            const frameMap = new Map<number, GroupedTeamJobSummary[]>();
-            const groupedJobs: GroupedTeamJobSummary[] = [];
+            const frameMap = new Map<number, TeamJobSummary[]>();
 
             for (const job of trajectoryJobs) {
                 const timestep = job.timestep ?? UNGROUPED_TIMESTEP;
+                const frameJobs = frameMap.get(timestep);
 
-                if (!frameMap.has(timestep)) {
-                    frameMap.set(timestep, []);
+                if (frameJobs) {
+                    frameJobs.push(job);
+                    continue;
                 }
-                frameMap.get(timestep)?.push(job);
-                groupedJobs.push(job);
-            }
-
-            if (groupedJobs.length === 0) {
-                continue;
+                frameMap.set(timestep, [job]);
             }
 
             const frameGroups: FrameJobGroup[] = [];
-            for (const [timestep, jobs] of frameMap.entries()) {
-                const overallStatus = this.computeFrameStatus(jobs);
+            for (const [timestep, frameJobs] of frameMap.entries()) {
                 frameGroups.push({
                     timestep,
-                    jobs,
-                    overallStatus
+                    jobs: frameJobs,
+                    overallStatus: this.computeFrameStatus(frameJobs)
                 });
             }
 
             frameGroups.sort((a, b) => compareFrameTimesteps(a.timestep, b.timestep));
 
-            const allJobs = groupedJobs;
-            const overallStatus = this.computeFrameStatus(allJobs);
-            const completedCount = allJobs.filter((job) => job.status === JobStatus.Completed).length;
-            const trajectoryName = groupedJobs[0].trajectoryName;
-
-            const latestTimestamp = this.resolveLatestTimestamp(groupedJobs) ?? SAFE_FALLBACK_GROUP_TIMESTAMP;
-
             groups.push({
                 trajectoryId,
-                trajectoryName,
+                trajectoryName: trajectoryJobs[0].trajectoryName as string,
                 frameGroups,
-                latestTimestamp,
-                overallStatus,
-                completedCount,
-                totalCount: allJobs.length
+                latestTimestamp: this.resolveLatestTimestamp(trajectoryJobs) ?? SAFE_FALLBACK_GROUP_TIMESTAMP,
+                overallStatus: this.computeFrameStatus(trajectoryJobs),
+                completedCount: trajectoryJobs.filter((job) => job.status === JobStatus.Completed).length,
+                totalCount: trajectoryJobs.length
             });
         }
 
         groups.sort((left, right) => this.compareTimestampValues(
-            this.parseTimestamp(right.latestTimestamp),
-            this.parseTimestamp(left.latestTimestamp)
+            parseTimestamp(right.latestTimestamp),
+            parseTimestamp(left.latestTimestamp)
         ) || left.trajectoryId.localeCompare(right.trajectoryId));
 
         return groups;
@@ -214,8 +201,8 @@ export default class TeamJobsService {
 
     private compareJobsForDisplay(left: TeamJobSummary, right: TeamJobSummary): number {
         const timestampComparison = this.compareTimestampValues(
-            this.resolveJobTimestampValue(right),
-            this.resolveJobTimestampValue(left)
+            parseTimestamp(this.resolveJobTimestamp(right)),
+            parseTimestamp(this.resolveJobTimestamp(left))
         );
 
         if (timestampComparison !== 0) {
@@ -231,35 +218,13 @@ export default class TeamJobsService {
     }
 
     private resolveJobTimestamp(job: TeamJobSummary): string | undefined {
-        const candidates = [job.timestamp, job.updatedAt, job.createdAt];
-
-        for (const candidate of candidates) {
-            if (!candidate || candidate.trim().length === 0) {
-                continue;
-            }
-
-            if (this.parseTimestamp(candidate) !== undefined) {
+        for (const candidate of [job.timestamp, job.updatedAt, job.createdAt]) {
+            if (parseTimestamp(candidate) !== undefined) {
                 return candidate;
             }
         }
 
         return undefined;
-    }
-
-    private resolveJobTimestampValue(job: TeamJobSummary): number | undefined {
-        const timestamp = this.resolveJobTimestamp(job);
-
-        return timestamp ? this.parseTimestamp(timestamp) : undefined;
-    }
-
-    private parseTimestamp(timestamp?: string): number | undefined {
-        if (!timestamp || timestamp.trim().length === 0) {
-            return undefined;
-        }
-
-        const parsedTimestamp = Date.parse(timestamp);
-
-        return Number.isFinite(parsedTimestamp) ? parsedTimestamp : undefined;
     }
 
     private compareTimestampValues(left?: number, right?: number): number {
@@ -292,13 +257,8 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobsRevision(teamId: string): Promise<number> {
-        const revision = await this.redis.get(buildProjectedTeamJobsRevisionKey(teamId));
-        const parsedRevision = Number(revision);
+        const revision = Number(await redisClient.get(projectedTeamJobsRevisionKey(teamId)));
 
-        return Number.isFinite(parsedRevision) && parsedRevision >= 0
-            ? parsedRevision
-            : 0;
+        return Number.isFinite(revision) && revision >= 0 ? revision : 0;
     }
-
-
 };

@@ -11,11 +11,7 @@ import { requestClusterHistory } from '../api/service';
 import { resolveClusterMetricId } from '../utils/resolve-cluster-metric-id';
 import { useMemo, useCallback } from 'react';
 
-interface UseClusterMetricsOptions {
-    clusterId?: string | null;
-}
-
-const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
+const useClusterMetrics = (options: { clusterId?: string | null } = {}) => {
     const selectedTeamId = useSelectedTeamId();
 
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
@@ -44,14 +40,14 @@ const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
             return;
         }
 
-        const isTargetHistoryLoaded = clusterHistoryLoadedQuery.get(targetClusterId) ?? false;
+        const isTargetHistoryLoaded = clusterHistoryLoadedQuery.get(targetClusterId);
         if (isTargetHistoryLoaded) {
             return;
         }
 
         teamSocketRoomService.waitUntilSubscribed(targetTeamId)
             .then(() => {
-                if (clusterHistoryLoadedQuery.get(targetClusterId) ?? false) {
+                if (clusterHistoryLoadedQuery.get(targetClusterId)) {
                     return;
                 }
 

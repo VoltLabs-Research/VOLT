@@ -2,7 +2,6 @@ import { useExportPluginMutation } from './queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
-import { isAccessDeniedError } from '@/shared/errors/core';
 
 const useExportPlugin = () => {
     const exportPluginMutationResult = useExportPluginMutation();
@@ -20,8 +19,8 @@ const useExportPlugin = () => {
                     error: { title: 'Failed to export plugin' }
                 }
             );
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) return;
+        } catch {
+            // showPromise already surfaced the failure as a toast.
         }
     }, [exportPluginMutationResult]);
 

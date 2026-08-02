@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { LatexDocumentStorageScope } from '@modules/latex/contracts/latex-document';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import path from 'node:path';
@@ -10,12 +11,12 @@ export const requireLatexStorageClusterId = (
     documentId: string,
     document: LatexDocumentStorageScope
 ): string => {
-    if (document.storageClusterId && document.storageClusterId.trim().length > 0) {
+    if (document.storageClusterId) {
         return document.storageClusterId;
     }
 
     throw ApplicationError.conflict(
-        'LatexDocument::StorageClusterRequired',
+        ErrorCodes.LATEX_DOCUMENT_STORAGE_CLUSTER_REQUIRED,
         `LaTeX document ${documentId} does not have a storage cluster assigned`
     );
 };
@@ -36,7 +37,7 @@ export const assertLatexAssetStorageKey = (
 ): void => {
     if (!storageKey) {
         throw ApplicationError.badRequest(
-            'LatexAsset::StorageKeyRequired',
+            ErrorCodes.LATEX_ASSET_STORAGE_KEY_REQUIRED,
             'The "key" query parameter is required'
         );
     }
@@ -46,7 +47,7 @@ export const assertLatexAssetStorageKey = (
     }
 
     throw ApplicationError.forbidden(
-        'LatexAsset::StorageKeyForbidden',
+        ErrorCodes.LATEX_ASSET_STORAGE_KEY_FORBIDDEN,
         'Asset key is outside the document storage scope'
     );
 };

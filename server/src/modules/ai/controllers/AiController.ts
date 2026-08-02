@@ -31,8 +31,8 @@ export default class AiController extends Controller {
         return this.#service.listConversations({
             teamId,
             userId,
-            page: query.page !== undefined ? Number(query.page) : undefined,
-            limit: query.limit !== undefined ? Number(query.limit) : undefined,
+            page: Number(query.page),
+            limit: Number(query.limit),
             includeArchived: query.includeArchived
         });
     }
@@ -47,8 +47,7 @@ export default class AiController extends Controller {
         return this.#service.createConversation({
             teamId,
             userId,
-            title: body.title,
-            message: body.message
+            ...body
         });
     }
 
@@ -63,8 +62,8 @@ export default class AiController extends Controller {
             teamId,
             userId,
             conversationId,
-            page: query.page !== undefined ? Number(query.page) : undefined,
-            limit: query.limit !== undefined ? Number(query.limit) : undefined
+            page: Number(query.page),
+            limit: Number(query.limit)
         });
     }
 
@@ -82,12 +81,12 @@ export default class AiController extends Controller {
             conversationId,
             userId,
             message: body.message,
-            messages: body.messages as AIConversationMessage[] | undefined,
+            messages: body.messages as AIConversationMessage[],
             title: body.title,
             provider: body.provider as AIProvider | undefined,
             model: body.model
         });
-        value.streamResult.pipeToResponse(res);
+        value.streamResult.pipeUIMessageStreamToResponse(res);
     }
 
     @Route(aiRoutes.updateConversation)
@@ -101,8 +100,7 @@ export default class AiController extends Controller {
             teamId,
             userId,
             conversationId,
-            title: body.title,
-            isArchived: body.isArchived
+            ...body
         });
     }
 

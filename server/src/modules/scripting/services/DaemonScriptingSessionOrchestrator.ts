@@ -1,16 +1,12 @@
-export type { NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
-import type { NotebookContainerStage } from '@volt/contracts/modules/scripting/domain';
+import type { NotebookContainerStage, ScriptingSessionJupyter } from '@volt/contracts/modules/scripting/domain';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
-import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
-import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
+import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 export interface ScriptingSessionNotebookInput {
@@ -18,25 +14,19 @@ export interface ScriptingSessionNotebookInput {
     content?: Record<string, unknown>;
 }
 
-export interface ScriptingSessionJupyterInfo {
-    url: string;
-    ready: boolean;
-    containerStage?: NotebookContainerStage;
-}
-
 export interface ScriptingSessionStartInput {
     teamId: string;
     teamClusterId: string;
     userId: string;
-    notebook?: ScriptingSessionNotebookInput;
-    notebookId?: string;
+    notebookId: string;
+    notebook: ScriptingSessionNotebookInput;
     secretKey?: string;
     trajectoryId?: string | null;
 }
 
 interface ScriptingSessionStartResult {
     notebookId: string;
-    jupyter: ScriptingSessionJupyterInfo;
+    jupyter: ScriptingSessionJupyter;
     accessGrant: ScriptingJupyterAccessGrant;
 }
 
@@ -68,24 +58,12 @@ interface DaemonNotebookSessionRequest {
     notebook: DaemonNotebookSessionSnapshot;
 }
 
+const NOTEBOOK_SESSION_CREATE_TIMEOUT_MS = 600_000;
+
 class DaemonScriptingSessionOrchestrator {
-    private readonly notebookService = new JupyterNotebookService();
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
-    private readonly notebookRuntimeTerminator = notebookRuntimeTerminator;
-
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
-    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
-        const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
-        if (!input.notebookId) {
-            throw ApplicationError.badRequest('Scripting::NotebookRequired', 'Notebook id is required to start a remote notebook session');
-        }
-        if (!input.notebook) {
-            throw ApplicationError.badRequest('Scripting::NotebookSnapshotRequired', 'Notebook snapshot is required to start a remote notebook session');
-        }
-
         const runtimeNotebookId = input.notebookId;
         const request: DaemonNotebookSessionRequest = {
             requestedBy: input.userId,
@@ -101,22 +79,21 @@ class DaemonScriptingSessionOrchestrator {
             }
         };
 
-        const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
-            teamClusterId,
+        const response = await teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
+            input.teamClusterId,
             ChannelCommands.NotebookSessionCreate,
             request,
-            { timeoutMs: 600_000 }
+            { timeoutMs: NOTEBOOK_SESSION_CREATE_TIMEOUT_MS }
         );
         await ScriptingNotebook.update(
             { id: input.notebookId },
             {
                 runtimeNotebookId,
-                teamCluster: teamClusterId
+                teamCluster: input.teamClusterId
             }
         );
 
-        const jupyter = this.requireDaemonJupyterResponse(response);
-        const daemonPath = jupyter.internalPath;
+        const jupyter = response.jupyter;
         const accessGrant = this.accessTokenService.createAccessGrant({
             teamId: input.teamId,
             runtimeNotebookId,
@@ -125,15 +102,15 @@ class DaemonScriptingSessionOrchestrator {
         const jupyterUrl = buildJupyterProxyUrl({
             teamId: input.teamId,
             runtimeNotebookId,
-            daemonPath,
+            daemonPath: jupyter.internalPath,
             accessToken: accessGrant.token
         });
+
         return attachScriptingJupyterAccessGrant({
             notebookId: input.notebookId,
             jupyter: {
                 ...jupyter,
-                url: jupyterUrl,
-                containerStage: jupyter.containerStage
+                url: jupyterUrl
             }
         }, accessGrant);
     }
@@ -142,25 +119,12 @@ class DaemonScriptingSessionOrchestrator {
         const notebooks = await ScriptingNotebook.findBy({ trajectory: trajectoryId });
 
         for (const notebook of notebooks) {
-            const notebookTeamClusterId = notebook.teamCluster || null;
-            if (!notebook.runtimeNotebookId || !notebookTeamClusterId) {
+            if (!notebook.runtimeNotebookId || !notebook.teamCluster) {
                 continue;
             }
 
-            await this.notebookRuntimeTerminator.terminate(notebookTeamClusterId, notebook.runtimeNotebookId);
+            await notebookRuntimeTerminator.terminate(notebook.teamCluster, notebook.runtimeNotebookId);
         }
-    }
-
-    async resolveNotebookTemplateContent(): Promise<Record<string, unknown>> {
-        return this.notebookService.resolveNotebookTemplateContent();
-    }
-
-    private requireDaemonJupyterResponse(response: DaemonNotebookSessionResponse): DaemonNotebookJupyterResponse {
-        if (response?.jupyter?.internalPath) {
-            return response.jupyter;
-        }
-
-        throw ApplicationError.internalServerError('Daemon returned an invalid Jupyter session response');
     }
 }
 

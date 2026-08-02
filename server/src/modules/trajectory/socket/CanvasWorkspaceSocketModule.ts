@@ -75,7 +75,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerJoinLobby(connection: ISocketConnection): void {
         this.on<TrajectoryRoomPayload>(connection.id, 'canvas.lobby.join', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId)) {
+            if (!conn.user) {
                 return;
             }
 
@@ -103,10 +103,6 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerLeaveLobby(connection: ISocketConnection): void {
         this.on<TrajectoryRoomPayload>(connection.id, 'canvas.lobby.leave', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId)) {
-                return;
-            }
-
             const ctx = this.ctx(conn);
             const lobby = this.lobbyRoom(payload.trajectoryId);
             await this.leaveRoom(conn.id, lobby);
@@ -121,7 +117,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerVisitWorkspace(connection: ISocketConnection): void {
         this.on<WorkspaceRoomPayload>(connection.id, 'canvas.workspace.visit', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId) || !this.isValidId(payload.ownerId)) {
+            if (!conn.user) {
                 return;
             }
 
@@ -160,7 +156,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerLeaveWorkspace(connection: ISocketConnection): void {
         this.on<WorkspaceRoomPayload>(connection.id, 'canvas.workspace.leave', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId) || !this.isValidId(payload.ownerId)) {
+            if (!conn.user) {
                 return;
             }
 
@@ -182,16 +178,15 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerPublishSnapshot(connection: ISocketConnection): void {
         this.on<WorkspaceSnapshotPayload>(connection.id, 'canvas.workspace.publish_snapshot', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId)) {
+            if (!conn.user || payload.ownerId !== conn.user._id) {
                 return;
             }
 
-            if (payload.ownerId !== conn.user._id) {
-                return;
-            }
-
-            const state = this.toRecord(payload.state);
-            const snapshot = await this.realtimeState.replaceSnapshot(payload.trajectoryId, conn.user._id, state);
+            const snapshot = await this.realtimeState.replaceSnapshot(
+                payload.trajectoryId,
+                conn.user._id,
+                payload.state ?? {}
+            );
             const room = this.workspaceRoom(payload.trajectoryId, conn.user._id);
             this.emitToRoomExcept(conn.id, room, 'canvas.workspace.sync_state', snapshot);
         });
@@ -199,20 +194,15 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerApplyPatch(connection: ISocketConnection): void {
         this.on<WorkspacePatchPayload>(connection.id, 'canvas.workspace.patch', async (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId)) {
+            if (!conn.user || payload.ownerId !== conn.user._id) {
                 return;
             }
 
-            if (payload.ownerId !== conn.user._id) {
-                return;
-            }
-
-            const patch = this.toRecord(payload.patch);
-            if (Object.keys(patch).length === 0) {
-                return;
-            }
-
-            const result = await this.realtimeState.applyPatch(payload.trajectoryId, conn.user._id, patch);
+            const result = await this.realtimeState.applyPatch(
+                payload.trajectoryId,
+                conn.user._id,
+                payload.patch ?? {}
+            );
             if (Object.keys(result.delta).length === 0) {
                 return;
             }
@@ -231,7 +221,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerCursor(connection: ISocketConnection): void {
         this.on<WorkspaceCursorPayload>(connection.id, 'canvas.workspace.cursor', (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId) || !this.isValidId(payload.ownerId)) {
+            if (!conn.user) {
                 return;
             }
 
@@ -251,11 +241,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private registerModelDrag(connection: ISocketConnection): void {
         this.on<WorkspaceModelDragPayload>(connection.id, 'canvas.workspace.model_drag', (conn, payload) => {
-            if (!conn.user || !this.isValidId(payload.trajectoryId) || !this.isValidId(payload.ownerId)) {
-                return;
-            }
-
-            if (payload.ownerId !== conn.user._id) {
+            if (!conn.user || payload.ownerId !== conn.user._id) {
                 return;
             }
 
@@ -333,18 +319,6 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
 
     private workspaceRoom(trajectoryId: string, ownerId: string): string {
         return `${WORKSPACE_PREFIX}:${trajectoryId}:${ownerId}`;
-    }
-
-    private isValidId(value: unknown): value is string {
-        return typeof value === 'string' && value.length > 0;
-    }
-
-    private toRecord(value: unknown): Record<string, unknown> {
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-            return value as Record<string, unknown>;
-        }
-
-        return {};
     }
 
     private readonly toPresenceUser = (connection: ISocketConnection): PresenceUser => ({

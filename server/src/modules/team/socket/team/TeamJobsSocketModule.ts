@@ -1,5 +1,5 @@
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
-import { ISocketConnection } from '@modules/socket/socket/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
@@ -11,7 +11,6 @@ import TeamJobsService from './TeamJobsService';
 class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;
-    private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
     private readonly teamJobsService = new TeamJobsService();
 
     constructor() {
@@ -20,7 +19,7 @@ class TeamJobsSocketModule extends BaseSocketModule {
 
     async onInit(): Promise<void> {
         logger.info('[TeamJobsSocketModule] Initialized');
-        this.unsubscribeFromTeamSubscription = this.teamSubscriptionService.subscribe(async ({ connection, subscription }) => {
+        this.unsubscribeFromTeamSubscription = socketTeamSubscriptionCoordinator.subscribe(async ({ connection, subscription }) => {
             await this.sendInitialJobs(connection, {
                 teamId: subscription.teamId,
                 previousTeamId: subscription.previousTeamId
@@ -32,11 +31,7 @@ class TeamJobsSocketModule extends BaseSocketModule {
         this.unsubscribeFromTeamSubscription?.();
     }
 
-    onConnection(connection: ISocketConnection): void {
-        this.onDisconnect(connection.id, async () => {
-            logger.debug(`[TeamJobsSocketModule] Connection ${connection.id} disconnected`);
-        });
-    }
+    onConnection(): void {}
 
     private async sendInitialJobs(
         connection: ISocketConnection,

@@ -32,9 +32,7 @@ const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
     showTitleAttribute: true
 });
 
-const getInitialWhiteboardTitle = (whiteboard: Whiteboard): string => {
-    return whiteboard.title;
-};
+const getInitialWhiteboardTitle = (whiteboard: Whiteboard): string => whiteboard.title;
 
 const validateWhiteboardTitle = (title: string): string | undefined => {
     return title.length > 120 ? 'Title must be 120 characters or less' : undefined;

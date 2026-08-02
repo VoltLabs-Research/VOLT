@@ -41,28 +41,13 @@ interface ViewportProps {
     showSceneActions?: boolean;
 }
 
-type CanvasTrajectory = Trajectory & {
-    teamId?: string;
-};
-
-const resolveTrajectoryTeamId = (trajectory: CanvasTrajectory | null | undefined): string | undefined => {
+const resolveTrajectoryTeamId = (trajectory: Trajectory | null | undefined): string | undefined => {
     if (!trajectory) {
         return undefined;
     }
 
-    if (typeof trajectory.teamId === 'string' && trajectory.teamId.length > 0) {
-        return trajectory.teamId;
-    }
-
-    if (!trajectory.team) {
-        return undefined;
-    }
-
-    if (typeof trajectory.team === 'string') {
-        return trajectory.team;
-    }
-
-    return trajectory.team._id;
+    // `Ref<Team>` is a deliberate populate union.
+    return typeof trajectory.team === 'string' ? trajectory.team : trajectory.team._id;
 };
 
 const TIMESTEP_VIEWER_DEFAULTS = {
@@ -95,9 +80,7 @@ const Viewport = ({
     showSceneActions = true
 }: ViewportProps) => {
     const selectedTeamId = useSelectedTeamId() ?? undefined;
-    const teamId = useMemo(() => {
-        return resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;
-    }, [selectedTeamId, trajectory]);
+    const teamId = resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;
     const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
     const {
         activeScenes,
@@ -191,15 +174,6 @@ const Viewport = ({
     }, [activeScenes.length, currentFrameBoxBounds, currentTimestep, trajectory?._id]);
 
     const resolvedTimestep = currentTimestep ?? 0;
-    const resolvedBoxBounds = currentFrameBoxBounds;
-    const canRenderTimestepViewer = Boolean(
-        resolvedBoxBounds
-        && trajectory?._id
-        && currentTimestep !== undefined
-        && currentFrame
-    );
-    const viewerTrajectoryId = trajectory?._id ?? '__local_glb__';
-    const autoFitKeyOverride = trajectory?._id ?? null;
 
     return (
         <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-viewport">
@@ -230,15 +204,15 @@ const Viewport = ({
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}
-                            {canRenderTimestepViewer && resolvedBoxBounds && (
+                            {currentFrameBoxBounds && currentFrame && currentTimestep !== undefined && (
                                 <TimestepViewer
                                     teamId={teamId}
-                                    trajectoryId={viewerTrajectoryId}
+                                    trajectoryId={trajectory?._id ?? '__local_glb__'}
                                     currentTimestep={resolvedTimestep}
                                     analysisId={analysisId}
                                     activeScenes={activeScenes}
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
-                                    boxBounds={resolvedBoxBounds}
+                                    boxBounds={currentFrameBoxBounds}
                                     sceneVisualOverrides={sceneVisualOverrides}
                                     lineHighlight={lineHighlight}
                                     setModelWorldBounds={setModelWorldBounds}
@@ -249,7 +223,7 @@ const Viewport = ({
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
                                     autoFit
-                                    autoFitKeyOverride={autoFitKeyOverride}
+                                    autoFitKeyOverride={trajectory?._id ?? null}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}

@@ -4,10 +4,7 @@ import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/store/use
 import { formatSize } from '@voltstack/bravais';
 import './TrajectoryUploadProgressPanel.css';
 
-const toPercent = (progress: number): number => {
-    if (!Number.isFinite(progress)) return 0;
-    return Math.min(100, Math.max(0, Math.round(progress * 100)));
-};
+const toPercent = (progress: number): number => Math.min(100, Math.max(0, Math.round(progress * 100)));
 
 const buildProgressValueText = (loadedBytes: number, totalBytes: number, percent: number): string => {
     if (totalBytes <= 0) {

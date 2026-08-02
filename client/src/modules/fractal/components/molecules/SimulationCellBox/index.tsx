@@ -8,6 +8,8 @@ import {
     hasValidCellVectors
 } from '@/modules/fractal/utils/cell-wireframe';
 import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
+import { FLOOR_AXIS_LOCK, useKeyboardDragModifiers } from '@/modules/fractal/components/molecules/SimulationCellBox/use-keyboard-drag-modifiers';
+import { useTouchDragArming } from '@/modules/fractal/components/molecules/SimulationCellBox/use-touch-drag-arming';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
@@ -16,6 +18,7 @@ import * as THREE from 'three';
 import { useMemo, useRef, useEffect, forwardRef, useState, useCallback } from 'react';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
+import type { Pos3D } from '@/modules/fractal/contracts/model';
 import type { ReactNode, RefObject } from 'react';
 
 interface SimulationCellGeometryView {
@@ -25,13 +28,9 @@ interface SimulationCellGeometryView {
     showPbcImages?: boolean;
 }
 
-interface SimulationCellTransforms {
+export interface SimulationCellTransforms {
     scale: number;
-    position: {
-        x: number;
-        y: number;
-        z: number;
-    };
+    position: Pos3D;
     groundOffset?: number;
 }
 
@@ -52,20 +51,12 @@ const _decomposeScale = new THREE.Vector3();
 const _clampedPos = new THREE.Vector3();
 const _identityQuat = new THREE.Quaternion();
 const _unitScale = new THREE.Vector3(1, 1, 1);
-const _cameraForward = new THREE.Vector3();
-
-type DragAxisLock = 'x' | 'y' | 'z';
-const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 
 const ZERO_OFFSET = {
     x: 0,
     y: 0,
     z: 0
 } as const;
-const DOUBLE_TAP_MAX_DELAY_MS = 320;
-const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
-const TOUCH_DRAG_ARM_TIMEOUT_MS = 800;
-const isPrimaryDragModifierPressed = (event: KeyboardEvent) => event.ctrlKey || event.metaKey;
 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     sceneKey,
@@ -90,131 +81,22 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const modelDragOffset = useEditorStore((state) => state.modelDragOffsets[sceneKey] ?? ZERO_OFFSET);
     const setModelDragOffsetForScene = useEditorStore((state) => state.setModelDragOffsetForScene);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
-    const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
-    const [isDesktopDragModifierActive, setIsDesktopDragModifierActive] = useState(false);
     const [isDesktopDragSessionActive, setIsDesktopDragSessionActive] = useState(false);
-    const axisLockRef = useRef<DragAxisLock>(FLOOR_AXIS_LOCK);
     const isMobileViewport = useMedia('(max-width: 768px)');
-    const lastPointerTypeRef = useRef<string | null>(null);
-    const lastTouchTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
-    const touchDragArmedRef = useRef(false);
     const suppressCurrentTouchDragRef = useRef(false);
-    const touchDragArmTimerRef = useRef<number | null>(null);
-    axisLockRef.current = axisLock;
-
-    const pickVerticalAxisLock = useCallback((): DragAxisLock => {
-        camera.getWorldDirection(_cameraForward);
-        return Math.abs(_cameraForward.x) > Math.abs(_cameraForward.y) ? 'y' : 'x';
-    }, [camera]);
-
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Alt' && axisLockRef.current === FLOOR_AXIS_LOCK) {
-                setAxisLock(pickVerticalAxisLock());
-            }
-
-            if (!isMobileViewport) {
-                setIsDesktopDragModifierActive(isPrimaryDragModifierPressed(event));
-            }
-        };
-        const handleKeyUp = (event: KeyboardEvent) => {
-            if (event.key === 'Alt') {
-                setAxisLock(FLOOR_AXIS_LOCK);
-            }
-
-            if (!isMobileViewport) {
-                setIsDesktopDragModifierActive(isPrimaryDragModifierPressed(event));
-            }
-        };
-        const handleBlur = () => {
-            setAxisLock(FLOOR_AXIS_LOCK);
-            setIsDesktopDragModifierActive(false);
-        };
-
-        if (isMobileViewport) {
-            setIsDesktopDragModifierActive(false);
-        }
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-        window.addEventListener('blur', handleBlur);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
-            window.removeEventListener('blur', handleBlur);
-        };
-    }, [isMobileViewport, pickVerticalAxisLock]);
+    const { axisLock, axisLockRef, isModifierActive } = useKeyboardDragModifiers(camera, isMobileViewport);
+    const touchDrag = useTouchDragArming(isMobileViewport);
+    const isLightTheme = theme === Theme.Light;
 
     useEffect(() => {
         return subscribeToAppTheme(setTheme);
     }, []);
 
-    const clearTouchDragArmTimer = useCallback(() => {
-        if (touchDragArmTimerRef.current !== null) {
-            window.clearTimeout(touchDragArmTimerRef.current);
-            touchDragArmTimerRef.current = null;
+    const setOrbitControlsEnabled = useCallback((enabled: boolean) => {
+        if (orbitControlsRef?.current) {
+            orbitControlsRef.current.enabled = enabled;
         }
-    }, []);
-
-    const disarmTouchDrag = useCallback(() => {
-        touchDragArmedRef.current = false;
-        clearTouchDragArmTimer();
-    }, [clearTouchDragArmTimer]);
-
-    const armTouchDrag = useCallback(() => {
-        touchDragArmedRef.current = true;
-        clearTouchDragArmTimer();
-        touchDragArmTimerRef.current = window.setTimeout(() => {
-            touchDragArmedRef.current = false;
-            touchDragArmTimerRef.current = null;
-        }, TOUCH_DRAG_ARM_TIMEOUT_MS);
-    }, [clearTouchDragArmTimer]);
-
-    useEffect(() => {
-        return () => clearTouchDragArmTimer();
-    }, [clearTouchDragArmTimer]);
-
-    const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
-        lastPointerTypeRef.current = event.pointerType;
-        if (!isMobileViewport || event.pointerType !== 'touch') {
-            return;
-        }
-
-        const now = Date.now();
-        const previousTap = lastTouchTapRef.current;
-        const isDoubleTap = Boolean(
-            previousTap &&
-            now - previousTap.time <= DOUBLE_TAP_MAX_DELAY_MS &&
-            Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <= DOUBLE_TAP_MAX_DISTANCE_PX
-        );
-
-        lastTouchTapRef.current = {
-            time: now,
-            x: event.clientX,
-            y: event.clientY
-        };
-
-        if (isDoubleTap) {
-            armTouchDrag();
-            return;
-        }
-
-        disarmTouchDrag();
-    }, [armTouchDrag, disarmTouchDrag, isMobileViewport]);
-
-    const simulationCellMaterial = useMemo(() => {
-        if (theme === Theme.Light) {
-            return {
-                color: '#121212',
-                opacity: 0.16
-            };
-        }
-
-        return {
-            color: '#ffffff',
-            opacity: 0.1
-        };
-    }, [theme]);
+    }, [orbitControlsRef]);
 
     useEffect(() => {
         const target = contentRef.current;
@@ -283,9 +165,9 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     });
 
     const geometry = useMemo(() => {
-        if (cellGeometry && hasValidCellVectors(cellGeometry.cellVectors)) {
+        if (cellGeometry?.cellVectors && hasValidCellVectors(cellGeometry.cellVectors)) {
             return buildCellWireframeGeometry(
-                cellGeometry.cellVectors!,
+                cellGeometry.cellVectors,
                 cellGeometry.cellOrigin,
                 {
                     pbc: cellGeometry.pbc,
@@ -328,7 +210,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             dragConfig={isMobileViewport
                 ? undefined
                 : {
-                    enabled: isDesktopDragModifierActive || isDesktopDragSessionActive
+                    enabled: isModifierActive || isDesktopDragSessionActive
                 }}
             dragLimits={[
                 undefined,
@@ -337,28 +219,21 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             ]}
             onHover={onHoverChange}
             onDragStart={() => {
-                const isMobileTouchGesture = isMobileViewport && lastPointerTypeRef.current === 'touch';
-                if (isMobileTouchGesture && !touchDragArmedRef.current) {
+                const isTouchGesture = touchDrag.isTouchGesture();
+                if (isTouchGesture && !touchDrag.consumeArming()) {
                     suppressCurrentTouchDragRef.current = true;
-                    if (orbitControlsRef?.current) {
-                        orbitControlsRef.current.enabled = true;
-                    }
+                    setOrbitControlsEnabled(true);
                     return;
                 }
 
                 suppressCurrentTouchDragRef.current = false;
-                if (isMobileTouchGesture) {
-                    disarmTouchDrag();
-                }
                 isDraggingRef.current = true;
-                if (!isMobileTouchGesture) {
+                if (!isTouchGesture) {
                     setIsDesktopDragSessionActive(true);
                 }
                 dragStartPosRef.current.copy(currentDragPosRef.current);
                 onSelect?.(contentRef.current);
-                if (orbitControlsRef?.current) {
-                    orbitControlsRef.current.enabled = false;
-                }
+                setOrbitControlsEnabled(false);
             }}
             onDrag={(localMatrix: THREE.Matrix4) => {
                 if (suppressCurrentTouchDragRef.current) {
@@ -366,15 +241,14 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 }
 
                 localMatrix.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
-                const isVertical = axisLockRef.current !== FLOOR_AXIS_LOCK;
-                if (isVertical) {
+                if (axisLockRef.current === FLOOR_AXIS_LOCK) {
+                    _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
+                } else {
                     _clampedPos.set(
                         dragStartPosRef.current.x,
                         dragStartPosRef.current.y,
                         Math.max(0, _decomposePos.z)
                     );
-                } else {
-                    _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
                 }
 
                 dragMatrixRef.current.compose(_clampedPos, _decomposeQuat, _decomposeScale);
@@ -398,9 +272,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             onDragEnd={() => {
                 if (suppressCurrentTouchDragRef.current) {
                     suppressCurrentTouchDragRef.current = false;
-                    if (orbitControlsRef?.current) {
-                        orbitControlsRef.current.enabled = true;
-                    }
+                    setOrbitControlsEnabled(true);
                     return;
                 }
 
@@ -415,14 +287,12 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     z: _decomposePos.z
                 });
                 invalidate();
-                if (orbitControlsRef?.current) {
-                    orbitControlsRef.current.enabled = true;
-                }
+                setOrbitControlsEnabled(true);
             }}
         >
             <group
                 ref={contentRef}
-                onPointerDown={handlePointerDown}
+                onPointerDown={touchDrag.handlePointerDown}
                 onClick={(event: ThreeEvent<MouseEvent>) => {
                     if (isDraggingRef.current) {
                         return;
@@ -449,7 +319,11 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
 
                 {showSimulationCell && (
                     <lineSegments geometry={geometry}>
-                        <lineBasicMaterial color={simulationCellMaterial.color} opacity={simulationCellMaterial.opacity} transparent />
+                        <lineBasicMaterial
+                            color={isLightTheme ? '#121212' : '#ffffff'}
+                            opacity={isLightTheme ? 0.16 : 0.1}
+                            transparent
+                        />
                     </lineSegments>
                 )}
 

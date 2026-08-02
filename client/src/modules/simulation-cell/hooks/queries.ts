@@ -6,28 +6,16 @@ import {
 import service from '../api/service';
 import type { GetSimulationCellByTrajectoryParams, GetSimulationCellsParams } from '../api/service';
 
-type SimulationCellQueryKeys = {
+const KEYS = buildKeys<{
     listing: GetSimulationCellsParams;
     byTrajectory: GetSimulationCellByTrajectoryParams;
-};
-
-const BASE_KEY = 'simulation-cells';
-
-const KEYS = buildKeys<SimulationCellQueryKeys>(BASE_KEY);
+}>('simulation-cells');
 
 export const simulationCellsQueryKey = KEYS.listing;
 
 export const simulationCellsQuery = createQuery(KEYS.listing, service.getAll);
 
-const getSimulationCellWithAccess = (params: GetSimulationCellByTrajectoryParams) => {
-    return currentCanvasDataAccess().getSimulationCell(params);
-};
-
-const simulationCellByTrajectoryKey = (params: GetSimulationCellByTrajectoryParams) => {
-    return currentAccessKey(KEYS.byTrajectory(params));
-};
-
 export const simulationCellByTrajectoryQuery = createQuery(
-    simulationCellByTrajectoryKey,
-    getSimulationCellWithAccess
+    (params: GetSimulationCellByTrajectoryParams) => currentAccessKey(KEYS.byTrajectory(params)),
+    (params: GetSimulationCellByTrajectoryParams) => currentCanvasDataAccess().getSimulationCell(params)
 );

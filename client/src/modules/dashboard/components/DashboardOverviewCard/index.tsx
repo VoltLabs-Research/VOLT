@@ -38,7 +38,7 @@ const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: Dashbo
                 <Text as='span' className='dashboard-stat-value'>{card.count}</Text>
                 <Row gap='025' className={`dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
                     <TrendIcon size={10} />
-                    <Text as='span'>{Math.abs(card.lastMonthStatus ?? 0)}%</Text>
+                    <Text as='span'>{Math.abs(card.lastMonthStatus)}%</Text>
                 </Row>
             </Row>
 
@@ -62,11 +62,11 @@ const DashboardSparkline = ({ card, color }: DashboardSparklineProps) => (
 
 const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     const navigate = useNavigate();
-    const isPositiveTrend = (card.lastMonthStatus ?? 0) >= 0;
+    const isPositiveTrend = card.lastMonthStatus >= 0;
     const isClickable = Boolean(card.listingUrl);
 
     const handleClick = () => {
-        if (isClickable && card.listingUrl) {
+        if (card.listingUrl) {
             navigate(card.listingUrl);
         }
     };

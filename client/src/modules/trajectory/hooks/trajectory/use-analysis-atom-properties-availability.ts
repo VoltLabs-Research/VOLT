@@ -1,5 +1,4 @@
 import { colorCodingPropertiesQuery } from '@/modules/trajectory/hooks/color-coding/queries';
-import { useMemo } from 'react';
 
 interface UseAnalysisAtomPropertiesAvailabilityParams {
     trajectoryId?: string;
@@ -31,9 +30,7 @@ const useAnalysisAtomPropertiesAvailability = ({
     );
 
     const atomPropertiesByExposureId = atomPropertiesQuery.data?.modifiers ?? {};
-    const hasAtomProperties = useMemo(() => {
-        return Object.values(atomPropertiesByExposureId).some((properties) => properties.length > 0);
-    }, [atomPropertiesByExposureId]);
+    const hasAtomProperties = Object.values(atomPropertiesByExposureId).some((properties) => properties.length > 0);
 
     return {
         hasAtomProperties,

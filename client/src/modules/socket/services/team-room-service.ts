@@ -110,8 +110,8 @@ class TeamSocketRoomService {
                 teamId,
                 previousTeamId
             });
-            if (!ack?.ok) {
-                throw new Error(ack?.error || `Failed to subscribe socket to team "${teamId}".`);
+            if (!ack.ok) {
+                throw new Error(ack.error || `Failed to subscribe socket to team "${teamId}".`);
             }
 
             if (this.currentTeamId === teamId) {

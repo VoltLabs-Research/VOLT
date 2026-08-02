@@ -110,7 +110,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             return;
         }
 
-        if (typeof pendingControlledValueRef.current === 'string') {
+        if (pendingControlledValueRef.current !== undefined) {
             pendingOperationsRef.current = [];
             syncControlledValue(pendingControlledValueRef.current);
             return;
@@ -146,7 +146,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     useEffect(() => {
         pendingControlledValueRef.current = value;
 
-        if (typeof value !== 'string') {
+        if (value === undefined) {
             return;
         }
 

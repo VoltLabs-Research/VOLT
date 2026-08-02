@@ -38,11 +38,10 @@ const oauthProviders: OAuthProvider[] = [{
 
 const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }: EmailStepProps) => {
     const visibleProviders = oauthProviders.filter((provider) => availableProviders.includes(provider.key));
-    const hasOAuth = visibleProviders.length > 0;
 
     return (
     <Stack gap='1'>
-        {hasOAuth && (
+        {visibleProviders.length > 0 && (
             <>
                 <Stack gap='1'>
                     {visibleProviders.map(({ key, label, icon }) => (

@@ -1,7 +1,23 @@
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
-import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
+import type {
+    ProcessDaemonAnalysisJobCompletionInput,
+    ProcessDaemonAnalysisJobStatusInput,
+    ProcessDaemonAnalysisStageStatusInput,
+    ProcessDaemonArtifactUploadJobStatusInput,
+    ProcessDaemonGlbJobStatusInput,
+    ProcessDaemonRasterJobStatusInput
+} from '@modules/cluster/contracts/daemon-job-completion';
+import type {
+    SceneArtifactParams,
+    SceneArtifactSourceType,
+    SceneArtifactStatus
+} from '@shared/contracts/types';
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
+import type {
+    TeamClusterRuntimeRoleConfigProps,
+    TeamClusterStatus
+} from '@shared/contracts/types/TeamCluster';
 import {
     TeamClusterServiceExposureAccessMode,
     type TeamClusterDaemonExecutionLogSegment,
@@ -92,19 +108,37 @@ export interface TeamClusterDaemonSessionAttachPayload {
     protocols?: string[];
 }
 
+export interface TeamClusterDaemonSessionAttachResult {
+    attached: boolean;
+    selectedProtocol?: string;
+}
+
+/**
+ * Commands travel in both directions: the control plane issues them to a daemon,
+ * and a daemon issues the runtime.* commands below back to the control plane.
+ */
 export interface TeamClusterDaemonCommandMessage {
     type: 'command';
     requestId: string;
     command: string;
     responseType?: TeamClusterDaemonResponseType;
-    payload?: Record<string, unknown>;
+    payload?: unknown;
 }
 
-interface TeamClusterDaemonCommandBinaryMessage {
-    type: 'command-binary';
-    requestId: string;
-    command: string;
-    envelope: Uint8Array;
+/**
+ * Every JSON reply on the reverse channel is wrapped by @voltstack/daemon-cluster-client,
+ * so `data` is the envelope and the handler result sits one level in. The handler
+ * result itself may be an error report, which is why it is a declared union member.
+ */
+export interface TeamClusterDaemonSuccessEnvelope<T> {
+    status: 'success';
+    data: T;
+}
+
+export interface TeamClusterDaemonErrorResult {
+    status: 'error';
+    code: string;
+    message: string;
 }
 
 export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
@@ -112,20 +146,10 @@ export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
     requestId: string;
     ok: boolean;
     status: number;
-    data?: T;
+    data?: TeamClusterDaemonSuccessEnvelope<T | TeamClusterDaemonErrorResult>;
     headers?: TeamClusterDaemonSocketHeaders;
     message?: string;
     streamId?: string;
-}
-
-interface TeamClusterDaemonSocketBinaryResponsePayload {
-    type: 'response-binary';
-    requestId: string;
-    ok: boolean;
-    status: number;
-    envelope: Uint8Array;
-    headers?: TeamClusterDaemonSocketHeaders;
-    message?: string;
 }
 
 export interface TeamClusterDaemonSocketStreamPayload {
@@ -195,7 +219,7 @@ interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
-    accessMode: TeamClusterServiceExposure['accessModes'][number];
+    accessMode: TeamClusterServiceExposureAccessMode;
 }
 
 interface TeamClusterDaemonDirectTunnelOpenPayload {
@@ -203,10 +227,10 @@ interface TeamClusterDaemonDirectTunnelOpenPayload {
     sessionId: string;
     targetHost: string;
     targetPort: number;
-    accessMode: TeamClusterServiceExposure['accessModes'][number];
+    accessMode: TeamClusterServiceExposureAccessMode;
 }
 
-type TeamClusterDaemonTunnelOpenPayload =
+export type TeamClusterDaemonTunnelOpenPayload =
     | TeamClusterDaemonExposureTunnelOpenPayload
     | TeamClusterDaemonDirectTunnelOpenPayload;
 
@@ -240,112 +264,62 @@ export interface TeamClusterDaemonTunnelClosePayload {
     message?: string;
 }
 
+export interface TeamClusterDaemonContainerCreateProgress {
+    operationId: string;
+    step?: string;
+    image?: string;
+    containerName?: string;
+    containerId?: string;
+}
+
 export interface TeamClusterDaemonRuntimeProgressPayload {
     type: 'runtime-progress';
     action: string;
     stage: string;
     timestamp: string;
-    payload?: Record<string, unknown>;
+    payload?: TeamClusterDaemonContainerCreateProgress;
 }
 
-interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
-    type: 'analysis-job-completion';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    success: boolean;
-    error?: string;
-}
-
-interface TeamClusterDaemonAnalysisJobStatusEventPayload {
-    type: 'analysis-job-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    status: 'running' | 'completed' | 'failed';
-    error?: string;
-}
-
-interface TeamClusterDaemonAnalysisStageStatusEventPayload {
-    type: 'analysis-stage-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    name: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId?: string;
-    timestep?: number;
-    stageKey: string;
-    label: string;
-    stageType: AnalysisStageType;
-    stageStatus: AnalysisStageStatus;
-    pluginId?: string;
-    pluginDisplayName?: string;
-    nodeId?: string;
-    exposureId?: string;
-    configHash?: string;
-    cacheHit?: boolean;
-    detail?: string;
-    startedAt?: string;
-    finishedAt?: string;
-    durationMs?: number;
-}
-
-interface TeamClusterDaemonRasterJobStatusEventPayload {
-    type: 'trajectory-raster-job-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: 'running' | 'completed' | 'failed';
-    error?: string;
-}
-
-interface TeamClusterDaemonGlbJobStatusEventPayload {
-    type: 'trajectory-glb-job-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: 'running' | 'completed' | 'failed';
-    error?: string;
-}
-
-interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
-    type: 'artifact-upload-job-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-    status: 'queued' | 'running' | 'completed' | 'failed';
-    error?: string;
-}
-
-interface TeamClusterDaemonRuntimeHeartbeatEventPayload {
-    type: 'runtime-heartbeat';
+/** Lifecycle commands a daemon invokes on the control plane. */
+export interface ClusterRuntimeHeartbeatCommand {
     teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
-    runtime?: Record<string, unknown>;
-    metrics?: Record<string, unknown>;
+    runtime?: { roleConfig: TeamClusterRuntimeRoleConfigProps };
+    metrics?: TeamClusterHeartbeatMetricsInput;
+}
+
+export interface ClusterRuntimeLifecycleCommand {
+    teamClusterId: string;
+    daemonPassword: string;
+    status: TeamClusterStatus;
+    installedVersion?: string;
+}
+
+export interface ClusterRuntimeDeleteCompletedCommand {
+    teamClusterId: string;
+    daemonPassword: string;
+}
+
+export interface TeamClusterDaemonAnalysisProvenanceEvent {
+    type: 'analysis-provenance';
+    teamClusterId: string;
+    daemonPassword: string;
+    pluginName: string;
+    pluginVersion: string;
+    parameters: Record<string, unknown>;
+    inputFrameContentHash: string;
+    atomCount: number;
+    frameIndex: number;
+    trajectoryId: string;
+    analysisId: string;
+    teamId: string;
+    coreToolkitVersion: string;
+    rngSeed?: number;
+    executedAt: string;
+    executedBy: string;
+    executionTimeMs: number;
+    outputArtifactIds: string[];
 }
 
 export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
@@ -354,20 +328,60 @@ export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
     TrajectorySceneArtifactUpsertBatch: 'trajectory-scene-artifact-upsert-batch'
 } as const;
 
-type TeamClusterDaemonServerEventMessage =
-    | TeamClusterDaemonAnalysisJobCompletionEventPayload
-    | TeamClusterDaemonAnalysisJobStatusEventPayload
-    | TeamClusterDaemonAnalysisStageStatusEventPayload
-    | TeamClusterDaemonRasterJobStatusEventPayload
-    | TeamClusterDaemonGlbJobStatusEventPayload
-    | TeamClusterDaemonArtifactUploadJobStatusEventPayload
-    | TeamClusterDaemonRuntimeHeartbeatEventPayload;
+/** Frames the daemon pushes as an inbound stream body rather than as a socket event. */
+export interface TeamClusterDaemonAnalysisLogChunkStream {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep: number;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+}
+
+export interface TeamClusterDaemonDebugLogChunkStream {
+    teamClusterId: string;
+    daemonPassword: string;
+    sessionId: string;
+    nodeId: string;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+}
+
+export interface TeamClusterDaemonSceneArtifactUpsertItem {
+    trajectory: string;
+    storageClusterId: string;
+    analysis?: string;
+    plugin?: string;
+    sourceType: SceneArtifactSourceType;
+    timestep: number;
+    objectName: string;
+    storageBucket: string;
+    params: SceneArtifactParams;
+    displayName: string;
+    status: SceneArtifactStatus;
+    metadata?: Record<string, unknown>;
+}
+
+export interface TeamClusterDaemonSceneArtifactUpsertBatchStream {
+    teamClusterId: string;
+    daemonPassword: string;
+    items: TeamClusterDaemonSceneArtifactUpsertItem[];
+}
+
+export type TeamClusterDaemonServerEventMessage =
+    | ProcessDaemonAnalysisJobCompletionInput
+    | ProcessDaemonAnalysisJobStatusInput
+    | ProcessDaemonAnalysisStageStatusInput
+    | ProcessDaemonRasterJobStatusInput
+    | ProcessDaemonGlbJobStatusInput
+    | ProcessDaemonArtifactUploadJobStatusInput
+    | TeamClusterDaemonAnalysisProvenanceEvent
+    | (ClusterRuntimeHeartbeatCommand & { type: 'runtime-heartbeat' });
 
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
-    | TeamClusterDaemonCommandBinaryMessage
     | TeamClusterDaemonSocketResponsePayload
-    | TeamClusterDaemonSocketBinaryResponsePayload
     | TeamClusterDaemonSocketStreamPayload
     | TeamClusterDaemonSocketStreamStatePayload
     | TeamClusterDaemonSessionInputPayload

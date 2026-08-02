@@ -4,15 +4,13 @@ import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import {
     jobStatusKey as buildJobStatusKey,
-    jobTombstoneKey as buildJobTombstoneKey,
-    projectedTeamJobsKey as buildProjectedTeamJobsKey,
-    projectedTeamJobsRevisionKey as buildProjectedTeamJobsRevisionKey,
-    projectedAnalysisJobsKey as buildProjectedAnalysisJobsKey
+    jobTombstoneKey,
+    projectedTeamJobsKey,
+    projectedTeamJobsRevisionKey,
+    projectedAnalysisJobsKey
 } from '@modules/jobs/services/JobRedisKeys';
 
 const STATUS_TTL_SECONDS = 86400;
-const PROJECTED_JOB_SOURCE = 'projected';
-const LOCAL_PROJECTED_JOB_BACKING_SOURCE = 'local';
 const MISSING_SNAPSHOT_SENTINEL = '__missing__';
 const TOMBSTONED_SENTINEL = '__tombstoned__';
 const MAX_UPSERT_RETRIES = 8;
@@ -54,8 +52,22 @@ end
 return {1, snapshotJson}
 `;
 
-const isTerminalStatus = (status?: TeamJobSnapshot['status']): boolean => {
+const isTerminalStatus = (status: TeamJobSnapshot['status']): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
+};
+
+/* A projected snapshot never regresses: terminal statuses stick, and a late Queued
+   frame must not undo a Running or Retrying job. */
+const holdsPreviousStatus = (
+    previousStatus: TeamJobSnapshot['status'],
+    incomingStatus: JobStatusChangedEventPayload['status']
+): boolean => {
+    if (isTerminalStatus(previousStatus)) {
+        return true;
+    }
+
+    return incomingStatus === JobStatus.Queued
+        && (previousStatus === JobStatus.Running || previousStatus === JobStatus.Retrying);
 };
 
 const resolveProjectedStatus = (
@@ -65,38 +77,12 @@ const resolveProjectedStatus = (
     status: TeamJobSnapshot['status'];
     shouldAdvanceTimestamps: boolean;
 } => {
-    if (!previousStatus || previousStatus === incomingStatus) {
-        return {
-            status: incomingStatus,
-            shouldAdvanceTimestamps: true
-        };
-    }
-
-    if (incomingStatus === JobStatus.Retrying) {
-        return {
-            status: incomingStatus,
-            shouldAdvanceTimestamps: true
-        };
-    }
-
-    if (isTerminalStatus(previousStatus)) {
-        return {
-            status: previousStatus,
-            shouldAdvanceTimestamps: false
-        };
-    }
-
     if (
-        previousStatus === JobStatus.Running
-        && incomingStatus === JobStatus.Queued
+        previousStatus
+        && previousStatus !== incomingStatus
+        && incomingStatus !== JobStatus.Retrying
+        && holdsPreviousStatus(previousStatus, incomingStatus)
     ) {
-        return {
-            status: previousStatus,
-            shouldAdvanceTimestamps: false
-        };
-    }
-
-    if (previousStatus === JobStatus.Retrying && incomingStatus === JobStatus.Queued) {
         return {
             status: previousStatus,
             shouldAdvanceTimestamps: false
@@ -109,21 +95,7 @@ const resolveProjectedStatus = (
     };
 };
 
-const resolveProjectedError = (
-    previousError: TeamJobSnapshot['error'] | undefined,
-    incomingStatus: JobStatusChangedEventPayload['status'],
-    incomingError: JobStatusChangedEventPayload['error']
-): TeamJobSnapshot['error'] => {
-    if (incomingStatus !== JobStatus.Failed) {
-        return undefined;
-    }
-
-    return incomingError ?? previousError;
-};
-
 class TeamJobProjectionService {
-        private readonly redis = redisClient;
-
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
             jobId,
@@ -144,9 +116,7 @@ class TeamJobProjectionService {
             ...extra
         } = payload;
         const jobStatusKey = buildJobStatusKey(jobId);
-        const projectedTeamJobsKey = buildProjectedTeamJobsKey(teamId);
-        const revisionKey = buildProjectedTeamJobsRevisionKey(teamId);
-        let previousRawSnapshot = await this.redis.get(jobStatusKey);
+        let previousRawSnapshot = await redisClient.get(jobStatusKey);
         let previousSnapshot = this.parseSnapshot(previousRawSnapshot);
 
         for (let attempt = 0; attempt < MAX_UPSERT_RETRIES; attempt += 1) {
@@ -169,37 +139,37 @@ class TeamJobProjectionService {
                 createdAt: previousSnapshot?.createdAt ?? timestamp,
                 name: name ?? previousSnapshot?.name,
                 message: message ?? previousSnapshot?.message,
-                error: resolveProjectedError(previousSnapshot?.error, status, error),
+                error: status === JobStatus.Failed ? (error ?? previousSnapshot?.error) : undefined,
                 analysisId: analysisId ?? previousSnapshot?.analysisId,
                 trajectoryId: trajectoryId ?? previousSnapshot?.trajectoryId,
                 trajectoryName,
                 timestep: timestep ?? previousSnapshot?.timestep,
                 teamClusterId: teamClusterId ?? previousSnapshot?.teamClusterId,
-                source: source ?? previousSnapshot?.source ?? PROJECTED_JOB_SOURCE,
-                backingSource: backingSource ?? previousSnapshot?.backingSource ?? LOCAL_PROJECTED_JOB_BACKING_SOURCE,
+                source: source ?? previousSnapshot?.source ?? 'projected',
+                backingSource: backingSource ?? previousSnapshot?.backingSource ?? 'local',
                 cleanupScope: cleanupScope ?? previousSnapshot?.cleanupScope
             };
             const nextSnapshotRaw = JSON.stringify(nextSnapshot);
 
-            const result = await this.redis.eval(
+            const result = await redisClient.eval(
                 UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT,
                 5,
                 jobStatusKey,
-                projectedTeamJobsKey,
-                buildProjectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
-                revisionKey,
-                buildJobTombstoneKey(jobId),
+                projectedTeamJobsKey(teamId),
+                projectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
+                projectedTeamJobsRevisionKey(teamId),
+                jobTombstoneKey(jobId),
                 previousRawSnapshot ?? MISSING_SNAPSHOT_SENTINEL,
                 nextSnapshotRaw,
                 STATUS_TTL_SECONDS,
                 nextSnapshot.analysisId ? '1' : '0'
             ) as [number, string] | null;
 
-            if (Array.isArray(result) && result[0] === -1) {
+            if (result?.[0] === -1) {
                 return null;
             }
 
-            if (Array.isArray(result) && result[0] === 1) {
+            if (result?.[0] === 1) {
                 const persistedSnapshot = this.parseSnapshot(result[1]);
                 if (!persistedSnapshot) {
                     throw new Error(`Failed to parse persisted projected job snapshot ${jobId}`);
@@ -208,9 +178,7 @@ class TeamJobProjectionService {
                 return persistedSnapshot;
             }
 
-            previousRawSnapshot = Array.isArray(result) && result[1]
-                ? result[1]
-                : null;
+            previousRawSnapshot = result?.[1] || null;
             previousSnapshot = this.parseSnapshot(previousRawSnapshot);
         }
 

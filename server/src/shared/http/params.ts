@@ -20,7 +20,6 @@ export const getParamResolvers = (ctor: object, handlerName: string | symbol): P
 
 export const Body = <T>(validate?: (raw: unknown) => T): ParameterDecorator =>
     createParamDecorator((req) => (validate ? validate(req.body) : req.body));
-
 export const Param = (name: string): ParameterDecorator =>
     createParamDecorator((req) => (req.params as Record<string, string>)[name]);
 

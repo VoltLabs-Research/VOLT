@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { forEachMaterial } from '@/modules/fractal/utils/renderable-materials';
 
 const isTexture = (value: unknown): value is THREE.Texture => {
     if (!value || typeof value !== 'object') {
@@ -54,14 +55,8 @@ export const disposeMaterialResources = (
 ) => {
     const disposedMaterials = new Set<THREE.Material>();
     const disposedTextures = new Set<THREE.Texture>();
-    let materials: THREE.Material[];
-    if (Array.isArray(materialOrMaterials)) {
-        materials = materialOrMaterials;
-    } else {
-        materials = [materialOrMaterials];
-    }
 
-    materials.forEach((material) => {
+    forEachMaterial({ material: materialOrMaterials }, (material) => {
         disposeSingleMaterial(material, disposedMaterials, disposedTextures);
     });
 };
@@ -73,28 +68,20 @@ export const disposeObject3DResources = (object: THREE.Object3D) => {
 
     object.traverse((child) => {
         if (
-            child instanceof THREE.Mesh ||
-            child instanceof THREE.Points ||
-            child instanceof THREE.Line
+            !(child instanceof THREE.Mesh) &&
+            !(child instanceof THREE.Points) &&
+            !(child instanceof THREE.Line)
         ) {
-            if (
-                child.geometry instanceof THREE.BufferGeometry &&
-                !disposedGeometries.has(child.geometry)
-            ) {
-                disposedGeometries.add(child.geometry);
-                child.geometry.dispose();
-            }
-
-            let materials: THREE.Material[];
-            if (Array.isArray(child.material)) {
-                materials = child.material;
-            } else {
-                materials = [child.material];
-            }
-
-            materials.forEach((material) => {
-                disposeSingleMaterial(material, disposedMaterials, disposedTextures);
-            });
+            return;
         }
+
+        if (!disposedGeometries.has(child.geometry)) {
+            disposedGeometries.add(child.geometry);
+            child.geometry.dispose();
+        }
+
+        forEachMaterial(child, (material) => {
+            disposeSingleMaterial(material, disposedMaterials, disposedTextures);
+        });
     });
 };

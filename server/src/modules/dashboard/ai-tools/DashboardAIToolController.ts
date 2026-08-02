@@ -1,5 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import DashboardService from '@modules/dashboard/services/DashboardService';
@@ -9,6 +10,7 @@ import type {
     GlobalSearchInput
 } from '@volt/contracts/modules/dashboard/ai-tools';
 
+@AIToolProvider()
 export default class DashboardAIToolController extends AIToolController {
     #service = new DashboardService();
 
@@ -43,7 +45,6 @@ export default class DashboardAIToolController extends AIToolController {
         const trajectoryItems = trajectories.map((trajectory) => ({
             ...trajectory,
             id: trajectory._id,
-            name: trajectory.name,
             deepLink: `/canvas/${trajectory._id}`
         }));
 
@@ -62,7 +63,6 @@ export default class DashboardAIToolController extends AIToolController {
         const containerItems = containers.map((container) => ({
             ...container,
             id: container._id,
-            name: container.name,
             deepLink: `/dashboard/containers/${container._id}`
         }));
 
@@ -84,7 +84,6 @@ export default class DashboardAIToolController extends AIToolController {
         const teamItems = teams.map((team) => ({
             ...team.toJSON(),
             id: team.id,
-            name: team.name,
             deepLink: '/dashboard/my-team'
         }));
 

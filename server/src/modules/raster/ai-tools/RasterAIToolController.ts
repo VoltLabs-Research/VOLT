@@ -1,5 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -9,6 +10,7 @@ import type { RenderSceneScreenshotInput } from '@volt/contracts/modules/raster/
 import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 
 
+@AIToolProvider()
 export default class RasterAIToolController extends AIToolController {
     #service = new RasterService();
 

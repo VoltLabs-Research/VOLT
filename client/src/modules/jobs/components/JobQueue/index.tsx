@@ -1,5 +1,5 @@
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import { getJobStatusLabel } from '@/modules/jobs/utils/job-status-label';
+import { JOB_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
 import { Box, Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
@@ -51,14 +51,18 @@ const formatDuration = (ms: number) => {
 };
 
 const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
-    if (!statusConfig[job.status]) return null;
+    // Every hook must run before any early return: `job.status` arrives over the
+    // socket, so an unmapped status must not change the hook call order.
+    const retryJobAnalysis = useRetryJobAnalysis();
+
+    const statusEntry = statusConfig[job.status];
+    if (!statusEntry) return null;
 
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
     const hasFrameTimestep = job.timestep !== undefined && job.timestep >= 0;
-    const retryJobAnalysis = useRetryJobAnalysis();
-    const statusLabel = getJobStatusLabel(job.status);
+    const statusLabel = JOB_STATUS_LABELS[job.status];
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
 
@@ -68,17 +72,14 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
             return;
         }
 
-        try {
-            await retryJobAnalysis(analysisId);
-        } catch {
-        }
+        await retryJobAnalysis(analysisId);
     };
 
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
 
     return (
         <Row justify='between' gap='075' className={containerClass}>
-            <span className='job-status-icon font-size-3' aria-hidden='true'>{statusConfig[job.status]?.icon}</span>
+            <span className='job-status-icon font-size-3' aria-hidden='true'>{statusEntry.icon}</span>
             <Stack gap='025' flex='1' minW='0'>
                 <Row justify='between' gap='05' wrap>
                     <Heading level={3} size='sm' weight='bold' className='job-name'>

@@ -1,12 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamAIIntegrationEntity from '@modules/team/models/TeamAIIntegration';
+import { dedupeEnabledModels } from '@modules/team/contracts/team-ai-integration';
 import {
-    buildTeamAIIntegrationCreatePayload,
-    buildTeamAIIntegrationUpdatePayload
-} from '@modules/team/contracts/team-ai-integration';
-import TeamAIProviderCatalog from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
+    getAllProviderMetadata,
+    getProviderMetadata,
+    normalizeProvider
+} from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';
+import { encrypt } from '@shared/infrastructure/utilities/crypto';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 import type {
     GetTeamAIIntegrationsResponse,
@@ -17,20 +18,7 @@ import type {
     TeamAIModelListItem
 } from '@volt/contracts/modules/team/domain';
 
-class TeamAIIntegrationSecretCipher{
-    async encrypt(value: string): Promise<string>{
-        return encrypt(value);
-    }
-
-    async decrypt(value: string): Promise<string>{
-        return decrypt(value);
-    }
-}
-
 export default class TeamAIIntegrationService{
-    #providerCatalog = new TeamAIProviderCatalog();
-    #secretCipher = new TeamAIIntegrationSecretCipher();
-
     async listByTeamId(teamId: string): Promise<GetTeamAIIntegrationsResponse>{
         const integrations = await TeamAIIntegrationEntity.find({
             where: { team: teamId },
@@ -40,7 +28,7 @@ export default class TeamAIIntegrationService{
         return {
             teamId,
             integrations: integrations.map((integration) => this.#toItem(integration)),
-            providers: this.#providerCatalog.getAllProviderMetadata()
+            providers: getAllProviderMetadata()
         };
     }
 
@@ -57,7 +45,7 @@ export default class TeamAIIntegrationService{
         const models: TeamAIModelListItem[] = [];
 
         for(const integration of integrations){
-            const providerMeta = this.#providerCatalog.getProviderMetadata(integration.provider);
+            const providerMeta = getProviderMetadata(integration.provider);
             const enabledModels = integration.enabledModels ?? [];
             const providerModels = enabledModels.map((model) => ({
                 id: model.id,
@@ -90,7 +78,7 @@ export default class TeamAIIntegrationService{
     }
 
     async createByProvider(teamId: string, userId: string, providerRaw: string, input: TeamAIIntegrationMutationInput): Promise<TeamAIIntegrationMutationResponse>{
-        const provider = this.#providerCatalog.normalize(providerRaw);
+        const provider = normalizeProvider(providerRaw);
         if(!provider){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
@@ -114,30 +102,22 @@ export default class TeamAIIntegrationService{
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED, 'Default model is required');
         }
 
-        const encryptedApiKey = await this.#secretCipher.encrypt(providedApiKey || 'ollama-local');
-        const enabledModels = (input.enabledModels ?? [])
-            .map(({ id, name }) => ({
-                id: id.trim(),
-                name: name.trim()
-            }))
-            .filter(({ id, name }) => id.length > 0 && name.length > 0);
-
-        const persisted = await TeamAIIntegrationEntity.create(buildTeamAIIntegrationCreatePayload({
-            teamId,
+        const persisted = await TeamAIIntegrationEntity.create({
+            team: teamId,
             provider,
-            encryptedApiKey,
+            encryptedApiKey: await encrypt(providedApiKey || 'ollama-local'),
             isEnabled: input.isEnabled ?? true,
             defaultModel,
-            enabledModels,
-            metadata: input.metadata,
-            userId
-        })).save();
+            enabledModels: dedupeEnabledModels(input.enabledModels),
+            metadata: input.metadata ?? {},
+            createdBy: userId
+        }).save();
 
         return { integration: this.#toItem(persisted) };
     }
 
     async updateByProvider(teamId: string, providerRaw: string, input: TeamAIIntegrationMutationInput): Promise<TeamAIIntegrationMutationResponse>{
-        const provider = this.#providerCatalog.normalize(providerRaw);
+        const provider = normalizeProvider(providerRaw);
         if(!provider){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
@@ -152,37 +132,29 @@ export default class TeamAIIntegrationService{
 
         const apiKey = input.apiKey?.trim();
         const encryptedApiKey = apiKey
-            ? await this.#secretCipher.encrypt(apiKey)
-            : existing.encryptedApiKey || await this.#secretCipher.encrypt('ollama-local');
+            ? await encrypt(apiKey)
+            : existing.encryptedApiKey || await encrypt('ollama-local');
 
         const defaultModel = input.defaultModel?.trim() || existing.defaultModel || null;
         if(!defaultModel){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED, 'Default model is required');
         }
 
-        const metadata = input.metadata ?? existing.metadata;
-        const enabledModels = input.enabledModels
-            ? input.enabledModels
-                .map(({ id, name }) => ({
-                    id: id.trim(),
-                    name: name.trim()
-                }))
-                .filter(({ id, name }) => id.length > 0 && name.length > 0)
-            : existing.enabledModels || [];
-
-        const persisted = await Object.assign(existing, buildTeamAIIntegrationUpdatePayload({
+        const persisted = await Object.assign(existing, {
             encryptedApiKey,
             isEnabled: input.isEnabled ?? existing.isEnabled,
             defaultModel,
-            enabledModels,
-            metadata
-        })).save();
+            enabledModels: input.enabledModels
+                ? dedupeEnabledModels(input.enabledModels)
+                : existing.enabledModels || [],
+            metadata: input.metadata ?? existing.metadata
+        }).save();
 
         return { integration: this.#toItem(persisted) };
     }
 
     async deleteByProvider(teamId: string, providerRaw: string): Promise<void>{
-        const provider = this.#providerCatalog.normalize(providerRaw);
+        const provider = normalizeProvider(providerRaw);
         if(!provider){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
@@ -202,7 +174,7 @@ export default class TeamAIIntegrationService{
     }
 
     #toItem(integration: TeamAIIntegrationEntity): TeamAIIntegration{
-        const providerMetadata = this.#providerCatalog.getProviderMetadata(integration.provider);
+        const providerMetadata = getProviderMetadata(integration.provider);
         return {
             _id: integration.id,
             teamId: integration.team,
@@ -214,8 +186,8 @@ export default class TeamAIIntegrationService{
             metadata: integration.metadata,
             hasApiKey: true,
             createdBy: integration.createdBy,
-            createdAt: integration.createdAt as unknown as string,
-            updatedAt: integration.updatedAt as unknown as string
+            createdAt: integration.createdAt.toISOString(),
+            updatedAt: integration.updatedAt.toISOString()
         };
     }
 }

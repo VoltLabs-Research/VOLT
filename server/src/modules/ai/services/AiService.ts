@@ -3,47 +3,38 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import AIConversation from '@modules/ai/models/AIConversation';
 import AIMessage from '@modules/ai/models/AIMessage';
 import { AIConversationMessageRole } from '@modules/ai/contracts/ai-message';
-import type {
-    AIConversationMessage,
-    AIMessageModelInfo,
-    AIMessagePart,
-    AIMessageParts,
-    AIMessageTokenUsage,
-    AIMessageToolStep
-} from '@modules/ai/contracts/ai-message';
-import type { AIChatFinishEvent, AIChatReplyStream } from '@modules/ai/services/AISDKChatTransport';
+import type { AIConversationMessage, AIMessagePart } from '@modules/ai/contracts/ai-message';
+import type { AIChatReplyStream } from '@modules/ai/services/AISDKChatTransport';
 import aiSdkChatTransport from '@modules/ai/services/AISDKChatTransport';
-import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/services/AIResponseMessagePartsMapper';
-import TeamMember from '@modules/team/models/TeamMember';
-import type { TeamAIProvider } from '@modules/team/contracts/team-ai-integration';
+import { persistAssistantResponse } from '@modules/ai/services/AIAssistantResponseStore';
+import { toAIMessageView } from '@modules/ai/services/AIMessageViewMapper';
+import { assertTeamMembership } from '@modules/team/services/team/team-membership-guard';
+import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
 import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 
 type AITextPart = AIMessagePart & { text: string };
+
+type AIMessageView = Record<string, unknown>;
 
 const CONVERSATION_PAGE_OPTIONS = {
     defaultLimit: 50,
     maxLimit: 200
 };
 
+/* Parts are an open `Record<string, unknown>` bag, so the text payload has to be
+   narrowed before it can be joined. */
 const isTextPart = (part: AIMessagePart): part is AITextPart => (
     part.type === 'text' && typeof part.text === 'string'
 );
 
-const normalizeUIMessages = (messages?: AIConversationMessage[]): AIConversationMessage[] | null => {
-    return messages?.length ? messages : null;
-};
-
 const extractLastUserMessageText = (messages: AIConversationMessage[]): string => {
     for(let index = messages.length - 1; index >= 0; index--){
         const message = messages[index];
-        if(message.role !== AIConversationMessageRole.User){
-            continue;
-        }
+        if(message.role !== AIConversationMessageRole.User) continue;
 
         return message.parts
             .filter(isTextPart)
@@ -55,119 +46,58 @@ const extractLastUserMessageText = (messages: AIConversationMessage[]): string =
     return '';
 };
 
-interface AIConversationView {
-    _id: string;
-    userId: string;
+interface AIConversationScope {
     teamId: string;
-    title: string;
-    lastMessageAt?: Date | null;
-    lastProvider?: string | null;
-    lastModel?: string | null;
-    isArchived: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    userId: string;
 }
 
-interface AIMessageArtifactsView {
-    items: Record<string, unknown>[];
-}
-
-interface AIMessageView {
-    _id: string;
+interface AIConversationRef extends AIConversationScope {
     conversationId: string;
-    role: AIMessageRole;
-    parts: AIMessageParts;
-    content: string;
-    artifacts: AIMessageArtifactsView | null;
-    modelInfo: AIMessageModelInfo | null;
-    tokenUsage: AIMessageTokenUsage | null;
-    createdAt: Date;
-    updatedAt: Date;
 }
 
-interface ListAIConversationsInput {
-    teamId: string;
-    userId: string;
+interface ListAIConversationsInput extends AIConversationScope {
     page?: number;
     limit?: number;
-    includeArchived?: boolean | string;
+    includeArchived?: string;
 }
 
-interface CreateAIConversationInput {
-    teamId: string;
-    userId: string;
+interface CreateAIConversationInput extends AIConversationScope {
     title?: string;
     message?: string;
 }
 
-interface CreateAIConversationOutput {
-    conversation: AIConversationView;
-    userMessage?: AIMessageView;
-}
-
-interface ListAIConversationMessagesInput {
-    teamId: string;
-    userId: string;
-    conversationId: string;
+interface ListAIConversationMessagesInput extends AIConversationRef {
     page?: number;
     limit?: number;
 }
 
-interface SendAIConversationMessageInput {
-    teamId: string;
-    conversationId: string;
-    userId: string;
+interface SendAIConversationMessageInput extends AIConversationRef {
     message?: string;
-    messages?: AIConversationMessage[];
+    messages: AIConversationMessage[];
     title?: string;
-    provider?: TeamAIProvider;
+    provider?: AIProvider;
     model?: string;
 }
 
-interface SendAIConversationMessageOutput {
-    streamResult: AIChatReplyStream;
-    userMessage?: AIMessageView;
-    assistantMessage?: Promise<AIMessageView | undefined>;
-}
-
-interface UpdateAIConversationInput {
-    teamId: string;
-    userId: string;
-    conversationId: string;
+interface UpdateAIConversationInput extends AIConversationRef {
     title?: string;
     isArchived?: boolean;
 }
 
-interface DeleteAIConversationInput {
-    teamId: string;
-    userId: string;
-    conversationId: string;
-}
-
-interface ConversationUpdatePayload {
-    lastMessageAt: Date;
-    lastProvider: string;
-    lastModel: string;
-    title: string;
-}
-
-const VALID_ARTIFACT_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
-
 export default class AiService{
-    async listConversations(input: ListAIConversationsInput): Promise<PaginatedResult<AIConversationView>>{
+    async listConversations(input: ListAIConversationsInput): Promise<PaginatedResult<AIConversation>>{
         const pageRequest = readPageRequest(input.page, input.limit, CONVERSATION_PAGE_OPTIONS);
-        const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
 
         const where: FindOptionsWhere<AIConversation> = {
             teamId: input.teamId,
             userId: input.userId
         };
 
-        if(!includeArchived){
+        if(input.includeArchived !== 'true'){
             where.isArchived = false;
         }
 
-        const [conversations, total] = await AIConversation.findAndCount({
+        return paginate(await AIConversation.findAndCount({
             where,
             order: {
                 lastMessageAt: 'DESC',
@@ -175,75 +105,47 @@ export default class AiService{
             },
             take: pageRequest.limit,
             skip: skipFor(pageRequest)
-        });
-
-        return paginate(
-            [conversations.map((conversation) => this.#toConversationView(conversation)), total],
-            pageRequest
-        );
+        }), pageRequest);
     }
 
-    async createConversation(input: CreateAIConversationInput): Promise<CreateAIConversationOutput>{
-        const title = input.title?.trim() || 'New Conversation';
-        const normalizedMessage = input.message?.trim();
-
-        if(normalizedMessage && title !== normalizedMessage){
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                'title must match the first message'
-            );
-        }
-
-        const now = new Date();
+    async createConversation(input: CreateAIConversationInput): Promise<{
+        conversation: AIConversation;
+        userMessage?: AIMessageView;
+    }>{
+        const firstMessage = input.message?.trim();
         const conversation = await AIConversation.create({
             teamId: input.teamId,
             userId: input.userId,
-            title,
+            title: input.title?.trim() || 'New Conversation',
             isArchived: false,
-            lastMessageAt: normalizedMessage
-                ? now
-                : null
+            lastMessageAt: firstMessage ? new Date() : null
         }).save();
 
-        const userMessage = normalizedMessage
-            ? await AIMessage.create({
-                conversationId: conversation.id,
-                role: AIMessageRole.User,
-                parts: [
-                    {
-                        type: 'text',
-                        text: normalizedMessage
-                    }
-                ],
-                content: normalizedMessage,
-                modelInfo: null,
-                tokenUsage: null
-            }).save()
-            : null;
+        if(!firstMessage) return { conversation };
+
+        const userMessage = await AIMessage.create({
+            conversationId: conversation.id,
+            role: AIMessageRole.User,
+            parts: [
+                {
+                    type: 'text',
+                    text: firstMessage
+                }
+            ],
+            content: firstMessage,
+            modelInfo: null,
+            tokenUsage: null
+        }).save();
 
         return {
-            conversation: this.#toConversationView(conversation),
-            userMessage: userMessage
-                ? this.#toMessageView(userMessage)
-                : undefined
+            conversation,
+            userMessage: toAIMessageView(userMessage)
         };
     }
 
     async listMessages(input: ListAIConversationMessagesInput): Promise<PaginatedResult<AIMessageView>>{
         const pageRequest = readPageRequest(input.page, input.limit, CONVERSATION_PAGE_OPTIONS);
-
-        const conversation = await this.#findOwnedConversation(
-            input.conversationId,
-            input.teamId,
-            input.userId
-        );
-
-        if(!conversation){
-            throw ApplicationError.notFound(
-                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
-                'AI conversation not found'
-            );
-        }
+        const conversation = await this.#requireOwnedConversation(input);
 
         const [messages, total] = await AIMessage.findAndCount({
             where: { conversationId: conversation.id },
@@ -252,62 +154,38 @@ export default class AiService{
             skip: skipFor(pageRequest)
         });
 
-        return paginate(
-            [messages.map((message) => this.#toMessageView(message)), total],
-            pageRequest
-        );
+        return paginate([messages.map(toAIMessageView), total], pageRequest);
     }
 
-    async streamMessage(input: SendAIConversationMessageInput): Promise<SendAIConversationMessageOutput>{
-        const uiMessages = normalizeUIMessages(input.messages);
+    async streamMessage(input: SendAIConversationMessageInput): Promise<{
+        streamResult: AIChatReplyStream;
+        userMessage?: AIMessageView;
+        assistantMessage: Promise<AIMessageView | undefined>;
+    }>{
+        await assertTeamMembership(input.teamId, input.userId);
 
-        if(!uiMessages){
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
-                'UI messages are required'
-            );
-        }
-
-        const member = await TeamMember.findOneBy({
-            team: input.teamId,
-            user: input.userId
-        });
-
-        if(!member){
-            throw ApplicationError.forbidden(
-                ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                'User is not a member of the selected team'
-            );
-        }
-
-        const conversation = await this.#findOwnedConversation(
-            input.conversationId,
-            input.teamId,
-            input.userId
-        );
-
-        if(!conversation){
-            throw ApplicationError.notFound(
-                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
-                'AI conversation not found'
-            );
-        }
-
+        const conversation = await this.#requireOwnedConversation(input);
         const conversationId = conversation.id;
-        const isContinuation = this.#isContinuationRequest(uiMessages);
+        const isContinuation = input.messages[input.messages.length - 1]?.role === AIConversationMessageRole.Assistant;
 
         let userMessage: AIMessage | null = null;
         let existingAssistantMessage: AIMessage | null = null;
 
         if(isContinuation){
-            existingAssistantMessage = await this.#findLastAssistantMessage(conversationId);
+            existingAssistantMessage = await AIMessage.findOne({
+                where: {
+                    conversationId,
+                    role: AIMessageRole.Assistant
+                },
+                order: { createdAt: 'DESC' }
+            });
             logger.debug(
                 'AI conversation %s: continuation detected, existing assistant message %s',
                 conversationId,
                 existingAssistantMessage?.id ?? 'not found'
             );
         }else{
-            const userText = input.message?.trim() || extractLastUserMessageText(uiMessages);
+            const userText = input.message?.trim() || extractLastUserMessageText(input.messages);
 
             if(userText){
                 userMessage = await AIMessage.create({
@@ -326,14 +204,8 @@ export default class AiService{
             }
         }
 
-        logger.debug(
-            'AI conversation %s: sending %d normalized messages',
-            conversationId,
-            uiMessages.length
-        );
-
-        let resolveAssistantMessage: (message: AIMessageView | undefined) => void = () => undefined;
-        let rejectAssistantMessage: (error: unknown) => void = () => undefined;
+        let resolveAssistantMessage!: (message: AIMessageView | undefined) => void;
+        let rejectAssistantMessage!: (error: unknown) => void;
         const assistantMessage = new Promise<AIMessageView | undefined>((resolve, reject) => {
             resolveAssistantMessage = resolve;
             rejectAssistantMessage = reject;
@@ -345,23 +217,22 @@ export default class AiService{
                 userId: input.userId,
                 provider: input.provider,
                 model: input.model,
-                messages: uiMessages,
+                messages: input.messages,
                 onFinish: async (event) => {
                     try{
-                        const persistedAssistantMessage = await this.#persistAssistantResponse(
+                        const persisted = await persistAssistantResponse(
                             conversationId,
                             event,
                             existingAssistantMessage
                         );
-                        const conversationUpdate: ConversationUpdatePayload = {
+
+                        await AIConversation.update({ id: conversationId }, {
                             lastMessageAt: new Date(),
                             lastProvider: event.provider,
                             lastModel: event.model,
                             title: input.title?.trim() || conversation.title
-                        };
-
-                        await AIConversation.update({ id: conversationId }, conversationUpdate);
-                        resolveAssistantMessage(persistedAssistantMessage);
+                        });
+                        resolveAssistantMessage(persisted);
                     }catch(error){
                         rejectAssistantMessage(error);
                         throw error;
@@ -371,7 +242,7 @@ export default class AiService{
 
             return {
                 streamResult,
-                userMessage: userMessage ? this.#toMessageView(userMessage) : undefined,
+                userMessage: userMessage ? toAIMessageView(userMessage) : undefined,
                 assistantMessage
             };
         }catch(error){
@@ -380,240 +251,36 @@ export default class AiService{
         }
     }
 
-    async updateConversation(input: UpdateAIConversationInput): Promise<AIConversationView>{
-        const conversation = await this.#findOwnedConversation(
-            input.conversationId,
-            input.teamId,
-            input.userId
-        );
+    async updateConversation(input: UpdateAIConversationInput): Promise<AIConversation>{
+        const conversation = await this.#requireOwnedConversation(input);
 
-        if(!conversation){
-            throw ApplicationError.notFound(
-                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
-                'AI conversation not found'
-            );
-        }
+        if(input.title !== undefined) conversation.title = input.title.trim();
+        if(input.isArchived !== undefined) conversation.isArchived = input.isArchived;
 
-        const updateData: Partial<Pick<AIConversation, 'title' | 'isArchived'>> = {};
-        if(input.title !== undefined) updateData.title = input.title.trim();
-        if(input.isArchived !== undefined) updateData.isArchived = input.isArchived;
-
-        const updatedConversation = await AIConversation.findOneBy({ id: conversation.id });
-
-        if(!updatedConversation){
-            throw ApplicationError.notFound(
-                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
-                'AI conversation not found'
-            );
-        }
-
-        return this.#toConversationView(await Object.assign(updatedConversation, updateData).save());
+        return conversation.save();
     }
 
-    async deleteConversation(input: DeleteAIConversationInput): Promise<void>{
-        const conversation = await this.#findOwnedConversation(
-            input.conversationId,
-            input.teamId,
-            input.userId
-        );
-
-        if(!conversation){
-            throw ApplicationError.notFound(
-                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
-                'AI conversation not found'
-            );
-        }
+    async deleteConversation(input: AIConversationRef): Promise<void>{
+        const conversation = await this.#requireOwnedConversation(input);
 
         await AIMessage.delete({ conversationId: conversation.id });
         await AIConversation.delete({ id: conversation.id });
     }
 
-    #findOwnedConversation(
-        conversationId: string,
-        teamId: string,
-        userId: string
-    ): Promise<AIConversation | null>{
-        return AIConversation.findOneBy({
+    async #requireOwnedConversation({ conversationId, teamId, userId }: AIConversationRef): Promise<AIConversation>{
+        const conversation = await AIConversation.findOneBy({
             id: conversationId,
             teamId,
             userId
         });
-    }
 
-    #isContinuationRequest(uiMessages: AIConversationMessage[]): boolean{
-        const lastMessage = uiMessages[uiMessages.length - 1];
-        return lastMessage?.role === AIConversationMessageRole.Assistant;
-    }
-
-    async #findLastAssistantMessage(conversationId: string): Promise<AIMessage | null>{
-        const messages = await AIMessage.find({
-            where: {
-                conversationId,
-                role: AIMessageRole.Assistant
-            },
-            order: { createdAt: 'DESC' },
-            take: 1
-        });
-
-        return messages.length > 0 ? messages[0] : null;
-    }
-
-    async #persistAssistantResponse(
-        conversationId: string,
-        event: AIChatFinishEvent,
-        existingMessage?: AIMessage | null
-    ): Promise<AIMessageView | undefined>{
-        const { parts: newParts, textContent: newTextContent } = mapAssistantResponseParts(event.responseMessages);
-
-        if(newParts.length === 0){
-            return existingMessage ? this.#toMessageView(existingMessage) : undefined;
+        if(!conversation){
+            throw ApplicationError.notFound(
+                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
+                'AI conversation not found'
+            );
         }
 
-        if(existingMessage){
-            return this.#mergeAssistantResponse(existingMessage, event, newParts, newTextContent);
-        }
-
-        return this.#createAssistantResponse(conversationId, event, newParts, newTextContent);
-    }
-
-    async #mergeAssistantResponse(
-        existingMessage: AIMessage,
-        event: AIChatFinishEvent,
-        newParts: AIMessageParts,
-        newTextContent: string
-    ): Promise<AIMessageView | undefined>{
-        const mergedParts = mergeAssistantParts(
-            existingMessage.parts,
-            newParts
-        );
-
-        const mergedContent = [existingMessage.content, newTextContent]
-            .filter(Boolean)
-            .join('\n');
-
-        const existingUsage = existingMessage.tokenUsage;
-        const newUsage = event.totalUsage;
-
-        const updatedMessage = await AIMessage.findOneBy({ id: existingMessage.id });
-
-        if(!updatedMessage) return undefined;
-
-        const merged = await Object.assign(updatedMessage, {
-            parts: mergedParts,
-            content: mergedContent,
-            modelInfo: {
-                provider: event.provider,
-                model: event.model,
-                finishReason: event.finishReason,
-                steps: [
-                    ...(existingMessage.modelInfo?.steps ?? []),
-                    ...event.steps
-                ]
-            },
-            tokenUsage: {
-                inputTokens: (existingUsage?.inputTokens ?? 0) + (newUsage?.inputTokens ?? 0),
-                outputTokens: (existingUsage?.outputTokens ?? 0) + (newUsage?.outputTokens ?? 0),
-                totalTokens: (existingUsage?.totalTokens ?? 0) + (newUsage?.totalTokens ?? 0)
-            }
-        }).save();
-
-        return this.#toMessageView(merged);
-    }
-
-    async #createAssistantResponse(
-        conversationId: string,
-        event: AIChatFinishEvent,
-        parts: AIMessageParts,
-        textContent: string
-    ): Promise<AIMessageView>{
-        const assistantMessage = await AIMessage.create({
-            conversationId,
-            role: AIMessageRole.Assistant,
-            parts,
-            content: textContent,
-            modelInfo: {
-                provider: event.provider,
-                model: event.model,
-                finishReason: event.finishReason,
-                steps: event.steps
-            },
-            tokenUsage: {
-                inputTokens: event.totalUsage?.inputTokens ?? 0,
-                outputTokens: event.totalUsage?.outputTokens ?? 0,
-                totalTokens: event.totalUsage?.totalTokens ?? 0
-            }
-        }).save();
-
-        return this.#toMessageView(assistantMessage);
-    }
-
-    #toConversationView(conversation: AIConversation): AIConversationView{
-        return {
-            _id: conversation.id,
-            userId: conversation.userId,
-            teamId: conversation.teamId,
-            title: conversation.title,
-            lastMessageAt: conversation.lastMessageAt ?? null,
-            lastProvider: conversation.lastProvider ?? null,
-            lastModel: conversation.lastModel ?? null,
-            isArchived: conversation.isArchived,
-            createdAt: conversation.createdAt,
-            updatedAt: conversation.updatedAt
-        };
-    }
-
-    #toMessageView(message: AIMessage): AIMessageView{
-        const messageId = message.id;
-        const steps = message.modelInfo?.steps ?? [];
-        const artifactItems = this.#extractArtifacts(messageId, steps);
-
-        return {
-            _id: messageId,
-            conversationId: message.conversationId,
-            role: message.role,
-            parts: message.parts,
-            content: message.content,
-            artifacts: artifactItems.length > 0
-                ? {
-                    items: artifactItems
-                }
-                : null,
-            modelInfo: message.modelInfo,
-            tokenUsage: message.tokenUsage,
-            createdAt: message.createdAt,
-            updatedAt: message.updatedAt
-        };
-    }
-
-    #extractArtifacts(messageId: string, steps: AIMessageToolStep[]): Record<string, unknown>[]{
-        const items: Record<string, unknown>[] = [];
-
-        for(let stepIndex = 0; stepIndex < steps.length; stepIndex++){
-            const step = steps[stepIndex];
-
-            for(let resultIndex = 0; resultIndex < step.toolResults.length; resultIndex++){
-                const result = step.toolResults[resultIndex];
-                if(!isRecord(result.output)) continue;
-
-                const output = result.output;
-                let payloadType = 'unknown';
-                if(typeof output.payloadType === 'string'){
-                    payloadType = output.payloadType;
-                }
-                const kind = VALID_ARTIFACT_KINDS.has(payloadType) ? payloadType : 'unknown';
-
-                items.push({
-                    id: `${messageId}:step-${stepIndex}:tool-result-${resultIndex}`,
-                    messageId,
-                    kind,
-                    title: result.toolName,
-                    summary: output.summary,
-                    payload: output,
-                    toolName: result.toolName
-                });
-            }
-        }
-
-        return items;
+        return conversation;
     }
 }

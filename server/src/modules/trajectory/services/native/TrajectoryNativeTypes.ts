@@ -43,7 +43,7 @@ export interface LineStyleFilterParam {
     property: string;
     operator: 'gte' | 'lte' | 'eq' | 'neq';
     value: number | string;
-};
+}
 
 export interface LineStyleParams {
     lineWidth?: number;
@@ -57,7 +57,7 @@ export interface LineStyleParams {
     startValue?: number;
     endValue?: number;
     filters?: LineStyleFilterParam[];
-};
+}
 
 export interface LineExportBaseOptions {
     lineWidth?: number;
@@ -65,17 +65,17 @@ export interface LineExportBaseOptions {
     colorBy?: string;
     propertyColors?: Record<string, [number, number, number, number]>;
     material?: Record<string, unknown>;
-};
+}
 
 export interface TrajectoryNativeLineModelResponse {
     objectKey: string;
     entitiesRendered: number;
     entitiesTotal: number;
     categoryCounts: Record<string, number>;
-};
+}
 
 export interface TrajectoryNativeObjectStreamResponse {
     stream: Readable;
     contentEncoding?: string;
     contentLength?: number;
-};
+}

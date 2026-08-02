@@ -1,9 +1,9 @@
-import { useCanvasPipelineStore } from '../../../store/canvas-pipeline';
+import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
     type ExpressionSelectAction,
@@ -31,26 +31,18 @@ const ACTION_OPTIONS = [
     }
 ];
 
-const isAction = (value: string): value is ExpressionSelectAction =>
-    ACTION_OPTIONS.some((option) => option.value === value);
-
-const ExpressionSelectStageEditor = memo(({
+const ExpressionSelectStageEditor = ({
     stageId,
     trajectoryId,
     analysisId,
     currentTimestep,
     onSave
 }: ExpressionSelectStageEditorProps) => {
-    const stage = useCanvasPipelineStore((s) =>
-        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
-    );
-    const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
+    const { config, patch } = useStageConfig<ExpressionSelectStageConfig>(stageId, trajectoryId);
 
-    const config = stage?.config as ExpressionSelectStageConfig | undefined;
-    const expression = config?.expression ?? '';
-    const action: ExpressionSelectAction = config?.action === 'delete' ? 'delete' : 'color';
+    const action = config?.action ?? 'color';
     const color = config?.color ?? DEFAULT_EXPRESSION_SELECT_COLOR;
-    const [draft, setDraft] = useState(expression);
+    const [draft, setDraft] = useState(config?.expression ?? '');
 
     const { data: atomBuffer } = trajectoryAtomsQuery(
         {
@@ -70,30 +62,15 @@ const ExpressionSelectStageEditor = memo(({
         0
     );
 
-    useEffect(() => {
-        setDraft(expression);
-    }, [expression]);
-
-    const handleApply = useCallback(() => {
-        updateStageConfig(stageId, { expression: draft } as Partial<ExpressionSelectStageConfig>, trajectoryId);
+    const handleApply = () => {
+        patch({ expression: draft });
         onSave?.();
-    }, [draft, stageId, trajectoryId, updateStageConfig, onSave]);
+    };
 
-    const handleClear = useCallback(() => {
+    const handleClear = () => {
         setDraft('');
-        updateStageConfig(stageId, { expression: '' } as Partial<ExpressionSelectStageConfig>, trajectoryId);
-    }, [stageId, trajectoryId, updateStageConfig]);
-
-    const handleActionChange = useCallback((_fieldKey: string, value: unknown) => {
-        const next = String(value);
-        if (isAction(next)) {
-            updateStageConfig(stageId, { action: next } as Partial<ExpressionSelectStageConfig>, trajectoryId);
-        }
-    }, [stageId, trajectoryId, updateStageConfig]);
-
-    const handleColorChange = useCallback((next: string) => {
-        updateStageConfig(stageId, { color: next } as Partial<ExpressionSelectStageConfig>, trajectoryId);
-    }, [stageId, trajectoryId, updateStageConfig]);
+        patch({ expression: '' });
+    };
 
     const hasExpression = draft.trim().length > 0;
 
@@ -115,7 +92,7 @@ const ExpressionSelectStageEditor = memo(({
                 fieldType='select'
                 label='With selection'
                 fieldValue={action}
-                onFieldChange={handleActionChange}
+                onFieldChange={(_, value) => patch({ action: String(value) as ExpressionSelectAction })}
                 options={ACTION_OPTIONS}
                 variant='canvas'
             />
@@ -127,7 +104,7 @@ const ExpressionSelectStageEditor = memo(({
                         type='color'
                         className='expression-select-chip__color'
                         value={color}
-                        onChange={(e) => handleColorChange(e.target.value)}
+                        onChange={(e) => patch({ color: e.target.value })}
                         aria-label='Selection highlight color'
                     />
                 </Row>
@@ -176,8 +153,6 @@ const ExpressionSelectStageEditor = memo(({
             </Row>
         </Stack>
     );
-});
-
-ExpressionSelectStageEditor.displayName = 'ExpressionSelectStageEditor';
+};
 
 export default ExpressionSelectStageEditor;

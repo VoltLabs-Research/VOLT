@@ -1,6 +1,7 @@
 export { getErrorMessage } from '@voltstack/voltclient';
 export { reportError } from '@/shared/errors/core/report-error';
 export {
+    isAbortError,
     isAccessDeniedCode,
     isAccessDeniedError,
     isApiError,

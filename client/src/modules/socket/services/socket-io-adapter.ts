@@ -3,6 +3,24 @@ import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection
 import { io, Socket } from 'socket.io-client';
 import type { EventSubscription, ISocketService, SocketOptions } from '@/modules/socket/contracts/socket-service';
 
+const subscribe = <TListener>(listeners: Set<TListener>, listener: TListener): (() => void) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+/** A throwing listener must not stop the others from being told. */
+const notify = <TValue>(listeners: Set<(value: TValue) => void>, value: TValue): void => {
+    listeners.forEach((listener) => {
+        try {
+            listener(value);
+        } catch {
+            // Documented above: one bad listener must not silence the rest.
+        }
+    });
+};
+
 class SocketIOAdapter implements ISocketService {
     private socket: Socket | null = null;
     private subscriptions: EventSubscription[] = [];
@@ -11,9 +29,9 @@ class SocketIOAdapter implements ISocketService {
     private connectionPromise: Promise<void> | null = null;
     private pendingResolve: (() => void) | null = null;
     private pendingReject: ((reason?: unknown) => void) | null = null;
-    private connectionListeners: Array<(connected: boolean) => void> = [];
+    private readonly connectionListeners = new Set<(connected: boolean) => void>();
     private connectionStatus = SocketConnectionStatus.Disconnected;
-    private connectionStatusListeners: Array<(status: SocketConnectionStatus) => void> = [];
+    private readonly connectionStatusListeners = new Set<(status: SocketConnectionStatus) => void>();
     private hasConnectedOnce = false;
     private connectErrorAttempts = 0;
 
@@ -83,10 +101,6 @@ class SocketIOAdapter implements ISocketService {
 
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
     on(event: string, callback: (...args: unknown[]) => void): () => void {
-        if (!event) {
-            throw new Error('Event name is required');
-        }
-
         const existingSubscription = this.subscriptions.find(
             (sub) => sub.event === event && sub.callback === callback
         );
@@ -114,8 +128,6 @@ class SocketIOAdapter implements ISocketService {
 
     off<TArgs extends unknown[]>(event: string, callback?: (...args: TArgs) => void): void;
     off(event: string, callback?: (...args: unknown[]) => void): void {
-        if (!event) return;
-
         if (callback) {
             this.subscriptions = this.subscriptions.filter(
                 (sub) => sub.event !== event || sub.callback !== callback
@@ -136,10 +148,6 @@ class SocketIOAdapter implements ISocketService {
     private static readonly ACK_TIMEOUT_MS = 30_000;
 
     emit<T = unknown>(event: string, data?: unknown): Promise<T> {
-        if (!event) {
-            return Promise.reject(new Error('Event name is required'));
-        }
-
         if (!this.socket?.connected) {
             return Promise.reject(new Error('Socket is not connected'));
         }
@@ -172,7 +180,7 @@ class SocketIOAdapter implements ISocketService {
     }
 
     emitWithoutAck(event: string, data?: unknown): void {
-        if (!event || !this.socket?.connected) {
+        if (!this.socket?.connected) {
             return;
         }
 
@@ -205,17 +213,11 @@ class SocketIOAdapter implements ISocketService {
     }
 
     onConnectionChange(listener: (connected: boolean) => void): () => void {
-        this.connectionListeners.push(listener);
-        return () => {
-            this.connectionListeners = this.connectionListeners.filter((l) => l !== listener);
-        };
+        return subscribe(this.connectionListeners, listener);
     }
 
     onConnectionStatusChange(listener: (status: SocketConnectionStatus) => void): () => void {
-        this.connectionStatusListeners.push(listener);
-        return () => {
-            this.connectionStatusListeners = this.connectionStatusListeners.filter((currentListener) => currentListener !== listener);
-        };
+        return subscribe(this.connectionStatusListeners, listener);
     }
 
     private handleConnect(): void {
@@ -305,12 +307,7 @@ class SocketIOAdapter implements ISocketService {
     }
 
     private notifyConnectionListeners(connected: boolean): void {
-        this.connectionListeners.forEach((listener) => {
-            try {
-                listener(connected);
-            } catch {
-            }
-        });
+        notify(this.connectionListeners, connected);
     }
 
     private setConnectionStatus(status: SocketConnectionStatus): void {
@@ -319,12 +316,7 @@ class SocketIOAdapter implements ISocketService {
         }
 
         this.connectionStatus = status;
-        this.connectionStatusListeners.forEach((listener) => {
-            try {
-                listener(status);
-            } catch {
-            }
-        });
+        notify(this.connectionStatusListeners, status);
     }
 };
 

@@ -62,44 +62,14 @@ interface UseLatexDocumentSocketProps {
     onRemoteContentUpdate?: (content: string, timestamp: number, fileId: string) => void;
 }
 
-const isLatexContentUpdatedPayload = (
-    value: unknown,
-    documentId?: string
-): value is LatexContentUpdatedPayload => {
-    if (!value || typeof value !== 'object') {
-        return false;
-    }
-
-    const candidate = value as Partial<LatexContentUpdatedPayload>;
-    return candidate.documentId === documentId
-        && typeof candidate.fileId === 'string'
-        && typeof candidate.content === 'string'
-        && typeof candidate.timestamp === 'number';
-};
-
-const isLatexFileUpdateAppliedPayload = (
-    value: unknown,
-    documentId?: string
-): value is LatexFileUpdateAppliedPayload => {
-    if (!value || typeof value !== 'object') {
-        return false;
-    }
-
-    const candidate = value as Partial<LatexFileUpdateAppliedPayload>;
-    return candidate.documentId === documentId
-        && typeof candidate.fileId === 'string'
-        && Array.isArray(candidate.update);
-};
-
-const readAckData = <TData,>(ack: SocketAck<TData> | undefined, fallbackMessage: string): TData => {
-    if (!ack?.ok || !ack.data) {
-        throw new Error(ack?.error ?? fallbackMessage);
+/** `SocketAck.data` is declared optional, so a successful ack still has to be narrowed. */
+const readAckData = <TData,>(ack: SocketAck<TData>, fallbackMessage: string): TData => {
+    if (!ack.ok || !ack.data) {
+        throw new Error(ack.error ?? fallbackMessage);
     }
 
     return ack.data;
 };
-
-const toUint8Array = (value: number[]): Uint8Array => new Uint8Array(value);
 
 const computeTextSplice = (currentText: string, nextText: string): TextSplice => {
     let prefixLength = 0;
@@ -193,23 +163,21 @@ const useLatexDocumentSocket = ({
         fireAndForget: false
     });
 
-    useSocketEvent<unknown>(SOCKET_LATEX_EVENTS.CONTENT_UPDATED, (payload) => {
-        if (!isLatexContentUpdatedPayload(payload, documentId)) return;
+    useSocketEvent<LatexContentUpdatedPayload>(SOCKET_LATEX_EVENTS.CONTENT_UPDATED, (payload) => {
+        if (payload.documentId !== documentId) return;
         onRemoteContentUpdateRef.current?.(payload.content, payload.timestamp, payload.fileId);
     }, { enabled: isActive });
 
-    useSocketEvent<unknown>(SOCKET_LATEX_EVENTS.FILE_UPDATE_APPLIED, (payload) => {
-        if (!isLatexFileUpdateAppliedPayload(payload, documentId)) return;
+    useSocketEvent<LatexFileUpdateAppliedPayload>(SOCKET_LATEX_EVENTS.FILE_UPDATE_APPLIED, (payload) => {
+        if (payload.documentId !== documentId) return;
 
         const session = getOrCreateSession(payload.fileId);
-        Y.applyUpdate(session.doc, toUint8Array(payload.update), REMOTE_ORIGIN);
+        Y.applyUpdate(session.doc, new Uint8Array(payload.update), REMOTE_ORIGIN);
         session.joined = true;
         onRemoteContentUpdateRef.current?.(session.text.toString(), Date.now(), payload.fileId);
     }, { enabled: isActive });
 
-    useSocketEvent<unknown>(SOCKET_LATEX_EVENTS.USERS_UPDATE, (users) => {
-        setCollaborators(Array.isArray(users) ? users as PresenceUser[] : []);
-    }, { enabled: isActive });
+    useSocketEvent<PresenceUser[]>(SOCKET_LATEX_EVENTS.USERS_UPDATE, setCollaborators, { enabled: isActive });
 
     const contentEmitter = useThrottledSocketEmit<LatexContentUpdatePayload>(SOCKET_LATEX_EVENTS.UPDATE_CONTENT, {
         intervalMs: CONTENT_DEBOUNCE_MS,
@@ -251,7 +219,7 @@ const useLatexDocumentSocket = ({
             });
             const data = readAckData(ack, 'LaTeX file collaboration join failed.');
 
-            Y.applyUpdate(session.doc, toUint8Array(data.update), REMOTE_ORIGIN);
+            Y.applyUpdate(session.doc, new Uint8Array(data.update), REMOTE_ORIGIN);
             session.joined = true;
 
             const resolvedContent = session.text.toString() || data.content;

@@ -10,17 +10,9 @@ export interface ISocketConnectionUser {
     readonly role?: string;
 }
 
-export type SocketAuthenticationState = 'guest' | 'authenticated' | 'rejected';
-
-export type SocketAuthenticationReason =
-    | 'missing_token'
-    | 'invalid_token'
-    | 'user_not_found'
-    | 'password_changed';
-
 export interface ISocketAuthenticationResult {
-    readonly state: SocketAuthenticationState;
-    readonly reason?: SocketAuthenticationReason;
+    readonly state: 'guest' | 'authenticated' | 'rejected';
+    readonly reason?: 'missing_token' | 'invalid_token' | 'user_not_found' | 'password_changed';
     readonly user?: ISocketConnectionUser;
 }
 
@@ -37,7 +29,6 @@ export interface ISocketConnection {
     readonly userId?: string;
     readonly user?: ISocketConnectionUser;
     data: ISocketConnectionData;
-    readonly rooms: Set<string>;
     nativeSocket?: Socket;
 }
 

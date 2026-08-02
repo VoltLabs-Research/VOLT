@@ -25,10 +25,6 @@ const CARD_ICONS: Record<string, ReactNode> = {
     analysis: <FlaskConical size={16} strokeWidth={1.8} />
 };
 
-const getCardIcon = (key: string): ReactNode => {
-    return CARD_ICONS[key];
-};
-
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
@@ -47,7 +43,7 @@ const DashboardPage = () => {
         <DashboardOverviewCard
             key={`${card.key}-${index}`}
             card={card}
-            icon={getCardIcon(card.key)}
+            icon={CARD_ICONS[card.key]}
         />
     ));
 

@@ -16,13 +16,11 @@ import multer from 'multer';
 import type {
     ClonePluginInput,
     CreatePluginInput,
-    DeleteBinaryInput,
-    DeletePluginByIdInput,
     DownloadPluginBinaryInput,
     ExecutePipelineInput,
-    ExportPluginInput,
     ImportPluginInput,
     ListPluginsInput,
+    PluginIdInput,
     RegistryInstallPluginInput,
     SearchRegistryPluginsInput,
     UpdatePluginByIdInput,
@@ -201,7 +199,7 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as ExportPluginInput;
+        const input = buildControllerParams(req) as unknown as PluginIdInput;
         const output = await this.#service.exportPlugin(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
@@ -294,7 +292,7 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as DeleteBinaryInput;
+        const input = buildControllerParams(req) as unknown as PluginIdInput;
         await this.#service.deleteBinary(input);
 
         res.status(HttpStatus.NoContent).send();
@@ -335,7 +333,7 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as DeletePluginByIdInput;
+        const input = buildControllerParams(req) as unknown as PluginIdInput;
         await this.#service.deletePluginById(input);
 
         res.status(HttpStatus.NoContent).send();

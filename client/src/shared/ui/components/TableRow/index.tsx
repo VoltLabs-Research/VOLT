@@ -64,8 +64,8 @@ const TableRow = <T extends Identifiable>({
 
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
-    const getColumnKey = (col: ColumnConfig<T>): string => String(col.key ?? col.path ?? '');
-    const getColumnTitle = (col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+    const getColumnKey = (col: ColumnConfig<T>): string => col.key ?? col.path ?? '';
+    const getColumnTitle = (col: ColumnConfig<T>): string => col.title ?? col.label ?? col.key ?? col.path ?? '';
     const {
         attributes,
         listeners,

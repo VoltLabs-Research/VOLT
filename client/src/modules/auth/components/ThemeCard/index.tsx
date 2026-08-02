@@ -7,39 +7,9 @@ import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 
-interface ThemePreviewStyles extends CSSProperties {
-    '--theme-preview-bg-start': string;
-    '--theme-preview-bg-end': string;
-    '--theme-preview-fg': string;
-    '--theme-preview-header-start': string;
-    '--theme-preview-header-end': string;
-    '--theme-preview-header-border': string;
-    '--theme-preview-panel-start': string;
-    '--theme-preview-panel-end': string;
-}
+type PreviewStyles = CSSProperties & Record<`--${string}`, string>;
 
-interface SystemPreviewStyles extends CSSProperties {
-    '--theme-preview-light-bg': string;
-    '--theme-preview-dark-bg': string;
-    '--theme-preview-dark-fg': string;
-}
-
-interface ThemePreviewConfig {
-    bgStart: string;
-    bgEnd: string;
-    fg: string;
-    headerStart: string;
-    headerEnd: string;
-    headerBorder: string;
-    panelStart: string;
-    panelEnd: string;
-}
-
-interface ThemeTokenMap {
-    [tokenName: string]: string;
-}
-
-const extractThemeTokens = (theme: VisualTheme): ThemeTokenMap => {
+const extractThemeTokens = (theme: VisualTheme): Record<string, string> => {
     const blockPattern = new RegExp(`:root\\[data-theme='${theme}'\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');
     const blockMatch = themeTokensStylesheet.match(blockPattern);
 
@@ -48,7 +18,7 @@ const extractThemeTokens = (theme: VisualTheme): ThemeTokenMap => {
     }
 
     const declarations = blockMatch[1].matchAll(/(--[\w-]+):\s*([^;]+);/g);
-    const tokens: ThemeTokenMap = {};
+    const tokens: Record<string, string> = {};
 
     for (const declaration of declarations) {
         const [, tokenName, tokenValue] = declaration;
@@ -58,49 +28,31 @@ const extractThemeTokens = (theme: VisualTheme): ThemeTokenMap => {
     return tokens;
 };
 
-const createThemePreviewConfig = (theme: VisualTheme): ThemePreviewConfig => {
-    const tokens = extractThemeTokens(theme);
-
-    return {
-        bgStart: tokens['--color-bg'],
-        bgEnd: tokens['--color-surface-1'],
-        fg: tokens['--color-text-primary'],
-        headerStart: tokens['--color-content-bg'],
-        headerEnd: tokens['--color-surface-2'],
-        headerBorder: tokens['--color-border-soft'],
-        panelStart: tokens['--status-info-bg'],
-        panelEnd: `color-mix(in srgb, ${tokens['--accent-indigo']} 20%, transparent)`
-    };
+const THEME_TOKENS: Record<VisualTheme, Record<string, string>> = {
+    [Theme.Light]: extractThemeTokens(Theme.Light),
+    [Theme.Dark]: extractThemeTokens(Theme.Dark)
 };
 
-const THEME_PREVIEW_CONFIG: Record<VisualTheme, ThemePreviewConfig> = {
-    [Theme.Light]: createThemePreviewConfig(Theme.Light),
-    [Theme.Dark]: createThemePreviewConfig(Theme.Dark)
-};
-
-const getPreviewStyles = (theme: Theme): ThemePreviewStyles | SystemPreviewStyles => {
+const getPreviewStyles = (theme: Theme): PreviewStyles => {
     if (theme === Theme.System) {
-        const lightConfig = THEME_PREVIEW_CONFIG[Theme.Light];
-        const darkConfig = THEME_PREVIEW_CONFIG[Theme.Dark];
-
         return {
-            '--theme-preview-light-bg': lightConfig.bgStart,
-            '--theme-preview-dark-bg': darkConfig.bgStart,
-            '--theme-preview-dark-fg': darkConfig.fg
+            '--theme-preview-light-bg': THEME_TOKENS[Theme.Light]['--color-bg'],
+            '--theme-preview-dark-bg': THEME_TOKENS[Theme.Dark]['--color-bg'],
+            '--theme-preview-dark-fg': THEME_TOKENS[Theme.Dark]['--color-text-primary']
         };
     }
 
-    const preview = THEME_PREVIEW_CONFIG[theme];
+    const tokens = THEME_TOKENS[theme];
 
     return {
-        '--theme-preview-bg-start': preview.bgStart,
-        '--theme-preview-bg-end': preview.bgEnd,
-        '--theme-preview-fg': preview.fg,
-        '--theme-preview-header-start': preview.headerStart,
-        '--theme-preview-header-end': preview.headerEnd,
-        '--theme-preview-header-border': preview.headerBorder,
-        '--theme-preview-panel-start': preview.panelStart,
-        '--theme-preview-panel-end': preview.panelEnd
+        '--theme-preview-bg-start': tokens['--color-bg'],
+        '--theme-preview-bg-end': tokens['--color-surface-1'],
+        '--theme-preview-fg': tokens['--color-text-primary'],
+        '--theme-preview-header-start': tokens['--color-content-bg'],
+        '--theme-preview-header-end': tokens['--color-surface-2'],
+        '--theme-preview-header-border': tokens['--color-border-soft'],
+        '--theme-preview-panel-start': tokens['--status-info-bg'],
+        '--theme-preview-panel-end': `color-mix(in srgb, ${tokens['--accent-indigo']} 20%, transparent)`
     };
 };
 
@@ -125,8 +77,6 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
     onKeyDown,
     tabIndex
 }, ref) => {
-    const previewStyles = getPreviewStyles(theme);
-
     return (
         <SelectableCard
             ref={ref}
@@ -141,7 +91,7 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
             data-theme-preview={theme}
             tabIndex={tabIndex}
         >
-            <Row justify='center' position='relative' className={`theme-preview ${previewClassName}`} style={previewStyles}>
+            <Row justify='center' position='relative' className={`theme-preview ${previewClassName}`} style={getPreviewStyles(theme)}>
                 {icon}
             </Row>
         </SelectableCard>

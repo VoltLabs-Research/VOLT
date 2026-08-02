@@ -61,17 +61,19 @@ const useLatexCompile = ({ documentId, hasCompilableTexFile }: UseLatexCompileIn
         compileRequestIdRef.current = 0;
     }, [documentId]);
 
-    const revokePdfUrl = (): void => {
+    const revokePdfUrl = useCallback((): void => {
         if(!compiledPdfUrlRef.current) return;
         URL.revokeObjectURL(compiledPdfUrlRef.current);
         compiledPdfUrlRef.current = null;
-    };
+    }, []);
 
-    const clearPdf = (): void => {
+    const clearPdf = useCallback((): void => {
         revokePdfUrl();
         setCompiledPdfBlob(null);
         setCompiledPdfUrl(null);
-    };
+    }, [revokePdfUrl]);
+
+    useEffect(() => revokePdfUrl, [revokePdfUrl]);
 
     const compileSilently = useCallback(async (): Promise<Blob | null> => {
         const requestId = ++compileRequestIdRef.current;
@@ -113,15 +115,14 @@ const useLatexCompile = ({ documentId, hasCompilableTexFile }: UseLatexCompileIn
             setCompileError(detail ?? fallback);
             return null;
         }
-    }, [compileDocument, documentId, hasCompilableTexFile]);
+    }, [clearPdf, compileDocument, documentId, hasCompilableTexFile, revokePdfUrl]);
 
     return {
         compileSilently,
         compiledPdfUrl,
         compiledPdfBlob,
         compileError,
-        isCompiling,
-        revokePdfUrl
+        isCompiling
     };
 };
 

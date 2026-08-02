@@ -1,8 +1,8 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
-import TeamClusterCredentialService from '@modules/cluster/services/TeamClusterCredentialService';
-import { hashEnrollmentToken } from '@modules/cluster/services/TeamClusterCredentialService';
-import { secureCompare } from '@modules/cluster/services/TeamClusterCredentialService';
+import { hashEnrollmentToken, secureCompare } from '@modules/cluster/services/TeamClusterCredentialService';
+import { decrypt } from '@shared/infrastructure/utilities/crypto';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 export interface DecryptedTeamClusterServiceCredentials {
@@ -16,14 +16,12 @@ export interface DecryptedTeamClusterServiceCredentials {
 }
 
 export default class DaemonCredentialGuard {
-    private readonly teamClusterCredentialService = new TeamClusterCredentialService();
-
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
         const teamCluster = await this.requireSensitiveCluster(teamClusterId);
         const persistedDaemonPassword = this.requireEncryptedDaemonPassword(teamCluster);
 
-        if (!secureCompare(await this.teamClusterCredentialService.decrypt(persistedDaemonPassword), daemonPassword)) {
-            throw ApplicationError.unauthorized('TeamCluster::DaemonUnauthorized', 'Invalid daemon credentials');
+        if (!secureCompare(await decrypt(persistedDaemonPassword), daemonPassword)) {
+            throw ApplicationError.unauthorized(ErrorCodes.TEAM_CLUSTER_DAEMON_UNAUTHORIZED, 'Invalid daemon credentials');
         }
 
         return teamCluster;
@@ -34,7 +32,7 @@ export default class DaemonCredentialGuard {
 
         if (!teamCluster.props.enrollmentTokenHash) {
             throw ApplicationError.conflict(
-                'TeamCluster::EnrollmentAlreadyCompleted',
+                ErrorCodes.TEAM_CLUSTER_ENROLLMENT_ALREADY_COMPLETED,
                 'Team cluster enrollment has already been completed'
             );
         }
@@ -42,7 +40,7 @@ export default class DaemonCredentialGuard {
         const hashedEnrollmentToken = hashEnrollmentToken(enrollmentToken);
         if (!secureCompare(teamCluster.props.enrollmentTokenHash, hashedEnrollmentToken)) {
             throw ApplicationError.unauthorized(
-                'TeamCluster::EnrollmentInvalid',
+                ErrorCodes.TEAM_CLUSTER_ENROLLMENT_INVALID,
                 'Invalid enrollment credentials'
             );
         }
@@ -51,7 +49,7 @@ export default class DaemonCredentialGuard {
     }
 
     async getDecryptedDaemonPassword(teamCluster: TeamCluster): Promise<string> {
-        return this.teamClusterCredentialService.decrypt(this.requireEncryptedDaemonPassword(teamCluster));
+        return decrypt(this.requireEncryptedDaemonPassword(teamCluster));
     }
 
     async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
@@ -68,20 +66,20 @@ export default class DaemonCredentialGuard {
         }
 
         return {
-            minioUsername: await this.teamClusterCredentialService.decrypt(minioUsername),
-            minioPassword: await this.teamClusterCredentialService.decrypt(minioPassword),
-            redisUsername: await this.teamClusterCredentialService.decrypt(redisUsername),
-            redisPassword: await this.teamClusterCredentialService.decrypt(redisPassword),
-            mongodbUsername: await this.teamClusterCredentialService.decrypt(mongodbUsername),
-            mongodbPassword: await this.teamClusterCredentialService.decrypt(mongodbPassword),
-            daemonPassword: await this.teamClusterCredentialService.decrypt(daemonPassword)
+            minioUsername: await decrypt(minioUsername),
+            minioPassword: await decrypt(minioPassword),
+            redisUsername: await decrypt(redisUsername),
+            redisPassword: await decrypt(redisPassword),
+            mongodbUsername: await decrypt(mongodbUsername),
+            mongodbPassword: await decrypt(mongodbPassword),
+            daemonPassword: await decrypt(daemonPassword)
         };
     }
 
     private async requireSensitiveCluster(teamClusterId: string): Promise<TeamCluster> {
         const teamCluster = await findTeamClusterByIdWithSensitiveData(teamClusterId);
         if (!teamCluster) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
+            throw ApplicationError.notFound(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 'Team cluster not found');
         }
 
         return teamCluster;

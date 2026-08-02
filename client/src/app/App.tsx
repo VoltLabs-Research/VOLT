@@ -19,7 +19,7 @@ import NotFoundState from '@/shared/ui/components/NotFoundState';
 import EndpointGuard from '@/app/routes/EndpointGuard';
 import TrajectoryUploadProgressPanel from '@/modules/trajectory/components/TrajectoryUploadProgressPanel';
 import { useThemeInitialization } from '@/shared/ui/hooks/use-theme';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
@@ -103,28 +103,22 @@ const AppRoutes = () => {
 
     useFallbackPageTitle(routeTitle);
     useRouteCleanup({
-        shouldCleanup: (previousPathname, nextPathname) => {
-            if (previousPathname.startsWith('/dashboard') && nextPathname.startsWith('/dashboard')) {
-                return false;
-            }
-
-            return true;
-        }
+        shouldCleanup: (previousPathname, nextPathname) => (
+            !(previousPathname.startsWith('/dashboard') && nextPathname.startsWith('/dashboard'))
+        )
     });
 
-    const handleRenderError = useCallback((error: Error, info: ErrorInfo) => {
-        const stack = info.componentStack ?? error.stack;
-
+    const handleRenderError = (error: Error, info: ErrorInfo) => {
         if (isApiError(error)) {
             reportError(error, { surface: ErrorSurface.Toast });
-            runErrorRecoveryCleanup(location.pathname, '/error');
-            navigate(buildErrorPath(getErrorMessage(error.code, error.message), 'render', stack ?? undefined), { replace: true });
-            return;
         }
 
+        const message = isApiError(error) ? getErrorMessage(error.code, error.message) : error.message;
+        const stack = info.componentStack ?? error.stack;
+
         runErrorRecoveryCleanup(location.pathname, '/error');
-        navigate(buildErrorPath(error.message, 'render', stack ?? undefined), { replace: true });
-    }, [location.pathname, navigate]);
+        navigate(buildErrorPath(message, 'render', stack ?? undefined), { replace: true });
+    };
 
     return (
         <>

@@ -3,12 +3,12 @@ import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelCon
 import { Select, IconButton, Row, Stack, Tooltip } from '@voltstack/bravais';
 import { useCallback, useEffect, useRef } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
-import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
+import type { LatexFileEntry } from '@/modules/latex/contracts/workspace';
+
 interface LatexAIPanelProps {
     documentId: string;
     documentTitle: string;
     files: LatexFileEntry[];
-    width?: number;
     height?: number;
     onClose: () => void;
 }
@@ -28,9 +28,7 @@ IMPORTANT INSTRUCTIONS:
 `;
 };
 
-const trimMessageDraft = (draft: string) => draft.trim();
-
-const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose }: LatexAIPanelProps) => {
+const LatexAIPanel = ({ documentId, documentTitle, files, height, onClose }: LatexAIPanelProps) => {
     const contextInjectedRef = useRef(false);
 
     const prependContext = useCallback((text: string): string => {
@@ -54,7 +52,7 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
         providerCatalogError,
         resetConversationState
     } = useAIConversationPanel({
-        normalizeDraft: trimMessageDraft,
+        normalizeDraft: (draft: string) => draft.trim(),
         prepareMessage: prependContext,
         onNavigateAway: onClose
     });
@@ -69,10 +67,7 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
     }, [resetConversationState]);
 
     return (
-        <Stack id='latex-ai-panel' className='latex-ai-panel' style={{
-            width,
-            height
-        }}>
+        <Stack id='latex-ai-panel' className='latex-ai-panel' style={{ height }}>
             <Row justify='between' className='latex-ai-panel__header'>
                 <Row gap='025' flex='1' minW='0'>
                     <Tooltip content='New conversation' placement='top'>

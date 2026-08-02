@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { AppEvents, PhaseSpec } from '@/types/events';
-import { errMessage } from '@/shared/error';
 
 export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
@@ -32,7 +31,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     const [phases, setPhases] = useState<PhaseSpec[]>([]);
     const [phaseState, setPhaseState] = useState<Record<string, PhaseProgress>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
-    const [voltUrl, setVoltUrl] = useState<string | null>(null);
     const [preflight, setPreflight] = useState<PreflightResult | null>(null);
     const [busy, setBusy] = useState(false);
     const startedRef = useRef(false);
@@ -65,8 +63,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         run(() => window.volt.deploy.start());
     };
 
-    const recheck = () => boot();
-
     useEffect(() => {
         const unsubState = window.volt.on('deploy:state', (p) => {
             setState(p.state);
@@ -81,15 +77,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
                     title: 'Deploy failed',
                     description: message
                 });
-            }
-
-            if(p.state === 'up'){
-                window.volt.app.voltUrl()
-                    .then(setVoltUrl)
-                    .catch((err) => sileo.error({
-                        title: 'Could not open Volt',
-                        description: errMessage(err)
-                    }));
             }
         });
 
@@ -165,7 +152,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         setPhases([]);
         setPhaseState({});
         setLogs([]);
-        setVoltUrl(null);
         setPreflight(null);
     };
 
@@ -174,11 +160,9 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         phases,
         phaseState,
         logs,
-        voltUrl,
         preflight,
         busy,
         reset,
-        recheck,
         run,
         start: boot
     };

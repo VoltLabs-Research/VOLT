@@ -1,5 +1,7 @@
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
+import { isAbortError, reportError } from '@/shared/errors/core';
+
 import type { EditorStore } from './types';
 import type { PlaybackState, PlaybackStore, PlaybackTimelineParams } from '@/modules/fractal/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
@@ -55,10 +57,6 @@ const advancePlaybackGeneration = (): number => {
     return _runtime.generation;
 };
 
-const isAbortError = (error: unknown): boolean => {
-    return error instanceof Error && error.name === 'AbortError';
-};
-
 const updateCurrentTimestep = (timestep: number, set: PlaybackSliceSet, get: PlaybackSliceGet) => {
     if (get().currentTimestep === timestep) {
         return;
@@ -107,6 +105,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
         (async () => {
             let shouldMarkPreloadComplete = didPreload;
+            let preloadAborted = false;
 
             if (!didPreload) {
                 if (!trajectoryId) {
@@ -147,22 +146,29 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                     });
                     shouldMarkPreloadComplete = true;
                 } catch (error) {
-                    if (isAbortError(error)) {
-                        return;
+                    preloadAborted = isAbortError(error);
+                    if (!preloadAborted) {
+                        reportError(error, { fallbackTitle: 'Frame preloading failed' });
                     }
-                } finally {
-                    if (_preloadAbortController === preloadAbortController) {
-                        _preloadAbortController = null;
-                    }
+                }
 
-                    if (_runtime.generation !== playbackGeneration) {
-                        return;
-                    }
+                // Deliberately not a `finally`: a `return` inside `finally`
+                // discards any in-flight exception.
+                if (_preloadAbortController === preloadAbortController) {
+                    _preloadAbortController = null;
+                }
 
-                    set({
-                        isPreloading: false,
-                        didPreload: shouldMarkPreloadComplete
-                    });
+                if (_runtime.generation !== playbackGeneration) {
+                    return;
+                }
+
+                set({
+                    isPreloading: false,
+                    didPreload: shouldMarkPreloadComplete
+                });
+
+                if (preloadAborted) {
+                    return;
                 }
             }
 

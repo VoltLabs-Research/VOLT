@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IoSettingsOutline, IoPeopleOutline, IoShieldOutline } from 'react-icons/io5';
 import AdminsTab from './tabs/AdminsTab';
 import GeneralTab from './tabs/GeneralTab';
@@ -68,16 +68,6 @@ const GroupManagementModal = ({
     const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const isOwner = chat?.createdBy?._id === currentUserId;
-    const isAdmin = chat?.admins?.some((a) => a._id === currentUserId) ?? false;
-    const canEdit = isOwner || isAdmin;
-
-    const availableMembers = useMemo(() => {
-        if (!chat) return [];
-        const existingIds = chat.participants.map((p) => p._id);
-        return teamMembers.filter((m) => !existingIds.includes(m._id));
-    }, [chat, teamMembers]);
-
     useEffect(() => {
         if (chat) {
             setGroupName(chat.groupName || '');
@@ -86,6 +76,13 @@ const GroupManagementModal = ({
     }, [chat]);
 
     if (!chat || !chat.isGroup) return null;
+
+    const isOwner = chat.createdBy?._id === currentUserId;
+    const isAdmin = chat.admins?.some((a) => a._id === currentUserId) ?? false;
+    const canEdit = isOwner || isAdmin;
+
+    const existingMemberIds = chat.participants.map((p) => p._id);
+    const availableMembers = teamMembers.filter((m) => !existingMemberIds.includes(m._id));
 
     const runAsync = async (action: () => Promise<void>) => {
         setIsLoading(true);
@@ -154,12 +151,7 @@ const GroupManagementModal = ({
         }
 
         event.preventDefault();
-        const nextTab = TABS[nextIndex];
-        if (!nextTab) {
-            return;
-        }
-
-        setActiveTab(nextTab.id);
+        setActiveTab(TABS[nextIndex].id);
         tabButtonRefs.current[nextIndex]?.focus();
     };
 

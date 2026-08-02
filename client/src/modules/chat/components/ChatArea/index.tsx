@@ -6,7 +6,7 @@ import MessageControls from '../MessageControls';
 import MessageList from '../MessageList';
 import TypingIndicator from '../TypingIndicator';
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { IoChatbubblesOutline } from 'react-icons/io5';
 import { EmptyState, Box, openModal, Stack } from '@voltstack/bravais';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
@@ -15,11 +15,6 @@ import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import type { TypingUser } from '@volt/contracts/modules/chat/domain';
 import './ChatArea.css';
-
-interface EditingMessage {
-    _id: string;
-    content: string;
-}
 
 interface ChatAreaProps {
     chat: Chat | null;
@@ -64,25 +59,14 @@ const ChatArea = ({
     onRemoveReaction,
     onInfoClick
 }: ChatAreaProps) => {
-    const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
 
-    const handleEditClick = useCallback((message: ChatMessage) => {
-        setEditingMessage({
-            _id: message._id,
-            content: message.content
-        });
+    const handleEditClick = (message: ChatMessage) => {
+        setEditingMessage(message);
         openModal(EDIT_MESSAGE_MODAL_ID);
-    }, []);
+    };
 
-    const handleEditSave = useCallback(async (messageId: string, newContent: string) => {
-        await onEditMessage(messageId, newContent);
-    }, [onEditMessage]);
-
-    const handleEditClose = useCallback(() => {
-        setEditingMessage(null);
-    }, []);
-
-    const handleDeleteClick = useCallback(async (messageId: string) => {
+    const handleDeleteClick = async (messageId: string) => {
         const isConfirmed = await confirm({
             title: 'Delete this message?',
             confirmText: 'Delete'
@@ -93,15 +77,15 @@ const ChatArea = ({
         }
 
         await onDeleteMessage(messageId);
-    }, [confirm, onDeleteMessage]);
+    };
 
-    const handleToggleReaction = useCallback((message: ChatMessage, emoji: string) => {
+    const handleToggleReaction = (message: ChatMessage, emoji: string) => {
         if (hasUserReactedWith(message.reactions, emoji, currentUserId)) {
             return onRemoveReaction(message._id, emoji);
         }
 
         return onSetReaction(message._id, emoji);
-    }, [currentUserId, onRemoveReaction, onSetReaction]);
+    };
 
     if (!chat) {
         return (
@@ -165,8 +149,8 @@ const ChatArea = ({
             <EditMessageModal
                 messageId={editingMessage?._id ?? null}
                 initialContent={editingMessage?.content ?? ''}
-                onSave={handleEditSave}
-                onClose={handleEditClose}
+                onSave={onEditMessage}
+                onClose={() => setEditingMessage(null)}
             />
         </Stack>
     );

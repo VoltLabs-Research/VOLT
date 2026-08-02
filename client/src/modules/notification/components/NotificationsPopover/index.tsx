@@ -23,11 +23,9 @@ const NotificationsPopover = () => {
     } = useNotificationData();
 
     const handleOpenChange = (isOpen: boolean) => {
-        if (!isOpen) {
-            return;
+        if (isOpen) {
+            fetchNotifications();
         }
-
-        fetchNotifications();
     };
 
     const triggerLabel = unreadCount > 0
@@ -56,31 +54,23 @@ const NotificationsPopover = () => {
         </IconButton>
     );
 
-    const renderHeaderActions = () => {
-        if (unreadCount <= 0) {
-            return null;
-        }
-
-        return (
-            <Row gap='025'>
-                <Button
-                    variant='ghost'
-                    size='sm'
-                    className='notifications-header-action color-muted'
-                    onClick={handleMarkAllAsRead}
-                    disabled={isMarkingAllAsRead}
-                >
-                    {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
-                </Button>
-            </Row>
-        );
-    };
-
     const renderPopoverContent = (closePopover: () => void) => (
         <>
             <PanelHeader
                 title='Notifications'
-                actions={renderHeaderActions()}
+                actions={unreadCount > 0 ? (
+                    <Row gap='025'>
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            className='notifications-header-action color-muted'
+                            onClick={handleMarkAllAsRead}
+                            disabled={isMarkingAllAsRead}
+                        >
+                            {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
+                        </Button>
+                    </Row>
+                ) : null}
                 onClose={closePopover}
                 className='notifications-header'
             />

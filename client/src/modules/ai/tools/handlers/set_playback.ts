@@ -1,15 +1,6 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface SetPlaybackInput {
-    speed?: number;
-    targetFps?: number;
-    rangeStart?: number;
-    rangeEnd?: number;
-}
-
-const MIN_PLAY_SPEED = 0.1;
-const MAX_PLAY_SPEED = 10;
+import type { SetPlaybackInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const setPlayback: ClientToolHandler<SetPlaybackInput> = {
     name: 'set_playback',
@@ -19,34 +10,30 @@ const setPlayback: ClientToolHandler<SetPlaybackInput> = {
         const store = useEditorStore.getState();
         const applied: Record<string, number> = {};
 
-        let touched = false;
-
-        if (typeof input.speed === 'number' && Number.isFinite(input.speed)) {
-            const clamped = Math.max(MIN_PLAY_SPEED, Math.min(MAX_PLAY_SPEED, input.speed));
-            store.setPlaySpeed(clamped);
-            applied.speed = clamped;
-            touched = true;
+        if (input.speed !== undefined) {
+            store.setPlaySpeed(input.speed);
+            applied.speed = input.speed;
         }
 
-        if (typeof input.targetFps === 'number' && Number.isFinite(input.targetFps) && input.targetFps > 0) {
+        // The only bound the contract does not tag, and a zero would stall the clock.
+        if (input.targetFps !== undefined && input.targetFps > 0) {
             store.setTargetFps(input.targetFps);
             applied.targetFps = input.targetFps;
-            touched = true;
         }
 
-        if (typeof input.rangeStart === 'number' && Number.isFinite(input.rangeStart)) {
+        if (input.rangeStart !== undefined) {
             store.setRangeStart(input.rangeStart);
             applied.rangeStart = input.rangeStart;
-            touched = true;
         }
 
-        if (typeof input.rangeEnd === 'number' && Number.isFinite(input.rangeEnd)) {
+        if (input.rangeEnd !== undefined) {
             store.setRangeEnd(input.rangeEnd);
             applied.rangeEnd = input.rangeEnd;
-            touched = true;
         }
 
-        if (!touched) {
+        const parts = Object.entries(applied).map(([key, value]) => `${key}=${value}`);
+
+        if (parts.length === 0) {
             return {
                 ok: false,
                 summary: 'No playback settings were provided.',
@@ -57,7 +44,6 @@ const setPlayback: ClientToolHandler<SetPlaybackInput> = {
 
         ctx.markViewerActing();
 
-        const parts = Object.entries(applied).map(([key, value]) => `${key}=${value}`);
         return {
             ok: true,
             summary: `Updated playback settings (${parts.join(', ')}).`,

@@ -56,7 +56,6 @@ const TrajectoryVisibilityToggle = ({
                     : 'Trajectory is now private'
             });
         } catch (error) {
-            setOptimisticValue(null);
             reportError(error, {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: 'Failed to update visibility'

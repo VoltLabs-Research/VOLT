@@ -21,11 +21,6 @@ export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
     chats: []
 };
 
-interface SearchQueryParams extends Record<string, unknown> {
-    query: string;
-    limit: number;
-}
-
 export const MIN_SEARCH_QUERY_LENGTH = 2;
 
 const endpoints = {
@@ -38,12 +33,11 @@ const endpoints = {
                 return EMPTY_GLOBAL_SEARCH_RESULTS;
             }
 
-            const params: SearchQueryParams = {
+            const response = await getClient('dashboard').get<ApiResponse<GlobalSearchResponse>>('/search', {
                 query,
                 limit
-            };
+            });
 
-            const response = await getClient('dashboard').get<ApiResponse<GlobalSearchResponse>>('/search', params);
             return response.data;
         }
     )

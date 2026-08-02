@@ -1,6 +1,6 @@
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
+import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 interface SwitchCaseEditorFormValues {
@@ -8,16 +8,13 @@ interface SwitchCaseEditorFormValues {
     defaultCase: boolean;
 }
 
-const useSwitchCaseEditorForm = createNodeEditorForm<SwitchCaseEditorFormValues, 'switchCase'>({
-    defaults: {
-        value: '',
-        defaultCase: false
-    },
-    dataKey: 'switchCase'
-});
+const SWITCH_CASE_DEFAULT_VALUES: SwitchCaseEditorFormValues = {
+    value: '',
+    defaultCase: false
+};
 
 const SwitchCaseEditor = ({ node }: EditorProps) => {
-    const form = useSwitchCaseEditorForm(node);
+    const form = useNodeEditorForm<SwitchCaseEditorFormValues>(node, 'switchCase', SWITCH_CASE_DEFAULT_VALUES);
     const isDefaultCase = form.watch('defaultCase') ?? false;
 
     return (

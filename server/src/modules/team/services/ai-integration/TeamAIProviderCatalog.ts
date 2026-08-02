@@ -7,45 +7,25 @@ interface TeamAIProviderMetadata {
     description: string;
 }
 
-const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadata> => {
-    const entries = AI_PROVIDERS.map((provider) => {
-        const metadata: TeamAIProviderMetadata = {
-            id: provider,
-            name: AI_PROVIDER_NAMES[provider],
-            description: AI_PROVIDER_DESCRIPTIONS[provider]
-        };
+const CATALOG = new Map<TeamAIProvider, TeamAIProviderMetadata>(AI_PROVIDERS.map((provider) => [provider, {
+    id: provider,
+    name: AI_PROVIDER_NAMES[provider],
+    description: AI_PROVIDER_DESCRIPTIONS[provider]
+}]));
 
-        return [provider, metadata] as const;
-    });
+export const getProviderMetadata = (provider: TeamAIProvider): TeamAIProviderMetadata => {
+    const metadata = CATALOG.get(provider);
+    if (!metadata) {
+        throw new Error(`Unsupported provider: ${provider}`);
+    }
 
-    return new Map(entries);
+    return metadata;
 };
 
-export default class TeamAIProviderCatalog {
-    private readonly catalog = buildTeamAIProviderCatalog();
+export const getAllProviderMetadata = (): TeamAIProviderMetadata[] => Array.from(CATALOG.values());
 
-    isSupported(provider: string): provider is TeamAIProvider {
-        return this.catalog.has(provider as TeamAIProvider);
-    }
+export const normalizeProvider = (provider: string): TeamAIProvider | null => {
+    const normalized = provider.toLowerCase().trim() as TeamAIProvider;
 
-    getProviderMetadata(provider: TeamAIProvider): TeamAIProviderMetadata {
-        const metadata = this.catalog.get(provider);
-        if (!metadata) {
-            throw new Error(`Unsupported provider: ${provider}`);
-        }
-
-        return metadata;
-    }
-
-    getAllProviderMetadata(): TeamAIProviderMetadata[] {
-        return Array.from(this.catalog.values());
-    }
-
-    normalize(provider: string): TeamAIProvider | null {
-        const normalized = provider.toLowerCase().trim();
-        if (this.isSupported(normalized)) {
-            return normalized;
-        }
-        return null;
-    }
+    return CATALOG.has(normalized) ? normalized : null;
 };

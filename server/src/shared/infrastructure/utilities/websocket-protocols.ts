@@ -1,12 +1,14 @@
-const readWebSocketProtocols = (value: string | string[] | undefined): string[] => {
-    const rawValues = Array.isArray(value)
-        ? value
-        : value
-            ? [value]
-            : [];
+/**
+ * `Sec-WebSocket-Protocol` arrives as a comma-separated list, possibly repeated
+ * across several header lines. Returns `undefined` when the client asked for no
+ * subprotocol, which is what the `ws` client expects in that case.
+ */
+export const buildWebSocketProtocolList = (
+    value: string | string[] | undefined
+): string[] | undefined => {
     const protocols = new Set<string>();
 
-    for (const rawValue of rawValues) {
+    for (const rawValue of Array.isArray(value) ? value : [value ?? '']) {
         for (const candidate of rawValue.split(',')) {
             const protocol = candidate.trim();
             if (protocol) {
@@ -15,12 +17,5 @@ const readWebSocketProtocols = (value: string | string[] | undefined): string[] 
         }
     }
 
-    return [...protocols];
-};
-
-export const buildWebSocketProtocolList = (
-    value: string | string[] | undefined
-): string[] | undefined => {
-    const protocols = readWebSocketProtocols(value);
-    return protocols.length > 0 ? protocols : undefined;
+    return protocols.size > 0 ? [...protocols] : undefined;
 };

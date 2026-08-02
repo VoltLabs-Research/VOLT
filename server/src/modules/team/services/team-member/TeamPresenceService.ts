@@ -8,7 +8,6 @@ export interface DetachedTeamPresenceSession {
 };
 
 interface AttachTeamPresenceResult {
-    onlineUserIds: string[];
     userBecameOnline: boolean;
     detachedSession: DetachedTeamPresenceSession | null;
 };
@@ -29,6 +28,18 @@ interface HeartbeatResult {
     minutesToPersist: number;
 };
 
+const getOrCreate = <K, V>(map: Map<K, V>, key: K, create: () => V): V => {
+    const existing = map.get(key);
+
+    if (existing) {
+        return existing;
+    }
+
+    const created = create();
+    map.set(key, created);
+    return created;
+};
+
 export default class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();
@@ -39,7 +50,6 @@ export default class TeamPresenceService {
 
         if (existingSession?.teamId === teamId && existingSession.userId === userId) {
             return {
-                onlineUserIds: this.getOnlineUserIds(teamId),
                 userBecameOnline: false,
                 detachedSession: null
             };
@@ -50,7 +60,7 @@ export default class TeamPresenceService {
             : null;
 
         const now = Date.now();
-        const teamPresence = this.getOrCreateTeamPresence(teamId);
+        const teamPresence = getOrCreate(this.presenceByTeam, teamId, () => new Map<string, TeamPresenceState>());
         const existingPresence = teamPresence.get(userId);
         const userBecameOnline = !existingPresence;
         const presence = existingPresence ?? {
@@ -69,10 +79,9 @@ export default class TeamPresenceService {
             teamId,
             userId
         });
-        this.getOrCreateUserConnections(userId).add(connectionId);
+        getOrCreate(this.connectionsByUser, userId, () => new Set<string>()).add(connectionId);
 
         return {
-            onlineUserIds: this.getOnlineUserIds(teamId),
             userBecameOnline,
             detachedSession
         };
@@ -142,38 +151,6 @@ export default class TeamPresenceService {
             userId: session.userId,
             minutesToPersist: this.consumeElapsedMinutes(presence, Date.now())
         };
-    }
-
-    getOnlineUserIds(teamId: string): string[] {
-        return Array.from(this.presenceByTeam.get(teamId)?.keys() ?? []);
-    }
-
-    isUserOnline(teamId: string, userId: string): boolean {
-        return this.presenceByTeam.get(teamId)?.has(userId) ?? false;
-    }
-
-    private getOrCreateTeamPresence(teamId: string): Map<string, TeamPresenceState> {
-        const existing = this.presenceByTeam.get(teamId);
-
-        if (existing) {
-            return existing;
-        }
-
-        const created = new Map<string, TeamPresenceState>();
-        this.presenceByTeam.set(teamId, created);
-        return created;
-    }
-
-    private getOrCreateUserConnections(userId: string): Set<string> {
-        const existing = this.connectionsByUser.get(userId);
-
-        if (existing) {
-            return existing;
-        }
-
-        const created = new Set<string>();
-        this.connectionsByUser.set(userId, created);
-        return created;
     }
 
     private consumeElapsedMinutes(

@@ -34,7 +34,3 @@ export const findAnalyses = async (options: FindAnalysesOptions): Promise<Pagina
 
     return paginate([analyses, total], pageRequest);
 };
-
-export const storageClusterIdOf = (trajectory: { storageClusterId?: string }): string | undefined => (
-    trajectory.storageClusterId ? String(trajectory.storageClusterId) : undefined
-);

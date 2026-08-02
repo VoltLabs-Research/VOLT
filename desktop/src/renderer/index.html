@@ -3,6 +3,16 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!--
+            The shell only ever renders its own bundle and talks to the main process
+            over IPC, so it needs no remote origins. Electron warns when a renderer
+            runs without a policy; this closes that gap without touching the VOLT
+            client, which is loaded as a separate top-level navigation.
+        -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"
+        />
         <title>Volt</title>
     </head>
     <body>

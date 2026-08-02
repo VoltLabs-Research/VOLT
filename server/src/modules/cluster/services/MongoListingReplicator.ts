@@ -1,8 +1,10 @@
 
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import Analysis from '@modules/analysis/models/Analysis';
-import { type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
-import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
+import {
+    describeClusterTransferJob,
+    type ClusterTransferJob
+} from '@modules/cluster/contracts/cluster-transfer-job';
 import type {
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';
@@ -35,7 +37,7 @@ export default class MongoListingReplicator{
             return;
         }
 
-        logger.info(`Replicating daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
+        logger.info(`Replicating daemon Mongo listing state for cluster transfer ${describeClusterTransferJob(job)}`);
 
         for (const documentType of MONGO_DOCUMENT_TYPES) {
             let skip = 0;
@@ -80,7 +82,7 @@ export default class MongoListingReplicator{
             }
         }
 
-        logger.info(`Replicated daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
+        logger.info(`Replicated daemon Mongo listing state for cluster transfer ${describeClusterTransferJob(job)}`);
     }
 
     async purgeMongoListings(
@@ -131,7 +133,7 @@ export default class MongoListingReplicator{
                 return [];
             }
 
-            return resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }) === sourceClusterId
+            return analysis.computeClusterId === sourceClusterId
                 ? [analysis.id]
                 : [];
         }
@@ -142,7 +144,7 @@ export default class MongoListingReplicator{
         });
 
         return analyses
-            .filter((analysis) => resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined }) === sourceClusterId)
+            .filter((analysis) => analysis.computeClusterId === sourceClusterId)
             .map((analysis) => analysis.id);
     }
 }

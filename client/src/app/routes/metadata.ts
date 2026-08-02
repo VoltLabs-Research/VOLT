@@ -10,13 +10,6 @@ interface RouteManifestEntry {
     route: RouteConfig;
 };
 
-interface RouteTitleMatch {
-    order: number;
-    path: string;
-    depth: number;
-    title: string;
-};
-
 export interface DashboardNavigationItem {
     label: string;
     path: string;
@@ -26,15 +19,6 @@ export interface DashboardNavigationItem {
     disabledReason?: string;
     multiTenantOnly?: boolean;
     moduleKey?: string;
-};
-
-type RouteCollectionKey = 'public' | 'protected' | 'guest';
-
-const ROUTE_COLLECTION_KEYS: RouteCollectionKey[] = ['public', 'protected', 'guest'];
-const ROUTE_COLLECTIONS: Record<RouteCollectionKey, RouteConfig[]> = {
-    public: publicRoutes,
-    protected: protectedRoutes,
-    guest: guestRoutes
 };
 
 const joinRoutePaths = (parentPath: string, childPath: string): string => {
@@ -93,22 +77,13 @@ const resolveDashboardNavigationPath = (path: string): string => {
     return path.replace(/\/:[^/]+\??$/u, '');
 };
 
-const routeManifestEntries: RouteManifestEntry[] = ROUTE_COLLECTION_KEYS.flatMap((collectionKey) => {
-    return createRouteManifestEntries(ROUTE_COLLECTIONS[collectionKey]);
-});
+const routeManifestEntries: RouteManifestEntry[] = createRouteManifestEntries([
+    ...publicRoutes,
+    ...protectedRoutes,
+    ...guestRoutes
+]);
 
-const routeTitleEntries: RouteTitleMatch[] = routeManifestEntries.flatMap((entry) => {
-    if (!entry.route.title) {
-        return [];
-    }
-
-    return [{
-        order: entry.order,
-        path: entry.path,
-        depth: entry.depth,
-        title: entry.route.title
-    }];
-});
+const routeTitleEntries: RouteManifestEntry[] = routeManifestEntries.filter((entry) => entry.route.title);
 
 const dashboardNavigationItemsBySection: Record<DashboardNavigationSection, DashboardNavigationItem[]> = {
     [DashboardNavigationSection.Main]: [],
@@ -138,7 +113,7 @@ export const getDashboardNavigationItems = (section: DashboardNavigationSection)
 };
 
 export const resolveConfiguredRouteTitle = (pathname: string): string | null => {
-    let resolvedEntry: RouteTitleMatch | null = null;
+    let resolvedEntry: RouteManifestEntry | null = null;
 
     for (const entry of routeTitleEntries) {
         if (!matchPath({
@@ -158,9 +133,5 @@ export const resolveConfiguredRouteTitle = (pathname: string): string | null => 
         }
     }
 
-    if (!resolvedEntry) {
-        return null;
-    }
-
-    return resolvedEntry.title;
+    return resolvedEntry?.route.title ?? null;
 };

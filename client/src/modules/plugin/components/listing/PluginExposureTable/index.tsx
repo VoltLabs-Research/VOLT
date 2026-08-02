@@ -1,23 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
-import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import type { ColumnConfig as ListingColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
-import InlineSubListingView from '@/modules/plugin/components/listing/InlineSubListingView';
+import InlineSubListingView, { type InlineSubListingViewProps } from '@/modules/plugin/components/listing/InlineSubListingView';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
+import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
+import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
-import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
-import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
+import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
-import { useNavigate } from 'react-router-dom';
-interface PluginExposureTableProps {
+
+export interface PluginExposureTableProps {
     pluginId: string;
     exposureName?: string;
     exposureId?: string;
@@ -32,28 +30,9 @@ interface PluginExposureTableProps {
     isRowSelected?: (row: ListingRow) => boolean;
 }
 
-interface InlineSubListingState {
-    analysisId: string;
-    exposureId: string;
-    timestep: number;
-    subListingNames: string[];
-    activeName: string;
-}
+type InlineSubListingState = Omit<InlineSubListingViewProps, 'onActiveNameChange' | 'onClose'>;
 
-const normalizeListingColumns = (columns: ListingColumnConfig[] | undefined): ListingColumnConfig[] => {
-    if (!columns?.length) return [];
-
-    return columns.map((column: ListingColumnConfig) => {
-        const key = String(column?.key || column?.label || '');
-        const title = column?.title || (column?.label ? formatSnakeCaseToTitle(column.label) : key);
-
-        return {
-            key,
-            title,
-            sortable: Boolean(column?.sortable)
-        };
-    });
-};
+const COMPACT_PAGE_SIZE = 20;
 
 const CompactPluginExposureTable = ({
     pluginId,
@@ -68,19 +47,16 @@ const CompactPluginExposureTable = ({
     isRowSelected
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
-    const pageSize = 20;
     const deleteRows = useDeletePluginListingAnalyses();
     const [inlineState, setInlineState] = useState<InlineSubListingState | null>(null);
 
-    const compactEnabled = Boolean(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
-
     const {
         data: infiniteData,
-        isLoading: compactLoading,
+        isLoading,
         isFetchingNextPage,
         fetchNextPage,
         hasNextPage,
-        error: compactError
+        error
     } = usePluginListingInfiniteQuery(
         {
             pluginId,
@@ -88,52 +64,32 @@ const CompactPluginExposureTable = ({
             exposureId,
             trajectoryId,
             analysisId,
-            limit: pageSize
+            limit: COMPACT_PAGE_SIZE
         },
         {
-            getNextPageParam: (lastPage) => {
-                if (lastPage.pagination?.hasMore) {
-                    return (lastPage.pagination.page ?? 1) + 1;
-                }
-                return undefined;
-            },
-            enabled: compactEnabled
+            getNextPageParam: (lastPage) => (
+                lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined
+            ),
+            enabled: Boolean(pluginId && (exposureName || exposureId) && (trajectoryId || teamId))
         }
     );
 
-    const compactRows = useMemo(() => {
-        if (!infiniteData?.pages) return [];
-        return infiniteData.pages.flatMap((page) => page.data ?? []);
-    }, [infiniteData]);
+    // Row and column identities feed the virtualized table's own memoized
+    // column-type inference, so they must stay stable across renders.
+    const rows = useMemo(
+        () => infiniteData?.pages.flatMap((page) => page.data) ?? [],
+        [infiniteData]
+    );
 
-    const compactColumns = useMemo<ListingColumnConfig[]>(() => {
-        if (!infiniteData?.pages?.length) return [];
+    const columns = useMemo(() => normalizeListingColumns(
+        infiniteData?.pages.find((page) => page._meta?.columns?.length)?._meta?.columns,
+        showTrajectoryColumn ?? !trajectoryId
+    ), [infiniteData, showTrajectoryColumn, trajectoryId]);
 
-        const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
-
-        for (const page of infiniteData.pages) {
-            const cols = page._meta?.columns;
-            if (!cols?.length) continue;
-
-            const normalizedColumns = normalizeListingColumns(cols);
-            if (shouldShowTrajectory) {
-                return normalizedColumns;
-            }
-
-            return normalizedColumns.filter((column) => String(column.key) !== 'trajectoryName');
-        }
-
-        return [];
-    }, [infiniteData, showTrajectoryColumn, trajectoryId]);
-
-    const subListingNames = useMemo<string[]>(() => {
-        if (!infiniteData?.pages?.length) return [];
-        for (const page of infiniteData.pages) {
-            const names = page._meta?.subListingNames;
-            if (names?.length) return names;
-        }
-        return [];
-    }, [infiniteData]);
+    const subListingNames = useMemo(
+        () => infiniteData?.pages.find((page) => page._meta?.subListingNames?.length)?._meta?.subListingNames ?? [],
+        [infiniteData]
+    );
 
     const handleLoadMore = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -141,93 +97,44 @@ const CompactPluginExposureTable = ({
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const handleRowClick = useMemo(() => {
-        if (!onRowClick) return undefined;
-        return (row: Record<string, unknown>) => onRowClick(row as ListingRow);
-    }, [onRowClick]);
-
     const selectedRowId = useMemo(() => {
         if (!isRowSelected) return null;
-        const selectedRow = compactRows.find((row) => isRowSelected(row));
+        const selectedRow = rows.find((row) => isRowSelected(row));
         return selectedRow ? String(selectedRow._id) : null;
-    }, [compactRows, isRowSelected]);
+    }, [rows, isRowSelected]);
 
     const getMenuOptions = useCallback((row: Record<string, unknown>): MenuOption[] => {
-        const item = row as Record<string, unknown> & { _id?: string; trajectoryId?: string; analysisId?: string; exposureId?: string; timestep?: number };
-        const options: MenuOption[] = [];
+        const item = row as ListingRow;
 
-        if (item.trajectoryId && item.analysisId && item.timestep !== undefined) {
-            options.push({
-                label: 'Inspect Atoms',
-                icon: RiEyeLine,
-                onClick: () => navigate(buildAtomsViewerPath({
-                    trajectoryId: item.trajectoryId!,
-                    analysisId: item.analysisId,
-                    timestep: item.timestep!
-                }))
-            });
-
-            for (const name of subListingNames) {
-                options.push({
-                    label: `View ${formatSnakeCaseToTitle(name)}`,
-                    icon: RiTableLine,
-                    onClick: () => {
-                        if (!item.trajectoryId || !item.analysisId || !item.exposureId || item.timestep === undefined) return;
-
-                        if (inlineSubListings) {
-                            setInlineState({
-                                analysisId: item.analysisId,
-                                exposureId: item.exposureId,
-                                timestep: item.timestep,
-                                subListingNames,
-                                activeName: name
-                            });
-                            return;
-                        }
-
-                        navigate(buildSubListingsPath({
-                            trajectoryId: item.trajectoryId,
-                            analysisId: item.analysisId,
-                            exposureId: item.exposureId,
-                            timestep: item.timestep,
-                            subListingNames,
-                            activeSubListingName: name
-                        }));
-                    }
-                });
-            }
-        }
-
-        if (item.analysisId) {
-            options.push({
-                label: 'Delete',
-                icon: RiDeleteBin6Line,
-                onClick: () => deleteRows([row as ListingRow]),
-                destructive: true
-            });
-        }
-
-        return options;
+        return buildListingRowMenuOptions({
+            row: item,
+            subListingNames,
+            navigate,
+            onDelete: () => deleteRows([item]),
+            onViewSubListing: inlineSubListings
+                ? ({ subListingName, ...target }) => setInlineState({
+                    ...target,
+                    subListingNames,
+                    activeName: subListingName
+                })
+                : undefined
+        });
     }, [navigate, subListingNames, deleteRows, inlineSubListings]);
 
     if (inlineState) {
         return (
             <InlineSubListingView
-                analysisId={inlineState.analysisId}
-                exposureId={inlineState.exposureId}
-                timestep={inlineState.timestep}
-                subListingNames={inlineState.subListingNames}
-                activeName={inlineState.activeName}
-                onActiveNameChange={(name) => setInlineState((prev) => (prev ? {
+                {...inlineState}
+                onActiveNameChange={(activeName) => setInlineState((prev) => (prev ? {
                     ...prev,
-                    activeName: name
+                    activeName
                 } : prev))}
                 onClose={() => setInlineState(null)}
             />
         );
     }
 
-    if (compactError && isAccessDeniedError(compactError)) {
+    if (error && isAccessDeniedError(error)) {
         return (
             <RecoveryState
                 title='Access denied'
@@ -238,25 +145,21 @@ const CompactPluginExposureTable = ({
         );
     }
 
-    const compactErrorMessage = compactError && !isAccessDeniedError(compactError)
-        ? reportError(compactError, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to load listing.'
-        }).title
-        : null;
-
     return (
         <PluginCompactTable
             key={`${pluginId}:${analysisId ?? 'default'}:${trajectoryId ?? 'all'}:${exposureId ?? exposureName ?? 'unknown'}`}
-            columns={compactColumns}
-            data={compactRows}
-            hasMore={hasNextPage ?? false}
-            isLoading={compactLoading}
+            columns={columns}
+            data={rows}
+            hasMore={hasNextPage}
+            isLoading={isLoading}
             isFetchingMore={isFetchingNextPage}
             onLoadMore={handleLoadMore}
-            error={compactErrorMessage}
+            error={error && reportError(error, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to load listing.'
+            }).title}
             getMenuOptions={getMenuOptions}
-            onRowClick={handleRowClick}
+            onRowClick={onRowClick && ((row) => onRowClick(row as ListingRow))}
             selectedRowId={selectedRowId}
         />
     );
@@ -272,8 +175,6 @@ const FullPluginExposureTable = ({
     showTrajectoryColumn,
     headerActions
 }: PluginExposureTableProps) => {
-    const deleteRows = useDeletePluginListingAnalyses();
-
     const listingHook = usePluginListing({
         pluginId,
         exposureName,
@@ -281,15 +182,12 @@ const FullPluginExposureTable = ({
         trajectoryId,
         analysisId,
         teamId,
-        showTrajectoryColumn,
-        onDeleteRows: deleteRows
+        showTrajectoryColumn
     });
-
-    const displayExposureName = listingHook.resolvedExposureName ?? exposureName ?? exposureId;
 
     return (
         <DocumentListing
-            title={displayExposureName || 'Listing'}
+            title={listingHook.resolvedExposureName || exposureId || 'Listing'}
             queryKey={LISTING_QUERY_KEYS.listingDetail({
                 pluginId,
                 exposureName,

@@ -1,29 +1,12 @@
 import { useCommandPaletteStore } from '@/modules/canvas/store/use-command-palette-store';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-type CommandPaletteAction = 'open' | 'close' | 'toggle';
-
-interface OpenCommandPaletteInput {
-    action?: CommandPaletteAction;
-}
-
-const VALID_ACTIONS: readonly CommandPaletteAction[] = ['open', 'close', 'toggle'];
+import type { OpenCommandPaletteInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const openCommandPalette: ClientToolHandler<OpenCommandPaletteInput> = {
     name: 'open_command_palette',
 
     run(input): ClientToolResult {
-        const action = input.action;
-
-        if (!action || !VALID_ACTIONS.includes(action)) {
-            return {
-                ok: false,
-                summary: 'Could not control the command palette.',
-                reason: 'invalid_action',
-                hint: 'action must be one of: open, close, toggle.'
-            };
-        }
-
+        const { action } = input;
         const palette = useCommandPaletteStore.getState();
 
         if (action === 'open') {
@@ -34,7 +17,7 @@ const openCommandPalette: ClientToolHandler<OpenCommandPaletteInput> = {
             palette.toggle();
         }
 
-        const isOpen = useCommandPaletteStore.getState().isOpen;
+        const { isOpen } = useCommandPaletteStore.getState();
 
         return {
             ok: true,
@@ -47,12 +30,6 @@ const openCommandPalette: ClientToolHandler<OpenCommandPaletteInput> = {
     },
 
     describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Command palette unchanged',
-                icon: 'command'
-            };
-        }
         const isOpen = (result.data as { isOpen?: boolean } | undefined)?.isOpen;
         return {
             label: isOpen ? 'Opened command palette' : 'Closed command palette',

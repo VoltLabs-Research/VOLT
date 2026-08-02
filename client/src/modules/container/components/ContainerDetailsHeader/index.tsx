@@ -3,7 +3,6 @@ import type { SegmentedTabOption } from '@voltstack/bravais';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { getPrimaryAccessiblePort } from '@/modules/container/utils/get-primary-accessible-port';
@@ -42,13 +41,10 @@ const TABS: ReadonlyArray<ContainerDetailsTabOption> = [
 
 const resolveActiveTab = (pathname: string, basePath: string): ContainerDetailsTabId => {
     const normalized = pathname.replace(/\/$/, '');
-    const base = basePath.replace(/\/$/, '');
 
-    if (normalized === base) return 'overview';
-    if (normalized.endsWith('/processes')) return 'processes';
-    if (normalized.endsWith('/terminal')) return 'terminal';
-    if (normalized.endsWith('/storage')) return 'storage';
-    return 'overview';
+    if (normalized === basePath.replace(/\/$/, '')) return 'overview';
+
+    return TABS.find((tab) => tab.path && normalized.endsWith(`/${tab.path}`))?.id ?? 'overview';
 };
 
 interface ContainerDetailsHeaderProps {
@@ -76,16 +72,11 @@ const ContainerDetailsHeader = ({
     const activeTab = resolveActiveTab(pathname, basePath);
     const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);
     const isRunning = container.status === 'running';
-
-    const createdRelative = useMemo(
-        () => formatDistanceToNow(new Date(container.createdAt), { addSuffix: true }),
-        [container.createdAt]
-    );
+    const createdRelative = formatDistanceToNow(new Date(container.createdAt), { addSuffix: true });
 
     const handleTabChange = (id: ContainerDetailsTabId) => {
-        const tab = TABS.find((t) => t.id === id);
-        if (!tab) return;
-        navigate(tab.path ? `${basePath}/${tab.path}` : basePath);
+        const tab = TABS.find((tabOption) => tabOption.id === id);
+        navigate(tab?.path ? `${basePath}/${tab.path}` : basePath);
     };
 
     return (

@@ -1,6 +1,6 @@
 import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Box, Skeleton, Stack, EmptyState } from '@voltstack/bravais';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
@@ -12,6 +12,15 @@ interface NotificationListProps {
     onClose: () => void;
 };
 
+const LOAD_MORE_THRESHOLD = 50;
+
+const skeletonLines = (
+    <>
+        <Skeleton variant='text' width='60%' height={20} />
+        <Skeleton variant='text' width='90%' height={16} />
+    </>
+);
+
 const NotificationList = ({ 
     notifications, 
     isLoading, 
@@ -21,33 +30,28 @@ const NotificationList = ({
 }: NotificationListProps) => {
     const containerRef = useRef<HTMLUListElement>(null);
 
-    const handleScroll = useCallback(() => {
-        const container = containerRef.current;
-        if (!container || isLoading || !hasMore) return;
-
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        const threshold = 50;
-
-        if (scrollHeight - scrollTop - clientHeight < threshold) {
-            onLoadMore();
-        }
-    }, [isLoading, hasMore, onLoadMore]);
-
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
+        const handleScroll = () => {
+            if (isLoading || !hasMore) return;
+
+            if (container.scrollHeight - container.scrollTop - container.clientHeight < LOAD_MORE_THRESHOLD) {
+                onLoadMore();
+            }
+        };
+
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, [handleScroll]);
+    }, [isLoading, hasMore, onLoadMore]);
 
     if (isLoading && notifications.length === 0) {
         return (
             <Stack gap='05' p='05'>
                 {Array.from({ length: 5 }).map((_, i) => (
                     <Box key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-075 radius-sm'>
-                        <Skeleton variant='text' width='60%' height={20} />
-                        <Skeleton variant='text' width='90%' height={16} />
+                        {skeletonLines}
                     </Box>
                 ))}
             </Stack>
@@ -74,8 +78,7 @@ const NotificationList = ({
             {isLoading && (
                 <li className='notification-row'>
                     <Box className='notification-item list-item-hoverable p-075 radius-sm'>
-                        <Skeleton variant='text' width='60%' height={20} />
-                        <Skeleton variant='text' width='90%' height={16} />
+                        {skeletonLines}
                     </Box>
                 </li>
             )}

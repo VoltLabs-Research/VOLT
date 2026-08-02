@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { EmptyState, Skeleton, IconButton, Row, SearchInput, Stack, Text, Tooltip } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
@@ -35,21 +35,17 @@ const ChatSidebar = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [showTeamMembers, setShowTeamMembers] = useState(false);
     let chatListContent: ReactNode;
-    const availableTeamMembers = useMemo(() => {
-        return teamMembers.filter((member) => member._id !== currentUserId);
-    }, [teamMembers, currentUserId]);
 
-    const filteredChats = useMemo(() => {
-        return chats.filter((chat) => {
-            if (chat.isGroup) {
-                return matchesQuery(chat.groupName || '', searchQuery);
-            }
-            const participant = chat.participants.find((p) => p._id !== currentUserId);
-            if (!participant) return false;
-            const name = `${participant.firstName} ${participant.lastName}`;
-            return matchesQuery(name, searchQuery);
-        });
-    }, [chats, searchQuery, currentUserId]);
+    const filteredChats = chats.filter((chat) => {
+        if (chat.isGroup) {
+            return matchesQuery(chat.groupName || '', searchQuery);
+        }
+
+        const participant = chat.participants.find((p) => p._id !== currentUserId);
+        if (!participant) return false;
+
+        return matchesQuery(`${participant.firstName} ${participant.lastName}`, searchQuery);
+    });
 
     const handleMemberSelect = (memberId: string) => {
         onStartChatWithMember(memberId);
@@ -57,7 +53,7 @@ const ChatSidebar = ({
     };
 
     let newChatTooltip = 'New Chat';
-    if (availableTeamMembers.length === 0) {
+    if (teamMembers.length === 0) {
         newChatTooltip = 'No team members available';
     } else if (showTeamMembers) {
         newChatTooltip = 'Hide team members';
@@ -90,7 +86,7 @@ const ChatSidebar = ({
         let emptyDescription = 'Start a chat with a team member!';
         if (searchQuery) {
             emptyDescription = 'No matches found';
-        } else if (availableTeamMembers.length === 0) {
+        } else if (teamMembers.length === 0) {
             emptyDescription = 'Invite teammates to start chatting here.';
         }
 
@@ -125,7 +121,7 @@ const ChatSidebar = ({
                                 onClick={() => setShowTeamMembers(!showTeamMembers)}
                                 title={newChatTooltip}
                                 aria-label={newChatTooltip}
-                                disabled={availableTeamMembers.length === 0}
+                                disabled={teamMembers.length === 0}
                             >
                                 <IoPersonAddOutline size={18} />
                             </IconButton>
@@ -152,7 +148,7 @@ const ChatSidebar = ({
                 />
             </Stack>
 
-            {showTeamMembers && availableTeamMembers.length > 0 && (
+            {showTeamMembers && teamMembers.length > 0 && (
                 <Stack p='1'>
                     <Text as='p' size='md' weight='bold' tone='secondary' className='chat-sidebar-section-title'>
                         Team Members

@@ -3,27 +3,64 @@ import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import './DebugContextPanel.css';
 
 type DebugContextOutput = Record<string, unknown>;
 type DebugContextEntry = [string, DebugContextOutput];
-
-interface SplitContextEntries {
-    preForEach: DebugContextEntry[];
-    forEachEntry: DebugContextEntry | null;
-    postForEach: DebugContextEntry[];
-    currentIndex: number;
-}
 
 interface ChevronProps {
     expanded: boolean;
     size?: number;
 }
 
-interface NodeLabelData {
-    label?: string;
-}
+const Chevron = ({ expanded, size = 11 }: ChevronProps) =>
+    expanded ? <ChevronDown size={size} /> : <ChevronRight size={size} />;
+
+/**
+ * Groups context entries around the forEach node so the iteration body can be
+ * rendered as a nested, collapsible group.
+ */
+const splitContextEntries = (
+    entries: DebugContextEntry[],
+    forEachNodeId: string | null,
+    executionOrder: Array<{ nodeId: string }>
+) => {
+    const orderIds = executionOrder.map((item) => item.nodeId);
+    const forEachPos = forEachNodeId ? orderIds.indexOf(forEachNodeId) : -1;
+
+    const pre: DebugContextEntry[] = [];
+    let feEntry: DebugContextEntry | null = null;
+    const post: DebugContextEntry[] = [];
+
+    if (!forEachNodeId || forEachPos === -1) {
+        return {
+            preForEach: entries,
+            forEachEntry: feEntry,
+            postForEach: post,
+            currentIndex: 0
+        };
+    }
+
+    const preIds = new Set(orderIds.slice(0, forEachPos));
+    const postIds = new Set(orderIds.slice(forEachPos + 1));
+
+    for (const [nodeId, output] of entries) {
+        if (nodeId === forEachNodeId) feEntry = [nodeId, output];
+        else if (preIds.has(nodeId)) pre.push([nodeId, output]);
+        else if (postIds.has(nodeId)) post.push([nodeId, output]);
+    }
+
+    pre.sort((a, b) => orderIds.indexOf(a[0]) - orderIds.indexOf(b[0]));
+    post.sort((a, b) => orderIds.indexOf(a[0]) - orderIds.indexOf(b[0]));
+
+    return {
+        preForEach: pre,
+        forEachEntry: feEntry,
+        postForEach: post,
+        currentIndex: Number(feEntry?.[1].currentIndex ?? 0)
+    };
+};
 
 const DebugContextPanel = () => {
     const contextSnapshot = usePluginDebugStore((s) => s.contextSnapshot);
@@ -39,73 +76,28 @@ const DebugContextPanel = () => {
     const entries = Object.entries(contextSnapshot);
     const hasData = entries.length > 0;
 
-    const toggleKey = useCallback((key: string) => {
+    const toggleKey = (key: string) => {
         setExpandedKeys((prev) => {
             const next = new Set(prev);
             if (next.has(key)) next.delete(key);
             else next.add(key);
             return next;
         });
-    }, []);
+    };
 
-    const { preForEach, forEachEntry, postForEach, currentIndex } = useMemo(() => {
-        if (!forEachNodeId) {
-            return {
-                preForEach: entries,
-                forEachEntry: null,
-                postForEach: [],
-                currentIndex: 0
-            };
-        }
-
-        const orderIds = executionOrder.map((e) => e.nodeId);
-        const forEachPos = orderIds.indexOf(forEachNodeId);
-
-        if (forEachPos === -1) {
-            return {
-                preForEach: entries,
-                forEachEntry: null,
-                postForEach: [],
-                currentIndex: 0
-            };
-        }
-
-        const preIds = new Set(orderIds.slice(0, forEachPos));
-        const postIds = new Set(orderIds.slice(forEachPos + 1));
-
-        const pre: DebugContextEntry[] = [];
-        let feEntry: DebugContextEntry | null = null;
-        const post: DebugContextEntry[] = [];
-
-        for (const [nodeId, output] of entries) {
-            if (nodeId === forEachNodeId) feEntry = [nodeId, output];
-            else if (preIds.has(nodeId)) pre.push([nodeId, output]);
-            else if (postIds.has(nodeId)) post.push([nodeId, output]);
-        }
-
-        pre.sort((a, b) => orderIds.indexOf(a[0]) - orderIds.indexOf(b[0]));
-        post.sort((a, b) => orderIds.indexOf(a[0]) - orderIds.indexOf(b[0]));
-
-        return {
-            preForEach: pre,
-            forEachEntry: feEntry,
-            postForEach: post,
-            currentIndex: Number(feEntry?.[1].currentIndex ?? 0)
-        };
-    }, [entries, forEachNodeId, executionOrder]) as SplitContextEntries;
+    const { preForEach, forEachEntry, postForEach, currentIndex } = splitContextEntries(
+        entries,
+        forEachNodeId,
+        executionOrder
+    );
 
     if (!isDebugging || !hasData) return null;
 
     const getNodeLabel = (nodeId: string): string => {
-        const node = nodes.find((n) => n.id === nodeId);
-        if (!node) return nodeId;
-        const nodeData = node.data as NodeLabelData;
-        const label = nodeData.label;
-        return label || (node.type ?? '').charAt(0).toUpperCase() + (node.type ?? '').slice(1);
+        const nodeType = nodes.find((n) => n.id === nodeId)?.type;
+        if (!nodeType) return nodeId;
+        return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
     };
-
-    const Chevron = ({ expanded, size = 11 }: ChevronProps) =>
-        expanded ? <ChevronDown size={size} /> : <ChevronRight size={size} />;
 
     const renderEntry = (nodeId: string, output: DebugContextOutput) => {
         const isExpanded = expandedKeys.has(nodeId);
@@ -130,10 +122,6 @@ const DebugContextPanel = () => {
     const iterationKey = `__iteration_${currentIndex}`;
     const forEachGroupKey = '__foreach_group';
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
-    let panelToggleIcon = <ChevronRight size={12} />;
-    if (isOpen) {
-        panelToggleIcon = <X size={12} className='color-secondary' />;
-    }
 
     return (
         <Stack position='absolute' zIndex='10' className='debug-context-panel glass-bg panel-floating top-1 right-1'>
@@ -143,7 +131,7 @@ const DebugContextPanel = () => {
                     Context
                     <Text as='span' weight='bold' className='debug-context-panel-count radius-full'>{entries.length}</Text>
                 </Row>
-                {panelToggleIcon}
+                {isOpen ? <X size={12} className='color-secondary' /> : <ChevronRight size={12} />}
             </Row>
 
             {isOpen && (

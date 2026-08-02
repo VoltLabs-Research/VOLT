@@ -1,15 +1,18 @@
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { SetChatSurfaceInput } from '@volt/contracts/modules/ai/ai-tools';
 
-interface SetChatSurfaceInput {
-    surface?: 'floating' | 'page' | 'hidden';
-}
+const EFFECT_LABELS: Record<SetChatSurfaceInput['surface'], string> = {
+    page: 'Opened the AI page',
+    hidden: 'Hid the chat widget',
+    floating: 'Opened the chat widget'
+};
 
 const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
     name: 'set_chat_surface',
 
     run(input, ctx): ClientToolResult {
-        const surface = input.surface ?? 'floating';
+        const { surface } = input;
         const store = useChatSurfaceStore.getState();
 
         if (surface === 'page') {
@@ -40,14 +43,8 @@ const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
     },
 
     describeEffect(input) {
-        const surface = input.surface ?? 'floating';
-        const label = surface === 'page'
-            ? 'Opened the AI page'
-            : surface === 'hidden'
-                ? 'Hid the chat widget'
-                : 'Opened the chat widget';
         return {
-            label,
+            label: EFFECT_LABELS[input.surface],
             icon: 'chat'
         };
     }

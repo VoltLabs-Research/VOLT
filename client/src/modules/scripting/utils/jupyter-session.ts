@@ -1,121 +1,87 @@
-import type { ScriptingSession } from '@volt/contracts/modules/scripting/domain';
+import type { GetScriptingSessionStatusResponse } from '@volt/contracts/modules/scripting/domain';
 
 export interface WaitForReadyScriptingSessionOptions {
-    intervalMs?: number;
-    timeoutMs?: number;
     isCancelled?: () => boolean;
-    onPending?: (session: ScriptingSession) => Promise<void> | void;
+    onPending?: (session: GetScriptingSessionStatusResponse) => Promise<void> | void;
 };
 
-interface WaitForReadyScriptingSessionStateLoader {
-    initialSession: ScriptingSession;
-    readSession: (session: ScriptingSession) => Promise<ScriptingSession>;
+interface ScriptingSessionLoader {
+    createSession: () => Promise<GetScriptingSessionStatusResponse>;
+    readSession: (session: GetScriptingSessionStatusResponse) => Promise<GetScriptingSessionStatusResponse>;
 };
 
 export interface WaitForReadyScriptingSessionResult {
-    session: ScriptingSession;
+    session: GetScriptingSessionStatusResponse;
     timedOut: boolean;
 };
 
-interface ReadSessionWithinDeadlineTimeoutResult {
-    timedOut: true;
-};
-
-interface ReadSessionWithinDeadlineSuccessResult {
-    session: ScriptingSession;
-    timedOut: false;
-};
-
-interface StartAndWaitForReadyScriptingSessionStateLoader {
-    createSession: () => Promise<ScriptingSession>;
-    readSession: (session: ScriptingSession) => Promise<ScriptingSession>;
-};
-
-type ReadSessionWithinDeadlineResult = ReadSessionWithinDeadlineTimeoutResult | ReadSessionWithinDeadlineSuccessResult;
-
-const DEFAULT_JUPYTER_SESSION_POLL_INTERVAL_MS = 2_000;
-const DEFAULT_JUPYTER_SESSION_TIMEOUT_MS = 120_000;
+const JUPYTER_SESSION_POLL_INTERVAL_MS = 2_000;
+const JUPYTER_SESSION_TIMEOUT_MS = 120_000;
+const JUPYTER_START_ERROR_MESSAGE = 'Failed to start Jupyter';
 
 export const JUPYTER_SESSION_PENDING_MESSAGE = 'Jupyter is still starting. Please wait a moment.';
 export const JUPYTER_SESSION_TIMEOUT_MESSAGE = 'Jupyter is still starting. Please retry in a moment.';
 
-const sleep = async (delayMs: number): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-};
+const sleep = (delayMs: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, delayMs));
 
-const getRemainingTimeMs = (deadlineMs: number): number => {
-    return Math.max(0, deadlineMs - Date.now());
-};
+const getRemainingTimeMs = (deadlineMs: number): number => Math.max(0, deadlineMs - Date.now());
 
+/** Resolves null when the deadline wins the race against the status request. */
 const readSessionWithinDeadline = async (
-    readSession: () => Promise<ScriptingSession>,
+    readSession: () => Promise<GetScriptingSessionStatusResponse>,
     deadlineMs: number
-): Promise<ReadSessionWithinDeadlineResult> => {
+): Promise<GetScriptingSessionStatusResponse | null> => {
     const remainingTimeMs = getRemainingTimeMs(deadlineMs);
     if (remainingTimeMs === 0) {
-        return {
-            timedOut: true
-        };
+        return null;
     }
 
-    const timeoutPromise = sleep(remainingTimeMs).then<ReadSessionWithinDeadlineResult>(() => ({
-        timedOut: true
-    }));
-    const sessionPromise = readSession().then<ReadSessionWithinDeadlineResult>((session) => ({
-        session,
-        timedOut: false
-    }));
-
-    return Promise.race([sessionPromise, timeoutPromise]);
+    return Promise.race([
+        readSession(),
+        sleep(remainingTimeMs).then(() => null)
+    ]);
 };
 
-const waitForReadyScriptingSession = async (
-    stateLoader: WaitForReadyScriptingSessionStateLoader,
-    options: WaitForReadyScriptingSessionOptions = {}
+export const startAndWaitForReadyScriptingSession = async (
+    { createSession, readSession }: ScriptingSessionLoader,
+    { isCancelled, onPending }: WaitForReadyScriptingSessionOptions = {}
 ): Promise<WaitForReadyScriptingSessionResult> => {
-    const intervalMs = Math.max(250, options.intervalMs ?? DEFAULT_JUPYTER_SESSION_POLL_INTERVAL_MS);
-    const timeoutMs = Math.max(intervalMs, options.timeoutMs ?? DEFAULT_JUPYTER_SESSION_TIMEOUT_MS);
-    const deadlineMs = Date.now() + timeoutMs;
-    let lastSession = stateLoader.initialSession;
-
-    if (lastSession.jupyter.ready) {
+    let lastSession = await createSession();
+    if (lastSession.jupyter.ready || isCancelled?.()) {
         return {
             session: lastSession,
             timedOut: false
         };
     }
 
+    const deadlineMs = Date.now() + JUPYTER_SESSION_TIMEOUT_MS;
+
     while (getRemainingTimeMs(deadlineMs) > 0) {
-        if (options.isCancelled?.()) {
+        if (isCancelled?.()) {
             break;
         }
 
-        if (options.onPending) {
-            await options.onPending(lastSession);
-        }
+        await onPending?.(lastSession);
 
-        if (options.isCancelled?.()) {
+        if (isCancelled?.()) {
             break;
         }
 
-        const remainingTimeMs = getRemainingTimeMs(deadlineMs);
-        if (remainingTimeMs > 0) {
-            await sleep(Math.min(intervalMs, remainingTimeMs));
-        }
+        await sleep(Math.min(JUPYTER_SESSION_POLL_INTERVAL_MS, getRemainingTimeMs(deadlineMs)));
 
-        if (options.isCancelled?.()) {
+        if (isCancelled?.()) {
             break;
         }
 
-        const readResult = await readSessionWithinDeadline(() => stateLoader.readSession(lastSession), deadlineMs);
-        if (readResult.timedOut) {
+        const session = await readSessionWithinDeadline(() => readSession(lastSession), deadlineMs);
+        if (!session) {
             return {
                 session: lastSession,
                 timedOut: true
             };
         }
 
-        lastSession = readResult.session;
+        lastSession = session;
         if (lastSession.jupyter.ready) {
             return {
                 session: lastSession,
@@ -130,20 +96,10 @@ const waitForReadyScriptingSession = async (
     };
 };
 
-export const startAndWaitForReadyScriptingSession = async (
-    stateLoader: StartAndWaitForReadyScriptingSessionStateLoader,
-    options: WaitForReadyScriptingSessionOptions = {}
-): Promise<WaitForReadyScriptingSessionResult> => {
-    const session = await stateLoader.createSession();
-    if (session.jupyter.ready || options.isCancelled?.()) {
-        return {
-            session,
-            timedOut: false
-        };
+export const getJupyterStartErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message.trim().length > 0) {
+        return error.message;
     }
 
-    return waitForReadyScriptingSession({
-        initialSession: session,
-        readSession: stateLoader.readSession
-    }, options);
+    return JUPYTER_START_ERROR_MESSAGE;
 };

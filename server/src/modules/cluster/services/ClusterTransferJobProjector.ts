@@ -69,101 +69,84 @@ interface TransferJobProjectionContext {
     analysisId?: string;
 }
 
+const resolveTrajectoryName = async (trajectoryId: string): Promise<string> => {
+    const trajectory = await Trajectory.findOne({
+        where: { id: trajectoryId },
+        select: {
+            id: true,
+            name: true
+        }
+    });
+
+    return trajectory?.name || `Trajectory ${trajectoryId}`;
+};
+
+/**
+ * The team job feed is keyed by trajectory, so a transfer that cannot be traced
+ * back to one is projected onto a synthetic trajectory instead of being dropped.
+ */
+const resolveProjectionContext = async (
+    scopeType: StoragePlacementScopeType,
+    scopeId: string
+): Promise<TransferJobProjectionContext> => {
+    if (scopeType === 'trajectory') {
+        return {
+            trajectoryId: scopeId,
+            trajectoryName: await resolveTrajectoryName(scopeId)
+        };
+    }
+
+    if (scopeType !== 'analysis') {
+        return {
+            trajectoryId: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID,
+            trajectoryName: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME
+        };
+    }
+
+    const analysis = await Analysis.findOne({
+        where: { id: scopeId },
+        select: {
+            id: true,
+            trajectory: true
+        }
+    });
+    const trajectoryId = analysis?.trajectory;
+
+    return {
+        trajectoryId: trajectoryId ?? CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID,
+        trajectoryName: trajectoryId
+            ? await resolveTrajectoryName(trajectoryId)
+            : CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME,
+        analysisId: scopeId
+    };
+};
 
 /**
  * Projects cluster transfer job state onto the team job feed so the UI can
  * follow a transfer without polling the transfer tables directly.
  */
-export default class ClusterTransferJobProjector{
-    #eventBus = eventBus;
+const publishTransferJobProjection = async (job: ClusterTransferJob): Promise<void> => {
+    try {
+        const context = await resolveProjectionContext(job.props.scopeType, job.props.scopeId);
 
-    async publishTransferJobProjection(job: ClusterTransferJob): Promise<void> {
-        try {
-            const projectionContext = await this.#resolveTransferJobProjectionContext(job);
-            const status = mapTransferStateToJobStatus(job.props.state);
-
-            await this.#eventBus.emit('job.status.changed', {
-                jobId: job.id,
-                teamId: job.props.team,
-                status,
-                queueType: CLUSTER_TRANSFER_QUEUE_TYPE,
-                name: getTransferJobName(job.props.scopeType),
-                message: getTransferJobMessage(job),
-                trajectoryId: projectionContext.trajectoryId,
-                trajectoryName: projectionContext.trajectoryName,
-                analysisId: projectionContext.analysisId,
-                source: 'projected',
-                backingSource: 'local',
-                cleanupScope: 'cluster-transfer',
-                transferJobId: job.id,
-                transferState: job.props.state,
-                transferReason: job.props.reason,
-                transferScopeType: job.props.scopeType,
-                transferScopeId: job.props.scopeId,
-                sourceClusterId: job.props.sourceClusterId,
-                destinationClusterId: job.props.destinationClusterId,
-                cleanupSource: job.props.cleanupSource,
-                copiedObjects: job.props.stats.copiedObjects,
-                copiedBytes: job.props.stats.copiedBytes,
-                verifiedObjects: job.props.stats.verifiedObjects,
-                verifiedBytes: job.props.stats.verifiedBytes,
-                deletedObjects: job.props.stats.deletedObjects,
-                ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
-            });
-        } catch {
-            logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
-        }
+        await eventBus.emit('job.status.changed', {
+            jobId: job.id,
+            teamId: job.props.team,
+            status: mapTransferStateToJobStatus(job.props.state),
+            queueType: CLUSTER_TRANSFER_QUEUE_TYPE,
+            name: getTransferJobName(job.props.scopeType),
+            message: getTransferJobMessage(job),
+            trajectoryId: context.trajectoryId,
+            trajectoryName: context.trajectoryName,
+            analysisId: context.analysisId,
+            source: 'projected',
+            backingSource: 'local',
+            cleanupScope: 'cluster-transfer',
+            ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
+        });
+    } catch {
+        logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
     }
+};
 
-    async #resolveTransferJobProjectionContext(
-        job: ClusterTransferJob
-    ): Promise<TransferJobProjectionContext> {
-        if (job.props.scopeType === 'trajectory') {
-            const trajectory = await Trajectory.findOne({
-                where: { id: job.props.scopeId },
-                select: {
-                    id: true,
-                    name: true
-                }
-            });
-
-            return {
-                trajectoryId: job.props.scopeId,
-                trajectoryName: trajectory?.name || `Trajectory ${job.props.scopeId}`
-            };
-        }
-
-        if (job.props.scopeType === 'analysis') {
-            const analysis = await Analysis.findOne({
-                where: { id: job.props.scopeId },
-                select: {
-                    id: true,
-                    trajectory: true
-                }
-            });
-            const trajectoryId = analysis?.trajectory;
-
-            if (trajectoryId) {
-                const trajectory = await Trajectory.findOne({
-                    where: { id: trajectoryId },
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                });
-
-                return {
-                    trajectoryId,
-                    trajectoryName: trajectory?.name || `Trajectory ${trajectoryId}`,
-                    analysisId: job.props.scopeId
-                };
-            }
-        }
-
-        return {
-            trajectoryId: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID,
-            trajectoryName: CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME,
-            ...(job.props.scopeType === 'analysis' ? { analysisId: job.props.scopeId } : {})
-        };
-    }
-}
+export default publishTransferJobProjection;

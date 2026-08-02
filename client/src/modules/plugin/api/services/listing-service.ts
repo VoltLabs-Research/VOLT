@@ -71,24 +71,12 @@ export interface GetSubListingResponse {
     limit: number;
 }
 
-interface ExposureSelectorParams {
-    exposureId?: string;
-    exposureName?: string;
-}
-
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
-
-const requireExposureSelector = (params: ExposureSelectorParams, message: string) => {
-    if (!params.exposureId && !params.exposureName) {
-        throw new Error(message);
-    }
-};
 
 const endpoints = {
     getListing: get<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>('/plugins/:pluginId/listings', {
         unwrap: 'raw',
         omit: ['pluginId'],
-        validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
         map: mapRawListingResponse
     }),
     getSubListing: get<GetSubListingInput, GetSubListingResponse>(
@@ -106,8 +94,7 @@ const endpoints = {
                 ...(exposureId ? { exposureId } : {}),
                 ...(exposureName ? { exposureName } : {}),
                 format
-            }),
-            validate: (params) => requireExposureSelector(params, 'Exposure::SelectorRequired')
+            })
         }
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInput>('GET',

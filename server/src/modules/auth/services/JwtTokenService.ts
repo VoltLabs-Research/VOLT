@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Secret, SignOptions } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
 import type { StringValue } from 'ms';
 
 interface TokenPayload {
@@ -57,9 +58,15 @@ export default class JwtTokenService {
     private readonly secret: Secret = getSecretKey();
     private readonly expiresIn = getExpiresIn();
 
+    /**
+     * `iat` only has second resolution, so two sign-ins for the same user inside
+     * one second would otherwise mint byte-identical tokens and collide on the
+     * unique `sessions.token` index. `jti` makes every session token distinct.
+     */
     public sign(userId: string): string {
         const signOptions: SignOptions = {
-            expiresIn: this.expiresIn
+            expiresIn: this.expiresIn,
+            jwtid: randomUUID()
         };
 
         return jwt.sign({

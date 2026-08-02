@@ -34,7 +34,6 @@ interface TimelineRulerProps {
     startFrame: number;
     endFrame: number;
     currentFrame: number;
-    helperTextId?: string;
     onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -50,7 +49,6 @@ const TimelineRuler = ({
     startFrame,
     endFrame,
     currentFrame,
-    helperTextId,
     onClick,
     onPointerDown,
     onPointerMove,
@@ -59,7 +57,7 @@ const TimelineRuler = ({
     onKeyDown
 }: TimelineRulerProps) => (
     <Box flex='1' position='relative' minH='0' className="canvas-timeline-body">
-        <Box display='flex' align='end' className="canvas-timeline-ruler scrollbar-none" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-describedby={helperTextId} aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
+        <Box display='flex' align='end' className="canvas-timeline-ruler scrollbar-none" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
             <TimelineRulerTicks ticks={ticks} />
         </Box>
 

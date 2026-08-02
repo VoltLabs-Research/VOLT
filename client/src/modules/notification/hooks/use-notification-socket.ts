@@ -4,9 +4,7 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 const useNotificationSocket = (): void => {
-    useSocketEvent<Notification>(SOCKET_NOTIFICATION_EVENTS.RECEIVED, (notification) => {
-        prependNotificationToInfiniteCache(notification);
-    });
+    useSocketEvent<Notification>(SOCKET_NOTIFICATION_EVENTS.RECEIVED, prependNotificationToInfiniteCache);
 };
 
 export default useNotificationSocket;

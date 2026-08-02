@@ -8,12 +8,6 @@ interface DemoClusterState {
     clear: () => void;
 }
 
-const toDate = (value: Date | string | null | undefined): Date | null => {
-    if (!value) return null;
-    const date = value instanceof Date ? value : new Date(value);
-    return Number.isFinite(date.getTime()) ? date : null;
-};
-
 export const useDemoClusterStore = create<DemoClusterState>((set) => ({
     isDemo: false,
     expiresAt: null,
@@ -27,7 +21,7 @@ export const useDemoClusterStore = create<DemoClusterState>((set) => ({
         }
         set({
             isDemo: true,
-            expiresAt: toDate(cluster.demoExpiresAt)
+            expiresAt: cluster.demoExpiresAt ? new Date(cluster.demoExpiresAt) : null
         });
     },
     clear: () => set({

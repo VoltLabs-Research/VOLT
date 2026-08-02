@@ -7,7 +7,12 @@ import type {
     TeamClusterObjectGatewayPutRequest
 } from '@shared/contracts/types/TeamClusterObjectGateway';
 
+/* Exposure identity, request paths and headers for the cluster object gateway. */
+
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
+
+export const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
+export const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 
 export interface TeamClusterObjectGatewayReadOptions {
     skipMetadata?: boolean;
@@ -17,8 +22,6 @@ export interface TeamClusterObjectGatewayReadOptions {
 const encodeObjectKeyPath = (objectKey: string): string => (
     objectKey.split('/').map(encodeURIComponent).join('/')
 );
-
-/* Request path and header construction for the cluster object gateway. */
 
 export const buildCollectionPath = (bucket: string): string => {
     return `${OBJECT_GATEWAY_BASE_PATH}/buckets/${encodeURIComponent(bucket)}/objects`;

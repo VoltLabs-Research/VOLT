@@ -1,27 +1,51 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
+import { ipcMain, dialog, BrowserWindow } from 'electron';
+import type { IpcMainInvokeEvent } from 'electron';
 import bus from '@/services/EventBus';
 import { CHANNELS } from '@/types/events';
 import Deploy from '@/services/Deploy';
-import DockerPreflight from '@/services/DockerPreflight';
+import { dockerPreflight } from '@/services/DockerPreflight';
 import AppConfig, { DevModeState, ThemePreference } from '@/services/AppConfig';
-import RemoteProbe from '@/services/RemoteProbe';
+import { probeRemoteEndpoint } from '@/services/RemoteProbe';
+import { openExternalUrl, sendToShell } from '@/services/WindowSecurity';
+import type { ConfirmOptions } from '@/types/global';
 
 export interface IpcDeps{
     deploy: Deploy;
     appConfig: AppConfig;
-    docker: DockerPreflight;
-    remote: RemoteProbe;
     loadShell: (hash?: string) => void;
 };
 
-export interface ConfirmOptions{
-    title: string;
-    message: string;
-    detail?: string;
-    confirmLabel?: string;
-    cancelLabel?: string;
-    danger?: boolean;
-}
+/*
+ * The window navigates away from the shell to the VOLT client, and with
+ * `remote.connect` that client can live on any endpoint the user names. The
+ * preload is attached to the window, so every one of those pages would otherwise
+ * inherit this bridge — including `deploy:reset`, which destroys the local stack's
+ * volumes, and `devmode:apply`, which takes filesystem paths. The web client never
+ * calls into `window.volt`, so the bridge is answered only for the shell itself.
+ */
+const isShellSender = (event: IpcMainInvokeEvent): boolean => {
+    const senderUrl = event.senderFrame?.url ?? '';
+    if(!senderUrl) return false;
+
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if(devUrl) return senderUrl.startsWith(devUrl);
+
+    return senderUrl.startsWith('file://');
+};
+
+/** Registers a handler that only answers the shell; anything else is rejected. */
+const handleFromShell = <TResult>(
+    channel: string,
+    handler: (event: IpcMainInvokeEvent, ...args: never[]) => TResult
+): void => {
+    ipcMain.handle(channel, (event, ...args) => {
+        if(!isShellSender(event)){
+            throw new Error(`Channel ${channel} is only available to the Volt shell`);
+        }
+
+        return handler(event, ...args as never[]);
+    });
+};
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     
@@ -32,18 +56,18 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         return token ? `${origin}/__bootstrap.html?token=${encodeURIComponent(token)}` : origin;
     };
 
-    ipcMain.handle('deploy:start', () => deps.deploy.start());
-    ipcMain.handle('deploy:stop', () => deps.deploy.stop());
-    ipcMain.handle('deploy:reset', () => deps.deploy.resetAndRedeploy());
+    handleFromShell('deploy:start', () => deps.deploy.start());
+    handleFromShell('deploy:stop', () => deps.deploy.stop());
+    handleFromShell('deploy:reset', () => deps.deploy.resetAndRedeploy());
 
-    ipcMain.handle('docker:preflight', () => deps.docker.preflight());
+    handleFromShell('docker:preflight', () => dockerPreflight());
 
-    ipcMain.handle('config:get', () => deps.appConfig.get());
+    handleFromShell('config:get', () => deps.appConfig.get());
 
-    ipcMain.handle('remote:probe', (_e, endpoint: string) => deps.remote.probe(endpoint));
+    handleFromShell('remote:probe', (_e, endpoint: string) => probeRemoteEndpoint(endpoint));
 
-    ipcMain.handle('remote:connect', async (_e, endpoint: string) => {
-        const result = await deps.remote.probe(endpoint);
+    handleFromShell('remote:connect', async (_e, endpoint: string) => {
+        const result = await probeRemoteEndpoint(endpoint);
         if(result.ok){
             await deps.appConfig.setDeployment({
                 mode: 'remote',
@@ -57,20 +81,20 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         return result;
     });
 
-    ipcMain.handle('remote:recent', () => deps.appConfig.getRecentEndpoints());
+    handleFromShell('remote:recent', () => deps.appConfig.getRecentEndpoints());
 
-    ipcMain.handle('deployment:get', () => deps.appConfig.getDeployment());
-    ipcMain.handle('deployment:setLocal', () => deps.appConfig.setDeployment({ mode: 'local' }));
-    ipcMain.handle('deployment:reset', () => deps.appConfig.clearDeployment());
+    handleFromShell('deployment:get', () => deps.appConfig.getDeployment());
+    handleFromShell('deployment:setLocal', () => deps.appConfig.setDeployment({ mode: 'local' }));
+    handleFromShell('deployment:reset', () => deps.appConfig.clearDeployment());
 
-    ipcMain.handle('shell:openExternal', (_e, url: string) => shell.openExternal(url));
+    handleFromShell('shell:openExternal', (_e, url: string) => openExternalUrl(url));
 
-    ipcMain.handle('dialog:pickDirectory', async () => {
+    handleFromShell('dialog:pickDirectory', async () => {
         const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
         return result.canceled ? null : result.filePaths[0];
     });
 
-    ipcMain.handle('dialog:confirm', async (_e, options: ConfirmOptions) => {
+    handleFromShell('dialog:confirm', async (_e, options: ConfirmOptions) => {
         const { response } = await dialog.showMessageBox(win, {
             type: options.danger ? 'warning' : 'question',
             buttons: [options.cancelLabel ?? 'Cancel', options.confirmLabel ?? 'Confirm'],
@@ -84,19 +108,15 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         return response === 1;
     });
 
-    ipcMain.handle('theme:set', (_e, theme: ThemePreference) => deps.appConfig.setTheme(theme));
+    handleFromShell('theme:set', (_e, theme: ThemePreference) => deps.appConfig.setTheme(theme));
 
-    ipcMain.handle('devmode:apply', (_e, payload: DevModeState) => deps.deploy.applyDevMode(payload));
+    handleFromShell('devmode:apply', (_e, payload: DevModeState) => deps.deploy.applyDevMode(payload));
 
-    ipcMain.handle('window:minimize', () => win.minimize());
-    ipcMain.handle('window:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
-    ipcMain.handle('window:close', () => win.close());
+    handleFromShell('window:minimize', () => win.minimize());
+    handleFromShell('window:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
+    handleFromShell('window:close', () => win.close());
 
-    ipcMain.handle('app:voltUrl', () => localClientUrl());
-
-    
-    
-    ipcMain.handle('app:openClient', async () => {
+    handleFromShell('app:openClient', async () => {
         const deployment = await deps.appConfig.getDeployment();
         const url = (deployment?.mode === 'remote' && deployment.remote)
             ? deployment.remote.clientUrl
@@ -104,13 +124,13 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         void win.loadURL(url).catch(() => { /* superseded by a newer navigation */ });
     });
 
-    ipcMain.handle('app:openShell', (_e, intent?: string) => {
+    handleFromShell('app:openShell', (_e, intent?: string) => {
         deps.loadShell(intent || 'launcher');
     });
 
     const unsubs = CHANNELS.map((event) =>
         bus.on(event, (payload) => {
-            if(!win.isDestroyed()) win.webContents.send(event, payload);
+            sendToShell(win, event, payload);
         })
     );
 

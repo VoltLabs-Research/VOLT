@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -7,7 +8,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 
 import { In, IsNull, LessThanOrEqual } from 'typeorm';
-import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
@@ -58,7 +58,6 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
 };
 
 class TrajectoryCloneCoordinator{
-
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     private readonly eventBus = eventBus;
@@ -73,10 +72,7 @@ class TrajectoryCloneCoordinator{
             }
 
             const renewTimer = setInterval(() => {
-                void this.renewClaim(
-                    claimed.id,
-                    CLAIM_TTL_MS
-                ).catch((error) => {
+                void this.renewClaim(claimed.id).catch((error) => {
                     logger.warn({
                         error,
                         jobId: claimed.id
@@ -100,7 +96,7 @@ class TrajectoryCloneCoordinator{
     async executeJob(jobId: string): Promise<TrajectoryCloneJob>{
         const job = await TrajectoryCloneJob.findOneBy({ id: jobId });
         if(!job){
-            throw ApplicationError.notFound('TrajectoryCloneJob::NotFound', 'Trajectory clone job not found');
+            throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_CLONE_JOB_NOT_FOUND, 'Trajectory clone job not found');
         }
 
         if(!OPEN_CLONE_JOB_STATES.includes(job.state)){
@@ -111,7 +107,7 @@ class TrajectoryCloneCoordinator{
             startedAt: job.startedAt ?? new Date(),
             errorCode: null,
             errorMessage: null
-        }, { publishUpdate: true });
+        });
 
         try{
             const copiedJob = await this.copyFrames(preparingJob);
@@ -123,7 +119,7 @@ class TrajectoryCloneCoordinator{
 
             const completedJob = await this.setJobState(copiedJob.id, TrajectoryCloneJobState.Completed, {
                 finishedAt: new Date()
-            }, { publishUpdate: true });
+            });
 
             logger.info(`[TrajectoryCloneCoordinator] Completed clone job=${completedJob.id} source=${completedJob.sourceTrajectoryId} destination=${completedJob.destinationTrajectoryId}`);
             return completedJob;
@@ -138,7 +134,7 @@ class TrajectoryCloneCoordinator{
                 finishedAt: new Date(),
                 errorCode,
                 errorMessage
-            }, { publishUpdate: true });
+            });
 
             logger.error({ err: error }, `[TrajectoryCloneCoordinator] Failed clone job=${failedJob.id}`);
             return failedJob;
@@ -154,7 +150,7 @@ class TrajectoryCloneCoordinator{
     private async copyFrames(initialJob: TrajectoryCloneJob): Promise<TrajectoryCloneJob>{
         const sourceTrajectory = await Trajectory.findOneBy({ id: initialJob.sourceTrajectoryId });
         if(!sourceTrajectory){
-            throw ApplicationError.notFound('Trajectory::NotFound', 'Source trajectory not found');
+            throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Source trajectory not found');
         }
 
         const sourceFrames = await TrajectoryFrame.find({
@@ -169,14 +165,21 @@ class TrajectoryCloneCoordinator{
                 ...initialJob.stats,
                 totalFrames
             }
-        }, { publishUpdate: true });
+        });
 
         if(totalFrames === 0){
             return currentJob;
         }
 
-        const sourceClusterId = this.requireStorageClusterId(initialJob.sourceClusterId, 'source');
-        const destinationClusterId = this.requireStorageClusterId(initialJob.destinationClusterId, 'destination');
+        const sourceClusterId = initialJob.sourceClusterId;
+        if(!sourceClusterId){
+            throw ApplicationError.conflict(
+                ErrorCodes.TRAJECTORY_CLONE_STORAGE_CLUSTER_REQUIRED,
+                'Trajectory clone source storage cluster is required'
+            );
+        }
+
+        const destinationClusterId = initialJob.destinationClusterId;
         const sortedFrames = [...sourceFrames].sort((a, b) => a.timestep - b.timestep);
 
         const cloneResult = await this.teamClusterDaemonClient.command<{
@@ -203,20 +206,9 @@ class TrajectoryCloneCoordinator{
                 copiedFrames: cloneResult.copiedFrames,
                 copiedBytes: cloneResult.copiedBytes
             }
-        }, { publishUpdate: true });
+        });
 
         return currentJob;
-    }
-
-    private requireStorageClusterId(clusterId: string | null | undefined, role: 'source' | 'destination'): string{
-        if(clusterId && clusterId.trim().length > 0){
-            return clusterId;
-        }
-
-        throw ApplicationError.conflict(
-            'TrajectoryClone::StorageClusterRequired',
-            `Trajectory clone ${role} storage cluster is required`
-        );
     }
 
     private async claimNextRunnable(): Promise<TrajectoryCloneJob | null>{
@@ -267,8 +259,8 @@ class TrajectoryCloneCoordinator{
         }
     }
 
-    private async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean>{
-        const claimExpiresAt = new Date(Date.now() + claimTtlMs);
+    private async renewClaim(jobId: string): Promise<boolean>{
+        const claimExpiresAt = new Date(Date.now() + CLAIM_TTL_MS);
         const result = await TrajectoryCloneJob.update({
             id: jobId,
             claimedBy: CLONE_WORKER_ID
@@ -290,22 +282,18 @@ class TrajectoryCloneCoordinator{
     private async setJobState(
         jobId: string,
         state: TrajectoryCloneJobState,
-        data: QueryDeepPartialEntity<TrajectoryCloneJob> = {},
-        options: { publishUpdate?: boolean } = {}
+        data: Partial<TrajectoryCloneJob> = {}
     ): Promise<TrajectoryCloneJob>{
         const job = await TrajectoryCloneJob.findOneBy({ id: jobId });
         if(!job){
             throw ApplicationError.notFound(
-                'TrajectoryCloneJob::NotFound',
+                ErrorCodes.TRAJECTORY_CLONE_JOB_NOT_FOUND,
                 'Trajectory clone job not found during update'
             );
         }
 
         const updated = await Object.assign(job, data, { state }).save();
-
-        if(options.publishUpdate){
-            await this.publishJobProjection(updated);
-        }
+        await this.publishJobProjection(updated);
 
         return updated;
     }

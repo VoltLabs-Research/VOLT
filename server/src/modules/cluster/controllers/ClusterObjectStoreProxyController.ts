@@ -1,7 +1,13 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import TeamClusterObjectStoreProxyService, {
-    type TeamClusterObjectStoreHeadResponse
-} from '@modules/cluster/services/TeamClusterObjectStoreProxyService';
+import TeamClusterObjectStoreProxyService from '@modules/cluster/services/TeamClusterObjectStoreProxyService';
+import {
+    applyObjectHeaders,
+    applyRangeHeaders,
+    isPartialContent,
+    readContentLength,
+    sendObjectError
+} from '@modules/cluster/controllers/cluster-object-http';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
@@ -12,6 +18,11 @@ import {
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';
+
+const PROXY_FAILURE = {
+    code: 'TeamCluster::ObjectStoreProxyFailed',
+    message: 'Unexpected object store proxy error'
+};
 
 const readHeader = (request: Request, headerName: string): string | undefined => {
     const value = request.header(headerName)?.trim();
@@ -28,7 +39,7 @@ const decodePathComponent = (value: string, fieldName: string): string => {
         return decodeURIComponent(value);
     } catch {
         throw ApplicationError.badRequest(
-            'TeamCluster::ObjectStoreProxyInvalidPath',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_INVALID_PATH,
             `${fieldName} contains invalid path encoding`
         );
     }
@@ -41,7 +52,7 @@ const resolveRoute = (
     const ownersPath = '/owners/';
     if (!pathname.startsWith(ownersPath)) {
         throw ApplicationError.notFound(
-            'TeamCluster::ObjectStoreProxyRouteNotFound',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_ROUTE_NOT_FOUND,
             'Object store proxy route not found'
         );
     }
@@ -50,7 +61,7 @@ const resolveRoute = (
     const ownerSlashIndex = ownerPath.indexOf('/');
     if (ownerSlashIndex < 0) {
         throw ApplicationError.notFound(
-            'TeamCluster::ObjectStoreProxyRouteNotFound',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_ROUTE_NOT_FOUND,
             'Object store proxy route not found'
         );
     }
@@ -60,7 +71,7 @@ const resolveRoute = (
     const bucketsPrefix = '/buckets/';
     if (!bucketPath.startsWith(bucketsPrefix)) {
         throw ApplicationError.notFound(
-            'TeamCluster::ObjectStoreProxyRouteNotFound',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_ROUTE_NOT_FOUND,
             'Object store proxy route not found'
         );
     }
@@ -69,7 +80,7 @@ const resolveRoute = (
     const bucketSlashIndex = bucketSection.indexOf('/');
     if (bucketSlashIndex < 0) {
         throw ApplicationError.notFound(
-            'TeamCluster::ObjectStoreProxyRouteNotFound',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_ROUTE_NOT_FOUND,
             'Object store proxy route not found'
         );
     }
@@ -87,7 +98,7 @@ const resolveRoute = (
 
     if (!remainder.startsWith('/objects/')) {
         throw ApplicationError.notFound(
-            'TeamCluster::ObjectStoreProxyRouteNotFound',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_ROUTE_NOT_FOUND,
             'Object store proxy route not found'
         );
     }
@@ -95,7 +106,7 @@ const resolveRoute = (
     const encodedObjectKey = remainder.slice('/objects/'.length);
     if (!encodedObjectKey) {
         throw ApplicationError.badRequest(
-            'TeamCluster::ObjectStoreProxyObjectKeyRequired',
+            ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_OBJECT_KEY_REQUIRED,
             'objectKey is required'
         );
     }
@@ -108,11 +119,6 @@ const resolveRoute = (
     };
 };
 
-const readContentLength = (request: Request): number | undefined => {
-    const rawContentLength = request.header('content-length');
-    return rawContentLength ? Number(rawContentLength) : undefined;
-};
-
 const readMetadataHeaders = (request: Request): Record<string, string> => {
     const metadata: Record<string, string> = {};
 
@@ -121,84 +127,21 @@ const readMetadataHeaders = (request: Request): Record<string, string> => {
             continue;
         }
 
+        const metadataKey = headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length);
         if (Array.isArray(headerValue)) {
-            metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue.join(', ');
-            continue;
-        }
-
-        if (typeof headerValue === 'string') {
-            metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue;
+            metadata[metadataKey] = headerValue.join(', ');
+        } else if (headerValue !== undefined) {
+            metadata[metadataKey] = headerValue;
         }
     }
 
     return metadata;
 };
 
-const applyResponseHeaders = (
-    headers: TeamClusterObjectStoreHeadResponse,
-    response: Response
-): void => {
-    if (headers.contentLength !== undefined) {
-        response.setHeader('content-length', String(headers.contentLength));
-    }
-
-    if (headers.contentType) {
-        response.setHeader('content-type', headers.contentType);
-    }
-
-    if (headers.contentEncoding) {
-        response.setHeader('content-encoding', headers.contentEncoding);
-    }
-
-    if (headers.etag) {
-        response.setHeader('etag', headers.etag);
-    }
-
-    if (headers.lastModified) {
-        response.setHeader('last-modified', headers.lastModified.toUTCString());
-    }
-
-    for (const [key, value] of Object.entries(headers.metadata)) {
+const applyMetadataHeaders = (response: Response, metadata: Record<string, string>): void => {
+    for (const [key, value] of Object.entries(metadata)) {
         response.setHeader(`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key}`, value);
     }
-};
-
-const applyPassthroughStreamHeaders = (
-    streamHeaders: Record<string, string> | undefined,
-    response: Response
-): void => {
-    if (!streamHeaders) {
-        return;
-    }
-
-    const acceptRanges = streamHeaders['accept-ranges'];
-    if (acceptRanges) {
-        response.setHeader('accept-ranges', acceptRanges);
-    }
-
-    const contentRange = streamHeaders['content-range'];
-    if (contentRange) {
-        response.setHeader('content-range', contentRange);
-    }
-};
-
-const sendError = (response: Response, error: unknown): void => {
-    const message = error instanceof Error ? error.message : 'Unexpected object store proxy error';
-    const code = error instanceof Error && 'code' in error && typeof error.code === 'string'
-        ? error.code
-        : 'TeamCluster::ObjectStoreProxyFailed';
-    const statusCode = typeof error === 'object'
-        && error !== null
-        && 'statusCode' in error
-        && typeof error.statusCode === 'number'
-        ? error.statusCode
-        : 500;
-
-    response.status(statusCode).json({
-        status: 'error',
-        code,
-        message
-    });
 };
 
 export default class ClusterObjectStoreProxyController {
@@ -248,7 +191,7 @@ export default class ClusterObjectStoreProxyController {
 
                     response.setHeader('allow', 'GET, DELETE');
                     throw new ApplicationError(
-                        'TeamCluster::ObjectStoreProxyMethodNotAllowed',
+                        ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_METHOD_NOT_ALLOWED,
                         'Method not allowed',
                         405
                     );
@@ -260,7 +203,8 @@ export default class ClusterObjectStoreProxyController {
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey
                     );
-                    applyResponseHeaders(head, response);
+                    applyObjectHeaders(response, head);
+                    applyMetadataHeaders(response, head.metadata);
                     response.status(200).end();
                     return;
                 }
@@ -277,9 +221,10 @@ export default class ClusterObjectStoreProxyController {
                         resolvedRoute.objectKey,
                         Object.keys(readOptions).length > 0 ? readOptions : undefined
                     );
-                    applyResponseHeaders(streamResponse, response);
-                    applyPassthroughStreamHeaders(streamResponse.headers, response);
-                    response.status(streamResponse.headers['content-range'] ? 206 : 200);
+                    applyObjectHeaders(response, streamResponse);
+                    applyMetadataHeaders(response, streamResponse.metadata);
+                    applyRangeHeaders(response, streamResponse.headers);
+                    response.status(isPartialContent(streamResponse.headers) ? 206 : 200);
                     await pipeline(streamResponse.stream, response);
                     return;
                 }
@@ -312,13 +257,13 @@ export default class ClusterObjectStoreProxyController {
 
                 response.setHeader('allow', 'GET, HEAD, PUT, DELETE');
                 throw new ApplicationError(
-                    'TeamCluster::ObjectStoreProxyMethodNotAllowed',
+                    ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_METHOD_NOT_ALLOWED,
                     'Method not allowed',
                     405
                 );
-            } catch (error) {
+            } catch (error: unknown) {
                 if (!response.headersSent) {
-                    sendError(response, error);
+                    sendObjectError(response, error, PROXY_FAILURE);
                     return;
                 }
 

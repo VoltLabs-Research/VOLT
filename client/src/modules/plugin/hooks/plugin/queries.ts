@@ -1,8 +1,5 @@
-import {
-    useQuery,
-    type QueryKey,
-    type UseQueryOptions
-} from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import type { QueryKey } from '@tanstack/react-query';
 import { createEntityCacheResource } from '@/shared/api/query-resources';
 import queryClient from '@/shared/query/query-client';
 import {
@@ -15,10 +12,10 @@ import {
     upsertEntityInList,
     removeEntityFromList,
     patchPaginatedPage,
-    patchInfinitePages,
     batchInvalidateQueries
 } from '@/shared/query/cache-utils';
 import { createMutation, createQuery, buildKeys } from '@/shared/query';
+import type { QueryOptions } from '@/shared/query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
@@ -26,8 +23,6 @@ import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/regi
 import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
 import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
-
-type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 const pluginBaseKeys = buildKeys<{
     all: void;
@@ -39,10 +34,6 @@ const catalogKeys = buildKeys<{
     list: GetPluginsInput;
 }>(['plugins', 'catalog']);
 
-const catalogInfiniteKeys = buildKeys<{
-    list: { limit: number };
-}>(['plugins', 'catalog', 'infinite']);
-
 const teamClusterKeys = buildKeys<{
     list: ListPluginTeamClustersInput;
 }>(['plugins', 'team-clusters']);
@@ -52,17 +43,12 @@ const registrySearchKeys = buildKeys<{
 }>(['plugins', 'registry', 'search']);
 
 export const PLUGIN_QUERY_KEYS = {
-    root: pluginBaseKeys.prefix,
     all: pluginBaseKeys.all,
     byId: pluginBaseKeys.byId,
     pluginById: pluginBaseKeys.pluginById,
     catalog: catalogKeys.prefix,
-    catalogInfinite: catalogInfiniteKeys.prefix,
     catalogList: catalogKeys.list,
-    catalogInfiniteList: catalogInfiniteKeys.list,
-    teamClusters: teamClusterKeys.prefix,
     teamClustersList: teamClusterKeys.list,
-    registrySearch: registrySearchKeys.prefix,
     registrySearchList: registrySearchKeys.list
 };
 
@@ -104,7 +90,7 @@ export const fetchPluginById = (
 
 export const usePluginByIdQuery = (
     params: GetPluginInput,
-    options?: QueryOptions<Plugin, Plugin>
+    options?: QueryOptions<Plugin>
 ) => {
     return useQuery<Plugin, Error, Plugin, QueryKey>({
         ...buildPluginByIdQueryOptions(params),
@@ -112,37 +98,22 @@ export const usePluginByIdQuery = (
     });
 };
 
-const pluginsQuery = createQuery<GetPluginsInput, PaginatedResponse<Plugin>>(
+export const usePluginsCatalogQuery = createQuery<GetPluginsInput, PaginatedResponse<Plugin>>(
     (params) => PLUGIN_QUERY_KEYS.catalogList(params),
     (params) => pluginService.getAll(params)
 );
 
-export const fetchPlugins = (params: GetPluginsInput) => pluginsQuery.fetch(params);
+export const fetchPlugins = (params: GetPluginsInput) => usePluginsCatalogQuery.fetch(params);
 
-export const usePluginsCatalogQuery = (
-    params: GetPluginsInput,
-    options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
-) => pluginsQuery(params, options as QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>> | undefined);
-
-const teamClustersQuery = createQuery<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>(
+export const usePluginTeamClustersQuery = createQuery<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>(
     (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),
     (params) => pluginService.listTeamClusters(params)
 );
 
-export const usePluginTeamClustersQuery = (
-    params: ListPluginTeamClustersInput,
-    options?: QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse>
-) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse> | undefined);
-
-const registrySearchQuery = createQuery<SearchRegistryInput, SearchRegistryResponse>(
+export const useRegistrySearchQuery = createQuery<SearchRegistryInput, SearchRegistryResponse>(
     (params) => PLUGIN_QUERY_KEYS.registrySearchList(params),
     (params) => pluginService.searchRegistry(params)
 );
-
-export const useRegistrySearchQuery = (
-    params: SearchRegistryInput,
-    options?: QueryOptions<SearchRegistryResponse, SearchRegistryResponse>
-) => registrySearchQuery(params, options as QueryOptions<SearchRegistryResponse, SearchRegistryResponse> | undefined);
 
 const pluginEntityCache = createEntityCacheResource<Plugin>({
     listKey: PLUGIN_QUERY_KEYS.all,
@@ -155,18 +126,9 @@ const pluginEntityCache = createEntityCacheResource<Plugin>({
 
             return upsertEntityInList(page, plugin);
         });
-
-        patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => {
-            if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
-                return page;
-            }
-
-            return upsertEntityInList(page, plugin);
-        });
     },
     onRemove: (pluginId) => {
         patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => removeEntityFromList(page, pluginId));
-        patchInfinitePages<Plugin>(PLUGIN_QUERY_KEYS.catalogInfinite(), (page) => removeEntityFromList(page, pluginId));
     }
 });
 
@@ -174,20 +136,12 @@ export const syncPluginEntityCaches = (plugin: Plugin): void => {
     pluginEntityCache.upsert(plugin);
 };
 
-const removePluginEntityCaches = (pluginId: string): void => {
-    pluginEntityCache.remove(pluginId);
-};
-
-const invalidatePluginCatalogQueries = async (): Promise<void> => {
+const invalidatePluginEntityQueries = async (): Promise<void> => {
     await batchInvalidateQueries([
         PLUGIN_QUERY_KEYS.catalog(),
-        PLUGIN_QUERY_KEYS.all()
+        PLUGIN_QUERY_KEYS.all(),
+        PLUGIN_QUERY_KEYS.byId()
     ]);
-};
-
-const invalidatePluginEntityQueries = async (): Promise<void> => {
-    await invalidatePluginCatalogQueries();
-    await queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.byId() });
 };
 
 const managePluginEntityMutation = <TVariables, TData = Plugin>(
@@ -200,36 +154,36 @@ const managePluginEntityMutation = <TVariables, TData = Plugin>(
 
 export const useSavePluginMutation = managePluginEntityMutation<SavePluginInput>(
     savePlugin,
-    (plugin) => syncPluginEntityCaches(plugin)
+    syncPluginEntityCaches
 );
 
 export const useDeletePluginMutation = managePluginEntityMutation<DeletePluginInput, void>(
     pluginService.delete,
-    (_data, { _id }) => removePluginEntityCaches(_id)
+    (_data, { _id }) => pluginEntityCache.remove(_id)
 );
 
 export const useExportPluginMutation = createMutation<Blob, ExportPluginInput>(pluginService.exportPlugin);
 
 export const useImportPluginMutation = managePluginEntityMutation<ImportPluginInput>(
     pluginService.importPlugin,
-    (plugin) => syncPluginEntityCaches(plugin)
+    syncPluginEntityCaches
 );
 
 export const useInstallRegistryPluginMutation = managePluginEntityMutation<InstallRegistryPluginInput>(
     pluginService.installRegistryPlugin,
-    (plugin) => syncPluginEntityCaches(plugin)
+    syncPluginEntityCaches
 );
 
 export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(pluginService.executePipeline);
 
 export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInput>(
     pluginService.clone,
-    (plugin) => syncPluginEntityCaches(plugin)
+    syncPluginEntityCaches
 );
 
 export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginParams>(
     pluginService.update,
-    (plugin) => syncPluginEntityCaches(plugin)
+    syncPluginEntityCaches
 );
 
 export const useUploadBinaryMutation = createMutation<UploadBinaryResponse, UploadBinaryParams>(pluginService.uploadBinary);

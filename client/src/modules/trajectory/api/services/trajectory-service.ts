@@ -27,7 +27,9 @@ export interface CreateTrajectoryInput {
         size: number;
         type?: string;
     }>;
-}interface CommitTrajectoryUploadSessionInput {
+}
+
+interface CommitTrajectoryUploadSessionInput {
     uploadSessionId: string;
     authToken?: string;
 }
@@ -159,7 +161,7 @@ const endpoints = {
     }),
     update: patch<UpdateTrajectoryParams, Trajectory>('/trajectories/:trajectoryId'),
     delete: del<DeleteTrajectoryInput>('/trajectories/:trajectoryId'),
-    move: patch<{ trajectoryId: string; folderId: string | null }, void>('/trajectories/:trajectoryId/folder', {
+    move: patch<MoveTrajectoryParams, void>('/trajectories/:trajectoryId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
     getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/trajectories/:trajectoryId/preview', {
@@ -207,5 +209,3 @@ export default createService({
         }
     }
 }, endpoints);
-
-export type CreateTrajectoryResponse = Trajectory;

@@ -21,16 +21,11 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useNavigate } from 'react-router-dom';
 const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    const trajectory = row.trajectory as unknown as Record<string, unknown> | null;
     return (
-        <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
+        <PopulatedCellPopover document={row.trajectory} modelName='Trajectory'>
             <span>{row.trajectory?.name || '-'}</span>
         </PopulatedCellPopover>
     );
-};
-
-const renderPluginName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    return row.pluginDisplayName;
 };
 
 const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
@@ -82,7 +77,6 @@ const BASE_COLUMNS: ColumnConfig<Analysis>[] = [
         key: 'pluginDisplayName',
         title: 'Plugin',
         sortable: true,
-        render: renderPluginName,
         skeleton: {
             variant: 'text',
             width: 110

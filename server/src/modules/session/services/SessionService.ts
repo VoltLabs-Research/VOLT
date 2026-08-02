@@ -4,28 +4,29 @@ import Session from '@modules/session/models/Session';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { parseUserAgent } from '@volt/contracts/modules/session/user-agent';
 
-interface SessionView{
-    _id: string;
-    user: string | null;
-    token: null;
-    userAgent: string;
-    ip: string;
-    isActive: boolean;
-    lastActivity: Date;
-    action: string;
-    success: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    isCurrent: boolean;
-    browser: string;
-    os: string;
-    isMobile: boolean;
-}
-
-
+const toSessionView = (entity: Session, currentToken?: string) => {
+    const ua = parseUserAgent(entity.userAgent ?? '');
+    return {
+        _id: entity.id,
+        user: entity.user,
+        token: null,
+        userAgent: entity.userAgent,
+        ip: entity.ip,
+        isActive: entity.isActive,
+        lastActivity: entity.lastActivity,
+        action: entity.action,
+        success: entity.success,
+        createdAt: entity.createdAt,
+        updatedAt: entity.updatedAt,
+        isCurrent: Boolean(currentToken && entity.token === currentToken),
+        browser: ua.browser,
+        os: ua.os,
+        isMobile: ua.isMobile
+    };
+};
 
 export default class SessionService{
-    async getActiveSessions(userId: string, currentToken?: string): Promise<SessionView[]>{
+    async getActiveSessions(userId: string, currentToken?: string){
         const sessions = await Session.find({
             where: {
                 user: userId,
@@ -33,16 +34,16 @@ export default class SessionService{
             },
             order: { lastActivity: 'DESC' }
         });
-        return sessions.map((session) => this.#toView(session, currentToken));
+        return sessions.map((session) => toSessionView(session, currentToken));
     }
 
-    async getLoginActivity(userId: string, limit = 20): Promise<{ activities: SessionView[] }>{
+    async getLoginActivity(userId: string, limit = 20){
         const sessions = await Session.find({
             where: { user: userId },
             order: { createdAt: 'DESC' },
             take: limit
         });
-        return { activities: sessions.map((session) => this.#toView(session)) };
+        return { activities: sessions.map((session) => toSessionView(session)) };
     }
 
     async revokeSession(sessionId: string, userId: string): Promise<void>{
@@ -72,26 +73,5 @@ export default class SessionService{
         );
 
         return { revokedCount: result.affected ?? 0 };
-    }
-
-    #toView(entity: Session, currentToken?: string): SessionView{
-        const ua = parseUserAgent(entity.userAgent ?? '');
-        return {
-            _id: entity.id,
-            user: entity.user,
-            token: null,
-            userAgent: entity.userAgent,
-            ip: entity.ip,
-            isActive: entity.isActive,
-            lastActivity: entity.lastActivity,
-            action: entity.action,
-            success: entity.success,
-            createdAt: entity.createdAt,
-            updatedAt: entity.updatedAt,
-            isCurrent: Boolean(currentToken && entity.token === currentToken),
-            browser: ua.browser,
-            os: ua.os,
-            isMobile: ua.isMobile
-        };
     }
 }

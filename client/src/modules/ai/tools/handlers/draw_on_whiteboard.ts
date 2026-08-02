@@ -8,9 +8,9 @@ import type {
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
 interface DrawOnWhiteboardInput {
-    whiteboardId?: string;
+    whiteboardId: string;
     mode?: 'append' | 'replace';
-    elements?: WhiteboardDrawElement[];
+    elements: WhiteboardDrawElement[];
 }
 
 const READINESS_TIMEOUT_MS = 6000;
@@ -40,9 +40,8 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
     name: 'draw_on_whiteboard',
 
     async run(input, ctx): Promise<ClientToolResult> {
-        const whiteboardId = typeof input.whiteboardId === 'string' ? input.whiteboardId.trim() : '';
-        const elements = Array.isArray(input.elements) ? input.elements : [];
-        const mode = input.mode === 'replace' ? 'replace' : 'append';
+        const whiteboardId = input.whiteboardId.trim();
+        const mode = input.mode ?? 'append';
 
         if (!whiteboardId) {
             return {
@@ -53,7 +52,7 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
             };
         }
 
-        if (elements.length === 0) {
+        if (input.elements.length === 0) {
             return {
                 ok: false,
                 summary: 'No elements to draw.',
@@ -79,7 +78,7 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
 
         const result = snapshot.draw({
             mode,
-            elements
+            elements: input.elements
         });
 
         return {

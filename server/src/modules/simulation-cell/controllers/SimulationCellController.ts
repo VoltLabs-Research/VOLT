@@ -40,6 +40,6 @@ export default class SimulationCellController extends Controller {
 
     @Route(simulationCellRoutes.get)
     getById(@Param('simulationCellId') simulationCellId: string) {
-        return this.#service.getById({ simulationCellId });
+        return this.#service.getById(simulationCellId);
     }
 }

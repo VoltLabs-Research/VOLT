@@ -25,7 +25,7 @@ const SliderSubmenu = ({ label, min, max, step, value, onChange }: SliderSubmenu
     </div>
 );
 
-export const buildTransparencySubmenu = (_label: string, value: number, onChange: (value: number) => void) => (
+export const buildTransparencySubmenu = (value: number, onChange: (value: number) => void) => (
     <SliderSubmenu
         label='Transparency'
         min={0}
@@ -36,7 +36,7 @@ export const buildTransparencySubmenu = (_label: string, value: number, onChange
     />
 );
 
-export const buildLineWidthSubmenu = (_label: string, value: number, defaultValue: number, onChange: (value: number) => void) => (
+export const buildLineWidthSubmenu = (value: number, defaultValue: number, onChange: (value: number) => void) => (
     <SliderSubmenu
         label='Line Width'
         min={Math.max(0.01, defaultValue * 0.25)}

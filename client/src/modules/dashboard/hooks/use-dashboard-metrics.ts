@@ -2,12 +2,7 @@ import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
 import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
-import type { DashboardCard } from '@/modules/dashboard/contracts/cards';
-
-interface DashboardYDomain {
-    min: number;
-    max: number;
-}
+import type { DashboardCard, DashboardCardYDomain } from '@/modules/dashboard/contracts/cards';
 
 const abbreviateNumber = (value: number): string => {
     if (value >= 1e9) return `${(value / 1e9).toFixed(1)}b`;
@@ -16,7 +11,7 @@ const abbreviateNumber = (value: number): string => {
     return String(value);
 };
 
-const calculateYDomain = (values: number[]): DashboardYDomain => {
+const calculateYDomain = (values: number[]): DashboardCardYDomain => {
     if (values.length === 0) {
         return {
             min: 0,
@@ -41,11 +36,13 @@ const buildCard = (
 ): DashboardCard => {
     let series: number[] = [];
     const weeklySeries = data.weekly[key];
-    if (Array.isArray(weeklySeries) && weeklySeries.every((value) => typeof value === 'number')) {
+    // DashboardWeeklySeries indexes labels (string[]) and series (number[]) under one
+    // signature, so `weeklySeries` is `number[] | string[]` and must be narrowed here.
+    if (weeklySeries.every((value) => typeof value === 'number')) {
         series = weeklySeries;
     }
 
-    const total = data.totals[key] || 0;
+    const total = data.totals[key];
 
     return {
         key,
@@ -53,7 +50,7 @@ const buildCard = (
         listingUrl: defaultUrl,
         count: abbreviateNumber(total),
         rawCount: total,
-        lastMonthStatus: data.lastMonth[key] || 0,
+        lastMonthStatus: data.lastMonth[key],
         series,
         labels: data.weekly.labels,
         yDomain: calculateYDomain(series)
@@ -85,12 +82,9 @@ const useDashboardMetrics = (teamId?: string) => {
         ];
     }, [metricsQuery.data]);
 
-    const errorMessage = metricsQuery.error instanceof Error ? metricsQuery.error.message : null;
-
     return {
         loading: metricsQuery.isLoading,
-        error: errorMessage,
-        data: metricsQuery.data || null,
+        error: metricsQuery.error?.message ?? null,
         cards,
         accessDenied,
         accessDeniedMessage

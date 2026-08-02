@@ -3,7 +3,6 @@ import type {
     PersistedStoragePlacement,
     StoragePlacementBucketRef,
     StoragePlacementProps,
-    StoragePlacementScopeType as StoragePlacementScopeTypeContract,
     StoragePlacementState as StoragePlacementStateContract
 } from '@shared/domain/contracts/team-cluster';
 
@@ -27,44 +26,37 @@ export const DEFAULT_STORAGE_PLACEMENT_STATE: StoragePlacementStateContract = St
 const normalizeStoragePlacementBuckets = (
     buckets: StoragePlacementBucketRef[]
 ): StoragePlacementBucketRef[] => {
-    return buckets
-        .filter((bucketRef) => Boolean(bucketRef.bucket))
-        .map((bucketRef) => ({
-            bucket: bucketRef.bucket,
-            prefix: bucketRef.prefix
-        }))
-        .sort((left, right) => {
-            if(left.bucket !== right.bucket){
-                return left.bucket.localeCompare(right.bucket);
-            }
+    const deduped = new Map<string, StoragePlacementBucketRef>();
 
-            return left.prefix.localeCompare(right.prefix);
-        });
+    for(const bucketRef of buckets){
+        if(bucketRef.bucket){
+            deduped.set(`${bucketRef.bucket}:${bucketRef.prefix}`, {
+                bucket: bucketRef.bucket,
+                prefix: bucketRef.prefix
+            });
+        }
+    }
+
+    return [...deduped.values()].sort((left, right) => {
+        if(left.bucket !== right.bucket){
+            return left.bucket.localeCompare(right.bucket);
+        }
+
+        return left.prefix.localeCompare(right.prefix);
+    });
 };
 
+type StoragePlacementPropsInput =
+    Partial<StoragePlacementProps>
+    & Pick<StoragePlacementProps, 'team' | 'scopeType' | 'scopeId' | 'primaryClusterId' | 'buckets'>;
+
 export const createStoragePlacementProps = (
-    input: {
-        team: string;
-        scopeType: StoragePlacementScopeTypeContract;
-        scopeId: string;
-        primaryClusterId: string;
-        replicaClusterIds?: string[];
-        buckets: StoragePlacementBucketRef[];
-        state?: StoragePlacementStateContract;
-        lastVerifiedAt?: Date | null;
-        bytesUsed?: number | null;
-        lastAccessedAt?: Date | null;
-        createdAt?: Date;
-        updatedAt?: Date;
-    }
+    input: StoragePlacementPropsInput
 ): StoragePlacementProps => {
     const now = input.createdAt ?? input.updatedAt ?? new Date();
 
     return {
-        team: input.team,
-        scopeType: input.scopeType,
-        scopeId: input.scopeId,
-        primaryClusterId: input.primaryClusterId,
+        ...input,
         replicaClusterIds: [...new Set((input.replicaClusterIds ?? []).filter(Boolean))],
         buckets: normalizeStoragePlacementBuckets(input.buckets),
         state: input.state ?? DEFAULT_STORAGE_PLACEMENT_STATE,

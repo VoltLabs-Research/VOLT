@@ -1,30 +1,22 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { format, formatDistanceStrict } from 'date-fns';
 import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
-import { Box, Button, Divider, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
+import { Box, Divider, KeyValueList, KeyValueRow, Stack } from '@voltstack/bravais';
 import { formatSize } from '@voltstack/bravais';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
-import useTimeSeriesBuffer from '@/modules/container/hooks/use-time-series-buffer';
-import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
+import ContainerPortBindingsCard from './ContainerPortBindingsCard';
+import useContainerMetricsHistory from '@/modules/container/hooks/use-container-metrics-history';
+import { buildContainerInspectorRows } from '@/modules/container/utils/build-container-inspector-rows';
 import useTip from '@/shared/tips/use-tip';
 import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';
 import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { ContainerStatsViewData } from '@/modules/container/services/container-stats-view';
-import type { EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
-import type { InspectorRow } from '../ContainerInspectorList';
+import type { EnvVariableFormItem } from '@/modules/container/contracts/forms';
 import './ContainerOverview.css';
-
-const HISTORY_POINTS = 60;
 
 const METRIC_COLOR = 'var(--color-text-muted)';
 
 const BYTES_PER_MB = 1024 * 1024;
-
-interface MetricPoint {
-    v: number;
-}
 
 interface ContainerOverviewProps {
     container: ContainerEntity;
@@ -33,119 +25,15 @@ interface ContainerOverviewProps {
     onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
 }
 
-const computePeakAvg = (values: number[]) => {
-    if (!values.length) return {
-        peak: 0,
-        avg: 0
-    };
-    const peak = Math.max(...values);
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-    return {
-        peak,
-        avg
-    };
-};
-
 const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
     useTip('container-env-vars');
 
     const isRunning = container.status === 'running';
-    const { openPort, openingPort } = useOpenContainerPort();
+    const history = useContainerMetricsHistory(stats);
 
-    const cpuBuffer = useTimeSeriesBuffer<MetricPoint>({ maxPoints: HISTORY_POINTS });
-    const memoryBuffer = useTimeSeriesBuffer<MetricPoint>({ maxPoints: HISTORY_POINTS });
-    const networkBuffer = useTimeSeriesBuffer<MetricPoint>({ maxPoints: HISTORY_POINTS });
-    const prevNetworkRef = useRef<{ rx: number; tx: number } | null>(null);
-
-    useEffect(() => {
-        if (!stats.cpu) return;
-        cpuBuffer.pushPoint({ v: stats.cpu.usage });
-    }, [stats.cpu, cpuBuffer]);
-
-    useEffect(() => {
-        if (!stats.memory) return;
-        memoryBuffer.pushPoint({ v: stats.memory.used });
-    }, [stats.memory, memoryBuffer]);
-
-    useEffect(() => {
-        if (!stats.network) return;
-        const prev = prevNetworkRef.current;
-        if (prev) {
-            const deltaRx = Math.max(0, stats.network.rx - prev.rx);
-            const deltaTx = Math.max(0, stats.network.tx - prev.tx);
-            networkBuffer.pushPoint({ v: deltaRx + deltaTx });
-        }
-        prevNetworkRef.current = {
-            rx: stats.network.rx,
-            tx: stats.network.tx
-        };
-    }, [stats.network, networkBuffer]);
-
-    const cpuValues = useMemo(() => cpuBuffer.history.map((p) => p.v), [cpuBuffer.history]);
-    const memoryValues = useMemo(() => memoryBuffer.history.map((p) => p.v), [memoryBuffer.history]);
-    const networkValues = useMemo(() => networkBuffer.history.map((p) => p.v), [networkBuffer.history]);
-
-    const cpuDerived = useMemo(() => computePeakAvg(cpuValues), [cpuValues]);
-    const memoryDerived = useMemo(() => computePeakAvg(memoryValues), [memoryValues]);
-
-    const cpuValue = stats.cpu ? `${stats.cpu.usage.toFixed(1)}%` : '—';
-    const memoryValue = stats.memory ? formatSize(stats.memory.used * BYTES_PER_MB) : '—';
-    const networkValue = stats.network ? formatSize(stats.network.rx + stats.network.tx) : '—';
-
-    const inspectorRows: InspectorRow[] = [
-        {
-            label: 'Image',
-            value: container.image,
-            copyValue: container.image
-        },
-        {
-            label: 'Container ID',
-            value: container.containerId.substring(0, 12),
-            copyValue: container.containerId
-        },
-        ...(container.internalIp
-            ? [{
-                label: 'Internal IP',
-                value: container.internalIp,
-                copyValue: container.internalIp
-            }]
-            : []),
-        {
-            label: 'CPU limit',
-            value: `${container.cpus} ${container.cpus === 1 ? 'core' : 'cores'}`
-        },
-        {
-            label: 'Memory limit',
-            value: formatSize(container.memory * BYTES_PER_MB)
-        },
-        ...(container.network ? [{
-            label: 'Network',
-            value: container.network
-        }] : []),
-        ...(container.volume ? [{
-            label: 'Volume',
-            value: container.volume
-        }] : []),
-        {
-            label: 'Created',
-            value: format(new Date(container.createdAt), 'PP · p')
-        },
-        ...(isRunning
-            ? [{
-                label: 'Uptime',
-                value: formatDistanceStrict(new Date(container.createdAt), new Date())
-            }]
-            : [])
-    ];
-
-    const envItems: EnvVariableFormItem[] = (container.env || []).map((item) => ({
+    const envItems: EnvVariableFormItem[] = container.env.map((item) => ({
         key: item.key,
         value: item.value
-    }));
-
-    const portItems: PortMappingFormItem[] = container.ports.map((item) => ({
-        private: item.private,
-        public: item.public
     }));
 
     return (
@@ -153,46 +41,46 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
             <Box className='container-overview-metrics'>
                 <ContainerMetricTile
                     label='CPU'
-                    value={cpuValue}
+                    value={stats.cpu ? `${stats.cpu.usage.toFixed(1)}%` : '—'}
                     badge={stats.cpu ? `${stats.cpu.cores} ${stats.cpu.cores === 1 ? 'core' : 'cores'}` : undefined}
-                    history={cpuValues}
+                    history={history.cpu.values}
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
                         {
                             label: 'Peak',
-                            value: `${cpuDerived.peak.toFixed(1)}%`
+                            value: `${history.cpu.peak.toFixed(1)}%`
                         },
                         {
                             label: 'Avg',
-                            value: `${cpuDerived.avg.toFixed(1)}%`
+                            value: `${history.cpu.avg.toFixed(1)}%`
                         }
                     ]}
                 />
 
                 <ContainerMetricTile
                     label='Memory'
-                    value={memoryValue}
+                    value={stats.memory ? formatSize(stats.memory.used * BYTES_PER_MB) : '—'}
                     badge={stats.memory ? `of ${formatSize(stats.memory.total * BYTES_PER_MB)}` : undefined}
-                    history={memoryValues}
+                    history={history.memory.values}
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
                         {
                             label: 'Peak',
-                            value: formatSize(memoryDerived.peak * BYTES_PER_MB)
+                            value: formatSize(history.memory.peak * BYTES_PER_MB)
                         },
                         {
                             label: 'Avg',
-                            value: formatSize(memoryDerived.avg * BYTES_PER_MB)
+                            value: formatSize(history.memory.avg * BYTES_PER_MB)
                         }
                     ]}
                 />
 
                 <ContainerMetricTile
                     label='Network'
-                    value={networkValue}
-                    history={networkValues}
+                    value={stats.network ? formatSize(stats.network.rx + stats.network.tx) : '—'}
+                    history={history.network.values}
                     color={METRIC_COLOR}
                     isLoading={!isRunning}
                     secondary={[
@@ -211,7 +99,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
             <Divider className='mt-2 mb-2' />
 
             <Box className='container-overview-inspector'>
-                <ContainerInspectorList title='Information' rows={inspectorRows} />
+                <ContainerInspectorList title='Information' rows={buildContainerInspectorRows(container)} />
 
                 <Box className='container-overview-inspector-side'>
                     <EditableKeyValueCard<EnvVariableFormItem>
@@ -243,72 +131,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         )}
                     />
 
-                    <EditableKeyValueCard<PortMappingFormItem>
-                        title='Port Bindings'
-                        titleClassName='container-overview-section-title'
-                        items={portItems}
-                        fields={[
-                            {
-                                key: 'private',
-                                placeholder: 'Container Port',
-                                type: 'number'
-                            },
-                            {
-                                key: 'public',
-                                placeholder: 'Host Port',
-                                type: 'number'
-                            }
-                        ]}
-                        emptyMessage='No ports exposed'
-                        onSave={onUpdatePorts}
-                        createEmpty={() => ({ private: 0 })}
-                        showCard={false}
-                        className='d-flex column'
-                        renderItem={(item, i) => {
-                                const resolvedPublicPort = item.public !== undefined && item.public > 0
-                                    ? item.public
-                                    : null;
-                                const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
-                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available' && accessiblePort.public !== undefined;
-
-                                const portLabel = (
-                                    <Row gap='05'>
-                                        <span className='tabular-nums'>{item.private}/tcp</span>
-                                        {resolvedPublicPort !== null && (
-                                            <>
-                                                <span className='color-muted'>→</span>
-                                                <span className='tabular-nums color-muted'>{resolvedPublicPort}</span>
-                                            </>
-                                        )}
-                                    </Row>
-                                );
-
-                                let portAction: React.ReactNode = null;
-                                if (canOpen) {
-                                    portAction = (
-                                        <Button
-                                            variant='ghost'
-                                            intent='brand'
-                                            size='sm'
-                                            onClick={() => openPort(container._id, item.private)}
-                                            isLoading={openingPort === item.private}
-                                        >
-                                            Open :{accessiblePort?.public}
-                                        </Button>
-                                    );
-                                } else if (accessiblePort?.status === 'unavailable') {
-                                    portAction = <Text size='sm' tone='muted'>Unavailable</Text>;
-                                } else {
-                                    portAction = <Text size='sm' tone='muted'>TCP only</Text>;
-                                }
-
-                                return (
-                                    <KeyValueList key={i}>
-                                        <KeyValueRow label={portLabel} value='' action={portAction} />
-                                    </KeyValueList>
-                                );
-                            }}
-                        />
+                    <ContainerPortBindingsCard container={container} onUpdatePorts={onUpdatePorts} />
                 </Box>
             </Box>
         </Stack>

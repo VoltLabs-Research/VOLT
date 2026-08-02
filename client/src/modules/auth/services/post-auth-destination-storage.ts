@@ -10,11 +10,6 @@ interface ResolvePostAuthDestinationInput {
     queryNext?: string | null;
 }
 
-interface BuildOnboardingRedirectPathInput {
-    destination?: string | null;
-    onboardingPath: string;
-}
-
 const sanitizePostAuthDestination = (destination: string | null | undefined): string | null => {
     if (!destination) {
         return null;
@@ -37,20 +32,12 @@ const sanitizePostAuthDestination = (destination: string | null | undefined): st
     }
 };
 
-const isOnboardingDestination = (destination: string): boolean => {
-    const safeDestination = sanitizePostAuthDestination(destination);
-    if (!safeDestination) {
-        return false;
-    }
-
+const isOnboardingDestination = (safeDestination: string): boolean => {
     const pathname = safeDestination.split(/[?#]/)[0];
     return pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`);
 };
 
-const buildOnboardingRedirectPath = ({
-    destination,
-    onboardingPath
-}: BuildOnboardingRedirectPathInput): string => {
+const buildOnboardingRedirectPath = (destination: string | null | undefined, onboardingPath: string): string => {
     const safeDestination = sanitizePostAuthDestination(destination);
 
     if (!safeDestination || isOnboardingDestination(safeDestination)) {
@@ -88,33 +75,20 @@ export const clearPostAuthDestination = (): void => {
 export const resolvePostAuthDestination = ({
     queryNext
 }: ResolvePostAuthDestinationInput): string => {
-    const safeQueryNext = sanitizePostAuthDestination(queryNext);
-    if (safeQueryNext) {
-        return safeQueryNext;
-    }
-
-    const storedDestination = getPostAuthDestination();
-    if (storedDestination) {
-        return storedDestination;
-    }
-
-    return DEFAULT_POST_AUTH_DESTINATION;
+    return sanitizePostAuthDestination(queryNext)
+        ?? getPostAuthDestination()
+        ?? DEFAULT_POST_AUTH_DESTINATION;
 };
 
 export const getOnboardingRedirectPath = (destination?: string | null): string => {
-    return buildOnboardingRedirectPath({
-        destination,
-        onboardingPath: ONBOARDING_PATH
-    });
+    return buildOnboardingRedirectPath(destination, ONBOARDING_PATH);
 };
 
 export const getClusterOnboardingRedirectPath = (destination?: string | null): string => {
-    return buildOnboardingRedirectPath({
+    return buildOnboardingRedirectPath(
         destination,
-        onboardingPath: isDemoClusterFeatureEnabled()
-            ? CLUSTER_ONBOARDING_CHOICE_PATH
-            : CLUSTER_ONBOARDING_PATH
-    });
+        isDemoClusterFeatureEnabled() ? CLUSTER_ONBOARDING_CHOICE_PATH : CLUSTER_ONBOARDING_PATH
+    );
 };
 
 export const getPostAuthRedirectPath = (destination: string): string => {
@@ -124,5 +98,5 @@ export const getPostAuthRedirectPath = (destination: string): string => {
         return safeDestination;
     }
 
-    return getOnboardingRedirectPath(safeDestination);
+    return buildOnboardingRedirectPath(safeDestination, ONBOARDING_PATH);
 };

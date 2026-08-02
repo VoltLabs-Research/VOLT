@@ -29,7 +29,7 @@ export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams 
         error: queryError,
         refetch
     } = useTrajectoryByIdQuery(
-        { trajectoryId: trajectoryId || '' },
+        trajectoryId || '',
         {
             enabled: shouldFetch,
             refetchOnMount: 'always',

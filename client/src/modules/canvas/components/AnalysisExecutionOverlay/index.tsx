@@ -17,7 +17,7 @@ interface AnalysisExecutionOverlayProps {
 }
 
 const formatDuration = (durationMs?: number): string => {
-    if (typeof durationMs !== 'number') return '';
+    if (durationMs === undefined) return '';
     if (durationMs < 1000) return `${Math.round(durationMs)}ms`;
     if (durationMs < 10000) return `${(durationMs / 1000).toFixed(1)}s`;
     return `${Math.round(durationMs / 1000)}s`;
@@ -77,7 +77,7 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             analysisId,
             trajectoryId,
             analyses,
-            trajectory?.analysis as Analysis[] | undefined
+            trajectory?.analysis
         );
     }, [analyses, analysisId, trajectory?.analysis, trajectoryId]);
 
@@ -113,7 +113,7 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
                         </Text>
                         <Text as='span' truncate className="canvas-tree-execution-label">{row.label}</Text>
                         {row.cacheHit && <Text as='span' className="canvas-tree-execution-chip">cached</Text>}
-                        {typeof row.durationMs === 'number' && (
+                        {row.durationMs !== undefined && (
                             <Text as='span' className="canvas-tree-execution-duration">{formatDuration(row.durationMs)}</Text>
                         )}
                     </div>

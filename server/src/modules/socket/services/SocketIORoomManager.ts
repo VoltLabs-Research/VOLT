@@ -1,5 +1,5 @@
 import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
-import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
+import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
 import logger from '@shared/infrastructure/logger';
 import { Server, Socket } from 'socket.io';
 
@@ -11,19 +11,11 @@ export default class SocketIORoomManager {
         this.io = io;
     }
 
-    registerConnection(socket: unknown): void{
-        this.registerSocket(socket as Socket);
-    }
-
-    unregisterConnection(socketId: string): void{
-        this.unregisterSocket(socketId);
-    }
-
-    private registerSocket(socket: Socket): void{
+    registerConnection(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
-    private unregisterSocket(socketId: string): void{
+    unregisterConnection(socketId: string): void{
         this.sockets.delete(socketId);
     }
 
@@ -83,11 +75,9 @@ export default class SocketIORoomManager {
             const byId = new Map<string, PresenceUser>();
 
             for(const socket of sockets){
-                const connection = socketConnectionMapper.toDomain(socket);
-                const presenceUser = userExtractor(connection);
-                const uid = presenceUser.id;
-                if(uid && !byId.has(uid)){
-                    byId.set(uid, presenceUser);
+                const presenceUser = userExtractor(toSocketConnection(socket as unknown as Socket));
+                if(presenceUser.id && !byId.has(presenceUser.id)){
+                    byId.set(presenceUser.id, presenceUser);
                 }
             }
 

@@ -26,10 +26,6 @@ interface DayElementProps {
     'aria-label'?: string;
 };
 
-const isActivityHeatmapChartDataItem = (value: HeatmapValue | null): value is ActivityHeatmapChartDataItem => {
-    return value !== null;
-};
-
 const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
     const {
         chartData,
@@ -40,8 +36,7 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
         tooltipPos,
         tooltipState,
         getDayAriaLabel,
-        handleMouseEnter,
-        handleDayFocus,
+        handleDayActivate,
         handleMouseLeave,
         handleMouseMove
     } = useActivityHeatmap({
@@ -58,23 +53,20 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
                         endDate={today}
                         values={chartData}
                         classForValue={(value: HeatmapValue | null) => {
-                            if (!isActivityHeatmapChartDataItem(value) || value.count === 0) return 'color-empty';
-                            return `color-scale-${Math.min(value.level, 4)}`;
+                            const chartValue = value as ActivityHeatmapChartDataItem | null;
+                            if (!chartValue?.count) return 'color-empty';
+                            return `color-scale-${Math.min(chartValue.level, 4)}`;
                         }}
                         showWeekdayLabels={false}
                         gutterSize={5}
                         transformDayElement={(element: ReactElement, value: HeatmapValue | null, _index: number) => {
-                            const chartValue = isActivityHeatmapChartDataItem(value) ? value : null;
+                            const chartValue = value as ActivityHeatmapChartDataItem | null;
 
-                            if (!React.isValidElement<DayElementProps>(element)) {
-                                return element;
-                            }
-
-                            return React.cloneElement(element, {
-                                onMouseEnter: (event: MouseEvent<SVGRectElement>) => handleMouseEnter(event, chartValue),
+                            return React.cloneElement(element as ReactElement<DayElementProps>, {
+                                onMouseEnter: (event: MouseEvent<SVGRectElement>) => handleDayActivate(event, chartValue),
                                 onMouseLeave: handleMouseLeave,
                                 onMouseMove: handleMouseMove,
-                                onFocus: (event: FocusEvent<SVGRectElement>) => handleDayFocus(event, chartValue),
+                                onFocus: (event: FocusEvent<SVGRectElement>) => handleDayActivate(event, chartValue),
                                 onBlur: handleMouseLeave,
                                 tabIndex: 0,
                                 role: 'img',

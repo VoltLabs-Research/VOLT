@@ -18,7 +18,7 @@ import { ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
-import type { FormEvent, ReactNode } from 'react';
+import type { FormEvent } from 'react';
 
 enum ClusterOnboardingStep {
     Name = 'name',
@@ -128,7 +128,9 @@ const ClusterOnboardingPage = () => {
         setWaitNonce((nonce) => nonce + 1);
     };
 
-    const handleSubmitName = async () => {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
         if (!name.trim()) {
             setError('Cluster name is required');
             return;
@@ -148,11 +150,6 @@ const ClusterOnboardingPage = () => {
         }
     };
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        await handleSubmitName();
-    };
-
     const handlePanelDelete = (cluster: TeamCluster) => {
         setDeleteTarget(cluster);
         openModal(DELETE_CLUSTER_MODAL_ID);
@@ -170,24 +167,21 @@ const ClusterOnboardingPage = () => {
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
 
-    let leftSlot: ReactNode | undefined;
-    if (hasConnectedCluster) {
-        leftSlot = (
-            <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
-                <Button
-                    to='/dashboard'
-                    className='cluster-onboarding-breadcrumb-link font-size-2'
-                    variant='ghost'
-                    intent='neutral'
-                    size='sm'
-                >
-                    Dashboard
-                </Button>
-                <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
-                <Text as='p' size='md' tone='secondary' aria-current='page'>Add new cluster</Text>
-            </nav>
-        );
-    }
+    const leftSlot = hasConnectedCluster ? (
+        <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
+            <Button
+                to='/dashboard'
+                className='cluster-onboarding-breadcrumb-link font-size-2'
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+            >
+                Dashboard
+            </Button>
+            <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
+            <Text as='p' size='md' tone='secondary' aria-current='page'>Add new cluster</Text>
+        </nav>
+    ) : undefined;
 
     const overlay = clusters.length > 0 ? (
         <ClusterListPanel

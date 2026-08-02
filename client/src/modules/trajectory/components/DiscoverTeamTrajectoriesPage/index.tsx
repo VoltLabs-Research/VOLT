@@ -3,7 +3,7 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import { Heading, SearchInput, Text } from '@voltstack/bravais';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import usePaginationParams from '@/shared/ui/hooks/use-pagination-params';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { ChangeEvent } from 'react';
 import type { PublicSimulationGridSummary } from '@/modules/trajectory/components/SimulationGrid';
@@ -18,13 +18,9 @@ export default function DiscoverTeamTrajectoriesPage() {
     const { teamId } = useParams<{ teamId: string }>();
     const { search, setSearch } = usePaginationParams();
     const [summary, setSummary] = useState<PublicSimulationGridSummary>(DEFAULT_DISCOVERY_SUMMARY);
-    const teamName = summary.team?.name ?? 'this team';
     const pageTitle = summary.team?.name
         ? `${summary.team.name} public trajectories`
         : 'Public trajectories';
-    const description = useMemo(() => (
-        `Public trajectories from ${teamName}.`
-    ), [teamName]);
 
     usePageTitle(pageTitle);
 
@@ -70,7 +66,7 @@ export default function DiscoverTeamTrajectoriesPage() {
                             tone='muted'
                             className='discover-team-trajectories-page__description'
                         >
-                            {description}
+                            {`Public trajectories from ${summary.team?.name ?? 'this team'}.`}
                         </Text>
                     </div>
                     <SearchInput

@@ -5,41 +5,21 @@ import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { disposeMaterialResources } from '@/modules/fractal/utils/resource-disposal';
 import { sharedShaderRegistry } from '@/modules/fractal/services/shader-registry';
 
-interface PointCloudMaterialUniforms extends Record<string, THREE.IUniform> {
-    cameraPosition: THREE.IUniform<THREE.Vector3>;
-    ambientFactor: THREE.IUniform<number>;
-    diffuseFactor: THREE.IUniform<number>;
-    specularFactor: THREE.IUniform<number>;
-    shininess: THREE.IUniform<number>;
-    rimFactor: THREE.IUniform<number>;
-    rimPower: THREE.IUniform<number>;
-    pointScale: THREE.IUniform<number>;
-    uMinPointSize: THREE.IUniform<number>;
-    edgeSoftness: THREE.IUniform<number>;
-    lightingMix: THREE.IUniform<number>;
-    opacity: THREE.IUniform<number>;
-}
-
 const DEFAULT_MIN_POINT_SIZE = 2.0;
-
-interface OptimizedMaterialUserData {
-    isOptimized?: boolean;
-}
 
 interface PointCloudColorInfo {
     hasColorAttribute: boolean;
     injectedFallbackColor: boolean;
-    replacedDarkColorAttribute: boolean;
-    minColor: [number, number, number] | null;
-    maxColor: [number, number, number] | null;
-    averageColor: [number, number, number] | null;
 }
 
-interface MaterialPipelineUserData {
-    basePointScale?: number;
-}
-
-type PointsWithPipelineUserData = THREE.Points & { userData: MaterialPipelineUserData & Record<string, unknown> };
+const OPTIMIZED_MATERIAL_DEFAULTS: THREE.MeshStandardMaterialParameters = {
+    clipShadows: true,
+    transparent: false,
+    alphaTest: 0.1,
+    side: THREE.FrontSide,
+    depthWrite: true,
+    depthTest: true
+};
 
 const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.5, 0.5, 0.5],
@@ -52,20 +32,7 @@ const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.6, 0.6, 0.6]
 ];
 
-const applyOptimizedMaterialSettings = (
-    material: THREE.Material,
-    clippingPlanes: THREE.Plane[]
-): THREE.Material => {
-    material.clippingPlanes = clippingPlanes;
-    material.precision = 'highp';
-    material.userData = {
-        ...material.userData,
-        isOptimized: true
-    } satisfies OptimizedMaterialUserData;
-    return material;
-};
-
-const createPointCloudUniforms = (): PointCloudMaterialUniforms => ({
+const createPointCloudUniforms = (pointScale: number): Record<string, THREE.IUniform> => ({
     cameraPosition: { value: new THREE.Vector3() },
     ambientFactor: { value: 0.7 },
     diffuseFactor: { value: 0.6 },
@@ -73,7 +40,7 @@ const createPointCloudUniforms = (): PointCloudMaterialUniforms => ({
     shininess: { value: 50.0 },
     rimFactor: { value: 0.05 },
     rimPower: { value: 2.0 },
-    pointScale: { value: 1.0 },
+    pointScale: { value: pointScale },
     uMinPointSize: { value: DEFAULT_MIN_POINT_SIZE },
     edgeSoftness: { value: 0.0 },
     lightingMix: { value: 1.0 },
@@ -89,14 +56,10 @@ const ensurePointCloudVisibilityAttribute = (geometry: THREE.BufferGeometry): vo
     geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Float32Array(pointCount).fill(1), 1));
 };
 
-const isColorStatsLoggingEnabled = (): boolean =>
-    import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true';
-
 const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCloudColorInfo => {
-    let colorAttribute = geometry.getAttribute('color');
+    const colorAttribute = geometry.getAttribute('color');
     const paletteIndexAttribute = geometry.getAttribute('_color_index');
-    const positions = geometry.getAttribute('position');
-    const pointCount = positions?.count ?? 0;
+    const pointCount = geometry.getAttribute('position')?.count ?? 0;
     const buildFallbackColors = () => {
         const fallbackColors = new Float32Array(pointCount * 3);
         for (let index = 0; index < pointCount; index += 1) {
@@ -126,7 +89,6 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
         }
         geometry.setAttribute('color', new THREE.BufferAttribute(paletteColors, 3));
         geometry.deleteAttribute('_color_index');
-        colorAttribute = geometry.getAttribute('color');
         return true;
     };
 
@@ -134,35 +96,16 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
         buildFallbackColors();
         return {
             hasColorAttribute: false,
-            injectedFallbackColor: true,
-            replacedDarkColorAttribute: false,
-            minColor: null,
-            maxColor: null,
-            averageColor: null
+            injectedFallbackColor: true
         };
     }
 
     const attribute = geometry.getAttribute('color');
-    if (!attribute) {
-        buildFallbackColors();
-        return {
-            hasColorAttribute: false,
-            injectedFallbackColor: true,
-            replacedDarkColorAttribute: false,
-            minColor: null,
-            maxColor: null,
-            averageColor: null
-        };
-    }
-
     const colorArray = attribute instanceof THREE.BufferAttribute && !attribute.normalized
         ? attribute.array
         : null;
     const stride = attribute.itemSize;
-    const collectStats = isColorStatsLoggingEnabled();
 
-    let minR = Number.POSITIVE_INFINITY; let minG = Number.POSITIVE_INFINITY; let minB = Number.POSITIVE_INFINITY;
-    let maxR = Number.NEGATIVE_INFINITY; let maxG = Number.NEGATIVE_INFINITY; let maxB = Number.NEGATIVE_INFINITY;
     let sumR = 0; let sumG = 0; let sumB = 0;
     let maxChannelRunning = Number.NEGATIVE_INFINITY;
     let hasFiniteColor = false;
@@ -181,34 +124,19 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
         if (r > maxChannelRunning) maxChannelRunning = r;
         if (g > maxChannelRunning) maxChannelRunning = g;
         if (b > maxChannelRunning) maxChannelRunning = b;
-        if (collectStats) {
-            if (r < minR) minR = r; if (g < minG) minG = g; if (b < minB) minB = b;
-            if (r > maxR) maxR = r; if (g > maxG) maxG = g; if (b > maxB) maxB = b;
-        }
     }
 
-    const denominator = hasFiniteColor ? attribute.count : 1;
-    const averageColor: [number, number, number] | null = hasFiniteColor
-        ? [sumR / denominator, sumG / denominator, sumB / denominator]
-        : null;
-    const minColor: [number, number, number] | null = (hasFiniteColor && collectStats) ? [minR, minG, minB] : null;
-    const maxColor: [number, number, number] | null = (hasFiniteColor && collectStats) ? [maxR, maxG, maxB] : null;
-    const maxChannel = hasFiniteColor ? maxChannelRunning : 0;
-    const avgLuma = averageColor
-        ? (averageColor[0] * 0.2126) + (averageColor[1] * 0.7152) + (averageColor[2] * 0.0722)
+    const avgLuma = hasFiniteColor
+        ? ((sumR * 0.2126) + (sumG * 0.7152) + (sumB * 0.0722)) / attribute.count
         : 0;
-    const shouldReplaceDarkColors = !hasFiniteColor || (maxChannel <= 0.02 && avgLuma <= 0.02);
+    const shouldReplaceDarkColors = !hasFiniteColor || (maxChannelRunning <= 0.02 && avgLuma <= 0.02);
     if (shouldReplaceDarkColors) {
         buildFallbackColors();
     }
 
     return {
         hasColorAttribute: true,
-        injectedFallbackColor: shouldReplaceDarkColors,
-        replacedDarkColorAttribute: shouldReplaceDarkColors,
-        minColor,
-        maxColor,
-        averageColor
+        injectedFallbackColor: shouldReplaceDarkColors
     };
 };
 
@@ -239,7 +167,6 @@ export class MaterialPipeline {
         const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
         const dynamicPointScale = spacing * 1.75;
 
-        const uniforms = createPointCloudUniforms();
         const program = sharedShaderRegistry.compile({
             vertex: pointCloudVertexSource,
             fragment: pointCloudFragmentSource
@@ -247,7 +174,7 @@ export class MaterialPipeline {
         const mat = new THREE.ShaderMaterial({
             vertexShader: program.vertex,
             fragmentShader: program.fragment,
-            uniforms,
+            uniforms: createPointCloudUniforms(dynamicPointScale),
             vertexColors: true,
             transparent: true,
             opacity: 1.0,
@@ -260,10 +187,8 @@ export class MaterialPipeline {
             clipping: true
         });
         mat.clippingPlanes = [];
-        uniforms.pointScale.value = dynamicPointScale;
 
-        const typedPoints = points as PointsWithPipelineUserData;
-        typedPoints.userData.basePointScale = dynamicPointScale;
+        points.userData.basePointScale = dynamicPointScale;
         this.pointCloudMaterials.add(mat);
 
         debugFractal('material-pipeline.configure-point-cloud', {
@@ -273,7 +198,6 @@ export class MaterialPipeline {
             dynamicPointScale,
             hasColorAttribute: colorInfo.hasColorAttribute,
             injectedFallbackColor: colorInfo.injectedFallbackColor,
-            replacedDarkColorAttribute: colorInfo.replacedDarkColorAttribute,
             attributeKeys: Object.keys(points.geometry.attributes),
             boundingSphereRadius: points.geometry.boundingSphere?.radius ?? null
         });
@@ -295,8 +219,8 @@ export class MaterialPipeline {
 
     optimizeMaterial(base: THREE.Material, clippingPlanes: THREE.Plane[]): THREE.Material {
         const key = base.uuid;
-        if (this.cache.has(key)) {
-            const cached = this.cache.get(key)!;
+        const cached = this.cache.get(key);
+        if (cached) {
             cached.clippingPlanes = clippingPlanes;
             return cached;
         }
@@ -304,6 +228,7 @@ export class MaterialPipeline {
         let material: THREE.Material;
         if (base instanceof THREE.MeshStandardMaterial) {
             material = new THREE.MeshStandardMaterial({
+                ...OPTIMIZED_MATERIAL_DEFAULTS,
                 color: base.color,
                 map: base.map,
                 normalMap: base.normalMap,
@@ -314,34 +239,25 @@ export class MaterialPipeline {
                 roughness: base.roughness,
                 metalness: base.metalness,
                 opacity: base.opacity,
-                vertexColors: base.vertexColors,
-                clipShadows: true,
-                transparent: false,
-                alphaTest: 0.1,
-                side: THREE.FrontSide,
-                depthWrite: true,
-                depthTest: true
+                vertexColors: base.vertexColors
             });
         } else if (base instanceof THREE.MeshBasicMaterial) {
             material = new THREE.MeshStandardMaterial({
+                ...OPTIMIZED_MATERIAL_DEFAULTS,
                 color: base.color,
                 map: base.map,
                 opacity: base.opacity,
-                vertexColors: base.vertexColors,
-                clipShadows: true,
-                transparent: false,
-                alphaTest: 0.1,
-                side: THREE.FrontSide,
-                depthWrite: true,
-                depthTest: true
+                vertexColors: base.vertexColors
             });
         } else {
             material = base.clone();
         }
 
-        const optimizedMaterial = applyOptimizedMaterialSettings(material, clippingPlanes);
-        this.cache.set(key, optimizedMaterial);
-        return optimizedMaterial;
+        material.clippingPlanes = clippingPlanes;
+        material.precision = 'highp';
+        material.userData.isOptimized = true;
+        this.cache.set(key, material);
+        return material;
     }
 
     configureGeometry(root: THREE.Group, clippingPlanes: THREE.Plane[]): THREE.Mesh | null {
@@ -358,14 +274,13 @@ export class MaterialPipeline {
     }
 
     dispose() {
-        this.cache.forEach((material) => {
+        [
+            ...this.cache.values(),
+            ...this.pointCloudMaterials
+        ].forEach((material) => {
             disposeMaterialResources(material);
         });
         this.cache.clear();
-
-        this.pointCloudMaterials.forEach((material) => {
-            disposeMaterialResources(material);
-        });
         this.pointCloudMaterials.clear();
     }
 }

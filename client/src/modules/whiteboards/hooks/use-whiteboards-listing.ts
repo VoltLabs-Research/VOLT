@@ -161,10 +161,8 @@ const useWhiteboardsListing = () => {
             whiteboardsListingResource.toasts.create
         );
 
-        if (whiteboard?._id) {
-            navigate(`/dashboard/whiteboard/${whiteboard._id}`);
-        }
-    }, [folderedListing.currentFolderId, createWhiteboard, teamId, navigate]);
+        openWhiteboard(whiteboard);
+    }, [folderedListing.currentFolderId, createWhiteboard, openWhiteboard, teamId]);
 
     return {
         ...folderedListing,

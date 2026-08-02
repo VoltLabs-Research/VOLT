@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { getOtherParticipant } from '@/modules/chat/utils/chat/chat-display';
 import { IoPeopleOutline } from 'react-icons/io5';
 import { cn } from '@/shared/utils/cn';
@@ -32,18 +31,10 @@ const ChatAvatar = ({
     isOnline, 
     className 
 }: ChatAvatarProps) => {
-    const otherParticipant = getOtherParticipant(chat, currentUserId);
-    const iconSize = GROUP_ICON_SIZES[size];
-    let icon: ReactNode;
-
-    if (chat.isGroup) {
-        icon = <IoPeopleOutline size={iconSize} />;
-    }
-    
     return (
         <Avatar
-            user={chat.isGroup ? undefined : otherParticipant}
-            icon={icon}
+            user={chat.isGroup ? undefined : getOtherParticipant(chat, currentUserId)}
+            icon={chat.isGroup ? <IoPeopleOutline size={GROUP_ICON_SIZES[size]} /> : undefined}
             size={size}
             showStatus={showStatus}
             isOnline={isOnline}

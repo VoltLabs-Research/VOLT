@@ -29,20 +29,10 @@ const getNodeOutputProperties = (node: Node<INodeData>, baseProperties: Record<s
 
 const getNodeLabel = (node: Node<INodeData>): string => {
     const nodeType = node.type as NodeType;
-    const fallback = NODE_CONFIGS[nodeType]?.label ?? nodeType;
     const shortId = node.id.slice(0, 8);
+    const name = (node.data.modifier?.name ?? node.data.exposure?.name)?.trim();
 
-    if (nodeType === NodeType.MODIFIER) {
-        const name = node.data.modifier?.name?.trim();
-        if (name) return `${name} (${shortId})`;
-    }
-
-    if (nodeType === NodeType.EXPOSURE) {
-        const name = node.data.exposure?.name?.trim();
-        if (name) return `${name} (${shortId})`;
-    }
-
-    return `${fallback} (${shortId})`;
+    return `${name || NODE_CONFIGS[nodeType]?.label || nodeType} (${shortId})`;
 };
 
 const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOption[] => {
@@ -53,14 +43,12 @@ const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOptio
         staleTime: Infinity
     });
 
-    const baseProperties = schema?.nodeTypes ?? {};
-
     return useMemo(() => {
+        const baseProperties = schema?.nodeTypes ?? {};
         const optionsMap = new Map<string, NodeReferenceOption>();
 
-        for (const rawNode of nodes) {
-            const node = rawNode as Node<INodeData>;
-            if (!node?.id || node.id === currentNodeId) continue;
+        for (const node of nodes) {
+            if (node.id === currentNodeId) continue;
 
             const properties = getNodeOutputProperties(node, baseProperties);
             const nodeLabel = getNodeLabel(node);
@@ -77,7 +65,7 @@ const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOptio
         }
 
         return Array.from(optionsMap.values());
-    }, [nodes, currentNodeId, baseProperties]);
+    }, [nodes, currentNodeId, schema]);
 };
 
 export default useNodeReferenceAutocomplete;

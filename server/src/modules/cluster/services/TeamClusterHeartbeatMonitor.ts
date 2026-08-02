@@ -12,8 +12,6 @@ const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOU
 
 class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
-    private readonly teamClusterLifecycleService = teamClusterLifecycleService;
-    private readonly demoClusterDeploymentService = demoClusterDeploymentService;
 
     start(): void {
         if (this.interval) {
@@ -36,12 +34,12 @@ class TeamClusterHeartbeatMonitor {
         this.interval = undefined;
     }
 
-    async runSweep(): Promise<void> {
+    private async runSweep(): Promise<void> {
         const disconnectEvidenceCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS);
         const deleteCutoff = new Date(Date.now() - TEAM_CLUSTER_DELETE_TIMEOUT_MS);
         await Promise.all([
-            this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(disconnectEvidenceCutoff),
-            this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff),
+            teamClusterLifecycleService.finalizeDeletingClustersByEvidence(disconnectEvidenceCutoff),
+            teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff),
             this.cleanupExpiredDemos()
         ]);
     }
@@ -54,13 +52,10 @@ class TeamClusterHeartbeatMonitor {
             status: Not(In([TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed]))
         });
         const expiredDemos = expiredDemoEntities.map(toTeamClusterLike);
-        if (expiredDemos.length === 0) {
-            return;
-        }
 
         await Promise.all(expiredDemos.map(async (demo) => {
             try {
-                await this.teamClusterLifecycleService.markDeleting(demo.id);
+                await teamClusterLifecycleService.markDeleting(demo.id);
             } catch (error: unknown) {
                 logger.warn(`[TeamClusterHeartbeatMonitor] markDeleting failed for expired demo teamClusterId=${demo.id} error=${(error as Error).message}`);
             }
@@ -69,8 +64,8 @@ class TeamClusterHeartbeatMonitor {
             const target = refreshedEntity ? toTeamClusterLike(refreshedEntity) : demo;
 
             try {
-                await this.demoClusterDeploymentService.teardownDemoStack(target);
-                await this.teamClusterLifecycleService.deleteTeamCluster(target);
+                await demoClusterDeploymentService.teardownDemoStack(target);
+                await teamClusterLifecycleService.deleteTeamCluster(target);
                 logger.info(`[TeamClusterHeartbeatMonitor] Expired demo cleaned up teamClusterId=${target.id} teamId=${target.props.team}`);
             } catch (error: unknown) {
                 logger.error(error, `[TeamClusterHeartbeatMonitor] Failed to clean up expired demo teamClusterId=${target.id} teamId=${target.props.team}`);

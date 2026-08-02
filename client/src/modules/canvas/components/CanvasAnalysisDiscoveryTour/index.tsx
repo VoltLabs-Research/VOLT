@@ -10,6 +10,7 @@ const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab
 const TARGET_GAP = 12;
 const VIEWPORT_MARGIN = 12;
 const CARD_ESTIMATED_HEIGHT = 146;
+const OPTIONAL_TARGET_SKIP_DELAY = 360;
 
 interface CanvasAnalysisDiscoveryTourProps {
     enabled: boolean;
@@ -29,7 +30,6 @@ interface TourStep {
     requiresAnalysisPanel?: boolean;
     requiresTimelineTab?: boolean;
     optional?: boolean;
-    missingTargetSkipDelay?: number;
 }
 
 interface TargetLayout {
@@ -37,52 +37,33 @@ interface TargetLayout {
     cardStyle: CSSProperties;
 }
 
-const getStorage = (): Storage => {
-    return window.localStorage;
-};
-
 const getTourStorageKey = (storageScopeId: string): string => {
     return `${TOUR_STORAGE_KEY_PREFIX}:${storageScopeId}`;
 };
 
 const hasCompletedTour = (storageScopeId: string): boolean => {
-    const storage = getStorage();
-    if (!storage) return false;
-
     try {
-        return storage.getItem(getTourStorageKey(storageScopeId)) === 'completed';
+        return window.localStorage.getItem(getTourStorageKey(storageScopeId)) === 'completed';
     } catch {
         return false;
     }
 };
 
 const markTourCompleted = (storageScopeId: string): void => {
-    const storage = getStorage();
-    if (!storage) return;
-
     try {
-        storage.setItem(getTourStorageKey(storageScopeId), 'completed');
+        window.localStorage.setItem(getTourStorageKey(storageScopeId), 'completed');
     } catch {
         // Storage can be unavailable in private contexts; the tour still works for this session.
     }
 };
 
-const clamp = (value: number, min: number, max: number): number => {
-    return Math.min(Math.max(value, min), max);
-};
+// Repeats `tick` on an interval until it reports the step settled; returns the effect cleanup.
+const pollUntilSettled = (intervalMs: number, tick: () => boolean): (() => void) => {
+    const timer = window.setInterval(() => {
+        if (tick()) window.clearInterval(timer);
+    }, intervalMs);
 
-const getTargetElement = (selector: string): HTMLElement | null => {
-    return document.querySelector<HTMLElement>(selector);
-};
-
-const dispatchAutoAction = (action: 'select-analysis'): void => {
-    if (action === 'select-analysis') {
-        window.dispatchEvent(new CustomEvent(TOUR_SELECT_ANALYSIS_EVENT));
-    }
-};
-
-const dispatchTimelineTabSelection = (): void => {
-    window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
+    return () => window.clearInterval(timer);
 };
 
 const buildSteps = (isMobile: boolean): TourStep[] => {
@@ -136,7 +117,7 @@ const buildTargetLayout = (targetRect: DOMRect, isMobile: boolean): TargetLayout
     const cardWidth = Math.min(isMobile ? 300 : 324, viewportWidth - VIEWPORT_MARGIN * 2);
     const targetCenter = targetRect.left + targetRect.width / 2;
     const maxLeft = Math.max(VIEWPORT_MARGIN, viewportWidth - cardWidth - VIEWPORT_MARGIN);
-    const left = clamp(targetCenter - cardWidth / 2, VIEWPORT_MARGIN, maxLeft);
+    const left = Math.min(Math.max(targetCenter - cardWidth / 2, VIEWPORT_MARGIN), maxLeft);
     const preferredTop = targetRect.bottom + TARGET_GAP;
     const top = preferredTop + CARD_ESTIMATED_HEIGHT > viewportHeight
         ? Math.max(VIEWPORT_MARGIN, targetRect.top - CARD_ESTIMATED_HEIGHT - TARGET_GAP)
@@ -182,13 +163,8 @@ const CanvasAnalysisDiscoveryTour = ({
 
     useEffect(() => {
         onActiveChange?.(isActive);
+        return () => onActiveChange?.(false);
     }, [isActive, onActiveChange]);
-
-    useEffect(() => {
-        return () => {
-            onActiveChange?.(false);
-        };
-    }, [onActiveChange]);
 
     const goToNextStep = useCallback(() => {
         if (stepIndex >= steps.length - 1) {
@@ -196,23 +172,15 @@ const CanvasAnalysisDiscoveryTour = ({
             return;
         }
 
-        setStepIndex((current) => Math.min(current + 1, steps.length - 1));
+        setStepIndex(stepIndex + 1);
     }, [completeTour, stepIndex, steps.length]);
 
     useEffect(() => {
-        if (!enabled) {
-            return;
-        }
-
-        if (hasStartedRef.current || hasCompletedTour(storageScopeId)) {
+        if (!enabled || hasStartedRef.current || hasCompletedTour(storageScopeId)) {
             return;
         }
 
         const timer = window.setTimeout(() => {
-            if (hasCompletedTour(storageScopeId)) {
-                return;
-            }
-
             hasStartedRef.current = true;
             completedPanelAutoSelectRef.current = false;
             setStepIndex(0);
@@ -236,28 +204,19 @@ const CanvasAnalysisDiscoveryTour = ({
         }
 
         let attempts = 0;
-        const maxAttempts = 24;
 
-        const runAutoAction = () => {
-            dispatchAutoAction('select-analysis');
+        return pollUntilSettled(160, () => {
+            window.dispatchEvent(new CustomEvent(TOUR_SELECT_ANALYSIS_EVENT));
             attempts += 1;
 
-            const selectedAnalysis = getTargetElement('[data-tour-id="canvas-first-analysis-row"]');
-            if (selectedAnalysis?.getAttribute('aria-selected') === 'true' || attempts >= maxAttempts) {
+            const selectedAnalysis = document.querySelector('[data-tour-id="canvas-first-analysis-row"]');
+            const settled = selectedAnalysis?.getAttribute('aria-selected') === 'true' || attempts >= 24;
+            if (settled) {
                 completedPanelAutoSelectRef.current = true;
-                return true;
             }
 
-            return false;
-        };
-
-        const timer = window.setInterval(() => {
-            if (runAutoAction()) {
-                window.clearInterval(timer);
-            }
-        }, 160);
-
-        return () => window.clearInterval(timer);
+            return settled;
+        });
     }, [activeStep, isActive]);
 
     useEffect(() => {
@@ -266,19 +225,16 @@ const CanvasAnalysisDiscoveryTour = ({
         }
 
         let attempts = 0;
-        const maxAttempts = 16;
-        const timer = window.setInterval(() => {
-            dispatchTimelineTabSelection();
+        const stopPolling = pollUntilSettled(120, () => {
+            window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
             attempts += 1;
 
-            if (getTargetElement(activeStep.targetSelector) || attempts >= maxAttempts) {
-                window.clearInterval(timer);
-            }
-        }, 120);
+            return Boolean(document.querySelector(activeStep.targetSelector)) || attempts >= 16;
+        });
 
-        dispatchTimelineTabSelection();
+        window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
 
-        return () => window.clearInterval(timer);
+        return stopPolling;
     }, [activeStep, isActive]);
 
     useEffect(() => {
@@ -290,7 +246,7 @@ const CanvasAnalysisDiscoveryTour = ({
         let frameId = 0;
 
         const updateLayout = () => {
-            const target = getTargetElement(activeStep.targetSelector);
+            const target = document.querySelector(activeStep.targetSelector);
             if (!target) {
                 setLayout(null);
                 return;
@@ -313,10 +269,10 @@ const CanvasAnalysisDiscoveryTour = ({
 
         const optionalTargetTimer = activeStep.optional
             ? window.setTimeout(() => {
-                if (!getTargetElement(activeStep.targetSelector)) {
+                if (!document.querySelector(activeStep.targetSelector)) {
                     goToNextStep();
                 }
-            }, activeStep.missingTargetSkipDelay ?? 360)
+            }, OPTIONAL_TARGET_SKIP_DELAY)
             : undefined;
 
         return () => {
@@ -336,7 +292,6 @@ const CanvasAnalysisDiscoveryTour = ({
         return null;
     }
 
-    const progressLabel = `${stepIndex + 1} / ${steps.length}`;
     const isLastStep = stepIndex === steps.length - 1;
     const cardStyle = layout?.cardStyle ?? {
         left: VIEWPORT_MARGIN,
@@ -361,7 +316,7 @@ const CanvasAnalysisDiscoveryTour = ({
                 aria-label='Analysis discovery tutorial'
             >
                 <div className='canvas-analysis-tour__header'>
-                    <span className='canvas-analysis-tour__step'>{progressLabel}</span>
+                    <span className='canvas-analysis-tour__step'>{stepIndex + 1} / {steps.length}</span>
                     <button
                         type='button'
                         className='canvas-analysis-tour__close'

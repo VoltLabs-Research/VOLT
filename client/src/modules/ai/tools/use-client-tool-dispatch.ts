@@ -41,6 +41,13 @@ export const useClientToolDispatch = () => {
                     hint: 'Open a trajectory in the canvas first (open_in_viewer), then retry.'
                 };
             } else {
+                // The one trust boundary for model-generated arguments, and the reason
+                // handlers do not re-check their input. Every @ClientAITool on the server
+                // declares `validate: typia.createValidate<TInput>()` over the same
+                // contract type, and AIToolController hands it to the AI SDK as the tool's
+                // inputSchema. The SDK validates there (`doParseToolCall`) and routes a
+                // failure to `tool-input-error`, which never reaches `onToolCall`. So an
+                // input that arrives here already matches the handler's declared type.
                 output = await handler.run(toolCall.input as Record<string, unknown>, context);
             }
         } catch (error) {

@@ -21,10 +21,6 @@ export const getTeamOwnerContactHint = (team: Team | null | undefined): string |
     }
 
     const fullName = `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim();
-    const displayName = fullName || owner.fullName?.trim() || owner.email;
-    if (!displayName) {
-        return undefined;
-    }
 
-    return `${displayName} (team owner)`;
+    return `${fullName || owner.fullName?.trim() || owner.email} (team owner)`;
 };

@@ -22,33 +22,22 @@ const KEYS = buildKeys<{
     sceneArtifacts: ListSceneArtifactsInput;
 }>(BASE_KEY);
 
-export const SCENE_ARTIFACTS_QUERY_KEYS = {
-    sceneArtifacts: KEYS.sceneArtifacts
-} as const;
-
 const isSceneArtifactsQueryKey = (queryKey: readonly unknown[]): boolean => {
     return queryKey.some((entry) => entry === BASE_KEY)
         && queryKey.some((entry) => entry === 'sceneArtifacts');
 };
 
 const getSceneArtifactAnalysisId = (item: SceneArtifact | RenderableExposurePayload): string | undefined => {
-    const candidate = item as unknown as Record<string, unknown>;
-
-    if (typeof candidate.analysisId === 'string') {
-        return candidate.analysisId;
+    if ('exposureId' in item) {
+        return item.analysisId;
     }
 
-    const analysis = candidate.analysis;
+    const analysis = item.analysis;
     if (typeof analysis === 'string') {
         return analysis;
     }
 
-    if (analysis && typeof analysis === 'object' && '_id' in analysis) {
-        const analysisId = (analysis as { _id?: unknown })._id;
-        return typeof analysisId === 'string' ? analysisId : undefined;
-    }
-
-    return undefined;
+    return analysis?._id;
 };
 
 const removeAnalysisItemsFromSceneArtifactPage = (
@@ -86,30 +75,27 @@ export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneA
 
 export const invalidateSceneArtifacts = (): Promise<void> => {
     return queryClient.invalidateQueries({
-        queryKey: currentAccessKey(SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts())
+        queryKey: currentAccessKey(KEYS.sceneArtifacts())
     });
 };
 
 export const snapshotSceneArtifactCaches = (): QueryDataSnapshot => {
-    return snapshotQueries((query) => Array.isArray(query.queryKey)
-        && isSceneArtifactsQueryKey(query.queryKey));
+    return snapshotQueries((query) => isSceneArtifactsQueryKey(query.queryKey));
 };
 
 export const cancelSceneArtifactCacheQueries = (): Promise<void> => {
     return queryClient.cancelQueries({
-        predicate: (query) => Array.isArray(query.queryKey)
-            && isSceneArtifactsQueryKey(query.queryKey)
+        predicate: (query) => isSceneArtifactsQueryKey(query.queryKey)
     });
 };
 
 export const removeSceneArtifactsForAnalysisFromCache = (analysisId: string): void => {
     queryClient.setQueriesData<SceneArtifactsPage>(
         {
-            predicate: (query) => Array.isArray(query.queryKey)
-                && isSceneArtifactsQueryKey(query.queryKey)
+            predicate: (query) => isSceneArtifactsQueryKey(query.queryKey)
         },
         (current) => {
-            if (!current || !Array.isArray(current.data)) return current;
+            if (!current) return current;
             return removeAnalysisItemsFromSceneArtifactPage(current, analysisId);
         }
     );

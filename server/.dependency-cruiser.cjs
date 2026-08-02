@@ -16,7 +16,7 @@ module.exports = {
             from: { path: '^src/modules/([^/]+)/' },
             to: {
                 path: '^src/modules/([^/]+)/',
-                pathNot: `^src/modules/(\\1|${KERNEL_MODULES.join('|')})/`
+                pathNot: `^src/modules/($1|${KERNEL_MODULES.join('|')})/`
             }
         },
         {

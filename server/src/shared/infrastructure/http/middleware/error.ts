@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import type { ErrorRequestHandler, Response } from 'express';
@@ -11,58 +11,20 @@ interface NormalizedError {
     statusCode: number;
 }
 
-interface NormalizedErrorMetadata {
-    code?: string;
-    message?: string;
-    statusCode?: number;
-}
+const getStringProperty = (value: Record<string, unknown>, property: string): string | undefined => {
+    const propertyValue = value[property];
 
-const isStatusCode = (value: unknown): value is number => {
-    return typeof value === 'number' && Number.isInteger(value);
+    return typeof propertyValue === 'string' ? propertyValue : undefined;
 };
 
-const getStringProperty = (value: Record<string, unknown> | undefined, property: string): string | undefined => {
-    const propertyValue = value?.[property];
+const getStatusCodeProperty = (value: Record<string, unknown>, property: string): number | undefined => {
+    const propertyValue = value[property];
 
-    if (typeof propertyValue !== 'string') {
-        return undefined;
-    }
-
-    return propertyValue;
+    return typeof propertyValue === 'number' && Number.isInteger(propertyValue) ? propertyValue : undefined;
 };
 
-const getStatusCodeProperty = (value: Record<string, unknown> | undefined, property: string): number | undefined => {
-    const propertyValue = value?.[property];
-
-    if (!isStatusCode(propertyValue)) {
-        return undefined;
-    }
-
-    return propertyValue;
-};
-
-const getErrorStatusCode = (value: Record<string, unknown> | undefined): number | undefined => {
+const getErrorStatusCode = (value: Record<string, unknown>): number | undefined => {
     return getStatusCodeProperty(value, 'statusCode') ?? getStatusCodeProperty(value, 'status');
-};
-
-const getFirstRecordValue = (value: Record<string, unknown> | undefined): Record<string, unknown> | undefined => {
-    if (!value) {
-        return undefined;
-    }
-
-    for (const nestedValue of Object.values(value)) {
-        const nestedRecord = asRecord(nestedValue);
-
-        if (nestedRecord) {
-            return nestedRecord;
-        }
-    }
-
-    return undefined;
-};
-
-const looksLikeErrorCode = (value: string): boolean => {
-    return value.includes('::');
 };
 
 /**
@@ -71,7 +33,7 @@ const looksLikeErrorCode = (value: string): boolean => {
  * leak table and column names). Codes that signal a genuine server defect —
  * undefined column, syntax error — are deliberately absent so they stay 500.
  */
-const DATABASE_CONSTRAINT_ERRORS: Record<string, Required<NormalizedErrorMetadata>> = {
+const DATABASE_CONSTRAINT_ERRORS: Record<string, NormalizedError> = {
     '23502': {
         code: ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
         message: 'A required field is missing',
@@ -94,7 +56,7 @@ const DATABASE_CONSTRAINT_ERRORS: Record<string, Required<NormalizedErrorMetadat
     }
 };
 
-const normalizeDatabaseError = (errorRecord: Record<string, unknown>): Required<NormalizedErrorMetadata> | undefined => {
+const normalizeDatabaseError = (errorRecord: Record<string, unknown>): NormalizedError | undefined => {
     if (getStringProperty(errorRecord, 'name') !== 'QueryFailedError') {
         return undefined;
     }
@@ -104,53 +66,16 @@ const normalizeDatabaseError = (errorRecord: Record<string, unknown>): Required<
     return sqlState ? DATABASE_CONSTRAINT_ERRORS[sqlState] : undefined;
 };
 
-const normalizeCastError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
-    if (getStringProperty(errorRecord, 'name') !== 'CastError') {
-        return undefined;
-    }
-
-    const path = getStringProperty(errorRecord, 'path');
-
-    return {
-        code: ErrorCodes.VALIDATION_INVALID_INPUT,
-        message: path ? `Invalid value for "${path}"` : 'Invalid identifier',
-        statusCode: HttpStatus.BadRequest
-    };
+const INTERNAL_SERVER_ERROR: NormalizedError = {
+    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+    statusCode: HttpStatus.InternalServerError
 };
 
-const normalizeValidationError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
-    const errorName = getStringProperty(errorRecord, 'name');
-    const nestedValidationErrors = asRecord(errorRecord.errors);
-
-    if (errorName !== 'ValidationError' && nestedValidationErrors === undefined) {
-        return undefined;
-    }
-
-    const validationError = getFirstRecordValue(nestedValidationErrors);
-
-    if (!validationError) {
-        return {
-            message: getStringProperty(errorRecord, 'message'),
-            statusCode: HttpStatus.BadRequest
-        };
-    }
-
-    const properties = asRecord(validationError.properties);
-    const reason = asRecord(validationError.reason);
-    const message = getStringProperty(properties, 'message')
-        ?? getStringProperty(validationError, 'message')
-        ?? getStringProperty(reason, 'message');
-    const explicitCode = getStringProperty(validationError, 'code')
-        ?? getStringProperty(properties, 'code')
-        ?? getStringProperty(reason, 'code');
-
-    return {
-        code: explicitCode ?? (message && looksLikeErrorCode(message) ? message : undefined),
-        message,
-        statusCode: getErrorStatusCode(validationError) ?? HttpStatus.BadRequest
-    };
-};
-
+/**
+ * Anything can reach the error middleware — our own `ApplicationError`, a
+ * TypeORM/driver failure, or a third-party rejection value — so this is one of
+ * the few places that genuinely has to inspect an `unknown` field by field.
+ */
 export const normalizeError = (error: unknown): NormalizedError => {
     if (error instanceof ApplicationError) {
         return {
@@ -167,40 +92,30 @@ export const normalizeError = (error: unknown): NormalizedError => {
         };
     }
 
-    const errorRecord = asRecord(error);
-
-    if (!errorRecord) {
-        return {
-            code: ErrorCodes.INTERNAL_SERVER_ERROR,
-            statusCode: HttpStatus.InternalServerError
-        };
+    if (!isRecord(error)) {
+        return INTERNAL_SERVER_ERROR;
     }
 
-    const databaseError = normalizeDatabaseError(errorRecord);
+    const databaseError = normalizeDatabaseError(error);
 
     if (databaseError) {
         return databaseError;
     }
 
-    const validationError = normalizeCastError(errorRecord) ?? normalizeValidationError(errorRecord);
-    const statusCode = getErrorStatusCode(errorRecord) ?? validationError?.statusCode;
-    const code = getStringProperty(errorRecord, 'code')
-        ?? validationError?.code;
-    const message = validationError?.message
-        ?? getStringProperty(errorRecord, 'message');
-    const isNativeError = error instanceof Error;
+    const statusCode = getErrorStatusCode(error);
+    const code = getStringProperty(error, 'code');
+    const message = getStringProperty(error, 'message');
 
-    if (statusCode !== undefined || code !== undefined || validationError || (message !== undefined && !isNativeError)) {
-        return {
-            ...(code ? { code } : {}),
-            ...(message ? { message } : {}),
-            statusCode: statusCode ?? HttpStatus.InternalServerError
-        };
+    // A bare `Error` carries a message that is an implementation detail, so it
+    // only reaches the client when something else marks the failure as expected.
+    if (statusCode === undefined && code === undefined && (message === undefined || error instanceof Error)) {
+        return INTERNAL_SERVER_ERROR;
     }
 
     return {
-        code: ErrorCodes.INTERNAL_SERVER_ERROR,
-        statusCode: HttpStatus.InternalServerError
+        ...(code ? { code } : {}),
+        ...(message ? { message } : {}),
+        statusCode: statusCode ?? HttpStatus.InternalServerError
     };
 };
 
@@ -209,15 +124,7 @@ const getErrorMessage = (error: NormalizedError): string => {
         return 'Internal Server Error';
     }
 
-    if (error.message) {
-        return error.message;
-    }
-
-    if (error.code) {
-        return error.code;
-    }
-
-    return 'Internal Server Error';
+    return error.message ?? error.code ?? 'Internal Server Error';
 };
 
 export const sendNormalizedError = (res: Response, error: NormalizedError): void => {

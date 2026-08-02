@@ -1,233 +1,132 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
-import { DaemonListingRow, DaemonPaginatedResult, toListingRowId } from '@modules/plugin/services/listing-row/DaemonListingMapper';
+import type { DaemonListingRow } from '@modules/plugin/services/listing-row/DaemonListingMapper';
+import { collectAllDaemonPages } from '@modules/plugin/services/listing-row/DaemonListingPager';
 import {
-    AnalysisListingExportOptionView,
-    AnalysisSubListingExportOptionView,
-    GetAnalysisListingExportOptionsOutput,
-    AnalysisListingExportData,
-    AnalysisSubListingExportData,
+    aggregateListingTables,
+    buildListingExportOptions
+} from '@modules/plugin/services/listing-row/ListingTableAggregation';
+import {
+    SubListingExportCollector,
+    discoverSubListingReferences
+} from '@modules/plugin/services/listing-row/SubListingExportCollector';
+import type {
     ExportListingRowsByAnalysisIdInput,
     ExportListingRowsByAnalysisIdOutput,
-    ListingRowByAnalysisData
+    GetAnalysisListingExportOptionsOutput
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { enrichDaemonListingRows } from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
 import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 
-import { ExportType } from '@shared/domain/port/persistence';
-
-interface ListingAggregation {
-    listingId: string;
-    listingName: string;
-    rows: Record<string, unknown>[];
-    dynamicColumns: Set<string>;
-}
-
-interface DiscoveredSubListingReference {
-    id: string;
-    plugin: string;
-    trajectory: string;
-    exposureId: string;
-    exposureName: string;
-    timestep: number;
-    subListingName: string;
-}
-
-interface SubListingAggregation {
-    exposureId: string;
-    exposureName: string;
-    subListingName: string;
-    timestep: number;
-    rows: Record<string, unknown>[];
-    dynamicColumns: Set<string>;
-}
-
-interface SubListingExportRowInput {
-    _id: string;
-    plugin: string;
-    trajectory: string;
-    exposureId: string;
-    exposureName: string;
-    timestep: number;
-    subListingName: string;
-    row: Record<string, unknown>;
-}
-
-interface DaemonSubListingRow {
-    _id: string;
-    plugin?: string;
-    trajectory?: string;
-    exposureId?: string;
-    exposureName?: string;
-    timestep?: number;
-    subListingName?: string;
-    row?: Record<string, unknown>;
-    [key: string]: unknown;
-}
-
-interface DaemonPaginatedDataResult<TData> {
-    data: TData[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-}
+const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
 interface ExcludedExposureSet {
     ids: Set<string>;
     names: Set<string>;
 }
 
-interface AnalysisExportContext{
+interface AnalysisExportContext {
     analysis: AnalysisEntity | null;
     teamClusterId?: string;
     excludedExposures: ExcludedExposureSet;
 }
 
-const buildAnalysisListingSelectionId = (listingId: string, listingName: string): string => {
-    return `${listingId || 'listing'}::${listingName || listingId || 'listing'}`;
+const hasConfig = (config: Record<string, unknown> | undefined): config is Record<string, unknown> => {
+    return config !== undefined && Object.keys(config).length > 0;
 };
 
-const buildAnalysisSubListingSelectionId = (
-    exposureId: string,
-    timestep: number,
-    subListingName: string
-): string => {
-    return [exposureId || 'exposure', timestep, subListingName || 'sub-listing'].join('::');
+const emptyExcludedExposures = (): ExcludedExposureSet => ({
+    ids: new Set<string>(),
+    names: new Set<string>()
+});
+
+/** An absent selection means "export everything"; an empty one means "nothing". */
+const normalizeSelectionSet = (selectionIds?: string[]): Set<string> | null => {
+    if (!selectionIds) {
+        return null;
+    }
+
+    return new Set(
+        selectionIds
+            .map((selectionId) => selectionId.trim())
+            .filter((selectionId) => selectionId && selectionId !== EMPTY_SELECTION_SENTINEL)
+    );
 };
 
-const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
-
+/**
+ * Catalogues what an analysis can export and materialises the selected listings,
+ * delegating the row folding to ListingTableAggregation and the nested
+ * sub-listings to SubListingExportCollector.
+ */
 export class AnalysisListingExportCatalogService {
+    #subListingCollector: SubListingExportCollector;
+
     constructor(
         private readonly daemonClient: ITeamClusterDaemonClient
-    ) {}
+    ) {
+        this.#subListingCollector = new SubListingExportCollector(daemonClient);
+    }
 
     async getExportOptions(analysisId: string): Promise<GetAnalysisListingExportOptionsOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(analysisId);
-
-        if (!teamClusterId) {
-            return {
-                analysisId,
-                hasConfig: this.hasConfig(analysis?.config),
-                listings: [],
-                subListings: []
-            };
-        }
-
-        const enrichedRows = await this.collectEnrichedListingRows(teamClusterId, analysisId, excludedExposures);
-        const listings = this.buildListingOptions(enrichedRows);
-        const subListings = this.buildSubListingOptions(enrichedRows);
+        const rows = await this.collectEnrichedListingRows(teamClusterId, analysisId, excludedExposures);
 
         return {
             analysisId,
-            hasConfig: this.hasConfig(analysis?.config),
-            listings,
-            subListings
+            hasConfig: hasConfig(analysis?.config),
+            listings: buildListingExportOptions(rows),
+            subListings: discoverSubListingReferences(rows).map((reference) => ({
+                id: reference.id,
+                exposureId: reference.exposureId,
+                exposureName: reference.exposureName,
+                timestep: reference.timestep,
+                subListingName: reference.subListingName,
+                label: reference.subListingName
+            }))
         };
     }
 
     async buildExportPayload(input: ExportListingRowsByAnalysisIdInput): Promise<ExportListingRowsByAnalysisIdOutput> {
-        const format = input.format ?? ExportType.Csv;
-        const includeConfig = input.includeConfig ?? true;
-        const selectedListingIds = this.normalizeSelectionSet(input.selectedListingIds);
-        const selectedSubListingIds = this.normalizeSelectionSet(input.selectedSubListingIds);
-
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(input.analysisId);
-        const config = includeConfig ? analysis?.config : undefined;
-
-        if (!teamClusterId) {
-            return {
-                analysisId: input.analysisId,
-                teamClusterId,
-                format,
-                config: this.hasConfig(config) ? config : undefined,
-                listings: [],
-                subListings: []
-            };
-        }
-
-        const enrichedRows = await this.collectEnrichedListingRows(teamClusterId, input.analysisId, excludedExposures);
-        const listings = this.aggregateListings(
-            input.analysisId,
-            enrichedRows,
-            selectedListingIds
-        );
-        const subListingReferences = this.discoverSubListingReferences(
-            enrichedRows,
-            selectedSubListingIds
-        );
-        const subListings = await this.collectSubListings(
-            teamClusterId,
-            input.teamId,
-            input.analysisId,
-            subListingReferences
-        );
+        const config = (input.includeConfig ?? true) ? analysis?.config : undefined;
+        const rows = await this.collectEnrichedListingRows(teamClusterId, input.analysisId, excludedExposures);
 
         return {
             analysisId: input.analysisId,
             teamClusterId,
-            format,
-            config: this.hasConfig(config) ? config : undefined,
-            listings,
-            subListings
+            config: hasConfig(config) ? config : undefined,
+            listings: aggregateListingTables(
+                input.analysisId,
+                rows,
+                normalizeSelectionSet(input.selectedListingIds)
+            ),
+            subListings: teamClusterId
+                ? await this.#subListingCollector.collect(
+                    teamClusterId,
+                    input.teamId,
+                    input.analysisId,
+                    discoverSubListingReferences(rows, normalizeSelectionSet(input.selectedSubListingIds))
+                )
+                : []
         };
     }
 
-    private normalizeSelectionSet(selectionIds?: string[]): Set<string> | null {
-        if (!selectionIds) {
-            return null;
-        }
-
-        const ids = selectionIds
-            .map((selectionId) => String(selectionId || '').trim())
-            .filter(Boolean)
-            .filter((selectionId) => selectionId !== EMPTY_SELECTION_SENTINEL);
-
-        return new Set(ids);
+    private shouldExcludeExposure(row: DaemonListingRow, excluded: ExcludedExposureSet): boolean {
+        return Boolean(row.exposureId && excluded.ids.has(row.exposureId))
+            || Boolean(row.exposureName && excluded.names.has(row.exposureName));
     }
 
-    private hasConfig(config: Record<string, unknown> | undefined): config is Record<string, unknown> {
-        return config !== undefined && Object.keys(config).length > 0;
-    }
-
-    private emptyExcludedExposureSet(): ExcludedExposureSet {
-        return {
-            ids: new Set<string>(),
-            names: new Set<string>()
-        };
-    }
-
-    private shouldExcludeExposure(
-        row: Pick<DaemonListingRow, 'exposureId' | 'exposureName'>,
-        excludedExposures: ExcludedExposureSet
-    ): boolean {
-        if (row.exposureId && excludedExposures.ids.has(row.exposureId)) {
-            return true;
-        }
-
-        if (row.exposureName && excludedExposures.names.has(row.exposureName)) {
-            return true;
-        }
-
-        return false;
-    }
-
+    /** Mesh exposures carry geometry rather than tabular rows, so they never export. */
     private async resolveExcludedExposures(pluginId?: string): Promise<ExcludedExposureSet> {
         if (!pluginId) {
-            return this.emptyExcludedExposureSet();
+            return emptyExcludedExposures();
         }
 
         const pluginEntity = await PluginEntity.findOneBy({ id: pluginId });
-        const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
-        const exposures = plugin?.props.exposures;
-        if (!exposures) {
-            return this.emptyExcludedExposureSet();
-        }
+        const exposures = pluginEntity ? toPluginLike(pluginEntity).props.exposures ?? [] : [];
 
         return exposures.reduce<ExcludedExposureSet>((accumulator, exposure) => {
             if (exposure.export?.exporter !== Exporter.Mesh) {
@@ -243,380 +142,38 @@ export class AnalysisListingExportCatalogService {
             }
 
             return accumulator;
-        }, this.emptyExcludedExposureSet());
+        }, emptyExcludedExposures());
     }
 
     private async resolveContext(analysisId: string): Promise<AnalysisExportContext> {
         const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
-        const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined })
-            : undefined;
-        const excludedExposures = await this.resolveExcludedExposures(analysis?.plugin);
 
         return {
             analysis,
-            teamClusterId,
-            excludedExposures
+            teamClusterId: analysis?.computeClusterId ?? undefined,
+            excludedExposures: await this.resolveExcludedExposures(analysis?.plugin)
         };
     }
 
     private async collectEnrichedListingRows(
-        teamClusterId: string,
+        teamClusterId: string | undefined,
         analysisId: string,
         excludedExposures: ExcludedExposureSet
     ): Promise<DaemonListingRow[]> {
-        const pageSize = 200;
-        let page = 1;
-        let totalPages = 1;
-        const listingRows: DaemonListingRow[] = [];
-
-        do {
-            const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
-                teamClusterId,
-                ChannelCommands.PluginListingsList,
-                {
-                    analysisId,
-                    page,
-                    limit: pageSize
-                }
-            );
-
-            totalPages = Math.max(1, daemonResult.totalPages || 1);
-            listingRows.push(
-                ...(daemonResult.data || []).filter((row) => !this.shouldExcludeExposure(row, excludedExposures))
-            );
-
-            page += 1;
-        } while (page <= totalPages);
-
-        return enrichDaemonListingRows({
-            rows: listingRows,
-            fallbackAnalysisId: analysisId
-        });
-    }
-
-    private buildListingOptions(rows: DaemonListingRow[]): AnalysisListingExportOptionView[] {
-        const listings = new Map<string, AnalysisListingExportOptionView>();
-
-        for (const row of rows) {
-            const listingId = row.exposureId || 'listing';
-            const listingName = row.exposureName || listingId;
-            const id = buildAnalysisListingSelectionId(listingId, listingName);
-
-            if (listings.has(id)) {
-                continue;
-            }
-
-            listings.set(id, {
-                id,
-                listingId,
-                listingName,
-                label: listingName
-            });
-        }
-
-        return Array.from(listings.values())
-            .sort((left, right) => left.label.localeCompare(right.label));
-    }
-
-    private buildSubListingOptions(rows: DaemonListingRow[]): AnalysisSubListingExportOptionView[] {
-        return this.discoverSubListingReferences(rows).map((reference) => ({
-            id: reference.id,
-            exposureId: reference.exposureId,
-            exposureName: reference.exposureName,
-            timestep: reference.timestep,
-            subListingName: reference.subListingName,
-            label: reference.subListingName
-        }));
-    }
-
-    private toExportRow(analysisId: string, listingRow: ListingRowByAnalysisData): Record<string, unknown> {
-        const baseRow: Record<string, unknown> = {
-            _id: listingRow._id,
-            pluginId: listingRow.plugin,
-            analysisId,
-            trajectoryId: listingRow.trajectory,
-            trajectoryName: listingRow.trajectoryName,
-            timestep: listingRow.timestep
-        };
-
-        for (const [key, value] of Object.entries(listingRow.row)) {
-            if (!(key in baseRow)) {
-                baseRow[key] = value;
-            }
-        }
-
-        return baseRow;
-    }
-
-    private buildColumns(dynamicColumns: Set<string>): string[] {
-        return [
-            '_id',
-            'pluginId',
-            'analysisId',
-            'trajectoryId',
-            'trajectoryName',
-            'timestep',
-            ...Array.from(dynamicColumns).sort((a, b) => a.localeCompare(b))
-        ];
-    }
-
-    private toSubListingExportRow(
-        analysisId: string,
-        row: SubListingExportRowInput
-    ): Record<string, unknown> {
-        const baseRow: Record<string, unknown> = {
-            _id: toListingRowId(row._id),
-            pluginId: row.plugin,
-            analysisId,
-            trajectoryId: row.trajectory,
-            exposureId: row.exposureId,
-            exposureName: row.exposureName,
-            timestep: row.timestep,
-            subListingName: row.subListingName
-        };
-
-        for (const [key, value] of Object.entries(row.row)) {
-            if (!(key in baseRow)) {
-                baseRow[key] = value;
-            }
-        }
-
-        return baseRow;
-    }
-
-    private buildSubListingColumns(dynamicColumns: Set<string>): string[] {
-        return [
-            '_id',
-            'pluginId',
-            'analysisId',
-            'trajectoryId',
-            'exposureId',
-            'exposureName',
-            'timestep',
-            'subListingName',
-            ...Array.from(dynamicColumns).sort((a, b) => a.localeCompare(b))
-        ];
-    }
-
-    private aggregateListings(
-        analysisId: string,
-        rows: DaemonListingRow[],
-        selectedListingIds: Set<string> | null
-    ): AnalysisListingExportData[] {
-        const listingMap = new Map<string, ListingAggregation>();
-
-        for (const doc of rows) {
-            const mapped: ListingRowByAnalysisData = {
-                _id: toListingRowId(doc._id),
-                plugin: doc.plugin || '',
-                exposureId: doc.exposureId || '',
-                exposureName: doc.exposureName || '',
-                trajectory: doc.trajectory || '',
-                trajectoryName: doc.trajectoryName as string,
-                timestep: doc.timestep ?? 0,
-                row: doc.row ?? {}
-            };
-
-            const listingId = mapped.exposureId || 'listing';
-            const listingName = mapped.exposureName || listingId;
-            const selectionId = buildAnalysisListingSelectionId(listingId, listingName);
-            if (selectedListingIds && !selectedListingIds.has(selectionId)) {
-                continue;
-            }
-
-            const aggregated = listingMap.get(selectionId) || {
-                listingId,
-                listingName,
-                rows: [],
-                dynamicColumns: new Set<string>()
-            };
-
-            const exportRow = this.toExportRow(analysisId, mapped);
-            aggregated.rows.push(exportRow);
-
-            Object.keys(exportRow).forEach((column) => {
-                if (!['_id', 'pluginId', 'analysisId', 'trajectoryId', 'trajectoryName', 'timestep'].includes(column)) {
-                    aggregated.dynamicColumns.add(column);
-                }
-            });
-
-            listingMap.set(selectionId, aggregated);
-        }
-
-        return Array.from(listingMap.values())
-            .sort((left, right) => left.listingName.localeCompare(right.listingName))
-            .map((listing) => ({
-                listingId: listing.listingId,
-                listingName: listing.listingName,
-                rows: listing.rows,
-                columns: this.buildColumns(listing.dynamicColumns)
-            }));
-    }
-
-    private discoverSubListingReferences(
-        rows: DaemonListingRow[],
-        selectedSubListingIds: Set<string> | null = null
-    ): DiscoveredSubListingReference[] {
-        const references = new Map<string, DiscoveredSubListingReference>();
-
-        for (const row of rows) {
-            if (!row.subListingNames?.length) {
-                continue;
-            }
-
-            const exposureId = row.exposureId || '';
-            const exposureName = row.exposureName || exposureId;
-            const plugin = row.plugin || '';
-            const trajectory = row.trajectory || '';
-            const timestep = row.timestep ?? 0;
-
-            for (const subListingName of row.subListingNames.filter(Boolean)) {
-                const id = buildAnalysisSubListingSelectionId(exposureId, timestep, subListingName);
-
-                if (selectedSubListingIds && !selectedSubListingIds.has(id)) {
-                    continue;
-                }
-
-                if (references.has(id)) {
-                    continue;
-                }
-
-                references.set(id, {
-                    id,
-                    plugin,
-                    trajectory,
-                    exposureId,
-                    exposureName,
-                    timestep,
-                    subListingName
-                });
-            }
-        }
-
-        return Array.from(references.values()).sort((left, right) => {
-            const exposureComparison = left.exposureName.localeCompare(right.exposureName);
-            if (exposureComparison !== 0) {
-                return exposureComparison;
-            }
-
-            const timestepComparison = left.timestep - right.timestep;
-            if (timestepComparison !== 0) {
-                return timestepComparison;
-            }
-
-            return left.subListingName.localeCompare(right.subListingName);
-        });
-    }
-
-    private async collectSubListingRows(
-        teamClusterId: string,
-        teamId: string,
-        analysisId: string,
-        reference: DiscoveredSubListingReference
-    ): Promise<SubListingExportRowInput[]> {
-        const pageSize = 200;
-        let page = 1;
-        let totalPages = 1;
-        const rows: SubListingExportRowInput[] = [];
-
-        do {
-            const daemonResult = await this.daemonClient.command<DaemonPaginatedDataResult<DaemonSubListingRow>>(
-                teamClusterId,
-                ChannelCommands.PluginSubListingsList,
-                {
-                    teamId,
-                    analysisId,
-                    exposureId: reference.exposureId,
-                    timestep: reference.timestep,
-                    subListingName: reference.subListingName,
-                    page,
-                    limit: pageSize
-                }
-            );
-
-            totalPages = Math.max(1, daemonResult.totalPages || 1);
-
-            for (const doc of daemonResult.data || []) {
-                rows.push({
-                    _id: toListingRowId(doc._id),
-                    plugin: reference.plugin,
-                    trajectory: reference.trajectory,
-                    exposureId: reference.exposureId,
-                    exposureName: reference.exposureName,
-                    timestep: reference.timestep,
-                    subListingName: reference.subListingName,
-                    row: doc.row ?? {}
-                });
-            }
-
-            page += 1;
-        } while (page <= totalPages);
-
-        return rows;
-    }
-
-    private async collectSubListings(
-        teamClusterId: string,
-        teamId: string,
-        analysisId: string,
-        references: DiscoveredSubListingReference[]
-    ): Promise<AnalysisSubListingExportData[]> {
-        if (references.length === 0) {
+        if (!teamClusterId) {
             return [];
         }
 
-        const allRows = (
-            await Promise.all(references.map((reference) => this.collectSubListingRows(
-                teamClusterId,
-                teamId,
-                analysisId,
-                reference
-            )))
-        ).flat();
+        const listingRows = await collectAllDaemonPages<DaemonListingRow>(
+            this.daemonClient,
+            teamClusterId,
+            ChannelCommands.PluginListingsList,
+            { analysisId }
+        );
 
-        const subListingMap = new Map<string, SubListingAggregation>();
-
-        for (const row of allRows) {
-            const key = buildAnalysisSubListingSelectionId(row.exposureId, row.timestep, row.subListingName);
-            const aggregated = subListingMap.get(key) || {
-                exposureId: row.exposureId,
-                exposureName: row.exposureName,
-                subListingName: row.subListingName,
-                timestep: row.timestep,
-                rows: [],
-                dynamicColumns: new Set<string>()
-            };
-
-            const exportRow = this.toSubListingExportRow(analysisId, row);
-            aggregated.rows.push(exportRow);
-
-            Object.keys(exportRow).forEach((column) => {
-                if (!['_id', 'pluginId', 'analysisId', 'trajectoryId', 'exposureId', 'exposureName', 'timestep', 'subListingName'].includes(column)) {
-                    aggregated.dynamicColumns.add(column);
-                }
-            });
-
-            subListingMap.set(key, aggregated);
-        }
-
-        return Array.from(subListingMap.values())
-            .sort((left, right) => {
-                const exposureComparison = left.exposureName.localeCompare(right.exposureName);
-                if (exposureComparison !== 0) return exposureComparison;
-
-                const subListingComparison = left.subListingName.localeCompare(right.subListingName);
-                if (subListingComparison !== 0) return subListingComparison;
-
-                return left.timestep - right.timestep;
-            })
-            .map((subListing) => ({
-                exposureId: subListing.exposureId,
-                exposureName: subListing.exposureName,
-                subListingName: subListing.subListingName,
-                timestep: subListing.timestep,
-                rows: subListing.rows,
-                columns: this.buildSubListingColumns(subListing.dynamicColumns)
-            }));
+        return enrichDaemonListingRows({
+            rows: listingRows.filter((row) => !this.shouldExcludeExposure(row, excludedExposures)),
+            fallbackAnalysisId: analysisId
+        });
     }
 }

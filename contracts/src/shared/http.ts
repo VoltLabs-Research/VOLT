@@ -10,15 +10,3 @@ export interface PaginationMeta{
     totalPages: number;
     hasMore: boolean;
 }
-
-export interface PaginatedApiResponse<T>{
-    status: string;
-    data: T[];
-    pagination: PaginationMeta;
-}
-
-export interface ApiErrorResponse{
-    status: string;
-    code?: string;
-    message?: string;
-}

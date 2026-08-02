@@ -1,17 +1,7 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface SetEnvironmentInput {
-    backgroundColor?: string;
-    grid?: { enabled?: boolean };
-    fog?: {
-        enableFog?: boolean;
-        fogColor?: string;
-        fogNear?: number;
-        fogFar?: number;
-    };
-}
+import type { SetEnvironmentInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const setEnvironment: ClientToolHandler<SetEnvironmentInput> = {
     name: 'set_environment',
@@ -24,24 +14,24 @@ const setEnvironment: ClientToolHandler<SetEnvironmentInput> = {
         ctx.markViewerActing();
         const store = useEditorStore.getState();
 
-        if (typeof input.backgroundColor === 'string' && input.backgroundColor) {
+        if (input.backgroundColor) {
             store.environment.setBackgroundColor(input.backgroundColor);
             applied.backgroundColor = input.backgroundColor;
             changes.push(`background ${input.backgroundColor}`);
         }
 
-        if (input.grid && typeof input.grid.enabled === 'boolean') {
+        if (input.grid?.enabled !== undefined) {
             store.grid.setGrid({ enabled: input.grid.enabled });
             applied.gridEnabled = input.grid.enabled;
             changes.push(input.grid.enabled ? 'grid on' : 'grid off');
         }
 
-        if (input.fog && typeof input.fog === 'object') {
-            const fogConfig: { enableFog?: boolean; fogColor?: string; fogNear?: number; fogFar?: number } = {};
-            if (typeof input.fog.enableFog === 'boolean') fogConfig.enableFog = input.fog.enableFog;
-            if (typeof input.fog.fogColor === 'string' && input.fog.fogColor) fogConfig.fogColor = input.fog.fogColor;
-            if (typeof input.fog.fogNear === 'number' && Number.isFinite(input.fog.fogNear)) fogConfig.fogNear = input.fog.fogNear;
-            if (typeof input.fog.fogFar === 'number' && Number.isFinite(input.fog.fogFar)) fogConfig.fogFar = input.fog.fogFar;
+        if (input.fog) {
+            const fogConfig: SetEnvironmentInput['fog'] = {};
+            if (input.fog.enableFog !== undefined) fogConfig.enableFog = input.fog.enableFog;
+            if (input.fog.fogColor) fogConfig.fogColor = input.fog.fogColor;
+            if (input.fog.fogNear !== undefined) fogConfig.fogNear = input.fog.fogNear;
+            if (input.fog.fogFar !== undefined) fogConfig.fogFar = input.fog.fogFar;
 
             if (Object.keys(fogConfig).length > 0) {
                 store.environment.setFogConfig(fogConfig);

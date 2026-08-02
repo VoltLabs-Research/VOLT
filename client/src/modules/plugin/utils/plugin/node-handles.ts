@@ -1,13 +1,11 @@
 import { Position } from '@xyflow/react';
 import type { CSSProperties } from 'react';
 import type {
-    INodeConnectorLayout,
     INodeConnectorPlacement,
     INodeData,
     NodeConnectorSide
 } from '@volt/contracts/modules/plugin/workflow';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
-import { isRecord } from '@/shared/utils/type-guards';
 import type { SelectOption } from '@voltstack/bravais';
 
 interface NodeHandleDefinition {
@@ -135,12 +133,8 @@ export const CONNECTOR_SIDE_OPTIONS: SelectOption[] = [{
     title: 'Bottom'
 }];
 
-const isConnectorSide = (value: unknown): value is NodeConnectorSide => {
-    return value === 'left' || value === 'right' || value === 'top' || value === 'bottom';
-};
-
-const clampConnectorOffset = (value: unknown, fallback: number): number => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
+const clampConnectorOffset = (value: number | undefined, fallback: number): number => {
+    if (value === undefined || !Number.isFinite(value)) {
         return fallback;
     }
 
@@ -148,52 +142,31 @@ const clampConnectorOffset = (value: unknown, fallback: number): number => {
 };
 
 export const getNodeHandleDefinitions = (nodeType: NodeType): NodeHandleDefinition[] => {
+    // `nodeType` reaches us as an unchecked cast of xyflow's `string | undefined`.
     return NODE_HANDLE_DEFINITIONS[nodeType] ?? [];
 };
 
-export const readNodeConnectorLayout = (data: INodeData | undefined): INodeConnectorLayout => {
-    if (!isRecord(data?.connectorLayout)) {
-        return {};
-    }
-
-    return data.connectorLayout as INodeConnectorLayout;
+export const createNodeHandlePlacement = (
+    placement: Partial<INodeConnectorPlacement> | undefined,
+    handleDefinition: NodeHandleDefinition
+): INodeConnectorPlacement => {
+    return {
+        side: placement?.side ?? handleDefinition.defaultPlacement.side,
+        offset: clampConnectorOffset(
+            placement?.offset,
+            handleDefinition.defaultPlacement.offset
+        )
+    };
 };
 
 export const resolveNodeHandlePlacement = (
     data: INodeData | undefined,
     handleDefinition: NodeHandleDefinition
 ): INodeConnectorPlacement => {
-    const connectorLayout = readNodeConnectorLayout(data);
-    const rawPlacement = connectorLayout[handleDefinition.id];
-
-    if (!isRecord(rawPlacement)) {
-        return handleDefinition.defaultPlacement;
-    }
-
-    return {
-        side: isConnectorSide(rawPlacement.side)
-            ? rawPlacement.side
-            : handleDefinition.defaultPlacement.side,
-        offset: clampConnectorOffset(
-            rawPlacement.offset,
-            handleDefinition.defaultPlacement.offset
-        )
-    };
-};
-
-export const createNodeHandlePlacement = (
-    placement: Partial<INodeConnectorPlacement>,
-    handleDefinition: NodeHandleDefinition
-): INodeConnectorPlacement => {
-    return {
-        side: isConnectorSide(placement.side)
-            ? placement.side
-            : handleDefinition.defaultPlacement.side,
-        offset: clampConnectorOffset(
-            placement.offset,
-            handleDefinition.defaultPlacement.offset
-        )
-    };
+    return createNodeHandlePlacement(
+        data?.connectorLayout?.[handleDefinition.id],
+        handleDefinition
+    );
 };
 
 export const toReactFlowHandlePosition = (side: NodeConnectorSide): Position => {

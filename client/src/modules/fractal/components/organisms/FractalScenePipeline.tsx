@@ -101,7 +101,6 @@ const FractalScenePipeline = ({
             />
             <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
             <DynamicLights
-                settings={config.lights}
                 preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory}
                 darkTheme={darkTheme}
             />

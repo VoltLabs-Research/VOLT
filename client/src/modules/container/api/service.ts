@@ -16,6 +16,7 @@ import type { ContainerStatsResponse } from '@volt/contracts/modules/container/d
 import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { GetContainerFilesResponse, ReadContainerFileResponse } from '@volt/contracts/modules/container/domain';
+import { normalizePortMapping } from '@/modules/container/utils/port-mapping';
 
 export enum ContainerAction {
     Start = 'start',
@@ -81,14 +82,7 @@ interface CreateContainerPortAccessUrlParams {
     privatePort: number;
 }
 
-const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(({ public: publicPort, ...port }) => (
-    publicPort === 0
-        ? port
-        : {
-            ...port,
-            public: publicPort
-        }
-));
+const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(normalizePortMapping);
 
 const endpoints = {
     getAll: paginated<GetContainersParams, PaginatedResponse<Container>>('/containers'),

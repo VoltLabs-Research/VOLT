@@ -2,8 +2,7 @@ import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
-import type { IModifierData } from '@volt/contracts/modules/plugin/workflow';
-import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
+import useWorkflowSaveStatus from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import EditableTag from '@/shared/ui/components/EditableTag';
@@ -12,7 +11,7 @@ import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { useKeyboardShortcut } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { DragEvent, ReactNode } from 'react';
 import '@xyflow/react/dist/style.css';
@@ -26,80 +25,27 @@ interface PluginBuilderProps {
 }
 
 const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => {
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [shortcutsTipTrigger, setShortcutsTipTrigger] = useState(0);
-    const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const { nodes, edges, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo, getWorkflow } = usePluginBuilderStore(
+    const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo } = usePluginBuilderStore(
         useShallow((state) => ({
             nodes: state.nodes,
-            edges: state.edges,
             updateNodeData: state.updateNodeData,
             selectedNode: state.selectedNode,
             selectNode: state.selectNode,
             deleteNode: state.deleteNode,
             addNode: state.addNode,
             undo: state.undo,
-            redo: state.redo,
-            getWorkflow: state.getWorkflow
+            redo: state.redo
         }))
     );
 
-    const saveWorkflow = useSaveWorkflow();
-    const isSaving = usePluginBuilderStore((state) => state.isSaving);
+    const { saveStatus, hasUnsavedChanges, save } = useWorkflowSaveStatus();
 
     useTip('plugin-builder-shortcuts', {
         enabled: shortcutsTipTrigger > 0,
         triggerKey: shortcutsTipTrigger
     });
-
-    const clearSaveStatusTimeout = useCallback(() => {
-        if (!saveStatusTimeoutRef.current) {
-            return;
-        }
-
-        clearTimeout(saveStatusTimeoutRef.current);
-        saveStatusTimeoutRef.current = null;
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            clearSaveStatusTimeout();
-        };
-    }, [clearSaveStatusTimeout]);
-
-    const handleSave = useCallback(async () => {
-        if (isSaving) return;
-
-        clearSaveStatusTimeout();
-        setSaveStatus('saving');
-        try {
-            const result = await saveWorkflow();
-            if (result) {
-                setSaveStatus('saved');
-                setHasUnsavedChanges(false);
-                saveStatusTimeoutRef.current = setTimeout(() => {
-                    setSaveStatus('idle');
-                    saveStatusTimeoutRef.current = null;
-                }, 2000);
-            } else {
-                setSaveStatus('error');
-                saveStatusTimeoutRef.current = setTimeout(() => {
-                    setSaveStatus('idle');
-                    saveStatusTimeoutRef.current = null;
-                }, 3000);
-            }
-        } catch {
-            setSaveStatus('error');
-            saveStatusTimeoutRef.current = setTimeout(() => {
-                setSaveStatus('idle');
-                saveStatusTimeoutRef.current = null;
-            }, 3000);
-        }
-    }, [clearSaveStatusTimeout, saveWorkflow, isSaving]);
-
-    useKeyboardShortcut('s', handleSave, { ctrl: true });
 
     const handleEscape = useCallback(() => {
         if (selectedNode) selectNode(null);
@@ -109,76 +55,47 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
         if (selectedNode) deleteNode(selectedNode.id);
     }, [selectedNode, deleteNode]);
 
-    const handleUndo = useCallback(() => { undo(); }, [undo]);
-    const handleRedo = useCallback(() => { redo(); }, [redo]);
-
     useKeyboardShortcut('Escape', handleEscape, { preventDefault: false });
     useKeyboardShortcut('Delete', handleDeleteSelected, { preventDefault: false });
-    useKeyboardShortcut('z', handleUndo, { ctrl: true });
-    useKeyboardShortcut('z', handleRedo, {
+    useKeyboardShortcut('z', undo, { ctrl: true });
+    useKeyboardShortcut('z', redo, {
         ctrl: true,
         shift: true
     });
 
-    const workflowFingerprint = useMemo(() => {
-        return JSON.stringify(getWorkflow());
-    }, [edges, getWorkflow, nodes]);
-
-    const isFirstRender = useRef(true);
-    useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-        setHasUnsavedChanges(true);
-    }, [workflowFingerprint]);
-
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (!hasUnsavedChanges) return;
-            e.preventDefault();
-            e.returnValue = '';
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
-
+    // Stable identity keeps SIDEBAR_TAGS (and therefore the palette subtree) mounted.
     const handleAddNode = useCallback((nodeType: NodeType) => {
-        const offset = nodes.length * 20;
+        const offset = usePluginBuilderStore.getState().nodes.length * 20;
         addNode(nodeType, {
             x: 150 + offset,
             y: 150 + offset
         });
         setShortcutsTipTrigger((current) => current + 1);
-    }, [addNode, nodes.length]);
-
-    const modifierNode = useMemo(() => {
-        return nodes.find(n => n.type === NodeType.MODIFIER);
-    }, [nodes]);
-
-    const pluginName = useMemo(() => {
-        return modifierNode?.data.modifier?.name || 'New Plugin';
-    }, [modifierNode]);
-
-    const handlePluginNameChange = useCallback((newName: string) => {
-        if (modifierNode) {
-            const currentModifier: IModifierData = modifierNode.data.modifier ?? { name: pluginName };
-            updateNodeData(modifierNode.id, {
-                modifier: {
-                    ...currentModifier,
-                    name: newName
-                }
-            });
-        }
-    }, [modifierNode, pluginName, updateNodeData]);
+    }, [addNode]);
 
     const onDragStart = useCallback((event: DragEvent, nodeType: NodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
     }, []);
 
+    const modifierNode = nodes.find((node) => node.type === NodeType.MODIFIER);
+    const pluginName = modifierNode?.data.modifier?.name || 'New Plugin';
+
+    const handlePluginNameChange = (newName: string) => {
+        if (!modifierNode) {
+            return;
+        }
+
+        updateNodeData(modifierNode.id, {
+            modifier: {
+                ...modifierNode.data.modifier ?? { name: pluginName },
+                name: newName
+            }
+        });
+    };
+
     const handleBackClick = useCallback(() => {
-        const goBack = async () => {
+        const leaveBuilder = async () => {
             if (hasUnsavedChanges) {
                 const isConfirmed = await confirm({
                     title: 'Leave with unsaved changes?',
@@ -194,8 +111,8 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             onBack();
         };
 
-        goBack().catch(() => undefined);
-    }, [confirm, hasUnsavedChanges, onBack]);
+        leaveBuilder().catch(() => undefined);
+    }, [hasUnsavedChanges, onBack]);
 
     const SIDEBAR_TAGS = useMemo(() => [
         {
@@ -246,7 +163,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                 </Sidebar.Bottom>
             </Sidebar>
 
-            <PluginBuilderCanvas saveStatus={saveStatus} onSave={handleSave} />
+            <PluginBuilderCanvas saveStatus={saveStatus} onSave={save} />
         </Box>
     );
 };

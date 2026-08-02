@@ -1,19 +1,13 @@
 import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
 
-enum ClusterInstallPlatform {
+export enum ClusterInstallPlatform {
     Windows = 'windows',
     MacOS = 'macos',
-    Linux = 'linux',
-    Unknown = 'unknown'
+    Linux = 'linux'
 }
 
-export type SupportedClusterInstallPlatform =
-    | ClusterInstallPlatform.Windows
-    | ClusterInstallPlatform.Linux
-    | ClusterInstallPlatform.MacOS;
-
 interface ClusterInstallPlatformOption {
-    id: SupportedClusterInstallPlatform;
+    id: ClusterInstallPlatform;
     label: string;
 };
 
@@ -38,7 +32,7 @@ const escapePowerShellSingleQuotedString = (value: string): string => {
     return value.replace(/'/g, "''");
 };
 
-const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
+export const getDefaultClusterInstallPlatform = (): ClusterInstallPlatform => {
     const userAgent = navigator.userAgent;
     if (userAgent.includes('Windows')) {
         return ClusterInstallPlatform.Windows;
@@ -48,22 +42,7 @@ const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
         return ClusterInstallPlatform.MacOS;
     }
 
-    if (userAgent.includes('Linux')) {
-        return ClusterInstallPlatform.Linux;
-    }
-
-    return ClusterInstallPlatform.Unknown;
-};
-
-const isSupportedClusterInstallPlatform = (platform: ClusterInstallPlatform): platform is SupportedClusterInstallPlatform => {
-    return CLUSTER_INSTALL_PLATFORM_OPTIONS.some((option) => option.id === platform);
-};
-
-export const getDefaultClusterInstallPlatform = (): SupportedClusterInstallPlatform => {
-    const detectedPlatform = detectBrowserInstallPlatform();
-    return isSupportedClusterInstallPlatform(detectedPlatform)
-        ? detectedPlatform
-        : ClusterInstallPlatform.Linux;
+    return ClusterInstallPlatform.Linux;
 };
 
 const buildPosixInstallCommand = (teamClusterId: string, enrollmentToken: string, cloudUrl: string): string => {
@@ -88,7 +67,7 @@ const buildWindowsInstallCommand = (teamClusterId: string, enrollmentToken: stri
 export const buildClusterInstallCommand = (
     teamClusterId: string,
     enrollmentToken: string,
-    platform: SupportedClusterInstallPlatform = getDefaultClusterInstallPlatform()
+    platform: ClusterInstallPlatform = getDefaultClusterInstallPlatform()
 ): string => {
     const cloudUrl = getBackendOrigin();
     if (platform === ClusterInstallPlatform.Windows) {

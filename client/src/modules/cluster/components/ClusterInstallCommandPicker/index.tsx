@@ -3,11 +3,11 @@ import CopyableField from '@/shared/ui/components/CopyableField';
 import { SegmentedTabs, Stack } from '@voltstack/bravais';
 import {
     CLUSTER_INSTALL_PLATFORM_OPTIONS,
+    ClusterInstallPlatform,
     buildClusterInstallCommand,
     getDefaultClusterInstallPlatform
 } from '@/modules/cluster/utils/build-cluster-install-command';
 import { useMemo, useState } from 'react';
-import type { SupportedClusterInstallPlatform } from '@/modules/cluster/utils/build-cluster-install-command';
 
 interface ClusterInstallCommandPickerProps {
     clusterId: string | null;
@@ -20,9 +20,7 @@ const ClusterInstallCommandPicker = ({
     enrollmentToken,
     className = ''
 }: ClusterInstallCommandPickerProps) => {
-    const [activePlatform, setActivePlatform] = useState<SupportedClusterInstallPlatform>(() => {
-        return getDefaultClusterInstallPlatform();
-    });
+    const [activePlatform, setActivePlatform] = useState<ClusterInstallPlatform>(getDefaultClusterInstallPlatform);
 
     const installCommand = useMemo(() => {
         if (!clusterId || !enrollmentToken) {
@@ -37,7 +35,7 @@ const ClusterInstallCommandPicker = ({
             <SegmentedTabs
                 tabs={CLUSTER_INSTALL_PLATFORM_OPTIONS}
                 activeTab={activePlatform}
-                onChange={(platform) => setActivePlatform(platform)}
+                onChange={setActivePlatform}
                 ariaLabel='Cluster host operating system'
                 size='sm'
                 fullWidth

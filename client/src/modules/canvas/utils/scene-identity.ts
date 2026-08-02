@@ -40,7 +40,7 @@ const normalizeParticleFilterConditionSignature = (condition: MaybeParticleFilte
 };
 
 const normalizeParticleFilterSignature = (scene: MaybeScene): string => {
-    if (Array.isArray(scene.conditions) && scene.conditions.length > 0) {
+    if (scene.conditions !== undefined && scene.conditions.length > 0) {
         return JSON.stringify({
             combinator: scene.combinator ?? 'AND',
             conditions: scene.conditions.map(normalizeParticleFilterConditionSignature)
@@ -128,7 +128,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
             sceneType: 'color-coding',
             source: 'color-coding',
             analysisId,
-            exposureId: String(artifact.params.exposureId || ''),
+            exposureId: artifact.params.exposureId ?? '',
             property: artifact.params.property,
             startValue: String(artifact.params.startValue),
             endValue: String(artifact.params.endValue),
@@ -138,7 +138,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
 
     if (artifact.sourceType === 'particle-filter') {
         const rawConditions = artifact.params.conditions;
-        const hasCompositeConditions = Array.isArray(rawConditions) && rawConditions.length > 0;
+        const hasCompositeConditions = rawConditions !== undefined && rawConditions.length > 0;
 
         if (
             (!hasCompositeConditions && artifact.params.property === undefined)
@@ -150,36 +150,20 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
         }
 
         const conditions = hasCompositeConditions
-            ? rawConditions.flatMap((condition): ParticleFilterSceneCondition[] => {
-                if (
-                    typeof condition.property !== 'string'
-                    || typeof condition.operator !== 'string'
-                    || condition.value === undefined
-                ) {
-                    return [];
-                }
-
-                return [{
-                    kind: 'property',
-                    property: String(condition.property),
-                    operator: String(condition.operator),
-                    value: typeof condition.value === 'number' ? condition.value : String(condition.value),
-                    ...(condition.exposureId ? { exposureId: String(condition.exposureId) } : {})
-                }];
-            })
+            ? rawConditions.map((condition): ParticleFilterSceneCondition => ({
+                kind: 'property',
+                property: condition.property,
+                operator: condition.operator,
+                value: condition.value,
+                ...(condition.exposureId ? { exposureId: condition.exposureId } : {})
+            }))
             : [{
                 kind: 'property',
-                property: String(artifact.params.property || ''),
-                operator: String(artifact.params.operator || ''),
-                value: typeof artifact.params.value === 'number'
-                    ? artifact.params.value
-                    : String(artifact.params.value),
-                ...(artifact.params.exposureId ? { exposureId: String(artifact.params.exposureId) } : {})
+                property: artifact.params.property ?? '',
+                operator: artifact.params.operator ?? '',
+                value: artifact.params.value ?? '',
+                ...(artifact.params.exposureId ? { exposureId: artifact.params.exposureId } : {})
             }] satisfies ParticleFilterSceneCondition[];
-
-        if (conditions.length === 0) {
-            return null;
-        }
 
         const firstPropertyCondition = conditions[0];
 
@@ -208,7 +192,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
             sceneType: 'line-style',
             source: 'line-style',
             analysisId,
-            exposureId: String(artifact.params.exposureId),
+            exposureId: artifact.params.exposureId,
             style: (artifact.params.style ?? {}) as LineStyleSpec
         };
     }
@@ -223,10 +207,4 @@ export const isSameSceneRenderMetadata = (
     return left?.exporter === right?.exporter
         && left?.exportType === right?.exportType
         && left?.defaultLineWidth === right?.defaultLineWidth;
-};
-
-export const isArtifactSceneActive = (activeScene: MaybeScene | null | undefined, artifact: SceneArtifact): boolean => {
-    const scene = toSceneObjectFromArtifact(artifact);
-    if (!scene || !activeScene) return false;
-    return isSameScene(activeScene, scene);
 };

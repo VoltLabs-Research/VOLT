@@ -1,5 +1,4 @@
 import { Box, Button, Row, CollapsibleSection } from '@voltstack/bravais';
-import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -10,7 +9,6 @@ import {
     CONNECTOR_SIDE_OPTIONS,
     createNodeHandlePlacement,
     getNodeHandleDefinitions,
-    readNodeConnectorLayout,
     resolveNodeHandlePlacement
 } from '@/modules/plugin/utils/plugin/node-handles';
 
@@ -22,16 +20,13 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const storeNodes = usePluginBuilderStore((state) => state.nodes);
 
-    const currentNode = useMemo(() => {
-        return storeNodes.find((candidate) => candidate.id === node.id) ?? node;
-    }, [storeNodes, node]);
-
-    const nodeType = currentNode.type as NodeType;
+    // The node handed to the editor is a snapshot; the store holds the live one.
+    const currentNode = storeNodes.find((candidate) => candidate.id === node.id) ?? node;
     const nodeData = currentNode.data;
-    const handleDefinitions = useMemo(() => getNodeHandleDefinitions(nodeType), [nodeType]);
-    const connectorLayout = useMemo(() => readNodeConnectorLayout(nodeData), [nodeData]);
+    const handleDefinitions = getNodeHandleDefinitions(currentNode.type as NodeType);
+    const connectorLayout = nodeData?.connectorLayout ?? {};
 
-    const updateHandlePlacement = useCallback((
+    const updateHandlePlacement = (
         handleId: string,
         nextPlacement: { side?: NodeConnectorSide; offset?: number; }
     ) => {
@@ -62,9 +57,9 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                 [handleId]: resolvedPlacement
             }
         });
-    }, [connectorLayout, handleDefinitions, node.id, nodeData, updateNodeData]);
+    };
 
-    const resetHandlePlacement = useCallback((handleId: string) => {
+    const resetHandlePlacement = (handleId: string) => {
         if (!(handleId in connectorLayout)) {
             return;
         }
@@ -75,7 +70,7 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
         updateNodeData(node.id, {
             connectorLayout: nextLayout
         });
-    }, [connectorLayout, node.id, updateNodeData]);
+    };
 
     if (handleDefinitions.length === 0) {
         return null;

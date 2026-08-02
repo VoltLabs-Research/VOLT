@@ -1,4 +1,8 @@
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
+import {
+    ArgumentType,
+    ArgumentVisibilityOperator
+} from '@volt/contracts/modules/plugin/enums';
 
 export { WorkflowNodeType };
 
@@ -12,16 +16,17 @@ export interface ModifierNodeData {
     description?: string;
 }
 
-export enum ArgumentType {
-    Select = 'select',
-    Number = 'number',
-    Frame = 'frame',
-    Boolean = 'boolean',
-    String = 'string',
-    List = 'list',
-    Tuple = 'tuple',
-    PluginReference = 'pluginReference'
-}
+/*
+ * `ArgumentType` and `ArgumentVisibilityOperator` are wire enums: the client sends
+ * them and the daemon executes on them, so they are re-exported from
+ * `@volt/contracts` rather than declared again here. There used to be a second
+ * `ArgumentType` enum in this file with the same eight values under different
+ * member names, which meant adding an argument type required editing two files
+ * with nothing to catch a mismatch.
+ */
+export { ArgumentType, ArgumentVisibilityOperator };
+
+export const ArgumentVisibilityOperators = Object.values(ArgumentVisibilityOperator);
 
 export interface ArgumentOption {
     key: string;
@@ -33,15 +38,6 @@ export interface ArgumentOptionSource {
     valueField?: string;
     labelField?: string;
 }
-
-export const ArgumentVisibilityOperators = [
-    'equals',
-    'notEquals',
-    'in',
-    'notIn'
-] as const;
-
-export type ArgumentVisibilityOperator = (typeof ArgumentVisibilityOperators)[number];
 
 export interface ArgumentVisibilityCondition {
     argument: string;

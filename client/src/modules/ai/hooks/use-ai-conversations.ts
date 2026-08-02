@@ -2,7 +2,6 @@ import { conversationQuery, invalidateConversationsQueries } from '@/modules/ai/
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import type { CreateAIConversationParams } from '@/modules/ai/api/service';
 import { useNavigate } from 'react-router-dom';
 interface UseAIConversationsOptions {
     navigateOnConversationChange?: boolean;
@@ -36,16 +35,10 @@ const useAIConversations = (
     const deleteConversationMutationResult = conversationQuery.useDeleteMutation();
     const renameConversationMutationResult = conversationQuery.useUpdateMutation();
 
-    const isConversationsLoading = conversationsResult.isLoading;
     let conversationsError: string | null = null;
     if (conversationsResult.error) {
         conversationsError = 'Failed to load conversations. Please try again.';
     }
-
-    const activeConversation = useMemo(
-        () => conversations.find((conversation) => conversation._id === conversationId) || null,
-        [conversations, conversationId]
-    );
 
     const handleConversationChange = useCallback((targetConversationId?: string) => {
         if (navigateOnConversationChange) {
@@ -58,21 +51,11 @@ const useAIConversations = (
         options.onConversationChange?.(targetConversationId);
     }, [navigate, navigateOnConversationChange, options.onConversationChange]);
 
-    const handleSelectConversation = useCallback((targetConversationId: string) => {
-        handleConversationChange(targetConversationId);
-    }, [handleConversationChange]);
-
-    const getConversationTitle = useCallback((value?: string) => {
-        const normalizedValue = value?.trim();
-        return normalizedValue || 'New Conversation';
-    }, []);
-
     const handleCreateConversation = useCallback(async (initialTitle?: string) => {
         try {
-            const title = getConversationTitle(initialTitle?.trim());
-            const params: CreateAIConversationParams = { title };
-
-            const conversation = await createConversationMutationResult.mutateAsync(params);
+            const conversation = await createConversationMutationResult.mutateAsync({
+                title: initialTitle?.trim() || 'New Conversation'
+            });
 
             options.onConversationCreated?.();
             handleConversationChange(conversation._id);
@@ -85,7 +68,7 @@ const useAIConversations = (
             });
             throw error;
         }
-    }, [getConversationTitle, handleConversationChange, createConversationMutationResult, options.checkAccessDeniedError, options.onConversationCreated]);
+    }, [handleConversationChange, createConversationMutationResult, options.checkAccessDeniedError, options.onConversationCreated]);
 
     const handleDeleteConversation = useCallback(async (targetConversationId: string) => {
         await showPromise(
@@ -120,17 +103,12 @@ const useAIConversations = (
         }
     }, [renameConversationMutationResult, options.checkAccessDeniedError]);
 
-    const loadConversations = useCallback(async () => {
-        await invalidateConversationsQueries();
-    }, []);
-
     return {
-        activeConversation,
         conversations,
-        isConversationsLoading,
+        isConversationsLoading: conversationsResult.isLoading,
         conversationsError,
-        loadConversations,
-        handleSelectConversation,
+        loadConversations: invalidateConversationsQueries,
+        handleSelectConversation: handleConversationChange,
         handleCreateConversation,
         handleDeleteConversation,
         handleRenameConversation

@@ -15,13 +15,6 @@
     min-width: 0;
 }
 
-.canvas-timeline-helper {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 0.5rem;
-    white-space: nowrap;
-}
-
 .canvas-timeline-controls-region {
     position: absolute;
     left: 50%;
@@ -163,19 +156,14 @@
 
 .canvas-ruler-tick-label--completed {
     color: var(--status-success);
-}
-
-.canvas-ruler-tick-mark--completed {
-    background: var(--status-success);
-}
-
-.canvas-ruler-tick-label--completed {
     text-shadow: 0 0 10px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
 
 .canvas-ruler-tick-mark--completed {
+    background: var(--status-success);
     box-shadow: 0 0 8px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
+
 :root[data-theme='light'] .canvas-ruler-tick-label--queued {
     color: #8a5300;
 }
@@ -222,10 +210,6 @@
 
     .canvas-timeline-tabs {
         max-width: 100%;
-    }
-
-    .canvas-timeline-helper {
-        display: none;
     }
 
     .canvas-timeline-frame-region {
@@ -398,10 +382,6 @@
     .canvas-timeline-ruler-region .canvas-timeline-ruler {
         border-bottom-color: var(--glass-border);
         touch-action: none;
-    }
-
-    .canvas-timeline-helper {
-        display: none;
     }
 
     .canvas-ruler-tick {

@@ -81,8 +81,7 @@ export const useSocketTerminalSession = <TAttachPayload>({
         }
     }, [attachEvent, attachPayload, resizeEvent, socketService, terminalRef]);
 
-    useSocketEvent<unknown>(dataEvent, (data) => {
-        if (typeof data !== 'string') return;
+    useSocketEvent<string>(dataEvent, (data) => {
         terminalRef.current?.write(data);
     });
 

@@ -70,9 +70,5 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
 const FALLBACK_NAVIGATION_ICON: LucideIcon = Boxes;
 
 export const resolveNavigationIcon = (iconKey?: DashboardNavigationIconKey): LucideIcon => {
-    if (iconKey && DASHBOARD_NAVIGATION_ICONS[iconKey]) {
-        return DASHBOARD_NAVIGATION_ICONS[iconKey].inactive;
-    }
-
-    return FALLBACK_NAVIGATION_ICON;
+    return iconKey ? DASHBOARD_NAVIGATION_ICONS[iconKey].inactive : FALLBACK_NAVIGATION_ICON;
 };

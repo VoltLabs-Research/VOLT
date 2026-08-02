@@ -1,23 +1,17 @@
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const useUserSessionActions = () => {
     const navigate = useNavigate();
     const [isSigningOut, setIsSigningOut] = useState(false);
 
-    const handleSignOut = useCallback(() => {
-        setIsSigningOut(true);
-        useAuthStore.getState().signOut();
-    }, []);
-
-    const handleSettingsClick = useCallback(() => {
-        navigate('/dashboard/settings/general');
-    }, [navigate]);
-
     return {
-        handleSettingsClick,
-        handleSignOut,
+        handleSettingsClick: () => navigate('/dashboard/settings/general'),
+        handleSignOut: () => {
+            setIsSigningOut(true);
+            useAuthStore.getState().signOut();
+        },
         isSigningOut
     };
 };

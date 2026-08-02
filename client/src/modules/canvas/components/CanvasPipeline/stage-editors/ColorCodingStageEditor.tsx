@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button, Stack, Text } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GradientPreview from '../../GradientPreview';
-import { useCanvasPipelineStore } from '../../../store/canvas-pipeline';
+import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import usePropertySelector from '@/modules/trajectory/hooks/particle-filter/use-property-selector';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
-import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
+import { COLORMAP_NAMES } from '@/modules/fractal/services/colormaps';
 import { parseNumericInput } from '../../../utils/parse-numeric-input';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -21,8 +21,16 @@ interface ColorCodingStageEditorProps {
     canMutateCanvas?: boolean;
 }
 
-const isColormapName = (value: string): value is ColormapName =>
-    (COLORMAP_NAMES as ReadonlyArray<string>).includes(value);
+const GRADIENT_OPTIONS = COLORMAP_NAMES.map((name) => ({
+    value: name,
+    title: name
+}));
+
+const BAKE_TOAST = createPromiseToastOptions({
+    loading: 'Baking color-coded model…',
+    success: 'Color-coded model baked',
+    error: 'Failed to bake color-coded model'
+});
 
 const ColorCodingStageEditor = ({
     stageId,
@@ -31,65 +39,41 @@ const ColorCodingStageEditor = ({
     currentTimestep,
     canMutateCanvas
 }: ColorCodingStageEditorProps) => {
-    const stage = useCanvasPipelineStore((s) =>
-        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
-    );
-    const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
+    const { config, patch } = useStageConfig<ColorCodingStageConfig>(stageId, trajectoryId);
     const setActiveScene = useEditorStore((s) => s.setActiveScene);
 
-    const config = stage?.config as ColorCodingStageConfig | undefined;
     const gradient = config?.gradient ?? 'Viridis';
     const manualRange = config?.manualRange;
 
-    const { propertyValue, propertyType, propertyOptions, handlePropertyChange, isLoading } = usePropertySelector({
+    const {
+        property,
+        propertyValue,
+        propertyType,
+        propertyOptions,
+        exposureId: selectedExposureId,
+        handlePropertyChange,
+        isLoading
+    } = usePropertySelector({
         trajectoryId,
         analysisId,
         timestep: currentTimestep
     });
+    const exposureId = selectedExposureId ?? undefined;
 
     const [minInput, setMinInput] = useState(() => (manualRange ? String(manualRange.min) : ''));
     const [maxInput, setMaxInput] = useState(() => (manualRange ? String(manualRange.max) : ''));
     const [isApplying, setIsApplying] = useState(false);
 
-    const patch = useCallback((next: Partial<ColorCodingStageConfig>) => {
-        updateStageConfig(stageId, next as Partial<ColorCodingStageConfig>, trajectoryId);
-    }, [stageId, trajectoryId, updateStageConfig]);
-
-    const selectedOption = useMemo(
-        () => propertyOptions.find((option) => option.value === propertyValue),
-        [propertyOptions, propertyValue]
-    );
-
-    const isCategorical = propertyType === 'string';
-
-    const gradientOptions = useMemo(
-        () => COLORMAP_NAMES.map((name) => ({
-            value: name,
-            title: name
-        })),
-        []
-    );
-
-    const colorCodingToast = useMemo(() => createPromiseToastOptions({
-        loading: 'Baking color-coded model…',
-        success: 'Color-coded model baked',
-        error: 'Failed to bake color-coded model'
-    }), []);
-
     const canApply = Boolean(
         canMutateCanvas
         && trajectoryId
         && currentTimestep !== undefined
-        && selectedOption
-        && selectedOption.property
+        && property
         && !isApplying
     );
 
-    const handleApply = useCallback(async () => {
-        if (!trajectoryId || currentTimestep === undefined || !selectedOption?.property) return;
-        const property = selectedOption.property;
-        const exposureId = selectedOption.exposureId ?? undefined;
-        const statsType = exposureId ? 'modifier' : 'base';
+    const handleApply = async () => {
+        if (!trajectoryId || currentTimestep === undefined || !property) return;
 
         setIsApplying(true);
         patch({ runStatus: 'loading' });
@@ -107,7 +91,7 @@ const ColorCodingStageEditor = ({
                     analysisId,
                     timestep: currentTimestep,
                     property,
-                    type: statsType,
+                    type: exposureId ? 'modifier' : 'base',
                     exposureId
                 });
                 startValue = stats.min;
@@ -127,7 +111,7 @@ const ColorCodingStageEditor = ({
                         ...(exposureId ? { exposureId } : {})
                     }
                 }),
-                colorCodingToast
+                BAKE_TOAST
             );
 
             setActiveScene({
@@ -166,10 +150,7 @@ const ColorCodingStageEditor = ({
         } finally {
             setIsApplying(false);
         }
-    }, [
-        trajectoryId, analysisId, currentTimestep, selectedOption, gradient,
-        minInput, maxInput, propertyValue, propertyType, patch, setActiveScene, colorCodingToast
-    ]);
+    };
 
     return (
         <Stack gap='05'>
@@ -183,7 +164,7 @@ const ColorCodingStageEditor = ({
                 variant='canvas'
             />
 
-            {isCategorical ? (
+            {propertyType === 'string' ? (
                 <Text size='xs' tone='muted'>
                     Categorical property — baked with a discrete palette.
                 </Text>
@@ -194,8 +175,8 @@ const ColorCodingStageEditor = ({
                         fieldType='select'
                         label='Color Gradient'
                         fieldValue={gradient}
-                        onFieldChange={(_, value) => { if (isColormapName(String(value))) patch({ gradient: String(value) }); }}
-                        options={gradientOptions}
+                        onFieldChange={(_, value) => patch({ gradient: String(value) })}
+                        options={GRADIENT_OPTIONS}
                         variant='canvas'
                     />
 

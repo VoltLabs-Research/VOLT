@@ -1,6 +1,6 @@
 import logger from '@shared/infrastructure/logger';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/TeamClusterReverseWebSocket';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
 import {
     normalizeWebSocketCloseCode,
     normalizeWebSocketPayload,
@@ -12,25 +12,15 @@ import http from 'node:http';
 import { Duplex, Readable } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 
-type ReverseWsHttpRelaySettleReason = 'end' | 'close' | 'error' | 'aborted';
-
 interface ReverseWsHttpProxyOptions {
     req: IncomingMessage;
-
     res: ServerResponse;
-
     agent: http.Agent;
-
     upstreamOrigin: string;
-
     rewrittenUrl: string;
-
     requestBody?: Buffer;
-
     onProxyRes?: (proxyRes: IncomingMessage) => void;
-
-    onSettled?: (destroy: boolean, reason: ReverseWsHttpRelaySettleReason) => void;
-
+    onSettled?: () => void;
     onError: (error: Error) => void;
 }
 
@@ -39,14 +29,11 @@ interface ReverseWsWebSocketUpgradeOptions {
     request: IncomingMessage;
     socket: Duplex;
     head: Buffer;
-
     upstreamWebSocketUrl: string;
     requestedProtocols?: string[];
 }
 
 class ReverseWsHttpRelay {
-    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
     createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
         const agent = new http.Agent({
             keepAlive: false,
@@ -62,7 +49,7 @@ class ReverseWsHttpRelay {
         const originalUrl = options.req.url;
         let settled = false;
 
-        const settle = (destroy: boolean, reason: ReverseWsHttpRelaySettleReason): void => {
+        const settle = (): void => {
             if (settled) {
                 return;
             }
@@ -70,7 +57,7 @@ class ReverseWsHttpRelay {
             settled = true;
             proxy.removeAllListeners();
             options.req.url = originalUrl;
-            options.onSettled?.(destroy, reason);
+            options.onSettled?.();
         };
 
         proxy.once('proxyReq', (proxyRequest) => {
@@ -81,17 +68,17 @@ class ReverseWsHttpRelay {
 
         proxy.once('proxyRes', (proxyResponse) => {
             options.onProxyRes?.(proxyResponse);
-            proxyResponse.once('end', () => settle(false, 'end'));
-            proxyResponse.once('close', () => settle(!options.res.writableEnded, 'close'));
+            proxyResponse.once('end', settle);
+            proxyResponse.once('close', settle);
         });
 
         proxy.once('error', (error: Error) => {
-            settle(true, 'error');
+            settle();
             options.onError(error);
         });
 
-        options.req.once('aborted', () => settle(true, 'aborted'));
-        options.res.once('close', () => settle(!options.res.writableEnded, 'close'));
+        options.req.once('aborted', settle);
+        options.res.once('close', settle);
 
         options.req.url = options.rewrittenUrl;
         proxy.web(options.req, options.res, {
@@ -104,7 +91,7 @@ class ReverseWsHttpRelay {
     }
 
     async proxyWebSocketUpgrade(options: ReverseWsWebSocketUpgradeOptions): Promise<void> {
-        const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(
+        const upstreamWebSocket = await teamClusterReverseChannelService.attachWebSocket(
             options.teamClusterId,
             options.upstreamWebSocketUrl,
             options.requestedProtocols

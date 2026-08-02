@@ -1,4 +1,5 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
+import { normalizePortMapping } from './port-mapping';
 import { ContainerTemplateCustomFieldType } from '@/modules/container/contracts/templates';
 import type {
     ContainerTemplate,
@@ -42,63 +43,25 @@ export const getContainerTemplateById = (templateId: string) => {
     return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
 };
 
-const getTemplatePorts = (template: ContainerTemplate): PortMapping[] => {
-    if (!template.defaultPort) {
-        return [];
-    }
-
-    return [{
-        private: template.defaultPort
-    }];
-};
-
 export const getCreatePorts = (ports: PortMapping[]): PortMapping[] => {
     return ports
         .filter((port) => port.private > 0)
-        .map((port) => {
-            if (port.public === undefined) {
-                return { private: port.private };
-            }
-
-            return {
-                private: port.private,
-                public: port.public
-            };
-        });
-};
-
-const getTemplateEnv = (template: ContainerTemplate): EnvVariable[] => {
-    if (!template.defaultEnv) {
-        return [];
-    }
-
-    return [...template.defaultEnv];
-};
-
-const getTemplateCustomFields = (template: ContainerTemplate): ContainerTemplateCustomField[] => {
-    if (!template.customFields) {
-        return [];
-    }
-
-    return [...template.customFields];
-};
-
-const getTemplateCustomFieldValues = (template: ContainerTemplate): ContainerTemplateCustomFieldValues => {
-    const customFieldValues: ContainerTemplateCustomFieldValues = {};
-
-    template.customFields?.forEach((customField) => {
-        customFieldValues[customField.id] = customField.defaultValue ?? '';
-    });
-
-    return customFieldValues;
+        .map(normalizePortMapping);
 };
 
 export const getTemplateConfiguration = (template: ContainerTemplate): TemplateConfiguration => {
+    const customFields = template.customFields ?? [];
+    const customFieldValues: ContainerTemplateCustomFieldValues = {};
+
+    customFields.forEach((customField) => {
+        customFieldValues[customField.id] = customField.defaultValue ?? '';
+    });
+
     return {
-        ports: getTemplatePorts(template),
-        env: getTemplateEnv(template),
-        customFields: getTemplateCustomFields(template),
-        customFieldValues: getTemplateCustomFieldValues(template),
+        ports: template.defaultPort ? [{ private: template.defaultPort }] : [],
+        env: [...(template.defaultEnv ?? [])],
+        customFields: [...customFields],
+        customFieldValues,
         mountDockerSocket: template.id === 'coder'
     };
 };
@@ -146,13 +109,14 @@ export const mergeContainerEnvVariables = (
     return Array.from(mergedEnvVariables.values());
 };
 
-export const hasInvalidCustomField = (
+export const getCustomFieldValidationErrorCount = (
     customFields: ContainerTemplateCustomField[],
     customFieldValues: ContainerTemplateCustomFieldValues
-) => {
-    return customFields.some((customField) => {
-        return getCustomFieldValidationError(customField, customFieldValues[customField.id] ?? '') !== null;
-    });
+): number => {
+    return customFields.reduce((count, customField) => {
+        const value = customFieldValues[customField.id] ?? '';
+        return getCustomFieldValidationError(customField, value) ? count + 1 : count;
+    }, 0);
 };
 
 export const getMaskedCustomFieldValue = (customField: ContainerTemplateCustomField, value: string) => {

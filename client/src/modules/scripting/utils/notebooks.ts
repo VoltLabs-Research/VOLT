@@ -1,44 +1,24 @@
-import type {
-    ScriptingNotebook,
-    ScriptingNotebookTrajectory
-} from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
 
-const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): string => {
-    if (typeof trajectory === 'string') {
-        return trajectory;
-    }
-
-    return trajectory._id;
-};
-
-export const getPrimaryTrajectory = (notebook: ScriptingNotebook): ScriptingNotebookTrajectory | string | null => {
-    return notebook.trajectory ?? null;
-};
-
-export const getTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
-    const primaryTrajectory = getPrimaryTrajectory(notebook);
-    if (!primaryTrajectory) {
-        return [];
-    }
-
-    return [getTrajectoryId(primaryTrajectory)].filter((id) => id.trim().length > 0);
-};
-
-export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
-    if (!notebook?.teamCluster) {
+/** `trajectory` is a Ref: a bare id unless the server populated the document. */
+export const getNotebookTrajectoryId = (notebook: ScriptingNotebook): string | undefined => {
+    const trajectory = notebook.trajectory;
+    if (!trajectory) {
         return undefined;
     }
 
-    if (typeof notebook.teamCluster === 'string') {
-        return notebook.teamCluster;
-    }
-
-    return notebook.teamCluster._id;
+    return typeof trajectory === 'string' ? trajectory : trajectory._id;
 };
 
-export const hasNotebookDeploymentConfiguration = (notebook?: ScriptingNotebook | null): boolean => {
-    return Boolean(getNotebookTeamClusterId(notebook));
+/** `teamCluster` is a Ref: a bare id unless the server populated the document. */
+export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
+    const teamCluster = notebook?.teamCluster;
+    if (!teamCluster) {
+        return undefined;
+    }
+
+    return typeof teamCluster === 'string' ? teamCluster : teamCluster._id;
 };
 
 export const getDeleteConfirmationMessage = createListingDeleteConfirmation<ScriptingNotebook>({

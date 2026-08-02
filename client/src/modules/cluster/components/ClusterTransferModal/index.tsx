@@ -68,10 +68,7 @@ const ClusterTransferModal = ({
         }
     });
 
-    const transferJobs = useMemo(() => {
-        const jobs = transferJobsQuery.data?.data;
-        return Array.isArray(jobs) ? jobs : [];
-    }, [transferJobsQuery.data]);
+    const transferJobs = transferJobsQuery.data?.data ?? [];
 
     const clusterNameById = useMemo(() => {
         return new Map(clusters.map((cluster) => [cluster._id, cluster.name]));

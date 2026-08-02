@@ -5,10 +5,3 @@ export interface TeamScopedSocketPayload {
 export interface SubscribeToTeamSocketPayload extends TeamScopedSocketPayload {
     previousTeamId?: string;
 }
-
-export interface NormalizedTeamSubscription {
-    teamId: string;
-    previousTeamId?: string;
-    roomName: string;
-    previousRoomName?: string;
-}

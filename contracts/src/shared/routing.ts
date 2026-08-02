@@ -10,6 +10,29 @@ export interface Endpoint<Input = never, Output = void>{
 export type InputOf<E> = E extends Endpoint<infer I, unknown> ? I : never;
 export type OutputOf<E> = E extends Endpoint<never, infer O> ? O : E extends Endpoint<infer _I, infer O> ? O : never;
 
+/**
+ * Fills the `:param` placeholders of an endpoint path.
+ *
+ * Every caller that needs a concrete URL should go through this instead of
+ * writing the path again: a client that hardcodes `/api/teams/${id}/clusters`
+ * silently breaks when the route moves, because nothing connects the two.
+ *
+ * Throws when a placeholder is left unfilled, so a missing parameter fails at the
+ * call rather than producing a URL containing a literal `:teamId`.
+ */
+export const buildPath = (endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>, params: Record<string, string> = {}): string => {
+    const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, (_match, name: string) => {
+        const value = params[name];
+        if (value === undefined || value === '') {
+            throw new Error(`buildPath: missing value for ":${name}" in "${endpoint.path}"`);
+        }
+
+        return encodeURIComponent(value);
+    });
+
+    return path;
+};
+
 export const get = <Output>(path: string): Endpoint<never, Output> => ({
     method: 'GET',
     path

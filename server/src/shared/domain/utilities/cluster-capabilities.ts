@@ -2,7 +2,6 @@
 import type {
     TeamClusterRole,
     TeamClusterRoleCapabilitiesProps,
-    TeamClusterRoleDrainProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterEffectiveCapabilitiesProps
 } from '@shared/contracts/types/TeamCluster';
@@ -22,34 +21,23 @@ const TEAM_CLUSTER_ROLE_CAPABILITIES: Record<TeamClusterRole, TeamClusterRoleCap
     }
 };
 
-const resolveTeamClusterRoleCapabilities = (
-    role: TeamClusterRole
-): TeamClusterRoleCapabilitiesProps => {
-    return { ...TEAM_CLUSTER_ROLE_CAPABILITIES[role] };
-};
-
-const buildTeamClusterEffectiveCapabilities = (
-    role: TeamClusterRole,
-    draining: Partial<TeamClusterRoleDrainProps> = {}
-): TeamClusterEffectiveCapabilitiesProps => {
-    const capabilities = resolveTeamClusterRoleCapabilities(role);
-    const computeDraining = draining.compute === true;
-    const storageDraining = draining.storage === true;
-    const servesResidualStorageReads = capabilities.canStore || capabilities.canCompute || storageDraining;
-
-    return {
-        acceptsComputeJobs: capabilities.canCompute && !computeDraining,
-        acceptsStorageWrites: capabilities.canStore && !storageDraining,
-        servesStorageReads: servesResidualStorageReads,
-        servesArtifactDownloads: servesResidualStorageReads
-    };
-};
-
+/**
+ * What a cluster may actually be asked to do: its role's capabilities, minus
+ * whatever it is currently draining. A cluster that is draining storage still
+ * serves reads, so residual downloads keep working while it empties.
+ */
 export const resolveEffectiveCapabilitiesFromRoleConfig = (
     roleConfig: Pick<TeamClusterRuntimeRoleConfigProps, 'effectiveRole' | 'draining'>
 ): TeamClusterEffectiveCapabilitiesProps => {
-    return buildTeamClusterEffectiveCapabilities(
-        roleConfig.effectiveRole,
-        roleConfig.draining
-    );
+    const { canStore, canCompute } = TEAM_CLUSTER_ROLE_CAPABILITIES[roleConfig.effectiveRole];
+    const computeDraining = roleConfig.draining?.compute === true;
+    const storageDraining = roleConfig.draining?.storage === true;
+    const servesResidualStorageReads = canStore || canCompute || storageDraining;
+
+    return {
+        acceptsComputeJobs: canCompute && !computeDraining,
+        acceptsStorageWrites: canStore && !storageDraining,
+        servesStorageReads: servesResidualStorageReads,
+        servesArtifactDownloads: servesResidualStorageReads
+    };
 };

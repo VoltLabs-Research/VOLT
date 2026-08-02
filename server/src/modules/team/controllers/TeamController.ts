@@ -3,21 +3,15 @@ import { Route, Status } from '@shared/http/route';
 import { Body, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
 import { Resource } from '@core/constants/resources';
 import TeamService from '@modules/team/services/TeamService';
 import { teamRoutes } from '@volt/contracts/modules/team/routes';
-import type { RequestHandler, Response, NextFunction } from 'express';
 import type {
     CreateTeamInput,
     UpdateTeamInput,
     SetDefaultTeamInput
 } from '@volt/contracts/modules/team/http';
-
-const teamMembership: RequestHandler = (req, res: Response, next: NextFunction): void => {
-    void checkTeamMembership(req as AuthenticatedRequest, res, next);
-};
 
 @Middleware(protect)
 export default class TeamController extends Controller {
@@ -114,7 +108,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.getMyPermissions)
-    @Middleware(teamMembership)
+    @Middleware(checkTeamMembership)
     getMyPermissions(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
@@ -123,7 +117,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.leave)
-    @Middleware(teamMembership)
+    @Middleware(checkTeamMembership)
     async leave(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string

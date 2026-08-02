@@ -10,9 +10,6 @@ import {
     sanitizeAssetPath
 } from '@modules/latex/services/LatexAssetStorage';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type {
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import path from 'node:path';
 import unzipper from 'unzipper';
@@ -21,50 +18,117 @@ import { toDocumentView } from '@modules/latex/services/latex-views';
 import type {
     LatexDocument
 } from '@volt/contracts/modules/latex/domain';
+import type { LatexDocumentImportRequest } from '@modules/latex/contracts/latex-document';
 import {
     MAIN_TEX_FILENAME
 } from '@modules/latex/services/latex-constants';
+
+const BINARY_ASSET_MIMETYPE = 'application/octet-stream';
+
+interface ImportedAsset{
+    buffer: Buffer;
+    originalName: string;
+    path: string;
+    mimetype: string;
+}
+
+const deriveTitle = (filename: string): string => {
+    const base = path.basename(filename, path.extname(filename));
+    const cleaned = base.trim().replace(/[_-]+/g, ' ');
+    return cleaned || 'Imported Document';
+};
+
+const createDocument = (
+    input: LatexDocumentImportRequest,
+    storageClusterId: string
+): Promise<LatexDocumentEntity> => {
+    return LatexDocumentEntity.create({
+        team: input.teamId,
+        title: deriveTitle(input.file.originalname),
+        folder: input.folderId ?? null,
+        storageClusterId,
+        createdBy: input.userId,
+        lastEditedBy: null
+    }).save();
+};
+
+const createFile = (
+    input: LatexDocumentImportRequest,
+    documentId: string,
+    file: Pick<LatexFileEntity, 'name' | 'path' | 'content' | 'isEntrypoint'>
+): Promise<LatexFileEntity> => {
+    return LatexFileEntity.create({
+        document: documentId,
+        team: input.teamId,
+        name: file.name,
+        path: file.path,
+        content: file.content,
+        isEntrypoint: file.isEntrypoint,
+        createdBy: input.userId
+    }).save();
+};
+
+const createMainTexFile = (
+    input: LatexDocumentImportRequest,
+    documentId: string,
+    content: string
+): Promise<LatexFileEntity> => {
+    return createFile(input, documentId, {
+        name: MAIN_TEX_FILENAME,
+        path: '',
+        content,
+        isEntrypoint: true
+    });
+};
+
+const storeAsset = async (
+    input: LatexDocumentImportRequest,
+    documentId: string,
+    storageClusterId: string,
+    asset: ImportedAsset
+): Promise<void> => {
+    const storageKey = buildLatexAssetStorageKey(
+        input.teamId,
+        documentId,
+        v4(),
+        path.extname(asset.originalName)
+    );
+
+    await objectGatewayClient.putBuffer(storageClusterId, {
+        bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+        objectKey: storageKey,
+        buffer: asset.buffer,
+        contentLength: asset.buffer.byteLength,
+        contentType: asset.mimetype
+    });
+
+    await LatexAssetEntity.create({
+        team: input.teamId,
+        document: documentId,
+        originalName: asset.originalName,
+        path: asset.path,
+        storageKey,
+        url: buildLatexAssetContentUrl(input.teamId, documentId, storageKey),
+        mimetype: asset.mimetype,
+        size: asset.buffer.byteLength,
+        createdBy: input.userId
+    }).save();
+};
 
 /**
  * Builds a LaTeX document from an uploaded .tex, .zip or .pdf payload.
  * Each format is a separate entry point; the caller decides which to use.
  */
 export default class LatexDocumentImporter{
-    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
+    async fromTex(input: LatexDocumentImportRequest, storageClusterId: string): Promise<LatexDocument>{
+        const document = await createDocument(input, storageClusterId);
 
-    #deriveTitle(filename: string): string{
-        const base = path.basename(filename, path.extname(filename));
-        const cleaned = base.trim().replace(/[_-]+/g, ' ');
-        return cleaned || 'Imported Document';
-    }
-
-    async fromTex(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
-        const content = input.file.buffer.toString('utf-8');
-        const title = this.#deriveTitle(input.file.originalname);
-
-        const document = await LatexDocumentEntity.create({
-            team: input.teamId,
-            title,
-            folder: input.folderId ?? null,
-            storageClusterId,
-            createdBy: input.userId,
-            lastEditedBy: null
-        }).save();
-
-        await LatexFileEntity.create({
-            document: document.id,
-            team: input.teamId,
-            name: MAIN_TEX_FILENAME,
-            path: '',
-            content,
-            isEntrypoint: true,
-            createdBy: input.userId
-        }).save();
+        await createMainTexFile(input, document.id, input.file.buffer.toString('utf-8'));
 
         return toDocumentView(document);
     }
 
-    async fromZip(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
+    async fromZip(input: LatexDocumentImportRequest, storageClusterId: string): Promise<LatexDocument>{
         let directory: unzipper.CentralDirectory;
         try{
             directory = await unzipper.Open.buffer(input.file.buffer);
@@ -80,28 +144,10 @@ export default class LatexDocumentImporter{
         }
 
         const mainTexBuffer = await mainTexFile.buffer();
-        const content = mainTexBuffer.toString('utf-8');
-        const title = this.#deriveTitle(input.file.originalname);
-
-        const document = await LatexDocumentEntity.create({
-            team: input.teamId,
-            title,
-            folder: input.folderId ?? null,
-            storageClusterId,
-            createdBy: input.userId,
-            lastEditedBy: null
-        }).save();
+        const document = await createDocument(input, storageClusterId);
         const documentId = document.id;
 
-        await LatexFileEntity.create({
-            document: documentId,
-            team: input.teamId,
-            name: MAIN_TEX_FILENAME,
-            path: '',
-            content,
-            isEntrypoint: true,
-            createdBy: input.userId
-        }).save();
+        await createMainTexFile(input, documentId, mainTexBuffer.toString('utf-8'));
 
         const otherFiles = directory.files.filter((f) => {
             const filePath = f.path;
@@ -114,35 +160,35 @@ export default class LatexDocumentImporter{
         await Promise.allSettled(
             texFiles.map(async (texFile) => {
                 const buffer = await texFile.buffer();
-                const fileContent = buffer.toString('utf-8');
-                const fileName = path.basename(texFile.path);
                 const dirPart = path.dirname(texFile.path);
-                const filePath = dirPart === '.' ? '' : `${dirPart}/`;
 
-                await LatexFileEntity.create({
-                    document: documentId,
-                    team: input.teamId,
-                    name: fileName,
-                    path: filePath,
-                    content: fileContent,
-                    isEntrypoint: false,
-                    createdBy: input.userId
-                }).save();
+                await createFile(input, documentId, {
+                    name: path.basename(texFile.path),
+                    path: dirPart === '.' ? '' : `${dirPart}/`,
+                    content: buffer.toString('utf-8'),
+                    isEntrypoint: false
+                });
             })
         );
 
         await Promise.allSettled(
-            assetFiles.map((assetFile) => this.#uploadAssetFromZipEntry(assetFile, documentId, storageClusterId, input.teamId, input.userId))
+            assetFiles.map(async (assetFile) => {
+                const originalName = path.basename(assetFile.path);
+
+                await storeAsset(input, documentId, storageClusterId, {
+                    buffer: await assetFile.buffer(),
+                    originalName,
+                    path: sanitizeAssetPath(assetFile.path, originalName),
+                    mimetype: BINARY_ASSET_MIMETYPE
+                });
+            })
         );
 
         return toDocumentView(document);
     }
 
-    async fromPdf(input: { teamId: string; userId: string; file: Express.Multer.File; folderId?: string | null }, storageClusterId: string): Promise<LatexDocument>{
-        const originalName = input.file.originalname ?? 'imported.pdf';
-        const title = this.#deriveTitle(originalName);
-        const ext = path.extname(originalName);
-        const mimetype = input.file.mimetype ?? 'application/pdf';
+    async fromPdf(input: LatexDocumentImportRequest, storageClusterId: string): Promise<LatexDocument>{
+        const originalName = input.file.originalname;
 
         const mainTexContent = [
             '\\documentclass{article}',
@@ -152,84 +198,17 @@ export default class LatexDocumentImporter{
             '\\end{document}'
         ].join('\n');
 
-        const document = await LatexDocumentEntity.create({
-            team: input.teamId,
-            title,
-            folder: input.folderId ?? null,
-            storageClusterId,
-            createdBy: input.userId,
-            lastEditedBy: null
-        }).save();
-        const documentId = document.id;
-        const storageKey = buildLatexAssetStorageKey(input.teamId, documentId, v4(), ext);
-        const url = buildLatexAssetContentUrl(input.teamId, documentId, storageKey);
+        const document = await createDocument(input, storageClusterId);
 
-        await this.#objectGatewayClient.putBuffer(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
-            objectKey: storageKey,
+        await storeAsset(input, document.id, storageClusterId, {
             buffer: input.file.buffer,
-            contentLength: input.file.buffer.byteLength,
-            contentType: mimetype
-        });
-
-        await LatexFileEntity.create({
-            document: documentId,
-            team: input.teamId,
-            name: MAIN_TEX_FILENAME,
-            path: '',
-            content: mainTexContent,
-            isEntrypoint: true,
-            createdBy: input.userId
-        }).save();
-
-        await LatexAssetEntity.create({
-            team: input.teamId,
-            document: documentId,
             originalName,
             path: originalName,
-            storageKey,
-            url,
-            mimetype,
-            size: input.file.buffer.byteLength,
-            createdBy: input.userId
-        }).save();
-
-        return toDocumentView(document);
-    }
-
-    async #uploadAssetFromZipEntry(
-        assetFile: unzipper.File,
-        documentId: string,
-        storageClusterId: string,
-        teamId: string,
-        userId: string
-    ): Promise<void>{
-        const buffer = await assetFile.buffer();
-        const originalName = path.basename(assetFile.path);
-        const ext = path.extname(originalName);
-        const storageKey = buildLatexAssetStorageKey(teamId, documentId, v4(), ext);
-        const mimetype = 'application/octet-stream';
-        const assetPath = sanitizeAssetPath(assetFile.path, originalName);
-        const url = buildLatexAssetContentUrl(teamId, documentId, storageKey);
-
-        await this.#objectGatewayClient.putBuffer(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
-            objectKey: storageKey,
-            buffer,
-            contentLength: buffer.byteLength,
-            contentType: mimetype
+            mimetype: input.file.mimetype
         });
 
-        await LatexAssetEntity.create({
-            team: teamId,
-            document: documentId,
-            originalName,
-            path: assetPath,
-            storageKey,
-            url,
-            mimetype,
-            size: buffer.byteLength,
-            createdBy: userId
-        }).save();
+        await createMainTexFile(input, document.id, mainTexContent);
+
+        return toDocumentView(document);
     }
 }

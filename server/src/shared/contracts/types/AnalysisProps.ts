@@ -1,12 +1,21 @@
-import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
-export type { AnalysisStageStatus };
+import type {
+    AnalysisArtifactStatus,
+    AnalysisStageKind,
+    AnalysisStageStatus
+} from '@volt/contracts/modules/analysis/domain';
 
+/*
+ * The wire unions are the single source of truth. This file used to redeclare
+ * `AnalysisArtifactStatus`, an identical `AnalysisExpectedArtifactStatus`, and
+ * `AnalysisStageType` (the same five values as `AnalysisStageKind`), which is how
+ * three definitions of one status ended up in the repo. `AnalysisStageType` is
+ * kept as an alias because it is the name the server's ports already use.
+ */
+export type { AnalysisArtifactStatus, AnalysisStageStatus };
+
+export type AnalysisStageType = AnalysisStageKind;
 
 export type AnalysisConfig = Record<string, unknown>;
-
-export type AnalysisArtifactStatus = 'pending' | 'generating' | 'uploading' | 'ready' | 'failed';
-
-export type AnalysisExpectedArtifactStatus = 'pending' | 'generating' | 'uploading' | 'ready' | 'failed';
 
 export interface AnalysisExpectedArtifact {
     exposureId: string;
@@ -14,13 +23,12 @@ export interface AnalysisExpectedArtifact {
     pluginId?: string;
     exporter?: string;
     exportType?: string;
-    status: AnalysisExpectedArtifactStatus;
+    status: AnalysisArtifactStatus;
     isPrimary?: boolean;
     objectName?: string;
     readyAt?: Date;
 }
 
-export type AnalysisStageType = 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
 export interface AnalysisStage {
     stageKey: string;
     label: string;

@@ -1,5 +1,4 @@
 import { redis } from '@core/config/redis';
-import logger from '@shared/infrastructure/logger';
 
 type WorkspaceStatePatch = Record<string, unknown>;
 
@@ -23,20 +22,13 @@ const TTL_SECONDS = 60 * 60;
 
 class CanvasWorkspaceRealtimeStateService {
     async getSnapshot(trajectoryId: string, ownerId: string): Promise<CanvasWorkspaceSnapshot | null> {
-        const key = this.buildKey(trajectoryId, ownerId);
-        const raw = await redis!.get(key);
+        const raw = await redis!.get(this.buildKey(trajectoryId, ownerId));
 
         if (!raw) {
             return null;
         }
 
-        try {
-            return JSON.parse(raw) as CanvasWorkspaceSnapshot;
-        } catch (error) {
-            logger.warn(`@canvas-workspace - failed to parse snapshot for ${key}: ${error}`);
-            await redis!.del(key);
-            return null;
-        }
+        return JSON.parse(raw) as CanvasWorkspaceSnapshot;
     }
 
     async replaceSnapshot(
@@ -48,7 +40,7 @@ class CanvasWorkspaceRealtimeStateService {
             trajectoryId,
             ownerId,
             revision: 1,
-            state: this.cloneState(state),
+            state,
             updatedAt: Date.now()
         };
 
@@ -126,24 +118,8 @@ class CanvasWorkspaceRealtimeStateService {
         return delta;
     }
 
-    private cloneState(state: WorkspaceStatePatch): WorkspaceStatePatch {
-        try {
-            return JSON.parse(JSON.stringify(state));
-        } catch {
-            return { ...state };
-        }
-    }
-
     private areEqual(left: unknown, right: unknown): boolean {
-        if (left === right) {
-            return true;
-        }
-
-        try {
-            return JSON.stringify(left) === JSON.stringify(right);
-        } catch {
-            return false;
-        }
+        return left === right || JSON.stringify(left) === JSON.stringify(right);
     }
 
     private buildKey(trajectoryId: string, ownerId: string): string {

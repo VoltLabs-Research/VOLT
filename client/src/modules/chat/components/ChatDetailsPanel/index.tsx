@@ -41,11 +41,7 @@ const ChatDetailsPanel = ({
 
     const displayName = getChatDisplayName(chat, currentUserId);
     const statusText = getChatStatusText(chat, presence);
-
-    let headerTitle = 'Contact Info';
-    if (chat.isGroup) {
-        headerTitle = 'Group Info';
-    }
+    const headerTitle = chat.isGroup ? 'Group Info' : 'Contact Info';
 
     return (
         <Stack height='max' className='chat-details'>

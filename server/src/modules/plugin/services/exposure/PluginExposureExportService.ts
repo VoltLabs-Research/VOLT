@@ -22,14 +22,7 @@ interface AnalysisFileRef {
     timestep: number;
 }
 
-const sortByTimestepAndName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
-    if (left.timestep !== right.timestep) {
-        return left.timestep - right.timestep;
-    }
-
-    return left.objectName.localeCompare(right.objectName);
-};
-
+/** Files arrive pre-sorted by object name, so grouping only has to preserve that order. */
 const groupAnalysisFilesByTimestep = (
     files: AnalysisFileRef[]
 ): Map<number, AnalysisFileRef[]> => {
@@ -39,10 +32,6 @@ const groupAnalysisFilesByTimestep = (
         const group = groupedFiles.get(file.timestep) || [];
         group.push(file);
         groupedFiles.set(file.timestep, group);
-    }
-
-    for (const [timestep, group] of groupedFiles.entries()) {
-        groupedFiles.set(timestep, group.sort(sortByTimestepAndName));
     }
 
     return groupedFiles;
@@ -59,33 +48,14 @@ interface PrefixCollectionConfig {
     prefix: string;
     type: AnalysisFileType;
     timestepRegex: RegExp;
-    extensionFilter?: string;
+    extensionFilter: string;
 }
-
-const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
-    return left.objectName.localeCompare(right.objectName);
-};
 
 export class PluginExposureExportService {
     constructor(
         private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
-
-    private async collectFilesByTimestep(
-        trajectoryId: string,
-        analysisId: string
-    ): Promise<Map<number, AnalysisFileRef[]>> {
-        const teamClusterId = await this.resolveTeamClusterId(trajectoryId);
-        const files = await this.listClusterAnalysisFiles(teamClusterId, trajectoryId, analysisId);
-        const groupedFiles = groupAnalysisFilesByTimestep(files);
-
-        for (const [timestep, group] of groupedFiles.entries()) {
-            groupedFiles.set(timestep, group.sort(sortAnalysisFilesByObjectName));
-        }
-
-        return groupedFiles;
-    }
 
     private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
         const trajectory = await TrajectoryEntity.findOneBy({ id: trajectoryId });
@@ -99,7 +69,7 @@ export class PluginExposureExportService {
         const storageClusterId = trajectory.storageClusterId;
         if (!storageClusterId) {
             throw ApplicationError.conflict(
-                'Trajectory::StorageClusterRequired',
+                ErrorCodes.TRAJECTORY_STORAGE_CLUSTER_REQUIRED,
                 'Trajectory storage cluster is required'
             );
         }
@@ -143,7 +113,7 @@ export class PluginExposureExportService {
             bucket: config.bucket,
             prefix: config.prefix
         })) {
-            if (config.extensionFilter && !objectName.endsWith(config.extensionFilter)) {
+            if (!objectName.endsWith(config.extensionFilter)) {
                 continue;
             }
 
@@ -174,20 +144,19 @@ export class PluginExposureExportService {
             })
         );
 
-        return groups.flat().sort(sortAnalysisFilesByObjectName);
+        return groups.flat().sort((left, right) => left.objectName.localeCompare(right.objectName));
     }
 
     async exportAnalysisExposureBundle(params: PluginExposureExportParams): Promise<DownloadStreamOutput> {
         const pluginName = sanitizeDownloadName(params.pluginName, 'plugin');
         const teamClusterId = await this.resolveTeamClusterId(params.trajectoryId);
-        const groupedFiles = await this.collectFilesByTimestep(params.trajectoryId, params.analysisId);
+        const groupedFiles = groupAnalysisFilesByTimestep(
+            await this.listClusterAnalysisFiles(teamClusterId, params.trajectoryId, params.analysisId)
+        );
         const timesteps = Array.from(groupedFiles.keys()).sort((left, right) => left - right);
 
         if (timesteps.length === 0) {
-            throw ApplicationError.notFound(
-                ErrorCodes.FILE_NOT_FOUND,
-                ErrorCodes.FILE_NOT_FOUND
-            );
+            throw ApplicationError.notFound(ErrorCodes.FILE_NOT_FOUND, 'File not found');
         }
 
         return this.archiveService.createArchiveDownload({

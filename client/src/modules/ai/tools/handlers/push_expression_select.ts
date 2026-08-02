@@ -1,18 +1,14 @@
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { PushExpressionSelectInput } from '@volt/contracts/modules/ai/ai-tools';
 import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '@/modules/canvas/store/canvas-pipeline';
 import { parse as parseExpression } from '@voltstack/expressions';
-
-interface PushExpressionSelectInput {
-    formula: string;
-    description?: string;
-}
 
 const pushExpressionSelect: ClientToolHandler<PushExpressionSelectInput> = {
     name: 'push_expression_select',
     needsViewer: true,
 
     run(input): ClientToolResult {
-        const formula = input.formula?.trim();
+        const formula = input.formula.trim();
         if (!formula) {
             return {
                 ok: false,

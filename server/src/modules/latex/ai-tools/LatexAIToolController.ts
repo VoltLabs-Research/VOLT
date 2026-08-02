@@ -1,8 +1,11 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import LatexService from '@modules/latex/services/LatexService';
+import LatexDocumentService from '@modules/latex/services/LatexDocumentService';
+import LatexDownloadService from '@modules/latex/services/LatexDownloadService';
+import LatexFileService from '@modules/latex/services/LatexFileService';
 import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 import LatexAssetService from '@modules/latex/services/LatexAssetService';
 import type {
@@ -17,8 +20,11 @@ import type {
     UpdateLatexFileInput
 } from '@volt/contracts/modules/latex/ai-tools';
 
+@AIToolProvider()
 export default class LatexAIToolController extends AIToolController {
-    #service = new LatexService();
+    #documents = new LatexDocumentService();
+    #files = new LatexFileService();
+    #downloads = new LatexDownloadService();
     #assets = new LatexAssetService();
 
     @AITool({
@@ -28,7 +34,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<CreateLatexDocumentInput>()
     })
     async createLatexDocument(input: CreateLatexDocumentInput & AIToolScope) {
-        return this.#service.createDocument(input);
+        return this.#documents.createDocument(input);
     }
 
     @AITool({
@@ -40,7 +46,7 @@ export default class LatexAIToolController extends AIToolController {
     async listLatexDocuments(input: ListLatexDocumentsInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.listDocuments({
+        const { total, data } = await this.#documents.listDocuments({
             page: 1,
             limit: 50,
             ...input
@@ -58,7 +64,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexDocumentRefInput>()
     })
     async getLatexDocument(input: LatexDocumentRefInput & AIToolScope) {
-        const document = await this.#service.getDocument(input);
+        const document = await this.#documents.getDocument(input);
         return {
             summary: `Retrieved LaTeX document "${document.title}".`,
             data: document
@@ -72,7 +78,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateLatexDocumentInput>()
     })
     async updateLatexDocument(input: UpdateLatexDocumentInput & AIToolScope) {
-        return this.#service.updateDocument(input);
+        return this.#documents.updateDocument(input);
     }
 
     @AITool({
@@ -82,7 +88,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<MoveLatexDocumentInput>()
     })
     async moveLatexDocument(input: MoveLatexDocumentInput & AIToolScope) {
-        return this.#service.moveDocument(input);
+        return this.#documents.moveDocument(input);
     }
 
     @AITool({
@@ -92,7 +98,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexDocumentRefInput>()
     })
     async deleteLatexDocument(input: LatexDocumentRefInput & AIToolScope) {
-        return this.#service.deleteDocument(input);
+        return this.#documents.deleteDocument(input);
     }
 
     @AITool({
@@ -102,7 +108,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexDocumentRefInput>()
     })
     async compileLatexDocument(input: LatexDocumentRefInput & AIToolScope) {
-        return this.#service.compileDocument(input);
+        return this.#downloads.compileDocument(input);
     }
 
     @AITool({
@@ -112,7 +118,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<CreateLatexFileInput>()
     })
     async createLatexFile(input: CreateLatexFileInput & AIToolScope) {
-        return this.#service.createFile(input);
+        return this.#files.createFile(input);
     }
 
     @AITool({
@@ -122,7 +128,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexDocumentRefInput>()
     })
     async listLatexFiles(input: LatexDocumentRefInput & AIToolScope) {
-        const files = await this.#service.listFiles(input);
+        const files = await this.#files.listFiles(input);
         return {
             summary: `Found ${files.length} LaTeX files.`,
             data: files
@@ -136,7 +142,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexFileRefInput>()
     })
     async getLatexFileContent(input: LatexFileRefInput & AIToolScope) {
-        const files = await this.#service.listFiles(input);
+        const files = await this.#files.listFiles(input);
         const file = files.find((candidate) => candidate._id === input.fileId);
         if (!file) {
             throw new Error(`LaTeX file ${input.fileId} was not found in document ${input.documentId}.`);
@@ -154,7 +160,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateLatexFileInput>()
     })
     async updateLatexFile(input: UpdateLatexFileInput & AIToolScope): Promise<LatexFile> {
-        return this.#service.updateFile({
+        return this.#files.updateFile({
             ...input,
             source: 'ai'
         });
@@ -167,7 +173,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexFileRefInput>()
     })
     async deleteLatexFile(input: LatexFileRefInput & AIToolScope) {
-        return this.#service.deleteFile(input);
+        return this.#files.deleteFile(input);
     }
 
     @AITool({
@@ -177,7 +183,7 @@ export default class LatexAIToolController extends AIToolController {
         validate: typia.createValidate<LatexFileRefInput>()
     })
     async setLatexFileEntrypoint(input: LatexFileRefInput & AIToolScope) {
-        return this.#service.setFileEntrypoint(input);
+        return this.#files.setFileEntrypoint(input);
     }
 
     @AITool({
@@ -197,8 +203,8 @@ export default class LatexAIToolController extends AIToolController {
 
         const format = input.format ?? 'zip';
         const { prepare, headers } = format === 'tex'
-            ? await this.#service.exportDocumentTex(input)
-            : await this.#service.exportDocumentZip(input);
+            ? await this.#downloads.exportDocumentTex(input)
+            : await this.#downloads.exportDocumentZip(input);
 
         if (prepare) {
             await prepare();

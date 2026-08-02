@@ -1,36 +1,24 @@
 import { endpointStorage } from './endpoint-storage';
 
-const trimTrailingSlash = (value: string): string => value.replace(/\/$/, '');
+const normalizeEndpoint = (endpoint: string | null | undefined): string | null => {
+    const trimmed = endpoint?.trim();
+    return trimmed ? trimmed.replace(/\/$/, '') : null;
+};
+
+const getEnvEndpoint = (): string | null => {
+    return normalizeEndpoint(import.meta.env.VITE_SERVER_ENDPOINT);
+};
 
 const hasDevProxyTarget = (): boolean => {
     if (!import.meta.env.DEV) {
         return false;
     }
 
-    const proxyUrl = import.meta.env.VITE_PROXY_API_URL;
-    return typeof proxyUrl === 'string' && proxyUrl.trim().length > 0;
-};
-
-const getEnvEndpoint = (): string | null => {
-    const endpoint = import.meta.env.VITE_SERVER_ENDPOINT;
-    if (typeof endpoint !== 'string' || endpoint.trim().length === 0) {
-        return null;
-    }
-
-    return trimTrailingSlash(endpoint.trim());
-};
-
-const getStoredEndpoint = (): string | null => {
-    const endpoint = endpointStorage.getEndpoint();
-    if (typeof endpoint !== 'string' || endpoint.trim().length === 0) {
-        return null;
-    }
-
-    return trimTrailingSlash(endpoint.trim());
+    return (import.meta.env.VITE_PROXY_API_URL?.trim().length ?? 0) > 0;
 };
 
 const resolveBackendEndpoint = (): string | null => {
-    const stored = getStoredEndpoint();
+    const stored = normalizeEndpoint(endpointStorage.getEndpoint());
     if (stored) {
         return stored;
     }

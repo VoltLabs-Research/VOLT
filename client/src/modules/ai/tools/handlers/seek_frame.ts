@@ -1,18 +1,19 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { SeekFrameInput } from '@volt/contracts/modules/ai/ai-tools';
 
-interface SeekFrameInput {
-    frame?: number;
-    position?: 'first' | 'last' | 'next' | 'previous';
-}
+const closestTimestep = (timesteps: number[], frame: number): number => {
+    return timesteps.reduce((closest, timestep) => {
+        return Math.abs(timestep - frame) < Math.abs(closest - frame) ? timestep : closest;
+    }, timesteps[0]);
+};
 
 const seekFrame: ClientToolHandler<SeekFrameInput> = {
     name: 'seek_frame',
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const bridge = ctx.getCanvasBridge();
-        const timesteps = Array.isArray(bridge.timesteps) ? bridge.timesteps : [];
+        const { timesteps, currentTimestep } = ctx.getCanvasBridge();
 
         if (timesteps.length === 0) {
             return {
@@ -23,18 +24,14 @@ const seekFrame: ClientToolHandler<SeekFrameInput> = {
             };
         }
 
+        const { frame } = input;
         let target: number | undefined;
 
-        if (typeof input.frame === 'number' && Number.isFinite(input.frame)) {
-            if (timesteps.includes(input.frame)) {
-                target = input.frame;
-            } else {
-                target = timesteps.reduce((closest, t) =>
-                    Math.abs(t - input.frame!) < Math.abs(closest - input.frame!) ? t : closest, timesteps[0]);
-            }
+        if (frame !== undefined) {
+            target = timesteps.includes(frame) ? frame : closestTimestep(timesteps, frame);
         } else if (input.position) {
-            const current = bridge.currentTimestep;
-            const currentIndex = typeof current === 'number' ? timesteps.indexOf(current) : -1;
+            const currentIndex = currentTimestep === undefined ? -1 : timesteps.indexOf(currentTimestep);
+            const base = currentIndex === -1 ? 0 : currentIndex;
 
             switch (input.position) {
                 case 'first':
@@ -43,20 +40,16 @@ const seekFrame: ClientToolHandler<SeekFrameInput> = {
                 case 'last':
                     target = timesteps[timesteps.length - 1];
                     break;
-                case 'next': {
-                    const base = currentIndex === -1 ? 0 : currentIndex;
+                case 'next':
                     target = timesteps[Math.min(base + 1, timesteps.length - 1)];
                     break;
-                }
-                case 'previous': {
-                    const base = currentIndex === -1 ? 0 : currentIndex;
+                case 'previous':
                     target = timesteps[Math.max(base - 1, 0)];
                     break;
-                }
             }
         }
 
-        if (typeof target !== 'number') {
+        if (target === undefined) {
             return {
                 ok: false,
                 summary: 'No frame target was given.',

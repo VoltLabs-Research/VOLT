@@ -1,14 +1,12 @@
 import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
+import { LOCAL_DEFAULTS } from '@/services/localDefaults';
 import { setTimeout as sleep } from 'node:timers/promises';
-
-const LOCAL_DEFAULTS = {
-    fullName: 'Local',
-    email: 'local@volt.local',
-    password: 'volt-local-desktop', 
-    teamName: 'Local',
-    clusterName: 'Local Cluster'
-} as const;
+import { authRoutes } from '@volt/contracts/modules/auth/routes';
+import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
+import { teamRoutes } from '@volt/contracts/modules/team/routes';
+import { buildPath } from '@volt/contracts/shared/routing';
+import type { Endpoint, HttpMethod } from '@volt/contracts/shared/routing';
 
 export interface ProvisionAccount{
     fullName: string;
@@ -44,6 +42,36 @@ class HttpError extends Error{
     }
 }
 
+interface RequestOptions{
+    params?: Record<string, string>;
+    body?: object;
+    token?: string;
+    /** Attempts for transport-level failures; the server may still be starting. */
+    attempts?: number;
+}
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
+const readMessage = (payload: unknown): string | undefined => {
+    if(typeof payload !== 'object' || payload === null) return undefined;
+    const message = (payload as { message?: unknown }).message;
+    return typeof message === 'string' ? message : undefined;
+};
+
+const readCode = (payload: unknown): string => {
+    if(typeof payload !== 'object' || payload === null) return '';
+    const record = payload as { code?: unknown; status?: unknown };
+    if(typeof record.code === 'string') return record.code;
+    if(typeof record.status === 'string') return record.status;
+    return '';
+};
+
+/** Unwraps the `{ data }` envelope the API uses, tolerating a bare body. */
+const readData = (payload: unknown): unknown => {
+    if(typeof payload !== 'object' || payload === null) return payload;
+    return 'data' in payload ? (payload as { data: unknown }).data : payload;
+};
+
 export default class Bootstrap{
     constructor(private readonly props: BootstrapProps){}
 
@@ -76,9 +104,6 @@ export default class Bootstrap{
         const password = acc?.password ?? LOCAL_DEFAULTS.password;
         const [firstName, ...rest] = (acc?.fullName ?? LOCAL_DEFAULTS.fullName).trim().split(/\s+/);
 
-        
-        
-        
         let auth: AuthResponse;
         let reused = false;
         try{
@@ -144,12 +169,12 @@ export default class Bootstrap{
     }
 
     async #me(token: string): Promise<{ _id: string }>{
-        return this.#getJson<{ _id: string }>('/api/auth/me', token);
+        return this.#request<{ _id: string }>(authRoutes.getMyAccount, { token });
     }
 
     async #findOrCreateTeam(token: string, name: string): Promise<TeamResponse>{
-        const teams = await this.#getJson<TeamResponse[]>('/api/teams', token);
-        const existing = teams?.find((team) => team?._id);
+        const teams = await this.#request<TeamResponse[]>(teamRoutes.listUserTeams, { token });
+        const existing = teams[0];
         if(existing){
             bus.emit('deploy:log', {
                 stream: 'stdout',
@@ -165,8 +190,11 @@ export default class Bootstrap{
     }
 
     async #findOrCreateCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
-        const clusters = await this.#getJson<Array<{ _id: string }>>(`/api/teams/${teamId}/clusters`, token);
-        const existing = clusters?.find((cluster) => cluster?._id);
+        const clusters = await this.#request<Array<{ _id: string }>>(teamClusterRoutes.list, {
+            params: { teamId },
+            token
+        });
+        const existing = clusters[0];
         if(existing){
             bus.emit('deploy:log', {
                 stream: 'stdout',
@@ -182,42 +210,63 @@ export default class Bootstrap{
     }
 
     async #signUp(email: string, password: string, firstName: string, lastName: string): Promise<AuthResponse>{
-        return this.#postJson<AuthResponse>('/api/auth/users', {
-            email,
-            firstName: firstName || 'Local',
-            lastName,
-            password
+        return this.#request<AuthResponse>(authRoutes.signUp, {
+            body: {
+                email,
+                firstName: firstName || 'Local',
+                lastName,
+                password
+            }
         });
     }
 
     async #signIn(email: string, password: string): Promise<string>{
-        const data = await this.#postJson<AuthResponse>('/api/auth/sessions', {
-            email,
-            password
+        const data = await this.#request<AuthResponse>(authRoutes.signIn, {
+            body: {
+                email,
+                password
+            }
         });
         return data.token;
     }
 
     async #createTeam(token: string, name: string): Promise<TeamResponse>{
-        return this.#postJson<TeamResponse>('/api/teams', {
-            name,
-            description: ''
-        }, token);
+        return this.#request<TeamResponse>(teamRoutes.create, {
+            body: {
+                name,
+                description: ''
+            },
+            token
+        });
     }
 
     async #setDefaultTeamForNewUsers(token: string, teamId: string): Promise<void>{
-        await this.#postJson<unknown>(`/api/teams/${teamId}/default-membership`, { enabled: true }, token, 'PUT');
+        await this.#request<unknown>(teamRoutes.setDefaultForNewUsers, {
+            params: { teamId },
+            body: { enabled: true },
+            token
+        });
     }
 
     async #createCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
-        return this.#postJson<TeamClusterResponse>(`/api/teams/${teamId}/clusters`, { name }, token);
+        return this.#request<TeamClusterResponse>(teamClusterRoutes.create, {
+            params: { teamId },
+            body: { name },
+            token
+        });
     }
 
     async #revealDaemonPassword(token: string, teamId: string, teamClusterId: string, password: string): Promise<string>{
-        const data = await this.#postJson<{ services: { daemon: { password: string } } }>(
-            `/api/teams/${teamId}/clusters/${teamClusterId}/credential-reveals`,
-            { password },
-            token
+        const data = await this.#request<{ services?: { daemon?: { password?: string } } }>(
+            teamClusterRoutes.revealCredentials,
+            {
+                params: {
+                    teamId,
+                    teamClusterId
+                },
+                body: { password },
+                token
+            }
         );
 
         const daemonPassword = data.services?.daemon?.password;
@@ -225,61 +274,65 @@ export default class Bootstrap{
         return daemonPassword;
     }
 
-    async #postJson<T>(path: string, body: object, token?: string, method: string = 'POST'): Promise<T>{
+    /**
+     * Single request path for the bootstrap flow. Method and path come from
+     * `@volt/contracts`, so a route change on the server surfaces here as a
+     * compile error instead of a 404 at first launch.
+     */
+    async #request<T>(
+        endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>,
+        options: RequestOptions = {}
+    ): Promise<T>{
+        const path = buildPath(endpoint, options.params);
         const url = `${this.props.serverOrigin}${path}`;
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if(token) headers.Authorization = `Bearer ${token}`;
+        const method: HttpMethod = endpoint.method;
 
-        const attempts = 5;
+        const headers: Record<string, string> = {};
+        if(options.body) headers['Content-Type'] = 'application/json';
+        if(options.token) headers.Authorization = `Bearer ${options.token}`;
+
+        const attempts = options.attempts ?? (method === 'GET' ? 1 : 5);
         let lastErr: unknown;
 
-        for(let i = 0; i < attempts; i++){
-            let res: Response;
+        for(let attempt = 0; attempt < attempts; attempt++){
+            let response: Response;
             let text: string;
             try{
-                res = await fetch(url, {
+                response = await fetch(url, {
                     method,
                     headers,
-                    body: JSON.stringify(body),
-                    signal: AbortSignal.timeout(10_000)
+                    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+                    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
                 });
-                text = await res.text();
+                text = await response.text();
             }catch(err){
                 lastErr = err;
-                if(i < attempts - 1){
+                if(attempt < attempts - 1){
                     await sleep(1000);
                     continue;
                 }
                 throw err;
             }
 
-            let parsed: any;
-            try{ parsed = text ? JSON.parse(text) : null; }catch{ parsed = null; }
-
-            if(!res.ok){
-                const code = parsed?.code ?? parsed?.status ?? '';
-                const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
-                throw new HttpError(res.status, `${path} → ${res.status} ${code} ${msg}`);
+            let payload: unknown = null;
+            try{
+                payload = text ? JSON.parse(text) : null;
+            }catch{
+                // A non-JSON body is still usable as an error message below.
+                payload = null;
             }
 
-            return (parsed?.data ?? parsed) as T;
+            if(!response.ok){
+                const message = readMessage(payload) ?? text ?? `HTTP ${response.status}`;
+                throw new HttpError(
+                    response.status,
+                    `${path} → ${response.status} ${readCode(payload)} ${message}`.replace(/\s+/g, ' ').trim()
+                );
+            }
+
+            return readData(payload) as T;
         }
 
         throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
-    }
-
-    async #getJson<T>(path: string, token: string): Promise<T>{
-        const res = await fetch(`${this.props.serverOrigin}${path}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: AbortSignal.timeout(10_000)
-        });
-        const text = await res.text();
-        let parsed: any;
-        try{ parsed = text ? JSON.parse(text) : null; }catch{ parsed = null; }
-        if(!res.ok){
-            const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
-            throw new HttpError(res.status, `${path} → ${res.status} ${msg}`);
-        }
-        return (parsed?.data ?? parsed) as T;
     }
 };

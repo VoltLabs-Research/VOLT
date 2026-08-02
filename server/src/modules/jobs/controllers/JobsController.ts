@@ -15,8 +15,7 @@ export default class JobsController extends Controller {
     @Route(jobsRoutes.removeRunningJobs)
     removeRunningJobs(
         @Param('teamId') teamId: string,
-        @Query('trajectoryId') trajectoryId: string,
-        @Query('status') status?: string
+        @Query('trajectoryId') trajectoryId: string
     ) {
         return this.#service.removeRunningJobs({
             teamId,

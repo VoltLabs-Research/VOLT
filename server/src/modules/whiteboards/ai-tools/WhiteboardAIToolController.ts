@@ -1,8 +1,12 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool, ClientAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import WhiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
+import { EMPTY_WHITEBOARD_SCENE } from '@modules/whiteboards/contracts/whiteboard';
+import type { WhiteboardScene } from '@modules/whiteboards/contracts/whiteboard';
 import { text } from 'node:stream/consumers';
 import type {
     CreateWhiteboardInput,
@@ -14,15 +18,14 @@ import type {
     WhiteboardRefInput
 } from '@volt/contracts/modules/whiteboards/ai-tools';
 
-interface ParsedWhiteboardScene {
-    revision?: number;
-    elements?: unknown[];
-    appState?: Record<string, unknown>;
-    files?: Record<string, unknown>;
-}
+/** Excalidraw persists an image cache alongside the scene; the realtime path ignores it. */
+type StoredScene = WhiteboardScene & { files?: Record<string, unknown> };
 
+@AIToolProvider()
 export default class WhiteboardAIToolController extends AIToolController {
     #service = new WhiteboardService();
+
+    #folders = new WhiteboardFolderService();
 
     @AITool({
         name: 'create_whiteboard',
@@ -75,29 +78,21 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<WhiteboardRefInput>()
     })
     async getWhiteboardState(input: WhiteboardRefInput & AIToolScope) {
-        const { stream } = await this.#service.getWhiteboardState(input.teamId, input.whiteboardId);
-        const raw = await text(stream);
+        const raw = await text(await this.#service.getWhiteboardState(input.teamId, input.whiteboardId));
 
-        let scene: ParsedWhiteboardScene;
+        let scene: StoredScene;
         try {
-            scene = JSON.parse(raw) as ParsedWhiteboardScene;
+            scene = JSON.parse(raw) as StoredScene;
         } catch {
-            scene = {
-                revision: 0,
-                elements: [],
-                appState: {}
-            };
+            scene = EMPTY_WHITEBOARD_SCENE;
         }
 
-        const elements = scene.elements ?? [];
-        const revision = scene.revision ?? 0;
-
         return {
-            summary: `Whiteboard scene has ${elements.length} element(s) at revision ${revision}.`,
+            summary: `Whiteboard scene has ${scene.elements.length} element(s) at revision ${scene.revision}.`,
             data: {
-                revision,
-                elements,
-                appState: scene.appState ?? {},
+                revision: scene.revision,
+                elements: scene.elements,
+                appState: scene.appState,
                 files: scene.files ?? {}
             }
         };
@@ -148,7 +143,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteWhiteboardFolderInput>()
     })
     async deleteWhiteboardFolder(input: DeleteWhiteboardFolderInput & AIToolScope) {
-        await this.#service.deleteFolder(input.teamId, input.folderId, input.userId);
+        await this.#folders.deleteFolder(input.teamId, input.folderId, input.userId);
         return {
             summary: `Deleted whiteboard folder ${input.folderId}.`,
             data: null

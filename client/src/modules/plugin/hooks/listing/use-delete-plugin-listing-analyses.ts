@@ -4,7 +4,6 @@ import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { runCrudMutation } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
-import { isAccessDeniedError } from '@/shared/errors/core';
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
@@ -26,16 +25,13 @@ const useDeletePluginListingAnalyses = () => {
         );
         if (!isConfirmed) return;
 
-        try {
-            await Promise.all(analysisIds.map((analysisId) =>
-                runCrudMutation(deleteAnalysisMutation.mutateAsync(analysisId), {
-                    action: 'Deleting',
-                    subject: 'Analysis'
-                })
-            ));
-        } catch(error: unknown) {
-            if (isAccessDeniedError(error)) return;
-        }
+        // Failures are already surfaced by runCrudMutation's toast.
+        await Promise.all(analysisIds.map((analysisId) =>
+            runCrudMutation(deleteAnalysisMutation.mutateAsync(analysisId), {
+                action: 'Deleting',
+                subject: 'Analysis'
+            })
+        )).catch(() => undefined);
     }, [deleteAnalysisMutation]);
 };
 

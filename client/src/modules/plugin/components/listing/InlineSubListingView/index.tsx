@@ -8,7 +8,7 @@ import { buildCompactSubListingColumns } from '@/modules/plugin/components/listi
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import './InlineSubListingView.css';
 
-interface InlineSubListingViewProps {
+export interface InlineSubListingViewProps {
     analysisId: string;
     exposureId: string;
     timestep: number;
@@ -29,8 +29,6 @@ const InlineSubListingView = ({
     onActiveNameChange,
     onClose
 }: InlineSubListingViewProps) => {
-    const enabled = Boolean(analysisId && exposureId && activeName);
-
     const {
         data: infiniteData,
         isLoading,
@@ -47,27 +45,22 @@ const InlineSubListingView = ({
             limit: SUB_LISTING_PAGE_SIZE
         },
         {
-            getNextPageParam: (lastPage) => {
-                if(lastPage.page < lastPage.totalPages){
-                    return lastPage.page + 1;
-                }
-                return undefined;
-            },
-            enabled
+            getNextPageParam: (lastPage) => (
+                lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined
+            ),
+            enabled: Boolean(analysisId && exposureId && activeName)
         }
     );
 
-    const rows = useMemo(() => {
-        if(!infiniteData?.pages) return [];
-        return infiniteData.pages.flatMap((page) => page.rows ?? []);
-    }, [infiniteData]);
+    const rows = useMemo(
+        () => infiniteData?.pages.flatMap((page) => page.rows) ?? [],
+        [infiniteData]
+    );
 
-    const columns = useMemo(() => {
-        const firstPage = infiniteData?.pages?.[0];
-        if(!firstPage?.columns?.length) return [];
-
-        return buildCompactSubListingColumns(firstPage.columns, rows as Record<string, unknown>[]);
-    }, [infiniteData, rows]);
+    const columns = useMemo(
+        () => buildCompactSubListingColumns(infiniteData?.pages[0]?.columns ?? [], rows),
+        [infiniteData, rows]
+    );
 
     const handleLoadMore = useCallback(() => {
         if(hasNextPage && !isFetchingNextPage){
@@ -116,10 +109,10 @@ const InlineSubListingView = ({
             <div className='plugin-inline-sub-listing__body'>
                 <PluginCompactTable
                     columns={columns}
-                    data={rows as Record<string, unknown>[]}
+                    data={rows}
                     isLoading={isLoading}
                     isFetchingMore={isFetchingNextPage}
-                    hasMore={hasNextPage ?? false}
+                    hasMore={hasNextPage}
                     onLoadMore={handleLoadMore}
                     error={errorMessage}
                 />

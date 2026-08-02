@@ -17,30 +17,21 @@ const AIConversationAlerts = ({
     loadConversations
 }: AIConversationAlertsProps) => (
     <>
-        {providerCatalogError && (
-            <Box className={className}>
+        {([
+            ['Unable to load AI providers', providerCatalogError, loadProviderCatalog],
+            ['Unable to load conversations', conversationsError, loadConversations]
+        ] as const).map(([title, description, retry]) => description && (
+            <Box key={title} className={className}>
                 <RecoveryState
-                    title='Unable to load AI providers'
-                    description={providerCatalogError}
+                    title={title}
+                    description={description}
                     tone={RecoveryStateTone.Error}
                     onRetry={() => {
-                        loadProviderCatalog().catch(() => undefined);
+                        retry().catch(() => undefined);
                     }}
                 />
             </Box>
-        )}
-        {conversationsError && (
-            <Box className={className}>
-                <RecoveryState
-                    title='Unable to load conversations'
-                    description={conversationsError}
-                    tone={RecoveryStateTone.Error}
-                    onRetry={() => {
-                        loadConversations().catch(() => undefined);
-                    }}
-                />
-            </Box>
-        )}
+        ))}
     </>
 );
 

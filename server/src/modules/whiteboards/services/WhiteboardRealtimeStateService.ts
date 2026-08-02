@@ -1,48 +1,23 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
+import {
+    EMPTY_WHITEBOARD_SCENE,
+    requireWhiteboardPayloadKey,
+    requireWhiteboardStorageClusterId
+} from '@modules/whiteboards/contracts/whiteboard';
+import type {
+    WhiteboardAppState,
+    WhiteboardElement,
+    WhiteboardScene,
+    WhiteboardSceneDelta,
+    WhiteboardSceneSnapshot
+} from '@modules/whiteboards/contracts/whiteboard';
+import { isSameOrder, orderElementIds, shouldReplaceElement } from '@modules/whiteboards/services/whiteboard-scene-merge';
 
-type WhiteboardRealtimeObjectGateway = Pick<
-    ITeamClusterObjectGatewayClient,
-    'exists' | 'getBuffer' | 'putBuffer'
->;
-
-interface WhiteboardRealtimeStateServiceDependencies{
-    objectGatewayClient?: WhiteboardRealtimeObjectGateway;
-}
-
-type WhiteboardElement = Record<string, unknown>;
-type WhiteboardAppState = Record<string, unknown>;
-
-interface WhiteboardSceneSnapshot {
-    whiteboardId: string;
-    revision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
-}
-
-interface WhiteboardSceneDelta {
-    whiteboardId: string;
-    revision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
-    elementOrder?: string[];
-}
-
-interface MergeSceneResult {
-    changed: boolean;
-    revision: number;
-    delta?: WhiteboardSceneDelta;
-}
-
-interface StoredWhiteboardScene {
-    revision?: number;
-    elements?: unknown[];
-    appState?: WhiteboardAppState;
-}
+type MergeSceneResult =
+    | { changed: false; revision: number }
+    | { changed: true; revision: number; delta: WhiteboardSceneDelta };
 
 interface WhiteboardRoomState {
     whiteboardId: string;
@@ -62,128 +37,9 @@ interface WhiteboardRoomState {
 
 const PERSIST_DEBOUNCE_MS = 500;
 
-const EMPTY_SCENE = (): StoredWhiteboardScene => ({
-    revision: 0,
-    elements: [],
-    appState: {}
-});
-
-const getElementId = (element: WhiteboardElement): string | null => {
-    const id = element.id;
-    return typeof id === 'string' && id.length > 0 ? id : null;
-};
-
-const getElementVersion = (element: WhiteboardElement): number => (
-    typeof element.version === 'number' && Number.isFinite(element.version)
-        ? element.version
-        : 0
-);
-
-const getElementUpdated = (element: WhiteboardElement): number => (
-    typeof element.updated === 'number' && Number.isFinite(element.updated)
-        ? element.updated
-        : 0
-);
-
-const getElementVersionNonce = (element: WhiteboardElement): number => (
-    typeof element.versionNonce === 'number' && Number.isFinite(element.versionNonce)
-        ? element.versionNonce
-        : 0
-);
-
-const getElementSignature = (element: WhiteboardElement): string | null => {
-    try {
-        return JSON.stringify(element);
-    } catch {
-        return null;
-    }
-};
-
-const hasEquivalentElementPayload = (
-    current: WhiteboardElement,
-    incoming: WhiteboardElement,
-    currentSignature?: string | null,
-    incomingSignature?: string | null
-): boolean => {
-    const resolvedCurrentSignature = currentSignature ?? getElementSignature(current);
-    const resolvedIncomingSignature = incomingSignature ?? getElementSignature(incoming);
-
-    return resolvedCurrentSignature !== null
-        && resolvedIncomingSignature !== null
-        && resolvedCurrentSignature === resolvedIncomingSignature;
-};
-
-const shouldReplaceElement = (
-    current: WhiteboardElement | undefined,
-    incoming: WhiteboardElement,
-    currentSignature: string | null | undefined,
-    resolveIncomingSignature: () => string | null
-): boolean => {
-    if (!current) {
-        return true;
-    }
-
-    const versionDelta = getElementVersion(incoming) - getElementVersion(current);
-    if (versionDelta !== 0) {
-        return versionDelta > 0;
-    }
-
-    const updatedDelta = getElementUpdated(incoming) - getElementUpdated(current);
-    if (updatedDelta !== 0) {
-        return updatedDelta > 0;
-    }
-
-    const versionNonceDelta = getElementVersionNonce(incoming) - getElementVersionNonce(current);
-    if (versionNonceDelta !== 0) {
-        return versionNonceDelta > 0;
-    }
-
-    return !hasEquivalentElementPayload(current, incoming, currentSignature, resolveIncomingSignature());
-};
-
-const normalizeElements = (value: unknown): WhiteboardElement[] => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((element): element is WhiteboardElement => (
-        typeof element === 'object' && element !== null && typeof (element as WhiteboardElement).id === 'string'
-    ));
-};
-
-const normalizeAppState = (value: unknown): WhiteboardAppState => (
-    typeof value === 'object' && value !== null
-        ? { ...(value as WhiteboardAppState) }
-        : {}
-);
-
-const areStringArraysEqual = (left: string[], right: string[]): boolean => {
-    if (left.length !== right.length) {
-        return false;
-    }
-
-    for (let index = 0; index < left.length; index += 1) {
-        if (left[index] !== right[index]) {
-            return false;
-        }
-    }
-
-    return true;
-};
-
 class WhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
-
-    #objectGatewayClientCache?: WhiteboardRealtimeObjectGateway;
-
-    constructor(dependencies: WhiteboardRealtimeStateServiceDependencies = {}){
-        this.#objectGatewayClientCache = dependencies.objectGatewayClient;
-    }
-
-    private get objectGatewayClient(): WhiteboardRealtimeObjectGateway {
-        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
-    }
 
     async getSnapshot(whiteboardId: string): Promise<WhiteboardSceneSnapshot | null> {
         const room = await this.getOrLoadRoom(whiteboardId);
@@ -200,7 +56,7 @@ class WhiteboardRealtimeStateService {
         elements: WhiteboardElement[],
         appState: WhiteboardAppState,
         userId: string,
-        elementOrder?: string[]
+        elementOrder: string[] = []
     ): Promise<MergeSceneResult | null> {
         const room = await this.getOrLoadRoom(whiteboardId);
         if (!room) {
@@ -213,77 +69,36 @@ class WhiteboardRealtimeStateService {
         let didChange = false;
 
         for (const element of elements) {
-            const id = getElementId(element);
-            if (!id) {
+            incomingOrder.push(element.id);
+
+            const signature = JSON.stringify(element);
+            if (room.elementSignatures.get(element.id) === signature) {
                 continue;
             }
 
-            incomingOrder.push(id);
-
-            let incomingSignature: string | null | undefined;
-            const resolveIncomingSignature = (): string | null => {
-                if (incomingSignature === undefined) {
-                    incomingSignature = getElementSignature(element);
-                }
-                return incomingSignature;
-            };
-
-            if (shouldReplaceElement(room.elements.get(id), element, room.elementSignatures.get(id), resolveIncomingSignature)) {
-                room.elements.set(id, element);
-                if (typeof incomingSignature === 'string') {
-                    room.elementSignatures.set(id, incomingSignature);
-                } else {
-                    room.elementSignatures.delete(id);
-                }
+            if (shouldReplaceElement(room.elements.get(element.id), element)) {
+                room.elements.set(element.id, element);
+                room.elementSignatures.set(element.id, signature);
                 changedElements.push(element);
                 didChange = true;
             }
         }
 
-        if (elementOrder?.length) {
-            const nextOrder = this.buildOrderedIds(elementOrder, room.elementOrder, room.elements);
-            if (!areStringArraysEqual(room.elementOrder, nextOrder)) {
+        if (elementOrder.length > 0 || incomingOrder.length > 0) {
+            const nextOrder = orderElementIds(room.elements, elementOrder, room.elementOrder, incomingOrder);
+            if (!isSameOrder(room.elementOrder, nextOrder)) {
                 room.elementOrder = nextOrder;
-                shouldBroadcastOrder = true;
-                didChange = true;
-            }
-        } else if (incomingOrder.length > 0) {
-            const nextOrder: string[] = [];
-            const seen = new Set<string>();
-
-            for (const id of room.elementOrder) {
-                if (seen.has(id) || !room.elements.has(id)) {
-                    continue;
-                }
-
-                seen.add(id);
-                nextOrder.push(id);
-            }
-
-            for (const id of incomingOrder) {
-                if (seen.has(id) || !room.elements.has(id)) {
-                    continue;
-                }
-
-                seen.add(id);
-                nextOrder.push(id);
-            }
-
-            if (!areStringArraysEqual(room.elementOrder, nextOrder)) {
-                room.elementOrder = nextOrder;
+                // Only a client-supplied reordering is worth replaying to the other peers.
+                shouldBroadcastOrder = elementOrder.length > 0;
                 didChange = true;
             }
         }
 
-        const normalizedAppState = normalizeAppState(appState);
         const appStateDelta: WhiteboardAppState = {};
-
-        for (const [key, value] of Object.entries(normalizedAppState)) {
-            if (Object.is(room.appState[key], value)) {
-                continue;
+        for (const [key, value] of Object.entries(appState)) {
+            if (!Object.is(room.appState[key], value)) {
+                appStateDelta[key] = value;
             }
-
-            appStateDelta[key] = value;
         }
 
         if (Object.keys(appStateDelta).length > 0) {
@@ -359,51 +174,42 @@ class WhiteboardRealtimeStateService {
             return null;
         }
 
-        if (!whiteboard.payloadKey) {
-            throw ApplicationError.conflict(
-                'Whiteboard::PayloadKeyRequired',
-                `Whiteboard ${whiteboard.id} does not have a payload key assigned`
-            );
-        }
-        const storageClusterId = whiteboard.storageClusterId?.trim();
-        if (!storageClusterId) {
-            throw ApplicationError.conflict(
-                'Whiteboard::StorageClusterRequired',
-                `Whiteboard ${whiteboard.id} does not have a storage cluster assigned`
-            );
-        }
+        const payloadKey = requireWhiteboardPayloadKey(whiteboard.id, whiteboard.payloadKey);
+        const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
+        const scene = await this.readScene(storageClusterId, payloadKey);
 
-        const payloadKey = whiteboard.payloadKey;
-        let storedScene = EMPTY_SCENE();
-
-        if (await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
-            try {
-                const buffer = await this.objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
-                storedScene = JSON.parse(buffer.toString('utf8')) as StoredWhiteboardScene;
-            } catch {
-                storedScene = EMPTY_SCENE();
-            }
-        }
-
-        const elements = normalizeElements(storedScene.elements);
         const room: WhiteboardRoomState = {
             whiteboardId,
             teamId: whiteboard.team,
             storageClusterId,
             payloadKey,
-            revision: storedScene.revision ?? 0,
-            elements: new Map(elements.map((element) => [element.id as string, element])),
-            elementSignatures: new Map<string, string>(),
-            elementOrder: elements.map((element) => element.id as string),
-            appState: normalizeAppState(storedScene.appState),
+            revision: scene.revision,
+            elements: new Map(scene.elements.map((element) => [element.id, element])),
+            elementSignatures: new Map(scene.elements.map((element) => [element.id, JSON.stringify(element)])),
+            elementOrder: scene.elements.map((element) => element.id),
+            appState: scene.appState,
             snapshotCache: null,
             persistTimer: null,
             lastEditedBy: whiteboard.lastEditedBy ?? null,
-            lastPersistedRevision: storedScene.revision ?? 0
+            lastPersistedRevision: scene.revision
         };
 
         this.rooms.set(whiteboardId, room);
         return room;
+    }
+
+    /** Object storage hands us raw bytes, so an unparseable payload degrades to an empty scene. */
+    private async readScene(storageClusterId: string, payloadKey: string): Promise<WhiteboardScene> {
+        if (!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
+            return EMPTY_WHITEBOARD_SCENE;
+        }
+
+        try {
+            const buffer = await objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
+            return JSON.parse(buffer.toString('utf8')) as WhiteboardScene;
+        } catch {
+            return EMPTY_WHITEBOARD_SCENE;
+        }
     }
 
     private schedulePersist(room: WhiteboardRoomState): void {
@@ -422,15 +228,9 @@ class WhiteboardRealtimeStateService {
             return;
         }
 
-        const snapshot = this.toSnapshot(room);
-        const storedScene: StoredWhiteboardScene = {
-            revision: snapshot.revision,
-            elements: snapshot.elements,
-            appState: snapshot.appState
-        };
-
-        const payload = Buffer.from(JSON.stringify(storedScene));
-        await this.objectGatewayClient.putBuffer(room.storageClusterId, {
+        const { whiteboardId, ...scene } = this.toSnapshot(room);
+        const payload = Buffer.from(JSON.stringify(scene));
+        await objectGatewayClient.putBuffer(room.storageClusterId, {
             bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
             objectKey: room.payloadKey,
             buffer: payload,
@@ -440,16 +240,12 @@ class WhiteboardRealtimeStateService {
         room.lastPersistedRevision = room.revision;
 
         if (room.lastEditedBy) {
-            await Whiteboard.update({ id: room.whiteboardId }, { lastEditedBy: room.lastEditedBy });
+            await Whiteboard.update({ id: whiteboardId }, { lastEditedBy: room.lastEditedBy });
         }
     }
 
     private toSnapshot(room: WhiteboardRoomState): WhiteboardSceneSnapshot {
-        if (room.snapshotCache) {
-            return room.snapshotCache;
-        }
-
-        room.snapshotCache = {
+        room.snapshotCache ??= {
             whiteboardId: room.whiteboardId,
             revision: room.revision,
             elements: room.elementOrder
@@ -459,38 +255,6 @@ class WhiteboardRealtimeStateService {
         };
 
         return room.snapshotCache;
-    }
-
-    private buildOrderedIds(
-        primaryOrder: string[],
-        secondaryOrder: string[],
-        elements: Map<string, WhiteboardElement>
-    ): string[] {
-        const orderedIds = new Set<string>();
-        const result: string[] = [];
-
-        const appendId = (id: string) => {
-            if (orderedIds.has(id) || !elements.has(id)) {
-                return;
-            }
-
-            orderedIds.add(id);
-            result.push(id);
-        };
-
-        for (const id of primaryOrder) {
-            appendId(id);
-        }
-
-        for (const id of secondaryOrder) {
-            appendId(id);
-        }
-
-        for (const id of elements.keys()) {
-            appendId(id);
-        }
-
-        return result;
     }
 }
 

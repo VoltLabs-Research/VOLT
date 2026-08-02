@@ -5,18 +5,10 @@ interface ElementWithChildrenProps {
     children?: ReactNode;
 }
 
-export interface ParsedMarkdownTable {
+interface ParsedMarkdownTable {
     columns: string[];
     rows: Record<string, unknown>[];
 }
-
-const getElementChildren = (node: ReactNode): ReactNode | undefined => {
-    if (!isValidElement<ElementWithChildrenProps>(node)) {
-        return undefined;
-    }
-
-    return node.props.children;
-};
 
 const extractTextFromChildren = (children: ReactNode): string => {
     const parts: string[] = [];
@@ -40,7 +32,7 @@ export const parseTableFromChildren = (children: ReactNode): ParsedMarkdownTable
         if (!isValidElement<ElementWithChildrenProps>(section)) return;
 
         const sectionType = section.type;
-        const sectionChildren = getElementChildren(section);
+        const sectionChildren = section.props.children;
 
         if (sectionType === 'thead') {
             Children.forEach(sectionChildren, (tr) => {

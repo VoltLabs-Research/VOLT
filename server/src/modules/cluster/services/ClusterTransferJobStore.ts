@@ -1,9 +1,11 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 
 import ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
 import { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
+    createClusterTransferJobDefaults,
     ClusterTransferJobReason as ClusterTransferJobReasonColumn,
     ClusterTransferJobState as ClusterTransferJobStateColumn
 } from '@modules/cluster/contracts/cluster-transfer-job';
@@ -16,7 +18,7 @@ import type {
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';
 import { In, IsNull, LessThanOrEqual, Or } from 'typeorm';
-import ClusterTransferJobProjector from '@modules/cluster/services/ClusterTransferJobProjector';
+import publishTransferJobProjection from '@modules/cluster/services/ClusterTransferJobProjector';
 import {
     CLUSTER_TRANSFER_CLAIM_TTL_MS,
     CLUSTER_TRANSFER_WORKER_ID,
@@ -27,7 +29,10 @@ import {
  * Persistence and distributed claim leasing for cluster transfer jobs.
  */
 export default class ClusterTransferJobStore{
-    #projector = new ClusterTransferJobProjector();
+    async findById(jobId: string): Promise<ClusterTransferJob | null> {
+        const entity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
+        return entity ? toClusterTransferJobLike(entity) : null;
+    }
 
     async setJobState(
         jobId: string,
@@ -39,7 +44,7 @@ export default class ClusterTransferJobStore{
     ): Promise<ClusterTransferJob> {
         const jobEntity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
         if (!jobEntity) {
-            throw ApplicationError.notFound('ClusterTransferJob::NotFound', 'Cluster transfer job not found during update');
+            throw ApplicationError.notFound(ErrorCodes.CLUSTER_TRANSFER_JOB_NOT_FOUND, 'Cluster transfer job not found during update');
         }
 
         const updatedJobEntity = await Object.assign(jobEntity, {
@@ -49,7 +54,7 @@ export default class ClusterTransferJobStore{
         const updatedJob = toClusterTransferJobLike(updatedJobEntity);
 
         if (options.publishUpdate) {
-            await this.#projector.publishTransferJobProjection(updatedJob);
+            await publishTransferJobProjection(updatedJob);
         }
 
         return updatedJob;
@@ -79,7 +84,13 @@ export default class ClusterTransferJobStore{
     }
 
     async createTransferJob(props: Partial<ClusterTransferJob['props']>): Promise<ClusterTransferJob> {
-        const created = await ClusterTransferJobEntity.create({ ...this.#toJobEntityPatch(props) }).save();
+        const created = await ClusterTransferJobEntity.create({
+            ...this.#toJobEntityPatch({
+                ...createClusterTransferJobDefaults(),
+                ...props
+            })
+        }).save();
+
         return toClusterTransferJobLike(created);
     }
 
@@ -155,8 +166,7 @@ export default class ClusterTransferJobStore{
             }
         }
 
-        const entity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
-        return entity ? toClusterTransferJobLike(entity) : null;
+        return this.findById(jobId);
     }
 
     async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean> {

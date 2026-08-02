@@ -1,112 +1,89 @@
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { useChatPresenceStore } from '../../store/chat/use-chat-presence-store';
 import { getOtherParticipant } from '../../utils/chat/chat-display';
+import { invalidateChatsQuery } from './queries';
 import useChatData from './use-chat-data';
 import useChatActions from './use-chat-actions';
-import useChatNavigation from './use-chat-navigation';
 import useChatSocket from './use-chat-socket';
-import useChatUIState from './use-chat-ui-state';
 import useGroupActions from '../group/use-group-actions';
 import useMessageActions from '../message/use-message-actions';
 import useTypingIndicator from '../message/use-typing-indicator';
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import type { User } from '@volt/contracts/modules/auth/domain';
+import { useNavigate } from 'react-router-dom';
 
 const useMessagesPage = (chatId?: string) => {
-    const { handleSelectChat, navigateToMessages } = useChatNavigation();
-    const uiState = useChatUIState();
-    const { closeDetails, toggleDetails } = uiState;
+    const navigate = useNavigate();
+    const [showDetails, setShowDetails] = useState(false);
+    const closeDetails = useCallback(() => setShowDetails(false), []);
+    const toggleDetails = () => setShowDetails((previous) => !previous);
 
-    const currentUser = useCurrentUser();
-    const currentUserId = currentUser?._id;
+    const currentUserId = useCurrentUser()?._id;
 
     const selectedTeam = useSelectedTeam();
     const selectedTeamId = useSelectedTeamId();
     const { members: teamMembers } = useTeamMemberData({ teamId: selectedTeamId });
 
-    const chatData = useChatData();
     const {
         chats,
         messages,
         currentChatId,
         hasMore: hasMoreMessages,
-        fetchChats,
         resetState,
         selectChat,
         loadMoreMessages,
-        addMessage,
-        updateMessage,
         isChatsLoading,
         isMessagesLoading,
         chatsError
-    } = chatData;
+    } = useChatData();
 
     const typingUsers = useChatPresenceStore((state) => state.typingUsers);
     const userPresence = useChatPresenceStore((state) => state.userPresence);
     const resetPresenceStore = useChatPresenceStore((state) => state.reset);
 
-    const messageActions = useMessageActions({ chatId: currentChatId ?? chatId });
+    const messageActions = useMessageActions(currentChatId ?? chatId);
     const chatActions = useChatActions();
     const groupActions = useGroupActions();
-    const { handleTyping } = useTypingIndicator(currentChatId ?? undefined);
-    const previousTeamIdRef = useRef<string | undefined>(selectedTeamId ?? undefined);
-    const handleInfoClick = toggleDetails;
+    const { handleTyping } = useTypingIndicator(currentChatId);
+    const previousTeamIdRef = useRef(selectedTeamId);
 
-    useChatSocket({
-        currentChatId: currentChatId ?? undefined,
-        addMessage,
-        updateMessage
-    });
+    useChatSocket(currentChatId);
 
-    const currentChat = useMemo(() => {
-        return chats.find((c) => c._id === chatId) || null;
-    }, [chats, chatId]);
+    const currentChat = chats.find((chat) => chat._id === chatId) ?? null;
 
-    const currentTypingUsers = useMemo(() => {
-        return typingUsers.filter((typingUser) => {
-            return typingUser.chatId === chatId
-                && typingUser.userId !== currentUserId
-                && typingUser.isTyping;
-        });
-    }, [typingUsers, chatId, currentUserId]);
+    const currentTypingUsers = typingUsers.filter((typingUser) => (
+        typingUser.chatId === chatId
+        && typingUser.userId !== currentUserId
+        && typingUser.isTyping
+    ));
 
-    const otherParticipantPresence = useMemo(() => {
-        if (!currentChat || currentChat.isGroup) {
-            return PresenceStatus.Unknown;
-        }
+    const otherParticipant = currentChat && !currentChat.isGroup
+        ? getOtherParticipant(currentChat, currentUserId)
+        : undefined;
+    const otherParticipantPresence = otherParticipant
+        ? userPresence[otherParticipant._id] || PresenceStatus.Unknown
+        : PresenceStatus.Unknown;
 
-        const other = getOtherParticipant(currentChat, currentUserId);
-        if (other) {
-            return userPresence[other._id] || PresenceStatus.Unknown;
-        }
-
-        return PresenceStatus.Unknown;
-    }, [currentChat, currentUserId, userPresence]);
-
-    const teamMembersAsUsers = useMemo((): User[] => {
-        return teamMembers.filter((member) => member.user._id !== currentUserId).map((member) => member.user);
-    }, [teamMembers, currentUserId]);
+    const teamMembersAsUsers = teamMembers
+        .filter((member) => member.user._id !== currentUserId)
+        .map((member) => member.user);
 
     useEffect(() => {
-        const previousTeamId = previousTeamIdRef.current;
-        const nextTeamId = selectedTeamId ?? undefined;
-
-        if (previousTeamId === nextTeamId) {
+        if (previousTeamIdRef.current === selectedTeamId) {
             return;
         }
 
-        previousTeamIdRef.current = nextTeamId;
+        previousTeamIdRef.current = selectedTeamId;
         resetState();
         resetPresenceStore();
 
-        if (nextTeamId) {
-            fetchChats();
+        if (selectedTeamId) {
+            invalidateChatsQuery().catch(() => undefined);
         }
-    }, [fetchChats, resetPresenceStore, resetState, selectedTeamId]);
+    }, [resetPresenceStore, resetState, selectedTeamId]);
 
     useEffect(() => {
         if (!chatId) {
@@ -128,13 +105,13 @@ const useMessagesPage = (chatId?: string) => {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: 'Unable to open this chat.'
             });
-            navigateToMessages();
+            navigate('/dashboard/messages');
         });
 
         return () => {
             ignore = true;
         };
-    }, [chatId, closeDetails, navigateToMessages, resetPresenceStore, resetState, selectChat]);
+    }, [chatId, closeDetails, navigate, resetPresenceStore, resetState, selectChat]);
 
     useEffect(() => {
         return () => {
@@ -143,55 +120,57 @@ const useMessagesPage = (chatId?: string) => {
         };
     }, [resetPresenceStore, resetState]);
 
-    const handleSelectConversation = useCallback((nextChatId: string) => {
+    const handleSelectConversation = (nextChatId: string) => {
         closeDetails();
-        handleSelectChat(nextChatId);
-    }, [closeDetails, handleSelectChat]);
+        navigate(`/dashboard/messages/${nextChatId}`);
+    };
 
-    const handleStartChat = useCallback(async (memberId: string) => {
+    const handleStartChat = async (memberId: string) => {
         if (selectedTeam) await chatActions.getOrCreateChat(selectedTeam._id, memberId);
-    }, [selectedTeam, chatActions]);
+    };
 
-    const handleBackToList = useCallback(() => {
+    const handleBackToList = () => {
         closeDetails();
-        navigateToMessages();
-    }, [closeDetails, navigateToMessages]);
+        navigate('/dashboard/messages');
+    };
 
-    const handleLoadMore = useCallback(() => {
+    const handleLoadMore = () => {
         if (chatId && hasMoreMessages) {
             loadMoreMessages();
         }
-    }, [chatId, hasMoreMessages, loadMoreMessages]);
+    };
 
-    const handleCreateGroup = useCallback(async (name: string, description: string, memberIds: string[]) => {
+    const handleCreateGroup = async (name: string, description: string, memberIds: string[]) => {
         if (!selectedTeam) return;
+
         await groupActions.createGroup({
             teamId: selectedTeam._id,
             groupName: name,
             groupDescription: description,
             participantIds: memberIds
         });
-    }, [selectedTeam, groupActions.createGroup]);
+    };
 
-    const handleSendFiles = useCallback(async (files: File[]) => {
+    const handleSendFiles = async (files: File[]) => {
         for (const file of files) await messageActions.sendFileMessage(file);
-    }, [messageActions.sendFileMessage]);
+    };
 
-    const handleUpdateGroupInfo = useCallback(async (_id: string, name: string, description: string) => {
+    const handleUpdateGroupInfo = async (_id: string, name: string, description: string) => {
         await groupActions.updateGroupInfo(_id, {
             groupName: name,
             groupDescription: description
         });
-    }, [groupActions.updateGroupInfo]);
+    };
 
-    const handleUpdateAdmins = useCallback(async (_id: string, adminIds: string[], action: 'add' | 'remove') => {
+    const handleUpdateAdmins = async (_id: string, adminIds: string[], action: 'add' | 'remove') => {
         await groupActions.updateGroupAdmins(_id, {
             targetUserIds: adminIds,
             action
         });
-    }, [groupActions.updateGroupAdmins]);
+    };
 
     return {
+        ...messageActions,
         currentChat,
         chats,
         messages,
@@ -203,7 +182,9 @@ const useMessagesPage = (chatId?: string) => {
         isMessagesLoading,
         hasMoreMessages,
         chatsError,
-        ...uiState,
+        showDetails,
+        toggleDetails,
+        closeDetails,
 
         handleSelectChat: handleSelectConversation,
         handleStartChat,
@@ -214,15 +195,7 @@ const useMessagesPage = (chatId?: string) => {
         handleSendFiles,
         handleUpdateGroupInfo,
         handleUpdateAdmins,
-        handleInfoClick,
 
-        sendMessage: messageActions.sendMessage,
-        isSendingMessage: messageActions.isSendingMessage,
-        isSendingFile: messageActions.isSendingFile,
-        editMessage: messageActions.editMessage,
-        deleteMessage: messageActions.deleteMessage,
-        setReaction: messageActions.setReaction,
-        removeReaction: messageActions.removeReaction,
         addUsersToGroup: groupActions.addUsersToGroup,
         leaveGroup: groupActions.leaveGroup
     };

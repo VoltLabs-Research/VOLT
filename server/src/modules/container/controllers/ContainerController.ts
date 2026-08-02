@@ -5,6 +5,11 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ContainerService from '@modules/container/services/ContainerService';
+import { createContainer, deleteContainer } from '@modules/container/services/container-provisioning';
+import { updateContainer } from '@modules/container/services/container-runtime-updates';
+import { createContainerPortAccessUrl } from '@modules/container/services/container-port-access';
+import containerFolderService from '@modules/container/services/ContainerFolderService';
+import containerRuntimeInspectionService from '@modules/container/services/ContainerRuntimeInspectionService';
 import { containerRoutes } from '@volt/contracts/modules/container/routes';
 import type {
     CreateContainerInput,
@@ -25,16 +30,15 @@ export default class ContainerController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateContainerInput
     ){
-        return this.#service.create(teamId, userId, body);
+        return createContainer(teamId, userId, body);
     }
 
     @Route(containerRoutes.list)
     list(
         @Param('teamId') teamId: string,
-        @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#service.list(teamId, userId, query);
+        return this.#service.list(teamId, query);
     }
 
     @Route(containerRoutes.listFolders)
@@ -42,7 +46,7 @@ export default class ContainerController extends Controller {
         @Param('teamId') teamId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#service.listFolders(teamId, query);
+        return containerFolderService.list(teamId, query);
     }
 
     @Route(containerRoutes.getFolder)
@@ -50,7 +54,7 @@ export default class ContainerController extends Controller {
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string
     ){
-        return this.#service.getFolder(teamId, folderId);
+        return containerFolderService.get(teamId, folderId);
     }
 
     @Route(containerRoutes.createFolder)
@@ -60,7 +64,7 @@ export default class ContainerController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: CreateContainerFolderInput
     ){
-        return this.#service.createFolder(teamId, userId, body);
+        return containerFolderService.create(teamId, userId, body);
     }
 
     @Route(containerRoutes.updateFolder)
@@ -69,7 +73,7 @@ export default class ContainerController extends Controller {
         @Param('folderId') folderId: string,
         @Body() body: UpdateContainerFolderInput
     ){
-        return this.#service.updateFolder(teamId, folderId, body);
+        return containerFolderService.update(teamId, folderId, body);
     }
 
     @Route(containerRoutes.removeFolder)
@@ -78,7 +82,7 @@ export default class ContainerController extends Controller {
         @Param('folderId') folderId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteFolder(teamId, folderId, userId);
+        await containerFolderService.delete(teamId, folderId, userId);
     }
 
     @Route(containerRoutes.get)
@@ -95,7 +99,7 @@ export default class ContainerController extends Controller {
         @Param('containerId') containerId: string,
         @Body() body: UpdateContainerInput
     ){
-        return this.#service.update(teamId, containerId, body);
+        return updateContainer(teamId, containerId, body);
     }
 
     @Route(containerRoutes.remove)
@@ -104,7 +108,7 @@ export default class ContainerController extends Controller {
         @Param('containerId') containerId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.delete(teamId, containerId, userId);
+        await deleteContainer(teamId, containerId, userId);
     }
 
     @Route(containerRoutes.createPortAccessUrl)
@@ -114,7 +118,7 @@ export default class ContainerController extends Controller {
         @Param('privatePort') privatePort: string,
         @CurrentUser() userId: string
     ) {
-        return this.#service.createPortAccessUrl(teamId, containerId, Number(privatePort), userId);
+        return createContainerPortAccessUrl(teamId, containerId, Number(privatePort), userId);
     }
 
     @Route(containerRoutes.move)
@@ -133,7 +137,7 @@ export default class ContainerController extends Controller {
         @Param('containerId') containerId: string,
         @Query('path') path: string
     ){
-        return this.#service.getFiles(teamId, containerId, path);
+        return containerRuntimeInspectionService.getFiles(teamId, containerId, path);
     }
 
     @Route(containerRoutes.getProcesses)
@@ -141,7 +145,7 @@ export default class ContainerController extends Controller {
         @Param('teamId') teamId: string,
         @Param('containerId') containerId: string
     ){
-        return this.#service.getProcesses(teamId, containerId);
+        return containerRuntimeInspectionService.getProcesses(teamId, containerId);
     }
 
     @Route(containerRoutes.getStats)
@@ -149,7 +153,7 @@ export default class ContainerController extends Controller {
         @Param('teamId') teamId: string,
         @Param('containerId') containerId: string
     ){
-        return this.#service.getStats(teamId, containerId);
+        return containerRuntimeInspectionService.getStats(teamId, containerId);
     }
 
     @Route(containerRoutes.readFile)
@@ -158,6 +162,6 @@ export default class ContainerController extends Controller {
         @Param('containerId') containerId: string,
         @Query('path') path: string
     ){
-        return this.#service.readFile(teamId, containerId, path);
+        return containerRuntimeInspectionService.readFile(teamId, containerId, path);
     }
 }

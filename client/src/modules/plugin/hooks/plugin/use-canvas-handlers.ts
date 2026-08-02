@@ -29,11 +29,6 @@ const useCanvasHandlers = ({ reactFlowInstance }: UseCanvasHandlersOptions) => {
         addNode(type, position);
     }, [reactFlowInstance, addNode]);
 
-    const onDragStart = useCallback((event: DragEvent, nodeType: NodeType) => {
-        event.dataTransfer.setData('application/reactflow', nodeType);
-        event.dataTransfer.effectAllowed = 'move';
-    }, []);
-
     const isValidConnection = useCallback((edgeOrConnection: Edge | Connection) => {
         const connection: Connection = {
             source: edgeOrConnection.source,
@@ -47,7 +42,6 @@ const useCanvasHandlers = ({ reactFlowInstance }: UseCanvasHandlersOptions) => {
     return {
         onDragOver,
         onDrop,
-        onDragStart,
         isValidConnection
     };
 };

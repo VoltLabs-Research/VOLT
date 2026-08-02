@@ -34,18 +34,12 @@ export class ClusterTransferRunner {
     }
 
     kick(jobLimit: number = 1): void {
-        void this.runTick({
-            jobLimit,
-            includeAutomaticRebalance: false
-        }).catch((error) => {
+        void this.runTick(jobLimit, false).catch((error) => {
             logger.error(error, '[ClusterTransferRunner] Failed to process manual transfer kick');
         });
     }
 
-    private async runTick(options: {
-        jobLimit?: number;
-        includeAutomaticRebalance?: boolean;
-    } = {}): Promise<void> {
+    private async runTick(jobLimit: number = 1, includeAutomaticRebalance: boolean = true): Promise<void> {
         if (this.running) {
             return;
         }
@@ -53,10 +47,10 @@ export class ClusterTransferRunner {
         this.running = true;
 
         try {
-            if (options.includeAutomaticRebalance !== false) {
+            if (includeAutomaticRebalance) {
                 await this.clusterTransferCoordinator.planAutomaticRebalance();
             }
-            await this.clusterTransferCoordinator.runPendingJobs(options.jobLimit ?? 1);
+            await this.clusterTransferCoordinator.runPendingJobs(jobLimit);
         } finally {
             this.running = false;
         }

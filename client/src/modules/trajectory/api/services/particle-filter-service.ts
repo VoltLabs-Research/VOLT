@@ -2,7 +2,7 @@ import { createService, get, post } from '@/app/core/http/utils/create-service';
 import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 
 
-export interface ParticleFilterCondition {
+interface ParticleFilterCondition {
     kind?: 'property';
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';

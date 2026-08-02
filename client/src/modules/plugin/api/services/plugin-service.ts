@@ -20,11 +20,9 @@ export interface ClonePluginInput {
     teamId?: string;
 }
 
-
 export interface DeletePluginInput {
     _id: string;
 }
-
 
 export interface PipelineStageInput {
     kind: PipelineStageKind;
@@ -64,7 +62,6 @@ export interface SearchRegistryInput {
     limit?: number;
 }
 
-
 export interface ListPluginTeamClustersInput {
     teamId: string;
     page: number;
@@ -100,17 +97,6 @@ interface DeleteBinaryInput {
 
 interface UploadBinaryTarget extends UploadBinaryResponse {
     uploadUrl: string;
-    expiresAt: string;
-}
-
-interface UploadBinaryTargetApiResponse {
-    status: 'success';
-    data: UploadBinaryTarget;
-}
-
-interface UploadBinaryCommitApiResponse {
-    status: 'success';
-    data: UploadBinaryResponse;
 }
 
 interface NodeTypesSchemaResponse {
@@ -129,7 +115,7 @@ const endpoints = {
     }),
     delete: del<DeletePluginInput>('/plugins/:_id'),
     uploadBinary: custom<UploadBinaryParams, UploadBinaryResponse>(async ({ getClient }, params) => {
-        const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
+        const targetResponse = await getClient().request<{ data: UploadBinaryTarget }>(
             'PATCH',
             `/plugins/${params.pluginId}/binary`,
             {
@@ -157,7 +143,7 @@ const endpoints = {
             }
         });
 
-        const commitResponse = await getClient().request<UploadBinaryCommitApiResponse>(
+        const commitResponse = await getClient().request<{ data: UploadBinaryResponse }>(
             'POST',
             `/plugins/${params.pluginId}/binary/commits`,
             {

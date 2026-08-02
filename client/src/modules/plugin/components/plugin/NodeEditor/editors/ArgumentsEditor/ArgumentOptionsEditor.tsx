@@ -1,6 +1,5 @@
 import { Box, Button, IconButton, EmptyState, Row, Stack, Text } from '@voltstack/bravais';
 import { Plus, Trash2 } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
 
 import type { IArgumentOption } from '@volt/contracts/modules/plugin/workflow';
 import type { KeyboardEvent } from 'react';
@@ -18,11 +17,9 @@ const LABEL_PLACEHOLDER = 'Human-readable label';
 interface OptionRowProps {
     option: IArgumentOption;
     index: number;
-    totalCount: number;
-    duplicateKey: boolean;
-    missingKey: boolean;
-    onKeyChange: (key: string) => void;
-    onLabelChange: (label: string) => void;
+    isLast: boolean;
+    errorTitle?: string;
+    onOptionChange: (patch: Partial<IArgumentOption>) => void;
     onRemove: () => void;
     onEnterOnLast: () => void;
 }
@@ -30,34 +27,27 @@ interface OptionRowProps {
 const OptionRow = ({
     option,
     index,
-    totalCount,
-    duplicateKey,
-    missingKey,
-    onKeyChange,
-    onLabelChange,
+    isLast,
+    errorTitle,
+    onOptionChange,
     onRemove,
     onEnterOnLast
 }: OptionRowProps) => {
     const handleLabelKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter' && index === totalCount - 1) {
+        if (event.key === 'Enter' && isLast) {
             event.preventDefault();
             onEnterOnLast();
         }
     };
 
-    const hasError = duplicateKey || missingKey;
-    const errorTitle = missingKey
-        ? 'Key is required'
-        : duplicateKey
-            ? 'Key must be unique'
-            : undefined;
+    const hasError = Boolean(errorTitle);
 
     return (
         <li className={`argument-options-row d-flex items-center gap-05${hasError ? ' has-error' : ''}`}>
             <input
                 type='text'
                 value={option.key}
-                onChange={(event) => onKeyChange(event.currentTarget.value)}
+                onChange={(event) => onOptionChange({ key: event.currentTarget.value })}
                 placeholder={KEY_PLACEHOLDER}
                 className={`argument-options-input argument-options-input--key font-mono font-size-2 flex-1${hasError ? ' has-error' : ''}`}
                 aria-label={`Option ${index + 1} key`}
@@ -69,7 +59,7 @@ const OptionRow = ({
             <input
                 type='text'
                 value={option.label}
-                onChange={(event) => onLabelChange(event.currentTarget.value)}
+                onChange={(event) => onOptionChange({ label: event.currentTarget.value })}
                 placeholder={LABEL_PLACEHOLDER}
                 className='argument-options-input argument-options-input--label font-size-2 flex-1'
                 aria-label={`Option ${index + 1} label`}
@@ -91,55 +81,46 @@ const OptionRow = ({
     );
 };
 
+const getDuplicateKeys = (options: IArgumentOption[]): Set<string> => {
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+
+    for (const option of options) {
+        const trimmedKey = option.key.trim();
+        if (!trimmedKey) continue;
+        if (seen.has(trimmedKey)) duplicates.add(trimmedKey);
+        seen.add(trimmedKey);
+    }
+
+    return duplicates;
+};
+
 const ArgumentOptionsEditor = ({
     options,
     onOptionsChange
 }: ArgumentOptionsEditorProps) => {
-    const duplicateKeys = useMemo(() => {
-        const seen = new Map<string, number>();
-        const duplicates = new Set<string>();
-        for (const option of options) {
-            const trimmedKey = option.key.trim();
-            if (!trimmedKey) continue;
-            const prior = seen.get(trimmedKey) ?? 0;
-            seen.set(trimmedKey, prior + 1);
-            if (prior >= 1) duplicates.add(trimmedKey);
-        }
-        return duplicates;
-    }, [options]);
+    const duplicateKeys = getDuplicateKeys(options);
 
-    const handleKeyChange = useCallback((index: number, rawKey: string) => {
-        const nextOptions = options.map((option, optionIndex) => {
+    const handleOptionChange = (index: number, patch: Partial<IArgumentOption>) => {
+        onOptionsChange(options.map((option, optionIndex) => {
             if (optionIndex !== index) return option;
             return {
                 ...option,
-                key: rawKey
+                ...patch
             };
-        });
-        onOptionsChange(nextOptions);
-    }, [options, onOptionsChange]);
+        }));
+    };
 
-    const handleLabelChange = useCallback((index: number, rawLabel: string) => {
-        const nextOptions = options.map((option, optionIndex) => {
-            if (optionIndex !== index) return option;
-            return {
-                ...option,
-                label: rawLabel
-            };
-        });
-        onOptionsChange(nextOptions);
-    }, [options, onOptionsChange]);
-
-    const handleAddOption = useCallback(() => {
+    const handleAddOption = () => {
         onOptionsChange([...options, {
             key: '',
             label: ''
         }]);
-    }, [options, onOptionsChange]);
+    };
 
-    const handleRemoveOption = useCallback((index: number) => {
+    const handleRemoveOption = (index: number) => {
         onOptionsChange(options.filter((_, optionIndex) => optionIndex !== index));
-    }, [options, onOptionsChange]);
+    };
 
     if (options.length === 0) {
         return (
@@ -175,16 +156,19 @@ const ArgumentOptionsEditor = ({
             <Stack as='ul' gap='025' role='list' className='argument-options-list'>
                 {options.map((option, index) => {
                     const trimmedKey = option.key.trim();
+
                     return (
                         <OptionRow
                             key={`option-${index}`}
                             option={option}
                             index={index}
-                            totalCount={options.length}
-                            duplicateKey={trimmedKey.length > 0 && duplicateKeys.has(trimmedKey)}
-                            missingKey={trimmedKey.length === 0}
-                            onKeyChange={(key) => handleKeyChange(index, key)}
-                            onLabelChange={(label) => handleLabelChange(index, label)}
+                            isLast={index === options.length - 1}
+                            errorTitle={!trimmedKey
+                                ? 'Key is required'
+                                : duplicateKeys.has(trimmedKey)
+                                    ? 'Key must be unique'
+                                    : undefined}
+                            onOptionChange={(patch) => handleOptionChange(index, patch)}
                             onRemove={() => handleRemoveOption(index)}
                             onEnterOnLast={handleAddOption}
                         />

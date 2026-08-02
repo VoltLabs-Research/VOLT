@@ -1,26 +1,10 @@
 import logger from '@shared/infrastructure/logger';
 import { networkInterfaces } from 'node:os';
-import { readPositiveIntegerEnv } from './env';
 
-export const readRelayPortRangeValue = readPositiveIntegerEnv;
+const readOptionalRelayHostValue = (name: string): string | null => process.env[name]?.trim() || null;
 
-export const readRelayHostValue = (name: string, fallback: string): string => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    return rawValue;
-};
-
-const readOptionalRelayHostValue = (name: string): string | null => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return null;
-    }
-
-    return rawValue;
-};
+export const readRelayHostValue = (name: string, fallback: string): string =>
+    readOptionalRelayHostValue(name) ?? fallback;
 
 const isWildcardRelayHost = (value: string): boolean => {
     return value === '0.0.0.0' || value === '::' || value === '[::]';

@@ -95,11 +95,9 @@ export const createFolderedTitleColumn = <TRow,>({
     showTitleAttribute = false
 }: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {
     const render: NonNullable<ColumnConfig<TRow>['render']> = (value, row) => {
-        let title = resolveTitle(row);
-
-        if (typeof value === 'string' && value.trim().length > 0) {
-            title = value;
-        }
+        const resolvedTitle = typeof value === 'string' && value.trim().length > 0
+            ? value
+            : resolveTitle(row);
 
         return (
             <Row gap='075' className={wrapperClassName} aria-label={getAriaLabel?.(row)}>
@@ -109,8 +107,8 @@ export const createFolderedTitleColumn = <TRow,>({
                     </Box>
                 )}
                 <Box overflow='hidden' minW='0'>
-                    <span className={titleClassName} title={showTitleAttribute ? title : undefined}>
-                        {title}
+                    <span className={titleClassName} title={showTitleAttribute ? resolvedTitle : undefined}>
+                        {resolvedTitle}
                     </span>
                 </Box>
             </Row>

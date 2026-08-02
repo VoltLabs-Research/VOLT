@@ -8,12 +8,8 @@ interface ListingRelevantExposure {
 export const getListingRelevantExposures = (
     exposures: IExposureComputed[] | undefined | null
 ): ListingRelevantExposure[] => {
-    if (!Array.isArray(exposures) || exposures.length === 0) {
-        return [];
-    }
-
-    return exposures
-        .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && exposure?.hasListing !== false)
+    return (exposures ?? [])
+        .filter((exposure) => exposure.hasListing !== false)
         .map((exposure) => ({
             exposureId: exposure._id,
             name: exposure.name

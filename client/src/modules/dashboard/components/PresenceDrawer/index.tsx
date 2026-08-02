@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 interface TeamPresenceMember {
     user: User;
     memberId: string;
+    isOnline: boolean;
 }
 
 const PresenceDrawer = () => {
@@ -26,35 +27,27 @@ const PresenceDrawer = () => {
     const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
     const hasPresenceSnapshot = useTeamPresenceStore((s) => s.hasPresenceSnapshot);
 
-    const { onlineMembers, offlineMembers } = useMemo(() => {
+    const { sortedMembers, onlineCount } = useMemo(() => {
         const online: TeamPresenceMember[] = [];
         const offline: TeamPresenceMember[] = [];
 
         for (const member of members) {
-            const user = member.user;
-            if (!user._id) continue;
+            const isOnline = resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot);
 
-            if (resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot)) {
-                online.push({
-                    user,
-                    memberId: member._id
-                });
-            } else {
-                offline.push({
-                    user,
-                    memberId: member._id
-                });
-            }
+            (isOnline ? online : offline).push({
+                user: member.user,
+                memberId: member._id,
+                isOnline
+            });
         }
 
         return {
-            onlineMembers: online,
-            offlineMembers: offline
+            sortedMembers: [...online, ...offline],
+            onlineCount: online.length
         };
     }, [members, onlineUserIds, hasPresenceSnapshot]);
 
     const totalCount = members.length;
-    const onlineCount = onlineMembers.length;
 
     const goToTeam = () => {
         closeModal(DASHBOARD_DRAWER_IDS.presence);
@@ -92,7 +85,6 @@ const PresenceDrawer = () => {
         </Row>
     );
 
-    const allSorted = [...onlineMembers, ...offlineMembers];
     const emptyState = (
         <EmptyState
             className='dashboard-presence-empty flex-1'
@@ -139,14 +131,9 @@ const PresenceDrawer = () => {
                     empty={emptyState}
                 >
                     <Box className='dashboard-presence-grid'>
-                        {allSorted.map(({ user, memberId }) => {
-                            const isOnline = resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot);
+                        {sortedMembers.map(({ user, memberId, isOnline }) => {
                             const title = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
                             const displayName = user.firstName ?? user.email?.split('@')[0] ?? '?';
-                            let nameClassName = 'font-size-1 text-truncate dashboard-presence-name color-muted';
-                            if (isOnline) {
-                                nameClassName = 'font-size-1 text-truncate dashboard-presence-name color-primary';
-                            }
 
                             return (
                                 <Stack key={memberId} align='center' gap='025' className='dashboard-presence-member' title={title}>
@@ -156,7 +143,7 @@ const PresenceDrawer = () => {
                                         showStatus
                                         isOnline={isOnline}
                                     />
-                                    <span className={nameClassName}>
+                                    <span className={`font-size-1 text-truncate dashboard-presence-name ${isOnline ? 'color-primary' : 'color-muted'}`}>
                                         {displayName}
                                     </span>
                                 </Stack>

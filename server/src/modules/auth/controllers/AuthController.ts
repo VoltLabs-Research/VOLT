@@ -7,6 +7,7 @@ import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-li
 import AuthService from '@modules/auth/services/AuthService';
 import { OAuthProvider } from '@modules/auth/contracts/user';
 import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/controllers/oauth-route-helpers';
+import { signInBody, signUpBody, updatePasswordBody } from '@modules/auth/controllers/credential-body';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import type {
     SignInInput,
@@ -59,7 +60,7 @@ export default class AuthController extends Controller {
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
     signIn(
-        @Body() body: SignInInput,
+        @Body(signInBody) body: SignInInput,
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ){
@@ -85,7 +86,7 @@ export default class AuthController extends Controller {
     @Route(authRoutes.signUp)
     @Status(201)
     signUp(
-        @Body() body: SignUpInput,
+        @Body(signUpBody) body: SignUpInput,
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ){
@@ -121,7 +122,7 @@ export default class AuthController extends Controller {
     @Status(200)
     updatePassword(
         @CurrentUser() userId: string,
-        @Body() body: UpdatePasswordInput,
+        @Body(updatePasswordBody) body: UpdatePasswordInput,
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ) {

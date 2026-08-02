@@ -1,8 +1,4 @@
-import type { SignUpInput, UpdateAccountInput } from '@volt/contracts/modules/auth/http';
-
-export interface SignUpFormInput extends SignUpInput{
-    passwordConfirm: string;
-}
+import type { UpdateAccountInput } from '@volt/contracts/modules/auth/http';
 
 export interface CheckEmailParams{
     email: string;

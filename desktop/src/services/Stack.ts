@@ -1,42 +1,34 @@
-import ProcessRunner from '@/services/ProcessRunner';
+import { run } from '@/services/ProcessRunner';
 import bus from '@/services/EventBus';
 
-export interface StackProps{
+export interface ComposeOptions{
     composeFile: string;
     env?: Record<string, string>;
     dockerPath?: string;
     augmentedPath?: string;
 };
 
-export default class Stack{
-    #runner = new ProcessRunner();
-
-    constructor(private readonly props: StackProps){}
-
-    #runCompose(args: string[], profiles: string[] = []){
-        const profileArgs = profiles.flatMap((p) => ['--profile', p]);
-        const env = this.props.augmentedPath ? {
-            ...this.props.env,
-            PATH: this.props.augmentedPath
-        } : this.props.env;
-        return this.#runner.run(this.props.dockerPath ?? 'docker', ['compose', '-f', this.props.composeFile, ...profileArgs, ...args], {
-            env,
-            onStdout: (line) => bus.emit('deploy:log', {
-                stream: 'stdout',
-                line
-            }),
-            onStderr: (line) => bus.emit('deploy:log', {
-                stream: 'stderr',
-                line
-            })
-        });
-    }
-
-    async up(profiles: string[] = [], build = false){
-        await this.#runCompose(['up', '-d', '--remove-orphans', ...(build ? ['--build'] : [])], profiles);
-    }
-
-    async down(profiles: string[] = [], volumes = false){
-        await this.#runCompose(['down', ...(volumes ? ['-v'] : [])], profiles);
-    }
+const compose = (options: ComposeOptions, args: string[], profiles: string[]) => {
+    const profileArgs = profiles.flatMap((p) => ['--profile', p]);
+    const env = options.augmentedPath ? {
+        ...options.env,
+        PATH: options.augmentedPath
+    } : options.env;
+    return run(options.dockerPath ?? 'docker', ['compose', '-f', options.composeFile, ...profileArgs, ...args], {
+        env,
+        onStdout: (line) => bus.emit('deploy:log', {
+            stream: 'stdout',
+            line
+        }),
+        onStderr: (line) => bus.emit('deploy:log', {
+            stream: 'stderr',
+            line
+        })
+    });
 };
+
+export const composeUp = (options: ComposeOptions, profiles: string[] = [], build = false) =>
+    compose(options, ['up', '-d', '--remove-orphans', ...(build ? ['--build'] : [])], profiles);
+
+export const composeDown = (options: ComposeOptions, profiles: string[] = [], volumes = false) =>
+    compose(options, ['down', ...(volumes ? ['-v'] : [])], profiles);

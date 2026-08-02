@@ -11,11 +11,9 @@ import {
 import type { GetRasterMetadataParams, TriggerRasterizationParams } from '@/modules/raster/api/service';
 import type { TriggerRasterizationResponse } from '@volt/contracts/modules/raster/domain';
 
-const BASE_KEY = 'raster';
-
 const KEYS = buildKeys<{
     metadata: GetRasterMetadataParams;
-}>(BASE_KEY);
+}>('raster');
 
 const markRasterizationRequestPending = (trajectoryId: string): void => {
     const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
@@ -39,23 +37,16 @@ const clearRasterizationRequestPending = (trajectoryId: string): void => {
     useTeamJobsStore.getState().setRequestedRasterTrajectoryIds(nextIds);
 };
 
-const getRasterMetadataWithAccess = (params: GetRasterMetadataParams) => {
-    return currentCanvasDataAccess().getRasterMetadata(params);
-};
-const rasterMetadataKey = (params: GetRasterMetadataParams) => currentAccessKey(KEYS.metadata(params));
-export const rasterMetadataQuery = createQuery(rasterMetadataKey, getRasterMetadataWithAccess);
+export const rasterMetadataQuery = createQuery(
+    (params: GetRasterMetadataParams) => currentAccessKey(KEYS.metadata(params)),
+    (params: GetRasterMetadataParams) => currentCanvasDataAccess().getRasterMetadata(params)
+);
 
 export const useTriggerRasterizationMutation = () => {
     return useMutation<TriggerRasterizationResponse, Error, TriggerRasterizationParams>({
         mutationFn: async (variables) => {
             markRasterizationRequestPending(variables.trajectoryId);
-
-            try {
-                return await rasterService.triggerRasterization(variables);
-            } catch (error) {
-                clearRasterizationRequestPending(variables.trajectoryId);
-                throw error;
-            }
+            return rasterService.triggerRasterization(variables);
         },
         onSuccess: async (_data, variables) => {
             clearRasterizationRequestPending(variables.trajectoryId);

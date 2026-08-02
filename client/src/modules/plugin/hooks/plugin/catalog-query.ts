@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import pluginService from '@/modules/plugin/api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
-import type { UseQueryOptions } from '@tanstack/react-query';
+import type { QueryOptions } from '@/shared/query';
 
 export const PLUGIN_CATALOG_ALL_QUERY_KEY = ['plugins', 'all'] as const;
 
@@ -24,9 +24,7 @@ const fetchAllPlugins = async (): Promise<Plugin[]> => {
     return allPlugins;
 };
 
-type PluginCatalogQueryOptions = Omit<UseQueryOptions<Plugin[], Error, Plugin[]>, 'queryKey' | 'queryFn'>;
-
-export const usePluginCatalogQuery = (options?: PluginCatalogQueryOptions) => {
+export const usePluginCatalogQuery = (options?: QueryOptions<Plugin[]>) => {
     return useQuery<Plugin[], Error, Plugin[]>({
         queryKey: PLUGIN_CATALOG_ALL_QUERY_KEY,
         queryFn: fetchAllPlugins,

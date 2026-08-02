@@ -16,8 +16,7 @@ const PreloadingOverlay = ({
 }: PreloadingOverlayProps) => {
     if (!active) return null;
 
-    
-    const hasProgress = typeof progress === 'number';
+    const hasProgress = progress !== undefined;
 
     return (
         <Row justify='center' align='center' position='absolute' inset='0' className="canvas-preload-overlay">

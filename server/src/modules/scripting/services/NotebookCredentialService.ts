@@ -1,8 +1,6 @@
-import TeamMember from '@modules/team/models/TeamMember';
+import { requireTeamMembership } from '@modules/team/services/team/team-membership-guard';
 import SecretKeyService from '@modules/team/services/SecretKeyService';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
 import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
 import logger from '@shared/infrastructure/logger';
 
@@ -57,18 +55,7 @@ class NotebookCredentialService {
     }
 
     private async resolveLauncherRoleId(teamId: string, userId: string): Promise<string> {
-        const member = await TeamMember.findOneBy({
-            user: userId,
-            team: teamId
-        });
-
-        if (!member) {
-            throw ApplicationError.notFound(
-                ErrorCodes.TEAM_MEMBER_NOT_FOUND,
-                'Team membership not found for notebook credential'
-            );
-        }
-
+        const member = await requireTeamMembership(teamId, userId);
         return member.role;
     }
 }

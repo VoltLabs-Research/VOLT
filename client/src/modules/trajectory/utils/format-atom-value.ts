@@ -11,7 +11,7 @@ export default function formatAtomValue(value: unknown, decimals: number): strin
         return '-';
     }
 
-    if (Array.isArray(value) || typeof value === 'object') {
+    if (typeof value === 'object') {
         try {
             return JSON.stringify(value);
         } catch {

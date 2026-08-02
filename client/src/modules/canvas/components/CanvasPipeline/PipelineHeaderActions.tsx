@@ -12,7 +12,6 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import PipelineRunControl from './PipelineRunControl';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
-import { useCallback } from 'react';
 import { Filter, FlaskConical, Palette, Play, Plus, Scissors, Spline } from 'lucide-react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -33,12 +32,11 @@ const PipelineHeaderActions = ({
     useEnsurePluginCatalogLoaded();
     const { modifiers } = usePluginSelectors();
     const addStage = useCanvasPipelineStore((s) => s.addStage);
-    const enabledOrderedCount = useStages(trajectoryId).filter(isOrderedPipelineStage).length;
+    const orderedStageCount = useStages(trajectoryId).filter(isOrderedPipelineStage).length;
 
-    const handleAdd = useCallback((type: StageType, config: StageConfig) => {
-        if (!trajectoryId) return;
+    const handleAdd = (type: StageType, config: StageConfig) => {
         addStage(type, config, trajectoryId);
-    }, [addStage, trajectoryId]);
+    };
 
     return (
         <Row gap='025' onClick={(event) => event.stopPropagation()}>
@@ -55,7 +53,7 @@ const PipelineHeaderActions = ({
                         shape='rounded'
                         iconOnly
                         leftIcon={<Play size={13} />}
-                        disabled={!canMutateCanvas || !trajectoryId || enabledOrderedCount === 0}
+                        disabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
                         aria-label='Run pipeline'
                     />
                 }

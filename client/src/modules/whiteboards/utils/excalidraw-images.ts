@@ -14,6 +14,19 @@ import type { ImageDimensions } from './whiteboard-image-files';
 
 const IMAGE_INSERTION_STACK_OFFSET = 40;
 
+const EXCALIDRAW_IMAGE_MIME_TYPES = new Set<PreparedWhiteboardImageAsset['mimeType']>([
+    'image/svg+xml',
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/x-icon',
+    'image/avif',
+    'image/jfif',
+    'application/octet-stream'
+]);
+
 interface WhiteboardImageInsertionPoint {
     clientX: number;
     clientY: number;
@@ -28,6 +41,38 @@ interface InsertWhiteboardImagesOptions {
     files: File[];
     prepareFile: (file: File) => Promise<PreparedWhiteboardImageAsset | null>;
     insertionPoint?: WhiteboardImageInsertionPoint | null;
+};
+
+const blobToDataURL = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+
+/** Excalidraw only accepts a closed set of mime types; anything else is read as a PNG. */
+const resolveExcalidrawImageMimeType = (mimeType: string): PreparedWhiteboardImageAsset['mimeType'] => {
+    if (EXCALIDRAW_IMAGE_MIME_TYPES.has(mimeType as PreparedWhiteboardImageAsset['mimeType'])) {
+        return mimeType as PreparedWhiteboardImageAsset['mimeType'];
+    }
+
+    return 'image/png';
+};
+
+export const createWhiteboardImageAsset = async (
+    assetId: string,
+    source: Blob
+): Promise<PreparedWhiteboardImageAsset> => {
+    const created = Date.now();
+
+    return {
+        id: assetId as FileId,
+        mimeType: resolveExcalidrawImageMimeType(source.type),
+        dataURL: await blobToDataURL(source) as PreparedWhiteboardImageAsset['dataURL'],
+        created,
+        lastRetrieved: created
+    };
 };
 
 const getViewportCenterInsertionPoint = (api: ExcalidrawImperativeAPI): WhiteboardImageInsertionPoint => {

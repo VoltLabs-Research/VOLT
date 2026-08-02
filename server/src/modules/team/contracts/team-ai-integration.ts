@@ -1,64 +1,18 @@
 import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import type { EnabledModel } from '@volt/contracts/modules/team/domain';
+
 export type TeamAIProvider = AIProvider;
 
-interface TeamAIIntegrationCreateInput{
-    teamId: string;
-    provider: TeamAIProvider;
-    encryptedApiKey: string;
-    isEnabled: boolean;
-    defaultModel: string;
-    enabledModels: EnabledModel[];
-    metadata?: Record<string, unknown>;
-    userId: string;
-}
+export const dedupeEnabledModels = (models: EnabledModel[] = []): EnabledModel[] => {
+    const byId = new Map<string, EnabledModel>();
 
-interface TeamAIIntegrationCreatePayload{
-    team: string;
-    provider: TeamAIProvider;
-    encryptedApiKey: string;
-    isEnabled: boolean;
-    defaultModel: string;
-    enabledModels: EnabledModel[];
-    metadata: Record<string, unknown>;
-    createdBy: string;
-}
+    for(const { id, name } of models){
+        const model = {
+            id: id.trim(),
+            name: name.trim()
+        };
+        if(model.id.length > 0 && model.name.length > 0) byId.set(model.id, model);
+    }
 
-interface TeamAIIntegrationUpdateInput{
-    encryptedApiKey: string;
-    isEnabled: boolean;
-    defaultModel: string;
-    enabledModels: EnabledModel[];
-    metadata?: Record<string, unknown>;
-}
-
-interface TeamAIIntegrationUpdatePayload{
-    encryptedApiKey: string;
-    isEnabled: boolean;
-    defaultModel: string;
-    enabledModels: EnabledModel[];
-    metadata: Record<string, unknown>;
-}
-
-const deduplicateEnabledModels = (models: EnabledModel[]): EnabledModel[] => (
-    [...new Map(models.map((model) => [model.id, model])).values()]
-);
-
-export const buildTeamAIIntegrationCreatePayload = (input: TeamAIIntegrationCreateInput): TeamAIIntegrationCreatePayload => ({
-    team: input.teamId,
-    provider: input.provider,
-    encryptedApiKey: input.encryptedApiKey,
-    isEnabled: input.isEnabled,
-    defaultModel: input.defaultModel,
-    enabledModels: deduplicateEnabledModels(input.enabledModels),
-    metadata: input.metadata ?? {},
-    createdBy: input.userId
-});
-
-export const buildTeamAIIntegrationUpdatePayload = (input: TeamAIIntegrationUpdateInput): TeamAIIntegrationUpdatePayload => ({
-    encryptedApiKey: input.encryptedApiKey,
-    isEnabled: input.isEnabled,
-    defaultModel: input.defaultModel,
-    enabledModels: deduplicateEnabledModels(input.enabledModels),
-    metadata: input.metadata ?? {}
-});
+    return [...byId.values()];
+};

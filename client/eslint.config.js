@@ -36,10 +36,14 @@ export default tseslint.config(
                 ignoreRestSiblings: true,
                 varsIgnorePattern: '^_'
             }],
-            'no-empty': 'warn',
-            'no-unsafe-finally': 'warn',
+            // An empty block is allowed only with a comment explaining the
+            // deliberate swallow, so an accidental one fails the build.
+            'no-empty': 'error',
+            'no-unsafe-finally': 'error',
             'prefer-const': 'warn',
-            'react-hooks/rules-of-hooks': 'warn',
+            // A hook called out of order corrupts React's internal state: this is
+            // never a stylistic warning.
+            'react-hooks/rules-of-hooks': 'error',
             'react-refresh/only-export-components': 'off'
         }
     }

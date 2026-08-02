@@ -11,7 +11,7 @@ import {
     isTeamClusterRoleTransitionPending,
     TEAM_CLUSTER_ROLE_OPTIONS
 } from '@/modules/cluster/utils/team-cluster-role';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
 
@@ -38,17 +38,11 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
     const isTransitionPending = teamCluster ? isTeamClusterRoleTransitionPending(teamCluster) : false;
     const drainingSummary = teamCluster ? describeTeamClusterDraining(teamCluster) : null;
 
-    const saveMessage = useMemo(() => {
-        if (!teamCluster) {
-            return 'The desired role is saved in Volt and applied when the daemon next connects.';
-        }
-
-        if (isLiveCluster) {
-            return 'Volt saves the desired role and asks the daemon to converge live with controlled drain when needed.';
-        }
-
-        return 'Volt saves the desired role now and applies it the next time the daemon connects.';
-    }, [isLiveCluster, teamCluster]);
+    const saveMessage = !teamCluster
+        ? 'The desired role is saved in Volt and applied when the daemon next connects.'
+        : isLiveCluster
+            ? 'Volt saves the desired role and asks the daemon to converge live with controlled drain when needed.'
+            : 'Volt saves the desired role now and applies it the next time the daemon connects.';
 
     const handleClose = () => {
         setSelectedRole(teamCluster?.roleConfig.desiredRole ?? 'cluster');

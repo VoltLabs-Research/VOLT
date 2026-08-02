@@ -1,32 +1,24 @@
-import TimelineHeader, { CORE_TABS, TimelineTab } from '../TimelineHeader';
-import AnalysisLogPanel from '../AnalysisLogPanel';
-import { useEditorStore } from '@/modules/canvas/store/editor';
-import SimulationCellView from '../SimulationCellView';
+import TimelineHeader, { TimelineTab } from '../TimelineHeader';
 import TimelineRuler from '../TimelineRuler';
+import TimelineTabContent from './TimelineTabContent';
+import useTimelineScrubber from './use-timeline-scrubber';
+import useTimelineTabsState from './use-timeline-tabs-state';
 import useTimelineJobActivity from '../../hooks/use-timeline-job-activity';
-import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
-import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import useTip from '@/shared/tips/use-tip';
 
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
-
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
-import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { Box, Stack } from '@voltstack/bravais';
-import type { TimelineTabOption } from '../TimelineHeader';
+import type { CanvasExposureDownloadParams } from '../canvas-panel-props';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 import './Timeline.css';
 
-const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
-
-interface RulerPointerGesture {
-    pointerId: number;
-}
+const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
+const PLACEHOLDER_TICK_COUNT = 50;
 
 interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
@@ -37,13 +29,7 @@ interface TimelineProps {
     selectedAnalysisTimesteps?: number[];
     analysisId: string | undefined;
     disableContextualTips?: boolean;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
+    onDownloadExposureListing?: (params: CanvasExposureDownloadParams) => void;
 }
 
 const Timeline = ({
@@ -61,105 +47,13 @@ const Timeline = ({
         enabled: !disableContextualTips
     });
 
-    const [activeTab, setActiveTab] = useState('timeline');
-    const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
-    const selectedTeamId = useSelectedTeamId();
-    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({
+    const { activeTab, tabs, handleTabChange, activeExposureId, pluginId } = useTimelineTabsState({
         trajectory,
         analysisId
     });
     const { toneByTimestep, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id);
 
-    const exposureTabs = useMemo<TimelineTabOption[]>(() => {
-        return listingExposures.map((exposure) => ({
-            id: `exposure:${exposure.exposureId}`,
-            label: exposure.name,
-            exposureId: exposure.exposureId
-        }));
-    }, [listingExposures]);
-
-    const tabs = useMemo<TimelineTabOption[]>(() => {
-        const nextTabs = [...CORE_TABS];
-
-        if (analysisId) {
-            nextTabs.push({
-                id: TimelineTab.Log,
-                label: 'Log'
-            });
-        }
-
-        return [...nextTabs, ...exposureTabs];
-    }, [analysisId, exposureTabs]);
-
-    const hasExposure = useCallback((exposureId?: string) => {
-        if (!exposureId) return false;
-        return listingExposures.some((item) => item.exposureId === exposureId);
-    }, [listingExposures]);
-
-    const handleTabChange = useCallback((tab: string) => {
-        setActiveTab(tab);
-        if (tab.startsWith('exposure:')) {
-            setTimelineExposureId(tab.replace('exposure:', ''), { replace: true });
-        } else if (timelineExposureId) {
-            setTimelineExposureId(undefined, { replace: true });
-        }
-    }, [setTimelineExposureId, timelineExposureId]);
-
-    useEffect(() => {
-        const handleTimelineTourTabSelection = () => {
-            handleTabChange(TimelineTab.Timeline);
-        };
-
-        window.addEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, handleTimelineTourTabSelection);
-        return () => {
-            window.removeEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, handleTimelineTourTabSelection);
-        };
-    }, [handleTabChange]);
-
-    useEffect(() => {
-        if (timelineExposureId && hasExposure(timelineExposureId)) {
-            setActiveTab(`exposure:${timelineExposureId}`);
-            return;
-        }
-
-        if (timelineExposureId && isPluginReady && !hasExposure(timelineExposureId)) {
-            setTimelineExposureId(undefined, { replace: true });
-            if (activeTab.startsWith('exposure:')) {
-                setActiveTab('timeline');
-            }
-            return;
-        }
-
-        if (activeTab.startsWith('exposure:')) {
-            const exposureId = activeTab.replace('exposure:', '');
-            if (!hasExposure(exposureId)) {
-                setActiveTab('timeline');
-                if (timelineExposureId) {
-                    setTimelineExposureId(undefined, { replace: true });
-                }
-            }
-        }
-    }, [activeTab, hasExposure, isPluginReady, timelineExposureId, setTimelineExposureId]);
-
-    useEffect(() => {
-        if (!analysisId && timelineExposureId) {
-            setTimelineExposureId(undefined, { replace: true });
-            setActiveTab('timeline');
-        }
-
-        if (!analysisId && activeTab === TimelineTab.Log) {
-            setActiveTab(TimelineTab.Timeline);
-        }
-    }, [activeTab, analysisId, timelineExposureId, setTimelineExposureId]);
-
-    const activeExposureId = useMemo(() => {
-        return activeTab.startsWith('exposure:')
-            ? activeTab.replace('exposure:', '')
-            : undefined;
-    }, [activeTab]);
-
     const {
-        setCurrentTimestep,
         playSpeed,
         setPlaySpeed,
         rangeStart,
@@ -167,7 +61,6 @@ const Timeline = ({
         setRangeStart,
         setRangeEnd
     } = useEditorStore(useShallow((state) => ({
-        setCurrentTimestep: state.setCurrentTimestep,
         playSpeed: state.playSpeed,
         setPlaySpeed: state.setPlaySpeed,
         rangeStart: state.rangeStart,
@@ -182,60 +75,49 @@ const Timeline = ({
             setRangeEnd(undefined);
             return;
         }
-        const first = availableTimesteps[0];
-        const last = availableTimesteps[availableTimesteps.length - 1];
         if (rangeStart === undefined || !availableTimesteps.includes(rangeStart)) {
-            setRangeStart(first);
+            setRangeStart(availableTimesteps[0]);
         }
         if (rangeEnd === undefined || !availableTimesteps.includes(rangeEnd)) {
-            setRangeEnd(last);
+            setRangeEnd(availableTimesteps[availableTimesteps.length - 1]);
         }
     }, [availableTimesteps, rangeStart, rangeEnd, setRangeStart, setRangeEnd]);
 
     const rangedTimesteps = useMemo(() => {
         return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
     }, [availableTimesteps, rangeStart, rangeEnd]);
-    const safeCurrentIndex = rangedTimesteps.indexOf(currentTimestep!);
 
-    const scopedTimesteps = useMemo(() => {
-        return selectedAnalysisTimesteps ? new Set(selectedAnalysisTimesteps) : undefined;
-    }, [selectedAnalysisTimesteps]);
-
+    /** Memoised because `TimelineRuler` renders one memoised element per tick. */
     const ticks = useMemo(() => {
         if (rangedTimesteps.length === 0) {
-            const tickCount = 50;
-            return Array.from({ length: tickCount }, (_, i) => ({
-                frame: i,
-                major: i % 10 === 0
+            return Array.from({ length: PLACEHOLDER_TICK_COUNT }, (_, index) => ({
+                frame: index,
+                major: index % 10 === 0
             }));
         }
+
+        const scopedTimesteps = selectedAnalysisTimesteps ? new Set(selectedAnalysisTimesteps) : undefined;
+
         return rangedTimesteps.map((frame) => ({
             frame,
             major: true,
             tone: toneByTimestep.get(frame),
-            
             dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false
         }));
-    }, [rangedTimesteps, toneByTimestep, scopedTimesteps]);
+    }, [rangedTimesteps, toneByTimestep, selectedAnalysisTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];
     const currentFrame = currentTimestep ?? startFrame;
-    const analysisFrameStatus = analysisId && typeof currentFrame === 'number'
+    const analysisFrameStatus = analysisId
         ? getAnalysisFrameStatus(analysisId, currentFrame)
         : undefined;
-    const isLiveLogFrame = analysisFrameStatus === 'running';
 
-    const rulerRef = useRef<HTMLDivElement>(null);
-    const tickElementsRef = useRef<HTMLDivElement[]>([]);
-    const tickCentersRef = useRef<number[]>([]);
-    const [playheadLeft, setPlayheadLeft] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const isDraggingRef = useRef(false);
-    const pendingScrubRafRef = useRef<number | null>(null);
-    const pendingScrubClientXRef = useRef<number | null>(null);
-    const rulerPointerGestureRef = useRef<RulerPointerGesture | null>(null);
-    const ignoreNextRulerClickRef = useRef(false);
+    const { rulerRef, playheadLeft, rulerHandlers } = useTimelineScrubber({
+        rangedTimesteps,
+        currentTimestep,
+        currentFrame
+    });
 
     const [zoomPercent, setZoomPercent] = useState(100);
 
@@ -244,14 +126,15 @@ const Timeline = ({
         let unsubscribe: (() => void) | undefined;
         let retryTimeoutId: number | undefined;
 
+        // The scene mounts independently of the timeline, so poll until its ref is wired.
         const trySubscribe = () => {
             if (cancelled) return;
             const scene = sceneRef.current;
-            if (scene?.subscribeZoom) {
-                unsubscribe = scene.subscribeZoom((nextZoom) => setZoomPercent(nextZoom));
+            if (scene) {
+                unsubscribe = scene.subscribeZoom(setZoomPercent);
                 return;
             }
-            retryTimeoutId = window.setTimeout(trySubscribe, 120);
+            retryTimeoutId = window.setTimeout(trySubscribe, SCENE_ZOOM_SUBSCRIBE_RETRY_MS);
         };
 
         trySubscribe();
@@ -262,310 +145,6 @@ const Timeline = ({
             unsubscribe?.();
         };
     }, [sceneRef]);
-
-    const handleZoomPreset = useCallback((preset: number) => {
-        sceneRef.current?.zoomTo?.(preset);
-    }, [sceneRef]);
-
-    const scrollToTick = useCallback((tickEl: HTMLDivElement, smooth: boolean) => {
-        const ruler = rulerRef.current;
-        if (!ruler) return;
-        const tickCenter = tickEl.offsetLeft + tickEl.offsetWidth / 2;
-        const rulerWidth = ruler.clientWidth;
-        const targetScroll = tickCenter - rulerWidth / 2;
-        ruler.scrollTo({
-            left: targetScroll,
-            behavior: smooth ? 'smooth' : 'auto'
-        });
-    }, []);
-
-    const collectTickElements = useCallback((): HTMLDivElement[] => {
-        const ruler = rulerRef.current;
-        if (!ruler) {
-            tickElementsRef.current = [];
-            tickCentersRef.current = [];
-            return [];
-        }
-
-        const tickElements = Array.from(ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick'));
-        tickElementsRef.current = tickElements;
-        tickCentersRef.current = tickElements.map((el) => el.offsetLeft + el.offsetWidth / 2);
-        return tickElements;
-    }, []);
-
-    useEffect(() => {
-        collectTickElements();
-    }, [collectTickElements, ticks]);
-
-    useEffect(() => {
-        const ruler = rulerRef.current;
-        if (!ruler) return;
-        const resizeObserver = new ResizeObserver(() => collectTickElements());
-        resizeObserver.observe(ruler);
-        return () => resizeObserver.disconnect();
-    }, [collectTickElements]);
-
-    const updatePlayheadPosition = useCallback(() => {
-        const ruler = rulerRef.current;
-        if (!ruler || rangedTimesteps.length === 0) return;
-        if (tickElementsRef.current.length === 0) {
-            collectTickElements();
-        }
-        const tickEl = tickElementsRef.current[safeCurrentIndex];
-        if (!tickEl) return;
-        const tickCenter = tickCentersRef.current[safeCurrentIndex] ?? (tickEl.offsetLeft + tickEl.offsetWidth / 2);
-        const scrollOffset = ruler.scrollLeft;
-        setPlayheadLeft(tickCenter - scrollOffset);
-
-        const rulerWidth = ruler.clientWidth;
-        const visibleLeft = scrollOffset;
-        const visibleRight = scrollOffset + rulerWidth;
-        const margin = 40;
-        if (tickCenter < visibleLeft + margin || tickCenter > visibleRight - margin) {
-            scrollToTick(tickEl, !isDraggingRef.current);
-        }
-    }, [collectTickElements, safeCurrentIndex, rangedTimesteps.length, scrollToTick]);
-
-    useEffect(() => {
-        updatePlayheadPosition();
-        const ruler = rulerRef.current;
-        if (!ruler) return;
-        const handleScroll = () => updatePlayheadPosition();
-        ruler.addEventListener('scroll', handleScroll);
-        const resizeObserver = new ResizeObserver(() => updatePlayheadPosition());
-        resizeObserver.observe(ruler);
-        return () => {
-            ruler.removeEventListener('scroll', handleScroll);
-            resizeObserver.disconnect();
-        };
-    }, [updatePlayheadPosition]);
-
-    const applyScrubAtClientX = useCallback((clientX: number) => {
-        const ruler = rulerRef.current;
-        if (!ruler || rangedTimesteps.length === 0) return;
-        if (tickCentersRef.current.length === 0) {
-            collectTickElements();
-        }
-        const centers = tickCentersRef.current;
-        if (centers.length === 0) return;
-
-        const rulerRect = ruler.getBoundingClientRect();
-        const localX = clientX - rulerRect.left + ruler.scrollLeft;
-
-        let lo = 0;
-        let hi = centers.length - 1;
-        while (lo < hi) {
-            const mid = (lo + hi) >> 1;
-            if (centers[mid] < localX) lo = mid + 1;
-            else hi = mid;
-        }
-
-        let nearestIndex = lo;
-        if (nearestIndex > 0 && Math.abs(centers[nearestIndex - 1] - localX) <= Math.abs(centers[nearestIndex] - localX)) {
-            nearestIndex -= 1;
-        }
-
-        if (nearestIndex < rangedTimesteps.length) {
-            setCurrentTimestep(rangedTimesteps[nearestIndex]);
-        }
-    }, [collectTickElements, rangedTimesteps, setCurrentTimestep]);
-
-    const scheduleScrub = useCallback((clientX: number) => {
-        pendingScrubClientXRef.current = clientX;
-        if (pendingScrubRafRef.current !== null) return;
-        pendingScrubRafRef.current = window.requestAnimationFrame(() => {
-            pendingScrubRafRef.current = null;
-            const pending = pendingScrubClientXRef.current;
-            pendingScrubClientXRef.current = null;
-            if (pending !== null) applyScrubAtClientX(pending);
-        });
-    }, [applyScrubAtClientX]);
-
-    useEffect(() => {
-        return () => {
-            if (pendingScrubRafRef.current !== null) {
-                window.cancelAnimationFrame(pendingScrubRafRef.current);
-                pendingScrubRafRef.current = null;
-            }
-        };
-    }, []);
-
-    const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-        if (ignoreNextRulerClickRef.current) {
-            ignoreNextRulerClickRef.current = false;
-            event.preventDefault();
-            return;
-        }
-
-        applyScrubAtClientX(event.clientX);
-    }, [applyScrubAtClientX]);
-
-    const handleRulerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        if (event.button !== 0) return;
-
-        if (event.pointerType === 'touch') {
-            rulerPointerGestureRef.current = {
-                pointerId: event.pointerId
-            };
-            setIsDragging(true);
-            isDraggingRef.current = true;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            applyScrubAtClientX(event.clientX);
-            event.preventDefault();
-            return;
-        }
-
-        rulerPointerGestureRef.current = null;
-        setIsDragging(true);
-        isDraggingRef.current = true;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        applyScrubAtClientX(event.clientX);
-    }, [applyScrubAtClientX]);
-
-    const handleRulerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        const gesture = rulerPointerGestureRef.current;
-        if (gesture?.pointerId === event.pointerId) {
-            event.preventDefault();
-            scheduleScrub(event.clientX);
-            return;
-        }
-
-        if (!isDragging) return;
-        scheduleScrub(event.clientX);
-    }, [isDragging, scheduleScrub]);
-
-    const handleRulerPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        const gesture = rulerPointerGestureRef.current;
-        if (gesture?.pointerId === event.pointerId) {
-            if (event.type === 'pointerleave') {
-                return;
-            }
-
-            rulerPointerGestureRef.current = null;
-            setIsDragging(false);
-            isDraggingRef.current = false;
-
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-
-            ignoreNextRulerClickRef.current = true;
-            applyScrubAtClientX(event.clientX);
-            event.preventDefault();
-            return;
-        }
-
-        if (!isDragging) return;
-        setIsDragging(false);
-        isDraggingRef.current = false;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-    }, [applyScrubAtClientX, isDragging]);
-
-    const handleRulerWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-        const ruler = rulerRef.current;
-        if (!ruler) return;
-        const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
-        ruler.scrollLeft += delta;
-    }, []);
-
-    const handleRulerKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (!rangedTimesteps.length) {
-            return;
-        }
-
-        const currentIndex = Math.max(0, rangedTimesteps.indexOf(currentFrame));
-        let nextIndex = currentIndex;
-
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
-            nextIndex = Math.max(0, currentIndex - 1);
-        }
-
-        if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
-            nextIndex = Math.min(rangedTimesteps.length - 1, currentIndex + 1);
-        }
-
-        if (event.key === 'Home') {
-            nextIndex = 0;
-        }
-
-        if (event.key === 'End') {
-            nextIndex = rangedTimesteps.length - 1;
-        }
-
-        if (nextIndex === currentIndex) {
-            return;
-        }
-
-        event.preventDefault();
-        setCurrentTimestep(rangedTimesteps[nextIndex]);
-    }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
-
-    const renderTimelineRuler = () => (
-        <TimelineRuler
-            rulerRef={rulerRef}
-            ticks={ticks}
-            playheadLeft={playheadLeft}
-            startFrame={startFrame}
-            endFrame={endFrame}
-            currentFrame={currentFrame}
-            onClick={handleRulerClick}
-            onPointerDown={handleRulerPointerDown}
-            onPointerMove={handleRulerPointerMove}
-            onPointerUp={handleRulerPointerUp}
-            onWheel={handleRulerWheel}
-            onKeyDown={handleRulerKeyDown}
-        />
-    );
-
-    const renderActiveTabContent = () => (
-        <>
-            {activeTab === 'particles' && trajectory?._id && (
-                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
-                    <PluginAtomsTable
-                        trajectoryId={trajectory._id}
-                        analysisId={analysisId}
-                    />
-                </Box>
-            )}
-
-            {activeTab === 'simulation-cell' && (
-                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
-                    <SimulationCellView trajectory={trajectory} currentTimestep={currentTimestep} />
-                </Box>
-            )}
-
-            {activeTab === TimelineTab.Log && analysisId && (
-                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
-                    <AnalysisLogPanel
-                        analysisId={analysisId}
-                        timestep={currentFrame}
-                        active={activeTab === TimelineTab.Log}
-                        live={isLiveLogFrame}
-                        activityStatus={analysisFrameStatus}
-                    />
-                </Box>
-            )}
-
-            {activeExposureId && trajectory?._id && pluginId && (
-                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
-                    {/* Reuse the dashboard listing flow so row actions keep the exact analysis/exposure/timestep context. */}
-                    <PluginExposureTable
-                        key={`${pluginId}:${analysisId ?? 'default'}:${trajectory._id}:${activeExposureId}`}
-                        pluginId={pluginId}
-                        exposureId={activeExposureId}
-                        trajectoryId={trajectory._id}
-                        analysisId={analysisId}
-                        teamId={selectedTeamId ?? undefined}
-                        showTrajectoryColumn={false}
-                        compact
-                        inlineSubListings
-                    />
-                </Box>
-            )}
-        </>
-    );
 
     return (
         <Stack
@@ -583,7 +162,7 @@ const Timeline = ({
                 endFrame={endFrame}
                 availableTimesteps={availableTimesteps}
                 zoomPercent={zoomPercent}
-                onZoomPreset={handleZoomPreset}
+                onZoomPreset={(preset) => sceneRef.current?.zoomTo(preset)}
                 onRangeStartChange={setRangeStart}
                 onRangeEndChange={setRangeEnd}
                 playSpeed={playSpeed}
@@ -596,13 +175,30 @@ const Timeline = ({
                 }}
             />
 
-            {activeTab === 'timeline' && (
+            {activeTab === TimelineTab.Timeline && (
                 <Box position='relative' className="canvas-timeline-ruler-region" data-tour-id="canvas-timeline-ruler">
-                    {renderTimelineRuler()}
+                    <TimelineRuler
+                        rulerRef={rulerRef}
+                        ticks={ticks}
+                        playheadLeft={playheadLeft}
+                        startFrame={startFrame}
+                        endFrame={endFrame}
+                        currentFrame={currentFrame}
+                        {...rulerHandlers}
+                    />
                 </Box>
             )}
 
-            {renderActiveTabContent()}
+            <TimelineTabContent
+                activeTab={activeTab}
+                activeExposureId={activeExposureId}
+                trajectory={trajectory}
+                analysisId={analysisId}
+                pluginId={pluginId}
+                currentTimestep={currentTimestep}
+                currentFrame={currentFrame}
+                analysisFrameStatus={analysisFrameStatus}
+            />
         </Stack>
     );
 };

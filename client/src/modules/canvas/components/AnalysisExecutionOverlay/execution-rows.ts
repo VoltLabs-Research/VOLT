@@ -28,12 +28,8 @@ interface BuildAnalysisExecutionRowsInput {
     currentTimestep?: number;
 }
 
-const isFiniteNumber = (value: unknown): value is number => {
-    return typeof value === 'number' && Number.isFinite(value);
-};
-
 const rowKey = (baseKey: string, timestep?: number): string => {
-    return `${baseKey}:${isFiniteNumber(timestep) ? timestep : 'global'}`;
+    return `${baseKey}:${timestep ?? 'global'}`;
 };
 
 const normalizeStageForDisplay = (
@@ -71,7 +67,7 @@ const isOutsideSelectedTimestepScope = (
     trajectory: Trajectory | null | undefined,
     currentTimestep: number | undefined
 ): boolean => {
-    if (!isFiniteNumber(currentTimestep)) {
+    if (currentTimestep === undefined) {
         return false;
     }
 
@@ -80,7 +76,7 @@ const isOutsideSelectedTimestepScope = (
         extractTrajectoryTimesteps(trajectory)
     );
 
-    return Array.isArray(selectedTimesteps) && !selectedTimesteps.includes(currentTimestep);
+    return !!selectedTimesteps && !selectedTimesteps.includes(currentTimestep);
 };
 
 const filterRowsForCurrentTimestep = <T extends { timestep?: number }>(
@@ -92,7 +88,7 @@ const filterRowsForCurrentTimestep = <T extends { timestep?: number }>(
         return rows;
     }
 
-    if (!isFiniteNumber(currentTimestep)) {
+    if (currentTimestep === undefined) {
         return [];
     }
 
@@ -115,7 +111,7 @@ export const buildAnalysisExecutionRows = ({
         .map((stage) => normalizeStageForDisplay(stage, resolvedStatus))
         .filter((stage) => stage.type !== 'plugin-ref');
     const hasFrameScopedRows = [...allChildRows, ...allStageRows]
-        .some((row) => isFiniteNumber(row.timestep));
+        .some((row) => row.timestep !== undefined);
     const childRows = filterRowsForCurrentTimestep(allChildRows, currentTimestep, hasFrameScopedRows);
     const stageRows = filterRowsForCurrentTimestep(allStageRows, currentTimestep, hasFrameScopedRows);
 

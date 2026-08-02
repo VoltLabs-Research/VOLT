@@ -1,12 +1,17 @@
 import { useCallback } from 'react';
 import { useRetryFailedFramesMutation } from '@/modules/analysis/hooks/queries';
-import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';
+import type { RetryFailedFramesResponse } from '@volt/contracts/modules/analysis/domain';
 
+/**
+ * Retries the failed frames of an analysis, resolving to `null` when the retry
+ * did not happen. `showPromise` has already surfaced the reason to the user, so
+ * callers have nothing left to handle and must not need a `catch`.
+ */
 const useRetryJobAnalysis = () => {
     const mutation = useRetryFailedFramesMutation();
 
-    return useCallback(async (analysisId: string) => {
+    return useCallback(async (analysisId: string): Promise<RetryFailedFramesResponse | null> => {
         try {
             return await showPromise(
                 mutation.mutateAsync({ analysisId }),
@@ -25,12 +30,8 @@ const useRetryJobAnalysis = () => {
                     error: { title: 'Failed to retry frames' }
                 }
             );
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) {
-                return;
-            }
-
-            throw error;
+        } catch {
+            return null;
         }
     }, [mutation]);
 };

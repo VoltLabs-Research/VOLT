@@ -20,8 +20,6 @@ interface AIPageRouteParams extends Params {
     conversationId?: string;
 }
 
-const UNSET_CONVERSATION_ID = Symbol('unset-conversation-id');
-
 const AIPage = () => {
     useTip('ai-spreadsheet-panel');
 
@@ -49,6 +47,7 @@ const AIPage = () => {
         isMessagesLoading,
         isProviderCatalogLoading,
         isSendingMessage,
+        noProviderConfigured,
         conversationsError,
         messagesError,
         providerCatalogError,
@@ -72,14 +71,10 @@ const AIPage = () => {
         stopStreaming
     } = useAIChatContext();
 
-    const prevConversationIdRef = useRef<string | undefined | typeof UNSET_CONVERSATION_ID>(UNSET_CONVERSATION_ID);
     const prevActiveConversationIdRef = useRef<string | undefined>(activeConversationId);
 
     useEffect(() => {
-        const urlChanged = prevConversationIdRef.current !== conversationId;
         const providerChanged = prevActiveConversationIdRef.current !== activeConversationId;
-
-        prevConversationIdRef.current = conversationId;
         prevActiveConversationIdRef.current = activeConversationId;
 
         if (conversationId === activeConversationId) {
@@ -87,17 +82,11 @@ const AIPage = () => {
         }
 
         if (providerChanged) {
-            if (activeConversationId) {
-                navigate(`/dashboard/ai/${activeConversationId}`);
-            } else {
-                navigate('/dashboard/ai');
-            }
+            navigate(activeConversationId ? `/dashboard/ai/${activeConversationId}` : '/dashboard/ai');
             return;
         }
 
-        if (urlChanged) {
-            setActiveConversationId(conversationId);
-        }
+        setActiveConversationId(conversationId);
     }, [conversationId, activeConversationId, navigate, setActiveConversationId]);
 
     const canCreate = canAccess(['ai-conversation:create']);
@@ -136,19 +125,8 @@ const AIPage = () => {
         handleCreateConversation().catch(console.warn);
     };
 
-    const handleDelete = async (targetConversationId: string) => {
-        await handleDeleteConversation(targetConversationId);
-    };
-
-    const handleRename = async (targetConversationId: string, title: string) => {
-        await handleRenameConversation(targetConversationId, title);
-    };
-
-    const noProviderConfigured = availableModelsForProvider.length === 0 && !isProviderCatalogLoading;
-    const isThreadEmpty = !isMessagesLoading && messages.length === 0;
-
     let workspaceClassName = 'ai-page-workspace';
-    if (isThreadEmpty) {
+    if (!isMessagesLoading && messages.length === 0) {
         workspaceClassName += ' is-empty';
     }
 
@@ -169,54 +147,52 @@ const AIPage = () => {
     }
 
     let workspaceContent: ReactNode = (
-        <>
-            <Row flex='1' className={workspaceClassName}>
-                <Stack flex='1' className='ai-page-chat-pane'>
-                    <AIConversationThread
-                        conversationId={conversationId}
-                        messages={messages}
-                        isLoading={isMessagesLoading}
-                        isResponding={isSendingMessage}
-                        error={messagesError}
-                        onOpenTableArtifact={handleOpenTableArtifact}
-                        addToolApprovalResponse={addToolApprovalResponse}
-                        onRetry={handleRetry}
-                    />
+        <Row flex='1' className={workspaceClassName}>
+            <Stack flex='1' className='ai-page-chat-pane'>
+                <AIConversationThread
+                    conversationId={conversationId}
+                    messages={messages}
+                    isLoading={isMessagesLoading}
+                    isResponding={isSendingMessage}
+                    error={messagesError}
+                    onOpenTableArtifact={handleOpenTableArtifact}
+                    addToolApprovalResponse={addToolApprovalResponse}
+                    onRetry={handleRetry}
+                />
 
-                    <AIComposer
-                        value={messageDraft}
-                        modelOptions={modelOptions}
-                        selectedModel={selectedModel}
-                        onChange={setMessageDraft}
-                        onModelChange={setSelectedModel}
-                        onSend={handleSend}
-                        onStop={stopStreaming}
-                        disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                        isSending={isSendingMessage}
-                        error={sendMessageError}
-                    />
-                </Stack>
+                <AIComposer
+                    value={messageDraft}
+                    modelOptions={modelOptions}
+                    selectedModel={selectedModel}
+                    onChange={setMessageDraft}
+                    onModelChange={setSelectedModel}
+                    onSend={handleSend}
+                    onStop={stopStreaming}
+                    disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
+                    isSending={isSendingMessage}
+                    error={sendMessageError}
+                />
+            </Stack>
 
-                {openArtifact && (
-                    <>
-                        <ResizeHandle
-                            direction='horizontal'
-                            isDragging={spreadsheetPanel.isDragging}
-                            label='Resize spreadsheet panel'
-                            controls='ai-artifact-spreadsheet-panel'
-                            {...spreadsheetPanel.handleProps}
+            {openArtifact && (
+                <>
+                    <ResizeHandle
+                        direction='horizontal'
+                        isDragging={spreadsheetPanel.isDragging}
+                        label='Resize spreadsheet panel'
+                        controls='ai-artifact-spreadsheet-panel'
+                        {...spreadsheetPanel.handleProps}
+                    />
+                    <Box id='ai-artifact-spreadsheet-panel' display='flex'>
+                        <AIArtifactSpreadsheetPanel
+                            artifact={openArtifact}
+                            onClose={handleCloseArtifactPanel}
+                            width={spreadsheetPanel.size}
                         />
-                        <Box id='ai-artifact-spreadsheet-panel' display='flex'>
-                            <AIArtifactSpreadsheetPanel
-                                artifact={openArtifact}
-                                onClose={handleCloseArtifactPanel}
-                                width={spreadsheetPanel.size}
-                            />
-                        </Box>
-                    </>
-                )}
-            </Row>
-        </>
+                    </Box>
+                </>
+            )}
+        </Row>
     );
 
     if (!selectedTeam?._id) {
@@ -250,8 +226,8 @@ const AIPage = () => {
                 error={conversationsError}
                 onCreateConversation={handleCreate}
                 onSelectConversation={handleSelectConversation}
-                onDeleteConversation={handleDelete}
-                onRenameConversation={handleRename}
+                onDeleteConversation={handleDeleteConversation}
+                onRenameConversation={handleRenameConversation}
                 canCreate={canCreate}
                 canUpdate={canUpdate}
                 canDelete={canDelete}

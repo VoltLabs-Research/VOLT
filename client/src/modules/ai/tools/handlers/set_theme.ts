@@ -1,14 +1,9 @@
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface SetThemeInput {
-    theme?: 'light' | 'dark' | 'system';
-}
+import type { SetThemeInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const THEME_STORAGE_KEY = 'theme';
 const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
-
-const VALID_THEMES: readonly Theme[] = [Theme.Light, Theme.Dark, Theme.System];
 
 const resolveEffectiveTheme = (preference: Theme): Theme => {
     if (preference === Theme.System) {
@@ -21,17 +16,9 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
     name: 'set_theme',
 
     run(input): ClientToolResult {
-        const requested = input.theme;
-        const preference = VALID_THEMES.find((theme) => theme === requested);
-
-        if (!preference) {
-            return {
-                ok: false,
-                summary: 'Could not change the theme.',
-                reason: 'invalid_theme',
-                hint: 'theme must be one of: light, dark, system.'
-            };
-        }
+        // The contract declares this as the literal union the LLM may send; it is
+        // value-identical to Theme, which TS keeps nominal for enums.
+        const preference = input.theme as Theme;
 
         localStorage.setItem(THEME_STORAGE_KEY, preference);
 
@@ -50,16 +37,9 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
         };
     },
 
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Theme unchanged',
-                icon: 'theme'
-            };
-        }
-        const data = result.data as { preference?: string; effective?: string } | undefined;
+    describeEffect(input) {
         return {
-            label: `Theme set to ${data?.preference ?? 'theme'}`,
+            label: `Theme set to ${input.theme}`,
             icon: 'theme'
         };
     }

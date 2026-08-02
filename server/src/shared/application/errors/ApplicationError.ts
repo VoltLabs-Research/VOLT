@@ -4,130 +4,49 @@ import type { ErrorCode } from '@core/constants/error-codes';
 interface ApplicationErrorOptions {
     statusCode?: number;
     headers?: Record<string, string>;
-    details?: unknown;
     cause?: unknown;
 }
 
-type ApplicationErrorInput = number | ApplicationErrorOptions | undefined;
+const withStatus = (statusCode: number) =>
+    (code: ErrorCode, message: string): ApplicationError => new ApplicationError(code, message, statusCode);
 
-interface ResolvedApplicationErrorOptions {
-    statusCode: number;
-    headers: Record<string, string>;
-    details?: unknown;
-    cause?: unknown;
-}
-
-const resolveApplicationErrorOptions = (input: ApplicationErrorInput): ResolvedApplicationErrorOptions => {
-    if (typeof input === 'number' || input === undefined) {
-        return {
-            statusCode: input ?? 500,
-            headers: {}
-        };
-    }
-
-    return {
-        statusCode: input.statusCode ?? 500,
-        headers: input.headers ?? {},
-        details: input.details,
-        cause: input.cause
-    };
-};
-
+/**
+ * An error the client is allowed to see: it carries the machine-readable code and
+ * the HTTP status the middleware should answer with. Anything thrown that is not
+ * an `ApplicationError` is treated as a server defect and reported as a 500.
+ *
+ * `code` is an `ErrorCode`, not a `string`: every code must be declared in
+ * `@core/constants/error-codes` so the set the client can receive is knowable
+ * from one file. `message` is what the user reads, so it must never be the code.
+ */
 export default class ApplicationError extends Error {
     public readonly statusCode: number;
     public readonly headers: Record<string, string>;
-    public readonly details?: unknown;
     public readonly cause?: unknown;
 
     constructor(
-        public readonly code: ErrorCode | string,
+        public readonly code: ErrorCode,
         public readonly message: string,
-        input: ApplicationErrorInput = 500
+        input: number | ApplicationErrorOptions = 500
     ) {
         super(message);
-        const options = resolveApplicationErrorOptions(input);
+        const options = typeof input === 'number' ? { statusCode: input } : input;
         this.name = 'ApplicationError';
-        this.statusCode = options.statusCode;
-        this.headers = options.headers;
-        this.details = options.details;
+        this.statusCode = options.statusCode ?? 500;
+        this.headers = options.headers ?? {};
         this.cause = options.cause;
         Object.setPrototypeOf(this, ApplicationError.prototype);
         Error.captureStackTrace(this, this.constructor);
     }
 
-    public static badRequest(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 400
-        });
-    }
+    public static badRequest = withStatus(400);
+    public static unauthorized = withStatus(401);
+    public static forbidden = withStatus(403);
+    public static notFound = withStatus(404);
+    public static conflict = withStatus(409);
+    public static unprocessableEntity = withStatus(422);
 
-    public static unauthorized(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 401
-        });
-    }
-
-    public static forbidden(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 403
-        });
-    }
-
-    public static notFound(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 404
-        });
-    }
-
-    public static conflict(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 409
-        });
-    }
-
-    public static unprocessableEntity(
-        code: ErrorCode | string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, {
-            ...options,
-            statusCode: 422
-        });
-    }
-
-    public static internalServerError(
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, message, {
-            ...options,
-            statusCode: 500
-        });
+    public static internalServerError(message: string): ApplicationError {
+        return new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, message, 500);
     }
 }

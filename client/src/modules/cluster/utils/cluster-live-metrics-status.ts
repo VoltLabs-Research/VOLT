@@ -10,43 +10,32 @@ export enum ClusterLiveMetricsLabel {
     MetricsUnavailable = 'Paused'
 }
 
+export type ClusterLiveMetricsVariant = 'success' | 'warning' | 'danger' | 'inactive';
+
 interface ClusterLiveMetricsStatus {
     label: ClusterLiveMetricsLabel;
-    variant: 'success' | 'warning' | 'danger' | 'inactive';
+    variant: ClusterLiveMetricsVariant;
 }
 
-interface GetClusterLiveMetricsStatusParams {
+const METRIC_STATUS: Record<ClusterStatus, ClusterLiveMetricsStatus> = {
+    [ClusterStatus.Healthy]: {
+        label: ClusterLiveMetricsLabel.Healthy,
+        variant: 'success'
+    },
+    [ClusterStatus.Warning]: {
+        label: ClusterLiveMetricsLabel.Warning,
+        variant: 'warning'
+    },
+    [ClusterStatus.Critical]: {
+        label: ClusterLiveMetricsLabel.Critical,
+        variant: 'danger'
+    }
+};
+
+export const getClusterLiveMetricsStatus = ({ metrics, isMetricsConnected }: {
     metrics: ClusterMetrics | null;
     isMetricsConnected: boolean;
-}
-
-interface ClusterMetricsRecoveryState {
-    title: string;
-    description: string;
-    tone: RecoveryStateTone;
-}
-
-interface GetClusterMetricsRecoveryStateParams {
-    clusterName: string;
-    isMetricsConnected: boolean;
-}
-
-const METRIC_STATUS_VARIANTS: Record<ClusterStatus, ClusterLiveMetricsStatus['variant']> = {
-    [ClusterStatus.Healthy]: 'success',
-    [ClusterStatus.Warning]: 'warning',
-    [ClusterStatus.Critical]: 'danger'
-};
-
-const METRIC_STATUS_LABELS: Record<ClusterStatus, ClusterLiveMetricsLabel> = {
-    [ClusterStatus.Healthy]: ClusterLiveMetricsLabel.Healthy,
-    [ClusterStatus.Warning]: ClusterLiveMetricsLabel.Warning,
-    [ClusterStatus.Critical]: ClusterLiveMetricsLabel.Critical
-};
-
-export const getClusterLiveMetricsStatus = ({
-    metrics,
-    isMetricsConnected
-}: GetClusterLiveMetricsStatusParams): ClusterLiveMetricsStatus => {
+}): ClusterLiveMetricsStatus => {
     if (!isMetricsConnected) {
         return {
             label: ClusterLiveMetricsLabel.MetricsUnavailable,
@@ -55,10 +44,7 @@ export const getClusterLiveMetricsStatus = ({
     }
 
     if (metrics) {
-        return {
-            label: METRIC_STATUS_LABELS[metrics.status],
-            variant: METRIC_STATUS_VARIANTS[metrics.status]
-        };
+        return METRIC_STATUS[metrics.status];
     }
 
     return {
@@ -67,10 +53,10 @@ export const getClusterLiveMetricsStatus = ({
     };
 };
 
-export const getClusterMetricsRecoveryState = ({
-    clusterName,
-    isMetricsConnected
-}: GetClusterMetricsRecoveryStateParams): ClusterMetricsRecoveryState => {
+export const getClusterMetricsRecoveryState = ({ clusterName, isMetricsConnected }: {
+    clusterName: string;
+    isMetricsConnected: boolean;
+}) => {
     if (!isMetricsConnected) {
         return {
             title: ClusterLiveMetricsLabel.MetricsUnavailable,

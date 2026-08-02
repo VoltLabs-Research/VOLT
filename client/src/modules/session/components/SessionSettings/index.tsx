@@ -15,8 +15,7 @@ import useTip from '@/shared/tips/use-tip';
 import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
 import { SessionActivityType } from '@volt/contracts/modules/session/domain';
 import type { ActiveSession, LoginActivityEntry } from '@volt/contracts/modules/session/domain';
-import type { FC, ReactNode } from 'react';
-import './SessionSettings.css';
+import type { ReactNode } from 'react';import './SessionSettings.css';
 
 const getActivityIconToneClass = (action: SessionActivityType, success: boolean): string => {
     if (!success) return 'session-row__icon--danger';
@@ -26,7 +25,7 @@ const getActivityIconToneClass = (action: SessionActivityType, success: boolean)
     return 'session-row__icon--muted';
 };
 
-const SessionSettings: FC = () => {
+const SessionSettings = () => {
     useTip('session-management');
 
     const {
@@ -43,7 +42,6 @@ const SessionSettings: FC = () => {
     } = useSessionData();
 
     const renderSession = (session: ActiveSession) => {
-        const isCurrent = session.isCurrent;
         const DeviceIcon = session.isMobile ? Smartphone : Monitor;
 
         return (
@@ -52,11 +50,11 @@ const SessionSettings: FC = () => {
                 <div className='session-row__body'>
                     <span className='session-row__title'>{session.browser} on {session.os}</span>
                     <span className='session-row__line'>{session.ip}</span>
-                    <span className={`session-row__line${isCurrent ? ' session-row__line--brand' : ''}`}>
-                        {isCurrent ? 'Current session' : formatSessionRelativeTime(session.lastActivity)}
+                    <span className={`session-row__line${session.isCurrent ? ' session-row__line--brand' : ''}`}>
+                        {session.isCurrent ? 'Current session' : formatSessionRelativeTime(session.lastActivity)}
                     </span>
                 </div>
-                {!isCurrent && (
+                {!session.isCurrent && (
                     <Button
                         variant='ghost'
                         intent='danger'
@@ -129,11 +127,9 @@ const SessionSettings: FC = () => {
     );
 
     let sessionsContent: ReactNode;
-    let sessionsEmpty = false;
     if (loadingSessions) {
         sessionsContent = Array.from({ length: 2 }).map((_, i) => renderRowSkeleton(`s-${i}`));
     } else if (sessions.length === 0) {
-        sessionsEmpty = true;
         sessionsContent = (
             <EmptyState
                 icon={<Shield size={24} />}
@@ -146,11 +142,9 @@ const SessionSettings: FC = () => {
     }
 
     let activityContent: ReactNode;
-    let activityEmpty = false;
     if (loadingActivity) {
         activityContent = Array.from({ length: 3 }).map((_, i) => renderRowSkeleton(`a-${i}`));
     } else if (activities.length === 0) {
-        activityEmpty = true;
         activityContent = (
             <EmptyState
                 icon={<Clock size={24} />}
@@ -170,7 +164,7 @@ const SessionSettings: FC = () => {
                     description='Devices currently signed in to your account'
                     action={activeSessionsAction}
                 />
-                {renderList(sessionsContent, sessionsEmpty)}
+                {renderList(sessionsContent, !loadingSessions && sessions.length === 0)}
             </Stack>
 
             <Stack border='soft' gap='1' p='1-5' radius='md'>
@@ -178,7 +172,7 @@ const SessionSettings: FC = () => {
                     title='Login Activity'
                     description='Recent login attempts on your account'
                 />
-                {renderList(activityContent, activityEmpty)}
+                {renderList(activityContent, !loadingActivity && activities.length === 0)}
             </Stack>
 
             <Modal

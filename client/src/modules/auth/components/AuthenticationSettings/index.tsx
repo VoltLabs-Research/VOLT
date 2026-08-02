@@ -2,14 +2,15 @@ import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hoo
 import { showPromise } from '@/shared/ui/hooks/toast';
 import SettingsRow from '@/modules/auth/components/SettingsRow';
 import { Button, Stack } from '@voltstack/bravais';
-import { Activity } from 'lucide-react';
-import PasswordStatusRow from '@/modules/auth/components/PasswordStatusRow';
+import { format } from 'date-fns';
+import { Activity, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { useState } from 'react';
 import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 import { useNavigate } from 'react-router-dom';
+
 const AuthenticationSettings = () => {
     const navigate = useNavigate();
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
@@ -31,9 +32,13 @@ const AuthenticationSettings = () => {
         );
     };
 
-    const handleViewLoginActivity = () => {
-        navigate('/dashboard/settings/sessions');
-    };
+    let passwordDescription = 'No password set (OAuth only)';
+
+    if (passwordInfo?.hasPassword) {
+        passwordDescription = passwordInfo.lastChanged
+            ? `Last changed: ${format(new Date(passwordInfo.lastChanged), 'MMMM d, yyyy')}`
+            : 'Password configured';
+    }
 
     return (
         <SettingsPage title="Authentication Settings">
@@ -43,10 +48,19 @@ const AuthenticationSettings = () => {
                     description="Manage your password and security settings" />
 
                 <Stack gap='1'>
-                    <PasswordStatusRow
-                        passwordInfo={passwordInfo ?? null}
-                        isFormOpen={isPasswordFormOpen}
-                        onToggleForm={() => setIsPasswordFormOpen(!isPasswordFormOpen)} />
+                    <SettingsRow
+                        icon={<Lock size={20} />}
+                        title="Password"
+                        description={passwordDescription}
+                        rightContent={(
+                            <Button
+                                variant="soft"
+                                rightIcon={isPasswordFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                onClick={() => setIsPasswordFormOpen(!isPasswordFormOpen)}
+                            >
+                                {passwordInfo?.hasPassword ? 'Change' : 'Set Password'}
+                            </Button>
+                        )} />
 
                     <PasswordChangeForm
                         passwordInfo={passwordInfo ?? null}
@@ -65,7 +79,7 @@ const AuthenticationSettings = () => {
                     icon={<Activity size={20} />}
                     title="Recent Sessions"
                     description="View your login history and active sessions"
-                    rightContent={<Button variant="soft" onClick={handleViewLoginActivity}>View Activity</Button>}
+                    rightContent={<Button variant="soft" onClick={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
                 />
             </Stack>
         </SettingsPage>

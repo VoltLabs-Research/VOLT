@@ -5,15 +5,12 @@ import type { AppEvents, PhaseSpec } from '@/types/events';
 type Spinner = ReturnType<typeof p.spinner>;
 type PhaseStatus = AppEvents['deploy:phase']['status'];
 
+const TTY = !!process.stdout.isTTY;
+
 export default class DeployProgress {
     #labels: Record<string, string> = {};
     #spinner: Spinner | null = null;
     #offHandlers: Array<() => void> = [];
-    readonly #tty: boolean;
-
-    constructor(){
-        this.#tty = !!process.stdout.isTTY;
-    }
 
     start(): void {
         this.#offHandlers = [
@@ -37,7 +34,7 @@ export default class DeployProgress {
     #renderPhase(id: string, status: PhaseStatus, detail?: string): void {
         const label = this.#labels[id] ?? id;
 
-        if(!this.#tty){
+        if(!TTY){
             if(status === 'running') console.log(`→ ${label}`);
             else if(status === 'error') console.log(`  ✗ ${label}${detail ? ` — ${detail}` : ''}`);
             else console.log(`  ✓ ${label}`);
@@ -60,7 +57,7 @@ export default class DeployProgress {
         if(!text) return;
         
         
-        if(this.#tty && this.#spinner){
+        if(TTY && this.#spinner){
             this.#spinner.message(text);
         }
     }

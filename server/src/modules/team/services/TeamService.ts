@@ -6,7 +6,6 @@ import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import { buildTeamRoleCreatePayload } from '@modules/team/contracts/team-role';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -21,6 +20,7 @@ import type {
 const INVITE_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const INVITE_CODE_LENGTH = 5;
 const MANAGE_INVITE_CODES_MESSAGE = 'You do not have permission to manage invite codes';
+const MANAGE_INVITE_CODES_PERMISSION = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
 
 const generateCode = (): string => {
     let code = '';
@@ -35,16 +35,9 @@ const normalizeInviteCode = (code: string): string => code.trim().toUpperCase();
 export default class TeamService{
     #membership = new TeamMembershipService();
     #deploymentSettings = new DeploymentSettingsService();
-    #eventBus = eventBus;
 
     async create(userId: string, input: CreateTeamInput): Promise<Team>{
         const { name, description } = input;
-        const ownerRoleDefinition = SystemRoles[SystemRoleNames.OWNER];
-        const additionalSystemRoles = [
-            SystemRoles[SystemRoleNames.ADMIN],
-            SystemRoles[SystemRoleNames.MEMBER],
-            SystemRoles[SystemRoleNames.VIEWER]
-        ];
 
         const team = await Team.getRepository().manager.transaction(async (manager): Promise<Team> => {
             const createdTeam = await manager.save(manager.create(Team, {
@@ -53,26 +46,21 @@ export default class TeamService{
                 owner: userId
             }));
 
-            const ownerRole = await manager.save(manager.create(TeamRole, buildTeamRoleCreatePayload({
-                teamId: createdTeam.id,
-                name: ownerRoleDefinition.name,
-                permissions: ownerRoleDefinition.permissions,
-                isSystem: ownerRoleDefinition.isSystem
-            })));
-
-            for(const roleDefinition of additionalSystemRoles){
-                await manager.save(manager.create(TeamRole, buildTeamRoleCreatePayload({
-                    teamId: createdTeam.id,
-                    name: roleDefinition.name,
-                    permissions: roleDefinition.permissions,
-                    isSystem: roleDefinition.isSystem
-                })));
+            const roleIdsByName = new Map<string, string>();
+            for(const definition of Object.values(SystemRoles)){
+                const role = await manager.save(manager.create(TeamRole, {
+                    team: createdTeam.id,
+                    name: definition.name,
+                    permissions: definition.permissions,
+                    isSystem: definition.isSystem
+                }));
+                roleIdsByName.set(definition.name, role.id);
             }
 
             await manager.save(manager.create(TeamMember, {
                 user: userId,
                 team: createdTeam.id,
-                role: ownerRole.id,
+                role: roleIdsByName.get(SystemRoleNames.OWNER),
                 joinedAt: new Date()
             }));
 
@@ -81,7 +69,7 @@ export default class TeamService{
             return createdTeam;
         });
 
-        await this.#eventBus.emit('team.created', {
+        await eventBus.emit('team.created', {
             ownerId: userId,
             teamId: team.id
         });
@@ -128,7 +116,7 @@ export default class TeamService{
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
         await team.remove();
-        await this.#eventBus.emit('team.deleted', {
+        await eventBus.emit('team.deleted', {
             teamId,
             userId
         });
@@ -143,19 +131,7 @@ export default class TeamService{
     }
 
     async checkInvitePermission(teamId: string, userId: string): Promise<{ canInvite: boolean }>{
-        const member = await TeamMember.findOne({
-            where: {
-                team: teamId,
-                user: userId
-            },
-            relations: { roleRef: true }
-        });
-        if(!member){
-            return { canInvite: false };
-        }
-        const permissions = member.roleRef?.permissions ?? [];
-        const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
-        return { canInvite: permissions.includes('*') || permissions.includes(requiredPermission) };
+        return { canInvite: await this.#canManageInviteCodes(teamId, userId) };
     }
 
     async generateInviteCode(teamId: string, userId: string): Promise<Team>{
@@ -193,11 +169,10 @@ export default class TeamService{
             },
             relations: { roleRef: true }
         });
-        if(!member){
-            return { permissions: [] };
-        }
-        const rolePermissions = this.#resolveRolePermissions(member.roleRef);
-        return { permissions: Array.from(new Set(rolePermissions)) };
+        const role = member?.roleRef;
+        const systemPermissions = role?.isSystem ? SystemRoles[role.name]?.permissions : undefined;
+
+        return { permissions: Array.from(new Set(systemPermissions ?? role?.permissions ?? [])) };
     }
 
     async leave(teamId: string, userId: string): Promise<void>{
@@ -273,7 +248,7 @@ export default class TeamService{
         return ApplicationError.notFound(ErrorCodes.TEAM_INVITE_CODE_NOT_FOUND, 'Invalid invite code');
     }
 
-    async #assertCanManageInviteCodes(teamId: string, userId: string): Promise<void>{
+    async #canManageInviteCodes(teamId: string, userId: string): Promise<boolean>{
         const member = await TeamMember.findOne({
             where: {
                 team: teamId,
@@ -281,32 +256,14 @@ export default class TeamService{
             },
             relations: { roleRef: true }
         });
-        if(!member){
-            throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, MANAGE_INVITE_CODES_MESSAGE);
-        }
-        const permissions = member.roleRef?.permissions ?? [];
-        const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
-        const canManage = permissions.includes('*') || permissions.includes(requiredPermission);
-        if(!canManage){
-            throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, MANAGE_INVITE_CODES_MESSAGE);
-        }
+        const permissions = member?.roleRef?.permissions ?? [];
+
+        return permissions.includes('*') || permissions.includes(MANAGE_INVITE_CODES_PERMISSION);
     }
 
-    #resolveRolePermissions(memberRole?: TeamRole): string[]{
-        if(memberRole?.isSystem && memberRole.name){
-            switch(memberRole.name){
-                case SystemRoleNames.OWNER:
-                    return SystemRoles[SystemRoleNames.OWNER].permissions;
-                case SystemRoleNames.ADMIN:
-                    return SystemRoles[SystemRoleNames.ADMIN].permissions;
-                case SystemRoleNames.MEMBER:
-                    return SystemRoles[SystemRoleNames.MEMBER].permissions;
-                case SystemRoleNames.VIEWER:
-                    return SystemRoles[SystemRoleNames.VIEWER].permissions;
-                default:
-                    break;
-            }
+    async #assertCanManageInviteCodes(teamId: string, userId: string): Promise<void>{
+        if(!await this.#canManageInviteCodes(teamId, userId)){
+            throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, MANAGE_INVITE_CODES_MESSAGE);
         }
-        return memberRole?.permissions ?? [];
     }
 }

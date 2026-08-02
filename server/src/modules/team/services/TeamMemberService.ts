@@ -7,7 +7,6 @@ import TeamMembershipService from '@modules/team/services/team/TeamMembershipSer
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
 import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
 import latexMemberContentCounter from '@modules/latex/services/LatexMemberContentCounter';
 import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';
@@ -28,10 +27,9 @@ const buildContentCounters = (): IMemberContentCounter[] => {
 export default class TeamMemberService{
     #presence = new TeamRoomPresenceService();
     #membership = new TeamMembershipService();
-    #eventBus = eventBus;
     #contentCounters: IMemberContentCounter[] = buildContentCounters();
 
-    async listByTeamId(teamId: string, page?: number, limit?: number): Promise<PaginatedResult<Record<string, unknown>>>{
+    async listByTeamId(teamId: string, page?: number, limit?: number){
         const pageRequest = readPageRequest(page, limit, { defaultLimit: DEFAULT_MEMBER_LIMIT });
 
         const [members, total] = await TeamMember.findAndCount({
@@ -51,11 +49,7 @@ export default class TeamMemberService{
             this.#presence.getOnlineUserIds(teamId)
         ]);
 
-        const countsByMetric = new Map<string, Map<string, number>>();
-        for(const result of countResults){
-            countsByMetric.set(result.key, result.counts);
-        }
-
+        const countsByMetric = new Map(countResults.map((result) => [result.key, result.counts]));
         const onlineUserIdSet = new Set(onlineUserIds);
 
         const data = members.map((member) => {
@@ -91,27 +85,23 @@ export default class TeamMemberService{
                 analysesCount: countsByMetric.get('analysesCount')?.get(member.user) || 0,
                 latexCount: countsByMetric.get('latexCount')?.get(member.user) || 0,
                 whiteboardsCount: countsByMetric.get('whiteboardsCount')?.get(member.user) || 0
-            } as Record<string, unknown>;
+            };
         });
 
         return paginate([data, total], pageRequest);
     }
 
-    async getById(teamMemberId: string): Promise<Record<string, unknown>>{
+    async getById(teamMemberId: string): Promise<TeamMember>{
         const member = await TeamMember.findOneBy({ id: teamMemberId });
         if(!member){
             throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'TeamMember not found');
         }
-        return member as unknown as Record<string, unknown>;
+        return member;
     }
 
-    async updateById(teamMemberId: string, data: UpdateTeamMemberInput): Promise<Record<string, unknown>>{
-        const member = await TeamMember.findOneBy({ id: teamMemberId });
-        if(!member){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'TeamMember not found');
-        }
-        const updated = await Object.assign(member, data).save();
-        return updated as unknown as Record<string, unknown>;
+    async updateById(teamMemberId: string, data: UpdateTeamMemberInput): Promise<TeamMember>{
+        const member = await this.getById(teamMemberId);
+        return Object.assign(member, data).save();
     }
 
     async deleteById(teamId: string, teamMemberId: string): Promise<void>{
@@ -120,7 +110,7 @@ export default class TeamMemberService{
             throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'Team member not found');
         }
         await this.#membership.removeMemberFromTeam(teamMemberId, teamId);
-        await this.#eventBus.emit('team-member.deleted', {
+        await eventBus.emit('team-member.deleted', {
             teamMemberId,
             teamId
         });

@@ -1,79 +1,28 @@
 import Controller from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import ClusterObjectTransferService, {
-    type ClusterObjectTransferReadResponse
-} from '@modules/cluster/services/ClusterObjectTransferService';
+import ClusterObjectTransferService from '@modules/cluster/services/ClusterObjectTransferService';
+import {
+    applyObjectHeaders,
+    applyRangeHeaders,
+    isPartialContent,
+    readContentLength,
+    sendObjectError
+} from '@modules/cluster/controllers/cluster-object-http';
 import { clusterObjectRoutes } from '@volt/contracts/modules/cluster/routes';
 import { pipeline } from 'node:stream/promises';
 
 import type { Request, Response } from 'express';
 
+const GATEWAY_FAILURE = {
+    code: 'ClusterObject::GatewayFailed',
+    message: 'Object gateway request failed'
+};
+
+/** Express types route params as `string | string[]`, so the array form must be narrowed. */
 const readRouteParam = (request: Request, paramName: 'teamId' | 'token'): string | undefined => {
     const value = request.params[paramName];
     return Array.isArray(value) ? value[0] : value;
-};
-
-const readContentLength = (request: Request): number | undefined => {
-    const rawContentLength = request.header('content-length');
-    return rawContentLength ? Number(rawContentLength) : undefined;
-};
-
-const sendError = (response: Response, error: unknown): void => {
-    const statusCode = typeof error === 'object'
-        && error !== null
-        && 'statusCode' in error
-        && typeof error.statusCode === 'number'
-        ? error.statusCode
-        : 500;
-    const code = error instanceof Error && 'code' in error && typeof error.code === 'string'
-        ? error.code
-        : 'ClusterObject::GatewayFailed';
-    const message = error instanceof Error ? error.message : 'Object gateway request failed';
-
-    response.status(statusCode).json({
-        status: 'error',
-        code,
-        message
-    });
-};
-
-const applyReadHeaders = (
-    response: Response,
-    streamResponse: ClusterObjectTransferReadResponse
-): void => {
-    if (streamResponse.contentLength !== undefined) {
-        response.setHeader('content-length', String(streamResponse.contentLength));
-    }
-
-    if (streamResponse.contentType) {
-        response.setHeader('content-type', streamResponse.contentType);
-    }
-
-    if (streamResponse.contentEncoding) {
-        response.setHeader('content-encoding', streamResponse.contentEncoding);
-    }
-
-    if (streamResponse.etag) {
-        response.setHeader('etag', streamResponse.etag);
-    }
-
-    if (streamResponse.lastModified) {
-        response.setHeader('last-modified', streamResponse.lastModified.toUTCString());
-    }
-
-    const acceptRanges = streamResponse.headers['accept-ranges'];
-    if (acceptRanges) {
-        response.setHeader('accept-ranges', acceptRanges);
-    }
-
-    const contentRange = streamResponse.headers['content-range'];
-    if (contentRange) {
-        response.setHeader('content-range', contentRange);
-    }
-
-    response.setHeader('cache-control', 'private, max-age=900');
-    response.setHeader('x-content-type-options', 'nosniff');
 };
 
 export default class ClusterObjectController extends Controller {
@@ -97,13 +46,8 @@ export default class ClusterObjectController extends Controller {
             );
 
             response.status(201).end();
-        } catch (error) {
-            if (!response.headersSent) {
-                sendError(response, error);
-                return;
-            }
-
-            response.destroy(error instanceof Error ? error : undefined);
+        } catch (error: unknown) {
+            this.#failResponse(response, error);
         }
     }
 
@@ -113,21 +57,12 @@ export default class ClusterObjectController extends Controller {
         @Res() response: Response
     ): Promise<void>{
         try {
-            const head = await this.#transferService.head(
-                readRouteParam(request, 'teamId'),
-                readRouteParam(request, 'token')
-            );
+            const head = await this.#transferService.head(readRouteParam(request, 'teamId'), readRouteParam(request, 'token'));
 
-            if (head.contentLength !== undefined) {
-                response.setHeader('content-length', String(head.contentLength));
-            }
-            if (head.contentType) response.setHeader('content-type', head.contentType);
-            if (head.contentEncoding) response.setHeader('content-encoding', head.contentEncoding);
-            if (head.etag) response.setHeader('etag', head.etag);
-            if (head.lastModified) response.setHeader('last-modified', head.lastModified.toUTCString());
+            applyObjectHeaders(response, head);
             response.status(200).end();
-        } catch (error) {
-            if (!response.headersSent) sendError(response, error);
+        } catch (error: unknown) {
+            this.#failResponse(response, error);
         }
     }
 
@@ -144,16 +79,24 @@ export default class ClusterObjectController extends Controller {
                 rangeHeader ? { rangeHeader } : undefined
             );
 
-            applyReadHeaders(response, streamResponse);
-            response.status(streamResponse.headers['content-range'] ? 206 : 200);
+            applyObjectHeaders(response, streamResponse);
+            applyRangeHeaders(response, streamResponse.headers);
+            response.setHeader('cache-control', 'private, max-age=900');
+            response.setHeader('x-content-type-options', 'nosniff');
+            response.status(isPartialContent(streamResponse.headers) ? 206 : 200);
             await pipeline(streamResponse.stream, response);
-        } catch (error) {
-            if (!response.headersSent) {
-                sendError(response, error);
-                return;
-            }
-
-            response.destroy(error instanceof Error ? error : undefined);
+        } catch (error: unknown) {
+            this.#failResponse(response, error);
         }
+    }
+
+    /** Once bytes are on the wire the only way to signal failure is to tear the socket down. */
+    #failResponse(response: Response, error: unknown): void {
+        if (!response.headersSent) {
+            sendObjectError(response, error, GATEWAY_FAILURE);
+            return;
+        }
+
+        response.destroy(error instanceof Error ? error : undefined);
     }
 }

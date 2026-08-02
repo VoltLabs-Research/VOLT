@@ -4,7 +4,6 @@ import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
 import scriptingSessionOrchestrator from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
 import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
-import { In, IsNull } from 'typeorm';
 
 @DefineEventGroup('scripting')
 export default class ScriptingEvents {
@@ -37,28 +36,6 @@ export default class ScriptingEvents {
         for (const notebook of notebooks) {
             await notebookCredentialService.revokeSecretKey(notebook);
         }
-        await this.#removeTrajectory(trajectoryId);
-    }
-
-    async #removeTrajectory(trajectoryId: string): Promise<void> {
-        const impacted = await ScriptingNotebook.find({
-            where: { trajectory: trajectoryId },
-            select: { id: true }
-        });
-        const impactedNotebookIds = impacted.map((notebook) => notebook.id);
-
-        await ScriptingNotebook.update(
-            { trajectory: trajectoryId },
-            { trajectory: null }
-        );
-
-        if (!impactedNotebookIds.length) {
-            return;
-        }
-
-        await ScriptingNotebook.delete({
-            id: In(impactedNotebookIds),
-            trajectory: IsNull()
-        });
+        await ScriptingNotebook.delete({ trajectory: trajectoryId });
     }
 }

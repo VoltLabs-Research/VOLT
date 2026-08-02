@@ -1,37 +1,25 @@
 import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
 import {
-    addMessageToCache,
     removeChatMessagesFromCache,
-    updateMessageInCache,
     useChatMessagesInfiniteQuery,
     useMarkAsReadMutation
 } from '../message/queries';
-import {
-    invalidateChatsQuery,
-    resetChatQueries,
-    chatsQuery
-} from './queries';
+import { resetChatQueries, chatsQuery } from './queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
 import { emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import type { SocketAck } from '@/modules/socket/contracts/socket-service';
-import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 
 const MAX_CACHED_CHAT_ROOMS = 4;
 
-const expectSocketAck = <T>(ack: SocketAck<T> | undefined, fallbackMessage: string): T | undefined => {
+const assertSocketAck = (ack: SocketAck | undefined, fallbackMessage: string): void => {
     if (!ack?.ok) {
         throw new Error(ack?.error || fallbackMessage);
     }
-
-    return ack.data;
 };
 
 const useChatData = () => {
-    const queryClient = useQueryClient();
-
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const currentChatIdRef = useRef<string | null>(null);
     const cachedChatIdsRef = useRef<string[]>([]);
@@ -39,7 +27,7 @@ const useChatData = () => {
     const desiredChatIdRef = useRef<string | null>(null);
     const lastPresenceRequestKeyRef = useRef<string | null>(null);
 
-    const markAsReadMutationResult = useMarkAsReadMutation();
+    const { mutateAsync: markChatAsRead } = useMarkAsReadMutation();
 
     const chatsResult = chatsQuery(undefined, {
         staleTime: 30_000,
@@ -47,25 +35,16 @@ const useChatData = () => {
     });
 
     const chats = chatsResult.data ?? [];
-    const chatsRef = useRef(chats);
 
     useEffect(() => {
-        chatsRef.current = chats;
-    }, [chats]);
-
-    useEffect(() => {
-        if (chatsResult.error) {
-            const error = chatsResult.error;
-            if (isAccessDeniedError(error)) return;
+        if (chatsResult.error && !isAccessDeniedError(chatsResult.error)) {
             sileo.error({ title: 'Failed to load chats' });
         }
     }, [chatsResult.error]);
 
     const messagesQuery = useChatMessagesInfiniteQuery(
         { chatId: currentChatId! },
-        {
-            enabled: !!currentChatId
-        }
+        { enabled: !!currentChatId }
     );
 
     const messages = useMemo(
@@ -73,25 +52,11 @@ const useChatData = () => {
         [messagesQuery.data]
     );
 
-    const hasMore = messagesQuery.hasNextPage ?? false;
-
-    const fetchChats = useCallback((): void => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-    }, [queryClient]);
-
-    const loadMoreMessages = useCallback((): void => {
+    const loadMoreMessages = (): void => {
         if (!messagesQuery.isFetchingNextPage && messagesQuery.hasNextPage) {
             messagesQuery.fetchNextPage().catch(() => undefined);
         }
-    }, [messagesQuery]);
-
-    const addMessage = useCallback((message: ChatMessage) => {
-        addMessageToCache(queryClient, currentChatIdRef.current, message);
-    }, [queryClient]);
-
-    const updateMessage = useCallback((_id: string, updates: Partial<ChatMessage>) => {
-        updateMessageInCache(queryClient, currentChatIdRef.current, _id, updates);
-    }, [queryClient]);
+    };
 
     const retainChatMessageCache = useCallback((chatId: string) => {
         cachedChatIdsRef.current = [
@@ -103,26 +68,34 @@ const useChatData = () => {
             const evictedChatId = cachedChatIdsRef.current.shift();
 
             if (evictedChatId) {
-                removeChatMessagesFromCache(queryClient, evictedChatId);
+                removeChatMessagesFromCache(evictedChatId);
             }
         }
-    }, [queryClient]);
+    }, []);
 
-    const requestChatPresence = useCallback((chatId: string, userIds: string[]) => {
-        const uniqueUserIds = Array.from(new Set(userIds));
-        const requestKey = `${chatId}:${uniqueUserIds.join(',')}`;
+    useEffect(() => {
+        if (!currentChatId) {
+            lastPresenceRequestKeyRef.current = null;
+            return;
+        }
 
-        if (uniqueUserIds.length === 0 || lastPresenceRequestKeyRef.current === requestKey) {
+        const currentChat = chatsResult.data?.find((chat) => chat._id === currentChatId);
+        if (!currentChat) {
+            return;
+        }
+
+        const userIds = currentChat.participants.map((participant) => participant._id);
+        const requestKey = `${currentChatId}:${userIds.join(',')}`;
+
+        if (lastPresenceRequestKeyRef.current === requestKey) {
             return;
         }
 
         lastPresenceRequestKeyRef.current = requestKey;
 
-        emitWithReport<SocketAck<Record<string, string>>>(SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, {
-            userIds: uniqueUserIds
-        })
+        emitWithReport<SocketAck>(SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, { userIds })
             .then((presenceAck) => {
-                expectSocketAck(presenceAck, 'Failed to load chat presence.');
+                assertSocketAck(presenceAck, 'Failed to load chat presence.');
             })
             .catch((error: unknown) => {
                 if (lastPresenceRequestKeyRef.current === requestKey) {
@@ -134,21 +107,7 @@ const useChatData = () => {
                     fallbackTitle: 'Failed to load chat presence.'
                 });
             });
-    }, []);
-
-    useEffect(() => {
-        if (!currentChatId) {
-            lastPresenceRequestKeyRef.current = null;
-            return;
-        }
-
-        const currentChat = chats.find((chat) => chat._id === currentChatId);
-        if (!currentChat) {
-            return;
-        }
-
-        requestChatPresence(currentChatId, currentChat.participants.map((participant) => participant._id));
-    }, [chats, currentChatId, requestChatPresence]);
+    }, [chatsResult.data, currentChatId]);
 
     const resetState = useCallback(() => {
         selectionVersionRef.current += 1;
@@ -162,8 +121,8 @@ const useChatData = () => {
         cachedChatIdsRef.current = [];
         currentChatIdRef.current = null;
         setCurrentChatId(null);
-        resetChatQueries(queryClient);
-    }, [queryClient]);
+        resetChatQueries();
+    }, []);
 
     const selectChat = useCallback(async (chatId: string) => {
         if (currentChatIdRef.current === chatId) return;
@@ -180,7 +139,7 @@ const useChatData = () => {
         setCurrentChatId(null);
 
         const joinAck = await emitWithReport<SocketAck>(SOCKET_CHAT_EVENTS.JOIN_CHAT, chatId);
-        expectSocketAck(joinAck, `Unable to join chat "${chatId}".`);
+        assertSocketAck(joinAck, `Unable to join chat "${chatId}".`);
 
         if (selectionVersion !== selectionVersionRef.current) {
             if (desiredChatIdRef.current !== chatId) {
@@ -193,7 +152,7 @@ const useChatData = () => {
         currentChatIdRef.current = chatId;
         setCurrentChatId(chatId);
 
-        markAsReadMutationResult.mutateAsync({ chatId }).catch((error: unknown) => {
+        markChatAsRead({ chatId }).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
                 reportError(error, {
                     surface: ErrorSurface.Toast,
@@ -201,26 +160,16 @@ const useChatData = () => {
                 });
             }
         });
-
-        const chat = chatsRef.current.find((currentChat) => currentChat._id === chatId);
-        if (!chat) {
-            return;
-        }
-
-        requestChatPresence(chatId, chat.participants.map((participant) => participant._id));
-    }, [markAsReadMutationResult, requestChatPresence, retainChatMessageCache]);
+    }, [markChatAsRead, retainChatMessageCache]);
 
     return {
         chats,
         messages,
         currentChatId,
-        hasMore,
-        fetchChats,
+        hasMore: messagesQuery.hasNextPage,
         selectChat,
         loadMoreMessages,
         resetState,
-        addMessage,
-        updateMessage,
         isChatsLoading: chatsResult.isLoading,
         isMessagesLoading: messagesQuery.isLoading || messagesQuery.isFetchingNextPage,
         chatsError: chatsResult.error

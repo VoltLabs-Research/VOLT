@@ -48,8 +48,10 @@ const CreateContainer = () => {
     const {
         config,
         selectedTemplate,
+        selectedTemplateEntity,
         customImage,
         customImageError,
+        image,
         selectedTeamId,
         selectedTeamClusterId,
         teams,
@@ -67,8 +69,6 @@ const CreateContainer = () => {
         handleTemplateSelect,
         setCustomImage,
         handleCreate,
-        getSelectedImage,
-        getSelectedTemplate,
         canProceedToConfig,
         canProceedToReview
     } = useCreateContainerForm();
@@ -141,8 +141,8 @@ const CreateContainer = () => {
                     teamClusters={teamClusters}
                     selectedTeamId={selectedTeamId}
                     selectedTeamClusterId={selectedTeamClusterId}
-                    image={getSelectedImage()}
-                    selectedTemplateName={getSelectedTemplate()?.name}
+                    image={image}
+                    selectedTemplateName={selectedTemplateEntity?.name}
                     draftLastSavedAt={draftLastSavedAt}
                     isLoading={isLoading}
                     deployProgressMessage={deployProgressMessage}

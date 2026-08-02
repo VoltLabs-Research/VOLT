@@ -22,8 +22,8 @@ export interface AIModelSelection {
 }
 
 export interface CreateConversationStreamTransportParams {
-    teamId?: string;
-    conversationId?: string;
+    teamId: string;
+    conversationId: string;
     getModelSelection: () => AIModelSelection;
 }
 

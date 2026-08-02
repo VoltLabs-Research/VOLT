@@ -42,27 +42,13 @@ interface ListTeamSceneArtifactsInput {
 export const buildSceneArtifactQuery = (
     params: Pick<ListSceneArtifactsInput, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType'>
 ) => {
-    const sourceType = params.sourceType;
     return {
         ...(params.analysisId ? { analysisId: params.analysisId } : {}),
         ...(params.projection ? { projection: params.projection } : {}),
         ...(params.timestep !== undefined ? { timestep: params.timestep } : {}),
         ...(params.page ? { page: params.page } : {}),
         ...(params.limit ? { limit: params.limit } : {}),
-        ...(sourceType ? { sourceType } : {})
-    };
-};
-
-const buildTeamSceneArtifactQuery = (
-    params: Pick<ListTeamSceneArtifactsInput, 'analysisId' | 'timestep' | 'page' | 'limit' | 'sourceType'>
-) => {
-    const sourceType = params.sourceType;
-    return {
-        ...(params.analysisId ? { analysisId: params.analysisId } : {}),
-        ...(params.timestep !== undefined ? { timestep: params.timestep } : {}),
-        ...(params.page ? { page: params.page } : {}),
-        ...(params.limit ? { limit: params.limit } : {}),
-        ...(sourceType ? { sourceType } : {})
+        ...(params.sourceType ? { sourceType: params.sourceType } : {})
     };
 };
 
@@ -75,7 +61,7 @@ const endpoints = {
     ),
     listByTeam: paginated<ListTeamSceneArtifactsInput, PaginatedResponse<SceneArtifact>>('/scene-artifacts', {
         unwrap: 'raw',
-        query: buildTeamSceneArtifactQuery
+        query: buildSceneArtifactQuery
     })
 };
 

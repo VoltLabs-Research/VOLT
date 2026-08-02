@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
@@ -9,20 +9,15 @@ interface DemoLocationState {
 
 const STORAGE_KEY = 'demo-welcome-seen';
 
-interface Step {
-    title: string;
-    description: string;
-}
-
 const formatRemaining = (expiresAt: Date | null): string => {
     if (!expiresAt) return 'a limited time';
     const remainingMs = expiresAt.getTime() - Date.now();
-    if (!Number.isFinite(remainingMs) || remainingMs <= 0) return 'a limited time';
+    if (remainingMs <= 0) return 'a limited time';
     const remainingMinutes = Math.max(1, Math.round(remainingMs / 60_000));
     return `${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}`;
 };
 
-const buildSteps = (expiresAt: Date | null): Step[] => {
+const buildSteps = (expiresAt: Date | null) => {
     const remaining = formatRemaining(expiresAt);
 
     return [
@@ -45,22 +40,17 @@ const buildSteps = (expiresAt: Date | null): Step[] => {
     ];
 };
 
-const isDemoLocationState = (state: unknown): state is DemoLocationState => {
-    return typeof state === 'object' && state !== null && 'justProvisionedDemo' in state;
-};
-
 const DemoWelcomeModal = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const expiresAt = useDemoClusterStore((state) => state.expiresAt);
-    const steps = useMemo(() => buildSteps(expiresAt), [expiresAt]);
+    const steps = buildSteps(expiresAt);
     const [isOpen, setIsOpen] = useState(false);
     const [stepIndex, setStepIndex] = useState(0);
 
     useEffect(() => {
-        const state = location.state;
-        const justProvisioned = isDemoLocationState(state) && state.justProvisionedDemo === true;
-        if (!justProvisioned) return;
+        const state = location.state as DemoLocationState | null;
+        if (state?.justProvisionedDemo !== true) return;
 
         const alreadySeen = localStorage.getItem(STORAGE_KEY) === '1';
         if (alreadySeen) {

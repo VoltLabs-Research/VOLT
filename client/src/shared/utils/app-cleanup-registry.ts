@@ -34,6 +34,7 @@ const runCleanup = (context: AppCleanupContext): void => {
         try {
             handler(context);
         } catch {
+            // Every registered handler must get its turn to clean up.
         }
     });
 };

@@ -1,14 +1,9 @@
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { ConfigureColorCodingInput } from '@volt/contracts/modules/ai/ai-tools';
 import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 
-interface ConfigureColorCodingInput {
-    property: string;
-    colorMap?: string;
-    min?: number;
-    max?: number;
-}
-
+/** The contract spells colormaps in lowercase; `COLORMAP_NAMES` is capitalized. */
 const resolveGradient = (raw?: string): ColormapName => {
     if (!raw) return 'Viridis';
     const match = COLORMAP_NAMES.find((name) => name.toLowerCase() === raw.toLowerCase());
@@ -21,7 +16,7 @@ const configureColorCoding: ClientToolHandler<ConfigureColorCodingInput> = {
 
     run(input): ClientToolResult {
         const gradient = resolveGradient(input.colorMap);
-        const manualRange = typeof input.min === 'number' && typeof input.max === 'number'
+        const manualRange = input.min !== undefined && input.max !== undefined
             ? {
                 min: input.min,
                 max: input.max

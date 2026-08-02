@@ -1,28 +1,29 @@
-import { analysisQuery, KEYS } from '../hooks/queries';
-import { patchPaginatedPage, removeEntityFromList, snapshotQueries } from '@/shared/query/cache-utils';
+import {
+    analysisQuery,
+    isAnalysisByTrajectoryQueryKey,
+    patchAnalysisByTrajectoryQueries,
+    KEYS
+} from '../hooks/queries';
+import { removeEntityFromList, snapshotQueries } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
-import type { GetAnalysesByTrajectoryParams } from '../api/service';
+import type {
+    AnalysisCreatedSocketPayload,
+    AnalysisStageChangedSocketPayload,
+    AnalysisStatusChangedSocketPayload
+} from '@/modules/socket/events/analysis';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 
-interface PatchAnalysisStatusInput {
-    analysisId: string;
-    status: Analysis['status'];
-    totalFrames?: number;
-    artifactStatus?: Analysis['artifactStatus'];
-    expectedArtifacts?: Analysis['expectedArtifacts'];
-    stages?: Analysis['stages'];
-    childAnalyses?: Analysis['childAnalyses'];
-};
+type PatchAnalysisStatusInput = Pick<
+    AnalysisStatusChangedSocketPayload,
+    'analysisId' | 'status' | 'totalFrames' | 'artifactStatus' | 'expectedArtifacts' | 'stages' | 'childAnalyses'
+>;
 
-interface PatchAnalysisExecutionInput {
-    analysisId: string;
-    artifactStatus?: Analysis['artifactStatus'];
-    expectedArtifacts?: Analysis['expectedArtifacts'];
-    stages?: Analysis['stages'];
-    childAnalyses?: Analysis['childAnalyses'];
-};
+type PatchAnalysisExecutionInput = Pick<
+    AnalysisStageChangedSocketPayload,
+    'analysisId' | 'artifactStatus' | 'expectedArtifacts' | 'stages' | 'childAnalyses'
+>;
 
 interface FindCachedAnalysisByIdInput {
     analysisId: string;
@@ -30,64 +31,25 @@ interface FindCachedAnalysisByIdInput {
     fallbackAnalyses?: Analysis[];
 };
 
-const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTrajectoryParams | undefined => {
-    const candidate = queryKey.find((entry): entry is Partial<GetAnalysesByTrajectoryParams> => {
+// TanStack hands query keys back as `readonly unknown[]`, so the params object has to be narrowed.
+const getQueryKeyTrajectoryId = (queryKey: readonly unknown[]): string | undefined => {
+    const params = queryKey.find((entry): entry is { trajectoryId: string } => {
         return typeof entry === 'object'
             && entry !== null
-            && typeof (entry as Partial<GetAnalysesByTrajectoryParams>).trajectoryId === 'string';
+            && typeof (entry as { trajectoryId?: unknown }).trajectoryId === 'string';
     });
 
-    if (typeof candidate?.trajectoryId !== 'string'
-        || typeof candidate.page !== 'number'
-        || typeof candidate.limit !== 'number') {
-        return undefined;
-    }
-
-    return {
-        trajectoryId: candidate.trajectoryId,
-        page: candidate.page,
-        limit: candidate.limit
-    };
-};
-
-const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean => {
-    return queryKey.some((entry) => entry === 'analysis')
-        && queryKey.some((entry) => entry === 'byTrajectory');
+    return params?.trajectoryId;
 };
 
 const isCanvasAnalysesQueryKey = (queryKey: readonly unknown[]): boolean => {
-    return queryKey.some((entry) => entry === 'canvas')
-        && queryKey.some((entry) => entry === 'analyses');
-};
-
-const isAnalysisListQueryKey = (queryKey: readonly unknown[]): boolean => {
-    return queryKey.some((entry) => entry === 'analysis')
-        && (
-            queryKey.some((entry) => entry === 'list')
-            || queryKey.some((entry) => entry === 'infinite-list')
-            || queryKey.some((entry) => entry === 'detail')
-        );
+    return queryKey.includes('canvas') && queryKey.includes('analyses');
 };
 
 const isAnalysisCacheQueryKey = (queryKey: readonly unknown[]): boolean => {
     return isAnalysisByTrajectoryQueryKey(queryKey)
-        || isAnalysisListQueryKey(queryKey)
-        || isCanvasAnalysesQueryKey(queryKey);
-};
-
-const patchByTrajectoryQueries = (
-    updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
-): void => {
-    queryClient.setQueriesData<PaginatedResponse<Analysis>>(
-        {
-            predicate: (query) => Array.isArray(query.queryKey)
-                && isAnalysisByTrajectoryQueryKey(query.queryKey)
-        },
-        (current) => {
-            if (!current || !Array.isArray(current.data)) return current;
-            return updater(current);
-        }
-    );
+        || isCanvasAnalysesQueryKey(queryKey)
+        || (queryKey.includes('analysis') && ['list', 'infinite-list', 'detail'].some((segment) => queryKey.includes(segment)));
 };
 
 const patchCanvasAnalysesQueries = (
@@ -95,25 +57,19 @@ const patchCanvasAnalysesQueries = (
 ): void => {
     queryClient.setQueriesData<PaginatedResponse<Analysis>>(
         {
-            predicate: (query) => Array.isArray(query.queryKey)
-                && isCanvasAnalysesQueryKey(query.queryKey)
+            predicate: (query) => isCanvasAnalysesQueryKey(query.queryKey)
         },
-        (current) => {
-            if (!current || !Array.isArray(current.data)) return current;
-            return updater(current);
-        }
+        (current) => current ? updater(current) : current
     );
 };
 
 export const snapshotAnalysisCaches = (): QueryDataSnapshot => {
-    return snapshotQueries((query) => Array.isArray(query.queryKey)
-        && isAnalysisCacheQueryKey(query.queryKey));
+    return snapshotQueries((query) => isAnalysisCacheQueryKey(query.queryKey));
 };
 
 export const cancelAnalysisCacheQueries = (): Promise<void> => {
     return queryClient.cancelQueries({
-        predicate: (query) => Array.isArray(query.queryKey)
-            && isAnalysisCacheQueryKey(query.queryKey)
+        predicate: (query) => isAnalysisCacheQueryKey(query.queryKey)
     });
 };
 
@@ -129,23 +85,18 @@ export const removeAnalysisCaches = (analysisId: string): void => {
         pageParams: current.pageParams
     }));
 
-    patchPaginatedPage<Analysis>(KEYS.byTrajectory(), removeFromPage);
-    patchByTrajectoryQueries(removeFromPage);
+    patchAnalysisByTrajectoryQueries(removeFromPage);
     patchCanvasAnalysesQueries(removeFromPage);
 };
 
 const upsertAnalysisCaches = (analysis: Analysis): void => {
     analysisQuery.cache.upsert(analysis);
 
-    const analysisTrajectoryId = analysis.trajectory?._id;
-
     queryClient.getQueriesData<PaginatedResponse<Analysis>>({
-        predicate: (query) => Array.isArray(query.queryKey)
-            && isAnalysisByTrajectoryQueryKey(query.queryKey)
+        predicate: (query) => isAnalysisByTrajectoryQueryKey(query.queryKey)
     }).forEach(([queryKey, page]) => {
         if (!page) return;
-        const params = getTrajectoryParams(queryKey);
-        if (params?.trajectoryId !== analysisTrajectoryId) return;
+        if (getQueryKeyTrajectoryId(queryKey) !== analysis.trajectory._id) return;
 
         const exists = page.data.some((a) => a._id === analysis._id);
         if (exists) {
@@ -174,32 +125,24 @@ const upsertAnalysisCaches = (analysis: Analysis): void => {
     });
 };
 
-export const upsertAnalysisFromSocketPayload = (data: Record<string, unknown>, trajectoryName = ''): void => {
-    const trajectoryId = String(data.trajectoryId || '');
-    if (!trajectoryId) {
-        return;
-    }
-
-    const newAnalysis = {
+export const upsertAnalysisFromSocketPayload = (data: AnalysisCreatedSocketPayload, trajectoryName: string): void => {
+    upsertAnalysisCaches({
         _id: data.analysisId,
         plugin: data.pluginId,
         pluginDisplayName: data.pluginDisplayName,
         config: data.config,
         trajectory: {
-            _id: trajectoryId,
+            _id: data.trajectoryId,
             name: trajectoryName
         },
-        totalFrames: data.totalFrames,
+        totalFrames: 0,
         status: data.status,
         artifactStatus: data.artifactStatus,
         expectedArtifacts: data.expectedArtifacts,
-        stages: data.stages,
-        childAnalyses: data.childAnalyses,
         createdAt: data.createdAt,
         updatedAt: data.createdAt
-    } as unknown as Analysis;
+    });
 
-    upsertAnalysisCaches(newAnalysis);
     void analysisQuery.cache.invalidate();
 };
 
@@ -215,26 +158,20 @@ export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnaly
     }
 
     for (const [queryKey, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({
-        predicate: (query) => Array.isArray(query.queryKey)
-            && isAnalysisByTrajectoryQueryKey(query.queryKey)
+        predicate: (query) => isAnalysisByTrajectoryQueryKey(query.queryKey)
     })) {
-        if (!page?.data?.length) {
+        if (trajectoryId && getQueryKeyTrajectoryId(queryKey) !== trajectoryId) {
             continue;
         }
 
-        const params = getTrajectoryParams(queryKey);
-        if (trajectoryId && params?.trajectoryId !== trajectoryId) {
-            continue;
-        }
-
-        const match = page.data.find((analysis) => analysis._id === analysisId);
+        const match = page?.data.find((analysis) => analysis._id === analysisId);
         if (match) {
             return match;
         }
     }
 
     for (const [, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({ queryKey: analysisQuery.QUERY_KEYS.lists() })) {
-        const match = page?.data?.find((analysis) => analysis._id === analysisId);
+        const match = page?.data.find((analysis) => analysis._id === analysisId);
         if (match) {
             return match;
         }
@@ -250,24 +187,17 @@ const patchAnalysisCaches = (
     const applyPatch = (analysis: Analysis): Analysis => {
         return analysis._id === analysisId ? patchEntity(analysis) : analysis;
     };
+    const patchPage = (page: PaginatedResponse<Analysis>): PaginatedResponse<Analysis> => ({
+        ...page,
+        data: page.data.map(applyPatch)
+    });
 
     queryClient.setQueryData<Analysis>(KEYS.detail(analysisId), (current) => {
         return current ? applyPatch(current) : current;
     });
 
-    analysisQuery.cache.patchAllLists((current) => ({
-        ...current,
-        data: current.data.map(applyPatch)
-    }));
-
-    patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => ({
-        ...page,
-        data: page.data.map(applyPatch)
-    }));
-    patchByTrajectoryQueries((page) => ({
-        ...page,
-        data: page.data.map(applyPatch)
-    }));
+    analysisQuery.cache.patchAllLists(patchPage);
+    patchAnalysisByTrajectoryQueries(patchPage);
 };
 
 export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): void => {

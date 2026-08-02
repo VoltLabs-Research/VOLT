@@ -5,7 +5,7 @@ import ChatService from '@modules/chat/services/ChatService';
 
 @DefineEventGroup('chat')
 export default class ChatEvents {
-    #service?: ChatService;
+    #service = new ChatService();
 
     @Event('chat.deleted')
     async deleteChatMessages({ chatId }: EventMap['chat.deleted']) {
@@ -14,7 +14,6 @@ export default class ChatEvents {
 
     @Event('user.deleted')
     async removeUserFromChats({ userId }: EventMap['user.deleted']) {
-        this.#service ??= new ChatService();
         await this.#service.removeUserFromAllChats(userId);
     }
 

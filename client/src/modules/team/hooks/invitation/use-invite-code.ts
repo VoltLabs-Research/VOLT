@@ -38,31 +38,25 @@ export default function useInviteCode() {
 
     const handleGenerate = useCallback(async () => {
         if (!teamId) return;
-        try {
-            await runAction({
-                action: () => generateMutation.mutateAsync({ teamId }),
-                toast: GENERATE_INVITE_CODE_TOAST_OPTIONS
-            });
-        } catch {
-        }
+        await runAction({
+            action: () => generateMutation.mutateAsync({ teamId }),
+            toast: GENERATE_INVITE_CODE_TOAST_OPTIONS
+        });
     }, [generateMutation, teamId]);
 
     const handleDelete = useCallback(async () => {
         if (!teamId) return;
-        try {
-            await runAction({
-                action: () => deleteMutation.mutateAsync({ teamId }),
-                confirm: {
-                    title: 'Delete this invite code?',
-                    description: 'Anyone using this code will no longer be able to join the team with it.',
-                    confirmText: 'Delete code',
-                    cancelText: 'Keep code',
-                    tone: ConfirmActionTone.Danger
-                },
-                toast: DELETE_INVITE_CODE_TOAST_OPTIONS
-            });
-        } catch {
-        }
+        await runAction({
+            action: () => deleteMutation.mutateAsync({ teamId }),
+            confirm: {
+                title: 'Delete this invite code?',
+                description: 'Anyone using this code will no longer be able to join the team with it.',
+                confirmText: 'Delete code',
+                cancelText: 'Keep code',
+                tone: ConfirmActionTone.Danger
+            },
+            toast: DELETE_INVITE_CODE_TOAST_OPTIONS
+        });
     }, [deleteMutation, teamId]);
 
     const handleCopy = useCallback(async () => {

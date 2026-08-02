@@ -11,8 +11,6 @@ type EndpointHealthResult =
     | { ok: true; origin: string }
     | { ok: false; reason: EndpointHealthFailure };
 
-const trimTrailingSlash = (value: string): string => value.replace(/\/$/, '');
-
 const normalizeEndpoint = (raw: string): string | null => {
     const trimmed = raw.trim();
     if (trimmed.length === 0) {
@@ -22,8 +20,7 @@ const normalizeEndpoint = (raw: string): string | null => {
     const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 
     try {
-        const url = new URL(withScheme);
-        return trimTrailingSlash(url.origin);
+        return new URL(withScheme).origin;
     } catch {
         return null;
     }

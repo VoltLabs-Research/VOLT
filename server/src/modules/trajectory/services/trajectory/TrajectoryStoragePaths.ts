@@ -9,10 +9,10 @@ export const buildTrajectoryGlbObjectName = (trajectoryId: string, timestep: str
     `trajectory-${trajectoryId}/timestep-${timestep}${TRAJECTORY_GLB_ZSTD_EXTENSION}`
 );
 
-const isZstdObjectName = (objectName: string): boolean => objectName.endsWith('.zst');
+const ZSTD_EXTENSION = '.zst';
 
 export const stripTrailingZstdExtension = (objectName: string): string => (
-    isZstdObjectName(objectName)
-        ? objectName.slice(0, -'.zst'.length)
+    objectName.endsWith(ZSTD_EXTENSION)
+        ? objectName.slice(0, -ZSTD_EXTENSION.length)
         : objectName
 );

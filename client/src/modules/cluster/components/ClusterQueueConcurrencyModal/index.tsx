@@ -191,14 +191,8 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                 return null;
             }
 
-            const parsedValue = Number(rawValue);
-            if (parsedValue < MIN_SCOPE_LIMIT) {
-                setError(`${field.label} max per trajectory must be greater than or equal to ${MIN_SCOPE_LIMIT}.`);
-                return null;
-            }
-
             parsedValues[field.key] = {
-                maxRunningPerTrajectory: parsedValue
+                maxRunningPerTrajectory: Number(rawValue)
             };
         }
 

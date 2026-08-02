@@ -2,17 +2,12 @@ import type { DashboardWorkspaceChromeOptions } from '@/modules/dashboard/contra
 
 export const DASHBOARD_LAYOUT_EVENTS = {
     requestSidebarCollapse: 'volt:request-sidebar-collapse',
-    requestSidebarExpand: 'volt:request-sidebar-expand',
-    workspaceChromeChanged: 'volt:workspace-chrome-changed'
+    requestSidebarExpand: 'volt:request-sidebar-expand'
 } as const;
 
 interface DashboardWorkspaceChromeRegistryEntry {
     collapseSidebar: boolean;
     hideHeader: boolean;
-}
-
-interface DashboardWorkspaceChromeRegistry {
-    entries: Record<string, DashboardWorkspaceChromeRegistryEntry>;
 }
 
 interface DashboardWorkspaceChromeState {
@@ -22,16 +17,11 @@ interface DashboardWorkspaceChromeState {
 
 type DashboardWorkspaceChromeListener = () => void;
 
-declare global {
-    interface Window {
-        __voltDashboardWorkspaceChrome?: DashboardWorkspaceChromeRegistry;
-    }
-}
-
+const dashboardWorkspaceChromeEntries = new Map<string, DashboardWorkspaceChromeRegistryEntry>();
 const dashboardWorkspaceChromeListeners = new Set<DashboardWorkspaceChromeListener>();
 
 const buildDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => {
-    const entries = Object.values(getDashboardWorkspaceChromeRegistry().entries);
+    const entries = [...dashboardWorkspaceChromeEntries.values()];
 
     return {
         sidebarCollapsed: entries.some((entry) => entry.collapseSidebar),
@@ -39,25 +29,11 @@ const buildDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => 
     };
 };
 
-const getDashboardWorkspaceChromeRegistry = (): DashboardWorkspaceChromeRegistry => {
-    if (!window.__voltDashboardWorkspaceChrome) {
-        window.__voltDashboardWorkspaceChrome = {
-            entries: {}
-        };
-    }
-
-    return window.__voltDashboardWorkspaceChrome;
-};
-
 let dashboardWorkspaceChromeStateSnapshot = buildDashboardWorkspaceChromeState();
 
 const dispatchDashboardWorkspaceChromeChange = (): void => {
     dashboardWorkspaceChromeStateSnapshot = buildDashboardWorkspaceChromeState();
     dashboardWorkspaceChromeListeners.forEach((listener) => listener());
-
-    window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.workspaceChromeChanged, {
-        detail: getDashboardWorkspaceChromeState()
-    }));
 };
 
 export const getDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => {
@@ -78,23 +54,18 @@ export const registerDashboardWorkspaceChrome = (
     registrationId: string,
     options: DashboardWorkspaceChromeOptions
 ): void => {
-    const registry = getDashboardWorkspaceChromeRegistry();
-
-    registry.entries[registrationId] = {
+    dashboardWorkspaceChromeEntries.set(registrationId, {
         collapseSidebar: Boolean(options.collapseSidebar),
         hideHeader: Boolean(options.hideHeader)
-    };
+    });
 
     dispatchDashboardWorkspaceChromeChange();
 };
 
 export const unregisterDashboardWorkspaceChrome = (registrationId: string): void => {
-    const registry = getDashboardWorkspaceChromeRegistry();
-
-    if (!registry.entries[registrationId]) {
+    if (!dashboardWorkspaceChromeEntries.delete(registrationId)) {
         return;
     }
 
-    delete registry.entries[registrationId];
     dispatchDashboardWorkspaceChromeChange();
 };

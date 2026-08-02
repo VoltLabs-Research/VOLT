@@ -1,47 +1,41 @@
-import { isAccessDeniedCode } from '@/shared/errors/core';
-import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import { getValueByPath } from '@voltstack/bravais';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import { sortData, type SortConfig } from '@/shared/utils/sort';
-import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
-import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
-import { Button, Heading, Popover, Row, SegmentedTabs, Skeleton, Stack, Text, PopoverMenu, VisuallyHidden } from '@voltstack/bravais';
-import AsyncMenuItemWrapper from '@/shared/ui/components/AsyncMenuItemWrapper';
 import DocumentListingGrid from '@/shared/ui/components/DocumentListingGrid';
-import DocumentListingTable from '@/shared/ui/components/DocumentListingTable';
-import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import DocumentListingHeader from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
+import DocumentListingTable, { getColumnKey } from '@/shared/ui/components/DocumentListingTable';
 import useDocumentListingPagination from '@/shared/ui/hooks/use-document-listing-pagination';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
-import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
+import useListingViewPreferences from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
+import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
+import { describeSortState, getColumnAriaSort, getColumnSortIndicator } from '@/shared/ui/components/DocumentListing/sort-affordances';
+import { isAccessDeniedCode } from '@/shared/errors/core';
+import { sortData } from '@/shared/utils/sort';
+import { Stack, usePrefersReducedMotion, VisuallyHidden } from '@voltstack/bravais';
 
 import './DocumentListing.css';
 import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { RiFileCopyLine } from 'react-icons/ri';
-import { RxDotsHorizontal } from 'react-icons/rx';
-import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { DocumentListingCreateNew, DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
+import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
+import type { MouseEvent, ReactNode } from 'react';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { QueryKey } from '@tanstack/react-query';
+
+export type { DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 
 export interface SocketInvalidationConfig {
     event: string;
     queryKeys: QueryKey[];
 };
 
-export interface DocumentListingTab {
-    id: string;
-    label: string;
-};
-
 type ViewMode = 'table' | 'grid';
 
-interface DocumentListingProps<T extends { _id: string }, TContext = Record<string, never>> {
-    title: string | React.ReactNode;
-    description?: React.ReactNode;
+interface DocumentListingProps<T extends Identifiable, TContext = Record<string, never>> {
+    title: ReactNode;
+    description?: ReactNode;
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
@@ -49,19 +43,19 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     defaultLimit?: number;
     enabled?: boolean;
     emptyMessage?: string;
-    createNew?: { buttonTitle: string; onCreate: () => void };
-    headerActions?: React.ReactNode;
+    createNew?: DocumentListingCreateNew;
+    headerActions?: ReactNode;
     headerMenuOptions?: MenuOption[];
     columns?: ColumnConfig<T>[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
-    onItemClick?: (item: T, event: React.MouseEvent) => boolean;
+    onItemClick?: (item: T, event: MouseEvent) => boolean;
     dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     view?: ViewMode;
-    renderGridItem?: (item: T, index: number) => React.ReactNode;
-    renderGridSkeleton?: () => React.ReactNode;
-    gridBeforeContent?: React.ReactNode;
+    renderGridItem?: (item: T, index: number) => ReactNode;
+    renderGridSkeleton?: () => ReactNode;
+    gridBeforeContent?: ReactNode;
     gridClassName?: string;
-    emptyIcon?: React.ReactNode;
+    emptyIcon?: ReactNode;
     emptyTitle?: string;
     emptyButtonText?: string;
     emptyButtonIsLoading?: boolean;
@@ -82,27 +76,11 @@ const DEFAULT_TABS: DocumentListingTab[] = [
     }
 ];
 
-const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string): string => {
-    if (preferredTabId && tabs.some((tab) => tab.id === preferredTabId)) {
-        return preferredTabId;
-    }
+const NO_INVALIDATION_RULES: SocketInvalidationConfig[] = [];
 
-    return tabs[0]?.id || 'list';
-};
+const COPY_DOCUMENT_ID_LABEL = 'Copy Document ID';
 
-const hashString = (value: string): string => {
-    let hash = 0;
-    for (let i = 0; i < value.length; i++) {
-        hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
-    }
-    return Math.abs(hash).toString(36);
-};
-
-const resolvePersistenceKey = (queryKey: QueryKey): string => {
-    return `list-${hashString(JSON.stringify(queryKey))}`;
-};
-
-const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
+const DocumentListing = <T extends Identifiable, TContext = Record<string, never>>({
     title,
     description,
     queryKey,
@@ -138,97 +116,16 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     socketInvalidation
 }: DocumentListingProps<T, TContext>) => {
     const prefersReducedMotion = usePrefersReducedMotion();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
-    const persistenceKey = resolvePersistenceKey(queryKey);
-    const tabParamKey = `${persistenceKey}-tab`;
-    const sortKeyParamKey = `${persistenceKey}-sort`;
-    const sortDirectionParamKey = `${persistenceKey}-dir`;
-    const hiddenColumnsParamKey = `${persistenceKey}-hide`;
-    const persistedTabId = searchParams.get(tabParamKey) || undefined;
-    const persistedSortKey = searchParams.get(sortKeyParamKey) || undefined;
-    const persistedSortDirection = searchParams.get(sortDirectionParamKey);
-    const persistedHiddenColumns = searchParams.get(hiddenColumnsParamKey);
-    const initialTabId = useMemo(() => {
-        return resolveInitialTabId(resolvedTabs, persistedTabId ?? defaultTabId);
-    }, [defaultTabId, persistedTabId, resolvedTabs]);
-    const [sortConfig, setSortConfig] = useState<SortConfig | null>(() => {
-        if (!persistedSortKey || (persistedSortDirection !== 'asc' && persistedSortDirection !== 'desc')) {
-            return null;
-        }
-
-        return {
-            key: persistedSortKey,
-            direction: persistedSortDirection
-        };
-    });
-    const [activeTabId, setActiveTabId] = useState(initialTabId);
-    const getColumnKey = useCallback((col: ColumnConfig<T>): string => {
-        return String(col.key ?? col.path ?? '');
-    }, []);
-    const defaultHiddenColumnKeys = useMemo(() => {
-        return new Set(columns.filter((col) => col.defaultHidden).map(getColumnKey));
-    }, [columns, getColumnKey]);
-    const [hiddenColumnKeys, setHiddenColumnKeys] = useState<Set<string>>(() => {
-        if (persistedHiddenColumns !== null) {
-            return new Set(persistedHiddenColumns.split(',').filter(Boolean));
-        }
-        return defaultHiddenColumnKeys;
-    });
-    const visibleColumns = useMemo(() => {
-        return columns.filter((col) => !hiddenColumnKeys.has(getColumnKey(col)));
-    }, [columns, hiddenColumnKeys, getColumnKey]);
-    const toggleColumnVisibility = useCallback((columnKey: string) => {
-        setHiddenColumnKeys((previous) => {
-            const next = new Set(previous);
-            if (next.has(columnKey)) {
-                next.delete(columnKey);
-            } else {
-                next.add(columnKey);
-            }
-            return next;
-        });
-    }, []);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setActiveTabId(initialTabId);
-    }, [initialTabId]);
-
-    useEffect(() => {
-        const currentTab = searchParams.get(tabParamKey);
-        const currentSortKey = searchParams.get(sortKeyParamKey);
-        const currentSortDirection = searchParams.get(sortDirectionParamKey);
-        const currentHiddenColumns = searchParams.get(hiddenColumnsParamKey);
-        const shouldPersistTab = !hideTabs && resolvedTabs.length > 1;
-        const nextTab = shouldPersistTab ? activeTabId : null;
-
-        const hiddenKeysSorted = [...hiddenColumnKeys].sort();
-        const defaultHiddenSorted = [...defaultHiddenColumnKeys].sort();
-        const matchesDefault = hiddenKeysSorted.length === defaultHiddenSorted.length
-            && hiddenKeysSorted.every((key, index) => key === defaultHiddenSorted[index]);
-        const nextHiddenColumns = matchesDefault ? null : (hiddenKeysSorted.join(',') || '');
-
-        if (
-            currentTab === nextTab
-            && currentSortKey === (sortConfig?.key ?? null)
-            && currentSortDirection === (sortConfig?.direction ?? null)
-            && currentHiddenColumns === nextHiddenColumns
-        ) {
-            return;
-        }
-
-        setSearchParams((prev) => applySearchParamUpdates(prev, {
-            [tabParamKey]: nextTab,
-            [sortKeyParamKey]: sortConfig?.key ?? null,
-            [sortDirectionParamKey]: sortConfig?.direction ?? null,
-            [hiddenColumnsParamKey]: nextHiddenColumns
-        }), { replace: true });
-    }, [activeTabId, defaultHiddenColumnKeys, hiddenColumnKeys, hiddenColumnsParamKey, hideTabs, resolvedTabs.length, searchParams, setSearchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey]);
-
-    const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
-        return String(col.key ?? col.path ?? '');
-    }, []);
+    const resolvedTabs = tabs?.length ? tabs : DEFAULT_TABS;
+    const preferences = useListingViewPreferences({
+        queryKey,
+        columns,
+        tabIds: resolvedTabs.map((tab) => tab.id),
+        defaultTabId,
+        onTabChange
+    });
+    const { sortConfig } = preferences;
 
     const {
         data,
@@ -247,35 +144,25 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         defaultLimit,
         enabled
     });
-    const invalidationRules = useMemo<SocketInvalidationRule[]>(
-        () => (socketInvalidation ?? []).map(({ event, queryKeys }) => ({
-            event,
-            queryKeys
-        })),
-        [socketInvalidation]
-    );
 
-    useSocketQueryInvalidation(invalidationRules, { enabled: invalidationRules.length > 0 });
+    useSocketQueryInvalidation(socketInvalidation ?? NO_INVALIDATION_RULES, {
+        enabled: Boolean(socketInvalidation?.length)
+    });
 
-    const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
+    const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
         const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
-        const itemId = String(item._id ?? '').trim();
 
-        if (!itemId || menuOptions.some((option) => option.label === 'Copy Document ID')) {
-            return menuOptions;
-        }
-
-        if (!includeCopyDocumentId) {
+        if(!includeCopyDocumentId || menuOptions.some((option) => option.label === COPY_DOCUMENT_ID_LABEL)){
             return menuOptions;
         }
 
         return [
             ...menuOptions,
             {
-                label: 'Copy Document ID',
+                label: COPY_DOCUMENT_ID_LABEL,
                 icon: RiFileCopyLine,
                 onClick: async () => {
-                    await copyTextToClipboard(itemId, {
+                    await copyTextToClipboard(item._id, {
                         successMessage: 'Document ID copied to clipboard',
                         errorMessage: 'Failed to copy document ID'
                     });
@@ -284,164 +171,50 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         ];
     }, [getMenuOptions, includeCopyDocumentId]);
 
-    const sortedData = useMemo(() => {
-        if (!sortConfig || data.length < 2) {
-            return data;
-        }
+    const sortedData = useMemo(() => sortData(data, sortConfig), [data, sortConfig]);
 
-        return sortData(data, sortConfig, getValueByPath);
-    }, [data, sortConfig]);
+    const handleSort = (col: ColumnConfig<T>) => {
+        const columnKey = getColumnKey(col);
 
-    const handleSort = useCallback((col: ColumnConfig<T>) => {
-        if (!col.sortable) {
-            return;
-        }
+        if(!col.sortable || !columnKey) return;
 
-        const columnKey = getColumnSortKey(col);
-        if (!columnKey) {
-            return;
-        }
-
-        setSortConfig((previousSortConfig) => {
-            if (previousSortConfig && previousSortConfig.key === columnKey) {
-                return {
-                    key: columnKey,
-                    direction: previousSortConfig.direction === 'asc' ? 'desc' : 'asc'
-                };
-            }
-
-            return {
-                key: columnKey,
-                direction: 'asc'
-            };
-        });
-    }, [getColumnSortKey]);
-
-    const getSortIndicator = useCallback((col: ColumnConfig<T>) => {
-        if (!col.sortable) {
-            return null;
-        }
-
-        const columnKey = getColumnSortKey(col);
-        const isActive = sortConfig?.key === columnKey;
-        const Icon = !isActive
-            ? ArrowUpDown
-            : sortConfig.direction === 'asc' ? ArrowUp : ArrowDown;
-
-        return (
-            <span
-                className={`sort-indicator d-flex flex-center ${isActive ? 'is-active' : ''}`}
-                aria-hidden='true'
-            >
-                <Icon size={12} strokeWidth={2} />
-            </span>
-        );
-    }, [getColumnSortKey, sortConfig]);
-
-    const getAriaSort = useCallback((col: ColumnConfig<T>): 'ascending' | 'descending' | 'none' => {
-        if (!col.sortable) {
-            return 'none';
-        }
-
-        const columnKey = getColumnSortKey(col);
-        if (!sortConfig || sortConfig.key !== columnKey) {
-            return 'none';
-        }
-
-        return sortConfig.direction === 'asc' ? 'ascending' : 'descending';
-    }, [getColumnSortKey, sortConfig]);
-
-    const sortAnnouncement = useMemo(() => {
-        if (!sortConfig) {
-            return 'List sorted by default order.';
-        }
-
-        const activeColumn = columns.find((column) => getColumnSortKey(column) === sortConfig.key);
-        const columnTitle = activeColumn ? String(activeColumn.title ?? activeColumn.label ?? activeColumn.key ?? activeColumn.path ?? 'selected column') : 'selected column';
-        const directionLabel = sortConfig.direction === 'asc' ? 'ascending' : 'descending';
-
-        return `Sorted by ${columnTitle} in ${directionLabel} order.`;
-    }, [columns, getColumnSortKey, sortConfig]);
-
-    const headerMenuTrigger = useMemo(() => {
-        if (!headerMenuOptions.length) {
-            return null;
-        }
-
-        return (
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                shape='circle'
-                iconOnly
-                title='Open listing actions'
-                aria-label='Open listing actions'
-            >
-                <RxDotsHorizontal />
-            </Button>
-        );
-    }, [headerMenuOptions.length]);
-
-    const shouldShowColumnPicker = view === 'table' && columns.length > 1;
-    const columnPickerTrigger = useMemo(() => {
-        if (!shouldShowColumnPicker) return null;
-        return (
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                shape='circle'
-                iconOnly
-                title='Toggle columns'
-                aria-label='Toggle columns'
-            >
-                <Columns3 size={16} />
-            </Button>
-        );
-    }, [shouldShowColumnPicker]);
-
-    const handleTabChange = useCallback((tabId: string) => {
-        const targetTab = resolvedTabs.find((tab) => tab.id === tabId);
-        if (!targetTab) {
-            return;
-        }
-
-        setActiveTabId(targetTab.id);
-        onTabChange?.(targetTab.id);
-    }, [onTabChange, resolvedTabs]);
+        preferences.toggleSort(columnKey);
+    };
 
     const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
+    /** Every prop both body renderers share, kept in one place so the two views cannot drift. */
+    const bodyProps = {
+        data: sortedData,
+        isLoading,
+        isFetchingMore,
+        hasMore,
+        onLoadMore: handleLoadMore,
+        getMenuOptions: wrappedGetMenuOptions,
+        dragAndDrop,
+        emptyMessage,
+        emptyButtonText,
+        onEmptyButtonClick,
+        errorMessage: error,
+        isAccessDenied,
+        onRetry: refresh,
+        retryButtonText: 'Try again'
+    };
+
     const renderContent = () => {
-        if (view === 'grid') {
-            if (!renderGridItem) {
-                return null;
-            }
+        if(view === 'grid'){
+            if(!renderGridItem) return null;
 
             return (
                 <DocumentListingGrid
-                    data={sortedData}
-                    isLoading={isLoading}
-                    isFetchingMore={isFetchingMore}
-                    hasMore={hasMore}
-                    onLoadMore={handleLoadMore}
+                    {...bodyProps}
                     renderItem={renderGridItem}
                     renderSkeleton={renderGridSkeleton}
                     emptyIcon={emptyIcon}
                     emptyTitle={emptyTitle}
-                    emptyMessage={emptyMessage}
-                    emptyButtonText={emptyButtonText}
                     emptyButtonIsLoading={emptyButtonIsLoading}
-                    onEmptyButtonClick={onEmptyButtonClick}
                     beforeContent={gridBeforeContent}
-                    getMenuOptions={wrappedGetMenuOptions}
-                    dragAndDrop={dragAndDrop}
                     className={gridClassName}
-                    errorMessage={error}
-                    isAccessDenied={isAccessDenied}
-                    onRetry={refresh}
-                    retryButtonText='Try again'
                 />
             );
         }
@@ -464,26 +237,13 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                     style={{ height: '100%' }}
                 >
                     <DocumentListingTable
+                        {...bodyProps}
                         listingLabel={typeof title === 'string' ? title : undefined}
-                        columns={visibleColumns}
-                        data={sortedData}
+                        columns={preferences.visibleColumns}
                         onCellClick={handleSort}
-                        getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
-                        getAriaSort={getAriaSort}
-                        isLoading={isLoading}
-                        getMenuOptions={wrappedGetMenuOptions}
+                        getCellTitle={(col) => <>{col.title} {getColumnSortIndicator(col, sortConfig)}</>}
+                        getAriaSort={(col) => getColumnAriaSort(col, sortConfig)}
                         onItemClick={onItemClick}
-                        dragAndDrop={dragAndDrop}
-                        emptyMessage={emptyMessage}
-                        hasMore={hasMore}
-                        isFetchingMore={isFetchingMore}
-                        onLoadMore={handleLoadMore}
-                        emptyButtonText={emptyButtonText}
-                        onEmptyButtonClick={onEmptyButtonClick}
-                        errorMessage={error}
-                        isAccessDenied={isAccessDenied}
-                        onRetry={refresh}
-                        retryButtonText='Try again'
                         scrollContainerRef={scrollContainerRef}
                     />
                 </motion.div>
@@ -494,117 +254,22 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     return (
         <Stack height='max' gap='1' className='document-listing-container color-secondary'>
             <VisuallyHidden aria-live='polite' aria-atomic='true'>
-                {sortAnnouncement}
+                {describeSortState(columns, sortConfig)}
             </VisuallyHidden>
             {!hideHeader && (
-                <Stack gap='3'>
-                    <Stack gap='1-5' p='2' className='document-listing-header-top-container'>
-                        <Row justify='between' align='start' gap='1-5' className='document-listing-header-row'>
-                            <Row gap='1' align='start' className='document-listing-header-main'>
-                                {isLoading && !data.length ? (
-                                    <Stack gap='025'>
-                                        <Skeleton variant='text' width={220} height={32} />
-                                        {description ? <Skeleton variant='text' width={224} height={18} /> : null}
-                                    </Stack>
-                                ) : (
-                                    <Stack gap='025' className='document-listing-header-title-block'>
-                                        {typeof title === 'string' ? (
-                                            <Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>{title}</Heading>
-                                        ) : (
-                                            title
-                                        )}
-                                        {description ? (
-                                            <Text as='p' size='sm' tone='muted' className='document-listing-header-description'>
-                                                {description}
-                                            </Text>
-                                        ) : null}
-                                    </Stack>
-                                )}
-                                {(headerMenuTrigger || columnPickerTrigger) && (
-                                    <Row gap='05'>
-                                        {columnPickerTrigger && (
-                                            <Popover
-                                                id='document-listing-column-picker'
-                                                trigger={columnPickerTrigger}
-                                                noPadding
-                                                className='context-menu-popover context-menu-popover--md'
-                                            >
-                                                {() => (
-                                                    <PopoverMenu label='Toggle columns'>
-                                                        {columns.map((col) => {
-                                                            const columnKey = getColumnKey(col);
-                                                            const optionLabel = String(col.title ?? col.label ?? col.key ?? col.path ?? columnKey);
-                                                            const isVisible = !hiddenColumnKeys.has(columnKey);
-                                                            return (
-                                                                <button
-                                                                    type='button'
-                                                                    role='menuitemcheckbox'
-                                                                    aria-checked={isVisible}
-                                                                    key={`document-listing-column-option-${columnKey}`}
-                                                                    className='document-listing-column-picker-item d-flex items-center gap-075'
-                                                                    onClick={() => toggleColumnVisibility(columnKey)}
-                                                                >
-                                                                    <span className='document-listing-column-picker-check d-flex flex-center' aria-hidden='true'>
-                                                                        {isVisible ? <Check size={14} /> : null}
-                                                                    </span>
-                                                                    <span className='flex-1 text-left'>{optionLabel}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </PopoverMenu>
-                                                )}
-                                            </Popover>
-                                        )}
-                                        {headerMenuTrigger && (
-                                            <Popover
-                                                id='document-listing-header-menu'
-                                                trigger={headerMenuTrigger}
-                                                noPadding
-                                                className='context-menu-popover context-menu-popover--md'
-                                            >
-                                                {(close) => (
-                                                    <PopoverMenu>
-                                                        {headerMenuOptions.map((option, index) => (
-                                                            <AsyncMenuItemWrapper
-                                                                key={`document-listing-header-option-${option.label}-${index}`}
-                                                                option={option}
-                                                                size='md'
-                                                                onSuccess={close}
-                                                            />
-                                                        ))}
-                                                    </PopoverMenu>
-                                                )}
-                                            </Popover>
-                                        )}
-                                    </Row>
-                                )}
-                            </Row>
-                            <Row gap='2' className='document-listing-header-actions'>
-                                {headerActions}
-                                {createNew && (
-                                    <Button variant='solid' intent='brand' onClick={createNew.onCreate} leftIcon={<Plus size={18} />}>
-                                        {createNew.buttonTitle}
-                                    </Button>
-                                )}
-                            </Row>
-                        </Row>
-                    </Stack>
-
-                    {!hideTabs && resolvedTabs.length >= 2 && (
-                        <div>
-                            <div className='document-listing-header-tabs-container'>
-                                <SegmentedTabs
-                                    tabs={resolvedTabs}
-                                    activeTab={activeTabId}
-                                    onChange={handleTabChange}
-                                    ariaLabel='Listing views'
-                                    layoutId={`${persistenceKey}-tabs`}
-                                />
-                            </div>
-                            <div className='document-listing-header-filters-container' />
-                        </div>
-                    )}
-                </Stack>
+                <DocumentListingHeader
+                    title={title}
+                    description={description}
+                    showTitleSkeleton={isLoading && !data.length}
+                    columns={columns}
+                    showColumnPicker={view === 'table' && columns.length > 1}
+                    headerActions={headerActions}
+                    headerMenuOptions={headerMenuOptions}
+                    createNew={createNew}
+                    tabs={resolvedTabs}
+                    hideTabs={hideTabs}
+                    preferences={preferences}
+                />
             )}
 
             {renderContent()}

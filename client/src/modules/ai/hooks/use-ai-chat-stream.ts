@@ -13,10 +13,6 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import type { ChatTransport, UIMessage } from 'ai';
 import type { RefObject } from 'react';
 
-interface ChatMessagesPayload {
-    messages: UIMessage[];
-}
-
 const createDeferredTransport = (): ChatTransport<UIMessage> => ({
     sendMessages: async () => {
         throw new Error('teamId and conversationId are required to send a message');
@@ -26,7 +22,7 @@ const createDeferredTransport = (): ChatTransport<UIMessage> => ({
     }
 });
 
-const lastAssistantMessageHasProviderExecutedApprovalResponses = ({ messages }: ChatMessagesPayload): boolean => {
+const lastAssistantMessageHasProviderExecutedApprovalResponses = ({ messages }: { messages: UIMessage[] }): boolean => {
     const message = messages[messages.length - 1];
     if (!message || message.role !== 'assistant') {
         return false;
@@ -87,12 +83,10 @@ const useAIChatStream = ({
             return createDeferredTransport();
         }
 
-        const getModelSelection = () => selectedModelRef.current ?? {};
-
         return createConversationStreamTransport({
             teamId,
             conversationId,
-            getModelSelection
+            getModelSelection: () => selectedModelRef.current
         });
     }, [conversationId, selectedModelRef, teamId]);
 
@@ -146,7 +140,7 @@ const useAIChatStream = ({
         }
     });
 
-    addToolResultRef.current = addToolResult as unknown as AddToolResultFn;
+    addToolResultRef.current = addToolResult as AddToolResultFn;
 
     const isSendingMessage = streamStatus === 'submitted' || streamStatus === 'streaming';
 
@@ -190,15 +184,7 @@ const useAIChatStream = ({
         const normalizedText = text.trim();
         if (!normalizedText || !canSendMessage || isSendingMessage || !conversationId) return;
 
-        try {
-            await sendMessage({ text: normalizedText });
-        } catch (error) {
-            if (error instanceof Error) {
-                throw error;
-            }
-
-            throw new Error('Failed to send message');
-        }
+        await sendMessage({ text: normalizedText });
     }, [canSendMessage, conversationId, isSendingMessage, sendMessage]);
 
     return {

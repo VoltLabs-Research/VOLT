@@ -55,11 +55,21 @@ export default class AppConfig{
         await chmod(this.props.configFile, 0o600).catch(() => {});
     }
 
-    async get(): Promise<Record<string, any>>{
+    /**
+     * The config file as parsed JSON. `unknown` values rather than `any`: the file
+     * is on disk and user-editable, so every field is read through `#field`, which
+     * makes the cast explicit at one place per field.
+     */
+    async get(): Promise<Record<string, unknown>>{
         if(!existsSync(this.props.configFile)) return {};
         const text = (await readFile(this.props.configFile)).toString().trim();
         if(!text) return {};
-        try{ return JSON.parse(text); }catch{ return {}; }
+        try{ return JSON.parse(text) as Record<string, unknown>; }catch{ return {}; }
+    }
+
+    /** Reads one top-level field, asserting the shape the caller expects. */
+    async #field<T>(key: string): Promise<T | undefined>{
+        return (await this.get())[key] as T | undefined;
     }
 
     async #update(payload: object){
@@ -77,13 +87,12 @@ export default class AppConfig{
     }
 
     async getInstalledReleaseTag(repoId: string): Promise<string | null>{
-        const config = await this.get();
-        return config?.[repoId]?.tag ?? null;
+        const release = await this.#field<{ tag?: string }>(repoId);
+        return release?.tag ?? null;
     }
 
     async getStackEnv(): Promise<Record<string, string>>{
-        const config = await this.get();
-        return (config.env ?? {}) as Record<string, string>;
+        return await this.#field<Record<string, string>>('env') ?? {};
     }
 
     async setStackEnv(env: Record<string, string>){
@@ -91,7 +100,7 @@ export default class AppConfig{
     }
 
     async getMode(): Promise<DeployMode | undefined>{
-        return (await this.get()).deployMode as DeployMode | undefined;
+        return this.#field<DeployMode>('deployMode');
     }
 
     async setMode(mode: DeployMode){
@@ -99,8 +108,7 @@ export default class AppConfig{
     }
 
     async getBootstrap(): Promise<BootstrapState | null>{
-        const config = await this.get();
-        const bootstrap = config.bootstrap as Partial<BootstrapState> | undefined;
+        const bootstrap = await this.#field<Partial<BootstrapState>>('bootstrap');
         if(!bootstrap?.done) return null;
         return bootstrap as BootstrapState;
     }
@@ -122,7 +130,7 @@ export default class AppConfig{
     }
 
     async getPersistedDevMode(): Promise<Partial<DevModeState> | undefined>{
-        return (await this.get()).devMode as Partial<DevModeState> | undefined;
+        return this.#field<Partial<DevModeState>>('devMode');
     }
 
     async setDevMode(state: DevModeState){
@@ -130,8 +138,7 @@ export default class AppConfig{
     }
 
     async getDeployment(): Promise<DeploymentState | null>{
-        const config = await this.get();
-        return (config.deployment as DeploymentState | undefined) ?? null;
+        return await this.#field<DeploymentState>('deployment') ?? null;
     }
 
     async setDeployment(state: DeploymentState){
@@ -145,7 +152,7 @@ export default class AppConfig{
     }
 
     async getWindowBounds(): Promise<WindowBounds | null>{
-        const bounds = (await this.get()).windowBounds as WindowBounds | undefined;
+        const bounds = await this.#field<WindowBounds>('windowBounds');
         if(!bounds || typeof bounds.width !== 'number' || typeof bounds.height !== 'number') return null;
         return bounds;
     }
@@ -154,17 +161,12 @@ export default class AppConfig{
         await this.#update({ windowBounds: bounds });
     }
 
-    async getTheme(): Promise<ThemePreference>{
-        const theme = (await this.get()).theme;
-        return theme === 'light' || theme === 'dark' ? theme : 'system';
-    }
-
     async setTheme(theme: ThemePreference){
         await this.#update({ theme });
     }
 
     async getRecentEndpoints(): Promise<string[]>{
-        const list = (await this.get()).recentEndpoints;
+        const list = await this.#field<unknown[]>('recentEndpoints');
         return Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string') : [];
     }
 

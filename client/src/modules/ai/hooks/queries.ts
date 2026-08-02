@@ -53,14 +53,4 @@ export const messagesQuery = createQuery(
     })
 );
 
-export const buildConversationMessagesQueryParams = (
-    teamId: string,
-    conversationId: string,
-    params?: ListAIConversationMessagesParams
-): ConversationMessagesQueryParams => ({
-    teamId,
-    conversationId,
-    params
-});
-
 export const invalidateConversationMessagesQuery = messagesQuery.invalidate;

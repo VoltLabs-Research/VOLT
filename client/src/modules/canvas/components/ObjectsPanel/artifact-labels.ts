@@ -1,18 +1,18 @@
-import type { SceneArtifact, SceneArtifactParticleFilterPropertyCondition } from '@volt/contracts/modules/trajectory/domain';
+import type { SceneArtifact, SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',
     highlight: 'Color Selection'
 } as const;
 
-const formatArtifactValue = (value: unknown): string => {
-    if (typeof value !== 'number' || Number.isNaN(value)) return String(value ?? '');
+const formatArtifactValue = (value: number | string): string => {
+    if (typeof value !== 'number') return value;
     if (Number.isInteger(value)) return String(value);
     return String(Number(value.toFixed(3)));
 };
 
-const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterPropertyCondition | SceneArtifact['params']): string => {
-    if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
+const formatParticleFilterConditionLabel = (condition: SceneArtifactParams): string => {
+    if (condition.property === undefined || condition.operator === undefined || condition.value === undefined) {
         return '';
     }
     return `${condition.property} ${condition.operator} ${formatArtifactValue(condition.value)}`;
@@ -20,22 +20,21 @@ const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilt
 
 const formatParticleFilterArtifactLabel = (artifact: SceneArtifact): string => {
     const { params, displayName } = artifact;
-    const baseCondition = Array.isArray(params.conditions) && params.conditions.length > 0
+    const baseCondition = params.conditions?.length
         ? formatParticleFilterConditionLabel(params.conditions[0])
         : formatParticleFilterConditionLabel(params);
 
     if (!baseCondition) return displayName;
 
-    const extraConditions = Array.isArray(params.conditions) && params.conditions.length > 1
-        ? `+${params.conditions.length - 1} more`
+    const extraConditions = (params.conditions?.length ?? 0) > 1
+        ? `+${(params.conditions?.length ?? 0) - 1} more`
         : '';
-    const actionLabel = params.action ? PARTICLE_FILTER_ACTION_LABELS[params.action] ?? params.action : '';
+    const actionLabel = params.action ? PARTICLE_FILTER_ACTION_LABELS[params.action] : '';
 
     return [baseCondition, extraConditions, actionLabel].filter(Boolean).join(' · ');
 };
 
 const capitalizeProperty = (property: string): string => {
-    if (!property) return property;
     return property.charAt(0).toUpperCase() + property.slice(1);
 };
 
@@ -43,7 +42,7 @@ const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
     const { params, displayName } = artifact;
 
     if (
-        typeof params.property !== 'string'
+        params.property === undefined
         || params.startValue === undefined
         || params.endValue === undefined
     ) {
@@ -51,7 +50,7 @@ const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
     }
 
     const rangeLabel = `Range: [${formatArtifactValue(params.startValue)}, ${formatArtifactValue(params.endValue)}]`;
-    const gradientLabel = typeof params.gradient === 'string' ? params.gradient : '';
+    const gradientLabel = params.gradient ?? '';
 
     return [capitalizeProperty(params.property), rangeLabel, gradientLabel].filter(Boolean).join(' · ');
 };

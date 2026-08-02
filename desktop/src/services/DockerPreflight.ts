@@ -1,6 +1,6 @@
 import Docker from 'dockerode';
-import DockerBinary from '@/services/DockerBinary';
-import ProbeRunner from '@/services/ProbeRunner';
+import { augmentedPath, dockerPath } from '@/services/DockerBinary';
+import { probe } from '@/services/ProbeRunner';
 import type { AppEvents, PreflightReason } from '@/types/events';
 
 export type PreflightResult = AppEvents['deploy:preflight'];
@@ -97,113 +97,105 @@ const COPY: Record<PreflightReason, (platform: NodeJS.Platform) => Copy> = {
     })
 };
 
-export default class DockerPreflight{
-    #binary = new DockerBinary();
+const result = (reason: PreflightReason, extra: {
+    platform: NodeJS.Platform;
+    cliPath?: string;
+    serverVersion?: string;
+    composeVersion?: string;
+    detail?: string;
+}): PreflightResult => {
+    const copy = COPY[reason](extra.platform);
+    return {
+        ok: reason === 'ok',
+        reason,
+        platform: extra.platform,
+        message: copy.message,
+        remediation: copy.remediation,
+        cta: copy.cta,
+        docsUrl: copy.docsUrl,
+        command: copy.command,
+        cliPath: extra.cliPath,
+        serverVersion: extra.serverVersion,
+        composeVersion: extra.composeVersion,
+        detail: extra.detail
+    };
+};
 
-    dockerPath(): Promise<string | null>{
-        return this.#binary.resolve();
-    }
+/**
+ * The docker CLI is a spawned subprocess, not a typed client: its exit codes and
+ * stderr text are the only signal available, so they stay parsed and classified.
+ */
+const classifyViaCli = async (cliPath: string, platform: NodeJS.Platform): Promise<PreflightResult> => {
+    const info = await probe(cliPath, ['info'], { env: { PATH: augmentedPath() } });
+    if(info.errno === 'ETIMEDOUT') return result('daemon-starting', {
+        platform,
+        cliPath
+    });
+    if(info.code === 0) return result('unknown', {
+        platform,
+        cliPath
+    });
 
-    augmentedPath(): string{
-        return this.#binary.augmentedPath();
-    }
-
-    async preflight(): Promise<PreflightResult>{
-        const platform = process.platform;
-
-        const cliPath = await this.#binary.resolve();
-        if(!cliPath) return this.#result('cli-missing', { platform });
-
-        let serverVersion: string | undefined;
-        try{
-            const docker = new Docker({ timeout: SOCKET_TIMEOUT });
-            await withTimeout(docker.ping(), PING_TIMEOUT);
-            const version = await withTimeout(docker.version(), PING_TIMEOUT) as { Version?: string };
-            serverVersion = version.Version;
-        }catch(err){
-            const code = (err as NodeJS.ErrnoException).code;
-            if(code === 'EACCES') return this.#result('permission-denied', {
-                platform,
-                cliPath
-            });
-            if(code === 'ETIMEDOUT') return this.#result('daemon-starting', {
-                platform,
-                cliPath
-            });
-            if(code === 'ENOENT' || code === 'ECONNREFUSED') return this.#result('daemon-down', {
-                platform,
-                cliPath
-            });
-            return this.#classifyViaCli(cliPath, platform);
-        }
-
-        const compose = await new ProbeRunner().probe(cliPath, ['compose', 'version', '--short'], {
-            env: { PATH: this.#binary.augmentedPath() }
-        });
-        if(compose.code !== 0) return this.#result('compose-missing', {
-            platform,
-            cliPath,
-            serverVersion
-        });
-
-        return this.#result('ok', {
-            platform,
-            cliPath,
-            serverVersion,
-            composeVersion: compose.stdout.trim()
-        });
-    }
-
-    async #classifyViaCli(cliPath: string, platform: NodeJS.Platform): Promise<PreflightResult>{
-        const info = await new ProbeRunner().probe(cliPath, ['info'], { env: { PATH: this.#binary.augmentedPath() } });
-        if(info.errno === 'ETIMEDOUT') return this.#result('daemon-starting', {
+    const text = `${info.stderr}\n${info.stdout}`.toLowerCase();
+    if(/permission denied/.test(text)) return result('permission-denied', {
+        platform,
+        cliPath
+    });
+    if(/cannot connect to the docker daemon|is the docker daemon running|no such file or directory|connection refused|the system cannot find the file specified/.test(text)){
+        return result('daemon-down', {
             platform,
             cliPath
         });
-        if(info.code === 0) return this.#result('unknown', {
+    }
+    return result('unknown', {
+        platform,
+        cliPath,
+        detail: info.stderr.trim()
+    });
+};
+
+export const dockerPreflight = async (): Promise<PreflightResult> => {
+    const platform = process.platform;
+
+    const cliPath = await dockerPath();
+    if(!cliPath) return result('cli-missing', { platform });
+
+    let serverVersion: string | undefined;
+    try{
+        const docker = new Docker({ timeout: SOCKET_TIMEOUT });
+        await withTimeout(docker.ping(), PING_TIMEOUT);
+        const version = await withTimeout(docker.version(), PING_TIMEOUT) as { Version?: string };
+        serverVersion = version.Version;
+    }catch(err){
+        const code = (err as NodeJS.ErrnoException).code;
+        if(code === 'EACCES') return result('permission-denied', {
             platform,
             cliPath
         });
-
-        const text = `${info.stderr}\n${info.stdout}`.toLowerCase();
-        if(/permission denied/.test(text)) return this.#result('permission-denied', {
+        if(code === 'ETIMEDOUT') return result('daemon-starting', {
             platform,
             cliPath
         });
-        if(/cannot connect to the docker daemon|is the docker daemon running|no such file or directory|connection refused|the system cannot find the file specified/.test(text)){
-            return this.#result('daemon-down', {
-                platform,
-                cliPath
-            });
-        }
-        return this.#result('unknown', {
+        if(code === 'ENOENT' || code === 'ECONNREFUSED') return result('daemon-down', {
             platform,
-            cliPath,
-            detail: info.stderr.trim()
+            cliPath
         });
+        return classifyViaCli(cliPath, platform);
     }
 
-    #result(reason: PreflightReason, extra: {
-        platform: NodeJS.Platform;
-        cliPath?: string;
-        serverVersion?: string;
-        composeVersion?: string;
-        detail?: string;
-    }): PreflightResult{
-        const copy = COPY[reason](extra.platform);
-        return {
-            ok: reason === 'ok',
-            reason,
-            platform: extra.platform,
-            message: copy.message,
-            remediation: copy.remediation,
-            cta: copy.cta,
-            docsUrl: copy.docsUrl,
-            command: copy.command,
-            cliPath: extra.cliPath,
-            serverVersion: extra.serverVersion,
-            composeVersion: extra.composeVersion,
-            detail: extra.detail
-        };
-    }
+    const compose = await probe(cliPath, ['compose', 'version', '--short'], {
+        env: { PATH: augmentedPath() }
+    });
+    if(compose.code !== 0) return result('compose-missing', {
+        platform,
+        cliPath,
+        serverVersion
+    });
+
+    return result('ok', {
+        platform,
+        cliPath,
+        serverVersion,
+        composeVersion: compose.stdout.trim()
+    });
 };

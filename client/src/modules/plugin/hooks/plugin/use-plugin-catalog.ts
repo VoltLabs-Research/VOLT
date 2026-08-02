@@ -6,13 +6,13 @@ import { PLUGIN_CATALOG_ALL_QUERY_KEY, usePluginCatalogQuery } from './catalog-q
 
 const usePluginCatalog = () => {
     const queryClient = useQueryClient();
-    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
 
     const allPluginsQuery = usePluginCatalogQuery({ enabled: false });
 
-    const loadAllPlugins = useCallback(async ({ force = true }: { force?: boolean } = {}): Promise<void> => {
+    const loadAllPlugins = useCallback(async (): Promise<void> => {
         const currentPlugins = queryClient.getQueryData<Plugin[]>(PLUGIN_CATALOG_ALL_QUERY_KEY);
-        if (!force && currentPlugins && currentPlugins.length > 0) return;
+        if (currentPlugins?.length) return;
 
         try {
             await allPluginsQuery.refetch();
@@ -43,10 +43,7 @@ const usePluginCatalog = () => {
 
     return {
         loadAllPlugins,
-        ensurePluginById,
-        accessDenied,
-        accessDeniedMessage,
-        isLoading: allPluginsQuery.isLoading
+        ensurePluginById
     };
 };
 
@@ -55,21 +52,11 @@ export default usePluginCatalog;
 export const useEnsurePluginCatalogLoaded = (enabled = true) => {
     const { loadAllPlugins } = usePluginCatalog();
 
-    const ensureLoaded = useCallback(async () => {
-        if (!enabled) {
-            return;
-        }
-
-        await loadAllPlugins({ force: false });
-    }, [enabled, loadAllPlugins]);
-
     useEffect(() => {
         if (!enabled) {
             return;
         }
 
-        ensureLoaded().catch(() => undefined);
-    }, [enabled, ensureLoaded]);
-
-    return ensureLoaded;
+        loadAllPlugins().catch(() => undefined);
+    }, [enabled, loadAllPlugins]);
 };

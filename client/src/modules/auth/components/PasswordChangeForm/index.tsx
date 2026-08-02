@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 import type { PasswordInfo } from '@volt/contracts/modules/auth/domain';
-import type { PasswordChangeForm as PasswordChangeFormType } from './validation-schema';
 
 interface PasswordChangeFormProps {
     passwordInfo: PasswordInfo | null;
@@ -24,7 +23,7 @@ const PasswordChangeForm = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, watch } = useForm<PasswordChangeFormType>({
+    const { control, handleSubmit, reset, watch } = useForm({
         defaultValues: {
             currentPassword: '',
             newPassword: '',

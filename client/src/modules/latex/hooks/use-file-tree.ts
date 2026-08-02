@@ -7,9 +7,8 @@ import {
 } from '@/modules/latex/utils/workspace';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
+import type { LatexFileEntry } from '@/modules/latex/contracts/workspace';
 import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
-import type { FileTreeNode } from '@/modules/latex/utils/file-tree';
 import type { RenameTarget } from '@/modules/latex/contracts/workspace';
 
 interface UseFileTreeInput {
@@ -18,8 +17,6 @@ interface UseFileTreeInput {
     folderPaths?: string[];
     onCreateFile: (name: string, path?: string, content?: string) => Promise<unknown>;
     onCreateFolder: (folderPath: string) => Promise<void>;
-    onRenameFile: (fileId: string, name: string) => Promise<void>;
-    onRenameAsset: (asset: LatexAsset, name: string) => Promise<void>;
     onDeleteFileDirect: (input: { documentId: string; fileId: string }) => Promise<unknown>;
     onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
     onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
@@ -27,30 +24,8 @@ interface UseFileTreeInput {
     documentId: string;
 }
 
-interface UseFileTreeOutput {
-    treeNodes: FileTreeNode[];
-    expandedFolders: Set<string>;
-    newFileTargetFolder: string | null;
-    newFolderTargetFolder: string | null;
-    renamingTarget: RenameTarget | null;
-    toggleFolder: (folderPath: string) => void;
-    openNewFileIn: (folderPath: string) => void;
-    closeNewFile: () => void;
-    handleConfirmNewFile: (name: string) => Promise<void>;
-    openNewFolderIn: (folderPath: string) => void;
-    closeNewFolder: () => void;
-    handleConfirmNewFolder: (name: string) => Promise<void>;
-    startRenameFolder: (folderPath: string) => void;
-    startRenameFile: (file: LatexFileEntry) => void;
-    startRenameAsset: (asset: LatexAsset) => void;
-    renameFolder: (folderPath: string, nextName: string) => Promise<void>;
-    cancelRename: () => void;
-    handleConfirmRename: (name: string) => Promise<void>;
-    handleDeleteFolder: (folderPath: string) => Promise<void>;
-    moveFileToFolder: (fileId: string, targetFolderPath: string) => Promise<boolean>;
-    moveAssetToFolder: (assetId: string, targetFolderPath: string) => Promise<boolean>;
-    moveFolderToFolder: (folderPath: string, targetFolderPath: string) => Promise<boolean>;
-}
+/** Shared so the default does not allocate a new array on every render. */
+const NO_EXTRA_FOLDER_PATHS: string[] = [];
 
 const getFolderDisplayName = (folderPath: string): string => {
     const normalized = normalizeWorkspaceFolderPath(folderPath).replace(/\/$/, '');
@@ -68,17 +43,15 @@ const getFolderParentPath = (folderPath: string): string => {
 const useFileTree = ({
     files,
     assets,
-    folderPaths = [],
+    folderPaths = NO_EXTRA_FOLDER_PATHS,
     onCreateFile,
     onCreateFolder,
-    onRenameFile,
-    onRenameAsset,
     onDeleteFileDirect,
     onDeleteAssetDirect,
     onUpdateFileDirect,
     onUpdateAssetDirect,
     documentId
-}: UseFileTreeInput): UseFileTreeOutput => {
+}: UseFileTreeInput) => {
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [newFileTargetFolder, setNewFileTargetFolder] = useState<string | null>(null);
     const [newFolderTargetFolder, setNewFolderTargetFolder] = useState<string | null>(null);
@@ -330,27 +303,6 @@ const useFileTree = ({
         return relocateFolder(folderPath, nextFolderPath);
     }, [relocateFolder]);
 
-    const handleConfirmRename = useCallback(async (name: string): Promise<void> => {
-        const nextName = name.trim();
-        if (!renamingTarget || !nextName) return;
-
-        if (renamingTarget.type === 'folder') {
-            const folderPath = renamingTarget.id.replace(/^folder:/, '');
-            await renameFolder(folderPath, nextName);
-        } else if (renamingTarget.type === 'file') {
-            const fileId = renamingTarget.id.replace(/^file:/, '');
-            await onRenameFile(fileId, nextName);
-        } else {
-            const assetId = renamingTarget.id.replace(/^asset:/, '');
-            const asset = assets.find((currentAsset) => currentAsset._id === assetId);
-            if (asset) {
-                await onRenameAsset(asset, nextName);
-            }
-        }
-
-        setRenamingTarget(null);
-    }, [assets, onRenameAsset, onRenameFile, renameFolder, renamingTarget]);
-
     const handleDeleteFolder = useCallback(async (folderPath: string): Promise<void> => {
         const folderName = getFolderDisplayName(folderPath);
         const accepted = await confirm({
@@ -399,7 +351,6 @@ const useFileTree = ({
         startRenameAsset,
         renameFolder,
         cancelRename,
-        handleConfirmRename,
         handleDeleteFolder,
         moveFileToFolder,
         moveAssetToFolder,

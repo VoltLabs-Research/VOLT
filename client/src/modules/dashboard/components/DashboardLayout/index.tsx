@@ -27,18 +27,13 @@ import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { sileo } from 'sileo';
 import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import './DashboardLayout.css';
-
-interface DashboardLocationState {
-    fromNotFound?: boolean;
-}
 
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
     /^\/dashboard\/containers\/[^/]+/,
@@ -53,12 +48,6 @@ const getOutletTransitionKey = (pathname: string): string => {
     return pathname;
 };
 
-const isDashboardLocationState = (state: unknown): state is DashboardLocationState => {
-    return typeof state === 'object'
-        && state !== null
-        && 'fromNotFound' in state;
-};
-
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
 
 const DashboardLayout = () => {
@@ -66,7 +55,6 @@ const DashboardLayout = () => {
 
     const { teams } = useTeamData();
     const location = useLocation();
-    const navigate = useNavigate();
     const prefersReducedMotion = usePrefersReducedMotion();
     const selectedTeamId = useSelectedTeamId();
     const setDemoFromCluster = useDemoClusterStore((state) => state.setFromCluster);
@@ -112,30 +100,9 @@ const DashboardLayout = () => {
     }, []);
 
     const expandSidebar = useCallback(() => {
-        setSidebarCollapsedPreference((prev) => {
-            if (prev) {
-                localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
-                return false;
-            }
-            return prev;
-        });
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
+        setSidebarCollapsedPreference(false);
     }, []);
-
-    useEffect(() => {
-        const state = location.state;
-        const fromNotFound = isDashboardLocationState(state) && state.fromNotFound === true;
-
-        if (fromNotFound) {
-            sileo.info({
-                title: 'Page not found',
-                description: 'The page you are looking for does not exist. You have been redirected to the dashboard.'
-            });
-            navigate(location.pathname, {
-                replace: true,
-                state: {}
-            });
-        }
-    }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
         setGlobalSearchBreadcrumb(null);

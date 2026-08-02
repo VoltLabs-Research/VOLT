@@ -2,11 +2,6 @@ import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import {
-    buildTeamRoleCreatePayload,
-    buildTeamRoleUpdatePayload,
-    canRenameTeamRoleTo
-} from '@modules/team/contracts/team-role';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -15,8 +10,6 @@ import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/m
 const DEFAULT_ROLE_LIMIT = 10;
 
 export default class TeamRoleService{
-    #eventBus = eventBus;
-
     async listByTeamId(teamId: string, page = 1, limit = DEFAULT_ROLE_LIMIT): Promise<PaginatedResult<TeamRole>>{
         const pageRequest = readPageRequest(page, limit, { defaultLimit: DEFAULT_ROLE_LIMIT });
 
@@ -38,14 +31,14 @@ export default class TeamRoleService{
     }
 
     async create(teamId: string, userId: string, input: CreateTeamRoleInput): Promise<TeamRole>{
-        const newRole = await TeamRole.create(buildTeamRoleCreatePayload({
-            teamId,
+        const newRole = await TeamRole.create({
+            team: teamId,
             name: input.name,
-            permissions: input.permissions ?? [],
+            permissions: [...new Set(input.permissions ?? [])],
             isSystem: input.isSystem ?? false
-        })).save();
+        }).save();
 
-        await this.#eventBus.emit('team-role.created', {
+        await eventBus.emit('team-role.created', {
             teamRoleId: newRole.id,
             teamId: newRole.team,
             name: newRole.name,
@@ -60,18 +53,16 @@ export default class TeamRoleService{
         if(!currentRole){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
-
-        if(!canRenameTeamRoleTo(currentRole, input.name)){
+        if(currentRole.isSystem && input.name && input.name !== currentRole.name){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ROLE_IS_SYSTEM, 'Cannot rename system roles');
         }
 
-        const updateData = buildTeamRoleUpdatePayload(currentRole, {
-            name: input.name,
-            permissions: input.permissions
-        });
-        const teamRole = await Object.assign(currentRole, updateData).save();
+        const teamRole = await Object.assign(currentRole, {
+            ...(input.permissions !== undefined && { permissions: input.permissions }),
+            ...(!currentRole.isSystem && input.name !== undefined && { name: input.name })
+        }).save();
 
-        await this.#eventBus.emit('team-role.updated', {
+        await eventBus.emit('team-role.updated', {
             teamRoleId: teamRole.id,
             teamId: teamRole.team,
             name: teamRole.name,
@@ -82,10 +73,6 @@ export default class TeamRoleService{
     }
 
     async deleteById(teamId: string, roleId: string, userId: string): Promise<{ success: boolean }>{
-        if(!userId){
-            throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'Authentication required');
-        }
-
         const roleToDelete = await TeamRole.findOneBy({ id: roleId });
         if(!roleToDelete){
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
@@ -110,7 +97,7 @@ export default class TeamRoleService{
 
         await roleToDelete.remove();
 
-        await this.#eventBus.emit('team-role.deleted', {
+        await eventBus.emit('team-role.deleted', {
             teamRoleId: roleId,
             teamId,
             userId,

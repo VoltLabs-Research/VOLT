@@ -43,16 +43,15 @@ const FloatingNodePanel = () => {
     const nodes = usePluginBuilderStore((state) => state.nodes);
     const { flowToScreenPosition } = useReactFlow();
     const viewport = useViewport();
-    const panelRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLElement | null>(null);
     const [position, setPosition] = useState<PanelPosition | null>(null);
 
     const computePosition = useCallback((node: Node): PanelPosition => {
-        const container = containerRef.current;
-        const containerHeight = container?.getBoundingClientRect().height ?? window.innerHeight;
-        const containerWidth = container?.getBoundingClientRect().width ?? window.innerWidth;
-        const containerTop = container?.getBoundingClientRect().top ?? 0;
-        const containerLeft = container?.getBoundingClientRect().left ?? 0;
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        const containerHeight = containerRect?.height ?? window.innerHeight;
+        const containerWidth = containerRect?.width ?? window.innerWidth;
+        const containerTop = containerRect?.top ?? 0;
+        const containerLeft = containerRect?.left ?? 0;
 
         const viewportBound = Math.floor(window.innerHeight * PANEL_VIEWPORT_RATIO);
         const maxHeight = Math.max(
@@ -98,17 +97,12 @@ const FloatingNodePanel = () => {
         }
     }, []);
 
-    const handleClose = useCallback(() => {
-        selectNode(null);
-    }, [selectNode]);
-
     const config = liveSelectedNode ? NODE_CONFIGS[liveSelectedNode.type as NodeType] : null;
 
     return (
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
                 <motion.div
-                    ref={panelRef}
                     className='floating-node-panel p-absolute overflow-hidden glass-bg d-flex column'
                     style={{
                         top: position.top,
@@ -133,7 +127,7 @@ const FloatingNodePanel = () => {
                         <Heading level={3} size='lg' weight='bold' className='flex-1'>
                             {config.label}
                         </Heading>
-                        <CloseButton onClick={handleClose} />
+                        <CloseButton onClick={() => selectNode(null)} />
                     </Row>
 
                     <NodeEditor node={liveSelectedNode} />

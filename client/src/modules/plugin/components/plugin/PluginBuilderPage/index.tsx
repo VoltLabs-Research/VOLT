@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
@@ -24,7 +24,7 @@ const PluginBuilderPage = () => {
     const { isLoading, accessDenied, accessDeniedMessage } = useLoadPlugin(pluginId);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
-    const handleBack = useCallback(() => navigate(-1), [navigate]);
+    const handleBack = () => navigate(-1);
 
     useEffect(() => {
         if (!pluginId) {
@@ -38,7 +38,7 @@ const PluginBuilderPage = () => {
         };
     }, [clearWorkflow]);
 
-    const bottomSidebarContent = useMemo(() => (
+    const bottomSidebarContent = (
         <Box p='1-5' className='editor-sidebar-user-avatar-wrapper'>
             <UserMenuPopover
                 onSettingsClick={handleSettingsClick}
@@ -46,7 +46,7 @@ const PluginBuilderPage = () => {
                 isSigningOut={isSigningOut}
             />
         </Box>
-    ), [handleSettingsClick, handleSignOut, isSigningOut]);
+    );
 
     if (accessDenied) {
         return <AccessDenied description={accessDeniedMessage} />;

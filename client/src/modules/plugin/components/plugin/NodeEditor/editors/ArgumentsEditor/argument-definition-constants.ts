@@ -2,14 +2,6 @@ import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import type { SelectOption } from '@voltstack/bravais';
 
-export const ARGUMENT_TYPE_LABELS: Record<string, string> = ARGUMENT_TYPE_OPTIONS.reduce<Record<string, string>>(
-    (accumulator, option) => {
-        accumulator[option.value] = option.label;
-        return accumulator;
-    },
-    {}
-);
-
 export const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map((option) => ({
     value: option.value,
     title: option.label

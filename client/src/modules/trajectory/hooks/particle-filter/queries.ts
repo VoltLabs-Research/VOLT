@@ -20,11 +20,6 @@ const KEYS = buildKeys<{
     uniqueValues: GetUniqueValuesInput;
 }>(BASE_KEY);
 
-export const PARTICLE_FILTER_QUERY_KEYS = {
-    filterProperties: KEYS.filterProperties,
-    uniqueValues: KEYS.uniqueValues
-} as const;
-
 const getFilterPropertiesKey = (params: GetFilterPropertiesInput) =>
     currentAccessKey(KEYS.filterProperties(params));
 

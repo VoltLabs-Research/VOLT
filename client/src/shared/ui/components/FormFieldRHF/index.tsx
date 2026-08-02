@@ -6,6 +6,7 @@ import type {
     CanvasStyleProps,
     ControlledProps,
     ControllerField,
+    FieldRendererProps,
     FormFieldChangeEvent,
     FormFieldRHFProps,
     SyntheticChangeEvent,
@@ -30,17 +31,14 @@ const isFieldChangeEvent = (value: unknown): value is FormFieldChangeEvent => {
 };
 
 const buildSyntheticChangeEvent = (name: string, value: unknown): SyntheticChangeEvent => {
-    const stringValue = String(value ?? '');
+    const target = {
+        name,
+        value: String(value ?? '')
+    };
 
     return {
-        target: {
-            name,
-            value: stringValue
-        },
-        currentTarget: {
-            name,
-            value: stringValue
-        }
+        target,
+        currentTarget: target
     };
 };
 
@@ -81,62 +79,31 @@ const createUncontrolledControllerField = (props: UncontrolledProps): Controller
 };
 
 const FormFieldRHF = <TForm extends FieldValues = FieldValues>(props: FormFieldRHFProps<TForm>) => {
-    const {
-        label,
-        fieldType = 'input',
-        placeholder,
-        icon,
-        options = [],
-        rows = 3,
-        className = '',
-        disabled = false,
-        type,
-        autoFocus = false,
-        variant = 'default',
-        suggestions,
-        onFetchSuggestions,
-        autocomplete,
-        inputProps,
-        isLoading = false
-    } = props;
-
-    const rendererProps = {
-        label,
-        fieldType,
-        placeholder,
-        icon,
-        options,
-        rows,
-        className,
-        disabled,
-        type,
-        autoFocus,
-        variant,
-        suggestions,
-        onFetchSuggestions,
-        autocomplete,
-        inputProps,
-        isLoading
+    const rendererProps: Omit<FieldRendererProps, 'field' | 'error'> = {
+        label: props.label,
+        fieldType: props.fieldType ?? 'input',
+        placeholder: props.placeholder,
+        icon: props.icon,
+        options: props.options ?? [],
+        rows: props.rows ?? 3,
+        className: props.className ?? '',
+        disabled: props.disabled ?? false,
+        type: props.type,
+        autoFocus: props.autoFocus ?? false,
+        variant: props.variant ?? 'default',
+        suggestions: props.suggestions,
+        onFetchSuggestions: props.onFetchSuggestions,
+        autocomplete: props.autocomplete,
+        inputProps: props.inputProps,
+        isLoading: props.isLoading ?? false
     };
 
     const renderFieldRenderer = (field: ControllerField, error?: string) => {
-        if (variant === 'inline' || variant === 'canvas') {
-            return (
-                <InlineCanvasFieldRenderer
-                    field={field}
-                    error={error}
-                    {...rendererProps}
-                />
-            );
-        }
+        const FieldRenderer = rendererProps.variant === 'default'
+            ? DefaultFieldRenderer
+            : InlineCanvasFieldRenderer;
 
-        return (
-            <DefaultFieldRenderer
-                field={field}
-                error={error}
-                {...rendererProps}
-            />
-        );
+        return <FieldRenderer field={field} error={error} {...rendererProps} />;
     };
 
     if (isControlled(props)) {

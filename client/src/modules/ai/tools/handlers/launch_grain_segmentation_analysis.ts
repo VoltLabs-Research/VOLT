@@ -1,26 +1,13 @@
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { LaunchGrainSegmentationAnalysisInput } from '@volt/contracts/modules/ai/ai-tools';
 import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 
-interface LaunchGrainSegmentationInput {
-    dislocation_density_threshold: number;
-    frame?: number;
-}
-
-const launchGrainSegmentation: ClientToolHandler<LaunchGrainSegmentationInput> = {
+const launchGrainSegmentation: ClientToolHandler<LaunchGrainSegmentationAnalysisInput> = {
     name: 'launch_grain_segmentation_analysis',
     needsViewer: true,
 
     run(input): ClientToolResult {
         const threshold = input.dislocation_density_threshold;
-
-        if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
-            return {
-                ok: false,
-                summary: 'Invalid threshold value.',
-                reason: 'invalid_threshold',
-                hint: 'dislocation_density_threshold must be a number between 0 and 1.'
-            };
-        }
 
         const stageId = useCanvasPipelineStore.getState().addStage('analysis-plugin', {
             pluginId: 'grain-segmentation',

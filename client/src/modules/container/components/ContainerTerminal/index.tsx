@@ -6,14 +6,11 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import Terminal from '@/shared/ui/components/Terminal';
 import type { TerminalHandle } from '@/shared/ui/components/Terminal';
+import type { Container } from '@volt/contracts/modules/container/domain';
 import './ContainerTerminal.css';
 
 interface ContainerTerminalProps {
-    container: {
-        _id: string;
-        name: string;
-        containerId: string;
-    };
+    container: Pick<Container, '_id' | 'name'>;
     onClose?: () => void;
     embedded?: boolean;
 }
@@ -21,17 +18,7 @@ interface ContainerTerminalProps {
 interface ContainerTerminalSocketError {
     code: string;
     message: string;
-    details?: string;
 }
-
-interface ContainerTerminalSizePayload {
-    cols: number;
-    rows: number;
-}
-
-const isContainerTerminalSocketError = (value: unknown): value is ContainerTerminalSocketError => {
-    return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
-};
 
 const TERMINAL_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
     CONTAINER_NOT_FOUND: "This container no longer exists. It may have been deleted — go back to the containers list.",
@@ -42,21 +29,12 @@ const TERMINAL_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
     STREAM_ERROR: 'Connection lost — refresh to reconnect.'
 };
 
+// The shared terminal session hook hands errors over as `unknown`; our server only
+// ever emits ContainerTerminalSocketError on this channel.
 const resolveTerminalErrorMessage = (error: unknown): string => {
-    if (typeof error === 'string') {
-        return error;
-    }
+    const { code, message } = error as ContainerTerminalSocketError;
 
-    if (isContainerTerminalSocketError(error)) {
-        const mappedMessage = TERMINAL_ERROR_MESSAGE_BY_CODE[error.code];
-        if (mappedMessage) {
-            return mappedMessage;
-        }
-
-        return error.details || error.message;
-    }
-
-    return 'Terminal error';
+    return TERMINAL_ERROR_MESSAGE_BY_CODE[code] ?? message;
 };
 
 const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTerminalProps) => {
@@ -76,16 +54,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
         resolveErrorMessage: resolveTerminalErrorMessage
     });
 
-    useSocketEvent<ContainerTerminalSizePayload>(SOCKET_CONTAINER_TERMINAL_EVENTS.SIZE, (payload) => {
-        if (
-            typeof payload?.cols !== 'number'
-            || typeof payload?.rows !== 'number'
-            || payload.cols < 1
-            || payload.rows < 1
-        ) {
-            return;
-        }
-
+    useSocketEvent<{ cols: number; rows: number }>(SOCKET_CONTAINER_TERMINAL_EVENTS.SIZE, (payload) => {
         terminalRef.current?.resize(payload.cols, payload.rows);
     });
 

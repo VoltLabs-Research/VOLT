@@ -2,8 +2,6 @@ import { Box, Stack, Text } from '@voltstack/bravais';
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utils/activity-mappings';
 import '@/modules/daily-activity/components/ActivityTooltipContent/ActivityEntry.css';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
-import { useMemo } from 'react';
-import type { FC } from 'react';
 
 interface ActivityTooltipContentProps {
     activity: DailyActivityHeatmapDetailEntry[];
@@ -12,14 +10,12 @@ interface ActivityTooltipContentProps {
     score: number;
 };
 
-const ActivityTooltipContent: FC<ActivityTooltipContentProps> = ({ activity, dateLabel, minutesOnline, score }) => {
-    const timeFormatter = useMemo(() => {
-        return new Intl.DateTimeFormat(undefined, {
-            hour: 'numeric',
-            minute: '2-digit'
-        });
-    }, []);
+const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit'
+});
 
+const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: ActivityTooltipContentProps) => {
     if (!activity.length) {
         return (
             <Stack gap='05' className='activity-tooltip-content'>
@@ -44,7 +40,7 @@ const ActivityTooltipContent: FC<ActivityTooltipContentProps> = ({ activity, dat
                     </span>
                     <Box className='activity-entry-content d-flex column min-w-0'>
                         <Text size='sm' tone='secondary'>
-                            {item.userDisplayName} · {timeFormatter.format(new Date(item.createdAt))}
+                            {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
                         </Text>
                         <Text size='md' tone='primary'>{item.description}</Text>
                     </Box>

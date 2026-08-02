@@ -1,16 +1,16 @@
-import { resolveConfiguredRouteTitle } from '@/app/routes/metadata';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
+import ContainerDetailsSkeleton from './ContainerDetailsSkeleton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
-import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
+import useContainerPageTitle from '../../hooks/use-container-page-title';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box, Stack, Row, Skeleton } from '@voltstack/bravais';
+import { Box, Stack } from '@voltstack/bravais';
 import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ContainerAction } from '../../api/service';
@@ -21,26 +21,9 @@ import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { ContainerDetailsContext } from '../../hooks/use-container-details-context';
 import './ContainerDetailsLayout.css';
-interface ContainerDetailsRouteParams extends Record<string, string | undefined> {
-    id: string;
-}
-
-const resolveContainerSectionTitle = (pathname: string): string => {
-    if (/^\/dashboard\/containers\/[^/]+\/?$/u.test(pathname)) {
-        return 'Details';
-    }
-
-    const routeTitle = resolveConfiguredRouteTitle(pathname);
-
-    if (!routeTitle || routeTitle === 'Container Details') {
-        return 'Details';
-    }
-
-    return routeTitle.replace(/^Container\s+/u, '');
-};
 
 const ContainerDetailsLayout = () => {
-    const { id } = useParams<ContainerDetailsRouteParams>();
+    const { id } = useParams<{ id: string }>();
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const prefersReducedMotion = usePrefersReducedMotion();
@@ -53,21 +36,7 @@ const ContainerDetailsLayout = () => {
         enabled: !!id
     });
 
-    const fallbackSectionTitle = resolveContainerSectionTitle(pathname);
-    const fallbackTitle = fallbackSectionTitle === 'Details'
-        ? 'Container Details'
-        : `Container ${fallbackSectionTitle}`;
-    let pageTitle = fallbackTitle;
-
-    if (container?.name) {
-        pageTitle = container.name;
-
-        if (fallbackSectionTitle !== 'Details') {
-            pageTitle = `${container.name} - ${fallbackSectionTitle}`;
-        }
-    }
-
-    usePageTitle(pageTitle);
+    useContainerPageTitle(container?.name);
 
     const actionLoading = updateContainerMutation.isPending || deleteContainerMutation.isPending;
     const { accessDenied, checkAccessDeniedError } = useAccessDenied();
@@ -80,7 +49,7 @@ const ContainerDetailsLayout = () => {
 
     const stats = useContainerStats({
         containerId: id,
-        isRunning: !!isRunning
+        isRunning
     });
 
     useEffect(() => {
@@ -97,7 +66,7 @@ const ContainerDetailsLayout = () => {
     }, [checkAccessDeniedError, error, isError]);
 
     const handleAction = useCallback(async (action: ContainerAction | 'delete') => {
-        if(!container || !id) return;
+        if(!id) return;
 
         try{
             if(action === 'delete'){
@@ -134,7 +103,7 @@ const ContainerDetailsLayout = () => {
         }catch{
             // Error handled by showPromise
         }
-    }, [container, id, deleteContainerMutation, updateContainerMutation, navigate]);
+    }, [id, deleteContainerMutation, updateContainerMutation, navigate]);
 
     const handleUpdateEnv = useCallback(async (env: EnvVariable[]) => {
         if(!id) return;
@@ -173,43 +142,14 @@ const ContainerDetailsLayout = () => {
         return {
             container,
             stats,
-            isRunning: !!isRunning,
+            isRunning,
             onUpdateEnv: handleUpdateEnv,
             onUpdatePorts: handleUpdatePorts,
             setHeaderActions
         };
     }, [container, stats, isRunning, handleUpdateEnv, handleUpdatePorts]);
 
-    if(isLoading && !container){
-        return (
-            <Stack className='container-details-layout'>
-                <Stack className='container-details-header'>
-                    <Skeleton variant='text' width={60} height={24} style={{ marginBottom: 8 }} />
-                    <Row justify='between' align='start' style={{ gap: '1rem' }}>
-                        <Stack gap='05'>
-                            <Skeleton variant='text' width={220} height={28} />
-                            <Skeleton variant='text' width={320} height={18} />
-                        </Stack>
-                        <Row gap='05'>
-                            <Skeleton variant='rounded' width={96} height={32} />
-                            <Skeleton variant='rounded' width={96} height={32} />
-                        </Row>
-                    </Row>
-                    <Box className='container-details-header-tabs-row'>
-                        <Skeleton variant='rounded' width={320} height={30} />
-                    </Box>
-                </Stack>
-                <Stack className='container-details-content-area' flex='1' p='1-5' gap='1-5'>
-                    <Row gap='2'>
-                        <Skeleton variant='rounded' width='33%' height={140} />
-                        <Skeleton variant='rounded' width='33%' height={140} />
-                        <Skeleton variant='rounded' width='33%' height={140} />
-                    </Row>
-                    <Skeleton variant='rounded' width='100%' height={240} />
-                </Stack>
-            </Stack>
-        );
-    }
+    if(isLoading && !container) return <ContainerDetailsSkeleton />;
 
     if(accessDenied) return <AccessDenied />;
 
@@ -218,7 +158,7 @@ const ContainerDetailsLayout = () => {
             <Box className='flex-center' display='flex' height='max'>
                 <RecoveryState
                     title='Container not found'
-                    description={isError && error instanceof Error ? error.message : 'The requested container could not be loaded.'}
+                    description={error?.message ?? 'The requested container could not be loaded.'}
                     tone={RecoveryStateTone.Error}
                     retryLabel='Go back'
                     onRetry={() => navigate('/dashboard/containers')}

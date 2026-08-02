@@ -6,17 +6,12 @@ import {
     useSetReactionMutation,
     useRemoveReactionMutation
 } from './queries';
-import { useCallback } from 'react';
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import { ErrorSurface, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
 
-interface UseMessageActionsOptions {
-    chatId?: string;
-}
-
-const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
+const useMessageActions = (chatId?: string) => {
     const sendMessageMutationResult = useSendMessageMutation();
     const sendFileMutationResult = useSendFileMutation();
     const editMessageMutationResult = useEditMessageMutation();
@@ -24,7 +19,7 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
     const setReactionMutationResult = useSetReactionMutation();
     const removeReactionMutationResult = useRemoveReactionMutation();
 
-    const sendMessage = useCallback(async (content: string) => {
+    const sendMessage = async (content: string) => {
         if (!chatId || !content.trim()) return;
 
         try {
@@ -44,9 +39,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
 
             sileo.error({ title: 'Failed to send message' });
         }
-    }, [chatId, sendMessageMutationResult]);
+    };
 
-    const sendFileMessage = useCallback(async (file: File) => {
+    const sendFileMessage = async (file: File) => {
         if (!chatId) return;
 
         try {
@@ -63,9 +58,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
             sileo.error({ title: 'Failed to send file' });
             throw error;
         }
-    }, [chatId, sendFileMutationResult]);
+    };
 
-    const editMessage = useCallback(async (messageId: string, content: string) => {
+    const editMessage = async (messageId: string, content: string) => {
         if (!chatId) return;
 
         return showPromise(editMessageMutationResult.mutateAsync({
@@ -77,9 +72,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
             success: { title: 'Message updated' },
             error: { title: 'Failed to edit message' }
         });
-    }, [chatId, editMessageMutationResult]);
+    };
 
-    const deleteMessage = useCallback(async (messageId: string) => {
+    const deleteMessage = async (messageId: string) => {
         if (!chatId) return;
 
         await showPromise(deleteMessageMutationResult.mutateAsync({
@@ -90,9 +85,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
             success: { title: 'Message deleted' },
             error: { title: 'Failed to delete message' }
         });
-    }, [chatId, deleteMessageMutationResult]);
+    };
 
-    const setReaction = useCallback(async (messageId: string, emoji: string) => {
+    const setReaction = async (messageId: string, emoji: string) => {
         if (!chatId) return;
 
         try {
@@ -104,9 +99,9 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
         } catch {
             sileo.error({ title: 'Failed to update reaction' });
         }
-    }, [chatId, setReactionMutationResult]);
+    };
 
-    const removeReaction = useCallback(async (messageId: string, emoji: string) => {
+    const removeReaction = async (messageId: string, emoji: string) => {
         if (!chatId) return;
 
         try {
@@ -118,7 +113,7 @@ const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
         } catch {
             sileo.error({ title: 'Failed to update reaction' });
         }
-    }, [chatId, removeReactionMutationResult]);
+    };
 
     return {
         sendMessage,

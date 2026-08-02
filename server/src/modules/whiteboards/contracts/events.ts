@@ -1,11 +1,4 @@
-export interface WhiteboardCreatedEventPayload{
-    whiteboardId: string;
-    teamId: string;
-    userId: string;
-    whiteboardTitle: string;
-}
-
-export interface WhiteboardDeletedEventPayload{
+export interface WhiteboardEventPayload{
     whiteboardId: string;
     teamId: string;
     userId: string;

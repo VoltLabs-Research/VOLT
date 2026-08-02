@@ -1,13 +1,13 @@
 import { Box, Button, Row, Stack, Text } from '@voltstack/bravais';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
+import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import Editor from '@monaco-editor/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload, File, Trash2, Check } from 'lucide-react';
 import { ENTRYPOINT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
@@ -26,13 +26,24 @@ const ENTRYPOINT_TYPE_OPTIONS = [{
     title: 'Packaged Executable'
 }];
 
-const useEntrypointEditorForm = createNodeEditorForm<EntrypointEditorFormValues, 'entrypoint'>({
-    defaults: ENTRYPOINT_EDITOR_DEFAULT_VALUES,
-    dataKey: 'entrypoint'
-});
+const MONACO_OPTIONS = {
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    lineNumbers: 'off' as const,
+    wordWrap: 'off' as const,
+    folding: false,
+    glyphMargin: false,
+    lineDecorationsWidth: 8,
+    overviewRulerLanes: 0,
+    padding: {
+        top: 12,
+        bottom: 12
+    }
+};
 
 const EntrypointEditor = ({ node }: EditorProps) => {
-    const form = useEntrypointEditorForm(node);
+    const form = useNodeEditorForm<EntrypointEditorFormValues>(node, 'entrypoint', ENTRYPOINT_EDITOR_DEFAULT_VALUES);
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
     const [monacoTheme, setMonacoTheme] = useState(() => getMonacoThemeName(getActiveAppTheme()));
     const {
@@ -78,22 +89,6 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             applyMonacoTheme(theme);
         });
     }, []);
-
-    const monacoOptions = useMemo(() => ({
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        lineNumbers: 'off' as const,
-        wordWrap: 'off' as const,
-        folding: false,
-        glyphMargin: false,
-        lineDecorationsWidth: 8,
-        overviewRulerLanes: 0,
-        padding: {
-            top: 12,
-            bottom: 12
-        }
-    }), []);
 
     return (
         <>
@@ -203,7 +198,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
                                 loading={<Box p='1' className='color-secondary'>Loading editor...</Box>}
-                                options={monacoOptions}
+                                options={MONACO_OPTIONS}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });
                                 }}

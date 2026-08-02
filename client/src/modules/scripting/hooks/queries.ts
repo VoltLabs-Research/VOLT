@@ -13,7 +13,7 @@ import type {
     UpdateScriptingNotebookParams
 } from '../api/scripting-service';
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
-import type { ScriptingSession } from '@volt/contracts/modules/scripting/domain';
+import type { CreateScriptingJupyterSessionResponse } from '@volt/contracts/modules/scripting/domain';
 
 interface ScriptingQueryKeys {
     notebooks: ListScriptingNotebooksParams;
@@ -40,6 +40,6 @@ export const useUpdateScriptingNotebookMutation = createInvalidatingMutation<Scr
     [KEYS.notebooks()]
 );
 
-export const useCreateScriptingSessionMutation = createMutation<ScriptingSession, CreateScriptingSessionParams>(
+export const useCreateScriptingSessionMutation = createMutation<CreateScriptingJupyterSessionResponse, CreateScriptingSessionParams>(
     service.createSession
 );

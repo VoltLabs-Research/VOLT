@@ -2,11 +2,9 @@ import { tokenStorage } from '@/shared/auth/token-storage';
 import { createInstrumentedHttpClient, DEFAULT_HTTP_TIMEOUT_MS } from './client-instrumentation';
 import { buildBackendUrl } from './backend-origin';
 import { VoltClient, dynamicToken } from '@voltstack/voltclient';
-import type { VoltClientOptions } from '@voltstack/voltclient';const getStoredToken = (): string | null => {
-    return tokenStorage.getToken();
-};
+import type { VoltClientOptions } from '@voltstack/voltclient';
 
-const credential = dynamicToken(getStoredToken);
+const credential = dynamicToken(() => tokenStorage.getToken());
 const apiBaseUrl = buildBackendUrl('/api');
 
 export const http = createInstrumentedHttpClient({

@@ -1,4 +1,4 @@
-import { getFrameGroupStatusLabel } from '@/modules/jobs/utils/job-status-label';
+import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
@@ -24,7 +24,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         : frame.timestep >= 0
             ? `Frame ${frame.timestep}`
             : 'General';
-    const statusLabel = getFrameGroupStatusLabel(frame.overallStatus);
+    const statusLabel = FRAME_GROUP_STATUS_LABELS[frame.overallStatus];
     const jobs = frame.jobs.map((job: Job, index: number) => (
         <JobQueue key={job.jobId || `job-${index}`} job={job} isChild />
     ));

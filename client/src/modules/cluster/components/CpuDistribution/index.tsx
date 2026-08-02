@@ -28,10 +28,6 @@ const BASE_CORE_COLORS = [
     '#AC8E68', '#5E5CE6', '#32D74B', '#FF6482'
 ];
 
-const generateCoreColors = (numCores: number): string[] => (
-    Array.from({ length: numCores }, (_, i) => BASE_CORE_COLORS[i % BASE_CORE_COLORS.length])
-);
-
 const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
     const chartData = useMemo<CpuCoreDataPoint[]>(() => {
         return history.map((point) => {
@@ -45,14 +41,16 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
 
     const numCores = useMemo(() => {
         return history.reduce((maxCores, point) => {
-            return Math.max(maxCores, point.cpu.coresUsage.length, point.cpu.cores || 0);
-        }, metrics?.cpu?.cores || 0);
-    }, [history, metrics?.cpu?.cores]);
-    const coreColors = useMemo(() => generateCoreColors(numCores), [numCores]);
+            return Math.max(maxCores, point.cpu.coresUsage.length, point.cpu.cores);
+        }, metrics?.cpu.cores ?? 0);
+    }, [history, metrics?.cpu.cores]);
+    const coreColors = useMemo(() => {
+        return Array.from({ length: numCores }, (_, i) => BASE_CORE_COLORS[i % BASE_CORE_COLORS.length]);
+    }, [numCores]);
 
-    const stats = useMemo(() => {
+    const avgUsage = useMemo(() => {
         if (chartData.length === 0 || numCores === 0) {
-            return { avgUsage: '0' };
+            return '0';
         }
 
         const coreAverages = Array.from({ length: numCores }, (_, coreIndex) => {
@@ -64,9 +62,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             return values.reduce((sum, val) => sum + val, 0) / values.length;
         });
 
-        return {
-            avgUsage: (coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1)
-        };
+        return (coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1);
     }, [chartData, numCores]);
 
     const hasCoreData = chartData.some((point) => Object.keys(point).length > 0);
@@ -103,7 +99,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             stats={[
                 {
                     label: 'Avg',
-                    value: `${stats.avgUsage}%`,
+                    value: `${avgUsage}%`,
                     emphasis: 'primary'
                 },
                 {

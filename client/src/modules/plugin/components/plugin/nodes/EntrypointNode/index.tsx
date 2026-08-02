@@ -8,19 +8,17 @@ const EntrypointNode = (props: NodeProps) => {
     const entrypoint = (data.entrypoint as IEntrypointData) || {};
     const entrypointType = entrypoint.type ?? EntrypointType.EXECUTABLE;
 
-    const hasBinary = !!entrypoint.binary;
     const entrypointLabel = entrypointType === EntrypointType.PYTHON_SCRIPT
         ? 'Python script'
         : entrypointType === EntrypointType.PACKAGED_EXECUTABLE
             ? 'Packaged executable'
             : 'Executable';
-    const binaryDisplay = hasBinary ? `${entrypointLabel}: ${entrypoint.binary || 'Binary attached'}` : undefined;
 
     return (
         <BaseNode
             {...props}
             nodeType={NodeType.ENTRYPOINT}
-            description={hasBinary ? binaryDisplay : 'No binary attached'}
+            description={entrypoint.binary ? `${entrypointLabel}: ${entrypoint.binary}` : 'No binary attached'}
         />
     );
 };

@@ -8,6 +8,7 @@ interface AITabularArtifactPayload {
     rows: Record<string, unknown>[];
 }
 
+/** Table payloads come from parsed markdown or an uploaded sheet, so shape is checked before use. */
 export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArtifactPayload | null => {
     if (artifact.kind !== AIMessageArtifactKind.Table || !isRecord(artifact.payload)) {
         return null;
@@ -35,7 +36,6 @@ export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArt
 
 interface AIImageArtifactPayload {
     url: string;
-    mediaType: string;
     summary?: string;
 }
 
@@ -60,35 +60,23 @@ const isAllowedImageUrl = (url: string): boolean => {
     }
 };
 
-export const resolveImagePayload = (source: AIMessageArtifact | unknown): AIImageArtifactPayload | null => {
-    let payload: unknown = source;
-    if (isRecord(source) && 'kind' in source && 'payload' in source) {
-        const artifact = source as unknown as AIMessageArtifact;
-        if (artifact.kind !== AIMessageArtifactKind.Image) {
-            return null;
-        }
-        payload = artifact.payload;
-    }
-
-    if (!isRecord(payload)) {
+/** Tool outputs reach us as `unknown`, so an image result is only trusted once its url checks out. */
+export const resolveImagePayload = (output: unknown): AIImageArtifactPayload | null => {
+    if (!isRecord(output)) {
         return null;
     }
 
-    if (payload.payloadType !== undefined && payload.payloadType !== 'image') {
+    if (output.payloadType !== undefined && output.payloadType !== 'image') {
         return null;
     }
 
-    const url = typeof payload.url === 'string' ? payload.url : null;
+    const url = typeof output.url === 'string' ? output.url : null;
     if (!url || !isAllowedImageUrl(url)) {
         return null;
     }
 
-    const mediaType = typeof payload.mediaType === 'string' ? payload.mediaType : 'image/png';
-    const summary = typeof payload.summary === 'string' ? payload.summary : undefined;
-
     return {
         url,
-        mediaType,
-        summary
+        summary: typeof output.summary === 'string' ? output.summary : undefined
     };
 };

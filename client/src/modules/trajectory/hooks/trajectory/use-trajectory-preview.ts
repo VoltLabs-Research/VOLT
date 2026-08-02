@@ -30,38 +30,22 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
     const hasPreviewReadinessSignal = isRasterReady || allowPersistedPreviewFallback;
     const isPreviewQueryEnabled = enabled && hasPreviewReadinessSignal && Boolean(trajectoryId);
 
-    const {
-        data,
-        error,
-        isLoading,
-        isError,
-        refetch
-    } = trajectoryPreviewQuery(
+    const rbacPreviewQuery = trajectoryPreviewQuery(
         { trajectoryId },
         {
             enabled: isPreviewQueryEnabled && accessMode === 'rbac'
         }
     );
-    const {
-        data: publicData,
-        error: publicError,
-        isLoading: isPublicLoading,
-        isError: isPublicError,
-        refetch: refetchPublic
-    } = publicTrajectoryPreviewQuery(
+    const publicPreviewQuery = publicTrajectoryPreviewQuery(
         { trajectoryId },
         {
             enabled: isPreviewQueryEnabled && accessMode === 'public'
         }
     );
-    const activeData = accessMode === 'public' ? publicData : data;
-    const activeError = accessMode === 'public' ? publicError : error;
-    const activeIsLoading = accessMode === 'public' ? isPublicLoading : isLoading;
-    const activeIsError = accessMode === 'public' ? isPublicError : isError;
-    const activeRefetch = accessMode === 'public' ? refetchPublic : refetch;
+    const activeQuery = accessMode === 'public' ? publicPreviewQuery : rbacPreviewQuery;
 
     useEffect(() => {
-        if (!activeData?.blob) {
+        if (!activeQuery.data?.blob) {
             if (previewBlobUrlRef.current) {
                 URL.revokeObjectURL(previewBlobUrlRef.current);
                 previewBlobUrlRef.current = null;
@@ -71,7 +55,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
             return;
         }
 
-        const objectUrl = URL.createObjectURL(activeData.blob);
+        const objectUrl = URL.createObjectURL(activeQuery.data.blob);
         const previousUrl = previewBlobUrlRef.current;
 
         previewBlobUrlRef.current = objectUrl;
@@ -80,7 +64,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         if (previousUrl) {
             URL.revokeObjectURL(previousUrl);
         }
-    }, [activeData?.blob]);
+    }, [activeQuery.data?.blob]);
 
     useEffect(() => {
         return () => {
@@ -91,12 +75,12 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         };
     }, []);
 
-    const hasNoPreviewYet = isApiError(activeError) && activeError.status === 404;
+    const hasNoPreviewYet = isApiError(activeQuery.error) && activeQuery.error.status === 404;
 
     return {
         previewBlobUrl,
-        isLoading: activeIsLoading,
-        error: activeIsError && !hasNoPreviewYet,
-        retry: activeRefetch
+        isLoading: activeQuery.isLoading,
+        error: activeQuery.isError && !hasNoPreviewYet,
+        retry: activeQuery.refetch
     };
 }

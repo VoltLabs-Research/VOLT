@@ -1,8 +1,9 @@
 import FrameCombobox from '../FrameCombobox';
+import PresetPopover from './PresetPopover';
 import TransportControls from '../TransportControls';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
-import { Button, Divider, Popover, Row, Select, Text, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { Button, Divider, Popover, Row, Select, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
@@ -20,12 +21,6 @@ interface TimelineDownloadContext {
     trajectoryId?: string;
 }
 
-interface TimelineFrameOption {
-    value: number | undefined;
-    onChange: (value: number | undefined) => void;
-    title: string;
-}
-
 export interface TimelineTabOption {
     id: string;
     label: string;
@@ -36,7 +31,7 @@ export interface TimelineTabOption {
 interface TimelineHeaderProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
-    tabs?: TimelineTabOption[];
+    tabs: TimelineTabOption[];
     trajectoryId?: string;
     currentTimestep: number | undefined;
     startFrame: number | undefined;
@@ -48,9 +43,8 @@ interface TimelineHeaderProps {
     onRangeEndChange: (value: number | undefined) => void;
     playSpeed: number;
     onPlaySpeedChange: (speed: number) => void;
-    helperText?: string;
     onDownloadExposureListing?: (params: DownloadPluginListingParams) => void;
-    downloadContext?: TimelineDownloadContext;
+    downloadContext: TimelineDownloadContext;
 }
 
 const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
@@ -101,35 +95,15 @@ const TimelineHeader = ({
     onRangeEndChange,
     playSpeed,
     onPlaySpeedChange,
-    helperText,
     onDownloadExposureListing,
     downloadContext
 }: TimelineHeaderProps) => {
-    const resolvedTabs = tabs?.length ? tabs : CORE_TABS;
-    const tabSelectOptions: SelectOption[] = resolvedTabs.map((tab) => ({
+    const tabSelectOptions: SelectOption[] = tabs.map((tab) => ({
         value: tab.id,
         title: tab.label
     }));
-    const frameOptions: TimelineFrameOption[] = [
-        {
-            value: startFrame,
-            onChange: onRangeStartChange,
-            title: 'Start timestep'
-        },
-        {
-            value: endFrame,
-            onChange: onRangeEndChange,
-            title: 'End timestep'
-        }
-    ];
 
-    const renderResolvedTab = (tab: TimelineTabOption) => {
-        const canDownloadExposure = Boolean(
-            tab.exposureId &&
-            downloadContext?.pluginId &&
-            onDownloadExposureListing
-        );
-
+    const renderTab = (tab: TimelineTabOption) => {
         const tabButton = (
             <Button
                 key={tab.id}
@@ -147,20 +121,17 @@ const TimelineHeader = ({
             </Button>
         );
 
-        if (!canDownloadExposure) {
+        const download = tab.exposureId && downloadContext.pluginId && onDownloadExposureListing
+            ? {
+                exposureId: tab.exposureId,
+                pluginId: downloadContext.pluginId,
+                run: onDownloadExposureListing
+            }
+            : undefined;
+
+        if (!download) {
             return tabButton;
         }
-
-        const handleDownloadExposure = (close: () => void) => {
-            onDownloadExposureListing?.({
-                pluginId: downloadContext?.pluginId || '',
-                exposureId: tab.exposureId || '',
-                analysisId: downloadContext?.analysisId,
-                trajectoryId: downloadContext?.trajectoryId,
-                exposureName: tab.label
-            });
-            close();
-        };
 
         return (
             <Popover
@@ -173,7 +144,16 @@ const TimelineHeader = ({
                     <PopoverMenu>
                         <PopoverMenuItem
                             label="Download"
-                            onClick={() => handleDownloadExposure(close)}
+                            onClick={() => {
+                                download.run({
+                                    pluginId: download.pluginId,
+                                    exposureId: download.exposureId,
+                                    analysisId: downloadContext.analysisId,
+                                    trajectoryId: downloadContext.trajectoryId,
+                                    exposureName: tab.label
+                                });
+                                close();
+                            }}
                         />
                     </PopoverMenu>
                 )}
@@ -181,92 +161,11 @@ const TimelineHeader = ({
         );
     };
 
-    const renderSpeedPreset = (close: () => void) => (preset: number) => {
-        const handleClick = () => {
-            onPlaySpeedChange(preset);
-            close();
-        };
-
-        return (
-            <Button
-                key={preset}
-                variant={preset === playSpeed ? 'solid' : 'ghost'}
-                intent="canvas"
-                shape="rounded"
-                size="sm"
-                className="font-size-05"
-                block
-                align="start"
-                onClick={handleClick}
-            >
-                {preset}x
-            </Button>
-        );
-    };
-
-    const renderZoomPreset = (close: () => void) => (preset: number) => {
-        const handleClick = () => {
-            onZoomPreset(preset);
-            close();
-        };
-
-        return (
-            <Button
-                key={preset}
-                variant={preset === zoomPercent ? 'solid' : 'ghost'}
-                intent="canvas"
-                shape="rounded"
-                size="sm"
-                className="font-size-05"
-                block
-                align="start"
-                onClick={handleClick}
-            >
-                {preset}%
-            </Button>
-        );
-    };
-
-    const renderFrameComboboxes = () => frameOptions.map((frame) => (
-        <FrameCombobox
-            key={frame.title}
-            value={frame.value}
-            options={availableTimesteps}
-            onChange={frame.onChange}
-            title={frame.title}
-        />
-    ));
-
-    const renderSpeedControl = (id: string) => (
-        <Popover
-            id={id}
-            noPadding
-            trigger={(
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    className="font-size-05 canvas-btn-compact"
-                    leftIcon={<Gauge size={12} />}
-                >
-                    {playSpeed}x
-                </Button>
-            )}
-        >
-            {(close) => (
-                <PopoverMenu>
-                    {SPEED_PRESETS.map(renderSpeedPreset(close))}
-                </PopoverMenu>
-            )}
-        </Popover>
-    );
-
     return (
         <Row width='max' className="canvas-timeline-header">
             <Row className="canvas-timeline-tabs-region">
                 <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs" data-tour-id="canvas-timeline-tabs">
-                    {resolvedTabs.map(renderResolvedTab)}
+                    {tabs.map(renderTab)}
                 </Row>
                 <div className="canvas-timeline-tab-select-region" data-tour-id="canvas-timeline-tab-selector">
                     <Select
@@ -280,11 +179,6 @@ const TimelineHeader = ({
                         aria-label="Timeline tab"
                     />
                 </div>
-                {helperText ? (
-                    <Text size='sm' tone='secondary' className="canvas-timeline-helper" aria-live="polite">
-                        {helperText}
-                    </Text>
-                ) : null}
             </Row>
 
             <Row className="canvas-timeline-mobile-actions">
@@ -300,34 +194,38 @@ const TimelineHeader = ({
 
                 <Row justify='end' className="canvas-timeline-frame-region">
                     <Row gap='05' justify='end' className="canvas-timeline-frame-info">
-                        {renderFrameComboboxes()}
+                        <FrameCombobox
+                            value={startFrame}
+                            options={availableTimesteps}
+                            onChange={onRangeStartChange}
+                            title='Start timestep'
+                        />
+                        <FrameCombobox
+                            value={endFrame}
+                            options={availableTimesteps}
+                            onChange={onRangeEndChange}
+                            title='End timestep'
+                        />
 
                         <Divider orientation='vertical' className='f-shrink-0' />
 
-                        {renderSpeedControl('timeline-speed')}
+                        <PresetPopover
+                            id="timeline-speed"
+                            icon={<Gauge size={12} />}
+                            presets={SPEED_PRESETS}
+                            value={playSpeed}
+                            suffix="x"
+                            onSelect={onPlaySpeedChange}
+                        />
 
-                        <Popover
+                        <PresetPopover
                             id="timeline-zoom"
-                            noPadding
-                            trigger={(
-                                <Button
-                                    variant="ghost"
-                                    intent="canvas"
-                                    shape="rounded"
-                                    size="sm"
-                                    className="font-size-05 canvas-btn-compact"
-                                    leftIcon={<ZoomIn size={12} />}
-                                >
-                                    {zoomPercent}%
-                                </Button>
-                            )}
-                        >
-                            {(close) => (
-                                <PopoverMenu>
-                                    {ZOOM_PRESETS.map(renderZoomPreset(close))}
-                                </PopoverMenu>
-                            )}
-                        </Popover>
+                            icon={<ZoomIn size={12} />}
+                            presets={ZOOM_PRESETS}
+                            value={zoomPercent}
+                            suffix="%"
+                            onSelect={onZoomPreset}
+                        />
                     </Row>
                 </Row>
             </Row>

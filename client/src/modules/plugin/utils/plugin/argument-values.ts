@@ -1,5 +1,5 @@
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
-import { getVisibleArguments, isArgumentVisible } from '@/modules/plugin/utils/plugin/argument-visibility';
+import { isArgumentVisible } from '@/modules/plugin/utils/plugin/argument-visibility';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection,
@@ -7,11 +7,7 @@ import type {
 } from '@volt/contracts/modules/plugin/workflow';
 import { isRecord } from '@/shared/utils/type-guards';
 
-interface ArgumentObjectValue {
-    [key: string]: unknown;
-}
-
-const isListItemArray = (value: unknown): value is ArgumentObjectValue[] => {
+const isListItemArray = (value: unknown): value is Record<string, unknown>[] => {
     return Array.isArray(value) && value.every(isRecord);
 };
 
@@ -27,13 +23,11 @@ export const createDefaultArgumentDefinition = (): IArgumentDefinition => {
     };
 };
 
-const hasPresetArgumentValue = (definition: IArgumentDefinition): boolean => {
-    return definition.value !== undefined;
+/** A definition with a preset `value` is filled in by the plugin, not the user. */
+export const isUserConfigurableArgument = (definition: IArgumentDefinition): boolean => {
+    return definition.value === undefined && !definition.inferFromContext;
 };
 
-export const isUserConfigurableArgument = (definition: IArgumentDefinition): boolean => {
-    return !hasPresetArgumentValue(definition) && !definition.inferFromContext;
-};
 
 export const getUserConfigurableArguments = (
     definitions: IArgumentDefinition[]
@@ -69,8 +63,8 @@ export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknow
     return '';
 };
 
-export const createDefaultListItem = (definitions?: IArgumentDefinition[]): ArgumentObjectValue => {
-    const nextItem: ArgumentObjectValue = {};
+export const createDefaultListItem = (definitions?: IArgumentDefinition[]): Record<string, unknown> => {
+    const nextItem: Record<string, unknown> = {};
 
     for (const definition of definitions ?? []) {
         nextItem[definition.argument] = definition.value ?? getArgumentDefaultValue(definition);
@@ -82,7 +76,7 @@ export const createDefaultListItem = (definitions?: IArgumentDefinition[]): Argu
 export const getTupleArgumentValue = (
     definition: IArgumentDefinition,
     value: unknown
-): ArgumentObjectValue => {
+): Record<string, unknown> => {
     if (isRecord(value)) {
         return value;
     }
@@ -126,7 +120,7 @@ export const getPrimitiveArgumentFieldValue = (
 export const getListArgumentValue = (
     definition: IArgumentDefinition,
     value: unknown
-): ArgumentObjectValue[] => {
+): Record<string, unknown>[] => {
     if (isListItemArray(value)) {
         return value;
     }
@@ -138,16 +132,11 @@ export const getListArgumentValue = (
     return [];
 };
 
-interface PluginReferenceSelectionValue {
-    pluginId: string;
-    config: Record<string, unknown>;
-}
-
 export const isPluginReferenceArgumentType = (type: ArgumentType): boolean => {
     return type === ArgumentType.PLUGIN_REFERENCE;
 };
 
-const isPluginReferenceSelectionValue = (value: unknown): value is PluginReferenceSelectionValue => {
+const isPluginReferenceSelectionValue = (value: unknown): value is IPluginReferenceSelection => {
     return isRecord(value) && typeof value.pluginId === 'string';
 };
 
@@ -176,7 +165,7 @@ const toPluginReferenceSelections = (value: unknown): IPluginReferenceSelection[
 
         return [{
             pluginId,
-            config: isRecord(selection.config) ? selection.config : {}
+            config: selection.config ?? {}
         }];
     });
 };
@@ -226,85 +215,6 @@ export const coerceArgumentInputValue = (
     }
 
     return value;
-};
-
-const resolveArgumentRuntimeValue = (
-    definition: IArgumentDefinition,
-    value: unknown
-): unknown => {
-    const resolvedValue = value ?? definition.value ?? definition.default;
-
-    if (definition.type === ArgumentType.BOOLEAN) {
-        return typeof resolvedValue === 'string' ? resolvedValue === 'true' : Boolean(resolvedValue);
-    }
-
-    if (definition.type === ArgumentType.NUMBER) {
-        if (typeof resolvedValue === 'number' && Number.isFinite(resolvedValue)) {
-            return resolvedValue;
-        }
-
-        if (typeof resolvedValue === 'string') {
-            if (!resolvedValue.trim()) {
-                return '';
-            }
-
-            const parsedValue = Number(resolvedValue);
-            return Number.isFinite(parsedValue) ? parsedValue : resolvedValue;
-        }
-
-        return '';
-    }
-
-    if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
-        if (isStringArray(resolvedValue)) {
-            return resolvedValue;
-        }
-
-        if (typeof resolvedValue === 'string' && resolvedValue.trim().length > 0) {
-            return [resolvedValue];
-        }
-
-        return [];
-    }
-
-    if (definition.type === ArgumentType.LIST) {
-        const items = getListArgumentValue(definition, resolvedValue);
-        const nestedDefinitions = definition.listArguments ?? [];
-
-        return items.map((item) => {
-            const normalizedItem: ArgumentObjectValue = {};
-
-            for (const nestedDefinition of getVisibleArguments(nestedDefinitions, item)) {
-                normalizedItem[nestedDefinition.argument] = resolveArgumentRuntimeValue(
-                    nestedDefinition,
-                    item[nestedDefinition.argument]
-                );
-            }
-
-            return normalizedItem;
-        });
-    }
-
-    if (definition.type === ArgumentType.TUPLE) {
-        const item = getTupleArgumentValue(definition, resolvedValue);
-        const nestedDefinitions = definition.listArguments ?? [];
-        const normalizedItem: ArgumentObjectValue = {};
-
-        for (const nestedDefinition of getVisibleArguments(nestedDefinitions, item)) {
-            normalizedItem[nestedDefinition.argument] = resolveArgumentRuntimeValue(
-                nestedDefinition,
-                item[nestedDefinition.argument]
-            );
-        }
-
-        return normalizedItem;
-    }
-
-    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
-        return getPluginReferenceValue(definition, resolvedValue);
-    }
-
-    return resolvedValue ?? '';
 };
 
 export const getSelectArgumentValue = (

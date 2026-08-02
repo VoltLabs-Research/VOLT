@@ -24,7 +24,7 @@ declare global{
                 preflight: () => Promise<AppEvents['deploy:preflight']>;
             };
             config: {
-                get: () => Promise<Record<string, any>>;
+                get: () => Promise<Record<string, unknown>>;
             };
             shell: {
                 openExternal: (url: string) => Promise<void>;
@@ -37,7 +37,6 @@ declare global{
                 confirm: (options: ConfirmOptions) => Promise<boolean>;
             };
             app: {
-                voltUrl: () => Promise<string>;
                 openClient: () => Promise<void>;
                 openShell: (intent?: string) => Promise<void>;
             };

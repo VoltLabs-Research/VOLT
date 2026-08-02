@@ -1,8 +1,4 @@
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import type {
-    RemoveTeamJobsResult,
-    RetryTeamJobsResult
-} from '@shared/contracts/ports/ITeamJobMaintenanceService';
 
 interface PartitionedJobs {
     daemonJobs: TeamJobSummary[];
@@ -10,6 +6,10 @@ interface PartitionedJobs {
 }
 
 /* Pure grouping, partitioning and result-shaping helpers for job maintenance. */
+
+export const isDaemonJob = (job: TeamJobSummary): boolean => {
+    return Boolean(job.teamClusterId) && job.backingSource === 'daemon';
+};
 
 export const partitionByBackingSource = (jobs: TeamJobSummary[]): PartitionedJobs => {
     const daemonJobs: TeamJobSummary[] = [];
@@ -47,24 +47,18 @@ export const groupByCluster = (jobs: TeamJobSummary[]): Map<string, TeamJobSumma
 };
 
 export const collectCleanupClusterIds = (
-        primaryClusterId: string | undefined,
-        additionalClusterIds: string[],
-        daemonClusterIds: string[]
-    ): string[] => {
-    return [
-        primaryClusterId,
-        ...additionalClusterIds,
-        ...daemonClusterIds
-    ].filter((clusterId): clusterId is string => Boolean(clusterId))
-        .filter((clusterId, index, values) => values.indexOf(clusterId) === index);
+    primaryClusterId: string | undefined,
+    additionalClusterIds: string[],
+    daemonClusterIds: string[]
+): string[] => {
+    return [...new Set(
+        [primaryClusterId, ...additionalClusterIds, ...daemonClusterIds]
+            .filter((clusterId): clusterId is string => Boolean(clusterId))
+    )];
 };
 
 export const distinctJobIds = (jobs: TeamJobSummary[]): string[] => {
-    return [...new Set(jobs.map((job) => job.jobId).filter((jobId) => jobId.trim().length > 0))];
-};
-
-const isDaemonJob = (job: TeamJobSummary): boolean => {
-    return Boolean(job.teamClusterId) && job.backingSource === 'daemon';
+    return [...new Set(jobs.map((job) => job.jobId))];
 };
 
 export const getErrorMessage = (error: unknown): string | undefined => {
@@ -73,34 +67,4 @@ export const getErrorMessage = (error: unknown): string | undefined => {
     }
 
     return undefined;
-};
-
-export const didRedisMutationAffect = (result: [Error | null, unknown] | undefined): boolean => {
-    if (!result) {
-        return false;
-    }
-
-    const [error, value] = result;
-    if (error) {
-        return false;
-    }
-
-    return typeof value === 'number' && value > 0;
-};
-
-export const emptyRemoveResult = (): RemoveTeamJobsResult => {
-    return {
-        deletedJobs: 0,
-        deletedAnalyses: 0,
-        affectedClusters: 0,
-        clusterFailures: []
-    };
-};
-
-export const emptyRetryResult = (): RetryTeamJobsResult => {
-    return {
-        retriedFrames: 0,
-        affectedClusters: 0,
-        clusterFailures: []
-    };
 };

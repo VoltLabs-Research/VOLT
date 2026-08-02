@@ -1,13 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
-import ProviderRegistry from '@modules/ai/services/ProviderRegistry';
+import { buildLanguageModel } from '@modules/ai/services/ProviderRegistry';
 import type { ResolvedModel } from '@modules/ai/contracts/provider';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { decrypt } from '@shared/infrastructure/utilities/crypto';
 
 export default class ModelResolver{
-    #registry = new ProviderRegistry();
-
     async resolve(teamId: string, requestedProvider?: string, requestedModel?: string): Promise<ResolvedModel>{
         const integration = await this.#findIntegration(teamId, requestedProvider);
         const modelName = requestedModel || integration.defaultModel;
@@ -19,10 +17,12 @@ export default class ModelResolver{
             );
         }
 
+        const baseUrl = integration.metadata?.baseUrl;
+
         return {
-            model: this.#registry.build(integration.provider, modelName, {
-                apiKey: await this.#readApiKey(integration),
-                baseUrl: this.#readBaseUrl(integration)
+            model: buildLanguageModel(integration.provider, modelName, {
+                apiKey: integration.encryptedApiKey ? await decrypt(integration.encryptedApiKey) : '',
+                baseURL: typeof baseUrl === 'string' ? baseUrl : undefined
             }),
             provider: integration.provider,
             modelName
@@ -56,14 +56,5 @@ export default class ModelResolver{
         }
 
         return requested;
-    }
-
-    #readApiKey(integration: TeamAIIntegration): Promise<string>{
-        return integration.encryptedApiKey ? decrypt(integration.encryptedApiKey) : Promise.resolve('');
-    }
-
-    #readBaseUrl(integration: TeamAIIntegration): string | undefined{
-        const baseUrl = integration.metadata?.baseUrl;
-        return typeof baseUrl === 'string' ? baseUrl : undefined;
     }
 }

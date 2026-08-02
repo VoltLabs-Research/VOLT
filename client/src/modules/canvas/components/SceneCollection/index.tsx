@@ -116,7 +116,7 @@ const SceneCollection = ({
             onAdd: () => addScene(defaultScene),
             onRemove: () => removeScene(defaultScene)
         }),
-        transparencyOption(buildTransparencySubmenu('trajectory', defaultOpacity, (value) => setSceneOpacity?.(defaultSceneKey, value))),
+        transparencyOption(buildTransparencySubmenu(defaultOpacity, (value: number) => setSceneOpacity?.(defaultSceneKey, value))),
         colorOption(buildColorSubmenu(sceneVisualOverrides[defaultSceneKey]?.color, (value) => setSceneColor?.(defaultSceneKey, value)))
     ];
 
@@ -126,7 +126,7 @@ const SceneCollection = ({
             onAdd: () => onToggleSimulationCell?.(),
             onRemove: () => onToggleSimulationCell?.()
         }),
-        transparencyOption(buildTransparencySubmenu('simulation cell', simulationCellOpacity, (value) => setSceneOpacity?.(simulationCellKey, value)))
+        transparencyOption(buildTransparencySubmenu(simulationCellOpacity, (value: number) => setSceneOpacity?.(simulationCellKey, value)))
     ];
 
     const trajectoryRow = (
@@ -202,7 +202,7 @@ const SceneCollection = ({
                     resolveSceneRenderMetadata={(pluginId, exposureId) => {
                         return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                     }}
-                    plugin={pluginsById[section.pluginId]}
+                    plugin={pluginsById[section.analysis.plugin]}
                     pluginsById={pluginsById}
                     selectionMode={selectionMode}
                     selectedScene={selectedScene}

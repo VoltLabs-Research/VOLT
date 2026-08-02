@@ -13,11 +13,9 @@ return 0
 `;
 
 class RedisScriptingSessionLock {
-        private readonly redis = redisClient;
-
     async acquire(key: string, ttlMs: number): Promise<ScriptingSessionLockLease | null> {
         const token = randomUUID();
-        const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
+        const acquired = await redisClient.set(key, token, 'PX', ttlMs, 'NX');
 
         if (!acquired) {
             return null;
@@ -25,7 +23,7 @@ class RedisScriptingSessionLock {
 
         return {
             release: async () => {
-                await this.redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token);
+                await redisClient.eval(RELEASE_LOCK_SCRIPT, 1, key, token);
             }
         };
     }

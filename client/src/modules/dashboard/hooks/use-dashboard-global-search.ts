@@ -1,7 +1,7 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
 import { EMPTY_GLOBAL_SEARCH_RESULTS, MIN_SEARCH_QUERY_LENGTH } from '@/modules/dashboard/api/service';
-import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
-import { isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
+import useGlobalSearchKeyboardNavigation from '@/modules/dashboard/hooks/use-global-search-keyboard-navigation';
+import { buildGlobalSearchSections } from '@/modules/dashboard/utils/global-search-sections';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import {
     autoUpdate,
@@ -13,107 +13,11 @@ import {
     useFloating,
     useInteractions
 } from '@floating-ui/react';
-import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
-import type { GlobalSearchResponse } from '@volt/contracts/modules/dashboard/domain';
-import type { KeyboardEvent } from 'react';
+import type { DashboardGlobalSearchItem } from '@/modules/dashboard/utils/global-search-sections';
 import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_RESULT_LIMIT = 5;
-
-interface DashboardGlobalSearchItem {
-    id: string;
-    title: string;
-    subtitle: string;
-    path: string;
-    teamId?: string;
-    disabled?: boolean;
-}
-
-interface DashboardGlobalSearchSection {
-    key: GlobalSearchSectionKey;
-    items: DashboardGlobalSearchItem[];
-}
-
-const formatSearchDate = (value: string): string => {
-    const date = new Date(value);
-
-    if (!isValid(date)) {
-        return '';
-    }
-
-    return format(date, 'P');
-};
-
-const buildSections = (results: GlobalSearchResponse): DashboardGlobalSearchSection[] => {
-    return [
-        {
-            key: 'analyses',
-            items: (results.analyses ?? []).map((analysis) => ({
-                id: analysis._id,
-                title: analysis.pluginDisplayName,
-                subtitle: formatSearchDate(analysis.createdAt),
-                path: `/canvas/${analysis.trajectory._id}?analysis=${analysis._id}`
-            }))
-        },
-        {
-            key: 'trajectories',
-            items: (results.trajectories ?? []).map((trajectory) => ({
-                id: trajectory._id,
-                title: trajectory.name,
-                subtitle: trajectory.status || '',
-                path: `/canvas/${trajectory._id}`,
-                disabled: !isTrajectoryNavigable(trajectory.status)
-            }))
-        },
-        {
-            key: 'containers',
-            items: (results.containers ?? []).map((container) => ({
-                id: container._id,
-                title: container.name,
-                subtitle: container.image,
-                path: `/dashboard/containers/${container._id}`
-            }))
-        },
-        {
-            key: 'plugins',
-            items: (results.plugins ?? []).map((plugin) => {
-                const listingExposure = plugin.listingExposures?.exposures[0] ?? getListingRelevantExposures(plugin.exposures)[0];
-
-                return {
-                    id: plugin._id,
-                    title: plugin.modifier?.name || plugin._id,
-                    subtitle: plugin.modifier?.description || '',
-                    path: listingExposure
-                        ? `/dashboard/plugins/${plugin._id}/exposure/${listingExposure.exposureId}/listing`
-                        : '/dashboard/plugins/list'
-                };
-            })
-        },
-        {
-            key: 'teams',
-            items: (results.teams ?? []).map((team) => ({
-                id: team._id,
-                title: team.name,
-                subtitle: team.description || '',
-                path: '/dashboard/my-team',
-                teamId: team._id
-            }))
-        },
-        {
-            key: 'chats',
-            items: (results.chats ?? []).map((chat) => ({
-                id: chat._id,
-                title: chat.participants
-                    .map((participant) => participant.firstName || participant.email)
-                    .join(', ') || 'Chat',
-                subtitle: chat.lastMessage?.content?.substring(0, 50) || 'No messages',
-                path: `/dashboard/messages/${chat._id}`
-            }))
-        }
-    ];
-};
 
 const useDashboardGlobalSearch = () => {
     const navigate = useNavigate();
@@ -122,7 +26,6 @@ const useDashboardGlobalSearch = () => {
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(-1);
 
     const { refs, floatingStyles, context } = useFloating({
         open: showResults,
@@ -147,6 +50,42 @@ const useDashboardGlobalSearch = () => {
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
 
+    const searchQuery = useGlobalSearchQuery(
+        {
+            query: debouncedQuery,
+            limit: SEARCH_RESULT_LIMIT
+        },
+        { enabled: debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH }
+    );
+
+    const sections = useMemo(
+        () => buildGlobalSearchSections(searchQuery.data ?? EMPTY_GLOBAL_SEARCH_RESULTS),
+        [searchQuery.data]
+    );
+    const flattenedItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
+
+    const handleSelect = (item: DashboardGlobalSearchItem) => {
+        if (item.disabled) {
+            return;
+        }
+
+        if (item.teamId) {
+            setSelectedTeamId(item.teamId);
+        }
+
+        navigate(item.path);
+        setQuery('');
+        setDebouncedQuery('');
+        setShowResults(false);
+    };
+
+    const { activeIndex, handleKeyDown } = useGlobalSearchKeyboardNavigation({
+        items: flattenedItems,
+        showResults,
+        setShowResults,
+        onSelect: handleSelect
+    });
+
     useEffect(() => {
         const nextQuery = query.trim();
 
@@ -157,7 +96,6 @@ const useDashboardGlobalSearch = () => {
         if (nextQuery.length < MIN_SEARCH_QUERY_LENGTH) {
             setDebouncedQuery('');
             setShowResults(false);
-            setActiveIndex(-1);
             return;
         }
 
@@ -173,123 +111,13 @@ const useDashboardGlobalSearch = () => {
         };
     }, [query]);
 
-    const searchQuery = useGlobalSearchQuery(
-        {
-            query: debouncedQuery,
-            limit: SEARCH_RESULT_LIMIT
-        },
-        { enabled: debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH }
-    );
-
-    const results = searchQuery.data ?? EMPTY_GLOBAL_SEARCH_RESULTS;
-    const sections = useMemo(() => buildSections(results), [results]);
-    const flattenedItems = useMemo<DashboardGlobalSearchItem[]>(() => {
-        return sections.flatMap((section) => section.items);
-    }, [sections]);
-    const totalResults = useMemo(
-        () => sections.reduce((count, section) => count + section.items.length, 0),
-        [sections]
-    );
     const isDebouncing = query.trim().length >= MIN_SEARCH_QUERY_LENGTH && query.trim() !== debouncedQuery;
-    const isLoading = isDebouncing || (debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH && searchQuery.isLoading);
-
-    const resetSearch = () => {
-        setQuery('');
-        setDebouncedQuery('');
-        setShowResults(false);
-        setActiveIndex(-1);
-    };
-
-    const handleSelect = (item: DashboardGlobalSearchItem) => {
-        if (item.disabled) {
-            return;
-        }
-
-        if (item.teamId) {
-            setSelectedTeamId(item.teamId);
-        }
-
-        navigate(item.path);
-        resetSearch();
-    };
 
     const handleFocus = () => {
         if (query.trim().length >= MIN_SEARCH_QUERY_LENGTH) {
             setShowResults(true);
         }
     };
-
-    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (!showResults && event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Escape') {
-            return;
-        }
-
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            if (!flattenedItems.length) {
-                return;
-            }
-
-            if (!showResults) {
-                setShowResults(true);
-            }
-
-            setActiveIndex((currentIndex) => {
-                return currentIndex >= flattenedItems.length - 1 ? 0 : currentIndex + 1;
-            });
-            return;
-        }
-
-        if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            if (!flattenedItems.length) {
-                return;
-            }
-
-            if (!showResults) {
-                setShowResults(true);
-            }
-
-            setActiveIndex((currentIndex) => {
-                if (currentIndex <= 0) {
-                    return flattenedItems.length - 1;
-                }
-
-                return currentIndex - 1;
-            });
-            return;
-        }
-
-        if (event.key === 'Enter') {
-            if (activeIndex < 0 || activeIndex >= flattenedItems.length) {
-                return;
-            }
-
-            event.preventDefault();
-            handleSelect(flattenedItems[activeIndex]);
-            return;
-        }
-
-        if (event.key === 'Escape') {
-            setShowResults(false);
-            setActiveIndex(-1);
-        }
-    };
-
-    useEffect(() => {
-        if (!showResults || !flattenedItems.length) {
-            setActiveIndex(-1);
-            return;
-        }
-
-        setActiveIndex((currentIndex) => {
-            if (currentIndex >= flattenedItems.length) {
-                return flattenedItems.length - 1;
-            }
-
-            return currentIndex;
-        });
-    }, [flattenedItems, showResults]);
 
     return {
         refs,
@@ -300,8 +128,8 @@ const useDashboardGlobalSearch = () => {
         showResults,
         sections,
         activeIndex,
-        totalResults,
-        isLoading,
+        totalResults: flattenedItems.length,
+        isLoading: isDebouncing || (debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH && searchQuery.isLoading),
         setQuery,
         handleFocus,
         handleKeyDown,

@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import defaultObjectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -55,8 +56,12 @@ interface TeamClusterObjectStoreReadOptions {
 }
 
 export type TeamClusterObjectStoreHeadResponse = TeamClusterObjectGatewayHeadResponse;
-type TeamClusterObjectStoreReadResponse = TeamClusterObjectGatewayStreamResponse;
 
+/*
+ * Symbol brands: the only way to obtain these values is through
+ * `requireRequesterCredentials` / `authorizeOwner`, so "authorized" is proven by
+ * the type system at every call site instead of re-checked at runtime.
+ */
 const requesterCredentialsBrand = Symbol('TeamClusterObjectStoreRequesterCredentials');
 const authorizedAccessBrand = Symbol('TeamClusterObjectStoreAuthorizedAccess');
 
@@ -93,7 +98,7 @@ export default class TeamClusterObjectStoreProxyService {
     ): TeamClusterObjectStoreRequesterCredentials {
         if (!requesterClusterId || !daemonPassword) {
             throw ApplicationError.unauthorized(
-                'TeamCluster::ObjectStoreProxyUnauthorized',
+                ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_UNAUTHORIZED,
                 'Daemon authentication headers are required'
             );
         }
@@ -109,8 +114,6 @@ export default class TeamClusterObjectStoreProxyService {
         credentials: TeamClusterObjectStoreRequesterCredentials,
         ownerClusterId: string
     ): Promise<AuthorizedTeamClusterObjectStoreAccess> {
-        this.#assertRequesterCredentials(credentials);
-
         const requesterCluster = await this.#daemonCredentialGuard.requireByDaemonPassword(
             credentials.requesterClusterId,
             credentials.daemonPassword
@@ -119,14 +122,14 @@ export default class TeamClusterObjectStoreProxyService {
 
         if (!ownerCluster) {
             throw ApplicationError.notFound(
-                'TeamCluster::ObjectStoreProxyOwnerNotFound',
+                ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_OWNER_NOT_FOUND,
                 'The requested owner cluster does not exist'
             );
         }
 
         if (ownerCluster.props.team !== requesterCluster.props.team) {
             throw ApplicationError.forbidden(
-                'TeamCluster::ObjectStoreProxyForbidden',
+                ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_FORBIDDEN,
                 'The requested owner cluster does not belong to the same team'
             );
         }
@@ -141,7 +144,7 @@ export default class TeamClusterObjectStoreProxyService {
         access: AuthorizedTeamClusterObjectStoreAccess,
         request: TeamClusterObjectGatewayListRequest
     ): Promise<TeamClusterObjectGatewayListResponse> {
-        return this.#objectGatewayClient.list(this.#requireAuthorizedOwnerId(access), request);
+        return this.#objectGatewayClient.list(access.ownerClusterId, request);
     }
 
     async deletePrefix(
@@ -149,11 +152,7 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         prefix: string
     ): Promise<number | undefined> {
-        return this.#objectGatewayClient.deleteByPrefix(
-            this.#requireAuthorizedOwnerId(access),
-            bucket,
-            prefix
-        );
+        return this.#objectGatewayClient.deleteByPrefix(access.ownerClusterId, bucket, prefix);
     }
 
     async head(
@@ -161,11 +160,7 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         objectKey: string
     ): Promise<TeamClusterObjectStoreHeadResponse> {
-        return this.#objectGatewayClient.head(
-            this.#requireAuthorizedOwnerId(access),
-            bucket,
-            objectKey
-        );
+        return this.#objectGatewayClient.head(access.ownerClusterId, bucket, objectKey);
     }
 
     async openRead(
@@ -173,27 +168,19 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         objectKey: string,
         options?: TeamClusterObjectStoreReadOptions
-    ): Promise<TeamClusterObjectStoreReadResponse> {
-        return this.#objectGatewayClient.getStream(
-            this.#requireAuthorizedOwnerId(access),
-            bucket,
-            objectKey,
-            options
-        );
+    ): Promise<TeamClusterObjectGatewayStreamResponse> {
+        return this.#objectGatewayClient.getStream(access.ownerClusterId, bucket, objectKey, options);
     }
 
     async write(
         access: AuthorizedTeamClusterObjectStoreAccess,
         input: TeamClusterObjectStoreWriteInput
     ): Promise<void> {
-        const ownerClusterId = this.#requireAuthorizedOwnerId(access);
-        const contentLength = this.#requireContentLength(input.contentLength);
-
-        await this.#objectGatewayClient.putStream(ownerClusterId, {
+        await this.#objectGatewayClient.putStream(access.ownerClusterId, {
             bucket: input.bucket,
             objectKey: input.objectKey,
             stream: input.stream,
-            contentLength,
+            contentLength: this.#requireContentLength(input.contentLength),
             ...(input.contentType ? { contentType: input.contentType } : {}),
             ...(input.contentEncoding ? { contentEncoding: input.contentEncoding } : {}),
             metadata: input.metadata
@@ -205,44 +192,24 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         objectKey: string
     ): Promise<void> {
-        await this.#objectGatewayClient.deleteObject(
-            this.#requireAuthorizedOwnerId(access),
-            bucket,
-            objectKey
-        );
+        await this.#objectGatewayClient.deleteObject(access.ownerClusterId, bucket, objectKey);
     }
 
-    #assertRequesterCredentials(credentials: TeamClusterObjectStoreRequesterCredentials): void {
-        if (credentials?.[requesterCredentialsBrand] !== true) {
-            throw ApplicationError.unauthorized(
-                'TeamCluster::ObjectStoreProxyUnauthorized',
-                'Daemon authentication headers are required'
-            );
-        }
-    }
-
-    #requireAuthorizedOwnerId(access: AuthorizedTeamClusterObjectStoreAccess): string {
-        if (access?.[authorizedAccessBrand] !== true) {
-            throw ApplicationError.forbidden(
-                'TeamCluster::ObjectStoreProxyForbidden',
-                'The requested owner cluster does not belong to the same team'
-            );
-        }
-
-        return access.ownerClusterId;
-    }
-
+    /*
+     * `content-length` arrives as a raw HTTP header string, so it still needs a
+     * real parse check before it becomes an upload size.
+     */
     #requireContentLength(contentLength: number | undefined): number {
         if (contentLength === undefined) {
             throw ApplicationError.badRequest(
-                'TeamCluster::ObjectStoreProxyContentLengthRequired',
+                ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_CONTENT_LENGTH_REQUIRED,
                 'content-length header is required for uploads'
             );
         }
 
         if (!Number.isInteger(contentLength) || contentLength < 0) {
             throw ApplicationError.badRequest(
-                'TeamCluster::ObjectStoreProxyInvalidContentLength',
+                ErrorCodes.TEAM_CLUSTER_OBJECT_STORE_PROXY_INVALID_CONTENT_LENGTH,
                 'content-length must be a non-negative integer'
             );
         }

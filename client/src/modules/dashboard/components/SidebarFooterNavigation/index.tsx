@@ -5,9 +5,7 @@ import { BookOpen, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
-import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
-import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
+import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
 import { Box, Tooltip } from '@voltstack/bravais';
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -20,20 +18,8 @@ const SETTINGS_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigatio
 const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collapsed = false }: SidebarFooterNavigationProps) => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
-    const singleTenant = useSingleTenant();
-    const enabledModules = useEnabledModules();
-    const { hidden: hiddenModules } = useHiddenModules();
-    const isModuleEnabled = (moduleKey?: string): boolean => {
-        if (!moduleKey) {
-            return true;
-        }
-
-        const serverEnabled = enabledModules === null || enabledModules.includes(moduleKey);
-
-        return serverEnabled && !hiddenModules.includes(moduleKey);
-    };
-    const tenantSettingsItems = singleTenant ? SETTINGS_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SETTINGS_NAVIGATION_ITEMS;
-    const settingsItems = tenantSettingsItems.filter((item) => isModuleEnabled(item.moduleKey));
+    const visibleNavigationItems = useVisibleNavigationItems();
+    const settingsItems = visibleNavigationItems(SETTINGS_NAVIGATION_ITEMS);
     const defaultSettingsPath = settingsItems[0]?.path ?? '/dashboard/settings/general';
 
     const handleOpenDocs = () => window.open('https://docs.voltcloud.dev', '_blank', 'noopener,noreferrer');

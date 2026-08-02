@@ -1,4 +1,4 @@
-import { getFrameGroupStatusLabel } from '@/modules/jobs/utils/job-status-label';
+import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { Heading, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
@@ -30,7 +30,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     ...buttonProps
 }, ref) => {
     const prefersReducedMotion = usePrefersReducedMotion();
-    const statusLabel = getFrameGroupStatusLabel(group.overallStatus);
+    const statusLabel = FRAME_GROUP_STATUS_LABELS[group.overallStatus];
     const summaryLabel = `${group.completedCount}/${group.totalCount} jobs • ${formatDistanceToNow(group.latestTimestamp, { addSuffix: true })}`;
     const previousStatusRef = useRef(group.overallStatus);
     const completionTimerRef = useRef<number | null>(null);

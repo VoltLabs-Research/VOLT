@@ -1,20 +1,21 @@
 import getListingDisplayState from '@/shared/ui/components/DocumentListing/listing-state';
-import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import GridItem from '@/shared/ui/components/DocumentListingGrid/GridItem';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import { buildItemMapByGeneratedId } from '@/shared/ui/components/DocumentListing/dnd-maps';
-import { cn } from '@/shared/utils/cn';
+import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingGrid.css';
-import { CSS } from '@dnd-kit/utilities';
-import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, rectIntersection } from '@dnd-kit/core';
 import { FileText, GripVertical } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
+import { useRef, useState } from 'react';
 import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
+import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
+import type { ReactNode } from 'react';
 
-interface DocumentListingGridProps<T extends { _id: string }> {
+const DRAG_ACTIVATION_DISTANCE = 8;
+
+interface DocumentListingGridProps<T extends Identifiable> {
     data: T[];
     isLoading?: boolean;
     isFetchingMore?: boolean;
@@ -38,132 +39,24 @@ interface DocumentListingGridProps<T extends { _id: string }> {
     retryButtonText?: string;
 };
 
-interface DocumentListingGridItemProps<T extends { _id: string }> {
-    item: T;
-    index: number;
-    renderItem: (item: T, index: number) => ReactNode;
-    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
-    draggableId?: string | null;
-    droppableId?: string | null;
-    showDragAffordance: boolean;
-    suppressNextClickRef: MutableRefObject<boolean>;
-}
+const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
 
-const getGridItemTitle = (item: unknown): string => {
-    if (typeof item !== 'object' || item === null) {
-        return 'Item';
-    }
+    return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+};
 
+/**
+ * Grid rows are heterogeneous documents, so the drag overlay label falls back to
+ * whichever human-readable field the row happens to expose.
+ */
+const getGridItemTitle = (item: { _id: string }): string => {
     const record = item as Record<string, unknown>;
     const value = record.name ?? record.title;
+
     return typeof value === 'string' && value.trim().length > 0 ? value : 'Item';
 };
 
-const DocumentListingGridItem = <T extends { _id: string },>({
-    item,
-    index,
-    renderItem,
-    getMenuOptions,
-    draggableId = null,
-    droppableId = null,
-    showDragAffordance,
-    suppressNextClickRef
-}: DocumentListingGridItemProps<T>) => {
-    const {
-        attributes,
-        listeners,
-        setNodeRef: setDraggableNodeRef,
-        transform,
-        isDragging
-    } = useDraggable({
-        id: draggableId ?? `document-listing-grid-disabled-draggable:${item._id}`,
-        disabled: !draggableId
-    });
-    const {
-        setNodeRef: setDroppableNodeRef,
-        isOver
-    } = useDroppable({
-        id: droppableId ?? `document-listing-grid-disabled-droppable:${item._id}`,
-        disabled: !droppableId
-    });
-    const menuOptions = getMenuOptions ? getMenuOptions(item, []) : [];
-
-    const setItemNodeRef = useCallback((node: HTMLDivElement | null) => {
-        setDraggableNodeRef(node);
-        setDroppableNodeRef(node);
-    }, [setDraggableNodeRef, setDroppableNodeRef]);
-
-    const itemStyle: CSSProperties = {
-        transform: CSS.Translate.toString(transform),
-        zIndex: isDragging ? 20 : undefined
-    };
-
-    const itemClassName = cn(
-        'document-listing-grid-item',
-        draggableId ? 'is-draggable' : '',
-        droppableId ? 'is-droppable' : '',
-        isDragging ? 'is-dragging' : '',
-        isOver ? 'is-drag-over' : ''
-    );
-
-    const content = (
-        <div
-            ref={setItemNodeRef}
-            className={itemClassName}
-            style={itemStyle}
-            onClickCapture={(event) => {
-                if (!suppressNextClickRef.current) {
-                    return;
-                }
-
-                event.preventDefault();
-                event.stopPropagation();
-                suppressNextClickRef.current = false;
-            }}
-            {...(draggableId ? attributes : {})}
-            {...(draggableId ? listeners : {})}
-        >
-            {draggableId && showDragAffordance ? (
-                <div className='document-listing-grid-drag-affordance' aria-hidden='true'>
-                    <GripVertical size={14} strokeWidth={1.8} />
-                </div>
-            ) : null}
-            {renderItem(item, index)}
-        </div>
-    );
-
-    if (menuOptions.length === 0) {
-        return content;
-    }
-
-    return (
-        <ContextMenuPopover id={`grid-item-menu-${item._id}`} trigger={content} options={menuOptions} />
-    );
-};
-
-const PlainDocumentListingGridItem = <T extends { _id: string },>({
-    item,
-    index,
-    renderItem,
-    getMenuOptions
-}: Pick<DocumentListingGridItemProps<T>, 'item' | 'index' | 'renderItem' | 'getMenuOptions'>) => {
-    const menuOptions = getMenuOptions ? getMenuOptions(item, []) : [];
-    const content = (
-        <div className='document-listing-grid-item'>
-            {renderItem(item, index)}
-        </div>
-    );
-
-    if (menuOptions.length === 0) {
-        return content;
-    }
-
-    return (
-        <ContextMenuPopover id={`grid-item-menu-${item._id}`} trigger={content} options={menuOptions} />
-    );
-};
-
-const DocumentListingGrid = <T extends { _id: string },>({
+const DocumentListingGrid = <T extends Identifiable,>({
     data,
     isLoading = false,
     isFetchingMore = false,
@@ -189,17 +82,13 @@ const DocumentListingGrid = <T extends { _id: string },>({
     const containerRef = useRef<HTMLDivElement>(null);
     const suppressNextClickRef = useRef(false);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: dragAndDrop?.activationDistance ?? 8
-            }
-        })
-    );
-    const collisionDetection = useCallback<CollisionDetection>((args) => {
-        const pointerCollisions = pointerWithin(args);
-        return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
-    }, []);
+    const {
+        sensors,
+        draggableIdByItemId,
+        droppableIdByItemId,
+        getDraggableItem,
+        dispatchDragEnd
+    } = useListingDragAndDrop(data, dragAndDrop, DRAG_ACTIVATION_DISTANCE);
     const { sentinelRef } = useInfiniteScroll({
         rootRef: containerRef,
         hasMore,
@@ -220,83 +109,29 @@ const DocumentListingGrid = <T extends { _id: string },>({
         isAccessDenied
     });
 
-    const draggableItemsById = useMemo(() => {
-        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
-            return dragAndDrop?.getDraggableId(item);
-        });
-    }, [data, dragAndDrop]);
-
-    const droppableItemsById = useMemo(() => {
-        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
-            return dragAndDrop?.getDroppableId(item);
-        });
-    }, [data, dragAndDrop]);
-
-    const activeDragItem = activeDragId ? draggableItemsById.get(activeDragId) ?? null : null;
+    const activeDragItem = activeDragId ? getDraggableItem(activeDragId) : null;
     const showDragAffordance = dragAndDrop?.showDragAffordance ?? true;
 
-    const handleDragStart = useCallback((event: DragStartEvent) => {
+    const handleDragStart = (event: DragStartEvent) => {
         suppressNextClickRef.current = true;
         setActiveDragId(String(event.active.id));
-    }, []);
+    };
 
-    const handleDragCancel = useCallback(() => {
+    const handleDragCancel = () => {
         suppressNextClickRef.current = true;
         setActiveDragId(null);
-    }, []);
+    };
 
-    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-        if (!dragAndDrop) {
-            setActiveDragId(null);
-            return;
-        }
-
+    const handleDragEnd = async (event: DragEndEvent) => {
         suppressNextClickRef.current = true;
-        const activeId = String(event.active.id);
-        const overId = event.over ? String(event.over.id) : null;
-
         setActiveDragId(null);
 
-        await dragAndDrop.onDragEnd({
-            event,
-            activeId,
-            overId,
-            activeItem: draggableItemsById.get(activeId) ?? null,
-            overItem: overId ? droppableItemsById.get(overId) ?? null : null
-        });
+        await dispatchDragEnd(event);
 
         window.setTimeout(() => {
             suppressNextClickRef.current = false;
         }, 0);
-    }, [dragAndDrop, draggableItemsById, droppableItemsById]);
-
-    const content = shouldShowContent && data.map((item, index) => {
-        if (!dragAndDrop) {
-            return (
-                <PlainDocumentListingGridItem
-                    key={item._id}
-                    item={item}
-                    index={index}
-                    renderItem={renderItem}
-                    getMenuOptions={getMenuOptions}
-                />
-            );
-        }
-
-        return (
-            <DocumentListingGridItem
-                key={item._id}
-                item={item}
-                index={index}
-                renderItem={renderItem}
-                getMenuOptions={getMenuOptions}
-                draggableId={dragAndDrop.getDraggableId(item)}
-                droppableId={dragAndDrop.getDroppableId(item)}
-                showDragAffordance={showDragAffordance}
-                suppressNextClickRef={suppressNextClickRef}
-            />
-        );
-    });
+    };
 
     const grid = (
         <div ref={containerRef} className={`document-listing-grid ${className}`}>
@@ -338,7 +173,20 @@ const DocumentListingGrid = <T extends { _id: string },>({
                 </div>
             )}
 
-            {content}
+            {shouldShowContent && data.map((item, index) => (
+                <GridItem
+                    key={item._id}
+                    item={item}
+                    index={index}
+                    renderItem={renderItem}
+                    getMenuOptions={getMenuOptions}
+                    isDragAndDropEnabled={Boolean(dragAndDrop)}
+                    draggableId={draggableIdByItemId.get(item._id) ?? null}
+                    droppableId={droppableIdByItemId.get(item._id) ?? null}
+                    showDragAffordance={showDragAffordance}
+                    suppressNextClickRef={suppressNextClickRef}
+                />
+            ))}
 
             {isFetchingMore && renderSkeleton?.()}
 
@@ -353,9 +201,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
         </>
     );
 
-    if (!dragAndDrop) {
-        return gridContent;
-    }
+    if(!dragAndDrop) return gridContent;
 
     return (
         <DndContext

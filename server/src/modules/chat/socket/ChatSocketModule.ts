@@ -1,33 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ChatService from '@modules/chat/services/ChatService';
+import { resolveAccessibleChat } from '@modules/chat/services/chat-access';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
-import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
-import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import { ackError, ackOk } from '@modules/socket/socket/socket-ack';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
+import type { SocketAck } from '@modules/socket/socket/socket-ack';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
-
-const SOCKET_CHAT_EVENTS = {
-    JOIN_CHAT: 'join_chat',
-    LEAVE_CHAT: 'leave_chat',
-    TYPING_START: 'typing_start',
-    TYPING_STOP: 'typing_stop',
-    GET_USERS_PRESENCE: 'get_users_presence',
-    USER_TYPING: 'user_typing',
-    USERS_PRESENCE_INFO: 'users_presence_info'
-} as const;
-
-type ReportedPresence = 'online' | 'offline';
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
 
 interface TypingPayload {
     chatId: string;
@@ -37,33 +18,17 @@ interface UsersPresencePayload {
     userIds: string[];
 }
 
-const ackOk = <T>(data?: T): SocketAck<T> => ({
-    ok: true,
-    data
-});
-const ackError = (error: string): SocketAck<never> => ({
-    ok: false,
-    error
-});
-
 class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';
 
-    #service = new ChatService();
-    private readonly teamRoomPresenceService: TeamRoomPresenceService;
+    private readonly teamRoomPresenceService = new TeamRoomPresenceService();
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        teamRoomPresenceService: TeamRoomPresenceService
-    ) {
-        super(emitter, roomManager, eventRegistry);
-        this.teamRoomPresenceService = teamRoomPresenceService;
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
-        this.on<string>(connection.id, SOCKET_CHAT_EVENTS.JOIN_CHAT, async (conn, payload) => {
+        this.on<string>(connection.id, 'join_chat', async (conn, chatId) => {
             const currentUserId = this.getCurrentUserId(conn);
             if (!currentUserId) {
                 return this.rejectAuthentication(conn.id);
@@ -71,55 +36,53 @@ class ChatSocketModule extends BaseSocketModule {
 
             let teamId: string;
             try {
-                teamId = await this.#service.resolveAccessibleChatTeamId(payload, currentUserId);
+                teamId = (await resolveAccessibleChat(chatId, currentUserId)).team;
             } catch (error) {
                 return this.rejectApplicationError(conn.id, error as ApplicationError);
             }
 
-            const previousChatId = this.getCurrentChatId(conn);
-            if (previousChatId && previousChatId !== payload) {
+            const previousChatId = conn.data.currentChatId;
+            if (previousChatId && previousChatId !== chatId) {
                 await this.cleanupActiveChat(conn, true);
             }
 
-            await this.joinRoom(conn.id, this.buildChatRoomName(payload));
-            this.setCurrentChatContext(conn, payload, teamId);
+            await this.joinRoom(conn.id, this.buildChatRoomName(chatId));
+            conn.data.currentChatId = chatId;
+            conn.data.currentChatTeamId = teamId;
 
             return ackOk();
         });
 
-        this.on<string>(connection.id, SOCKET_CHAT_EVENTS.LEAVE_CHAT, async (conn, payload) => {
-            if (this.getCurrentChatId(conn) === payload) {
+        this.on<string>(connection.id, 'leave_chat', async (conn, chatId) => {
+            if (conn.data.currentChatId === chatId) {
                 await this.cleanupActiveChat(conn, true);
                 return ackOk();
             }
 
-            await this.leaveRoom(conn.id, this.buildChatRoomName(payload));
+            await this.leaveRoom(conn.id, this.buildChatRoomName(chatId));
             return ackOk();
         });
 
-        this.on<TypingPayload>(connection.id, SOCKET_CHAT_EVENTS.TYPING_START, async (conn, payload) => {
-            return this.handleTypingEvent(conn, payload, true);
-        });
+        this.on<TypingPayload>(connection.id, 'typing_start', (conn, payload) => (
+            this.handleTypingEvent(conn, payload.chatId, true)
+        ));
 
-        this.on<TypingPayload>(connection.id, SOCKET_CHAT_EVENTS.TYPING_STOP, async (conn, payload) => {
-            return this.handleTypingEvent(conn, payload, false);
-        });
+        this.on<TypingPayload>(connection.id, 'typing_stop', (conn, payload) => (
+            this.handleTypingEvent(conn, payload.chatId, false)
+        ));
 
-        this.on<UsersPresencePayload>(connection.id, SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, async (conn, payload) => {
-            const teamId = this.getCurrentChatTeamId(conn);
+        this.on<UsersPresencePayload>(connection.id, 'get_users_presence', async (conn, payload) => {
+            const teamId = conn.data.currentChatTeamId;
             if (!teamId) {
                 return this.rejectInactiveChat(conn.id);
             }
 
-            const uniqueUserIds = Array.from(new Set(payload.userIds));
-            const onlineUserIds = await this.teamRoomPresenceService.getOnlineUserIds(teamId);
-            const onlineUserIdsSet = new Set(onlineUserIds);
-            const presenceMap = uniqueUserIds.reduce<Record<string, ReportedPresence>>((acc, userId) => {
-                acc[userId] = onlineUserIdsSet.has(userId) ? 'online' : 'offline';
-                return acc;
-            }, {});
+            const onlineUserIds = new Set(await this.teamRoomPresenceService.getOnlineUserIds(teamId));
+            const presenceMap = Object.fromEntries(
+                payload.userIds.map((userId) => [userId, onlineUserIds.has(userId) ? 'online' : 'offline'])
+            );
 
-            this.emitToSocket(conn.id, SOCKET_CHAT_EVENTS.USERS_PRESENCE_INFO, presenceMap);
+            this.emitToSocket(conn.id, 'users_presence_info', presenceMap);
             return ackOk();
         });
 
@@ -128,27 +91,25 @@ class ChatSocketModule extends BaseSocketModule {
         });
     }
 
-    private async handleTypingEvent(
-        connection: ISocketConnection,
-        payload: TypingPayload,
-        isTyping: boolean
-    ): Promise<SocketAck> {
+    private handleTypingEvent(connection: ISocketConnection, chatId: string, isTyping: boolean): SocketAck {
         if (!this.getCurrentUserId(connection)) {
             return this.rejectAuthentication(connection.id);
         }
 
-        if (this.getCurrentChatId(connection) !== payload.chatId) {
+        if (connection.data.currentChatId !== chatId) {
             return this.rejectInactiveChat(connection.id);
         }
 
-        this.emitTypingState(payload.chatId, connection, isTyping, true);
+        this.emitTypingState(chatId, connection, isTyping, true);
         return ackOk();
     }
 
     private async cleanupActiveChat(connection: ISocketConnection, leaveRoom: boolean): Promise<void> {
-        const activeChatId = this.getCurrentChatId(connection);
+        const activeChatId = connection.data.currentChatId;
+        delete connection.data.currentChatId;
+        delete connection.data.currentChatTeamId;
+
         if (!activeChatId) {
-            this.clearCurrentChatContext(connection);
             return;
         }
 
@@ -157,8 +118,6 @@ class ChatSocketModule extends BaseSocketModule {
         if (leaveRoom) {
             await this.leaveRoom(connection.id, this.buildChatRoomName(activeChatId));
         }
-
-        this.clearCurrentChatContext(connection);
     }
 
     private emitTypingState(
@@ -181,11 +140,11 @@ class ChatSocketModule extends BaseSocketModule {
         const room = this.buildChatRoomName(chatId);
 
         if (excludeSender) {
-            this.emitToRoomExcept(connection.id, room, SOCKET_CHAT_EVENTS.USER_TYPING, payload);
+            this.emitToRoomExcept(connection.id, room, 'user_typing', payload);
             return;
         }
 
-        this.emitToRoom(room, SOCKET_CHAT_EVENTS.USER_TYPING, payload);
+        this.emitToRoom(room, 'user_typing', payload);
     }
 
     private getCurrentUserId(connection: ISocketConnection): string | undefined {
@@ -193,34 +152,12 @@ class ChatSocketModule extends BaseSocketModule {
     }
 
     private getUserDisplayName(connection: ISocketConnection): string {
-        const firstName = connection.user?.firstName?.trim();
-        const lastName = connection.user?.lastName?.trim();
-        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+        const fullName = [connection.user?.firstName, connection.user?.lastName]
+            .map((part) => part?.trim())
+            .filter(Boolean)
+            .join(' ');
 
-        if (fullName) {
-            return fullName;
-        }
-
-        const emailLocalPart = connection.user?.email?.split('@')[0]?.trim();
-        return emailLocalPart || 'A team member';
-    }
-
-    private getCurrentChatId(connection: ISocketConnection): string | undefined {
-        return connection.data.currentChatId || undefined;
-    }
-
-    private getCurrentChatTeamId(connection: ISocketConnection): string | undefined {
-        return connection.data.currentChatTeamId || undefined;
-    }
-
-    private setCurrentChatContext(connection: ISocketConnection, chatId: string, teamId: string): void {
-        connection.data.currentChatId = chatId;
-        connection.data.currentChatTeamId = teamId;
-    }
-
-    private clearCurrentChatContext(connection: ISocketConnection): void {
-        delete connection.data.currentChatId;
-        delete connection.data.currentChatTeamId;
+        return fullName || connection.user?.email?.split('@')[0]?.trim() || 'A team member';
     }
 
     private buildChatRoomName(chatId: string): string {
@@ -245,9 +182,4 @@ class ChatSocketModule extends BaseSocketModule {
     }
 }
 
-export default new ChatSocketModule(
-    socketIOEmitter,
-    socketIORoomManager,
-    socketIOEventRegistry,
-    new TeamRoomPresenceService()
-);
+export default new ChatSocketModule();

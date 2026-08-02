@@ -56,13 +56,13 @@ export default class TrajectoryEvents {
             where: { team: teamId },
             select: { id: true }
         });
-        this.#service ??= new TrajectoryService();
+        const service = this.#service ??= new TrajectoryService();
 
         await cascadeDeleteEach({
             label: 'TrajectoryEvents',
             ids: trajectories.map((trajectory) => trajectory.id),
             deleteOne: async (trajectoryId) => {
-                await this.#service!.deleteById({
+                await service.deleteById({
                     trajectoryId,
                     teamId,
                     userId
@@ -73,18 +73,12 @@ export default class TrajectoryEvents {
 
     @Event('trajectory.deleted')
     async cleanupJobs(payload: EventMap['trajectory.deleted']) {
-        const { teamId, trajectoryId } = payload;
-
-        if (!teamId) {
-            return;
-        }
-
         try {
             await teamJobMaintenanceService.cleanupDeletedTrajectory(payload);
         } catch (error) {
             logger.warn(
                 error,
-                `[TrajectoryEvents] Failed to purge runtime state for trajectory ${trajectoryId}`
+                `[TrajectoryEvents] Failed to purge runtime state for trajectory ${payload.trajectoryId}`
             );
         }
     }
@@ -123,14 +117,6 @@ export default class TrajectoryEvents {
             ))
         );
 
-        this.#logFailures(`team cluster ${teamClusterId}`, results, targets);
-    }
-
-    #logFailures(
-        targetName: string,
-        results: PromiseSettledResult<unknown>[],
-        targets: TrajectoryStorageCleanupTarget[]
-    ): void {
         results.forEach((result, index) => {
             if (result.status === 'fulfilled') {
                 return;
@@ -139,7 +125,7 @@ export default class TrajectoryEvents {
             const target = targets[index];
             logger.warn(
                 result.reason,
-                `[TrajectoryEvents] Failed to delete ${targetName} storage prefix ${target.bucket}/${target.prefix}`
+                `[TrajectoryEvents] Failed to delete team cluster ${teamClusterId} storage prefix ${target.bucket}/${target.prefix}`
             );
         });
     }

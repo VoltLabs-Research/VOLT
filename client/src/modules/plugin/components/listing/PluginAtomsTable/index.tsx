@@ -30,20 +30,62 @@ const getTypeColor = (t?: number): string => {
 
 const ATOMS_PAGE_SIZE = 100;
 
-const BASE_ATOM_COLUMN_KEYS = new Set(['id', 'type', 'x', 'y', 'z']);
+const BASE_ATOM_COLUMNS: PluginTableColumnConfig[] = [
+    {
+        key: 'id',
+        title: 'ID',
+        width: 80
+    },
+    {
+        key: 'type',
+        title: 'Type',
+        width: 80,
+        render: (value: unknown) => (
+            <Row gap='05'>
+                <div
+                    style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: getTypeColor(typeof value === 'number' ? value : undefined)
+                    }}
+                />
+                {String(value)}
+            </Row>
+        )
+    },
+    {
+        key: 'x',
+        title: 'X',
+        width: 100,
+        render: (value: unknown) => formatAtomValue(value, 3)
+    },
+    {
+        key: 'y',
+        title: 'Y',
+        width: 100,
+        render: (value: unknown) => formatAtomValue(value, 3)
+    },
+    {
+        key: 'z',
+        title: 'Z',
+        width: 100,
+        render: (value: unknown) => formatAtomValue(value, 3)
+    }
+];
+
+const BASE_ATOM_COLUMN_KEYS = new Set(BASE_ATOM_COLUMNS.map((column) => column.key));
 
 const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
-    const resolvedAnalysisId = analysisId || 'default';
-    const enabled = Boolean(trajectoryId && currentTimestep !== undefined);
     const baseAtomsParams = useMemo(() => ({
         trajectoryId,
-        analysisId: resolvedAnalysisId,
+        analysisId: analysisId || 'default',
         exposureId,
         timestep: currentTimestep ?? 0,
         limit: ATOMS_PAGE_SIZE
-    }), [trajectoryId, resolvedAnalysisId, exposureId, currentTimestep]);
+    }), [trajectoryId, analysisId, exposureId, currentTimestep]);
 
     const {
         data: infiniteData,
@@ -52,7 +94,9 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         fetchNextPage,
         hasNextPage,
         error
-    } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, { enabled });
+    } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, {
+        enabled: Boolean(trajectoryId && currentTimestep !== undefined)
+    });
 
     const aosCacheRef = useRef(new WeakMap<GetAtomsResponse, AtomData[]>());
 
@@ -78,65 +122,17 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         return [];
     }, [infiniteData]);
 
-    const columns: PluginTableColumnConfig[] = useMemo(() => {
-        const base: PluginTableColumnConfig[] = [
-            {
-                key: 'id',
-                title: 'ID',
-                width: 80
-            },
-            {
-                key: 'type',
-                title: 'Type',
-                width: 80,
-                render: (v: unknown) => {
-                    const numericValue = typeof v === 'number' ? v : undefined;
-                    return (
-                        <Row gap='05'>
-                            <div
-                                style={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: '50%',
-                                    backgroundColor: getTypeColor(numericValue)
-                                }}
-                            />
-                            {String(v)}
-                        </Row>
-                    );
-                }
-            },
-            {
-                key: 'x',
-                title: 'X',
-                width: 100,
-                render: (value: unknown) => formatAtomValue(value, 3)
-            },
-            {
-                key: 'y',
-                title: 'Y',
-                width: 100,
-                render: (value: unknown) => formatAtomValue(value, 3)
-            },
-            {
-                key: 'z',
-                title: 'Z',
-                width: 100,
-                render: (value: unknown) => formatAtomValue(value, 3)
-            }
-        ];
-
-        const extra = properties
+    const columns: PluginTableColumnConfig[] = useMemo(() => [
+        ...BASE_ATOM_COLUMNS,
+        ...properties
             .filter((prop) => !BASE_ATOM_COLUMN_KEYS.has(prop))
             .map((prop) => ({
                 key: prop,
                 title: prop,
                 width: 120,
                 render: (value: unknown) => formatAtomValue(value, 4)
-            }));
-
-        return [...base, ...extra];
-    }, [properties]);
+            }))
+    ], [properties]);
 
     const handleLoadMore = () => {
         if (hasNextPage && !isFetchingNextPage) {

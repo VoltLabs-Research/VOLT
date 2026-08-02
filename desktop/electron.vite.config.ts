@@ -2,7 +2,12 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 
-const alias = { '@': resolve('src') };
+const alias = {
+    '@': resolve('src'),
+    // Same alias the server and client use, so desktop consumes the shared wire
+    // contracts instead of restating routes and types.
+    '@volt/contracts': resolve('../contracts/src')
+};
 
 export default defineConfig({
     main: {

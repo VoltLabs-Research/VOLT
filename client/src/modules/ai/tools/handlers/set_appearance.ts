@@ -1,14 +1,8 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { isPerformancePreset } from '@/shared/rendering/performance';
 
+import { PerformancePreset } from '@/shared/rendering/performance';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-import type { PerformancePreset } from '@/shared/rendering/performance';
-
-interface SetAppearanceInput {
-    pointSize?: number;
-    showSimulationCell?: boolean;
-    quality?: string;
-}
+import type { SetAppearanceInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const setAppearance: ClientToolHandler<SetAppearanceInput> = {
     name: 'set_appearance',
@@ -21,32 +15,25 @@ const setAppearance: ClientToolHandler<SetAppearanceInput> = {
         ctx.markViewerActing();
         const store = useEditorStore.getState();
 
-        if (typeof input.pointSize === 'number' && Number.isFinite(input.pointSize)) {
+        if (input.pointSize !== undefined) {
             store.setPointSizeMultiplier(input.pointSize);
             const effective = useEditorStore.getState().pointSizeMultiplier;
             applied.pointSize = effective;
             changes.push(`point size ${effective}`);
         }
 
-        if (typeof input.showSimulationCell === 'boolean') {
+        if (input.showSimulationCell !== undefined) {
             store.setShowSimulationCell(input.showSimulationCell);
             applied.showSimulationCell = input.showSimulationCell;
             changes.push(input.showSimulationCell ? 'simulation cell on' : 'simulation cell off');
         }
 
-        if (typeof input.quality === 'string' && input.quality) {
-            const preset = input.quality.toLowerCase();
-            if (!isPerformancePreset(preset)) {
-                return {
-                    ok: false,
-                    summary: `Unknown quality preset "${input.quality}".`,
-                    reason: 'invalid_quality',
-                    hint: 'Use one of: ultra, high, balanced, performance, battery.'
-                };
-            }
-            store.performanceSettings.setPreset(preset as PerformancePreset);
-            applied.quality = preset;
-            changes.push(`quality ${preset}`);
+        if (input.quality !== undefined) {
+            // The contract declares this as the literal union the LLM may send; it is
+            // value-identical to PerformancePreset, which TS keeps nominal for enums.
+            store.performanceSettings.setPreset(input.quality as PerformancePreset);
+            applied.quality = input.quality;
+            changes.push(`quality ${input.quality}`);
         }
 
         if (changes.length === 0) {

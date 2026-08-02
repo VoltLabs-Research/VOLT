@@ -1,19 +1,18 @@
 import { useCanvasFocusStore } from '@/modules/canvas/store/use-canvas-focus-store';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface FocusResultInput {
-    modifierId?: string | null;
-}
+import type { FocusResultInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const focusResult: ClientToolHandler<FocusResultInput> = {
     name: 'focus_result',
     needsViewer: false,
 
-    run(input, _ctx): ClientToolResult {
+    run(input): ClientToolResult {
         const focus = useCanvasFocusStore.getState();
-        const raw = input.modifierId;
+        // `modifierId` is a declared `string | null` union: null is the documented
+        // way to clear the focus, so this narrowing is load-bearing.
+        const modifierId = input.modifierId?.trim();
 
-        if (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === '')) {
+        if (!modifierId) {
             focus.clearFocusedModifier();
             return {
                 ok: true,
@@ -22,16 +21,6 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
             };
         }
 
-        if (typeof raw !== 'string') {
-            return {
-                ok: false,
-                summary: 'Could not focus the result.',
-                reason: 'invalid_modifier_id',
-                hint: 'modifierId must be a string id or null.'
-            };
-        }
-
-        const modifierId = raw.trim();
         focus.focusModifier(modifierId);
 
         return {
@@ -41,16 +30,10 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
         };
     },
 
-    describeEffect(input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Focus unchanged',
-                icon: 'focus'
-            };
-        }
-        const cleared = input.modifierId === null || input.modifierId === undefined || input.modifierId === '';
+    describeEffect(_input, result) {
+        const focusedModifierId = (result.data as { focusedModifierId?: string | null } | undefined)?.focusedModifierId;
         return {
-            label: cleared ? 'Cleared focus' : 'Focused result',
+            label: focusedModifierId ? 'Focused result' : 'Cleared focus',
             icon: 'focus'
         };
     }

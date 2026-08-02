@@ -5,39 +5,23 @@ import type { Node } from '@xyflow/react';
 import { useForm } from 'react-hook-form';
 import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form';
 
-interface UseNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey extends keyof INodeData> {
-    node: Node<INodeData>;
-    dataKey: TDataKey;
-    defaults: TFormValues;
-}
-
-interface CreateNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey extends keyof INodeData> {
-    defaults: TFormValues;
-    dataKey: TDataKey;
-}
-
-const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends keyof INodeData>(
-    options: UseNodeEditorFormOptions<TFormValues, TDataKey>
+/**
+ * Binds a react-hook-form instance to one slice of a builder node's data,
+ * writing every change back to the builder store.
+ */
+const useNodeEditorForm = <TFormValues extends FieldValues>(
+    node: Node<INodeData>,
+    dataKey: keyof INodeData,
+    defaults: TFormValues
 ): UseFormReturn<TFormValues> => {
-    const {
-        node,
-        dataKey,
-        defaults
-    } = options;
-
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const storeNodes = usePluginBuilderStore((state) => state.nodes);
 
     const initialValues = useMemo((): TFormValues => {
         const storeNode = storeNodes.find((storeNodeItem) => storeNodeItem.id === node.id);
-        const data = storeNode?.data ?? node.data;
-        const value = data[dataKey];
+        const value = (storeNode?.data ?? node.data)[dataKey];
 
-        if (value === undefined) {
-            return defaults;
-        }
-
-        return value as TFormValues;
+        return value === undefined ? defaults : value as TFormValues;
     }, [storeNodes, node.id, node.data, dataKey, defaults]);
 
     const form = useForm<TFormValues>({
@@ -68,14 +52,4 @@ const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends key
     return form;
 };
 
-export const createNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends keyof INodeData>(
-    config: CreateNodeEditorFormOptions<TFormValues, TDataKey>
-) => {
-    return function useCreatedNodeEditorForm(node: Node<INodeData>) {
-        return useNodeEditorForm<TFormValues, TDataKey>({
-            node,
-            dataKey: config.dataKey,
-            defaults: config.defaults
-        });
-    };
-};
+export default useNodeEditorForm;

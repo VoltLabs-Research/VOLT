@@ -1,5 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
@@ -37,12 +38,10 @@ interface PluginTopology {
 }
 
 const summarize = (plugin: PluginRecord): PluginTopology => {
-    const nodes = plugin.workflow?.nodes ?? [];
-    const edges = plugin.workflow?.edges ?? [];
+    const { nodes, edges } = plugin.workflow;
     const nodeTypeCounts: Record<string, number> = {};
     for (const node of nodes) {
-        const type = String(node.type ?? 'unknown');
-        nodeTypeCounts[type] = (nodeTypeCounts[type] ?? 0) + 1;
+        nodeTypeCounts[node.type] = (nodeTypeCounts[node.type] ?? 0) + 1;
     }
     return {
         name: plugin.modifier?.name ?? plugin._id,
@@ -61,6 +60,7 @@ const diffSets = (a: string[], b: string[]) => ({
     shared: a.filter((item) => b.includes(item))
 });
 
+@AIToolProvider()
 export default class PluginAIToolController extends AIToolController {
     #service = new PluginService();
     #summarizer = new AnalysisResultSummarizer();

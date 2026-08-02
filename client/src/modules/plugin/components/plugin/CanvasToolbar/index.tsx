@@ -3,7 +3,6 @@ import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
 import { ZoomIn, ZoomOut, Maximize, Save, AlertTriangle } from 'lucide-react';
-import { useCallback } from 'react';
 
 interface CanvasToolbarProps {
     saveStatus: SaveStatus;
@@ -13,27 +12,23 @@ interface CanvasToolbarProps {
 
 const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     const { zoomIn, zoomOut, fitView } = useReactFlow();
-    const zoomPercent = Math.round(zoom * 100);
-    const validationResult = usePluginBuilderStore((state) => state.validationResult);
-    const hasErrors = validationResult && !validationResult.valid && validationResult.errors.length > 0;
+    const errors = usePluginBuilderStore((state) => state.validationErrors);
 
-    const handleZoomIn = useCallback(() => { zoomIn(); }, [zoomIn]);
-    const handleZoomOut = useCallback(() => { zoomOut(); }, [zoomOut]);
-    const handleFitView = useCallback(() => { fitView({ padding: 0.2 }); }, [fitView]);
+    const issueSummary = `${errors.length} ${errors.length === 1 ? 'issue' : 'issues'}`;
 
     return (
         <>
-            {hasErrors && (
+            {errors.length > 0 && (
                 <Callout
                     tone='danger'
-                    title={`${validationResult!.errors.length} ${validationResult!.errors.length === 1 ? 'issue' : 'issues'} to fix before publishing`}
+                    title={`${issueSummary} to fix before publishing`}
                     icon={<AlertTriangle size={14} />}
                     role='alert'
                     ariaLive='polite'
                     className='canvas-toolbar-validation'
                 >
                     <Stack as='ul' gap='025' className='canvas-toolbar-validation-list'>
-                        {validationResult!.errors.map((error, index) => (
+                        {errors.map((error, index) => (
                             <Text key={index} as='li' size='sm'>
                                 {error}
                             </Text>
@@ -45,15 +40,15 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
             <FloatingToolbar placement='bottom' align='center' offset={1.25} className='canvas-toolbar'>
                 <SaveStatusIndicator status={saveStatus} className='canvas-toolbar-status' />
 
-                {hasErrors && (
+                {errors.length > 0 && (
                     <Tooltip
-                        content={validationResult!.errors.join(' · ')}
+                        content={errors.join(' · ')}
                         placement='top'
                     >
                         <Row gap='05' cursor='pointer' className='canvas-toolbar-status canvas-toolbar-status--error'>
                             <AlertTriangle size={14} />
                             <Text as='p' size='sm'>
-                                {validationResult!.errors.length} {validationResult!.errors.length === 1 ? 'issue' : 'issues'}
+                                {issueSummary}
                             </Text>
                         </Row>
                     </Tooltip>
@@ -61,21 +56,21 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
 
                 <Row gap='025'>
                     <Tooltip content='Zoom out' placement='top'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => zoomOut()}>
                             <ZoomOut size={16} />
                         </Button>
                     </Tooltip>
                     <Text as='p' size='sm' tone='secondary' align='center' className='u-select-none canvas-toolbar-zoom-label tabular-nums'>
-                        {zoomPercent}%
+                        {Math.round(zoom * 100)}%
                     </Text>
                     <Tooltip content='Zoom in' placement='top'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => zoomIn()}>
                             <ZoomIn size={16} />
                         </Button>
                     </Tooltip>
                     <Divider orientation='vertical' className='canvas-toolbar-divider' />
                     <Tooltip content='Fit to view' placement='top'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => fitView({ padding: 0.2 })}>
                             <Maximize size={16} />
                         </Button>
                     </Tooltip>

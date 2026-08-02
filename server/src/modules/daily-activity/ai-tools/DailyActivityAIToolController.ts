@@ -1,10 +1,12 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import type { GetActivitySummaryInput } from '@volt/contracts/modules/daily-activity/ai-tools';
 
+@AIToolProvider()
 export default class DailyActivityAIToolController extends AIToolController {
     #service = new DailyActivityService();
 

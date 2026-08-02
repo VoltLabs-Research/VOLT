@@ -13,12 +13,11 @@ import { Server } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
-import type { ConnectEndpointForm } from './validation-schema';
 
 const ConnectEndpointTemplate = () => {
     const [isVerifying, setIsVerifying] = useState(false);
 
-    const { control, getValues, trigger } = useForm<ConnectEndpointForm>({
+    const { control, getValues, trigger } = useForm<{ endpoint: string }>({
         defaultValues: {
             endpoint: ''
         },

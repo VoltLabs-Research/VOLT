@@ -36,18 +36,7 @@ const resolveJobTimestep = (job: Job): number | undefined => {
     return job.timestep ?? job.metadata?.timestep;
 };
 
-const normalizeJobTimestep = (job: Job, timestep: number): Job => {
-    return {
-        ...job,
-        timestep
-    };
-};
-
 const parseTimestamp = (timestamp: string): number => {
-    if (timestamp.trim().length === 0) {
-        return 0;
-    }
-
     const parsedTimestamp = Date.parse(timestamp);
     return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
 };
@@ -56,7 +45,10 @@ const UNGROUPED_TIMESTEP = -1;
 
 const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup => {
     const timestep = resolveJobTimestep(updatedJob) ?? UNGROUPED_TIMESTEP;
-    const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
+    const normalizedJob: Job = {
+        ...updatedJob,
+        timestep
+    };
 
     return {
         trajectoryId: updatedJob.trajectoryId,
@@ -79,7 +71,10 @@ export const applyJobUpdate = (
 ): TrajectoryJobGroup[] => {
     const timestep = resolveJobTimestep(updatedJob) ?? UNGROUPED_TIMESTEP;
 
-    const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
+    const normalizedJob: Job = {
+        ...updatedJob,
+        timestep
+    };
     const trajIndex = groups.findIndex((group) => group.trajectoryId === updatedJob.trajectoryId);
     if (trajIndex === -1) {
         const trajectoryGroup = buildTrajectoryGroup(normalizedJob);
@@ -115,10 +110,10 @@ export const applyJobUpdate = (
                     ...normalizedJob
                 }
                 : normalizedJob;
-        const nextJob = normalizeJobTimestep(
-            nextJobSource,
-            resolveJobTimestep(nextJobSource) ?? timestep
-        );
+        const nextJob: Job = {
+            ...nextJobSource,
+            timestep: resolveJobTimestep(nextJobSource) ?? timestep
+        };
         const frameIndex = frameGroupsWithoutExistingJob.findIndex((frame) => frame.timestep === timestep);
         let newFrameGroups = frameGroupsWithoutExistingJob;
 

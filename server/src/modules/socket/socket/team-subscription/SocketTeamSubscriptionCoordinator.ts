@@ -1,9 +1,13 @@
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
-import type { NormalizedTeamSubscription } from '@modules/socket/socket/team-subscription/team-subscription';
 
 interface TeamSubscriptionContext {
     connection: ISocketConnection;
-    subscription: NormalizedTeamSubscription;
+    subscription: {
+        teamId: string;
+        previousTeamId?: string;
+        roomName: string;
+        previousRoomName?: string;
+    };
 }
 
 type TeamSubscriptionHandler = (
@@ -26,10 +30,6 @@ class SocketTeamSubscriptionCoordinator {
 
     getCurrentTeamId(connection: ISocketConnection): string | undefined{
         return connection.data.currentTeamId;
-    }
-
-    setCurrentTeamId(connection: ISocketConnection, teamId: string): void{
-        connection.data.currentTeamId = teamId;
     }
 
     clearCurrentTeamId(connection: ISocketConnection): void{

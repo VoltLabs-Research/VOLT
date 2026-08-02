@@ -4,7 +4,6 @@ import type { ChatRecord } from '@shared/contracts/ports';
 import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
 import type {
     GetAnalysesByTeamIdItemView,
-    ListContainersOutput,
     PluginRecord,
     TrajectoryRecord
 } from '@shared/contracts/operations';
@@ -24,45 +23,17 @@ import { paginate, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PageRequest } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 
-interface ContainerSearchView{
+type ContainerSearchRecord = {
     _id: string;
     name: string;
-    image: string;
-    containerId: string;
-    folder: string | null;
-    createdBy: string;
-    status: string;
-    memory: number;
-    cpus: number;
-    internalIp?: string;
-    team?: string;
-    teamCluster?: string;
-    env: unknown[];
-    ports: unknown[];
-    network?: string;
-    volume?: string;
-    mountDockerSocket?: boolean;
-    accessiblePorts?: unknown[];
-    createdAt?: Date;
-    updatedAt?: Date;
-}
+};
 
-interface ChatSearchParticipant{
-    firstName: string;
-    lastName: string;
-    email: string;
-}
-
-interface ChatSearchLastMessage{
-    content: string;
-}
-
-interface ChatSearchView{
-    participants: ChatSearchParticipant[];
-    lastMessage: ChatSearchLastMessage | null;
+type ChatSearchRecord = ChatRecord<{
+    participants: User[];
+    lastMessage: ChatMessage | null;
     isGroup: boolean;
-    groupName: string;
-}
+    groupName: string | null;
+}>;
 
 interface PluginSearchProps{
     modifier?: { name: string } | null;
@@ -82,11 +53,11 @@ interface GetGlobalSearchInput{
 
 interface GetGlobalSearchResult{
     analyses: GetAnalysesByTeamIdItemView[];
-    containers: ListContainersOutput<ContainerSearchView>['data'];
+    containers: ContainerSearchRecord[];
     trajectories: TrajectoryRecord[];
     teams: Team[];
     plugins: PluginSearchRecord[];
-    chats: ChatRecord<ChatSearchView>[];
+    chats: ChatSearchRecord[];
 }
 
 interface FindAnalysesOptions{
@@ -111,8 +82,6 @@ const MAX_LIMIT = 10;
 const MIN_SEARCH_QUERY_LENGTH = 2;
 const LIKE_ESCAPE_CHARACTER = '\\';
 
-const normalizeQuery = (value: string | undefined): string => value?.trim() ?? '';
-
 const normalizeLimit = (value: number | undefined): number => {
     if(value === undefined || !Number.isFinite(value)){
         return DEFAULT_LIMIT;
@@ -135,8 +104,6 @@ const matchesNormalizedQuery = (normalizedQuery: string, ...values: Array<string
 
 const toAnalysisView = (analysis: Analysis): GetAnalysesByTeamIdItemView => ({
     ...analysis.toJSON(),
-    _id: analysis.id,
-    plugin: analysis.plugin,
     trajectory: analysis.trajectoryRef
         ? {
             _id: analysis.trajectoryRef.id,
@@ -187,7 +154,7 @@ export default class DashboardService{
     #teamService = new TeamService();
 
     async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult>{
-        const normalizedQuery = normalizeQuery(input.query);
+        const normalizedQuery = input.query?.trim() ?? '';
         if(normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH){
             return EMPTY_GLOBAL_SEARCH_RESULTS;
         }
@@ -230,28 +197,7 @@ export default class DashboardService{
 
         return {
             analyses: analysesResult.data,
-            containers: (containersResult.data as unknown as ContainerSearchView[]).map((container) => ({
-                _id: container._id,
-                name: container.name,
-                image: container.image,
-                containerId: container.containerId,
-                folder: container.folder,
-                createdBy: container.createdBy,
-                status: container.status,
-                memory: container.memory,
-                cpus: container.cpus,
-                internalIp: container.internalIp,
-                team: container.team,
-                teamCluster: container.teamCluster,
-                env: container.env,
-                ports: container.ports,
-                network: container.network,
-                volume: container.volume,
-                mountDockerSocket: container.mountDockerSocket,
-                accessiblePorts: container.accessiblePorts,
-                createdAt: container.createdAt,
-                updatedAt: container.updatedAt
-            })),
+            containers: containersResult.data,
             trajectories: trajectoriesResult,
             teams: teams
                 .filter((team) => matchesNormalizedQuery(
@@ -261,7 +207,7 @@ export default class DashboardService{
                 ))
                 .slice(0, limit),
             plugins: pluginsResult.data,
-            chats: (chats as unknown as ChatRecord<ChatSearchView>[])
+            chats: chats
                 .filter((chat) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
                     chat.lastMessage?.content,
@@ -336,7 +282,7 @@ export default class DashboardService{
         return paginate([data, matches.length], pageRequest);
     }
 
-    async #findContainers(teamId: string, searchPattern: string, pageRequest: PageRequest): Promise<PaginatedResult<Record<string, unknown>>>{
+    async #findContainers(teamId: string, searchPattern: string, pageRequest: PageRequest): Promise<PaginatedResult<ContainerSearchRecord>>{
         const [containers, total] = await Container.findAndCount({
             where: {
                 team: teamId,
@@ -347,7 +293,7 @@ export default class DashboardService{
             skip: skipFor(pageRequest)
         });
 
-        return paginate([containers.map((container) => container.toJSON()), total], pageRequest);
+        return paginate([containers.map((container) => container.toJSON() as ContainerSearchRecord), total], pageRequest);
     }
 
     async #searchTrajectoryIdsByTeamAndName(teamId: string, searchPattern: string): Promise<string[]>{
@@ -375,7 +321,7 @@ export default class DashboardService{
         return trajectories.map((trajectory) => toTrajectoryRecord(trajectory));
     }
 
-    async #findChatsByUserId(userId: string): Promise<Array<Record<string, unknown>>>{
+    async #findChatsByUserId(userId: string): Promise<ChatSearchRecord[]>{
         const chats = await Chat.createQueryBuilder('chat')
             .where(participantCondition('member'), { member: memberToken(userId) })
             .andWhere('chat.isActive = :isActive', { isActive: true })
@@ -389,9 +335,9 @@ export default class DashboardService{
 
         return chats.map((chat) => ({
             ...chat.toJSON(),
-            participants: this.#resolveUsers(chat.participants, participants),
-            lastMessage: this.#resolveLastMessage(chat, lastMessages)
-        }));
+            participants: (chat.participants ?? []).flatMap((participantId) => participants.get(participantId) ?? []),
+            lastMessage: chat.lastMessage === null ? null : lastMessages.get(chat.lastMessage) ?? null
+        } as ChatSearchRecord));
     }
 
     async #loadUsers(userIds: string[]): Promise<Map<string, User>>{
@@ -408,16 +354,5 @@ export default class DashboardService{
 
         const messages = await ChatMessage.findBy({ id: In(uniqueIds) });
         return new Map(messages.map((message) => [message.id, message]));
-    }
-
-    #resolveUsers(userIds: string[] | null, users: Map<string, User>): User[]{
-        return (userIds ?? [])
-            .map((userId) => users.get(userId))
-            .filter((user): user is User => user !== undefined);
-    }
-
-    #resolveLastMessage(chat: Chat, messages: Map<string, ChatMessage>): ChatMessage | null{
-        if(chat.lastMessage === null) return null;
-        return messages.get(chat.lastMessage) ?? null;
     }
 }

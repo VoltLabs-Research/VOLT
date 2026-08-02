@@ -1,38 +1,25 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { Analysis } from '@shared/contracts/types';
-import type { Plugin } from '@modules/plugin/contracts/plugin';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import {
+    buildPluginDispatch,
+    type PipelineDispatchPayload,
+    type PipelineStageDispatch,
+    type RoutePluginExecutionInput,
+    type TrajectoryFramePayload
+} from '@modules/plugin/services/plugin/plugin-dispatch-payload';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
+import type { QueuedJobNotification } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import logger from '@shared/infrastructure/logger';
+import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
+import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 
-export interface PluginReferenceExecutionRequest {
-    referencePath: string;
-    pluginId: string;
-    config: Record<string, unknown>;
-}
-
-export interface RoutePluginExecutionInput {
-    teamClusterId: string;
-    analysis: Analysis;
-    analysisId: string;
-    pluginDisplayName: string;
-    trajectoryId: string;
-    trajectoryName: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
-    teamId: string;
-    plugin: Plugin;
-    pluginDependencies: Plugin[];
-    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
-    config: Record<string, unknown>;
-    selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
-    timestep?: number;
-}
+export type { PluginReferenceExecutionRequest, RoutePluginExecutionInput, TrajectoryFramePayload };
 
 export interface PipelineStageExecutionInput {
-    kind: 'plugin' | 'slice' | 'expression';
+    kind: PipelineStageKind;
     execution?: RoutePluginExecutionInput;
     cacheHit?: boolean;
     cacheSourceAnalysisId?: string;
@@ -45,387 +32,43 @@ interface RoutePipelineExecutionInput {
     teamId: string;
     trajectoryId: string;
     trajectoryName: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    trajectoryFrames: TrajectoryFramePayload[];
     storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
     stages: PipelineStageExecutionInput[];
 }
-import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import type {
-    IDaemonAnalysisCompletionService,
-    IStoragePlacementService,
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
-import TeamCluster from '@modules/cluster/models/TeamCluster';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import logger from '@shared/infrastructure/logger';
-import { promisify } from 'node:util';
-import zlib from 'node:zlib';
 
-const gzipAsync = promisify(zlib.gzip);
-
-const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
-const PLUGIN_SYNC_CACHE_TTL_SECONDS = 600;
-const PLUGIN_SYNC_CACHE_PREFIX = 'plugin-sync:';
-
-interface DaemonPluginSyncResponse {
-    synced: boolean;
-    objectKey: string;
+interface DaemonPipelineStartResponse {
+    jobs: QueuedJobNotification[];
 }
 
-interface DaemonAnalysisStartResponse {
-    queued: boolean;
-    totalJobs: number;
-    jobs: DaemonAnalysisJob[];
-}
+type ComputingStage = PipelineStageExecutionInput & { execution: RoutePluginExecutionInput };
 
-interface DaemonAnalysisJob {
-    jobId: string;
-    name: string;
-    teamId: string;
-    timestep: number;
-    trajectoryId: string;
-    analysisId: string;
-    queueType: string;
-}
+const groupJobsByAnalysisId = (jobs: QueuedJobNotification[]): Map<string, QueuedJobNotification[]> => {
+    const jobsByAnalysisId = new Map<string, QueuedJobNotification[]>();
 
-interface DaemonAnalysisPayload {
-    _id: string;
-    plugin: string;
-    pluginDisplayName: string;
-    computeClusterId?: string;
-    storageClusterId?: string;
-    config: Record<string, unknown>;
-    trajectory: string;
-    createdBy: string;
-    totalFrames?: number;
-    startedAt?: Date;
-    finishedAt?: Date;
-    team: string;
-    status: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
-    return {
-        _id: analysis._id,
-        plugin: analysis.props.plugin,
-        pluginDisplayName: analysis.props.pluginDisplayName,
-        computeClusterId: analysis.props.computeClusterId,
-        storageClusterId: analysis.props.storageClusterId,
-        config: analysis.props.config,
-        trajectory: analysis.props.trajectory,
-        createdBy: analysis.props.createdBy,
-        totalFrames: analysis.props.totalFrames,
-        startedAt: analysis.props.startedAt,
-        finishedAt: analysis.props.finishedAt,
-        team: analysis.props.team,
-        status: analysis.props.status,
-        createdAt: analysis.props.createdAt,
-        updatedAt: analysis.props.updatedAt
-    };
-};
-
-interface NestedPluginDefinition {
-    pluginId: string;
-    workflow: WorkflowProps;
-}
-
-interface PluginDispatchPayload extends Record<string, unknown> {
-    analysis: DaemonAnalysisPayload;
-    analysisId: string;
-    pluginId: string;
-    pluginDisplayName: string;
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    trajectoryFramesCompressed: string;
-    workflowCompressed: string;
-    nestedPluginsCompressed: string;
-    pluginReferenceExecutionsCompressed: string;
-    config: Record<string, unknown>;
-    selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
-    timestep?: number;
-}
-
-interface PipelineStageDispatch {
-    kind: 'plugin' | 'slice' | 'expression';
-    plugin?: PluginDispatchPayload;
-    cacheHit?: boolean;
-    cacheSourceAnalysisId?: string;
-    sharedExposureIds?: string[];
-    config?: Record<string, unknown>;
-}
-
-interface PipelineDispatchPayload extends Record<string, unknown> {
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    storageClusterId?: string;
-    selectedTimesteps?: number[];
-    timestep?: number;
-    stages: PipelineStageDispatch[];
-}
-
-interface EncodedDispatchSection {
-    rawBytes: number;
-    storedBytes: number;
-    compressedValue: string;
-}
-
-const injectOwnerClusterIdIntoWorkflow = (
-    workflow: WorkflowProps,
-    ownerClusterId: string
-): WorkflowProps => {
-    if (!ownerClusterId) {
-        return workflow;
-    }
-
-    return {
-        ...workflow,
-        nodes: workflow.nodes.map((node) => {
-            if (node.type !== WorkflowNodeType.Entrypoint || !node.data.entrypoint) {
-                return node;
-            }
-
-            return {
-                ...node,
-                data: {
-                    ...node.data,
-                    entrypoint: {
-                        ...node.data.entrypoint,
-                        ownerClusterId
-                    }
-                }
-            };
-        })
-    };
-};
-
-const buildNestedPluginDefinitionWithOwner = (
-    plugin: Plugin,
-    ownerClusterId: string
-): NestedPluginDefinition => {
-    return {
-        pluginId: plugin.id,
-        workflow: injectOwnerClusterIdIntoWorkflow(
-            plugin.props.workflow.props,
-            ownerClusterId
-        )
-    };
-};
-
-const createPluginReferenceExecutionKey = (request: PluginReferenceExecutionRequest): string => {
-    return JSON.stringify({
-        referencePath: request.referencePath,
-        pluginId: request.pluginId,
-        config: request.config
-    });
-};
-
-const dedupePluginsById = (plugins: Plugin[]): Plugin[] => {
-    const dedupedPlugins = new Map<string, Plugin>();
-
-    for (const plugin of plugins) {
-        if (dedupedPlugins.has(plugin.id)) {
-            continue;
+    for (const job of jobs) {
+        const existing = jobsByAnalysisId.get(job.analysisId);
+        if (existing) {
+            existing.push(job);
+        } else {
+            jobsByAnalysisId.set(job.analysisId, [job]);
         }
-
-        dedupedPlugins.set(plugin.id, plugin);
     }
 
-    return Array.from(dedupedPlugins.values());
+    return jobsByAnalysisId;
 };
 
-const dedupePluginReferenceExecutions = (
-    pluginReferenceExecutions: PluginReferenceExecutionRequest[]
-): PluginReferenceExecutionRequest[] => {
-    const dedupedPluginReferenceExecutions = new Map<string, PluginReferenceExecutionRequest>();
-
-    for (const pluginReferenceExecution of pluginReferenceExecutions) {
-        const key = createPluginReferenceExecutionKey(pluginReferenceExecution);
-        if (dedupedPluginReferenceExecutions.has(key)) {
-            continue;
-        }
-
-        dedupedPluginReferenceExecutions.set(key, {
-            referencePath: pluginReferenceExecution.referencePath,
-            pluginId: pluginReferenceExecution.pluginId,
-            config: pluginReferenceExecution.config
-        });
-    }
-
-    return Array.from(dedupedPluginReferenceExecutions.values());
-};
-
-const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection> => {
-    const serializedBuffer = Buffer.from(JSON.stringify(value), 'utf8');
-    const rawBytes = serializedBuffer.byteLength;
-
-    const compressed = await gzipAsync(serializedBuffer);
-    const compressedValue = compressed.toString('base64');
-    return {
-        rawBytes,
-        storedBytes: compressedValue.length,
-        compressedValue
-    };
-};
-
+/**
+ * Sends a planned pipeline to the compute cluster's daemon and opens the
+ * completion session for every stage that will actually run, so job progress can
+ * be projected back to the client.
+ */
 class PluginExecutionRouter {
     private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
-    private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
-    private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection>>();
-    private readonly inflightPluginSyncs = new Map<string, Promise<void>>();
-
-    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
-    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
-    }
-
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
-        private readonly redis = redisClient;
-
-    private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection> {
-        try {
-            const cached = await this.redis.get(cacheKey);
-            if (cached) {
-                return JSON.parse(cached) as EncodedDispatchSection;
-            }
-        } catch (error: unknown) {
-            logger.warn({
-                err: error,
-                cacheKey
-            }, '@plugin-execution-router: dispatch section cache read failed');
-        }
-
-        const existing = this.inflightEncodes.get(cacheKey);
-        if (existing) return existing;
-
-        const pending = (async () => {
-            const encoded = await encodeDispatchSection(value);
-            try {
-                await this.redis.setex(cacheKey, DISPATCH_SECTION_CACHE_TTL_SECONDS, JSON.stringify(encoded));
-            } catch (error: unknown) {
-                logger.warn({
-                    err: error,
-                    cacheKey
-                }, '@plugin-execution-router: dispatch section cache write failed');
-            }
-            return encoded;
-        })().finally(() => {
-            this.inflightEncodes.delete(cacheKey);
-        });
-
-        this.inflightEncodes.set(cacheKey, pending);
-        return pending;
-    }
-
-    private encodeWorkflowSection(plugin: Plugin, ownerClusterId: string): Promise<EncodedDispatchSection> {
-        const revision = plugin.props.updatedAt.getTime();
-        const cacheKey = `plugin-dispatch:workflow:${plugin.id}:${revision}:${ownerClusterId || 'unknown-owner'}`;
-        return this.cachedEncode(
-            cacheKey,
-            injectOwnerClusterIdIntoWorkflow(
-                plugin.props.workflow.props,
-                ownerClusterId
-            )
-        );
-    }
-
-    private encodeNestedPluginsSection(
-        rootPluginId: string,
-        deps: Plugin[],
-        nestedPlugins: NestedPluginDefinition[],
-        ownerClusterIds: Map<string, string>
-    ): Promise<EncodedDispatchSection> {
-        const revisionToken = deps
-            .map((d) => `${d.id}@${d.props.updatedAt.getTime()}@${ownerClusterIds.get(d.id) || 'unknown-owner'}`)
-            .sort()
-            .join('|');
-        const cacheKey = `plugin-dispatch:nested:${rootPluginId}:${revisionToken || 'empty'}`;
-        return this.cachedEncode(cacheKey, nestedPlugins);
-    }
-
-    private async resolvePluginBinaryOwnerClusterId(plugin: Plugin): Promise<string> {
-        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
-        const currentOwnerClusterId = placement.props.primaryClusterId;
-        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
-        const objectKey = entrypointNode?.data.entrypoint?.binaryObjectPath;
-
-        if (!objectKey) {
-            return currentOwnerClusterId;
-        }
-
-        if (await this.pluginBinaryExists(currentOwnerClusterId, objectKey)) {
-            return currentOwnerClusterId;
-        }
-
-        const teamClusters = await TeamCluster.findBy({ team: plugin.props.team });
-
-        for (const candidateCluster of teamClusters) {
-            if (candidateCluster.id === currentOwnerClusterId) {
-                continue;
-            }
-
-            if (!(await this.pluginBinaryExists(candidateCluster.id, objectKey))) {
-                continue;
-            }
-
-            await this.storagePlacementService.switchPrimaryCluster(
-                'plugin-binary',
-                plugin.id,
-                candidateCluster.id,
-                {
-                    replicaClusterIds: placement.props.replicaClusterIds,
-                    state: placement.props.state,
-                    lastVerifiedAt: new Date()
-                }
-            );
-
-            logger.warn(
-                {
-                    pluginId: plugin.id,
-                    objectKey,
-                    previousOwnerClusterId: currentOwnerClusterId,
-                    repairedOwnerClusterId: candidateCluster.id
-                },
-                '@plugin-execution-router: repaired plugin binary storage placement owner'
-            );
-
-            return candidateCluster.id;
-        }
-
-        return currentOwnerClusterId;
-    }
-
-    private async pluginBinaryExists(ownerClusterId: string, objectKey: string): Promise<boolean> {
-        try {
-            await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
-            return true;
-        } catch (error: unknown) {
-            if (error instanceof ApplicationError && error.statusCode === 404) {
-                return false;
-            }
-
-            logger.warn(
-                {
-                    err: error,
-                    ownerClusterId,
-                    objectKey
-                },
-                '@plugin-execution-router: failed to inspect plugin binary while resolving owner'
-            );
-            return false;
-        }
-    }
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async routePipeline(input: RoutePipelineExecutionInput): Promise<void> {
         const stageDispatches: PipelineStageDispatch[] = [];
@@ -457,7 +100,7 @@ class PluginExecutionRouter {
                 );
             }
 
-            const { dispatchPayload, syncTasks: stageSyncTasks } = await this.buildPluginDispatch(stage.execution);
+            const { dispatchPayload, syncTasks: stageSyncTasks } = await buildPluginDispatch(stage.execution);
             syncTasks.push(...stageSyncTasks);
             stageDispatches.push({
                 kind: 'plugin',
@@ -478,26 +121,25 @@ class PluginExecutionRouter {
             stages: stageDispatches
         };
 
-        const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(
+        const response = await this.teamClusterDaemonClient.command<DaemonPipelineStartResponse>(
             input.teamClusterId,
             ChannelCommands.PipelineStart,
             pipelinePayload
         );
 
         const computingStages = input.stages.filter(
-            (stage): stage is PipelineStageExecutionInput & { execution: RoutePluginExecutionInput } =>
+            (stage): stage is ComputingStage =>
                 stage.kind === 'plugin' && !stage.cacheHit && stage.execution !== undefined
         );
-        const jobsByAnalysisId = new Map<string, DaemonAnalysisJob[]>();
-        for (const job of response.jobs ?? []) {
-            const existing = jobsByAnalysisId.get(job.analysisId);
-            if (existing) {
-                existing.push(job);
-            } else {
-                jobsByAnalysisId.set(job.analysisId, [job]);
-            }
-        }
 
+        await this.openCompletionSessions(input, computingStages, groupJobsByAnalysisId(response.jobs));
+    }
+
+    private async openCompletionSessions(
+        input: RoutePipelineExecutionInput,
+        computingStages: ComputingStage[],
+        jobsByAnalysisId: Map<string, QueuedJobNotification[]>
+    ): Promise<void> {
         for (const stage of computingStages) {
             const stageJobs = jobsByAnalysisId.get(stage.execution.analysisId) ?? [];
             await this.daemonAnalysisCompletionService.initializeSession(
@@ -507,175 +149,21 @@ class PluginExecutionRouter {
                 input.trajectoryId
             );
 
-            if (stageJobs.length > 0) {
-                await this.daemonAnalysisCompletionService.handleJobsQueued(
-                    stageJobs.map((job) => ({
-                        ...job,
-                        trajectoryName: input.trajectoryName
-                    })),
-                    input.teamId,
-                    input.teamClusterId
-                ).catch((error) => {
-                    logger.warn(error, '@plugin-execution-router: failed to project queued pipeline jobs');
-                });
-            }
-        }
-    }
-
-    private async buildPluginDispatch(
-        input: RoutePluginExecutionInput
-    ): Promise<{ dispatchPayload: PluginDispatchPayload; syncTasks: Promise<void>[] }> {
-        const uniqueDependencyPlugins = dedupePluginsById(input.pluginDependencies);
-        const uniquePluginsToSync = dedupePluginsById([
-            input.plugin,
-            ...uniqueDependencyPlugins
-        ]);
-
-        const pluginOwnerClusterIds = new Map(await Promise.all(
-            uniquePluginsToSync.map(async (plugin) => {
-                const ownerClusterId = await this.resolvePluginBinaryOwnerClusterId(plugin);
-                return [plugin.id, ownerClusterId] as const;
-            })
-        ));
-        const rootPluginOwnerClusterId = pluginOwnerClusterIds.get(input.plugin.id) ?? '';
-        const nestedPlugins = uniqueDependencyPlugins.map((plugin) => buildNestedPluginDefinitionWithOwner(
-            plugin,
-            pluginOwnerClusterIds.get(plugin.id) ?? ''
-        ));
-        const pluginReferenceExecutions = dedupePluginReferenceExecutions(input.pluginReferenceExecutions);
-
-        const [encodedTrajectoryFrames, encodedWorkflow, encodedNestedPlugins, encodedPluginReferenceExecutions] = await Promise.all([
-            encodeDispatchSection(input.trajectoryFrames),
-            this.encodeWorkflowSection(input.plugin, rootPluginOwnerClusterId),
-            this.encodeNestedPluginsSection(input.plugin.id, uniqueDependencyPlugins, nestedPlugins, pluginOwnerClusterIds),
-            encodeDispatchSection(pluginReferenceExecutions)
-        ]);
-
-        const syncTasks = uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(
-            input.teamClusterId,
-            dependency,
-            pluginOwnerClusterIds.get(dependency.id)
-        ));
-
-        const dispatchPayload: PluginDispatchPayload = {
-            analysis: serializeAnalysis(input.analysis),
-            analysisId: input.analysisId,
-            pluginId: input.plugin.id,
-            pluginDisplayName: input.pluginDisplayName,
-            teamId: input.teamId,
-            teamClusterId: input.teamClusterId,
-            trajectoryId: input.trajectoryId,
-            trajectoryFramesCompressed: encodedTrajectoryFrames.compressedValue,
-            workflowCompressed: encodedWorkflow.compressedValue,
-            nestedPluginsCompressed: encodedNestedPlugins.compressedValue,
-            pluginReferenceExecutionsCompressed: encodedPluginReferenceExecutions.compressedValue,
-            config: input.config,
-            selectedFrameOnly: input.selectedFrameOnly,
-            selectedTimesteps: input.selectedTimesteps,
-            timestep: input.timestep
-        };
-
-        return {
-            dispatchPayload,
-            syncTasks
-        };
-    }
-
-    private async syncPluginBinaryIfNeeded(
-        teamClusterId: string,
-        plugin: Plugin,
-        ownerClusterIdOverride?: string
-    ): Promise<void> {
-        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
-        const entrypoint = entrypointNode?.data.entrypoint;
-        const objectKey = entrypoint?.binaryObjectPath;
-        if (!objectKey) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
-                `Plugin ${plugin.id} is missing an uploaded entrypoint binary`
-            );
-        }
-
-        const ownerClusterId = ownerClusterIdOverride
-            ?? (await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id)).props.primaryClusterId;
-        const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(ownerClusterId, objectKey);
-
-        const syncKey = `${teamClusterId}:${ownerClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
-        const redisKey = `${PLUGIN_SYNC_CACHE_PREFIX}${syncKey}`;
-
-        try {
-            const cached = await this.redis.get(redisKey);
-            if (cached === '1') {
-                return;
-            }
-        } catch (error: unknown) {
-            logger.warn({
-                err: error,
-                syncKey
-            }, '@plugin-execution-router: plugin sync cache read failed');
-        }
-
-        const existingSync = this.inflightPluginSyncs.get(syncKey);
-        if (existingSync) {
-            return existingSync;
-        }
-
-        const pendingSync = (async () => {
-            const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(
-                teamClusterId,
-                ChannelCommands.PluginSync,
-                {
-                    pluginId: plugin.id,
-                    objectKey,
-                    ownerClusterId,
-                    expectedHash
-                },
-                { timeoutClass: 'long-running-control-plane' }
-            );
-
-            if (!syncResponse.synced) {
-                throw ApplicationError.conflict(
-                    ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
-                    `Plugin binary is not reachable from compute cluster: ${objectKey}`
-                );
+            if (stageJobs.length === 0) {
+                continue;
             }
 
-            try {
-                await this.redis.setex(redisKey, PLUGIN_SYNC_CACHE_TTL_SECONDS, '1');
-            } catch (error: unknown) {
-                logger.warn({
-                    err: error,
-                    syncKey
-                }, '@plugin-execution-router: plugin sync cache write failed');
-            }
-        })().finally(() => {
-            this.inflightPluginSyncs.delete(syncKey);
-        });
-
-        this.inflightPluginSyncs.set(syncKey, pendingSync);
-        return pendingSync;
-    }
-
-    private async readObjectSha256(ownerClusterId: string, objectKey: string): Promise<string | undefined> {
-        let objectHead;
-        try {
-            objectHead = await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
-        } catch (error: unknown) {
-            if (error instanceof ApplicationError && error.statusCode === 404) {
-                throw ApplicationError.conflict(
-                    ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
-                    `Plugin binary is missing from storage: ${objectKey}`
-                );
-            }
-
-            throw new ApplicationError(
-                ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
-                `Failed to inspect plugin binary in storage: ${objectKey}`,
-                503
-            );
+            await this.daemonAnalysisCompletionService.handleJobsQueued(
+                stageJobs.map((job) => ({
+                    ...job,
+                    trajectoryName: input.trajectoryName
+                })),
+                input.teamId,
+                input.teamClusterId
+            ).catch((error) => {
+                logger.warn(error, '@plugin-execution-router: failed to project queued pipeline jobs');
+            });
         }
-
-        return objectHead.metadata.sha256 || undefined;
     }
 }
 

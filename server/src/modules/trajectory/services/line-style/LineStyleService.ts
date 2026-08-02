@@ -1,10 +1,8 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import {
+    buildClusterRequiredError,
     recordSceneArtifact,
     resolveSceneArtifactExecutionContext
 } from '@modules/trajectory/services/SceneArtifactService';
@@ -16,7 +14,6 @@ import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { createHash } from 'node:crypto';
 
@@ -48,14 +45,6 @@ const buildLineStyleObjectName = (
     return `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/line-style/${exposureId}/${styleHash}.glb.zst`;
 };
 
-const buildClusterRequiredError = (): ApplicationError => {
-    return new ApplicationError(
-        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
-        'This operation requires a team cluster. No local native modules available.',
-        501
-    );
-};
-
 /**
  * Deliberately NOT shared with the same-looking `stableStringify` in
  * `WorkflowProjection`. This one feeds `hashLineStyle`, and that digest is
@@ -83,8 +72,6 @@ const hashLineStyle = (style: LineStyleSpec): string => {
 };
 
 class LineStyleService {
-    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
-
     async createStyledModel(
         trajectoryId: string,
         timestep: string | number,
@@ -103,21 +90,18 @@ class LineStyleService {
             computeClusterId,
             storageClusterId
         } = await resolveSceneArtifactExecutionContext({
-            trajectoryId: String(trajectoryId),
+            trajectoryId,
             timestep: String(timestep),
-            analysisId,
-            teamClusterSelectionService: this.teamClusterSelectionService,
-            dumpStorage: trajectoryDumpStorageService,
-            buildClusterRequiredError
+            analysisId
         });
 
         const baseOptions = await this.resolveExportBaseOptions(analysisId, exposureId);
         const response = await trajectoryNativeDaemonService.exportLineModel({
             teamClusterId: computeClusterId,
-            trajectoryId: String(trajectoryId),
+            trajectoryId,
             timestep: Number(timestep),
-            analysisId: String(analysisId),
-            exposureId: String(exposureId),
+            analysisId,
+            exposureId,
             objectKey: objectName,
             ownerClusterId: storageClusterId,
             ...(baseOptions ? { baseOptions } : {}),
@@ -127,20 +111,20 @@ class LineStyleService {
         const colorMode = style.colorMode ?? 'category';
         const lineWidthLabel = style.lineWidth !== undefined ? ` · w=${style.lineWidth}` : '';
         await recordSceneArtifact({
-            trajectory: String(trajectoryId),
+            trajectory: trajectoryId,
             storageClusterId,
-            analysis: String(analysisId),
+            analysis: analysisId,
             sourceType: SceneArtifactSourceType.LineStyle,
             timestep: Number(timestep),
             objectName,
             params: {
-                exposureId: String(exposureId),
+                exposureId,
                 style: style as Record<string, unknown>
             },
             displayName: `Lines · ${colorMode}${lineWidthLabel} · t=${timestep}`,
             metadata: {
-                analysisId: String(analysisId),
-                exposureId: String(exposureId),
+                analysisId,
+                exposureId,
                 entitiesRendered: response.entitiesRendered,
                 entitiesTotal: response.entitiesTotal,
                 categoryCounts: response.categoryCounts
@@ -202,7 +186,7 @@ class LineStyleService {
         analysisId: string,
         exposureId: string
     ): Promise<LineExportBaseOptions | undefined> {
-        const analysis = await AnalysisEntity.findOneBy({ id: String(analysisId) });
+        const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
         if (!analysis) {
             return undefined;
         }
@@ -222,11 +206,11 @@ class LineStyleService {
         exposureId: string
     ): Promise<string> {
         const artifact = await SceneArtifact.createQueryBuilder('artifact')
-            .where('artifact.trajectory = :trajectory', { trajectory: String(trajectoryId) })
-            .andWhere('artifact.analysis = :analysis', { analysis: String(analysisId) })
+            .where('artifact.trajectory = :trajectory', { trajectory: trajectoryId })
+            .andWhere('artifact.analysis = :analysis', { analysis: analysisId })
             .andWhere('artifact.sourceType = :sourceType', { sourceType: SceneArtifactSourceType.PluginExposure })
             .andWhere('artifact.timestep = :timestep', { timestep: Number(timestep) })
-            .andWhere('artifact.params = :params', { params: JSON.stringify({ exposureId: String(exposureId) }) })
+            .andWhere('artifact.params = :params', { params: JSON.stringify({ exposureId }) })
             .getOne();
 
         if (!artifact) {
@@ -240,17 +224,14 @@ class LineStyleService {
     }
 
     private async streamModelObject(trajectoryId: string, objectName: string): Promise<LineStyleStreamResponse> {
-        const trajectory = await Trajectory.findOneBy({ id: String(trajectoryId) });
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
-            : undefined;
+        const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
-        if (!storageClusterId) {
+        if (!trajectory) {
             throw buildClusterRequiredError();
         }
 
         return trajectoryNativeDaemonService.getObjectStreamResponse(
-            storageClusterId,
+            trajectory.storageClusterId,
             TEAM_CLUSTER_BUCKETS.MODELS,
             objectName
         );

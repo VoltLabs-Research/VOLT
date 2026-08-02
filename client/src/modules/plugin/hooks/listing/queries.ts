@@ -1,7 +1,6 @@
 import {
     useInfiniteQuery,
     useQuery,
-    type QueryKey,
     type UseQueryOptions
 } from '@tanstack/react-query';
 import queryClient from '@/shared/query/query-client';
@@ -24,8 +23,6 @@ import type {
     GetSubListingInput,
     GetSubListingResponse
 } from '../../api/services/listing-service';
-
-type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 const listingKeys = buildKeys<{
     detail: GetPluginListingInput;
@@ -52,40 +49,46 @@ export const LISTING_QUERY_KEYS = {
     subListing: subListingKeys.prefix,
     subListingInfinite: subListingInfiniteKeys.prefix,
     subListingDetail: subListingInfiniteKeys.detail,
-    analysisExportOptions: analysisExportOptionsKeys.prefix,
     analysisExportOptionsDetail: analysisExportOptionsKeys.detail
 };
 
-const buildPluginListingQueryOptions = (params: GetPluginListingInput) => {
+// Listing reads go through the canvas data access layer (public canvases hit
+// different endpoints) and fall back to the canvas' current trajectory.
+const useListingAccess = (trajectoryId?: string) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
+
+    return {
+        mode,
+        dataAccess,
+        trajectoryId: trajectoryId ?? storeTrajectoryId ?? ''
+    };
+};
+
+export const fetchPluginListing = (params: GetPluginListingInput) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({
         ...DEFAULT_CANVAS_ACCESS_STATE,
         mode: accessState.mode
     });
-    const trajectoryId = params.trajectoryId ?? accessState.trajectoryId ?? '';
-    return {
+
+    return queryClient.fetchQuery({
         queryKey: withAccessMode(accessState.mode, LISTING_QUERY_KEYS.listingDetail(params)),
         queryFn: () => dataAccess.getPluginListing({
             ...params,
-            trajectoryId
+            trajectoryId: params.trajectoryId ?? accessState.trajectoryId ?? ''
         })
-    };
-};
-
-export const fetchPluginListing = (params: GetPluginListingInput) => {
-    return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
+    });
 };
 
 export const usePluginListingQuery = (
     params: GetPluginListingInput,
-    options?: QueryOptions<GetPluginListingResponse, GetPluginListingResponse>
+    options?: Partial<UseQueryOptions<GetPluginListingResponse, Error>>
 ) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
-    const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
+    const { mode, dataAccess, trajectoryId } = useListingAccess(params.trajectoryId);
 
-    return useQuery<GetPluginListingResponse, Error, GetPluginListingResponse, QueryKey>({
+    return useQuery({
         ...options,
         queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
         queryFn: () => dataAccess.getPluginListing({
@@ -99,10 +102,7 @@ export const usePluginListingInfiniteQuery = (
     params: Omit<GetPluginListingInput, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetPluginListingResponse) => number | undefined; enabled?: boolean }
 ) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
-    const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
+    const { mode, dataAccess, trajectoryId } = useListingAccess(params.trajectoryId);
 
     return useInfiniteQuery({
         queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingInfiniteDetail(params)),
@@ -125,10 +125,7 @@ export const useSubListingInfiniteQuery = (
     params: Omit<GetSubListingInput, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetSubListingResponse) => number | undefined; enabled?: boolean }
 ) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
-    const trajectoryId = storeTrajectoryId ?? '';
+    const { mode, dataAccess, trajectoryId } = useListingAccess();
 
     return useInfiniteQuery({
         queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.subListingDetail(params)),

@@ -1,5 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import TeamService from '@modules/team/services/TeamService';
@@ -7,6 +8,7 @@ import TeamMemberService from '@modules/team/services/TeamMemberService';
 import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
 
+@AIToolProvider()
 export default class TeamAIToolController extends AIToolController {
     #team = new TeamService();
     #members = new TeamMemberService();
@@ -24,10 +26,9 @@ export default class TeamAIToolController extends AIToolController {
         const { integrations, providers } = await this.#aiIntegrations.listByTeamId(input.teamId);
         const { models } = await this.#aiIntegrations.listModels(input.teamId);
 
-        const onlineCount = members.filter((member) => {
-            const user = member.user as { isOnline?: boolean } | undefined;
-            return user?.isOnline === true;
-        }).length;
+        const onlineCount = members.filter((member) => (
+            typeof member.user !== 'string' && member.user.isOnline
+        )).length;
 
         const enabledIntegrations = integrations.filter((integration) => integration.isEnabled);
 

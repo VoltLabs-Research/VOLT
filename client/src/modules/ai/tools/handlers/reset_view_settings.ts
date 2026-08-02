@@ -1,26 +1,20 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
+import type { ResetViewSettingsInput } from '@volt/contracts/modules/ai/ai-tools';
 
-interface ResetViewSettingsInput {
-    action?: 'undo' | 'redo' | 'reset_all';
-}
+const EFFECT_LABELS: Record<ResetViewSettingsInput['action'], string> = {
+    undo: 'Undid view change',
+    redo: 'Redid view change',
+    reset_all: 'Reset view settings'
+};
 
 const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
     name: 'reset_view_settings',
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const action = input.action;
-
-        if (action !== 'undo' && action !== 'redo' && action !== 'reset_all') {
-            return {
-                ok: false,
-                summary: 'No valid action specified.',
-                reason: 'invalid_action',
-                hint: 'Use action: "undo", "redo", or "reset_all".'
-            };
-        }
+        const { action } = input;
 
         ctx.markViewerActing();
 
@@ -69,20 +63,14 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
     },
 
     describeEffect(input, result) {
-        const action = input.action ?? 'reset';
         if (!result.ok) {
             return {
-                label: `View ${action} failed`,
+                label: `View ${input.action} failed`,
                 icon: 'rotate'
             };
         }
-        const labels: Record<string, string> = {
-            undo: 'Undid view change',
-            redo: 'Redid view change',
-            reset_all: 'Reset view settings'
-        };
         return {
-            label: labels[action] ?? 'Adjusted view',
+            label: EFFECT_LABELS[input.action],
             icon: 'rotate'
         };
     }

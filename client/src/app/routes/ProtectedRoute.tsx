@@ -26,11 +26,6 @@ interface ProtectedRouteProps{
     mode: RouteMode;
 };
 
-interface RouteReadyMeasurement {
-    key: string;
-    startedAt: number;
-};
-
 export enum RouteMode {
     Protected = 'protected',
     Guest = 'guest',
@@ -42,7 +37,6 @@ setGetTeamId(() => useTeamStore.getState().selectedTeamId ?? null);
 const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const location = useLocation();
     const currentDestination = location.pathname + location.search + location.hash;
-    const queryNext = new URLSearchParams(location.search).get('next');
 
     const user = useCurrentUser();
     const isLoading = useAuthStore((state) => state.isLoading);
@@ -78,7 +72,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const isClusterCheckLoading = teamClustersQuery.isLoading;
     const shouldRedirectToOnboarding = teamClustersQuery.isSuccess
         && !hasUsableTeamCluster(teamClustersQuery.data.data);
-    const routeReadyRef = useRef<RouteReadyMeasurement | null>(null);
+    const routeReadyRef = useRef<{ key: string; startedAt: number } | null>(null);
     const routeReadyKey = `${mode}:${currentDestination}`;
     const isRouteSettled = mode === RouteMode.Protected
         ? isInitialized
@@ -237,7 +231,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     }
 
     if(isAuthenticated){
-        const destination = resolvePostAuthDestination({ queryNext });
+        const destination = resolvePostAuthDestination({
+            queryNext: new URLSearchParams(location.search).get('next')
+        });
 
         return renderProtectedContent(<Navigate to={destination} replace />);
     }

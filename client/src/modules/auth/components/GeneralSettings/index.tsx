@@ -9,7 +9,7 @@ import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';
 
 const AVATAR_TOAST_OPTIONS = createPromiseToastOptions({
@@ -31,7 +31,7 @@ const GeneralSettings = () => {
     const deleteMe = useDeleteMeMutation();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-    const handleAvatarUpload = useCallback(async (file: File) => {
+    const handleAvatarUpload = async (file: File) => {
         setIsUploadingAvatar(true);
 
         try{
@@ -42,21 +42,22 @@ const GeneralSettings = () => {
         }finally{
             setIsUploadingAvatar(false);
         }
-    }, [updateMe]);
+    };
 
-    const handleProfileUpdate = useCallback(async (data: ProfileFormType) => {
+    const handleProfileUpdate = async (data: ProfileFormType) => {
         await updateMe.mutateAsync({
             fullName: data.fullName,
             email: data.email
         });
-    }, [updateMe]);
+    };
 
+    // Identity must stay stable across renders: ProfileForm resets its form whenever it changes.
     const profileInitialValues = useMemo(() => ({
         fullName: user?.fullName || '',
         email: user?.email || ''
     }), [user?.fullName, user?.email]);
 
-    const handleDeleteAccount = useCallback(async () => {
+    const handleDeleteAccount = async () => {
         await runAction({
             action: () => deleteMe.mutateAsync(),
             confirm: {
@@ -69,7 +70,7 @@ const GeneralSettings = () => {
                 signOut();
             }
         });
-    }, [deleteMe, signOut]);
+    };
 
     return (
         <SettingsPage title="General Settings">

@@ -5,14 +5,9 @@ import { isHideableModule } from '@/modules/system/constants/hideable-modules';
 interface HiddenModulesStore {
     hidden: string[];
     toggle: (moduleKey: string) => void;
-    setHidden: (moduleKeys: string[]) => void;
 }
 
 const HIDDEN_MODULES_STORAGE_KEY = 'volt:hidden-modules';
-
-const sanitize = (moduleKeys: string[]): string[] => {
-    return Array.from(new Set(moduleKeys)).filter(isHideableModule);
-};
 
 export const useHiddenModulesStore = create<HiddenModulesStore>()(
     persist(
@@ -24,21 +19,20 @@ export const useHiddenModulesStore = create<HiddenModulesStore>()(
                 }
 
                 const current = get().hidden;
-                const next = current.includes(moduleKey)
-                    ? current.filter((key) => key !== moduleKey)
-                    : [...current, moduleKey];
 
-                set({ hidden: sanitize(next) });
-            },
-            setHidden: (moduleKeys: string[]) => {
-                set({ hidden: sanitize(moduleKeys) });
+                set({
+                    hidden: current.includes(moduleKey)
+                        ? current.filter((key) => key !== moduleKey)
+                        : [...current, moduleKey]
+                });
             }
         }),
         {
             name: HIDDEN_MODULES_STORAGE_KEY,
             onRehydrateStorage: () => (state) => {
                 if (state) {
-                    state.hidden = sanitize(state.hidden);
+                    // Persisted keys can be stale or protected since they were written.
+                    state.hidden = Array.from(new Set(state.hidden)).filter(isHideableModule);
                 }
             }
         }

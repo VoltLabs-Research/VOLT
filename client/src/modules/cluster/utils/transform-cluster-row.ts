@@ -1,10 +1,11 @@
 import { formatNetworkSpeed } from './format-network';
-import { formatUptime } from './format-uptime';
+import { getClusterCpuUsage } from './cluster-cpu-usage';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utils/cluster-live-metrics-status';
+import { formatDuration } from '@voltstack/bravais';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 import type { ClusterTransferJob } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster, TeamClusterRole, TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import type { ClusterLiveMetricsLabel } from '@/modules/cluster/utils/cluster-live-metrics-status';
+import type { ClusterLiveMetricsLabel, ClusterLiveMetricsVariant } from '@/modules/cluster/utils/cluster-live-metrics-status';
 
 export interface ServerRow {
     _id: string;
@@ -14,7 +15,7 @@ export interface ServerRow {
     desiredRole: TeamClusterRole;
     effectiveRole: TeamClusterRole;
     status: ClusterLiveMetricsLabel;
-    statusVariant: 'success' | 'warning' | 'danger' | 'inactive';
+    statusVariant: ClusterLiveMetricsVariant;
     lifecycleStatus: TeamClusterStatus;
     installedVersion: string | null;
     lastHeartbeatAt: Date | string | null;
@@ -36,20 +37,7 @@ interface TransformClusterToRowParams {
     isMetricsConnected: boolean;
 }
 
-const calculateCpuUsage = (metrics: ClusterMetrics | null): number | null => {
-    if (!metrics) {
-        return null;
-    }
-
-    const { coresUsage, usage } = metrics.cpu;
-    
-    if (coresUsage?.length) {
-        const sum = coresUsage.reduce((acc, val) => acc + val, 0);
-        return Math.round(sum / coresUsage.length);
-    }
-    
-    return Math.round(usage);
-};
+const SECONDS_PER_MINUTE = 60;
 
 const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected }: TransformClusterToRowParams): ServerRow => {
     const liveMetrics = isMetricsConnected ? metrics : null;
@@ -72,12 +60,12 @@ const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected }: Tra
         lastHeartbeatAt: teamCluster.lastHeartbeatAt,
         lastDisconnectAt: teamCluster.lastDisconnectAt,
         daemonPort: teamCluster.services.daemon.port,
-        cpu: calculateCpuUsage(liveMetrics),
+        cpu: liveMetrics ? Math.round(getClusterCpuUsage(liveMetrics.cpu)) : null,
         memory: liveMetrics ? Math.round(liveMetrics.memory.usagePercent) : null,
         diskFree: liveMetrics ? Math.round(liveMetrics.disk.free) : null,
         diskUsagePercent: liveMetrics ? Math.round(liveMetrics.disk.usagePercent) : null,
         network: liveMetrics ? formatNetworkSpeed(liveMetrics.network.incoming + liveMetrics.network.outgoing) : '--',
-        uptime: liveMetrics ? formatUptime(liveMetrics.uptime) : '--',
+        uptime: liveMetrics ? formatDuration(liveMetrics.uptime / SECONDS_PER_MINUTE) : '--',
         analysisCount: liveMetrics?.analysisCount ?? null,
         activeTransfers: teamCluster.activeTransfers ?? []
     };

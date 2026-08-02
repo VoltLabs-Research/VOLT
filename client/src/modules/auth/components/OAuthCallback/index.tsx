@@ -39,15 +39,6 @@ const OAuthCallbackTemplate = () => {
     useEffect(() => {
         let isCancelled = false;
 
-        const clearRedirectTimeout = () => {
-            if (redirectTimeoutReference.current === null) {
-                return;
-            }
-
-            window.clearTimeout(redirectTimeoutReference.current);
-            redirectTimeoutReference.current = null;
-        };
-
         const handleOAuthCallback = async () => {
             try{
                 const token = params.get('token');
@@ -68,7 +59,6 @@ const OAuthCallbackTemplate = () => {
 
                 redirectTimeoutReference.current = window.setTimeout(() => {
                     clearPostAuthDestination();
-                    redirectTimeoutReference.current = null;
                     navigate(redirectPath);
                 }, 1500);
             }catch(error){
@@ -85,28 +75,12 @@ const OAuthCallbackTemplate = () => {
 
         return () => {
             isCancelled = true;
-            clearRedirectTimeout();
+
+            if (redirectTimeoutReference.current !== null) {
+                window.clearTimeout(redirectTimeoutReference.current);
+            }
         };
     }, [markAuthenticated, navigate]);
-
-    if (status === 'error') {
-        return (
-            <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
-                <Box position='absolute' inset='0' overflow='hidden'>
-                    <Box position='absolute' radius='full' width='50' className='oauth-background-blob oauth-blob-blue' />
-                    <Box position='absolute' radius='full' className='oauth-background-blob oauth-blob-purple' />
-                </Box>
-
-                <RecoveryState
-                    tone={RecoveryStateTone.Error}
-                    title='Authentication failed'
-                    description={errorMessage}
-                    retryLabel='Back to sign in'
-                    onRetry={handleBackToSignIn}
-                />
-            </Row>
-        );
-    }
 
     return (
         <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
@@ -115,66 +89,76 @@ const OAuthCallbackTemplate = () => {
                 <Box position='absolute' radius='full' className='oauth-background-blob oauth-blob-purple' />
             </Box>
 
-            <motion.div
-                initial={{
-                    opacity: 0,
-                    scale: 0.95
-                }}
-                animate={{
-                    opacity: 1,
-                    scale: 1
-                }}
-                className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
-            >
-                <Row justify='center' className='mb-1-5 oauth-status-icon'>
-                    {status === 'loading' && (
-                        <Loader scale={0.6} isFixed={false} />
-                    )}
-
-                    {status === 'success' && (
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 200,
-                                damping: 10
-                            }}
-                        >
-                            <CheckCircle size={48} className='oauth-icon-success' />
-                        </motion.div>
-                    )}
-                </Row>
-
+            {status === 'error' ? (
+                <RecoveryState
+                    tone={RecoveryStateTone.Error}
+                    title='Authentication failed'
+                    description={errorMessage}
+                    retryLabel='Back to sign in'
+                    onRetry={handleBackToSignIn}
+                />
+            ) : (
                 <motion.div
-                    key={status}
                     initial={{
                         opacity: 0,
-                        y: 10
+                        scale: 0.95
                     }}
                     animate={{
                         opacity: 1,
-                        y: 0
+                        scale: 1
                     }}
+                    className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
                 >
-                    <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
-                        {status === 'loading' && 'Authenticating...'}
-                        {status === 'success' && 'Successfully Authenticated!'}
-                    </Heading>
-                </motion.div>
+                    <Row justify='center' className='mb-1-5 oauth-status-icon'>
+                        {status === 'loading' && (
+                            <Loader scale={0.6} isFixed={false} />
+                        )}
 
-                <motion.div
-                    key={`desc-${status}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <Text as='p' tone='secondary'>
-                        {status === 'loading' && 'Please wait while we verify your credentials.'}
-                        {status === 'success' && 'Redirecting you to setup...'}
-                    </Text>
+                        {status === 'success' && (
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{
+                                    type: 'spring',
+                                    stiffness: 200,
+                                    damping: 10
+                                }}
+                            >
+                                <CheckCircle size={48} className='oauth-icon-success' />
+                            </motion.div>
+                        )}
+                    </Row>
+
+                    <motion.div
+                        key={status}
+                        initial={{
+                            opacity: 0,
+                            y: 10
+                        }}
+                        animate={{
+                            opacity: 1,
+                            y: 0
+                        }}
+                    >
+                        <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
+                            {status === 'loading' && 'Authenticating...'}
+                            {status === 'success' && 'Successfully Authenticated!'}
+                        </Heading>
+                    </motion.div>
+
+                    <motion.div
+                        key={`desc-${status}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <Text as='p' tone='secondary'>
+                            {status === 'loading' && 'Please wait while we verify your credentials.'}
+                            {status === 'success' && 'Redirecting you to setup...'}
+                        </Text>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+            )}
         </Row>
     );
 };

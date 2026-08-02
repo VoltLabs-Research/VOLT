@@ -9,7 +9,6 @@ import type { LineColorMode, LineStyleFilterRow } from '../../../hooks/use-line-
 
 interface LineStyleStageEditorProps {
     trajectoryId?: string;
-    analysisId?: string;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
 }
@@ -40,14 +39,10 @@ const FILTER_OPERATOR_OPTIONS = [
     }
 ];
 
-const isColorMode = (value: string): value is LineColorMode =>
-    COLOR_MODE_OPTIONS.some((option) => option.value === value);
-
-const isFilterOperator = (value: string): value is LineStyleFilterRow['operator'] =>
-    FILTER_OPERATOR_OPTIONS.some((option) => option.value === value);
-
-const isColormapName = (value: string): value is ColormapName =>
-    COLORMAP_NAMES.some((name) => name === value);
+const GRADIENT_OPTIONS = COLORMAP_NAMES.map((name) => ({
+    value: name,
+    title: name
+}));
 
 const formatPropertyValue = (value: unknown): string => {
     if (typeof value === 'number') {
@@ -62,7 +57,6 @@ const formatPropertyValue = (value: unknown): string => {
 
 const LineStyleStageEditor = ({
     trajectoryId,
-    analysisId,
     currentTimestep,
     canMutateCanvas
 }: LineStyleStageEditorProps) => {
@@ -106,7 +100,6 @@ const LineStyleStageEditor = ({
         inspectError
     } = useLineStyle({
         trajectoryId,
-        analysisId,
         currentTimestep
     });
 
@@ -130,10 +123,6 @@ const LineStyleStageEditor = ({
         value: property.name,
         title: property.label
     }));
-    const gradientOptions = COLORMAP_NAMES.map((name) => ({
-        value: name,
-        title: name
-    }));
 
     return (
         <Stack gap='05'>
@@ -142,10 +131,7 @@ const LineStyleStageEditor = ({
                 fieldType='select'
                 label='Color by'
                 fieldValue={colorMode}
-                onFieldChange={(_fieldKey, value) => {
-                    const nextValue = String(value);
-                    if (isColorMode(nextValue)) setColorMode(nextValue);
-                }}
+                onFieldChange={(_fieldKey, value) => setColorMode(String(value) as LineColorMode)}
                 options={COLOR_MODE_OPTIONS}
                 variant='canvas'
             />
@@ -221,11 +207,8 @@ const LineStyleStageEditor = ({
                         fieldType='select'
                         label='Gradient'
                         fieldValue={gradient}
-                        onFieldChange={(_fieldKey, value) => {
-                            const nextValue = String(value);
-                            if (isColormapName(nextValue)) setGradient(nextValue);
-                        }}
-                        options={gradientOptions}
+                        onFieldChange={(_fieldKey, value) => setGradient(String(value) as ColormapName)}
+                        options={GRADIENT_OPTIONS}
                         variant='canvas'
                     />
                     <FormFieldRHF
@@ -267,10 +250,9 @@ const LineStyleStageEditor = ({
                             fieldType='select'
                             label='Operator'
                             fieldValue={row.operator}
-                            onFieldChange={(_fieldKey, value) => {
-                                const nextValue = String(value);
-                                if (isFilterOperator(nextValue)) updateFilterRow(row.id, { operator: nextValue });
-                            }}
+                            onFieldChange={(_fieldKey, value) => updateFilterRow(row.id, {
+                                operator: String(value) as LineStyleFilterRow['operator']
+                            })}
                             options={FILTER_OPERATOR_OPTIONS}
                             variant='canvas'
                         />

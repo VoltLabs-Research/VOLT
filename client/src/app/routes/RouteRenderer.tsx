@@ -118,7 +118,7 @@ const renderRouteElement = (route: RouteConfig) => {
 const renderRouteWithChildren = (route: RouteConfig) => {
     const routeElement = renderRouteElement(route);
 
-    if(route.children && route.children.length > 0){
+    if(route.children?.length){
         return (
             <Route
                 key={route.path}
@@ -126,19 +126,12 @@ const renderRouteWithChildren = (route: RouteConfig) => {
                 element={routeElement}
             >
                 {route.children.map((child) => (
-                    child.index ? (
-                        <Route
-                            key={child.path}
-                            index
-                            element={renderRouteElement(child)}
-                        />
-                    ) : (
-                        <Route
-                            key={child.path}
-                            path={child.path}
-                            element={renderRouteElement(child)}
-                        />
-                    )
+                    <Route
+                        key={child.path}
+                        index={child.index}
+                        path={child.index ? undefined : child.path}
+                        element={renderRouteElement(child)}
+                    />
                 ))}
             </Route>
         );
@@ -154,36 +147,30 @@ const renderRouteWithChildren = (route: RouteConfig) => {
     );
 };
 
-const isRouteModuleEnabled = (
-    route: RouteConfig,
-    enabledModules: string[] | null,
-    hiddenModules: string[]
-): boolean => {
-    if (!route.moduleKey) {
-        return true;
-    }
-
-    const serverEnabled = enabledModules === null || enabledModules.includes(route.moduleKey);
-
-    return serverEnabled && !hiddenModules.includes(route.moduleKey);
-};
-
 const filterEnabledRoutes = (
     routes: RouteConfig[],
     enabledModules: string[] | null,
     hiddenModules: string[]
 ): RouteConfig[] => {
-    return routes.filter((route) => isRouteModuleEnabled(route, enabledModules, hiddenModules));
+    return routes.filter((route) => {
+        if (!route.moduleKey) {
+            return true;
+        }
+
+        const serverEnabled = enabledModules === null || enabledModules.includes(route.moduleKey);
+
+        return serverEnabled && !hiddenModules.includes(route.moduleKey);
+    });
 };
 
 export const renderPublicRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
-    return filterEnabledRoutes(publicRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route));
+    return filterEnabledRoutes(publicRoutes, enabledModules, hiddenModules).map(renderRouteWithChildren);
 };
 
 export const renderProtectedRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
-            {filterEnabledRoutes(nonDashboardProtectedRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(nonDashboardProtectedRoutes, enabledModules, hiddenModules).map(renderRouteWithChildren)}
             <Route
                 path={DASHBOARD_ROUTE_PREFIX}
                 element={(
@@ -192,7 +179,7 @@ export const renderProtectedRoutes = (enabledModules: string[] | null, hiddenMod
                     </Suspense>
                 )}
             >
-                {filterEnabledRoutes(dashboardProtectedRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
+                {filterEnabledRoutes(dashboardProtectedRoutes, enabledModules, hiddenModules).map(renderRouteWithChildren)}
             </Route>
         </Route>
     );
@@ -201,7 +188,7 @@ export const renderProtectedRoutes = (enabledModules: string[] | null, hiddenMod
 export const renderGuestRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
-            {filterEnabledRoutes(guestRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(guestRoutes, enabledModules, hiddenModules).map(renderRouteWithChildren)}
         </Route>
     );
 };
@@ -209,7 +196,7 @@ export const renderGuestRoutes = (enabledModules: string[] | null, hiddenModules
 export const renderOptionalAuthRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.OptionalAuth} />}>
-            {filterEnabledRoutes(optionalAuthRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(optionalAuthRoutes, enabledModules, hiddenModules).map(renderRouteWithChildren)}
         </Route>
     );
 };

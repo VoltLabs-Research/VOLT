@@ -1,11 +1,11 @@
 import { SegmentedTabs, Callout, Text } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { FC } from 'react';
-import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
+import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';
 import ContextEditor from './editors/ContextEditor';
@@ -19,13 +19,9 @@ import SwitchStatementEditor from './editors/SwitchStatementEditor';
 import SwitchCaseEditor from './editors/SwitchCaseEditor';
 import ConnectorLayoutEditor from './ConnectorLayoutEditor';
 
-interface NodeEditorProps {
-    node: Node;
-}
-
 type NodeEditorSection = 'details' | 'connectors';
 
-const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
+const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<EditorProps>>> = {
     [NodeType.MODIFIER]: ModifierEditor,
     [NodeType.ARGUMENTS]: ArgumentsEditor,
     [NodeType.CONTEXT]: ContextEditor,
@@ -50,7 +46,7 @@ const SECTION_TABS: ReadonlyArray<{ id: NodeEditorSection; label: string }> = [
     }
 ];
 
-const NodeEditor = ({ node }: NodeEditorProps) => {
+const NodeEditor = ({ node }: EditorProps) => {
     const deleteNode = usePluginBuilderStore((state) => state.deleteNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
     const [activeSection, setActiveSection] = useState<NodeEditorSection>('details');

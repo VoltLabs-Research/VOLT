@@ -7,10 +7,9 @@ import { mkdir } from 'node:fs/promises';
 import * as p from '@clack/prompts';
 import AppConfig from '@/services/AppConfig';
 import type { DeployMode } from '@/services/AppConfig';
-import { createSourceResolver } from '@/services/sources';
-import DockerPreflight from '@/services/DockerPreflight';
-import Deploy from '@/services/Deploy';
+import SourceResolver from '@/services/SourceResolver';
 import DeployProgress from '@/services/DeployProgress';
+import Deploy from '@/services/Deploy';
 import { isUp, webProbeUrl } from '@/shared/health';
 
 const EXIT_USAGE = 2;
@@ -135,9 +134,11 @@ const main = async () => {
 
     const appConfig = new AppConfig({ configFile: path.join(dataDir, 'app-config.json') });
     const composeFile = process.env.VOLT_COMPOSE_FILE ?? path.join(moduleDir, '..', 'stack', 'compose.yml');
-    const docker = new DockerPreflight();
     const progress = new DeployProgress();
-    const sources = createSourceResolver(appConfig, downloadDir);
+    const sources = new SourceResolver({
+        appConfig,
+        downloadDir
+    });
 
     const existing = await appConfig.getBootstrap();
 
@@ -153,7 +154,6 @@ const main = async () => {
             composeFile,
             appConfig,
             sources,
-            docker,
             withCluster
         });
         progress.start();
@@ -319,7 +319,6 @@ const main = async () => {
         composeFile,
         appConfig,
         sources,
-        docker,
         account: {
             fullName: answers.fullName,
             email: answers.email,

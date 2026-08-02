@@ -24,7 +24,7 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-wa
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { ArrowRightLeft, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -70,6 +70,81 @@ const createMetricColumn = (key: 'cpu' | 'memory', title: string): ColumnConfig<
     render: (_, row) => renderMetricValue(row[key])
 });
 
+const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
+    {
+        key: 'name',
+        title: 'Cluster',
+        sortable: true,
+        width: 240,
+        render: (_, row) => (
+            <Row gap='05'>
+                <Text as='p' size='md' tone='secondary'>{row.name}</Text>
+            </Row>
+        )
+    },
+    {
+        key: 'lifecycleStatus',
+        title: 'Lifecycle',
+        sortable: true,
+        width: 180,
+        render: (_, row) => (
+            <StatusBadge variant={getTeamClusterStatusVariant(row.lifecycleStatus)} size='compact'>
+                {getTeamClusterStatusLabel(row.lifecycleStatus)}
+            </StatusBadge>
+        )
+    },
+    {
+        key: 'desiredRole',
+        title: 'Role',
+        sortable: true,
+        width: 220,
+        render: (_, row) => {
+            const isTransitionPending = isTeamClusterRoleTransitionPending(row.teamCluster);
+            const drainingSummary = describeTeamClusterDraining(row.teamCluster);
+
+            return (
+                <Stack gap='025'>
+                    <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
+                        {getTeamClusterRoleLabel(row.desiredRole)}
+                    </StatusBadge>
+                    <Text as='p' size='sm' className={isTransitionPending ? 'color-warning' : 'color-muted'}>
+                        {isTransitionPending
+                            ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
+                            : getTeamClusterRoleSummary(row.desiredRole)}
+                    </Text>
+                </Stack>
+            );
+        }
+    },
+    {
+        key: 'status',
+        title: 'Metrics',
+        sortable: true,
+        width: 220,
+        render: (_, row) => (
+            <StatusBadge variant={row.statusVariant} size='compact'>
+                {row.status}
+            </StatusBadge>
+        )
+    },
+    createMetricColumn('cpu', 'CPU'),
+    createMetricColumn('memory', 'Memory'),
+    {
+        key: 'diskUsagePercent',
+        title: 'Disk',
+        sortable: true,
+        width: 220,
+        render: (_, row) => renderDiskValue(row)
+    },
+    {
+        key: 'lastHeartbeatAt',
+        title: 'Last Heartbeat',
+        sortable: true,
+        width: 180,
+        render: (_, row) => <Text as='p' size='sm' tone='secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Text>
+    }
+];
+
 const ClustersListing = () => {
     const navigate = useNavigate();
     const state = useClusterPageState();
@@ -77,37 +152,33 @@ const ClustersListing = () => {
     const [installCommandClusterId, setInstallCommandClusterId] = useState<string | null>(null);
     const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
     const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
-    const createNew = useMemo(() => ({
-        buttonTitle: 'Add new Cluster',
-        onCreate: () => navigate('/onboarding/cluster/setup')
-    }), [navigate]);
 
-    const handleRevealCredentials = useCallback((cluster: TeamCluster) => {
+    const handleRevealCredentials = (cluster: TeamCluster) => {
         state.setCredentialsCluster(cluster);
         openModal(CLUSTER_CREDENTIALS_MODAL_ID);
-    }, [state]);
+    };
 
-    const handleDeleteCluster = useCallback((cluster: TeamCluster) => {
+    const handleDeleteCluster = (cluster: TeamCluster) => {
         state.setDeleteTarget(cluster);
         openModal(DELETE_CLUSTER_MODAL_ID);
-    }, [state]);
+    };
 
-    const handleQueueConcurrency = useCallback((cluster: TeamCluster) => {
+    const handleQueueConcurrency = (cluster: TeamCluster) => {
         state.setQueueConcurrencyTarget(cluster);
         openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
-    }, [state]);
+    };
 
-    const handleRoleChange = useCallback((cluster: TeamCluster) => {
+    const handleRoleChange = (cluster: TeamCluster) => {
         state.setRoleTarget(cluster);
         openModal(CLUSTER_ROLE_MODAL_ID);
-    }, [state]);
+    };
 
-    const handleTransferData = useCallback((cluster: TeamCluster) => {
+    const handleTransferData = (cluster: TeamCluster) => {
         state.setTransferTarget(cluster);
         openModal(CLUSTER_TRANSFER_MODAL_ID);
-    }, [state]);
+    };
 
-    const handleShowInstallCommand = useCallback((cluster: TeamCluster) => {
+    const handleShowInstallCommand = (cluster: TeamCluster) => {
         if (!vm.selectedTeamId) return;
 
         regenerateTokenMutation.mutate({
@@ -120,7 +191,7 @@ const ClustersListing = () => {
                 openModal(CLUSTER_INSTALL_COMMAND_MODAL_ID);
             }
         });
-    }, [vm.selectedTeamId, regenerateTokenMutation]);
+    };
 
     const socketInvalidation = useMemo<SocketInvalidationConfig[] | undefined>(() => {
         if (!vm.selectedTeamId) {
@@ -135,82 +206,7 @@ const ClustersListing = () => {
         ];
     }, [vm.selectedTeamId]);
 
-    const columns = useMemo<ColumnConfig<ServerRow>[]>(() => [
-        {
-            key: 'name',
-            title: 'Cluster',
-            sortable: true,
-            width: 240,
-            render: (_, row) => (
-                <Row gap='05'>
-                    <Text as='p' size='md' tone='secondary'>{row.name}</Text>
-                </Row>
-            )
-        },
-        {
-            key: 'lifecycleStatus',
-            title: 'Lifecycle',
-            sortable: true,
-            width: 180,
-            render: (_, row) => (
-                <StatusBadge variant={getTeamClusterStatusVariant(row.lifecycleStatus)} size='compact'>
-                    {getTeamClusterStatusLabel(row.lifecycleStatus)}
-                </StatusBadge>
-            )
-        },
-        {
-            key: 'desiredRole',
-            title: 'Role',
-            sortable: true,
-            width: 220,
-            render: (_, row) => {
-                const isTransitionPending = isTeamClusterRoleTransitionPending(row.teamCluster);
-                const drainingSummary = describeTeamClusterDraining(row.teamCluster);
-
-                return (
-                    <Stack gap='025'>
-                        <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
-                            {getTeamClusterRoleLabel(row.desiredRole)}
-                        </StatusBadge>
-                        <Text as='p' size='sm' className={isTransitionPending ? 'color-warning' : 'color-muted'}>
-                            {isTransitionPending
-                                ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
-                                : getTeamClusterRoleSummary(row.desiredRole)}
-                        </Text>
-                    </Stack>
-                );
-            }
-        },
-        {
-            key: 'status',
-            title: 'Metrics',
-            sortable: true,
-            width: 220,
-            render: (_, row) => (
-                <StatusBadge variant={row.statusVariant} size='compact'>
-                    {row.status}
-                </StatusBadge>
-            )
-        },
-        createMetricColumn('cpu', 'CPU'),
-        createMetricColumn('memory', 'Memory'),
-        {
-            key: 'diskUsagePercent',
-            title: 'Disk',
-            sortable: true,
-            width: 220,
-            render: (_, row) => renderDiskValue(row)
-        },
-        {
-            key: 'lastHeartbeatAt',
-            title: 'Last Heartbeat',
-            sortable: true,
-            width: 180,
-            render: (_, row) => <Text as='p' size='sm' tone='secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Text>
-        }
-    ], []);
-
-    const getMenuOptions = useCallback((row: ServerRow): MenuOption[] => [
+    const getMenuOptions = (row: ServerRow): MenuOption[] => [
         {
             label: 'Monitor',
             icon: Monitor,
@@ -249,7 +245,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleRoleChange, handleShowInstallCommand, handleTransferData, navigate]);
+    ];
 
     return (
         <>
@@ -287,7 +283,7 @@ const ClustersListing = () => {
             <DocumentListing<ServerRow>
                 title='Clusters'
                 queryKey={TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId ?? '')}
-                columns={columns}
+                columns={CLUSTER_COLUMNS}
                 fetchData={vm.fetchClusters}
                 getMenuOptions={getMenuOptions}
                 onItemClick={(row) => {
@@ -305,7 +301,10 @@ const ClustersListing = () => {
                         <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
                     </Stack>
                 )}
-                createNew={createNew}
+                createNew={{
+                    buttonTitle: 'Add new Cluster',
+                    onCreate: () => navigate('/onboarding/cluster/setup')
+                }}
                 hideTabs
                 enabled={Boolean(vm.selectedTeamId)}
                 socketInvalidation={socketInvalidation}

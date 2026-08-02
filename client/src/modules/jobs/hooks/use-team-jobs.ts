@@ -3,23 +3,17 @@ import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { useQueryClient } from '@tanstack/react-query';
+import queryClient from '@/shared/query/query-client';
 import { useCallback, useEffect, useRef } from 'react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import useTeamJobsStore from '../store/use-team-jobs-store';
 import { applyJobUpdate } from '../utils/job-group-updates';
 import {
-    resetTeamJobsGroupsQueryData,
     setTeamJobsGroupsQueryData,
     updateTeamJobsGroupsQueryData,
     teamJobsGroups
 } from './queries';
-import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
-
-interface TeamJobsEventPayload {
-    revision: number;
-    groups: TrajectoryJobGroup[];
-};
+import type { Job, TeamJobsSnapshot, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
 interface UseTeamJobsOptions {
     subscribe?: boolean;
@@ -33,8 +27,12 @@ const isTerminalJobStatus = (status: JobStatus): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
 };
 
+/** Unversioned updates always apply; versioned ones only when they are newer than what the cache holds. */
+const isPendingRevision = (job: Job, appliedRevision: number): boolean => {
+    return job.revision === undefined || job.revision > appliedRevision;
+};
+
 const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
-    const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -66,10 +64,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         }, TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS);
     }, [clearJobsLoadingTimeout, setLoading]);
 
-    const setGroups = useCallback((newGroups: TrajectoryJobGroup[]) => {
-        setTeamJobsGroupsQueryData(newGroups, queryClient);
-    }, [queryClient]);
-
     const handleConnect = useCallback((connected: boolean) => {
         setConnected(connected);
 
@@ -86,21 +80,15 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             setLatestAppliedRevision(revision);
         }
 
-        setGroups(incomingGroups);
+        setTeamJobsGroupsQueryData(incomingGroups);
         setLoading(false);
-    }, [clearJobsLoadingTimeout, setGroups, setLatestAppliedRevision, setLoading]);
+    }, [clearJobsLoadingTimeout, setLatestAppliedRevision, setLoading]);
 
     const flushPendingJobUpdates = useCallback(() => {
         jobUpdateFlushTimerRef.current = undefined;
 
         const appliedRevision = useTeamJobsStore.getState().latestAppliedRevision;
-        const queued = pendingJobUpdatesRef.current.filter((event) => {
-            if (event.revision === undefined) {
-                return true;
-            }
-
-            return event.revision > appliedRevision;
-        });
+        const queued = pendingJobUpdatesRef.current.filter((event) => isPendingRevision(event, appliedRevision));
         if (queued.length === 0) return;
         pendingJobUpdatesRef.current = [];
 
@@ -112,12 +100,12 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         for (const event of queued) {
             const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
             if (isRasterUpdate) {
-                if (currentIds.has(event.trajectoryId!)) {
+                if (currentIds.has(event.trajectoryId)) {
                     if (!nextRasterIds) nextRasterIds = new Set(currentIds);
-                    nextRasterIds.delete(event.trajectoryId!);
+                    nextRasterIds.delete(event.trajectoryId);
                 }
                 if (event.status === JobStatus.Completed) {
-                    rasterCompletedTrajectoryIds.add(event.trajectoryId!);
+                    rasterCompletedTrajectoryIds.add(event.trajectoryId);
                 }
             } else if (isTerminalJobStatus(event.status)) {
                 hasTerminalNonRaster = true;
@@ -134,7 +122,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
                 groups = applyJobUpdate(groups, event);
             }
             return groups;
-        }, queryClient);
+        });
 
         const maxAppliedRevision = queued.reduce((highestRevision, event) => {
             if (event.revision === undefined) {
@@ -162,11 +150,10 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
                 queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
             }, 500);
         }
-    }, [queryClient, setLatestAppliedRevision, setRequestedRasterTrajectoryIds]);
+    }, [setLatestAppliedRevision, setRequestedRasterTrajectoryIds]);
 
     const handleJobUpdate = useCallback((event: Job) => {
-        if (!event.trajectoryId) return;
-        if (currentTeamId && typeof event.teamId === 'string' && event.teamId !== currentTeamId) {
+        if (currentTeamId && event.teamId !== currentTeamId) {
             return;
         }
         if (event.revision !== undefined && event.revision <= latestAppliedRevision) {
@@ -180,7 +167,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         }
     }, [currentTeamId, flushPendingJobUpdates, latestAppliedRevision]);
 
-    const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
+    const handleInitialJobsEvent = useCallback((payload: TeamJobsSnapshot) => {
         if (payload.revision < latestAppliedRevision) {
             clearJobsLoadingTimeout();
             setLoading(false);
@@ -199,10 +186,10 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
         setCurrentTeamId(teamId);
         setLatestAppliedRevision(0);
-        setGroups([]);
+        setTeamJobsGroupsQueryData([]);
         setLoading(true);
         startJobsLoadingTimeout();
-    }, [setCurrentTeamId, setGroups, setLatestAppliedRevision, setLoading, startJobsLoadingTimeout]);
+    }, [setCurrentTeamId, setLatestAppliedRevision, setLoading, startJobsLoadingTimeout]);
 
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();
@@ -211,20 +198,16 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             jobUpdateFlushTimerRef.current = undefined;
         }
         pendingJobUpdatesRef.current = [];
-        resetTeamJobsGroupsQueryData(queryClient);
+        setTeamJobsGroupsQueryData([]);
         reset();
-    }, [clearJobsLoadingTimeout, queryClient, reset]);
+    }, [clearJobsLoadingTimeout, reset]);
 
-    useSocketEvent<TeamJobsEventPayload>(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent, { enabled: subscribe });
+    useSocketEvent<TeamJobsSnapshot>(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent, { enabled: subscribe });
     useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdate, { enabled: subscribe });
 
     useEffect(() => {
         const remainingPendingUpdates = pendingJobUpdatesRef.current.filter((event) => {
-            if (event.revision === undefined) {
-                return true;
-            }
-
-            return event.revision > latestAppliedRevision;
+            return isPendingRevision(event, latestAppliedRevision);
         });
 
         if (remainingPendingUpdates.length === pendingJobUpdatesRef.current.length) {

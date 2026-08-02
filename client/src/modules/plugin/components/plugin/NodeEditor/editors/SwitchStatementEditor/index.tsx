@@ -1,22 +1,17 @@
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
+import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
 interface SwitchStatementEditorFormValues {
     expression: string;
 }
 
-const useSwitchStatementEditorForm = createNodeEditorForm<SwitchStatementEditorFormValues, 'switchStatement'>({
-    defaults: {
-        expression: ''
-    },
-    dataKey: 'switchStatement'
-});
+const SWITCH_STATEMENT_DEFAULT_VALUES: SwitchStatementEditorFormValues = { expression: '' };
 
 const SwitchStatementEditor = ({ node }: EditorProps) => {
-    const form = useSwitchStatementEditorForm(node);
+    const form = useNodeEditorForm<SwitchStatementEditorFormValues>(node, 'switchStatement', SWITCH_STATEMENT_DEFAULT_VALUES);
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
 
     return (

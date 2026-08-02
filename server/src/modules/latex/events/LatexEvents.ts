@@ -3,13 +3,13 @@ import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGate
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import LatexAsset from '@modules/latex/models/LatexAsset';
 import LatexFile from '@modules/latex/models/LatexFile';
-import LatexService from '@modules/latex/services/LatexService';
+import LatexDocumentService from '@modules/latex/services/LatexDocumentService';
 import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@modules/latex/services/LatexAssetStorage';
 import latexSocketModule from '@modules/latex/socket/LatexSocketModule';
 
 @DefineEventGroup('latex')
 export default class LatexEvents {
-    #service?: LatexService;
+    #service?: LatexDocumentService;
 
     @Event('latex-document.deleted')
     async cleanupDocumentAssets({ documentId, teamId, storageClusterId }: EventMap['latex-document.deleted']) {
@@ -30,7 +30,7 @@ export default class LatexEvents {
 
     @Event('team.deleted')
     async deleteTeamDocuments({ teamId, userId }: EventMap['team.deleted']) {
-        this.#service ??= new LatexService();
+        this.#service ??= new LatexDocumentService();
         await this.#service.deleteAllDocumentsForTeam(teamId, userId ?? '');
     }
 }

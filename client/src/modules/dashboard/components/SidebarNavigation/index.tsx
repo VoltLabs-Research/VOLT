@@ -10,10 +10,8 @@ import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import { Box, Tooltip } from '@voltstack/bravais';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
-import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
-import { useMemo } from 'react';
+import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
+import { useCallback, useMemo } from 'react';
 import {
     BarChart3,
     Box as CubeIcon,
@@ -41,33 +39,20 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const { canAccess: canAccessPermissions } = useTeamPermissions();
     const { plugins } = usePluginSelectors();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
-    const singleTenant = useSingleTenant();
-    const enabledModules = useEnabledModules();
-    const { hidden: hiddenModules } = useHiddenModules();
+    const visibleNavigationItems = useVisibleNavigationItems();
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
-    const handleNavigate = (to: string) => {
+    const handleNavigate = useCallback((to: string) => {
         navigate(to);
         setSidebarOpen(false);
-    };
-
-    const isModuleEnabled = (item: DashboardNavigationItem): boolean => {
-        if (!item.moduleKey) {
-            return true;
-        }
-
-        const serverEnabled = enabledModules === null || enabledModules.includes(item.moduleKey);
-
-        return serverEnabled && !hiddenModules.includes(item.moduleKey);
-    };
+    }, [navigate, setSidebarOpen]);
 
     const isSelected = (to: string) => {
-        let selected = pathname.startsWith(to);
         if (to === '/dashboard') {
-            selected = pathname === to;
+            return pathname === to;
         }
 
-        return selected;
+        return pathname.startsWith(to);
     };
 
     const canAccess = (item: DashboardNavigationItem): boolean => {
@@ -80,37 +65,25 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         {
             label: 'View All',
             isSelected: pathname === '/dashboard/trajectories/list',
-            onClick: () => {
-                navigate('/dashboard/trajectories/list');
-                setSidebarOpen(false);
-            }
+            onClick: () => handleNavigate('/dashboard/trajectories/list')
         },
         {
             label: 'Artifacts',
             isSelected: pathname === '/dashboard/trajectories/artifacts',
-            onClick: () => {
-                navigate('/dashboard/trajectories/artifacts');
-                setSidebarOpen(false);
-            }
+            onClick: () => handleNavigate('/dashboard/trajectories/artifacts')
         },
         {
             label: 'Simulation Cells',
             isSelected: pathname === '/dashboard/simulation-cells/list',
-            onClick: () => {
-                navigate('/dashboard/simulation-cells/list');
-                setSidebarOpen(false);
-            }
+            onClick: () => handleNavigate('/dashboard/simulation-cells/list')
         }
-    ], [pathname, navigate, setSidebarOpen]);
+    ], [pathname, handleNavigate]);
 
     const analysisSubItems = useMemo(() => [
         {
             label: 'View all',
             isSelected: pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin'),
-            onClick: () => {
-                navigate('/dashboard/analysis-configs/list');
-                setSidebarOpen(false);
-            }
+            onClick: () => handleNavigate('/dashboard/analysis-configs/list')
         },
         ...plugins
             .map((plugin) => {
@@ -134,23 +107,17 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     subItems: exposures.map((exposure) => ({
                         label: exposure.name,
                         isSelected: pathname.includes(`/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`),
-                        onClick: () => {
-                            navigate(`/dashboard/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`);
-                            setSidebarOpen(false);
-                        }
+                        onClick: () => handleNavigate(`/dashboard/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`)
                     }))
                 };
             })
-    ], [pathname, searchParams, navigate, setSidebarOpen, plugins]);
+    ], [pathname, searchParams, handleNavigate, plugins]);
 
     const clustersSubItems = useMemo(() => [
         {
             label: 'View all',
             isSelected: pathname === '/dashboard/clusters',
-            onClick: () => {
-                navigate('/dashboard/clusters');
-                setSidebarOpen(false);
-            }
+            onClick: () => handleNavigate('/dashboard/clusters')
         },
         ...sidebarClusters.clusters.map((cluster) => ({
             label: cluster.name,
@@ -166,28 +133,14 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 }
             ]
         }))
-    ], [pathname, navigate, setSidebarOpen, sidebarClusters]);
+    ], [pathname, handleNavigate, sidebarClusters]);
 
-    const canAccessTrajectories = canAccess({
-        label: '',
-        path: '',
-        icon: undefined,
-        requiredPermissions: ['trajectory:read']
-    });
-    const canAccessAnalysis = canAccess({
-        label: '',
-        path: '',
-        icon: undefined,
-        requiredPermissions: ['analysis:read']
-    });
+    const canAccessTrajectories = canAccessPermissions(['trajectory:read']);
+    const canAccessAnalysis = canAccessPermissions(['analysis:read']);
 
     const renderNavItem = (item: DashboardNavigationItem) => {
         const isAllowed = canAccess(item);
         const iconPair = item.icon ? DASHBOARD_NAVIGATION_ICONS[item.icon] : null;
-        let onClick: (() => void) | undefined;
-        if (isAllowed) {
-            onClick = () => handleNavigate(item.path);
-        }
 
         if (!iconPair) {
             return null;
@@ -202,7 +155,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     label={item.label}
                     icon={Icon}
                     isSelected={selected}
-                    onClick={onClick}
+                    onClick={isAllowed ? () => handleNavigate(item.path) : undefined}
                     disabled={!isAllowed}
                 />
             </Box>
@@ -231,7 +184,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     return (
         <nav className='sidebar-nav y-auto'>
-            {(singleTenant ? MAIN_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : MAIN_NAVIGATION_ITEMS).filter(isModuleEnabled).map(renderNavItem)}
+            {visibleNavigationItems(MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
             <Tooltip
                 content={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
@@ -277,7 +230,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 />
             </Tooltip>
 
-            {(singleTenant ? SECONDARY_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SECONDARY_NAVIGATION_ITEMS).filter(isModuleEnabled).map(renderNavItem)}
+            {visibleNavigationItems(SECONDARY_NAVIGATION_ITEMS).map(renderNavItem)}
 
             {!sidebarClusters.isOnClustersRoute && (
                 <ClusterCredentialsModal

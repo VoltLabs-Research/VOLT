@@ -15,9 +15,8 @@ import type { LanguageModel } from 'ai';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ProviderCredentials } from '@modules/ai/contracts/provider';
 
-interface SdkOptions{
+export interface SdkOptions{
     apiKey?: string;
     baseURL?: string;
 }
@@ -40,19 +39,16 @@ const SDK_FACTORIES: Record<AIProvider, SdkFactory> = {
     [AIProvider.Ollama]: createOllama
 };
 
-export default class ProviderRegistry{
-    build(provider: AIProvider, modelName: string, credentials: ProviderCredentials): LanguageModel{
-        const factory = SDK_FACTORIES[provider];
-        if(!factory){
-            throw ApplicationError.badRequest(
-                ErrorCodes.AI_PROVIDER_UNAVAILABLE,
-                `Provider "${provider}" is not supported. Available: ${AI_PROVIDERS.join(', ')}`
-            );
-        }
-
-        return factory({
-            apiKey: credentials.apiKey,
-            baseURL: credentials.baseUrl
-        })(modelName);
+/* The provider column is user-supplied configuration read back from the database, so
+   a row can still name a provider this build no longer ships. */
+export const buildLanguageModel = (provider: AIProvider, modelName: string, options: SdkOptions): LanguageModel => {
+    const factory = SDK_FACTORIES[provider];
+    if(!factory){
+        throw ApplicationError.badRequest(
+            ErrorCodes.AI_PROVIDER_UNAVAILABLE,
+            `Provider "${provider}" is not supported. Available: ${AI_PROVIDERS.join(', ')}`
+        );
     }
-}
+
+    return factory(options)(modelName);
+};

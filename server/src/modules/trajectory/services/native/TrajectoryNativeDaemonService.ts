@@ -2,20 +2,16 @@ import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterO
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import type {
+    AtomPageResult,
     FrameMetadata,
     LineExportBaseOptions,
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
 } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import type {
-    ITeamClusterObjectGatewayClient,
-    ITeamClusterSelectionService
-} from '@shared/contracts/ports';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
-import { Readable } from 'node:stream';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -49,7 +45,9 @@ interface TrajectoryNativeConditionFilterPreviewRequest extends TrajectoryNative
     operator: string;
     value: number | string;
     externalValues?: Float32Array;
-}interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
+}
+
+interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
     objectKey: string;
     startValue: number;
     endValue: number;
@@ -71,30 +69,10 @@ interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
     style?: LineStyleParams;
 }
 
-interface TrajectoryNativeAtomsPageResponse {
-    atoms: Array<{
-        id: number;
-        type: number;
-        x: number;
-        y: number;
-        z: number;
-        [property: string]: number;
-    }>;
-    totalAtoms: number;
-    nativeProperties: string[];
-    analysisPropertyNames?: string[];
-    analysisAtoms?: Record<string, unknown>[];
-}
-
 interface TrajectoryNativeFilterPreviewResponse {
     mask: Uint8Array;
     matchCount: number;
     totalAtoms: number;
-}
-
-interface ResolveTrajectoryNativeClusterContextInput {
-    trajectoryId: string;
-    teamClusterSelectionService: ITeamClusterSelectionService;
 }
 
 interface TrajectoryNativeClusterContext {
@@ -104,18 +82,16 @@ interface TrajectoryNativeClusterContext {
 }
 
 export const resolveTrajectoryNativeClusterContext = async (
-    input: ResolveTrajectoryNativeClusterContextInput
+    trajectoryId: string
 ): Promise<TrajectoryNativeClusterContext | null> => {
-    const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
-    const storageClusterId = trajectory
-        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId })
-        : undefined;
+    const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
-    if (!trajectory || !storageClusterId) {
+    if (!trajectory) {
         return null;
     }
 
-    const computeClusterId = await input.teamClusterSelectionService.resolveComputeClusterId(
+    const storageClusterId = trajectory.storageClusterId;
+    const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(
         trajectory.team,
         undefined,
         storageClusterId
@@ -129,12 +105,9 @@ export const resolveTrajectoryNativeClusterContext = async (
 };
 
 class TrajectoryNativeDaemonService {
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
-    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
-    }
+    private readonly objectGatewayClient = objectGatewayClientSingleton;
 
     async getTrajectoryMetadata(input: TrajectoryNativeRequest): Promise<FrameMetadata> {
         return this.teamClusterDaemonClient.command(
@@ -159,7 +132,7 @@ class TrajectoryNativeDaemonService {
         });
     }
 
-    async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<TrajectoryNativeAtomsPageResponse> {
+    async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<AtomPageResult> {
         return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeAtoms, {
             ...this.toBaseBody(input),
             page: input.page,
@@ -168,7 +141,7 @@ class TrajectoryNativeDaemonService {
         });
     }
 
-    async previewFilter(input: TrajectoryNativeConditionFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
+    async previewFilter(input: TrajectoryNativeConditionFilterPreviewRequest): Promise<TrajectoryNativeFilterPreviewResponse> {
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
             ChannelCommands.TrajectoryNativeFilterPreview,
@@ -226,10 +199,6 @@ class TrajectoryNativeDaemonService {
 
     private floatArrayToBytes(floats: Float32Array): Uint8Array {
         return new Uint8Array(floats.buffer, floats.byteOffset, floats.byteLength);
-    }
-
-    async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {
-        return (await this.getObjectStreamResponse(teamClusterId, bucket, objectKey)).stream;
     }
 
     async getObjectStreamResponse(teamClusterId: string, bucket: string, objectKey: string): Promise<TrajectoryNativeObjectStreamResponse> {

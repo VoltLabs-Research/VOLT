@@ -43,10 +43,8 @@ const HeaderBreadcrumbs = () => {
 
     const renderBreadcrumb = (breadcrumb: BreadcrumbItem) => {
         if (breadcrumb.path) {
-            const { path } = breadcrumb;
-
             return (
-                <Link to={path} className='breadcrumb-item breadcrumb-link color-secondary'>
+                <Link to={breadcrumb.path} className='breadcrumb-item breadcrumb-link color-secondary'>
                     {breadcrumb.label}
                 </Link>
             );

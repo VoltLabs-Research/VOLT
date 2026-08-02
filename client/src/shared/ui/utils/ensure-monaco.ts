@@ -5,27 +5,6 @@ import { loader } from '@monaco-editor/react';
 
 import type * as Monaco from 'monaco-editor';
 
-type MonacoWorkerFactory = new () => Worker;
-
-interface MonacoWorkerModule {
-    default: MonacoWorkerFactory;
-};
-
-const hasWorkerFactoryDefault = (value: unknown): value is MonacoWorkerModule => {
-    return typeof value === 'object'
-        && value !== null
-        && 'default' in value
-        && typeof value.default === 'function';
-};
-
-const readWorkerFactory = (value: unknown, workerName: string): MonacoWorkerFactory => {
-    if (!hasWorkerFactoryDefault(value)) {
-        throw new Error(`Failed to load Monaco worker module: ${workerName}`);
-    }
-
-    return value.default;
-};
-
 interface MonacoThemeTokens {
     background: string;
     surface: string;
@@ -182,11 +161,11 @@ const ensureMonaco = (): Promise<typeof Monaco> => {
         jsonWorkerModule,
         tsWorkerModule
     ]) => {
-        const editorWorker = readWorkerFactory(editorWorkerModule, 'editor');
-        const cssWorker = readWorkerFactory(cssWorkerModule, 'css');
-        const htmlWorker = readWorkerFactory(htmlWorkerModule, 'html');
-        const jsonWorker = readWorkerFactory(jsonWorkerModule, 'json');
-        const tsWorker = readWorkerFactory(tsWorkerModule, 'typescript');
+        const editorWorker = editorWorkerModule.default;
+        const cssWorker = cssWorkerModule.default;
+        const htmlWorker = htmlWorkerModule.default;
+        const jsonWorker = jsonWorkerModule.default;
+        const tsWorker = tsWorkerModule.default;
 
         self.MonacoEnvironment = {
             getWorker(_, label) {

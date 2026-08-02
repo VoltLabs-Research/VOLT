@@ -1,12 +1,12 @@
 import Controller from '@shared/http/Controller';
 import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
+import { encodeAtomsBinary } from '@modules/trajectory/controllers/atoms-binary-format';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 
 import type {
-    AtomColumnDType,
     GetAtomsColumnarInput,
     GetAtomsColumnarOutput
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
@@ -14,109 +14,16 @@ import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
-const DTYPE_ID: Record<AtomColumnDType, number> = {
-    f32: 0,
-    u32: 1,
-    u16: 2,
-    str: 3,
-    i32: 4
-};
-
-const DTYPE_BYTES: Record<AtomColumnDType, number> = {
-    f32: 4,
-    u32: 4,
-    u16: 2,
-    str: 1,
-    i32: 4
-};
-
-const encodeAtomsBinary = (result: GetAtomsColumnarOutput): Buffer => {
-    const columns = result.columns;
-    const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));
-
-    let headerSize = 16 + 4 + 4;
-    let dataSize = 0;
-
-    for (let i = 0; i < columns.length; i += 1) {
-        const column = columns[i];
-        const nameBuffer = nameBuffers[i];
-        if (nameBuffer.byteLength > 0xFF) {
-            throw new Error(`Atom property name exceeds 255 bytes: ${column.name}`);
-        }
-
-        if (DTYPE_ID[column.dtype] === undefined) {
-            throw new Error(`Unsupported atom column dtype: ${column.dtype}`);
-        }
-
-        const elementSize = DTYPE_BYTES[column.dtype];
-        if (column.buffer.byteLength % elementSize !== 0) {
-            throw new Error(`Atom column buffer length not aligned to dtype size: ${column.name}`);
-        }
-
-        headerSize += 1 + nameBuffer.byteLength + 1 + 4;
-        dataSize += column.buffer.byteLength;
-    }
-
-    const headerSizeWithPadField = headerSize + 4;
-    const padBytes = (4 - (headerSizeWithPadField % 4)) % 4;
-    const envelopeSize = headerSizeWithPadField + padBytes;
-
-    const envelope = Buffer.alloc(envelopeSize);
-    let offset = 0;
-    envelope.writeUInt32LE(result.total, offset);
-    offset += 4;
-    envelope.writeUInt32LE(result.page, offset);
-    offset += 4;
-    envelope.writeUInt32LE(result.limit, offset);
-    offset += 4;
-    envelope.writeUInt32LE(result.totalPages, offset);
-    offset += 4;
-    envelope.writeUInt32LE(result.count, offset);
-    offset += 4;
-    envelope.writeUInt32LE(columns.length, offset);
-    offset += 4;
-
-    for (let i = 0; i < columns.length; i += 1) {
-        const column = columns[i];
-        const nameBuffer = nameBuffers[i];
-        envelope.writeUInt8(nameBuffer.byteLength, offset);
-        offset += 1;
-        nameBuffer.copy(envelope, offset);
-        offset += nameBuffer.byteLength;
-        envelope.writeUInt8(DTYPE_ID[column.dtype], offset);
-        offset += 1;
-        envelope.writeUInt32LE(column.buffer.byteLength, offset);
-        offset += 4;
-    }
-
-    envelope.writeUInt32LE(padBytes, offset);
-    offset += 4;
-
-    const parts: Buffer[] = [envelope];
-    for (const column of columns) {
-        parts.push(Buffer.from(column.buffer.buffer, column.buffer.byteOffset, column.buffer.byteLength));
-    }
-
-    return Buffer.concat(parts, envelopeSize + dataSize);
-};
-
-const getParamValue = (value: string | string[]): string => (
-    Array.isArray(value) ? value[0] : value
-);
-
-const getOptionalNumber = (value: unknown): number | undefined => (
-    value ? Number(value) : undefined
-);
-
+/** `accept-encoding` is declared as a possibly repeated header. */
 const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
     const header = req.headers['accept-encoding'];
-
-    if (Array.isArray(header)) {
-        return header.join(',');
-    }
-
-    return header;
+    return Array.isArray(header) ? header.join(',') : header;
 };
+
+/** Express 5 types every route param as `string | string[]`, because a segment can repeat. */
+const readRouteParam = (value: string | string[]): string => (
+    Array.isArray(value) ? value[0] : value
+);
 
 export default abstract class TrajectoryControllerBase extends Controller {
     protected readonly service = new TrajectoryService();
@@ -156,7 +63,6 @@ export default abstract class TrajectoryControllerBase extends Controller {
         BaseResponse.paginated(res, value, value._meta);
     }
 
-
     protected defaultStreamHeaders(): Record<string, string> {
         return {
             'Content-Type': 'application/octet-stream',
@@ -164,15 +70,20 @@ export default abstract class TrajectoryControllerBase extends Controller {
         };
     }
 
+    /** Single source of truth for the GLB response headers of every canvas model route. */
     protected passthroughModelHeaders(value: {
-        stream?: unknown;
         contentEncoding?: string;
         contentLength?: number;
-    }): Record<string, string> {
+        objectName?: string;
+    } = {}): Record<string, string> {
         const headers: Record<string, string> = {
             'Content-Type': 'model/gltf-binary',
             'Cache-Control': 'public, max-age=31536000, immutable'
         };
+
+        if (value.objectName) {
+            headers['Content-Disposition'] = `attachment; filename="${value.objectName}"`;
+        }
 
         if (value.contentEncoding && value.contentEncoding !== 'identity') {
             headers['X-Volt-Resource-Encoding'] = value.contentEncoding;
@@ -213,10 +124,10 @@ export default abstract class TrajectoryControllerBase extends Controller {
 
     protected buildAtomsInput(req: AuthenticatedRequest): GetAtomsColumnarInput {
         return {
-            trajectoryId: getParamValue(req.params.trajectoryId),
+            trajectoryId: readRouteParam(req.params.trajectoryId),
             timestep: Number(req.params.timestep),
-            page: getOptionalNumber(req.query.page),
-            limit: getOptionalNumber(req.query.limit),
+            page: req.query.page ? Number(req.query.page) : undefined,
+            limit: req.query.limit ? Number(req.query.limit) : undefined,
             analysisId: typeof req.query.analysisId === 'string' ? req.query.analysisId : undefined
         };
     }

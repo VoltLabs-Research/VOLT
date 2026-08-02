@@ -1,11 +1,11 @@
 import type { ContainerAccessiblePort } from '@volt/contracts/modules/container/domain';
 
+export const isBrowserAccessiblePort = (port: ContainerAccessiblePort | undefined): boolean => {
+    return Boolean(port?.browserAccessible && port.status === 'available' && port.public !== undefined);
+};
+
 export const getPrimaryAccessiblePort = (
     accessiblePorts?: ContainerAccessiblePort[]
 ): ContainerAccessiblePort | null => {
-    if (!accessiblePorts?.length) {
-        return null;
-    }
-
-    return accessiblePorts.find((port) => port.browserAccessible && port.status === 'available' && port.public !== undefined) || null;
+    return accessiblePorts?.find(isBrowserAccessiblePort) ?? null;
 };

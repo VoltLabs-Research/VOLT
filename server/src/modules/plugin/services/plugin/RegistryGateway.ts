@@ -1,24 +1,9 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { getRegistryUrl } from '@core/config/registry';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
 
-export interface RegistryPackageSummary {
-    fullName: string;
-    name: string;
-    username: string;
-    kind: string;
-    description?: string;
-    keywords?: string[];
-    latest?: string;
-    downloads?: { total: number; last30d: number };
-    updatedAt?: string;
-}
-
-export interface RegistrySearchResult {
-    items: RegistryPackageSummary[];
-    page: number;
-    pageSize: number;
-    total: number;
-}
+export type RegistrySearchResult = SearchRegistryResponse;
 
 interface ResolvedRegistryTarball {
     downloadUrl: string;
@@ -36,7 +21,7 @@ const parsePackageName = (fullName: string): ParsedPackageName => {
     const match = /^@([a-z0-9][a-z0-9-]*)\/([a-z0-9][a-z0-9._-]*)$/.exec(fullName.trim().toLowerCase());
     if (!match) {
         throw ApplicationError.badRequest(
-            'Registry::InvalidPackageName',
+            ErrorCodes.REGISTRY_INVALID_PACKAGE_NAME,
             'Registry package name must be @username/name'
         );
     }
@@ -96,7 +81,7 @@ export default class RegistryGateway {
     private async resolveLatestVersion(username: string, name: string): Promise<string> {
         const response = await this.fetch(`/packages/${encodeURIComponent(username)}/${encodeURIComponent(name)}`);
         if (response.status === 404) {
-            throw ApplicationError.notFound('Registry::PackageNotFound', `Package @${username}/${name} not found`);
+            throw ApplicationError.notFound(ErrorCodes.REGISTRY_PACKAGE_NOT_FOUND, `Package @${username}/${name} not found`);
         }
         if (!response.ok) {
             throw this.unavailable(`packument lookup failed with status ${response.status}`);
@@ -118,7 +103,7 @@ export default class RegistryGateway {
     }
 
     private unavailable(message: string, cause?: unknown): ApplicationError {
-        return new ApplicationError('Registry::Unavailable', `Plugin registry unavailable: ${message}`, {
+        return new ApplicationError(ErrorCodes.REGISTRY_UNAVAILABLE, `Plugin registry unavailable: ${message}`, {
             statusCode: 502,
             cause
         });

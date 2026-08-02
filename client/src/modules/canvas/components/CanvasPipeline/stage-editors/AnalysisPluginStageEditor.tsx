@@ -1,11 +1,11 @@
-import { useCanvasPipelineStore } from '../../../store/canvas-pipeline';
+import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import { extractTrajectoryTimesteps } from '../../../utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { AnalysisPluginStageConfig } from '../../../store/canvas-pipeline';
 
@@ -22,47 +22,19 @@ const AnalysisPluginStageEditor = ({
     trajectoryId,
     onSave
 }: AnalysisPluginStageEditorProps) => {
-    const stage = useCanvasPipelineStore((s) =>
-        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
-    );
-    const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
-
-    const config = stage?.config as AnalysisPluginStageConfig | undefined;
-    const pluginId = config?.pluginId;
-
+    const { config, patch } = useStageConfig<AnalysisPluginStageConfig>(stageId, trajectoryId);
     const { modifiers, getPluginArguments } = usePluginSelectors();
 
-    const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
+    // Memoised because a trajectory can carry thousands of timesteps.
     const frameOptions: SelectOption[] = useMemo(
-        () => availableTimesteps.map((t) => ({
+        () => extractTrajectoryTimesteps(trajectory).map((t) => ({
             value: String(t),
             title: `t=${t}`
         })),
-        [availableTimesteps]
+        [trajectory]
     );
 
-    const selectedModifier = useMemo(() => {
-        if (!pluginId) return null;
-        return modifiers.find((m) => m.pluginId === pluginId) ?? null;
-    }, [pluginId, modifiers]);
-
-    const argValues = useMemo(() => config?.argValues ?? {}, [config?.argValues]);
-
-    const handleConfigChange = useCallback((key: string, value: unknown) => {
-        if (!pluginId) return;
-        updateStageConfig(
-            stageId,
-            {
-                argValues: {
-                    ...argValues,
-                    [key]: value
-                }
-            } as Partial<AnalysisPluginStageConfig>,
-            trajectoryId
-        );
-    }, [argValues, pluginId, stageId, trajectoryId, updateStageConfig]);
-
-    if (!config || !pluginId) {
+    if (!config?.pluginId) {
         return (
             <Row justify='center'>
                 <Text size='sm' tone='muted'>This analysis stage is misconfigured.</Text>
@@ -70,7 +42,9 @@ const AnalysisPluginStageEditor = ({
         );
     }
 
-    if (!selectedModifier) {
+    const { pluginId, argValues } = config;
+
+    if (!modifiers.some((m) => m.pluginId === pluginId)) {
         return (
             <Row justify='center'>
                 <Text size='sm' tone='muted'>Plugin “{pluginId}” is not available in this team.</Text>
@@ -78,14 +52,17 @@ const AnalysisPluginStageEditor = ({
         );
     }
 
-    const args = getUserConfigurableArguments(getPluginArguments(pluginId));
-
     return (
         <Stack gap='075'>
             <ArgumentFieldsRenderer
-                arguments={args}
+                arguments={getUserConfigurableArguments(getPluginArguments(pluginId))}
                 values={argValues}
-                onChange={handleConfigChange}
+                onChange={(key, value) => patch({
+                    argValues: {
+                        ...argValues,
+                        [key]: value
+                    }
+                })}
                 frameOptions={frameOptions}
                 emptyMessage='No arguments configured.'
             />

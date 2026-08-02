@@ -5,12 +5,8 @@ import teamClusterExposureRegistryService from '@modules/cluster/services/TeamCl
 import { findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 
 class NotebookRuntimeTerminator {
-    private readonly exposureRegistryService = teamClusterExposureRegistryService;
-
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
     async terminate(teamClusterId: string, runtimeNotebookId: string): Promise<boolean> {
-        const exposures = this.exposureRegistryService.listTeamClusterExposures(teamClusterId);
+        const exposures = teamClusterExposureRegistryService.listTeamClusterExposures(teamClusterId);
         const match = findNotebookExposure(exposures, runtimeNotebookId);
         const containerId = match?.exposure.containerId;
 
@@ -19,7 +15,7 @@ class NotebookRuntimeTerminator {
         }
 
         try {
-            await this.teamClusterDaemonClient.command(
+            await teamClusterDaemonClient.command(
                 teamClusterId,
                 ChannelCommands.ContainerDelete,
                 { containerId }

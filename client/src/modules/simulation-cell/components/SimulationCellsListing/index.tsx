@@ -9,48 +9,25 @@ import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/dom
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { formatNumber } from '@voltstack/bravais';
 
-interface PeriodicAxisStatus {
-    axis: 'X' | 'Y' | 'Z';
-    enabled: boolean;
-};
-
 const LENGTH_UNIT = 'Å';
 
 const formatDimension = (value: number): string => {
     return `${formatNumber(value)} ${LENGTH_UNIT}`;
 };
 
-const getPeriodicBoundaryAxes = (cell: SimulationCell): PeriodicAxisStatus[] => {
-    const pbc = cell.geometry.periodic_boundary_conditions;
-    return [
-        {
-            axis: 'X',
-            enabled: pbc.x
-        },
-        {
-            axis: 'Y',
-            enabled: pbc.y
-        },
-        {
-            axis: 'Z',
-            enabled: pbc.z
-        }
-    ];
-};
-
 const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']> = (_, row) => {
-    const axes = getPeriodicBoundaryAxes(row);
+    const pbc = row.geometry.periodic_boundary_conditions;
 
     return (
         <Row gap='05' wrap>
-            {axes.map((axis) => (
+            {([['X', pbc.x], ['Y', pbc.y], ['Z', pbc.z]] as const).map(([axis, enabled]) => (
                 <Tag
-                    key={axis.axis}
-                    tone={axis.enabled ? 'success' : 'neutral'}
+                    key={axis}
+                    tone={enabled ? 'success' : 'neutral'}
                     variant='soft'
                     size='xs'
                 >
-                    {axis.axis}: {axis.enabled ? 'Periodic' : 'Open'}
+                    {axis}: {enabled ? 'Periodic' : 'Open'}
                 </Tag>
             ))}
         </Row>
@@ -63,7 +40,7 @@ const COLUMNS: ColumnConfig<SimulationCell>[] = [
         title: 'Trajectory',
         sortable: true,
         render: (_, row) => (
-            <PopulatedCellPopover document={row.trajectory as unknown as Record<string, unknown>} modelName='Trajectory'>
+            <PopulatedCellPopover document={row.trajectory} modelName='Trajectory'>
                 <span>{row.trajectory.name}</span>
             </PopulatedCellPopover>
         ),

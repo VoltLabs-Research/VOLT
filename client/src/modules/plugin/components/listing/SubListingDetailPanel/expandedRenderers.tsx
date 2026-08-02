@@ -5,27 +5,7 @@ import { formatScientific, vectorMagnitude } from '@/modules/plugin/components/l
 const NUMERIC_PRECISION = 8;
 const MAX_ARRAY_ROWS = 500;
 
-const isNumberArray = (input: unknown): input is number[] => {
-    return Array.isArray(input) && input.every((entry) => typeof entry === 'number');
-};
-
-const isNumberMatrix = (input: unknown): input is number[][] => {
-    if(!Array.isArray(input)) return false;
-    for(const row of input){
-        if(!Array.isArray(row)) return false;
-        for(const cell of row){
-            if(typeof cell !== 'number') return false;
-        }
-    }
-    return true;
-};
-
 const DIMENSION_LABELS = ['x', 'y', 'z', 'w'];
-
-const dimensionLabel = (index: number): string => {
-    if(index < DIMENSION_LABELS.length) return DIMENSION_LABELS[index];
-    return `d${index}`;
-};
 
 const renderPrimitive = (value: unknown): ReactNode => {
     if(value === null || value === undefined){
@@ -123,7 +103,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                 <div className='plugin-detail-points__head' style={gridStyle}>
                     <span className='plugin-detail-points__index-cell'>#</span>
                     {Array.from({ length: dim }).map((_, index) => (
-                        <span key={index} className='plugin-detail-points__cell-head'>{dimensionLabel(index)}</span>
+                        <span key={index} className='plugin-detail-points__cell-head'>{DIMENSION_LABELS[index] ?? `d${index}`}</span>
                     ))}
                 </div>
                 <div className='plugin-detail-points__body'>
@@ -221,7 +201,6 @@ export const renderExpandedValue = (value: unknown, depth = 0): ReactNode => {
 
     switch(kind){
         case 'empty':
-            return renderPrimitive(value);
         case 'boolean':
         case 'integer':
         case 'number':
@@ -240,13 +219,9 @@ export const renderExpandedValue = (value: unknown, depth = 0): ReactNode => {
             return renderObject(value as Record<string, unknown>, depth);
         case 'mixed':
         default:
+            // `mixed` is only produced for arrays that are neither all-numbers
+            // nor all-number-rows, and for values that are not objects at all.
             if(Array.isArray(value)){
-                if(isNumberArray(value)){
-                    return renderNumberArray(value);
-                }
-                if(isNumberMatrix(value)){
-                    return renderMatrix(value);
-                }
                 return renderHeterogeneousArray(value);
             }
             return <span className='plugin-detail-fallback'>{JSON.stringify(value)}</span>;

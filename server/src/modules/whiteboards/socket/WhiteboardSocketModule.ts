@@ -1,8 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import { ackError, ackOk } from '@modules/socket/socket/socket-ack';
 import realtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
 import logger from '@shared/infrastructure/logger';
 
+import type { SocketAck } from '@modules/socket/socket/socket-ack';
+import type { WhiteboardAppState, WhiteboardElement } from '@modules/whiteboards/contracts/whiteboard';
 import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
@@ -16,32 +19,10 @@ interface WhiteboardPatchPayload {
     whiteboardId: string;
     clientId: string;
     baseRevision: number;
-    elements: Record<string, unknown>[];
-    appState: Record<string, unknown>;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
     elementOrder?: string[];
 }
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
-
-interface WhiteboardPatchAck {
-    accepted: boolean;
-    revision: number;
-    delta?: Record<string, unknown>;
-    snapshot?: Record<string, unknown>;
-}
-
-const ackOk = <T>(data: T): SocketAck<T> => ({
-    ok: true,
-    data
-});
-const ackError = (error: string): SocketAck<never> => ({
-    ok: false,
-    error
-});
 
 class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';
@@ -63,28 +44,19 @@ class WhiteboardSocketModule extends BaseSocketModule {
 
     private registerSubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'subscribe_to_whiteboard', async (conn, payload) => {
-            if (payload.whiteboardId.length === 0) {
-                return ackError('Invalid whiteboard id');
-            }
-
             const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
             const teamId = await realtimeStateService.getTeamId(payload.whiteboardId);
             if (!snapshot || !teamId) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
-                return ackError('Whiteboard not found');
+                return this.reject(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
             }
 
             if (!conn.user?.teams?.includes(teamId)) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
-                return ackError('You are not a member of this team');
+                return this.reject(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
             }
 
             const previousWhiteboardId = conn.data['whiteboardId'] as string | undefined;
-            const previousRoom = previousWhiteboardId && previousWhiteboardId !== payload.whiteboardId
-                ? this.buildRoomId(previousWhiteboardId)
-                : undefined;
-
-            if (previousRoom) {
+            if (previousWhiteboardId && previousWhiteboardId !== payload.whiteboardId) {
+                const previousRoom = this.buildRoomId(previousWhiteboardId);
                 await this.leaveRoom(conn.id, previousRoom);
                 await this.broadcastPresence(previousRoom, 'whiteboard_users_update', this.toPresenceUser);
                 await this.releaseRoomIfIdle(previousWhiteboardId);
@@ -102,10 +74,6 @@ class WhiteboardSocketModule extends BaseSocketModule {
 
     private registerUnsubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'unsubscribe_from_whiteboard', async (conn, payload) => {
-            if (payload.whiteboardId.length === 0) {
-                return;
-            }
-
             const room = this.buildRoomId(payload.whiteboardId);
             await this.leaveRoom(conn.id, room);
 
@@ -121,26 +89,23 @@ class WhiteboardSocketModule extends BaseSocketModule {
     }
 
     private registerPatch(connection: ISocketConnection): void {
-        this.on<WhiteboardPatchPayload, SocketAck<WhiteboardPatchAck>>(connection.id, 'whiteboard_patch', async (conn, payload) => {
-            if (!conn.user || payload.whiteboardId.length === 0) {
+        this.on<WhiteboardPatchPayload>(connection.id, 'whiteboard_patch', async (conn, payload) => {
+            if (!conn.user) {
                 return ackError('Invalid whiteboard patch payload');
             }
 
             const room = this.buildRoomId(payload.whiteboardId);
             if (!this.roomManager.isInRoom(conn.id, room)) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.VALIDATION_INVALID_INPUT, 'Socket is not subscribed to this whiteboard');
-                return ackError('Socket is not subscribed to this whiteboard');
+                return this.reject(conn.id, ErrorCodes.VALIDATION_INVALID_INPUT, 'Socket is not subscribed to this whiteboard');
             }
 
             const teamId = await realtimeStateService.getTeamId(payload.whiteboardId);
             if (!teamId) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
-                return ackError('Whiteboard not found');
+                return this.reject(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
             }
 
             if (!conn.user.teams?.includes(teamId)) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
-                return ackError('You are not a member of this team');
+                return this.reject(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
             }
 
             const previousSnapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
@@ -151,76 +116,50 @@ class WhiteboardSocketModule extends BaseSocketModule {
                 payload.elements,
                 payload.appState,
                 conn.user._id,
-                payload.elementOrder?.filter((id) => id.length > 0)
+                payload.elementOrder
             );
 
             if (!mergeResult) {
                 return ackError('Whiteboard state unavailable');
             }
 
-            if (!mergeResult.changed) {
-                if (isStalePatch) {
-                    const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
-                    if (snapshot) {
-                        return ackOk({
-                            accepted: false,
-                            revision: snapshot.revision,
-                            snapshot: {
-                                ...snapshot,
-                                senderId: conn.user._id,
-                                clientId: payload.clientId,
-                                baseRevision: payload.baseRevision
-                            }
-                        });
-                    }
-                }
-                return ackOk({
-                    accepted: true,
-                    revision: mergeResult.revision
-                });
-            }
+            // Echoed back on the ack and on the broadcast so a peer can tell its own
+            // patches apart from someone else's and reconcile against its base revision.
+            const origin = {
+                senderId: conn.user._id,
+                clientId: payload.clientId,
+                baseRevision: payload.baseRevision
+            };
 
-            const socketPayload = mergeResult.delta
+            const delta = mergeResult.changed
                 ? {
                     ...mergeResult.delta,
-                    senderId: conn.user._id,
-                    clientId: payload.clientId,
-                    baseRevision: payload.baseRevision
+                    ...origin
                 }
                 : undefined;
 
-            if (socketPayload) {
-                this.emitToRoomExcept(conn.id, room, 'whiteboard_apply_delta', socketPayload);
+            if (delta) {
+                this.emitToRoomExcept(conn.id, room, 'whiteboard_apply_delta', delta);
             }
 
-            if (isStalePatch) {
-                const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
-                if (snapshot) {
-                    return ackOk({
-                        accepted: true,
-                        revision: snapshot.revision,
-                        delta: socketPayload,
-                        snapshot: {
-                            ...snapshot,
-                            senderId: conn.user._id,
-                            clientId: payload.clientId,
-                            baseRevision: payload.baseRevision
-                        }
-                    });
-                }
-            }
-
-            if (!mergeResult.delta) {
+            // A patch built on an outdated revision gets the authoritative scene back.
+            const snapshot = isStalePatch ? await realtimeStateService.getSnapshot(payload.whiteboardId) : null;
+            if (!snapshot) {
                 return ackOk({
                     accepted: true,
-                    revision: mergeResult.revision
+                    revision: mergeResult.revision,
+                    delta
                 });
             }
 
             return ackOk({
-                accepted: true,
-                revision: mergeResult.revision,
-                delta: socketPayload
+                accepted: mergeResult.changed,
+                revision: snapshot.revision,
+                delta,
+                snapshot: {
+                    ...snapshot,
+                    ...origin
+                }
             });
         });
     }
@@ -238,16 +177,17 @@ class WhiteboardSocketModule extends BaseSocketModule {
         });
     }
 
-    private async releaseRoomIfIdle(whiteboardId: string | undefined): Promise<void> {
-        if (!whiteboardId) {
-            return;
-        }
-
-        const room = this.buildRoomId(whiteboardId);
-        const socketIds = await this.roomManager.getSocketsInRoom(room);
+    /** The last subscriber out flushes the room so its scene is not held in memory forever. */
+    private async releaseRoomIfIdle(whiteboardId: string): Promise<void> {
+        const socketIds = await this.roomManager.getSocketsInRoom(this.buildRoomId(whiteboardId));
         if (socketIds.length === 0) {
             await realtimeStateService.flushAndRelease(whiteboardId);
         }
+    }
+
+    private reject(socketId: string, code: string, message: string): SocketAck<never> {
+        this.emitErrorToSocket(socketId, code, message);
+        return ackError(message);
     }
 
     private buildRoomId(whiteboardId: string): string {

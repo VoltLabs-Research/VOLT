@@ -1,60 +1,48 @@
-import { buildConversationMessagesQueryParams, invalidateConversationMessagesQuery, messagesQuery } from '@/modules/ai/hooks/queries';
+import { invalidateConversationMessagesQuery, messagesQuery } from '@/modules/ai/hooks/queries';
+import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import { useCallback, useMemo } from 'react';
-import type { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
+import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
 import type { UIMessage } from 'ai';
 
-const toUIMessageRole = (role: AIMessageRole): UIMessage['role'] => {
-    if (role === 'assistant') {
-        return 'assistant';
-    }
-
-    return 'user';
+const MESSAGES_PAGE = {
+    page: 1,
+    limit: 200
 };
 
+const toQueryParams = (teamId: string, conversationId: string): ConversationMessagesQueryParams => ({
+    teamId,
+    conversationId,
+    params: MESSAGES_PAGE
+});
+
 const toUIMessage = (message: AIConversationMessage): UIMessage => {
-    const parts = message.parts;
+    let parts = message.parts;
 
-    if (parts.length > 0) {
-        return {
-            id: message._id,
-            role: toUIMessageRole(message.role),
-            parts
-        };
-    }
-
-    const fallbackText = message.content.trim();
-    let fallbackParts: UIMessage['parts'] = [];
-
-    if (fallbackText) {
-        fallbackParts = [{
+    if (parts.length === 0 && message.content.trim()) {
+        parts = [{
             type: 'text',
-            text: fallbackText
+            text: message.content.trim()
         }];
     }
 
     return {
         id: message._id,
-        role: toUIMessageRole(message.role),
-        parts: fallbackParts
+        role: message.role === AIMessageRole.Assistant ? 'assistant' : 'user',
+        parts
     };
 };
 
 const useAIConversationMessages = (teamId: string | null, conversationId?: string) => {
-    const fallbackMessagesQueryParams = useMemo(() => buildConversationMessagesQueryParams('', ''), []);
-
     const messagesQueryParams = useMemo(() => {
         if (!teamId || !conversationId) {
             return undefined;
         }
 
-        return buildConversationMessagesQueryParams(teamId, conversationId, {
-            page: 1,
-            limit: 200
-        });
+        return toQueryParams(teamId, conversationId);
     }, [teamId, conversationId]);
 
-    const messagesResult = messagesQuery(messagesQueryParams ?? fallbackMessagesQueryParams, {
+    const messagesResult = messagesQuery(messagesQueryParams ?? toQueryParams('', ''), {
         enabled: Boolean(messagesQueryParams)
     });
 
@@ -62,7 +50,6 @@ const useAIConversationMessages = (teamId: string | null, conversationId?: strin
         return (messagesResult.data?.data ?? []).map(toUIMessage);
     }, [messagesResult.data]);
 
-    const isMessagesLoading = messagesResult.isLoading;
     let messagesError: string | null = null;
     if (messagesResult.error) {
         messagesError = 'Failed to load conversation messages.';
@@ -73,17 +60,14 @@ const useAIConversationMessages = (teamId: string | null, conversationId?: strin
             return;
         }
 
-        await invalidateConversationMessagesQuery(buildConversationMessagesQueryParams(teamId, targetConversationId, {
-            page: 1,
-            limit: 200
-        }));
+        await invalidateConversationMessagesQuery(toQueryParams(teamId, targetConversationId));
     }, [teamId]);
 
     return {
         conversationMessages,
         messagesQueryParams,
         messagesResult,
-        isMessagesLoading,
+        isMessagesLoading: messagesResult.isLoading,
         messagesError,
         loadConversationMessages
     };

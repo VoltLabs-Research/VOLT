@@ -1,77 +1,60 @@
 import { Box, Row, Stack, Skeleton } from '@voltstack/bravais';
+import type { PanelWidths } from './use-latex-panel-layout';
 
-interface LoadingPlaceholderBlock {
-    key: string;
+interface PlaceholderBlockProps {
     width: string;
-}
-
-interface LoadingSkeletonProps {
-    width: string | number;
-    height: string | number;
-    borderRadius?: string | number;
+    height?: string;
+    borderRadius?: string;
 }
 
 interface LatexWorkspaceSkeletonProps {
-    panelWidths: { files: number; preview: number; ai: number };
+    panelWidths: PanelWidths;
     isAIPanelOpen: boolean;
 }
 
-const LOADING_FILE_PANEL_BLOCKS: LoadingPlaceholderBlock[] = [
+const BLOCK_BACKGROUND = 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))';
+const PANEL_BORDER = '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))';
+
+const FILE_PANEL_BLOCKS = ['72%', '88%', '64%', '81%'];
+const EDITOR_BLOCKS = ['94%', '86%', '91%', '67%'];
+const PREVIEW_BLOCKS: PlaceholderBlockProps[] = [
     {
-        key: 'file-1',
-        width: '72%'
+        width: '100%',
+        height: '9rem',
+        borderRadius: '0.75rem'
     },
     {
-        key: 'file-2',
-        width: '88%'
+        width: '100%',
+        height: '1rem',
+        borderRadius: '0.75rem'
     },
     {
-        key: 'file-3',
-        width: '64%'
-    },
-    {
-        key: 'file-4',
-        width: '81%'
+        width: '82%',
+        height: '1rem',
+        borderRadius: '0.75rem'
     }
 ];
-const LOADING_EDITOR_BLOCKS: LoadingPlaceholderBlock[] = [
-    {
-        key: 'editor-1',
-        width: '94%'
-    },
-    {
-        key: 'editor-2',
-        width: '86%'
-    },
-    {
-        key: 'editor-3',
-        width: '91%'
-    },
-    {
-        key: 'editor-4',
-        width: '67%'
-    }
-];
-const LOADING_PREVIEW_BLOCKS: LoadingPlaceholderBlock[] = [
-    {
-        key: 'preview-1',
-        width: '100%'
-    },
-    {
-        key: 'preview-2',
-        width: '100%'
-    },
-    {
-        key: 'preview-3',
-        width: '82%'
-    }
-];
+
+const PlaceholderBlock = ({
+    width,
+    height = '0.875rem',
+    borderRadius = '999px'
+}: PlaceholderBlockProps) => (
+    <div
+        style={{
+            width,
+            height,
+            borderRadius,
+            background: BLOCK_BACKGROUND
+        }}
+    />
+);
 
 const LoadingSkeleton = ({
     width,
     height,
     borderRadius = '999px'
-}: LoadingSkeletonProps) => (
+}: PlaceholderBlockProps) => (
     <Skeleton
         variant='rectangular'
         animation='wave'
@@ -79,7 +62,7 @@ const LoadingSkeleton = ({
         height={height}
         style={{
             borderRadius,
-            backgroundColor: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+            backgroundColor: BLOCK_BACKGROUND
         }}
     />
 );
@@ -92,9 +75,9 @@ const LatexWorkspaceSkeleton = ({ panelWidths, isAIPanelOpen }: LatexWorkspaceSk
                 <LoadingSkeleton width='18rem' height='0.875rem' />
             </Stack>
             <Row gap='075'>
-                <LoadingSkeleton width='6.5rem' height='2rem' borderRadius='999px' />
-                <LoadingSkeleton width='7.5rem' height='2rem' borderRadius='999px' />
-                <LoadingSkeleton width='5.5rem' height='2rem' borderRadius='999px' />
+                <LoadingSkeleton width='6.5rem' height='2rem' />
+                <LoadingSkeleton width='7.5rem' height='2rem' />
+                <LoadingSkeleton width='5.5rem' height='2rem' />
             </Row>
         </Row>
 
@@ -102,18 +85,10 @@ const LatexWorkspaceSkeleton = ({ panelWidths, isAIPanelOpen }: LatexWorkspaceSk
             <Stack gap='1' minH='0' style={{
                     width: panelWidths.files,
                     padding: '1rem',
-                    borderRight: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                    borderRight: PANEL_BORDER
                 }}>
                 <LoadingSkeleton width='5.5rem' height='0.875rem' />
-                {LOADING_FILE_PANEL_BLOCKS.map((block) => <div
-                    key={block.key}
-                    style={{
-                        width: block.width,
-                        height: '0.875rem',
-                        borderRadius: '999px',
-                        background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                    }}
-                />)}
+                {FILE_PANEL_BLOCKS.map((width, index) => <PlaceholderBlock key={index} width={width} />)}
             </Stack>
 
             <Stack flex='1' minW='0' className='latex-workspace__main-content'>
@@ -122,15 +97,7 @@ const LatexWorkspaceSkeleton = ({ panelWidths, isAIPanelOpen }: LatexWorkspaceSk
                     <LoadingSkeleton width='100%' height='2.5rem' borderRadius='0.85rem' />
                     <LoadingSkeleton width='100%' height='100%' borderRadius='1rem' />
                     <Stack gap='075' width='max' style={{ maxWidth: '42rem' }}>
-                        {LOADING_EDITOR_BLOCKS.map((block) => <div
-                            key={block.key}
-                            style={{
-                                width: block.width,
-                                height: '0.9rem',
-                                borderRadius: '999px',
-                                background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                            }}
-                        />)}
+                        {EDITOR_BLOCKS.map((width, index) => <PlaceholderBlock key={index} width={width} height='0.9rem' />)}
                     </Stack>
                 </Stack>
 
@@ -138,25 +105,11 @@ const LatexWorkspaceSkeleton = ({ panelWidths, isAIPanelOpen }: LatexWorkspaceSk
                     <Stack id='latex-ai-panel' gap='075' className='latex-ai-panel' style={{
                             height: panelWidths.ai,
                             padding: '1rem',
-                            borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                            borderTop: PANEL_BORDER
                         }}>
                         <LoadingSkeleton width='5rem' height='0.875rem' />
-                        <div
-                            style={{
-                                width: '42%',
-                                height: '0.875rem',
-                                borderRadius: '999px',
-                                background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                            }}
-                        />
-                        <div
-                            style={{
-                                width: '75%',
-                                height: '0.875rem',
-                                borderRadius: '999px',
-                                background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                            }}
-                        />
+                        <PlaceholderBlock width='42%' />
+                        <PlaceholderBlock width='75%' />
                     </Stack>
                 )}
             </Stack>
@@ -164,18 +117,10 @@ const LatexWorkspaceSkeleton = ({ panelWidths, isAIPanelOpen }: LatexWorkspaceSk
             <Stack gap='1' minH='0' style={{
                     width: panelWidths.preview,
                     padding: '1rem',
-                    borderLeft: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                    borderLeft: PANEL_BORDER
                 }}>
                 <LoadingSkeleton width='5.75rem' height='0.875rem' />
-                {LOADING_PREVIEW_BLOCKS.map((block) => <div
-                    key={block.key}
-                    style={{
-                        width: block.width,
-                        height: block.key === 'preview-1' ? '9rem' : '1rem',
-                        borderRadius: '0.75rem',
-                        background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                    }}
-                />)}
+                {PREVIEW_BLOCKS.map((block, index) => <PlaceholderBlock key={index} {...block} />)}
             </Stack>
         </Box>
     </Stack>

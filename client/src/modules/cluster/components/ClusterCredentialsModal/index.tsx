@@ -152,7 +152,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                             <Stack key={service.label} gap='025' p='1' radius='md' className='cluster-credentials-card'>
                                 <Heading level={3} size='md' weight='bold'>{service.label}</Heading>
                                 <Text as='p' size='sm' tone='secondary'>Port: {service.port ?? 'Not assigned'}</Text>
-                                {'username' in service && service.username && (
+                                {service.username && (
                                     <Text as='p' size='sm' tone='secondary'>Username: {service.username}</Text>
                                 )}
                                 <Row justify='between' gap='05'>

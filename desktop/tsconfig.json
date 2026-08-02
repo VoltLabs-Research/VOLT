@@ -14,7 +14,8 @@
     "resolveJsonModule": true,
     "verbatimModuleSyntax": false,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@volt/contracts/*": ["../contracts/src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "electron.vite.config.ts"],

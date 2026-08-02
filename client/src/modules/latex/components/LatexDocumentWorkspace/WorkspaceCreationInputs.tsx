@@ -1,50 +1,43 @@
 import WorkspaceEntryInput from './WorkspaceEntryInput';
+import { useWorkspaceTree } from './workspace-tree-context';
 import { FolderPlus } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface WorkspaceCreationInputsProps {
     folderPath: string;
-    newFileTargetFolder: string | null;
-    newFolderTargetFolder: string | null;
-    folderLabel: string;
-    fileLabel: string;
+    /** Where the entry is being created, e.g. `at the project root`. */
+    parentLabel: string;
     fileIcon: ReactNode;
-    onConfirmNewFolder: (name: string) => Promise<void>;
-    onCancelNewFolder: () => void;
-    onConfirmNewFile: (name: string) => Promise<void>;
-    onCancelNewFile: () => void;
 }
 
-const WorkspaceCreationInputs = ({
-    folderPath,
-    newFileTargetFolder,
-    newFolderTargetFolder,
-    folderLabel,
-    fileLabel,
-    fileIcon,
-    onConfirmNewFolder,
-    onCancelNewFolder,
-    onConfirmNewFile,
-    onCancelNewFile
-}: WorkspaceCreationInputsProps) => {
+const WorkspaceCreationInputs = ({ folderPath, parentLabel, fileIcon }: WorkspaceCreationInputsProps) => {
+    const {
+        newFileTargetFolder,
+        newFolderTargetFolder,
+        handleConfirmNewFile,
+        handleConfirmNewFolder,
+        closeNewFile,
+        closeNewFolder
+    } = useWorkspaceTree();
+
     return (
         <>
             {newFolderTargetFolder === folderPath && (
                 <WorkspaceEntryInput
                     icon={<FolderPlus size={13} />}
-                    label={folderLabel}
+                    label={`Create a folder ${parentLabel}`}
                     placeholder='Folder name'
-                    onConfirm={onConfirmNewFolder}
-                    onCancel={onCancelNewFolder}
+                    onConfirm={handleConfirmNewFolder}
+                    onCancel={closeNewFolder}
                 />
             )}
             {newFileTargetFolder === folderPath && (
                 <WorkspaceEntryInput
                     icon={fileIcon}
-                    label={fileLabel}
+                    label={`Create a file ${parentLabel}`}
                     placeholder='File name'
-                    onConfirm={onConfirmNewFile}
-                    onCancel={onCancelNewFile}
+                    onConfirm={handleConfirmNewFile}
+                    onCancel={closeNewFile}
                 />
             )}
         </>

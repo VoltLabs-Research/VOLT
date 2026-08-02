@@ -1,7 +1,7 @@
 import { createService, del, get, patch, post, request } from '@/app/core/http/utils/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { SignInInput, UpdatePasswordInput, UpdateAccountInput } from '@volt/contracts/modules/auth/http';
+import type { SignInInput, SignUpInput, UpdatePasswordInput, UpdateAccountInput } from '@volt/contracts/modules/auth/http';
 import type {
     AuthSession,
     CheckEmailResponse,
@@ -11,7 +11,6 @@ import type {
 } from '@volt/contracts/modules/auth/domain';
 import type {
     CheckEmailParams,
-    SignUpFormInput,
     UpdateAvatarInput,
     UpdateMeInput
 } from '../contracts/forms';
@@ -46,9 +45,7 @@ const endpoints = {
     deleteMe: del<EmptyParams>('/me'),
     signIn: post<SignInInput, AuthSession>('/sessions'),
     localSignIn: post<EmptyParams, AuthSession>('/sessions/local'),
-    signUp: post<SignUpFormInput, AuthSession>('/users', {
-        omit: ['passwordConfirm']
-    }),
+    signUp: post<SignUpInput, AuthSession>('/users'),
     checkEmail: get<CheckEmailParams, CheckEmailResponse>('/emails/:email/availability'),
     getAvailableOAuthProviders: get<EmptyParams, OAuthProviders>('/oauth/providers'),
     getPasswordInfo: get<EmptyParams, PasswordInfo>('/password/info'),

@@ -1,13 +1,13 @@
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
-import Stack from '@/services/Stack';
+import { composeDown, composeUp, type ComposeOptions } from '@/services/Stack';
 import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
-import ProcessRunner from '@/services/ProcessRunner';
-import DockerPreflight, { PreflightError } from '@/services/DockerPreflight';
+import { run } from '@/services/ProcessRunner';
+import { dockerPreflight, PreflightError } from '@/services/DockerPreflight';
+import { augmentedPath, dockerPath } from '@/services/DockerBinary';
 import { assertDevPaths } from '@/services/devPaths';
 import bus from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
-import { errMessage } from '@/shared/error';
 import { isUp, PROBE_PATH, webProbeUrl } from '@/shared/health';
 import pWaitFor from 'p-wait-for';
 
@@ -15,12 +15,13 @@ export interface DeployProps{
     composeFile: string;
     appConfig: AppConfig;
     sources: SourceResolver;
-    docker: DockerPreflight;
     account?: ProvisionAccount;
     withCluster?: boolean;
 }
 
 type DeployState = AppEvents['deploy:state']['state'];
+
+const errMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 const waitForUrl = (url: string, timeout = 120_000) =>
     pWaitFor(() => isUp(url), {
@@ -78,7 +79,7 @@ export default class Deploy{
     }
 
     async #startCore(){
-        const status = await this.props.docker.preflight();
+        const status = await dockerPreflight();
         bus.emit('deploy:preflight', status);
         if(!status.ok) throw new PreflightError(status);
 
@@ -100,7 +101,7 @@ export default class Deploy{
         const baseEnv = await this.#composeEnv(sources);
 
         await this.#phase('build', async () =>
-            (await this.#stack(baseEnv)).up([], changed));
+            composeUp(await this.#compose(baseEnv), [], changed));
 
         await this.#phase('server', () =>
             waitForUrl(`${serverOrigin}${PROBE_PATH}`));
@@ -115,7 +116,7 @@ export default class Deploy{
         if(this.props.withCluster !== false){
             const daemonEnv = this.#withDaemonEnv(baseEnv, state);
             await this.#phase('daemon', async () =>
-                (await this.#stack(daemonEnv)).up(['enrolled'], changed));
+                composeUp(await this.#compose(daemonEnv), ['enrolled'], changed));
         }
 
         await this.#phase('web', () => waitForUrl(webProbe));
@@ -162,27 +163,25 @@ export default class Deploy{
             const env = await this.#composeEnv(sources);
             const bootstrap = await this.props.appConfig.getBootstrap();
             const downEnv = bootstrap ? this.#withDaemonEnv(env, bootstrap) : env;
-            await (await this.#stack(downEnv)).down(['enrolled'], volumes);
+            await composeDown(await this.#compose(downEnv), ['enrolled'], volumes);
         });
     }
 
     async resetDepsVolumes(){
-        const dockerPath = await this.props.docker.dockerPath();
-        await new ProcessRunner().run(dockerPath ?? 'docker', [
+        await run(await dockerPath() ?? 'docker', [
             'volume', 'rm', '-f',
             'volt_volt-server-node-modules',
             'volt_cluster-daemon-node-modules'
-        ], { env: { PATH: this.props.docker.augmentedPath() } }).catch(() => {});
+        ], { env: { PATH: augmentedPath() } }).catch(() => {});
     }
 
-    async #stack(env: Record<string, string>): Promise<Stack>{
-        const dockerPath = await this.props.docker.dockerPath();
-        return new Stack({
+    async #compose(env: Record<string, string>): Promise<ComposeOptions>{
+        return {
             composeFile: this.props.composeFile,
             env,
-            dockerPath: dockerPath ?? undefined,
-            augmentedPath: this.props.docker.augmentedPath()
-        });
+            dockerPath: await dockerPath() ?? undefined,
+            augmentedPath: augmentedPath()
+        };
     }
 
     async applyDevMode(payload: DevModeState){

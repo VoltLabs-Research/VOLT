@@ -1,5 +1,3 @@
-import type { TrajectoryStatus } from '@volt/contracts/modules/trajectory/domain';
-
 const PROCESSING_STAGE_LABELS: Record<string, string> = {
     idle: '',
     'waiting-for-process': 'Waiting...',
@@ -9,15 +7,15 @@ const PROCESSING_STAGE_LABELS: Record<string, string> = {
     failed: 'Failed'
 };
 
-export const getStageMessage = (stage: TrajectoryStatus | string | undefined): string => {
+export const getStageMessage = (stage: string | undefined): string => {
     if (!stage) return '';
     return PROCESSING_STAGE_LABELS[stage] ?? 'Processing...';
 };
 
-export const isProcessingStatus = (status: TrajectoryStatus | string | undefined): boolean => {
+export const isProcessingStatus = (status: string | undefined): boolean => {
     return !!status && status !== 'completed' && status !== 'idle' && status !== 'failed';
 };
 
-export const isTrajectoryNavigable = (status: TrajectoryStatus | string | undefined): boolean => {
+export const isTrajectoryNavigable = (status: string | undefined): boolean => {
     return status === 'completed';
 };

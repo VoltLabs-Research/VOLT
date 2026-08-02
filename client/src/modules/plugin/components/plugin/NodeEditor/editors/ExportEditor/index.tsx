@@ -1,12 +1,10 @@
-import { useCallback, useState, useMemo, useEffect } from 'react';
-import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
+import { useState, useEffect } from 'react';
+import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import CodeEditor from '@/shared/ui/components/CodeEditor';
-import type { IExportData } from '@volt/contracts/modules/plugin/workflow';
-import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import { EXPORT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ExportEditorFormValues } from './schema';
@@ -40,72 +38,41 @@ const CHART_TYPE_OPTIONS = [
     }
 ];
 
-const useExportEditorForm = createNodeEditorForm<ExportEditorFormValues, 'export'>({
-    defaults: EXPORT_EDITOR_DEFAULT_VALUES,
-    dataKey: 'export'
-});
-
 const ExportEditor = ({ node }: EditorProps) => {
-    const form = useExportEditorForm(node);
+    const form = useNodeEditorForm<ExportEditorFormValues>(node, 'export', EXPORT_EDITOR_DEFAULT_VALUES);
 
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
+    const isChartExporter = form.watch('exporter') === Exporter.CHART;
+    const options = form.watch('options') ?? {};
 
-    const watchedExporter = form.watch('exporter');
-    const watchedOptions = form.watch('options');
-
-    const isChartExporter = watchedExporter === Exporter.CHART;
-    const options = watchedOptions ?? {};
-
-    const chartOptions = useMemo(() => ({
+    // String() is required: `options` holds hand-authored JSON typed as unknown.
+    const chartOptions = {
         xAxisKey: String(options.xAxisKey ?? ''),
         yAxisKey: String(options.yAxisKey ?? ''),
         chartType: String(options.chartType ?? 'line'),
         title: String(options.title ?? ''),
         xAxisLabel: String(options.xAxisLabel ?? ''),
         yAxisLabel: String(options.yAxisLabel ?? '')
-    }), [options]);
+    };
 
-    const [jsonValue, setJsonValue] = useState(() => JSON.stringify(options, null, 2));
-    const optionsJson = useMemo(() => JSON.stringify(options, null, 2), [options]);
+    const optionsJson = JSON.stringify(options, null, 2);
+    const [jsonValue, setJsonValue] = useState(optionsJson);
 
-    const updateChartOption = useCallback((key: string, value: unknown) => {
-        const currentValues = form.getValues();
-        const currentOptions = currentValues.options ?? {};
-        const newOptions = {
-            ...currentOptions,
-            [key]: value
+    const createChartOptionChangeHandler = (key: string) =>
+        (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+            form.setValue('options', {
+                ...form.getValues().options,
+                [key]: e.target.value
+            }, { shouldDirty: true });
         };
-        updateNodeData(node.id, {
-            export: {
-                ...currentValues,
-                options: newOptions
-            } as IExportData
-        });
-        form.setValue('options', newOptions, { shouldDirty: true });
-    }, [form, node.id, updateNodeData]);
 
-    const createChartOptionChangeHandler = useCallback((key: string) => {
-        return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-            updateChartOption(key, e.target.value);
-        };
-    }, [updateChartOption]);
-
-    const handleJsonChange = useCallback((value: string) => {
+    const handleJsonChange = (value: string) => {
         setJsonValue(value);
         try {
-            const parsed = JSON.parse(value);
-            const currentValues = form.getValues();
-            updateNodeData(node.id, {
-                export: {
-                    ...currentValues,
-                    options: parsed
-                } as IExportData
-            });
-            form.setValue('options', parsed, { shouldDirty: true });
+            form.setValue('options', JSON.parse(value), { shouldDirty: true });
         } catch {
             // Invalid JSON, don't update store
         }
-    }, [form, node.id, updateNodeData]);
+    };
 
     useEffect(() => {
         setJsonValue(optionsJson);

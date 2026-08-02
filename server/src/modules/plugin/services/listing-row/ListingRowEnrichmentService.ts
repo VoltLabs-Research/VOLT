@@ -12,126 +12,71 @@ interface EnrichDaemonListingRowsInput {
     fallbackAnalysisId?: string;
 }
 
-interface ColumnFactoryInput {
-    key: string;
-    label: string;
-    sortable?: boolean;
-}
-
 const TRAJECTORY_COLUMN_KEY = 'trajectoryName';
 const TIMESTEP_COLUMN_KEY = 'timestep';
 const RESERVED_COLUMN_KEYS = new Set([TRAJECTORY_COLUMN_KEY, TIMESTEP_COLUMN_KEY]);
 
-const createColumn = ({ key, label, sortable = true }: ColumnFactoryInput): ColumnDef => {
-    return {
-        key,
-        label,
-        sortable
-    };
-};
+const columnKeyOf = (column: ColumnDef): string => column.key ?? column.label;
 
 const buildDynamicColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): ColumnDef[] => {
     const columns = daemonColumns?.length
-        ? daemonColumns.map((column) => createColumn({
+        ? daemonColumns.map((column) => ({
             key: column,
-            label: column
+            label: column,
+            sortable: true
         }))
         : deriveColumns(rows);
 
-    return columns.filter((column) => !RESERVED_COLUMN_KEYS.has(String(column.key ?? column.label)));
+    return columns.filter((column) => !RESERVED_COLUMN_KEYS.has(columnKeyOf(column)));
 };
 
-const resolveAnalysisIds = (rows: DaemonListingRow[], fallbackAnalysisId?: string): string[] => {
-    const ids = new Set<string>();
-
-    for (const row of rows) {
-        const analysisId = row.analysis?.trim() || fallbackAnalysisId;
-        if (analysisId) {
-            ids.add(analysisId);
-        }
+const loadAnalyses = async (analysisIds: Set<string>): Promise<Map<string, AnalysisEntity>> => {
+    if(analysisIds.size === 0){
+        return new Map();
     }
 
-    return Array.from(ids);
+    const analyses = await AnalysisEntity.findBy({ id: In([...analysisIds]) });
+
+    return new Map(analyses.map((analysis) => [analysis.id, analysis]));
 };
 
-const loadAnalyses = async (
-    analysisIds: string[]
-): Promise<Map<string, AnalysisEntity>> => {
-    const analyses = new Map<string, AnalysisEntity>();
-    if(analysisIds.length === 0){
-        return analyses;
+const loadTrajectoryNames = async (trajectoryIds: Set<string>): Promise<Map<string, string>> => {
+    if(trajectoryIds.size === 0){
+        return new Map();
     }
 
-    const analysisList = await AnalysisEntity.findBy({ id: In(analysisIds) });
-
-    for(const analysis of analysisList){
-        analyses.set(analysis.id, analysis);
-    }
-
-    return analyses;
-};
-
-const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, AnalysisEntity>): string[] => {
-    const ids = new Set<string>();
-
-    for (const row of rows) {
-        const analysisId = row.analysis?.trim();
-        const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory;
-
-        if (trajectoryId) {
-            ids.add(trajectoryId);
-        }
-    }
-
-    return Array.from(ids);
-};
-
-const loadTrajectoryNames = async (
-    trajectoryIds: string[]
-): Promise<Map<string, string>> => {
-    const trajectoryNames = new Map<string, string>();
-    if(trajectoryIds.length === 0){
-        return trajectoryNames;
-    }
-
-    const trajectoryList = await TrajectoryEntity.find({
-        where: { id: In(trajectoryIds) },
+    const trajectories = await TrajectoryEntity.find({
+        where: { id: In([...trajectoryIds]) },
         select: {
             id: true,
             name: true
         }
     });
 
-    for(const trajectory of trajectoryList){
-        const trajectoryName = trajectory.name?.trim();
-        if(!trajectoryName){
-            continue;
-        }
-
-        trajectoryNames.set(trajectory.id, trajectoryName);
-    }
-
-    return trajectoryNames;
+    return new Map(
+        trajectories
+            .map((trajectory): [string, string] => [trajectory.id, trajectory.name?.trim() ?? ''])
+            .filter(([, name]) => name.length > 0)
+    );
 };
 
 export const buildListingColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): ColumnDef[] => {
     return [
-        createColumn({
+        {
             key: TRAJECTORY_COLUMN_KEY,
-            label: 'Trajectory'
-        }),
-        createColumn({
+            label: 'Trajectory',
+            sortable: true
+        },
+        {
             key: TIMESTEP_COLUMN_KEY,
-            label: 'Timestep'
-        }),
+            label: 'Timestep',
+            sortable: true
+        },
         ...buildDynamicColumns(rows, daemonColumns)
     ];
 };
 
-export const buildListingExportColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): string[] => {
-    const dynamicColumns = buildDynamicColumns(rows, daemonColumns).map((column) => String(column.key ?? column.label));
-
+export const buildListingExportColumns = (rows: DaemonListingRow[]): string[] => {
     return Array.from(new Set([
         '_id',
         'analysisId',
@@ -139,10 +84,15 @@ export const buildListingExportColumns = (rows: DaemonListingRow[], daemonColumn
         'trajectoryName',
         'timestep',
         'exposureId',
-        ...dynamicColumns
+        ...buildDynamicColumns(rows).map(columnKeyOf)
     ]));
 };
 
+/**
+ * Daemon rows only carry ids, and may omit the analysis when the caller already
+ * knows it. Each row is resolved to its analysis and trajectory once, then the
+ * trajectory names are looked up in a single query and stamped onto the rows.
+ */
 export const enrichDaemonListingRows = async ({
     rows,
     fallbackAnalysisId
@@ -151,29 +101,19 @@ export const enrichDaemonListingRows = async ({
         return rows;
     }
 
-    const analysisIds = resolveAnalysisIds(rows, fallbackAnalysisId);
-    const analyses = await loadAnalyses(analysisIds);
-    const trajectoryIds = resolveTrajectoryIds(
-        rows.map((row) => ({
-            ...row,
-            analysis: row.analysis?.trim() || fallbackAnalysisId || row.analysis
-        })),
-        analyses
-    );
-    const trajectoryNames = await loadTrajectoryNames(trajectoryIds);
+    const analysisIdByRow = rows.map((row) => row.analysis?.trim() || fallbackAnalysisId || '');
+    const analyses = await loadAnalyses(new Set(analysisIdByRow.filter(Boolean)));
 
-    return rows.map((row) => {
-        const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';
-        const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory || '';
-        const trajectoryName = trajectoryNames.get(trajectoryId) || '';
-
-        return {
-            ...row,
-            analysis: analysisId,
-            trajectory: trajectoryId,
-            trajectoryName,
-            timestep: row.timestep ?? 0
-        };
+    const trajectoryIdByRow = rows.map((row, index) => {
+        return row.trajectory?.trim() || analyses.get(analysisIdByRow[index])?.trajectory || '';
     });
+    const trajectoryNames = await loadTrajectoryNames(new Set(trajectoryIdByRow.filter(Boolean)));
+
+    return rows.map((row, index) => ({
+        ...row,
+        analysis: analysisIdByRow[index],
+        trajectory: trajectoryIdByRow[index],
+        trajectoryName: trajectoryNames.get(trajectoryIdByRow[index]) || '',
+        timestep: row.timestep ?? 0
+    }));
 };

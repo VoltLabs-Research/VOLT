@@ -9,20 +9,13 @@ export interface GetRasterMetadataParams {
 export interface TriggerRasterizationParams {
     teamId: string;
     trajectoryId: string;
-    config?: unknown;
 }
 
 const endpoints = {
     triggerRasterization: post<TriggerRasterizationParams, TriggerRasterizationResponse>('/trajectories/:trajectoryId/rasters/jobs', {
         client: 'scoped',
         omit: ['teamId'],
-        body: ({ config }) => {
-            if (config === undefined) {
-                return {};
-            }
-
-            return { config };
-        }
+        body: () => ({})
     }),
     getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/trajectories/:trajectoryId/rasters/metadata')
 };

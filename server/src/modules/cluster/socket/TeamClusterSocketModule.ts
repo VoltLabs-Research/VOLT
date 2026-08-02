@@ -1,6 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import analysisExecutionLogServiceInstance from '@modules/analysis/services/AnalysisExecutionLogService';
-import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
@@ -8,52 +6,27 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
-import {
-    toTeamClusterQueueConcurrencyView,
-    toTeamClusterQueueScopeLimitsView
-} from '@modules/cluster/services/TeamClusterView';
-import ClusterService, {
-    type ProcessDaemonSceneArtifactUpsertInput
-} from '@modules/cluster/services/ClusterService';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
 import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
-import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/TeamClusterReverseChannelTypes';
-import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
+import TeamClusterDaemonFrameRouter from '@modules/cluster/socket/TeamClusterDaemonFrameRouter';
 import {
-    TEAM_CLUSTER_METRICS_ALL_EVENT,
-    TEAM_CLUSTER_METRICS_HISTORY_EVENT,
-    toTeamClusterClientMetrics
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import {
-    ChannelCommands,
-    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_ID,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
+    TEAM_CLUSTER_METRICS_ALL_EVENT,
+    TEAM_CLUSTER_METRICS_HISTORY_EVENT,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
     getTeamClusterRoom,
-    type TeamClusterDaemonCommandMessage,
+    toTeamClusterClientMetrics,
     type TeamClusterDaemonMessage,
-    type TeamClusterDaemonRegisterPayload
+    type TeamClusterDaemonRegisterPayload,
+    type TeamClusterDaemonSocketChannel
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-
-interface DaemonAppendFrameSegmentsService {
-    appendFrameSegments(input: {
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        jobId: string;
-        timestep: number;
-        segments: TeamClusterDaemonExecutionLogSegment[];
-    }): Promise<void>;
-}
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -69,103 +42,32 @@ const TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS = readPositiveIntegerEnv(
     60_000
 );
 
-interface DaemonStreamLogSegment {
-    stream: 'stdout' | 'stderr' | 'system';
-    text: string;
-    occurredAt: string;
-    nodeId?: string;
-    nodeType?: string;
-    nodeLabel?: string;
-    pluginId?: string;
-    executionPath?: string[];
-}
-
-interface DaemonAnalysisLogChunkStreamPayload {
-    type: string;
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep: number;
-    segments: DaemonStreamLogSegment[];
-}
-
-interface DaemonDebugLogChunkStreamPayload {
-    type: string;
-    teamClusterId: string;
-    daemonPassword: string;
-    sessionId: string;
-    nodeId: string;
-    segments: DaemonStreamLogSegment[];
-}
-
-interface DaemonSceneArtifactUpsertItem {
-    trajectory: string;
-    storageClusterId: string;
-    analysis?: string;
-    plugin?: string;
-    sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';
-    timestep: number;
-    objectName: string;
-    storageBucket: string;
-    params: Record<string, unknown>;
-    displayName: string;
-    status: 'ready' | 'failed';
-    metadata?: Record<string, unknown>;
-}
-
-interface DaemonSceneArtifactUpsertBatchStreamPayload {
-    type: string;
-    teamClusterId: string;
-    daemonPassword: string;
-    items: DaemonSceneArtifactUpsertItem[];
-}
-
-interface DaemonAnalysisProvenanceEventPayload {
-    pluginName: string;
-    pluginVersion: string;
-    parameters: Record<string, unknown>;
-    inputFrameContentHash: string;
-    atomCount: number;
-    frameIndex: number;
-    trajectoryId: string;
-    analysisId: string;
-    teamId: string;
-    coreToolkitVersion: string;
-    rngSeed?: number;
-    executedAt: string;
-    executedBy: string;
-    executionTimeMs: number;
-    outputArtifactIds: string[];
-}
+/** Only these channels mean "the cluster is up"; the others are pure transports. */
+const LIFECYCLE_CHANNELS: TeamClusterDaemonSocketChannel[] = [
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
+];
 
 class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-    #clusterServiceCache?: ClusterService;
-    private get clusterService(): ClusterService {
-        return (this.#clusterServiceCache ??= new ClusterService());
-    }
-
-    private readonly teamClusterHeartbeatMonitor = teamClusterHeartbeatMonitor;
-    private readonly teamClusterLifecycleService = teamClusterLifecycleService;
-    private readonly teamClusterReverseChannelService = teamClusterReverseChannelService;
-    private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService = analysisExecutionLogServiceInstance;
-    private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
-    private readonly systemMetricsRepository = systemMetricsRepository;
-    private readonly provenanceService = new ProvenanceService();
+    private readonly daemonFrameRouter = new TeamClusterDaemonFrameRouter(
+        (socketId, event, payload) => {
+            this.emitToSocket(socketId, event, payload);
+        },
+        (teamClusterId) => {
+            this.clearPendingDaemonDisconnect(teamClusterId);
+        }
+    );
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     async onInit(): Promise<void> {
-        this.teamClusterHeartbeatMonitor.start();
-        this.registerDaemonStreamConsumers();
+        teamClusterHeartbeatMonitor.start();
+        this.daemonStreamUnsubscribeFns.push(...this.daemonFrameRouter.registerInboundStreamConsumers());
     }
 
     async onShutdown(): Promise<void> {
@@ -176,7 +78,7 @@ class TeamClusterSocketModule extends BaseSocketModule {
             clearTimeout(timer);
         }
         this.pendingDaemonDisconnectTimers.clear();
-        this.teamClusterHeartbeatMonitor.stop();
+        teamClusterHeartbeatMonitor.stop();
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -186,7 +88,6 @@ class TeamClusterSocketModule extends BaseSocketModule {
             async (conn, payload) => {
                 const previousTeamClusterIds = (conn.data.teamClusterIds as string[] | undefined) ?? [];
                 const requestedIds = Array.from(new Set(payload.teamClusterIds));
-                const authorizedTeamIds = new Set(conn.user?.teams ?? []);
                 const nextSubscribedIds: string[] = [];
 
                 for (const previousTeamClusterId of previousTeamClusterIds) {
@@ -196,19 +97,12 @@ class TeamClusterSocketModule extends BaseSocketModule {
                 }
 
                 for (const teamClusterId of requestedIds) {
-                    const teamCluster = await this.findTeamClusterById(teamClusterId);
-
-                    if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
-                        this.emitErrorToSocket(
-                            conn.id,
-                            ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                            'You are not allowed to subscribe to this team cluster'
-                        );
+                    const teamCluster = await this.findAuthorizedTeamCluster(conn, teamClusterId, 'You are not allowed to subscribe to this team cluster');
+                    if (!teamCluster) {
                         continue;
                     }
 
-                    const roomName = getTeamClusterRoom(teamClusterId);
-                    await this.joinRoom(conn.id, roomName);
+                    await this.joinRoom(conn.id, getTeamClusterRoom(teamClusterId));
                     nextSubscribedIds.push(teamClusterId);
                     await this.emitLatestMetricsToSocket(conn.id, teamCluster);
                 }
@@ -221,19 +115,12 @@ class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_METRICS_HISTORY_EVENT,
             async (conn, payload) => {
-                const teamCluster = await this.findTeamClusterById(payload.clusterId);
-                const authorizedTeamIds = new Set(conn.user?.teams ?? []);
-
-                if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
-                    this.emitErrorToSocket(
-                        conn.id,
-                        ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                        'You are not allowed to read metrics for this team cluster'
-                    );
+                const teamCluster = await this.findAuthorizedTeamCluster(conn, payload.clusterId, 'You are not allowed to read metrics for this team cluster');
+                if (!teamCluster) {
                     return;
                 }
 
-                const history = await this.systemMetricsRepository.getHistoryByClusterId(
+                const history = await systemMetricsRepository.getHistoryByClusterId(
                     teamCluster.id,
                     payload.minutes ?? 5
                 );
@@ -255,25 +142,18 @@ class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
             async (conn, payload) => {
-                await this.teamClusterLifecycleService.authenticateDaemonConnection(
+                await teamClusterLifecycleService.authenticateDaemonConnection(
                     payload.teamClusterId,
                     payload.daemonPassword
                 );
 
                 const channel = payload.channel ?? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
-                if (
-                    channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
-                    || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
-                ) {
+                if (LIFECYCLE_CHANNELS.includes(channel)) {
                     this.clearPendingDaemonDisconnect(payload.teamClusterId);
-                    await this.teamClusterLifecycleService.markDaemonConnected(payload.teamClusterId);
+                    await teamClusterLifecycleService.markDaemonConnected(payload.teamClusterId);
                 }
 
-                this.teamClusterReverseChannelService.registerDaemonConnection(
-                    conn.id,
-                    payload.teamClusterId,
-                    channel
-                );
+                teamClusterReverseChannelService.registerDaemonConnection(conn.id, payload.teamClusterId, channel);
                 this.emitToSocket(conn.id, TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
                     teamClusterId: payload.teamClusterId,
                     channel
@@ -285,156 +165,49 @@ class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
             async (_conn, payload) => {
-                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
-                    await this.handleDaemonServerCommand(connection.id, payload);
-                    return;
-                }
+                if (teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id)) {
+                    if (payload.type === 'command') {
+                        await this.daemonFrameRouter.handleCommand(connection.id, payload);
+                        return;
+                    }
 
-                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id)) {
-                    const handled = await this.handleDaemonServerEvent(connection.id, payload);
-                    if (handled) {
+                    if (await this.daemonFrameRouter.handleEvent(connection.id, payload)) {
                         return;
                     }
                 }
 
-                this.teamClusterReverseChannelService.handleMessage(connection.id, payload);
+                teamClusterReverseChannelService.handleMessage(connection.id, payload);
             }
         );
 
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
-            const registration = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
-            if (registration && this.isLifecycleSocketChannel(registration.channel)) {
+            const registration = teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
+            if (registration && LIFECYCLE_CHANNELS.includes(registration.channel)) {
                 this.scheduleDaemonDisconnect(registration.teamClusterId, registration.channel);
             }
         });
     }
 
-    private async findTeamClusterById(teamClusterId: string): Promise<TeamCluster | null> {
+    /** Emits the forbidden error and returns null when this connection may not see the cluster. */
+    private async findAuthorizedTeamCluster(
+        conn: ISocketConnection,
+        teamClusterId: string,
+        forbiddenMessage: string
+    ): Promise<TeamCluster | null> {
         const entity = await TeamClusterEntity.findOneBy({ id: teamClusterId });
-        return entity ? toTeamClusterLike(entity) : null;
-    }
+        const teamCluster = entity ? toTeamClusterLike(entity) : null;
 
-    private registerDaemonStreamConsumers(): void {
-        this.daemonStreamUnsubscribeFns.push(
-            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk,
-                (message: TeamClusterDaemonInboundStreamPayload) => {
-                    void this.handleAnalysisLogChunkStream(message);
-                }
-            )
-        );
-
-        this.daemonStreamUnsubscribeFns.push(
-            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk,
-                (message: TeamClusterDaemonInboundStreamPayload) => {
-                    void this.handleDebugLogChunkStream(message);
-                }
-            )
-        );
-
-        this.daemonStreamUnsubscribeFns.push(
-            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch,
-                (message: TeamClusterDaemonInboundStreamPayload) => {
-                    void this.handleSceneArtifactUpsertBatchStream(message);
-                }
-            )
-        );
-    }
-
-    private async handleAnalysisLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload<DaemonAnalysisLogChunkStreamPayload>(message);
-        if (!payload) {
-            return;
-        }
-
-        await this.analysisExecutionLogService.appendFrameSegments({
-            analysisId: payload.analysisId,
-            teamId: payload.teamId,
-            trajectoryId: payload.trajectoryId,
-            jobId: payload.jobId,
-            timestep: payload.timestep,
-            segments: payload.segments
-        });
-    }
-
-    private async handleDebugLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload<DaemonDebugLogChunkStreamPayload>(message);
-        if (!payload) {
-            return;
-        }
-
-        this.pluginDebugSessionRegistry.emitLogChunk(
-            payload.sessionId,
-            payload.teamClusterId,
-            payload.nodeId,
-            payload.segments
-        );
-    }
-
-    private async handleSceneArtifactUpsertBatchStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload<DaemonSceneArtifactUpsertBatchStreamPayload>(message);
-        if (!payload) {
-            return;
-        }
-
-        const inputs: ProcessDaemonSceneArtifactUpsertInput[] = payload.items.map((item) => ({
-            teamClusterId: payload.teamClusterId,
-            daemonPassword: payload.daemonPassword,
-            trajectory: item.trajectory,
-            storageClusterId: item.storageClusterId,
-            analysis: item.analysis,
-            plugin: item.plugin,
-            sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInput['sourceType'],
-            timestep: item.timestep,
-            objectName: item.objectName,
-            storageBucket: item.storageBucket,
-            params: item.params as ProcessDaemonSceneArtifactUpsertInput['params'],
-            displayName: item.displayName,
-            status: item.status as ProcessDaemonSceneArtifactUpsertInput['status'],
-            metadata: item.metadata
-        }));
-        try {
-            await this.clusterService.processDaemonSceneArtifactUpsertBatch(inputs);
-        } catch (error: unknown) {
-            const appError = error as ApplicationError;
-            logger.warn(`Failed to process daemon scene artifact batch streamId=${message.streamId} batchSize=${payload.items.length} statusCode=${appError.statusCode} message=${appError.message}`);
-        }
-    }
-
-    private parseInboundStreamPayload<TPayload extends {
-        type: string;
-        teamClusterId: string;
-    }>(
-        message: TeamClusterDaemonInboundStreamPayload
-    ): TPayload | null {
-        let parsedJson: unknown;
-        try {
-            parsedJson = JSON.parse(message.chunk.toString('utf8'));
-        } catch (error) {
-            logger.warn(
-                error,
-                `Failed to parse daemon stream chunk JSON streamId=${message.streamId} requestId=${message.requestId}`
-            );
+        if (!teamCluster || !new Set(conn.user?.teams ?? []).has(teamCluster.props.team)) {
+            this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, forbiddenMessage);
             return null;
         }
 
-        const payload = parsedJson as TPayload;
-
-        if (payload.teamClusterId !== message.teamClusterId) {
-            logger.warn(
-                `Ignoring daemon stream payload with mismatched cluster streamId=${message.streamId} socketClusterId=${message.teamClusterId} payloadClusterId=${payload.teamClusterId}`
-            );
-            return null;
-        }
-
-        return payload;
+        return teamCluster;
     }
 
     private async emitLatestMetricsToSocket(socketId: string, teamCluster: TeamCluster): Promise<void> {
-        const latestMetric = await this.systemMetricsRepository.getLatestByClusterId(teamCluster.id);
+        const latestMetric = await systemMetricsRepository.getLatestByClusterId(teamCluster.id);
         if (!latestMetric) {
             return;
         }
@@ -444,155 +217,8 @@ class TeamClusterSocketModule extends BaseSocketModule {
         ]);
     }
 
-    private async handleDaemonServerCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
-        if (payload.command === ChannelCommands.RuntimeConfigGet) {
-            const teamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
-
-            if (!teamClusterId) {
-                this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-                    type: 'response',
-                    requestId: payload.requestId,
-                    ok: false,
-                    status: 401,
-                    message: 'Daemon socket is not registered'
-                });
-                return;
-            }
-
-            const teamCluster = await this.findTeamClusterById(teamClusterId);
-            if (!teamCluster) {
-                this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-                    type: 'response',
-                    requestId: payload.requestId,
-                    ok: false,
-                    status: 404,
-                    message: 'Team cluster not found'
-                });
-                return;
-            }
-
-            this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-                type: 'response',
-                requestId: payload.requestId,
-                ok: true,
-                status: 200,
-                data: {
-                    status: 'success',
-                    data: {
-                        queueConcurrency: toTeamClusterQueueConcurrencyView(teamCluster.props.queueConcurrency),
-                        queueScopeLimits: toTeamClusterQueueScopeLimitsView(teamCluster.props.queueScopeLimits),
-                        roleConfig: teamCluster.props.roleConfig,
-                        effectiveCapabilities: teamCluster.effectiveCapabilities
-                    }
-                }
-            });
-            return;
-        }
-
-        if (payload.command === 'runtime.heartbeat') {
-            try {
-                const value = await this.clusterService.recordHeartbeat(payload.payload as never);
-                this.emitUseCaseSuccess(socketId, payload.requestId, value);
-            } catch (error: unknown) {
-                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
-            }
-            return;
-        }
-
-        if (payload.command === 'runtime.lifecycle') {
-            try {
-                const value = await this.clusterService.updateLifecycle(payload.payload as never);
-                this.emitUseCaseSuccess(socketId, payload.requestId, value);
-            } catch (error: unknown) {
-                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
-            }
-            return;
-        }
-
-        if (payload.command === 'runtime.delete-completed') {
-            try {
-                const value = await this.clusterService.completeDeletion(payload.payload as never);
-                this.emitUseCaseSuccess(socketId, payload.requestId, value);
-            } catch (error: unknown) {
-                this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
-            }
-            return;
-        }
-
-        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-            type: 'response',
-            requestId: payload.requestId,
-            ok: false,
-            status: 404,
-            message: `Unknown daemon server command: ${payload.command}`
-        });
-    }
-
-    private async handleDaemonServerEvent(socketId: string, payload: TeamClusterDaemonMessage): Promise<boolean> {
-        const registeredTeamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
-
-        if ('teamClusterId' in payload && registeredTeamClusterId && payload.teamClusterId !== registeredTeamClusterId) {
-            logger.warn(`Ignoring daemon server event with mismatched team cluster id registeredTeamClusterId=${registeredTeamClusterId} payloadTeamClusterId=${payload.teamClusterId} type=${payload.type}`);
-            return true;
-        }
-
-        if (
-            payload.type === 'analysis-job-completion'
-            || payload.type === 'analysis-job-status'
-            || payload.type === 'analysis-stage-status'
-            || payload.type === 'trajectory-raster-job-status'
-            || payload.type === 'trajectory-glb-job-status'
-            || payload.type === 'artifact-upload-job-status'
-        ) {
-            try {
-                await this.clusterService.processDaemonJobCompletion(payload as never);
-            } catch (error: unknown) {
-                const appError = error as ApplicationError;
-                logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${appError.statusCode} message=${appError.message}`);
-            }
-
-            return true;
-        }
-
-        if (payload.type === 'runtime-heartbeat') {
-            this.clearPendingDaemonDisconnect(payload.teamClusterId);
-            try {
-                await this.clusterService.recordHeartbeat(payload as never);
-            } catch (error: unknown) {
-                const appError = error as ApplicationError;
-                logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${appError.statusCode} message=${appError.message}`);
-            }
-
-            return true;
-        }
-
-        if ((payload as { type: string }).type === 'analysis-provenance') {
-            const provenanceEvent = payload as unknown as DaemonAnalysisProvenanceEventPayload;
-            this.provenanceService.recordAnalysisExecution({
-                ...provenanceEvent,
-                executedAt: new Date(provenanceEvent.executedAt)
-            }).catch((err: unknown) => {
-                logger.warn({ err }, 'Failed to record analysis provenance from daemon event');
-            });
-            return true;
-        }
-
-        return false;
-    }
-
-    private isLifecycleSocketChannel(channel: string): boolean {
-        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
-            || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat;
-    }
-
     private hasLifecycleSocketConnection(teamClusterId: string): boolean {
-        return this.teamClusterReverseChannelService.hasDaemonConnection(
-            teamClusterId,
-            TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
-        ) || this.teamClusterReverseChannelService.hasDaemonConnection(
-            teamClusterId,
-            TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
-        );
+        return LIFECYCLE_CHANNELS.some((channel) => teamClusterReverseChannelService.hasDaemonConnection(teamClusterId, channel));
     }
 
     private clearPendingDaemonDisconnect(teamClusterId: string): void {
@@ -605,13 +231,13 @@ class TeamClusterSocketModule extends BaseSocketModule {
         this.pendingDaemonDisconnectTimers.delete(teamClusterId);
     }
 
-    private scheduleDaemonDisconnect(teamClusterId: string, channel: string): void {
+    /** A daemon restart closes its sockets, so a disconnect is only real after a grace window. */
+    private scheduleDaemonDisconnect(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): void {
+        this.clearPendingDaemonDisconnect(teamClusterId);
+
         if (this.hasLifecycleSocketConnection(teamClusterId)) {
-            this.clearPendingDaemonDisconnect(teamClusterId);
             return;
         }
-
-        this.clearPendingDaemonDisconnect(teamClusterId);
 
         if (TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS <= 0) {
             void this.finalizeDaemonDisconnect(teamClusterId);
@@ -636,33 +262,10 @@ class TeamClusterSocketModule extends BaseSocketModule {
         }
 
         try {
-            await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
+            await teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
         } catch {
             logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${teamClusterId}`);
         }
-    }
-
-    private emitUseCaseSuccess<T>(socketId: string, requestId: string, data: T): void {
-        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-            type: 'response',
-            requestId,
-            ok: true,
-            status: 200,
-            data: {
-                status: 'success',
-                data
-            }
-        });
-    }
-
-    private emitUseCaseError(socketId: string, requestId: string, error: ApplicationError): void {
-        this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
-            type: 'response',
-            requestId,
-            ok: false,
-            status: error.statusCode,
-            message: error.message
-        });
     }
 }
 

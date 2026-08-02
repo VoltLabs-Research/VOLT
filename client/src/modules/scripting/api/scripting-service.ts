@@ -3,7 +3,10 @@ import { createService, del, get, paginated, patch, post } from '@/app/core/http
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ScriptingNotebook, ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
 import type { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
-import type { ScriptingSession } from '@volt/contracts/modules/scripting/domain';
+import type {
+    CreateScriptingJupyterSessionResponse,
+    GetScriptingSessionStatusResponse
+} from '@volt/contracts/modules/scripting/domain';
 
 export interface CreateScriptingNotebookParams {
     teamId: string;
@@ -59,14 +62,14 @@ const endpoints = {
         })
     }),
     deleteNotebook: del<DeleteScriptingNotebookParams>('/notebooks/:notebookId'),
-    createSession: post<CreateScriptingSessionParams, ScriptingSession>('/notebook-sessions', {
+    createSession: post<CreateScriptingSessionParams, CreateScriptingJupyterSessionResponse>('/notebook-sessions', {
         body: ({ notebookId, trajectoryId, teamClusterId }) => ({
             notebookId,
             trajectoryId,
             teamClusterId
         })
     }),
-    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, ScriptingSession>('/notebook-sessions/:notebookId/status'),
+    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, GetScriptingSessionStatusResponse>('/notebook-sessions/:notebookId/status'),
     deleteNotebookSession: del<DeleteNotebookSessionParams>('/notebook-sessions/:notebookId')
 };
 

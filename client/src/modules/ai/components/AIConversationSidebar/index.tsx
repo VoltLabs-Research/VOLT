@@ -131,7 +131,7 @@ const AIConversationSidebar = ({
         const isEditing = editingConversationId === conversation._id;
         let itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer';
         if (isActive) {
-            itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer is-active';
+            itemClassName += ' is-active';
         }
 
         let renameTooltip = 'You do not have permission to rename conversations.';

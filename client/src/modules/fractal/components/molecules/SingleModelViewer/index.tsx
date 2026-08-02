@@ -5,7 +5,7 @@ import SimulationCellBox from '@/modules/fractal/components/molecules/Simulation
 import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utils/model-world-bounds';
-import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils/box-utils';
+import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utils/scene-utils';
 import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
@@ -16,8 +16,9 @@ import { useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useEffect, useCallback, useRef } from 'react';
+import type { SimulationCellTransforms } from '@/modules/fractal/components/molecules/SimulationCellBox';
 import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
-import type { ModelLoadingState } from '@/modules/fractal/contracts/model';
+import type { ModelLoadingState, Pos3D } from '@/modules/fractal/contracts/model';
 import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
@@ -25,25 +26,9 @@ import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } 
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 import type { FC, RefObject } from 'react';
 
-interface OptionalVec3 {
-    x?: number;
-    y?: number;
-    z?: number;
-}
-
-interface AutoFitBoxTransforms {
-    scale: number;
-    position: {
-        x: number;
-        y: number;
-        z: number;
-    };
-    groundOffset?: number;
-}
-
 const buildWorldBoundsFromModel = (
     bounds: BoundsInfo,
-    transforms: AutoFitBoxTransforms
+    transforms: SimulationCellTransforms
 ): THREE.Box3 => {
     const groundOffset = transforms.groundOffset || 0;
     const worldOffset = new THREE.Vector3(
@@ -73,8 +58,8 @@ interface SingleModelViewerProps {
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
     onLoadingStateChanged?: (state: ModelLoadingState) => void;
-    rotation?: OptionalVec3;
-    position?: OptionalVec3;
+    rotation?: Partial<Pos3D>;
+    position?: Partial<Pos3D>;
     scale?: number;
     autoFit?: boolean;
     autoFitKeyOverride?: string | null;
@@ -103,11 +88,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     onModelBoundsChanged,
     onLoadingStateChanged,
     rotation = {},
-    position = {
-        x: 0,
-        y: 0,
-        z: 0
-    },
+    position = {},
     scale = 1,
     autoFit = true,
     autoFitKeyOverride,
@@ -119,25 +100,17 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     onContentTypeDetected
 }) => {
     const lastEmittedModelWorldBoundsReference = useRef<ModelWorldBounds | null>(null);
-    const autoFitKeyRef = useRef<string | null>(null);
     const autoFitAppliedRef = useRef(!autoFit);
-    const autoFitWaitLoggedRef = useRef(false);
     const modelContainerRef = useRef<THREE.Group>(null!);
 
-    const boxTransforms = useMemo(() => {
-        return calculateBoxTransforms(boxBounds);
+    const cellBoxTransforms = useMemo<SimulationCellTransforms>(() => {
+        const boxTransforms = calculateBoxTransforms(boxBounds);
+        return {
+            scale: boxTransforms.scale,
+            position: boxTransforms.position,
+            groundOffset: getGroundOffset(boxBounds, boxTransforms)
+        };
     }, [boxBounds]);
-
-    const groundOffset = useMemo(() => getGroundOffset(boxBounds, boxTransforms), [boxBounds, boxTransforms]);
-    const cellBoxTransforms = useMemo(() => {
-        const transforms = buildCellBoxTransforms(boxTransforms, groundOffset);
-
-        if (!transforms) {
-            throw new Error('Failed to build canonical cell box transforms.');
-        }
-
-        return transforms;
-    }, [boxTransforms, groundOffset]);
     const autoFitKey = useMemo(() => {
         if (autoFitKeyOverride !== undefined) {
             return autoFit ? autoFitKeyOverride : null;
@@ -212,9 +185,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         }),
         [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
     );
-    const url = glbResource.url;
 
-    const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
+    const sceneKey = getSceneKey(sceneConfig);
 
     const canPickLineEntities = canvasMode !== 'public' && resolveLineSceneSource(sceneConfig) !== null;
     const pickLineEntity = useLineEntityPick(trajectoryId, currentTimestep);
@@ -258,12 +230,11 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const {
         modelBounds,
-        loadError,
         deselect,
         setSelectedObject,
         onHoverChange
     } = useGlbScene({
-        url,
+        url: glbResource.url,
         resourceKey: glbResource.resourceKey,
         sliceClippingPlanes,
         position: {
@@ -298,30 +269,13 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     }, modelContainerRef);
 
     useEffect(() => {
-        autoFitKeyRef.current = autoFitKey;
-        autoFitAppliedRef.current = !autoFit;
-        autoFitWaitLoggedRef.current = false;
+        autoFitAppliedRef.current = !autoFit || !autoFitKey;
     }, [autoFit, autoFitKey]);
-
-    useEffect(() => {
-        debugFractal('single-model.request', {
-            trajectoryId,
-            timestep: currentTimestep,
-            sceneKey,
-            url,
-            autoFit,
-            autoFitKey,
-            boxBounds
-        });
-    }, [autoFit, autoFitKey, boxBounds, currentTimestep, sceneKey, trajectoryId, url]);
 
     const { invalidate } = useThree();
 
     useEffect(() => {
-        if (!autoFit || autoFitAppliedRef.current || !autoFitKeyRef.current) {
-            return;
-        }
-        if (!modelBounds) {
+        if (autoFitAppliedRef.current || !modelBounds) {
             return;
         }
 
@@ -352,22 +306,13 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             return;
         }
 
-        const worldCenter = worldBox.getCenter(new THREE.Vector3());
-        const worldSize = worldBox.getSize(new THREE.Vector3());
-        const previousCameraPosition = camera.position.toArray();
-        const previousTarget = controls.target.toArray();
         fitPerspectiveCameraToBox(camera, worldBox, controls);
         autoFitAppliedRef.current = true;
         debugFractal('single-model.autofit-applied', {
             trajectoryId,
             timestep: currentTimestep,
             sceneKey,
-            source: 'model-bounds-effect',
-            worldCenter: worldCenter.toArray(),
-            worldSize: worldSize.toArray(),
-            previousCameraPosition,
             nextCameraPosition: camera.position.toArray(),
-            previousTarget,
             nextTarget: controls.target.toArray()
         });
         invalidate();
@@ -388,35 +333,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             deselect();
         }
     }, [isSelected, deselect]);
-
-    useEffect(() => {
-        if (!modelBounds) {
-            return;
-        }
-
-        debugFractal('single-model.bounds', {
-            trajectoryId,
-            timestep: currentTimestep,
-            sceneKey,
-            center: modelBounds.center.toArray(),
-            size: modelBounds.size.toArray(),
-            radius: modelBounds.boundingSphere.radius
-        });
-    }, [currentTimestep, modelBounds, sceneKey, trajectoryId]);
-
-    useEffect(() => {
-        if (!loadError) {
-            return;
-        }
-
-        warnFractal('single-model.load-error', {
-            trajectoryId,
-            timestep: currentTimestep,
-            sceneKey,
-            error: loadError,
-            url
-        });
-    }, [currentTimestep, loadError, sceneKey, trajectoryId, url]);
 
     return (
         <SimulationCellBox

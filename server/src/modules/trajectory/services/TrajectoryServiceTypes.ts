@@ -1,34 +1,24 @@
 import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
-import type {
-    SceneArtifactProps,
-    SceneArtifactSourceType
-} from '@shared/contracts/types/SceneArtifact';
-import type {
-    CreateLineStyledModelResult,
-    LineStyleSpec
-} from '@modules/trajectory/services/line-style/LineStyleService';
-import { ParticleFilterCombinator } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
-import type { TeamMetricsSnapshot } from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
+import type { SceneArtifactProps, SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
+import type { LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
 import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
 import type {
     CloneTrajectoryInput as WireCloneTrajectoryInput,
-    MoveTrajectoryInput as WireMoveTrajectoryInput
+    CreateColoredModelInput as WireCreateColoredModelInput,
+    CreateTrajectoryUploadSessionInput as WireCreateTrajectoryUploadSessionInput,
+    MoveTrajectoryInput as WireMoveTrajectoryInput,
+    TrajectoryUploadFileInput
 } from '@volt/contracts/modules/trajectory/http';
 
-export { ParticleFilterCombinator };
-
-export interface CreateTrajectoryOutput extends TrajectoryProps {
-    _id: string;
-}
-
+/**
+ * Wire projection of a trajectory row. Every trajectory-returning endpoint
+ * answers with this shape, so create/read/update share the single name.
+ */
 export interface TrajectoryRecord extends TrajectoryProps {
-    _id: string;
-}
-
-export interface GetTrajectoryByIdOutput extends TrajectoryProps {
     _id: string;
 }
 
@@ -40,16 +30,10 @@ export interface GetTrajectoriesByTeamIdInput {
     search?: string;
 }
 
-export interface GetTrajectoriesByTeamIdOutput extends PaginatedResult<TrajectoryRecord> {}
-
 export interface UpdateTrajectoryByIdInput {
     trajectoryId: string;
     name: string;
     isPublic: boolean;
-}
-
-export interface UpdateTrajectoryByIdOutput extends TrajectoryProps {
-    _id: string;
 }
 
 export interface MoveTrajectoryInput extends WireMoveTrajectoryInput {
@@ -57,17 +41,7 @@ export interface MoveTrajectoryInput extends WireMoveTrajectoryInput {
     trajectoryId: string;
 }
 
-export type MoveTrajectoryOutput = null;
-
-export interface GetTeamMetricsInput {
-    teamId: string;
-}export type GetTeamMetricsResult = TeamMetricsSnapshot;
-
-export interface GetTrajectoryPreviewInput {
-    trajectoryId: string;
-}
-
-export interface GetTrajectoryPreviewOutput {
+export interface TrajectoryPreviewResult {
     base64: string;
     etag: string;
 }
@@ -110,26 +84,10 @@ export interface DownloadTrajectoryInput {
     archive?: boolean;
 }
 
-export interface DownloadTrajectoryOutput {
-    stream: Readable;
-    headers: Record<string, string>;
-    prepare?: () => Promise<void>;
-}
-
 export interface DownloadTrajectoryAnalysesInput {
     trajectoryId: string;
     teamId: string;
     name?: string;
-}
-
-export interface DownloadTrajectoryAnalysesOutput {
-    stream: Readable;
-    headers: Record<string, string>;
-    prepare?: () => Promise<void>;
-}
-
-export interface DownloadSampleSimulationsInput {
-    filename?: string;
 }
 
 export interface DownloadSampleSimulationsOutput {
@@ -137,22 +95,12 @@ export interface DownloadSampleSimulationsOutput {
     filename: string;
 }
 
-export interface TrajectoryUploadSessionFileInput {
-    name: string;
-    size: number;
-    type?: string;
-}
-
-export interface CreateTrajectoryUploadSessionInput {
-    name: string;
-    files: TrajectoryUploadSessionFileInput[];
+export interface CreateTrajectoryUploadSessionInput extends WireCreateTrajectoryUploadSessionInput {
     userId: string;
     teamId: string;
-    teamClusterId?: string;
-    folderId?: string | null;
 }
 
-export interface TrajectoryUploadPartView {
+interface TrajectoryUploadPartView {
     partNumber: number;
     offset: number;
     size: number;
@@ -170,7 +118,7 @@ export interface TrajectoryUploadSessionFileView {
 }
 
 export interface CreateTrajectoryUploadSessionOutput {
-    trajectory: CreateTrajectoryOutput;
+    trajectory: TrajectoryRecord;
     uploadSession: {
         id: string;
         chunkSize: number;
@@ -179,40 +127,26 @@ export interface CreateTrajectoryUploadSessionOutput {
     };
 }
 
-export interface CommitTrajectoryUploadSessionInput {
+/** Commit and cancel address an upload session the same way. */
+export interface TrajectoryUploadSessionRequest {
     teamId: string;
     userId: string;
     uploadSessionId: string;
 }
 
-export interface CommitTrajectoryUploadSessionOutput {
-    trajectoryId: string;
-}
-
-export interface CancelTrajectoryUploadSessionInput {
-    teamId: string;
-    userId: string;
-    uploadSessionId: string;
-}
-
-export interface CreateColoredModelInput {
+/**
+ * The trajectory/timestep pair every model derivation is scoped by, optionally
+ * narrowed to one analysis exposure.
+ */
+export interface TrajectoryExposureScope {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     exposureId?: string;
-    property: string;
-    startValue: number;
-    endValue: number;
-    gradient: string;
 }
 
-export type CreateColoredModelOutput = null;
-
-export interface GetColorCodingPropertiesInput {
+export interface CreateColoredModelInput extends WireCreateColoredModelInput {
     trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
-    exposureId?: string;
 }
 
 export interface GetColorCodingPropertiesOutput {
@@ -221,11 +155,7 @@ export interface GetColorCodingPropertiesOutput {
     modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
 }
 
-export interface GetColorCodingStatsInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
-    exposureId?: string;
+export interface GetColorCodingStatsInput extends TrajectoryExposureScope {
     property: string;
     type: string;
 }
@@ -235,25 +165,9 @@ export interface GetColorCodingStatsOutput {
     max: number;
 }
 
-export interface GetColoredModelStreamInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
-    exposureId?: string;
+interface ParticleFilterConditionRequestInput {
     property: string;
-    startValue: number;
-    endValue: number;
-    gradient: string;
-}
-
-export interface GetColoredModelStreamOutput {
-    stream: Readable;
-}
-
-export interface ParticleFilterConditionRequestInput {
-    kind?: 'property';
-    property: string;
-    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    operator: string;
     value: number | string;
     exposureId?: string;
 }
@@ -271,13 +185,8 @@ export interface PreviewParticleFilterOutput {
     totalAtoms: number;
 }
 
-export interface ApplyParticleFilterActionInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
+export interface ApplyParticleFilterActionInput extends PreviewParticleFilterInput {
     action: 'delete' | 'highlight';
-    combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionRequestInput[];
 }
 
 export interface ApplyParticleFilterActionOutput {
@@ -286,24 +195,8 @@ export interface ApplyParticleFilterActionOutput {
     action: string;
 }
 
-export interface GetFilteredModelStreamInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
+export interface GetFilteredModelStreamInput extends PreviewParticleFilterInput {
     action?: string;
-    combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionRequestInput[];
-}
-
-export interface GetFilteredModelStreamOutput {
-    stream: Readable;
-}
-
-export interface GetParticleFilterPropertiesInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
-    exposureId?: string;
 }
 
 export interface GetParticleFilterPropertiesOutput {
@@ -313,11 +206,7 @@ export interface GetParticleFilterPropertiesOutput {
     exposureNames: Record<string, string>;
 }
 
-export interface GetParticleFilterUniqueValuesInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId?: string;
-    exposureId?: string;
+export interface GetParticleFilterUniqueValuesInput extends TrajectoryExposureScope {
     property: string;
     maxValues?: number;
 }
@@ -326,68 +215,30 @@ export interface GetParticleFilterUniqueValuesOutput {
     values: Array<number | string>;
 }
 
-export interface CreateLineStyledModelInput {
+/** Line derivations always target one baked exposure, so both ids are required. */
+export interface LineExposureScope {
     trajectoryId: string;
     timestep: string;
     analysisId: string;
     exposureId: string;
+}
+
+export interface CreateLineStyledModelInput extends LineExposureScope {
     style?: LineStyleSpec;
-}export interface GetLineStyledModelStreamInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId: string;
-    exposureId: string;
+}
+
+/** `style` arrives as a JSON-encoded query parameter rather than a parsed object. */
+export interface GetLineStyledModelStreamInput extends LineExposureScope {
     style?: string;
 }
 
-export interface GetLineStyledModelStreamOutput {
-    stream: Readable;
-}
-
-export interface GetLineModelRangesStreamInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId: string;
-    exposureId: string;
-    style?: string;
-}
-
-export interface GetOctreeMetadataStreamInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId: string;
-    exposureId: string;
-}
-
-export interface GetLineEntityPropertiesInput {
-    trajectoryId: string;
-    timestep: string;
-    analysisId: string;
-    exposureId: string;
+export interface GetLineEntityPropertiesInput extends LineExposureScope {
     entityId: string;
 }
 
 export interface GetLineEntityPropertiesOutput {
     entityId: number;
     properties: Record<string, unknown>;
-}
-
-export interface TeamSceneArtifactOutput {
-    _id: string;
-    trajectory: SceneArtifactProps['trajectory'];
-    storageClusterId?: SceneArtifactProps['storageClusterId'];
-    analysis?: SceneArtifactProps['analysis'];
-    plugin?: SceneArtifactProps['plugin'];
-    sourceType: SceneArtifactProps['sourceType'];
-    timestep: number;
-    objectName: string;
-    storageBucket: string;
-    params: SceneArtifactProps['params'];
-    displayName: string;
-    status: SceneArtifactProps['status'];
-    metadata?: Record<string, unknown>;
-    createdAt: Date;
-    updatedAt: Date;
 }
 
 export interface ListTeamSceneArtifactsInput {
@@ -398,8 +249,6 @@ export interface ListTeamSceneArtifactsInput {
     page?: number;
     limit?: number;
 }
-
-export interface ListTeamSceneArtifactsOutput extends PaginatedResult<TeamSceneArtifactOutput> {}
 
 export interface ListTrajectorySceneArtifactsInput {
     trajectoryId: string;
@@ -415,12 +264,7 @@ export enum PublicCanvasAccessMode {
     ReadOnly = 'read-only'
 }
 
-export interface GetPublicCanvasBootstrapInput {
-    trajectoryId: string;
-    userId?: string;
-}
-
-export interface PublicCanvasFrameView {
+interface PublicCanvasFrameView {
     timestep: number;
     natoms: number;
     simulationCell: string;
@@ -436,15 +280,13 @@ export interface PublicCanvasBootstrapTrajectoryView {
     frames: PublicCanvasFrameView[];
 }
 
-export interface PublicCanvasAccessView {
-    mode: PublicCanvasAccessMode;
-    isGuest: boolean;
-    isPublic: boolean;
-    hasTeamMembership: boolean;
-}
-
 export interface GetPublicCanvasBootstrapOutput {
-    access: PublicCanvasAccessView;
+    access: {
+        mode: PublicCanvasAccessMode;
+        isGuest: boolean;
+        isPublic: boolean;
+        hasTeamMembership: boolean;
+    };
     trajectory: PublicCanvasBootstrapTrajectoryView;
 }
 
@@ -468,7 +310,9 @@ export interface GetPublicCanvasRasterFrameInput {
     analysisId?: string;
     model?: string;
     userId?: string;
-}export interface GetAtomsColumnarInput {
+}
+
+export interface GetAtomsColumnarInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -481,7 +325,6 @@ export type AtomColumnDType = 'f32' | 'u32' | 'u16' | 'str' | 'i32';
 export interface AtomColumn {
     name: string;
     dtype: AtomColumnDType;
-
     buffer: Uint8Array;
 }
 
@@ -495,16 +338,4 @@ export interface GetAtomsColumnarOutput {
     propertyNames: string[];
 }
 
-export interface TrajectoryPreviewResult {
-    base64: string;
-    etag: string;
-}
-
-export interface ParticleFilterConditionInput {
-    property: string;
-    operator: string;
-    value: number | string;
-    exposureId?: string;
-}
-
-export type CreateLineStyledModelOutput = CreateLineStyledModelResult;
+export type { TrajectoryUploadFileInput };

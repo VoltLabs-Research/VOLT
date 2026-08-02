@@ -75,7 +75,7 @@ export default class WorkflowProjectionService {
             .map((argument) => argument.argument);
 
         const listingEntries = exposures
-            .filter((exposure) => exposure.hasListing !== false)
+            .filter((exposure) => exposure.hasListing)
             .map((exposure) => ({
                 exposureId: exposure._id,
                 name: exposure.name
@@ -101,17 +101,11 @@ export default class WorkflowProjectionService {
     }
 }
 
-const DEFAULT_PLUGIN_DISPLAY_NAME = '';
+export const resolvePluginDisplayName = (workflow: Workflow): string => {
+    const modifierNode = workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
 
-export class PluginDisplayNameResolver {
-    static resolve(workflow: Workflow, fallback: string = DEFAULT_PLUGIN_DISPLAY_NAME): string {
-        const modifierNode = workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
-        const name = modifierNode?.data?.modifier?.name?.trim();
-
-        return name || fallback;
-    }
-}
-
+    return modifierNode?.data?.modifier?.name?.trim() ?? '';
+};
 /**
  * Deliberately NOT shared with the same-looking `stableStringify` in
  * `LineStyleService`. This one feeds `computePipelineStageHash` /

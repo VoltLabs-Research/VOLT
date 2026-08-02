@@ -1,7 +1,6 @@
 import { extractTrajectoryTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
-import { fetchTrajectoryAtoms } from '@/modules/trajectory/hooks/trajectory/queries';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
-import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { TRAJECTORY_QUERY_KEYS, fetchTrajectoryAtoms, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
@@ -13,6 +12,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import AtomTypeBadge from '../AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 
 interface PerAtomViewerContext {
@@ -25,31 +25,23 @@ interface AtomListingRow extends AtomData {
     _id: string;
 }
 
-interface PaginationRequestParams {
-    page: number;
-    limit: number;
-}
+type PerAtomViewerFetchParams = Pick<PaginationParams, 'page' | 'limit'> & PerAtomViewerContext;
 
-type PerAtomViewerFetchParams = PaginationRequestParams & PerAtomViewerContext;
-
-interface ColumnSkeletonConfig {
-    variant: 'text';
-    width: number;
-}
-
-const ID_SKELETON: ColumnSkeletonConfig = {
+const ID_SKELETON = {
     variant: 'text',
     width: 60
-};
+} as const;
 
-const COORDINATE_SKELETON: ColumnSkeletonConfig = {
+const COORDINATE_SKELETON = {
     variant: 'text',
     width: 80
-};
+} as const;
 
 const EMPTY_PROPERTIES: string[] = [];
 
-const BASE_ATOM_COLUMN_KEYS = new Set(['id', 'type', 'x', 'y', 'z']);
+const COORDINATE_KEYS = ['x', 'y', 'z'] as const;
+
+const BASE_ATOM_COLUMN_KEYS = new Set<string>(['id', 'type', ...COORDINATE_KEYS]);
 
 const renderAtomTypeBadge = (value: unknown) => {
     if (typeof value !== 'string' && typeof value !== 'number') {
@@ -168,24 +160,12 @@ export default function PerAtomViewer() {
                 skeleton: ID_SKELETON,
                 render: renderAtomTypeBadge
             },
-            {
-                key: 'x',
-                title: 'X',
+            ...COORDINATE_KEYS.map((key): ColumnConfig<AtomListingRow> => ({
+                key,
+                title: key.toUpperCase(),
                 skeleton: COORDINATE_SKELETON,
                 render: (value: unknown) => formatAtomValue(value, 3)
-            },
-            {
-                key: 'y',
-                title: 'Y',
-                skeleton: COORDINATE_SKELETON,
-                render: (value: unknown) => formatAtomValue(value, 3)
-            },
-            {
-                key: 'z',
-                title: 'Z',
-                skeleton: COORDINATE_SKELETON,
-                render: (value: unknown) => formatAtomValue(value, 3)
-            }
+            }))
         ];
 
         const extraProperties = [...new Set(properties)].filter((prop) => !BASE_ATOM_COLUMN_KEYS.has(prop));
@@ -206,8 +186,6 @@ export default function PerAtomViewer() {
         analysisId,
         timestep: timestep ?? 0
     }), [trajectoryId, analysisId, timestep]);
-
-    const listingQueryKey = useMemo(() => TRAJECTORY_QUERY_KEYS.perAtom(), []);
 
     const headerActions = useMemo(() => {
         if (timestep === undefined || !timestepOptions.length) {
@@ -235,7 +213,7 @@ export default function PerAtomViewer() {
     return (
         <DocumentListing<AtomListingRow, PerAtomViewerContext>
             title={`Per-Atom Properties - Frame ${timestep ?? '-'}`}
-            queryKey={listingQueryKey}
+            queryKey={TRAJECTORY_QUERY_KEYS.perAtom()}
             columns={columns}
             fetchData={fetchData}
             context={listingContext}

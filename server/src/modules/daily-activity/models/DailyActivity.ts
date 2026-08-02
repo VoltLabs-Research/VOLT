@@ -3,7 +3,7 @@ import BaseModel from '@shared/infrastructure/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import User from '@modules/auth/models/User';
-import type { DailyActivityEntryProps } from '@modules/daily-activity/contracts/daily-activity';
+import type { ActivityType } from '@volt/contracts/modules/daily-activity/domain';
 
 @Entity('daily_activities')
 @Index(['team'])
@@ -31,7 +31,11 @@ export default class DailyActivity extends BaseModel{
         type: 'simple-json',
         default: '[]'
     })
-    activity!: DailyActivityEntryProps[];
+    activity!: Array<{
+        type: ActivityType;
+        createdAt: Date;
+        description: string;
+    }>;
 
     @Column({
         type: 'integer',

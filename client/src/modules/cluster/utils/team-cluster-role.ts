@@ -3,56 +3,50 @@ import type { SelectOption, StatusBadgeProps } from '@voltstack/bravais';
 
 interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;
+    summary: string;
+    badgeVariant: StatusBadgeProps['variant'];
 }
 
-export const TEAM_CLUSTER_ROLE_OPTIONS: TeamClusterRoleOption[] = [
-    {
+const TEAM_CLUSTER_ROLE_META: Record<TeamClusterRole, TeamClusterRoleOption> = {
+    'cluster': {
         value: 'cluster',
         title: 'Cluster',
-        description: 'Runs compute jobs and also owns authoritative storage.'
+        description: 'Runs compute jobs and also owns authoritative storage.',
+        summary: 'Compute + storage',
+        badgeVariant: 'brand'
     },
-    {
+    'storage-server': {
         value: 'storage-server',
         title: 'Storage server',
-        description: 'Accepts authoritative writes and serves downloads, but does not run compute jobs.'
+        description: 'Accepts authoritative writes and serves downloads, but does not run compute jobs.',
+        summary: 'Storage only',
+        badgeVariant: 'primary'
     },
-    {
+    'compute-node': {
         value: 'compute-node',
         title: 'Compute node',
-        description: 'Runs compute jobs with remote reads and writes, but does not own authoritative storage.'
+        description: 'Runs compute jobs with remote reads and writes, but does not own authoritative storage.',
+        summary: 'Compute only',
+        badgeVariant: 'neutral'
     }
-];
+};
+
+export const TEAM_CLUSTER_ROLE_OPTIONS: TeamClusterRoleOption[] = Object.values(TEAM_CLUSTER_ROLE_META);
 
 export const getTeamClusterRoleLabel = (role: TeamClusterRole): string => {
-    const option = TEAM_CLUSTER_ROLE_OPTIONS.find((candidate) => candidate.value === role);
-    return option?.title ?? role;
+    return TEAM_CLUSTER_ROLE_META[role].title;
 };
 
 export const getTeamClusterRoleDescription = (role: TeamClusterRole): string => {
-    const option = TEAM_CLUSTER_ROLE_OPTIONS.find((candidate) => candidate.value === role);
-    return option?.description ?? role;
+    return TEAM_CLUSTER_ROLE_META[role].description ?? role;
 };
 
 export const getTeamClusterRoleSummary = (role: TeamClusterRole): string => {
-    switch (role) {
-        case 'cluster':
-            return 'Compute + storage';
-        case 'storage-server':
-            return 'Storage only';
-        case 'compute-node':
-            return 'Compute only';
-    }
+    return TEAM_CLUSTER_ROLE_META[role].summary;
 };
 
 export const getTeamClusterRoleBadgeVariant = (role: TeamClusterRole): StatusBadgeProps['variant'] => {
-    switch (role) {
-        case 'cluster':
-            return 'brand';
-        case 'storage-server':
-            return 'primary';
-        case 'compute-node':
-            return 'neutral';
-    }
+    return TEAM_CLUSTER_ROLE_META[role].badgeVariant;
 };
 
 export const describeTeamClusterDraining = (teamCluster: TeamCluster): string | null => {

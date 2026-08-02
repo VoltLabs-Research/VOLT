@@ -49,18 +49,12 @@ const ClusterMonitoringPage = () => {
         };
     }, [vm.metrics]);
 
-    const metricsUnavailableState = useMemo(() => {
-        if (!vm.hasClusters || vm.metrics) {
-            return null;
-        }
-
-        const clusterName = vm.selectedCluster?.name ?? 'This cluster';
-
-        return getClusterMetricsRecoveryState({
-            clusterName,
+    const metricsUnavailableState = !vm.hasClusters || vm.metrics
+        ? null
+        : getClusterMetricsRecoveryState({
+            clusterName: vm.selectedCluster?.name ?? 'This cluster',
             isMetricsConnected: vm.isMetricsConnected
         });
-    }, [vm.hasClusters, vm.isMetricsConnected, vm.metrics, vm.selectedCluster]);
 
     useEffect(() => {
         if (!hasRenderableMetrics) {

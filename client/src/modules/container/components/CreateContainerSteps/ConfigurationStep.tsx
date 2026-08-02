@@ -1,36 +1,19 @@
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import OptionalConfigSection from './OptionalConfigSection';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { Box, Button, CollapsibleSection, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
+import TemplateCustomFieldsSection from './TemplateCustomFieldsSection';
+import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { useState } from 'react';
-import type { ReactNode } from 'react';
-import { getCustomFieldValidationError } from '../../utils/container-form';
-import { ContainerTemplateCustomFieldType } from '@/modules/container/contracts/templates';
-import type { ContainerConfig } from '../../hooks/use-create-container-form';
+import { getCustomFieldValidationErrorCount } from '../../utils/container-form';
+import { normalizePortMapping } from '../../utils/port-mapping';
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
-import type { ContainerTemplateCustomField } from '@/modules/container/contracts/templates';
-import type { EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
+import type { ContainerConfig, EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
 import type { FieldConfig } from '@/shared/ui/components/EditableKeyValueCard';
 import type { Team } from '@volt/contracts/modules/team/domain';
 import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
-
-type PortMappingSourceItem = ContainerConfig['ports'][number] | PortMappingFormItem;
-
-const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormItem => {
-    if (item.public !== undefined && item.public > 0) {
-        return {
-            private: item.private,
-            public: item.public
-        };
-    }
-
-    return {
-        private: item.private
-    };
-};
 
 interface ConfigurationStepProps {
     config: ContainerConfig;
@@ -90,121 +73,6 @@ const getTeamFieldError = (selectedTeamId: string | null, teams: Team[]) => {
     return 'Select a team to continue.';
 };
 
-const getCustomFieldValidationErrorCount = (
-    customFields: ContainerTemplateCustomField[],
-    customFieldValues: ContainerConfig['customFieldValues']
-): number => {
-    return customFields.reduce((count, customField) => {
-        const customFieldValue = customFieldValues[customField.id] ?? '';
-        return getCustomFieldValidationError(customField, customFieldValue) ? count + 1 : count;
-    }, 0);
-};
-
-const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
-    if (customField.type === ContainerTemplateCustomFieldType.Password) {
-        return 'password';
-    }
-
-    return 'text';
-};
-
-interface OptionalConfigSectionProps {
-    title: string;
-    description: string;
-    defaultExpanded?: boolean;
-    errorCount?: number;
-    children: ReactNode;
-}
-
-const OptionalConfigSection = ({
-    title,
-    description,
-    defaultExpanded = false,
-    errorCount = 0,
-    children
-}: OptionalConfigSectionProps) => {
-    const hasError = errorCount > 0;
-    const [isExpanded, setIsExpanded] = useState(defaultExpanded || hasError);
-
-    const expanded = isExpanded || hasError;
-
-    return (
-        <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
-            <CollapsibleSection
-                title={title}
-                expanded={expanded}
-                onExpandedChange={setIsExpanded}
-                useDefaultHeaderStyles={false}
-                headerAction={hasError
-                    ? (
-                        <Tag tone='danger' size='xs' variant='soft'>
-                            {`${errorCount} to fix`}
-                        </Tag>
-                    )
-                    : undefined}
-                bodyClassName='mt-075'
-            >
-                <Stack gap='1'>
-                    <Text as='p' size='md' tone='muted'>{description}</Text>
-                    {children}
-                </Stack>
-            </CollapsibleSection>
-        </Stack>
-    );
-};
-
-const hasRequiredCustomField = (customFields: ContainerTemplateCustomField[]): boolean => {
-    return customFields.some((customField) => customField.required);
-};
-
-const renderCustomFields = (
-    customFields: ContainerTemplateCustomField[],
-    customFieldValues: ContainerConfig['customFieldValues'],
-    onConfigChange: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void
-) => {
-    const handleCustomFieldChange = (customFieldId: string, value: string) => {
-        onConfigChange('customFieldValues', {
-            ...customFieldValues,
-            [customFieldId]: value
-        });
-    };
-
-    const renderCustomField = (customField: ContainerTemplateCustomField) => {
-        const fieldValue = customFieldValues[customField.id] ?? '';
-        const fieldError = getCustomFieldValidationError(customField, fieldValue) ?? undefined;
-        const fieldLabel = customField.required ? `${customField.label} (required)` : customField.label;
-
-        return (
-            <Stack key={customField.id} gap='05'>
-                <FormFieldRHF
-                    label={fieldLabel}
-                    name={customField.id}
-                    placeholder={customField.placeholder}
-                    value={fieldValue}
-                    onChange={(event) => handleCustomFieldChange(customField.id, event.target.value)}
-                    type={getCustomFieldType(customField)}
-                    error={fieldError}
-                    inputProps={{
-                        autoComplete: customField.type === ContainerTemplateCustomFieldType.Password
-                            ? 'new-password'
-                            : 'off'
-                    }}
-                    className='w-full'
-                />
-                {customField.description && (
-                    <Text as='p' size='md' tone='muted'>{customField.description}</Text>
-                )}
-            </Stack>
-        );
-    };
-
-    return (
-        <Stack gap='1'>
-            {customFields.map(renderCustomField)}
-        </Stack>
-    );
-};
-
 const ConfigurationStep = ({
     config,
     teams,
@@ -221,7 +89,7 @@ const ConfigurationStep = ({
     onNext
 }: ConfigurationStepProps) => {
     const isDemoCluster = useDemoClusterStore((state) => state.isDemo);
-    const portItems: PortMappingFormItem[] = config.ports.map(getPortMappingFormItem);
+    const portItems: PortMappingFormItem[] = config.ports.map(normalizePortMapping);
     const envItems: EnvVariableFormItem[] = config.env.map((item) => ({
         key: item.key,
         value: item.value
@@ -239,8 +107,6 @@ const ConfigurationStep = ({
         Boolean(selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB))
     ].filter(Boolean).length + customFieldErrorCount;
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
-    const hasCustomFields = config.customFields.length > 0;
-    const templateSettingsDefaultExpanded = hasRequiredCustomField(config.customFields);
 
     return (
         <Stack className='create-container-step' gap='2'>
@@ -298,15 +164,13 @@ const ConfigurationStep = ({
                     clusterDescription='Choose where this container will be deployed.'
                 />
 
-                {hasCustomFields && (
-                    <OptionalConfigSection
-                        title='Template settings'
-                        description='These options come from the selected template.'
-                        defaultExpanded={templateSettingsDefaultExpanded}
+                {config.customFields.length > 0 && (
+                    <TemplateCustomFieldsSection
+                        customFields={config.customFields}
+                        customFieldValues={config.customFieldValues}
                         errorCount={customFieldErrorCount}
-                    >
-                        {renderCustomFields(config.customFields, config.customFieldValues, onConfigChange)}
-                    </OptionalConfigSection>
+                        onChange={(customFieldValues) => onConfigChange('customFieldValues', customFieldValues)}
+                    />
                 )}
 
                 <OptionalConfigSection
@@ -318,7 +182,7 @@ const ConfigurationStep = ({
                         fields={PORT_FIELDS}
                         alwaysEditing
                         showCard={false}
-                        onChange={(items) => onConfigChange('ports', items.map(getPortMappingFormItem))}
+                        onChange={(items) => onConfigChange('ports', items.map(normalizePortMapping))}
                         createEmpty={() => ({ private: 80 })}
                         emptyMessage='No port mappings added.'
                     />

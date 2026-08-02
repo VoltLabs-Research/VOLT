@@ -2,12 +2,7 @@ import { formatSize } from '@voltstack/bravais';
 
 const BYTES_PER_KB = 1024;
 
-interface NetworkSpeedFormatted {
-    value: string;
-    unit: string;
-}
-
-export const formatNetworkSpeedWithUnit = (kbs: number): NetworkSpeedFormatted => {
+export const formatNetworkSpeedWithUnit = (kbs: number) => {
     const [value, unit] = formatSize(kbs * BYTES_PER_KB).split(' ');
     return {
         value,

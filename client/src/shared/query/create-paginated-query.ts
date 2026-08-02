@@ -1,117 +1,17 @@
 import queryClient from './query-client';
-import { skipToken, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { createInfiniteQuery } from './create-infinite-query';
+import { createQuery } from './create-query';
+import { withSuccess } from './create-mutation';
+import { useMutation } from '@tanstack/react-query';
+import type { InfinitePages, PaginationRequest } from './create-infinite-query';
+import type { MutationOptions } from './create-mutation';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { Identifiable } from '@/shared/contracts/entity';
-import type { FetchQueryOptions, InfiniteData, QueryKey, UseInfiniteQueryOptions, UseMutationOptions, UseQueryOptions } from '@tanstack/react-query';
-import type { MutationFunctionContext } from '@tanstack/react-query';
+import type { QueryKey } from '@tanstack/react-query';
 
-export type QueryOptions<TData> = Omit<UseQueryOptions<TData>, 'queryKey' | 'queryFn'>;
-
-export type MutationOptions<TData, TVariables> = Omit<
-    UseMutationOptions<TData, Error, TVariables>,
-    'mutationFn'
->;
-
-export type InfiniteQueryOptions<TData> = Omit<
-    UseInfiniteQueryOptions<TData, Error, InfiniteData<TData, number>, QueryKey, number>,
-    'queryKey' | 'queryFn' | 'initialPageParam' | 'getNextPageParam'
->;
-
-type UpdateVariables<TUpdateParams> = {
+interface UpdateVariables<TUpdateParams> {
     id: string;
     params: TUpdateParams;
-};
-
-type KeyFnMap<T extends object> = {
-    [K in keyof T]: T[K] extends void
-        ? (params?: void) => QueryKey
-        : (() => QueryKey) & ((params: T[K]) => QueryKey);
-} & {
-    prefix: () => QueryKey;
-};
-
-type QueryHook<TParams, TData> =
-    ((params: TParams, options?: QueryOptions<TData>) => ReturnType<typeof useQuery<TData>>)
-    & QueryHookStatics<TParams, TData>;
-
-type SocketQueryHook<TParams, TData> =
-    ((params: TParams, options?: QueryOptions<TData>) => ReturnType<typeof useQuery<TData>>)
-    & SocketQueryStatics<TParams, TData>;
-
-type InfiniteQueryHook<TParams, TEntity> =
-    ((
-        params: TParams,
-        options?: InfiniteQueryOptions<PaginatedResponse<TEntity>>
-    ) => ReturnType<typeof useInfiniteQuery<
-        PaginatedResponse<TEntity>,
-        Error,
-        InfiniteData<PaginatedResponse<TEntity>, number>,
-        QueryKey,
-        number
-    >>)
-    & InfiniteQueryStatics<TParams, TEntity>;
-
-type MutationHook<TData, TVariables> =
-    (options?: MutationOptions<TData, TVariables>) => ReturnType<typeof useMutation<TData, Error, TVariables>>;
-
-interface PaginationRequest {
-    page: number;
-    limit: number;
-};
-
-interface SocketQueryConfig<TData> {
-    initialData?: TData;
-};
-
-interface InfiniteQueryConfig {
-    defaultLimit?: number;
-};
-
-interface WithSuccessOptions<TData, TVariables, TOnMutateResult = unknown> {
-    onSuccess?: (
-        data: TData,
-        variables: TVariables,
-        onMutateResult: TOnMutateResult,
-        context: MutationFunctionContext
-    ) => unknown;
-};
-
-type MutationInvalidationKeys<TData, TVariables, TOnMutateResult = unknown> =
-    QueryKey[]
-    | ((
-        data: TData,
-        variables: TVariables,
-        onMutateResult: TOnMutateResult,
-        context: MutationFunctionContext
-    ) => QueryKey[]);
-
-interface QueryBuildOptions<TData> {
-    queryKey: QueryKey;
-    queryFn: () => Promise<TData>;
-};
-
-interface QueryHookStatics<TParams, TData> {
-    set: (params: TParams, data: TData) => void;
-    fetch: (params: TParams, options?: Omit<FetchQueryOptions<TData>, 'queryKey' | 'queryFn'>) => Promise<TData>;
-    invalidate: (params: TParams) => Promise<void>;
-    clear: (params: TParams) => void;
-    buildOptions: (params: TParams) => QueryBuildOptions<TData>;
-};
-
-interface SocketQueryStatics<TParams, TData> {
-    set: (params: TParams, data: TData) => void;
-    get: (params: TParams) => TData | undefined;
-    update: (params: TParams, updater: (current: TData | undefined) => TData) => void;
-    reset: (params: TParams) => void;
-};
-
-interface InfiniteQueryStatics<TParams, TEntity> {
-    setData: (
-        params: TParams,
-        updater: (current: InfiniteData<PaginatedResponse<TEntity>, number> | undefined) => InfiniteData<PaginatedResponse<TEntity>, number> | undefined
-    ) => void;
-    invalidate: (params: TParams) => Promise<void>;
-    clear: (params: TParams) => void;
 };
 
 interface PaginatedQueryConfig<
@@ -135,197 +35,10 @@ interface PaginatedQueryConfig<
     onRemove?: (id: string) => void;
 };
 
-export function buildKeys<T extends object>(base: string | readonly string[]): KeyFnMap<T>;
-export function buildKeys(base: string | readonly string[]) {
-    const baseSegments = typeof base === 'string' ? [base] : [...base];
-    const target = {
-        prefix: () => [...baseSegments]
-    };
-
-    return new Proxy(target, {
-        get: (_, key: string) => {
-            if (key === 'prefix') {
-                return () => [...baseSegments];
-            }
-
-            return (params: unknown) => {
-                if (params === undefined || params === null) {
-                    return [...baseSegments, key];
-                }
-
-                return [...baseSegments, key, params];
-            };
-        }
-    });
-};
-
-export const withSuccess = <TData, TVariables, TOnMutateResult = unknown>(
-    handler: (data: TData, variables: TVariables, onMutateResult: TOnMutateResult, context: MutationFunctionContext) => void,
-    options?: WithSuccessOptions<TData, TVariables, TOnMutateResult>
-): ((data: TData, variables: TVariables, onMutateResult: TOnMutateResult, context: MutationFunctionContext) => void) => {
-    return (data, variables, onMutateResult, context) => {
-        handler(data, variables, onMutateResult, context);
-        options?.onSuccess?.(data, variables, onMutateResult, context);
-    };
-};
-
-export const createQuery = <TParams, TData>(
-    keyFn: (params: TParams) => QueryKey,
-    queryFn: (params: TParams) => Promise<TData>
-): QueryHook<TParams, TData> => {
-    return Object.assign(
-        (params: TParams, options?: QueryOptions<TData>) => useQuery({
-            ...options,
-            queryKey: keyFn(params),
-            queryFn: () => queryFn(params)
-        }),
-        {
-            set(params: TParams, data: TData): void {
-                queryClient.setQueryData(keyFn(params), data);
-            },
-            fetch(
-                params: TParams,
-                options?: Omit<FetchQueryOptions<TData>, 'queryKey' | 'queryFn'>
-            ): Promise<TData> {
-                return queryClient.fetchQuery({
-                    ...options,
-                    queryKey: keyFn(params),
-                    queryFn: () => queryFn(params)
-                });
-            },
-            invalidate(params: TParams): Promise<void> {
-                return queryClient.invalidateQueries({ queryKey: keyFn(params) });
-            },
-            clear(params: TParams): void {
-                queryClient.removeQueries({ queryKey: keyFn(params) });
-            },
-            buildOptions(params: TParams): QueryBuildOptions<TData> {
-                return {
-                    queryKey: keyFn(params),
-                    queryFn: () => queryFn(params)
-                };
-            }
-        }
-    );
-};
-
-export const createSocketQuery = <TParams, TData>(
-    keyFn: (params: TParams) => QueryKey,
-    config?: SocketQueryConfig<TData>
-): SocketQueryHook<TParams, TData> => {
-    return Object.assign(
-        (params: TParams, options?: QueryOptions<TData>) => useQuery({
-            ...options,
-            queryKey: keyFn(params),
-            queryFn: skipToken,
-            initialData: config?.initialData,
-            staleTime: Infinity,
-            gcTime: Infinity
-        }),
-        {
-            set(params: TParams, data: TData): void {
-                queryClient.setQueryData(keyFn(params), data);
-            },
-            get(params: TParams): TData | undefined {
-                return queryClient.getQueryData<TData>(keyFn(params));
-            },
-            update(params: TParams, updater: (current: TData | undefined) => TData): void {
-                queryClient.setQueryData<TData>(keyFn(params), updater);
-            },
-            reset(params: TParams): void {
-                queryClient.removeQueries({ queryKey: keyFn(params) });
-            }
-        }
-    );
-};
-
-export const createInfiniteQuery = <TParams, TEntity>(
-    keyFn: (params: TParams) => QueryKey,
-    fetchPage: (params: TParams, pagination: PaginationRequest) => Promise<PaginatedResponse<TEntity>>,
-    config?: InfiniteQueryConfig
-): InfiniteQueryHook<TParams, TEntity> => {
-    const limit = config?.defaultLimit ?? 20;
-
-    return Object.assign(
-        (params: TParams, options?: InfiniteQueryOptions<PaginatedResponse<TEntity>>) => useInfiniteQuery<
-            PaginatedResponse<TEntity>,
-            Error,
-            InfiniteData<PaginatedResponse<TEntity>, number>,
-            QueryKey,
-            number
-        >({
-            ...options,
-            queryKey: keyFn(params),
-            queryFn: ({ pageParam }) => fetchPage(params, {
-                page: pageParam,
-                limit
-            }),
-            initialPageParam: 1,
-            getNextPageParam: (lastPage) => lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined
-        }),
-        {
-            setData(
-                params: TParams,
-                updater: (current: InfiniteData<PaginatedResponse<TEntity>, number> | undefined) => InfiniteData<PaginatedResponse<TEntity>, number> | undefined
-            ): void {
-                queryClient.setQueryData<InfiniteData<PaginatedResponse<TEntity>, number>>(keyFn(params), updater);
-            },
-            invalidate(params: TParams): Promise<void> {
-                return queryClient.invalidateQueries({ queryKey: keyFn(params) });
-            },
-            clear(params: TParams): void {
-                queryClient.removeQueries({ queryKey: keyFn(params) });
-            }
-        }
-    );
-};
-
-export const createMutation = <TData, TVariables>(
-    mutationFn: (variables: TVariables) => Promise<TData>,
-    onSuccess?: (data: TData, variables: TVariables, onMutateResult: unknown, context: MutationFunctionContext) => unknown
-): MutationHook<TData, TVariables> => {
-    return (options?: MutationOptions<TData, TVariables>) => useMutation<TData, Error, TVariables>({
-        ...options,
-        mutationFn,
-        onSuccess: onSuccess
-            ? withSuccess((data, variables, onMutateResult, context) => {
-                void onSuccess(data, variables, onMutateResult, context);
-            }, options)
-            : options?.onSuccess
-    });
-};
-
-export const createInvalidatingMutation = <TData, TVariables, TOnMutateResult = unknown>(
-    mutationFn: (variables: TVariables) => Promise<TData>,
-    invalidationKeys: MutationInvalidationKeys<TData, TVariables, TOnMutateResult>,
-    onSuccess?: (
-        data: TData,
-        variables: TVariables,
-        onMutateResult: TOnMutateResult,
-        context: MutationFunctionContext
-    ) => unknown
-): MutationHook<TData, TVariables> => {
-    return createMutation<TData, TVariables>(mutationFn, async (data, variables, onMutateResult, context) => {
-        const keys = typeof invalidationKeys === 'function'
-            ? invalidationKeys(data, variables, onMutateResult as TOnMutateResult, context)
-            : invalidationKeys;
-
-        await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-        await onSuccess?.(data, variables, onMutateResult as TOnMutateResult, context);
-    });
-};
-
-const withPaginationParams = <TParams extends object>(params: TParams, pagination: PaginationRequest): TParams & PaginationRequest => {
-    return {
-        ...params,
-        ...pagination
-    };
-};
-
-const buildPaginationFromCurrent = (current: PaginatedResponse<unknown>, shouldRemove = false) => {
+const shiftTotal = (current: PaginatedResponse<unknown>, shouldRemove = false) => {
     const total = shouldRemove
         ? Math.max(0, current.pagination.total - 1)
-        : Math.max(0, current.pagination.total + 1);
+        : current.pagination.total + 1;
 
     return {
         ...current.pagination,
@@ -334,6 +47,11 @@ const buildPaginationFromCurrent = (current: PaginatedResponse<unknown>, shouldR
     };
 };
 
+/**
+ * The CRUD surface of one paginated resource: list and infinite-list hooks, the
+ * three mutations, and the cache patching that keeps every cached page in step
+ * with a create/update/delete without a refetch.
+ */
 export const createPaginatedQuery = <
     TEntity extends Identifiable,
     TListParams extends object = Record<string, never>,
@@ -341,6 +59,8 @@ export const createPaginatedQuery = <
     TUpdateParams = Partial<TEntity>,
     TCreateResult extends TEntity = TEntity
 >(config: PaginatedQueryConfig<TEntity, TListParams, TCreateParams, TUpdateParams, TCreateResult>) => {
+    // Every hook is returned regardless of which service methods the resource
+    // declares, so a missing one can only be caught when it is actually called.
     const requireService = <T,>(fn: T | undefined, method: string): T => {
         if (!fn) {
             throw new Error(`[${config.baseKey}] service.${method} is not defined`);
@@ -364,11 +84,18 @@ export const createPaginatedQuery = <
     };
 
     const patchAllInfiniteLists = (
-        updater: (current: InfiniteData<PaginatedResponse<TEntity>, number>) => InfiniteData<PaginatedResponse<TEntity>, number>
+        updater: (current: InfinitePages<TEntity>) => InfinitePages<TEntity>
     ): void => {
-        queryClient.setQueriesData<InfiniteData<PaginatedResponse<TEntity>, number>>({
+        queryClient.setQueriesData<InfinitePages<TEntity>>({
             queryKey: QUERY_KEYS.infiniteLists()
         }, (current) => current?.pages ? updater(current) : current);
+    };
+
+    const clearDetailCache = (id: string): void => {
+        queryClient.removeQueries({
+            queryKey: config.detailKey(id),
+            predicate: (query) => query.queryKey[1] === id
+        });
     };
 
     const upsert = (entity: TEntity): void => {
@@ -384,15 +111,14 @@ export const createPaginatedQuery = <
             return {
                 ...current,
                 data: nextData,
-                pagination: exists ? current.pagination : buildPaginationFromCurrent(current)
+                pagination: exists ? current.pagination : shiftTotal(current)
             };
         });
 
         patchAllInfiniteLists((current) => {
             let found = false;
             const pages = current.pages.map((page) => {
-                const exists = page.data.some((currentEntity) => currentEntity._id === entity._id);
-                if (!exists) {
+                if (!page.data.some((currentEntity) => currentEntity._id === entity._id)) {
                     return page;
                 }
 
@@ -411,7 +137,7 @@ export const createPaginatedQuery = <
                 pages[0] = {
                     ...firstPage,
                     data: [entity, ...firstPage.data].slice(0, firstPage.pagination.limit),
-                    pagination: buildPaginationFromCurrent(firstPage)
+                    pagination: shiftTotal(firstPage)
                 };
             }
 
@@ -433,7 +159,7 @@ export const createPaginatedQuery = <
         patchAllLists((current) => ({
             ...current,
             data: current.data.filter((entity) => entity._id !== id),
-            pagination: buildPaginationFromCurrent(current, true)
+            pagination: shiftTotal(current, true)
         }));
 
         patchAllInfiniteLists((current) => ({
@@ -441,21 +167,13 @@ export const createPaginatedQuery = <
             pages: current.pages.map((page) => ({
                 ...page,
                 data: page.data.filter((entity) => entity._id !== id),
-                pagination: buildPaginationFromCurrent(page, true)
+                pagination: shiftTotal(page, true)
             })),
             pageParams: current.pageParams
         }));
 
-        queryClient.removeQueries({
-            queryKey: config.detailKey(id),
-            predicate: (query) => query.queryKey[1] === id
-        });
-
+        clearDetailCache(id);
         config.onRemove?.(id);
-    };
-
-    const invalidate = (): Promise<void> => {
-        return queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all() });
     };
 
     const invalidateListings = (): Promise<void[]> => {
@@ -465,39 +183,11 @@ export const createPaginatedQuery = <
         ]);
     };
 
-    const syncDetailCache = (entity: TEntity): void => {
+    /** Shared tail of create and update: the entity is already the server's answer. */
+    const acceptEntity = (entity: TEntity): void => {
         queryClient.setQueryData<TEntity>(config.detailKey(entity._id), entity);
-    };
-
-    const clearDetailCache = (id: string): void => {
-        queryClient.removeQueries({
-            queryKey: config.detailKey(id),
-            predicate: (query) => query.queryKey[1] === id
-        });
-    };
-
-    const useListQuery = createQuery(QUERY_KEYS.list, config.service.list);
-
-    const useInfiniteListQuery = (
-        params: TListParams,
-        options?: InfiniteQueryOptions<PaginatedResponse<TEntity>>
-    ) => {
-        return useInfiniteQuery<
-            PaginatedResponse<TEntity>,
-            Error,
-            InfiniteData<PaginatedResponse<TEntity>, number>,
-            QueryKey,
-            number
-        >({
-            ...options,
-            queryKey: QUERY_KEYS.infiniteList(params),
-            queryFn: ({ pageParam }) => config.service.list(withPaginationParams(params, {
-                page: pageParam,
-                limit: config.defaultLimit ?? 20
-            })),
-            initialPageParam: 1,
-            getNextPageParam: (lastPage) => lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined
-        });
+        void invalidateListings();
+        config.onUpsert?.(entity);
     };
 
     const useCreateMutation = (options?: MutationOptions<TCreateResult, TCreateParams>) => {
@@ -505,10 +195,7 @@ export const createPaginatedQuery = <
             ...options,
             mutationFn: (params) => requireService(config.service.create, 'create')(params),
             onSuccess: withSuccess((result) => {
-                const entity = config.extractEntity ? config.extractEntity(result) : result;
-                syncDetailCache(entity);
-                void invalidateListings();
-                config.onUpsert?.(entity);
+                acceptEntity(config.extractEntity ? config.extractEntity(result) : result);
             }, options)
         });
     };
@@ -517,11 +204,7 @@ export const createPaginatedQuery = <
         return useMutation<TEntity, Error, UpdateVariables<TUpdateParams>>({
             ...options,
             mutationFn: ({ id, params }) => requireService(config.service.update, 'update')(id, params),
-            onSuccess: withSuccess((entity) => {
-                syncDetailCache(entity);
-                void invalidateListings();
-                config.onUpsert?.(entity);
-            }, options)
+            onSuccess: withSuccess(acceptEntity, options)
         });
     };
 
@@ -544,12 +227,19 @@ export const createPaginatedQuery = <
             remove,
             patchAllLists,
             patchAllInfiniteLists,
-            invalidate
+            invalidate: (): Promise<void> => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all() })
         },
-        useListQuery,
+        useListQuery: createQuery(QUERY_KEYS.list, config.service.list),
         useCreateMutation,
         useUpdateMutation,
         useDeleteMutation,
-        useInfiniteListQuery
+        useInfiniteListQuery: createInfiniteQuery<TListParams, TEntity>(
+            QUERY_KEYS.infiniteList,
+            (params, pagination) => config.service.list({
+                ...params,
+                ...pagination
+            }),
+            { defaultLimit: config.defaultLimit }
+        )
     };
 };

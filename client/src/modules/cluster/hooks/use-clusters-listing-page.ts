@@ -17,40 +17,6 @@ import type { InfiniteData } from '@tanstack/react-query';
 
 type ClusterListingCache = InfiniteData<PaginatedResponse<ServerRow>, number>;
 
-const isClusterListingCache = (cachedData: unknown): cachedData is ClusterListingCache => {
-    if (!cachedData || typeof cachedData !== 'object') {
-        return false;
-    }
-
-    if (!('pages' in cachedData) || !('pageParams' in cachedData)) {
-        return false;
-    }
-
-    return Array.isArray(cachedData.pages) && Array.isArray(cachedData.pageParams);
-};
-
-const refreshClusterListingRows = (
-    cachedData: unknown,
-    metricsByClusterId: Record<string, ClusterMetrics>,
-    isMetricsConnected: boolean
-): unknown => {
-    if (!isClusterListingCache(cachedData)) {
-        return cachedData;
-    }
-
-    return {
-        ...cachedData,
-        pages: cachedData.pages.map((page) => ({
-            ...page,
-            data: transformClustersToRows(page.data.map((row) => ({
-                teamCluster: row.teamCluster,
-                metrics: metricsByClusterId[row.teamCluster._id] ?? null,
-                isMetricsConnected
-            })))
-        }))
-    };
-};
-
 const useClustersListingPage = () => {
     const queryClient = useQueryClient();
     const selectedTeamId = useSelectedTeamId();
@@ -77,10 +43,22 @@ const useClustersListingPage = () => {
             return;
         }
 
-        queryClient.setQueriesData({
+        queryClient.setQueriesData<ClusterListingCache>({
             queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(selectedTeamId)
-        }, (cachedData) => refreshClusterListingRows(cachedData, metricsByClusterId, metricsState.isConnected));
-    }, [metricsByClusterId, metricsState.isConnected, queryClient, selectedTeamId]);
+        }, (cachedData) => {
+            if (!cachedData) {
+                return cachedData;
+            }
+
+            return {
+                ...cachedData,
+                pages: cachedData.pages.map((page) => ({
+                    ...page,
+                    data: mapClustersToRows(page.data.map((row) => row.teamCluster))
+                }))
+            };
+        });
+    }, [mapClustersToRows, queryClient, selectedTeamId]);
 
     const fetchClusters = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<ServerRow>> => {
         const page = params.page ?? 1;

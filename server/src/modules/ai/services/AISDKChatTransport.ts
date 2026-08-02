@@ -4,40 +4,25 @@ import {
     streamText
 } from 'ai';
 import type { ToolSet } from 'ai';
-import type { Response } from 'express';
 import type {
     AIConversationMessage,
+    AIMessageTokenUsage,
     AIMessageToolStep
 } from '@modules/ai/contracts/ai-message';
 import { SYSTEM_PROMPT } from '@modules/ai/contracts/system-prompt';
+import AIToolService from '@modules/ai/services/AIToolService';
 import ModelResolver from '@modules/ai/services/ModelResolver';
-import SdkMapper from '@modules/ai/services/SdkMapper';
-import type AIToolServiceType from '@modules/ai/services/AIToolService';
-import type { TeamAIProvider } from '@modules/team/contracts/team-ai-integration';
+import { toModelMessages, toToolSteps } from '@modules/ai/services/SdkMapper';
+import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import logger from '@shared/infrastructure/logger';
 
 const MAX_TOOL_STEPS = 12;
 
-let aiToolServiceCache: typeof AIToolServiceType | undefined;
-const getAiToolService = (): typeof AIToolServiceType => {
-    return aiToolServiceCache ??= (require('@modules/ai/services/AIToolService') as { default: typeof AIToolServiceType }).default;
-};
-
-type AIStreamResult = ReturnType<typeof streamText>;
-
-export interface AIChatReplyStream{
-    pipeToResponse(response: Response): void;
-}
-
-export interface AIChatReplyUsage{
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-}
+export type AIChatReplyStream = ReturnType<typeof streamText>;
 
 export interface AIChatFinishEvent{
     text: string;
-    totalUsage?: AIChatReplyUsage | null;
+    totalUsage?: Partial<AIMessageTokenUsage> | null;
     finishReason: string;
     steps: AIMessageToolStep[];
     responseMessages: unknown[];
@@ -48,30 +33,21 @@ export interface AIChatFinishEvent{
 interface GenerateAIChatReplyInput{
     teamId: string;
     userId: string;
-    provider?: TeamAIProvider;
+    provider?: AIProvider;
     model?: string;
     messages: AIConversationMessage[];
     onFinish?: (event: AIChatFinishEvent) => Promise<void>;
 }
 
-class AISDKReplyStream implements AIChatReplyStream{
-    constructor(private readonly result: AIStreamResult){}
-
-    pipeToResponse(response: Response): void{
-        this.result.pipeUIMessageStreamToResponse(response);
-    }
-}
-
 class AISDKChatTransport{
     #models = new ModelResolver();
-    #mapper = new SdkMapper();
 
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream>{
         const resolved = await this.#models.resolve(input.teamId, input.provider, input.model);
-        const messages = await this.#mapper.toModelMessages(input.messages);
-        const tools: ToolSet = getAiToolService().createToolsForContext(input.teamId, input.userId);
+        const messages = await toModelMessages(input.messages);
+        const tools: ToolSet = AIToolService.createToolsForContext(input.teamId, input.userId);
 
-        const result = streamText({
+        return streamText({
             model: resolved.model,
             system: SYSTEM_PROMPT,
             messages,
@@ -84,7 +60,7 @@ class AISDKChatTransport{
                     text: event.text,
                     totalUsage: event.totalUsage,
                     finishReason: event.finishReason,
-                    steps: this.#mapper.toToolSteps(event.steps),
+                    steps: toToolSteps(event.steps),
                     responseMessages: event.response.messages,
                     provider: resolved.provider,
                     model: resolved.modelName
@@ -92,8 +68,6 @@ class AISDKChatTransport{
             },
             onError: ({ error }) => this.#logStreamError(error)
         });
-
-        return new AISDKReplyStream(result);
     }
 
     #logStreamError(error: unknown){

@@ -14,30 +14,19 @@ import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import type { GetPluginsInput } from '@/modules/plugin/api/services/plugin-service';
+import { useCallback, useRef, useState } from 'react';
+import type { ComponentType } from 'react';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
-import type { BaseEntity } from '@volt/contracts/shared/base';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/contracts/menu';
+import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
 import './PluginsListing.css';
 import { useNavigate } from 'react-router-dom';
-interface PluginListingRow extends BaseEntity {
-    modifier?: Plugin['modifier'];
-    exposures?: Plugin['exposures'];
-}
 
-const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    {
-        event: SOCKET_PLUGIN_EVENTS.CREATED,
-        queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()]
-    },
-    {
-        event: SOCKET_PLUGIN_EVENTS.DELETED,
-        queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()]
-    }
-];
+const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [SOCKET_PLUGIN_EVENTS.CREATED, SOCKET_PLUGIN_EVENTS.DELETED].map((event) => ({
+    event,
+    queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()]
+}));
 
 const CLONE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Cloning plugin...',
@@ -57,12 +46,88 @@ const DELETE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to delete plugin'
 });
 
+interface PluginStatusAction {
+    status: PluginStatus;
+    label: string;
+    icon: ComponentType<MenuIconProps>;
+    loading: string;
+    success: string;
+}
+
+const PLUGIN_STATUS_ACTIONS: PluginStatusAction[] = [
+    {
+        status: PluginStatus.PUBLISHED,
+        label: 'Publish',
+        icon: RiCheckLine,
+        loading: 'Publishing...',
+        success: 'Plugin published'
+    },
+    {
+        status: PluginStatus.DRAFT,
+        label: 'Set as Draft',
+        icon: RiDraftLine,
+        loading: 'Setting as draft...',
+        success: 'Plugin set as draft'
+    },
+    {
+        status: PluginStatus.DISABLED,
+        label: 'Disable',
+        icon: RiForbidLine,
+        loading: 'Disabling...',
+        success: 'Plugin disabled'
+    }
+];
+
+const COLUMNS: ColumnConfig<Plugin>[] = [
+    {
+        key: 'modifier.name',
+        title: 'Name',
+        sortable: true,
+        render: (_, plugin) => (
+            <Text as='span' size='md' weight='medium' className='plugin-name-link'>
+                {plugin.modifier?.name}
+            </Text>
+        ),
+        skeleton: {
+            variant: 'text',
+            width: 160
+        }
+    },
+    {
+        key: 'modifier.version',
+        title: 'Version',
+        sortable: true,
+        render: (_, plugin) => plugin.modifier?.version,
+        skeleton: {
+            variant: 'text',
+            width: 70
+        }
+    },
+    statusColumn<Plugin>('status', 'Status', {
+        sortable: true,
+        width: 80
+    }),
+    {
+        key: 'exposures',
+        title: 'Exposures',
+        render: (_, plugin) => (
+            <Text as='span' size='sm' weight='bold' className='exposure-count'>
+                {(plugin.exposures ?? []).length}
+            </Text>
+        ),
+        skeleton: {
+            variant: 'text',
+            width: 60
+        }
+    },
+    dateColumn<Plugin>('createdAt', 'Created', { width: 100 })
+];
+
 const PluginsListing = () => {
     useTip('plugins-import-export');
 
     const navigate = useNavigate();
     const importInputRef = useRef<HTMLInputElement>(null);
-    const [isImporting, setIsImporting] = useState(false);
     const [isRegistryOpen, setIsRegistryOpen] = useState(false);
     const selectedTeam = useSelectedTeam()!;
     const { canAccess } = useTeamPermissions();
@@ -75,88 +140,33 @@ const PluginsListing = () => {
     const exportPlugin = useExportPlugin();
     const importPluginMutation = useImportPluginMutation();
 
-    const fetchData = useCallback(async (params: GetPluginsInput) => {
-        return await fetchPlugins(params);
-    }, []);
-
-    const handleClone = useCallback(async (item: Plugin) => {
-        const clonedPlugin = await runAction({
-            action: () => clonePluginMutation.mutateAsync({
-                pluginId: item._id,
-                teamId: selectedTeam._id
-            }),
-            toast: CLONE_PLUGIN_TOAST_OPTIONS,
-            afterSuccess: (plugin) => {
-                navigate(`/plugins/builder?id=${plugin._id}`);
-            }
-        });
-
-        return clonedPlugin;
-    }, [clonePluginMutation, selectedTeam._id, navigate]);
-
     const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if(!file) return;
 
-        setIsImporting(true);
         try{
             await runAction({
                 action: () => importPluginMutation.mutateAsync({ file }),
                 toast: IMPORT_PLUGIN_TOAST_OPTIONS
             });
         }finally{
-            setIsImporting(false);
             importInputRef.current!.value = '';
         }
     }, [importPluginMutation]);
 
-    const handleStatusChange = useCallback(async (plugin: Plugin, newStatus: PluginStatus) => {
-        const statusLabels: Record<PluginStatus, string> = {
-            [PluginStatus.PUBLISHED]: 'Publishing',
-            [PluginStatus.DRAFT]: 'Setting as draft',
-            [PluginStatus.DISABLED]: 'Disabling'
-        };
-        const successLabels: Record<PluginStatus, string> = {
-            [PluginStatus.PUBLISHED]: 'Plugin published',
-            [PluginStatus.DRAFT]: 'Plugin set as draft',
-            [PluginStatus.DISABLED]: 'Plugin disabled'
-        };
+    const handleStatusChange = useCallback(async (plugin: Plugin, action: PluginStatusAction) => {
         await runAction({
             action: () => updatePluginMutation.mutateAsync({
                 _id: plugin._id,
-                status: newStatus
+                status: action.status
             }),
             toast: createPromiseToastOptions({
-                loading: `${statusLabels[newStatus]}...`,
-                success: successLabels[newStatus],
+                loading: action.loading,
+                success: action.success,
                 error: 'Failed to update plugin status'
             })
         });
     }, [updatePluginMutation]);
-
-    const buildDeleteConfirmationMessage = useCallback((selectedItems: Plugin[]) => {
-        let confirmationMessage = `Delete ${selectedItems.length} plugins? This action cannot be undone.`;
-
-        if (selectedItems.length === 1) {
-            confirmationMessage = `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`;
-        }
-
-        return confirmationMessage;
-    }, []);
-
-    const triggerImportFileSelect = useCallback(() => {
-        importInputRef.current?.click();
-    }, []);
-
-    const openRegistryBrowser = useCallback(() => {
-        setIsRegistryOpen(true);
-        openModal(REGISTRY_BROWSER_MODAL_ID);
-    }, []);
-
-    const closeRegistryBrowser = useCallback(() => {
-        setIsRegistryOpen(false);
-        closeModal(REGISTRY_BROWSER_MODAL_ID);
-    }, []);
 
     const { getMenuOptions: getBaseMenuOptions } = useListingActions<Plugin>({
         actions: {
@@ -170,7 +180,14 @@ const PluginsListing = () => {
                 label: 'Clone',
                 icon: RiFileCopyLine,
                 handler: async ({ item }) => {
-                    await handleClone(item);
+                    await runAction({
+                        action: () => clonePluginMutation.mutateAsync({
+                            pluginId: item._id,
+                            teamId: selectedTeam._id
+                        }),
+                        toast: CLONE_PLUGIN_TOAST_OPTIONS,
+                        afterSuccess: (plugin) => navigate(`/plugins/builder?id=${plugin._id}`)
+                    });
                 },
                 requiredPermission: 'plugin:create'
             },
@@ -187,42 +204,13 @@ const PluginsListing = () => {
                         toast: DELETE_PLUGIN_TOAST_OPTIONS
                     });
                 },
-                confirm: ({ selectedItems }) => buildDeleteConfirmationMessage(selectedItems),
+                confirm: ({ selectedItems }) => (selectedItems.length === 1
+                    ? `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`
+                    : `Delete ${selectedItems.length} plugins? This action cannot be undone.`),
                 requiredPermission: 'plugin:delete'
             }
         }
     });
-
-    const getPluginStatusMenuOptions = useCallback((item: Plugin): MenuOption[] => {
-        if (!canUpdate) {
-            return [];
-        }
-
-        const statusActions: MenuOption[] = [];
-        if(item.status !== PluginStatus.PUBLISHED){
-            statusActions.push({
-                label: 'Publish',
-                icon: RiCheckLine,
-                onClick: () => handleStatusChange(item, PluginStatus.PUBLISHED)
-            });
-        }
-        if(item.status !== PluginStatus.DRAFT){
-            statusActions.push({
-                label: 'Set as Draft',
-                icon: RiDraftLine,
-                onClick: () => handleStatusChange(item, PluginStatus.DRAFT)
-            });
-        }
-        if(item.status !== PluginStatus.DISABLED){
-            statusActions.push({
-                label: 'Disable',
-                icon: RiForbidLine,
-                onClick: () => handleStatusChange(item, PluginStatus.DISABLED)
-            });
-        }
-
-        return statusActions;
-    }, [canUpdate, handleStatusChange]);
 
     const getMenuOptions = useCallback((item: Plugin, selectedItems: Plugin[]): MenuOption[] => {
         const baseOptions = getBaseMenuOptions(item, selectedItems);
@@ -230,109 +218,30 @@ const PluginsListing = () => {
             return baseOptions;
         }
 
-        const deleteOption = baseOptions.filter((option) => option.destructive);
-        const nonDeleteOptions = baseOptions.filter((option) => !option.destructive);
-        return [...nonDeleteOptions, ...getPluginStatusMenuOptions(item), ...deleteOption];
-    }, [getBaseMenuOptions, getPluginStatusMenuOptions]);
+        const statusOptions: MenuOption[] = canUpdate
+            ? PLUGIN_STATUS_ACTIONS
+                .filter((action) => item.status !== action.status)
+                .map((action) => ({
+                    label: action.label,
+                    icon: action.icon,
+                    onClick: () => handleStatusChange(item, action)
+                }))
+            : [];
 
-    let createNewConfig: { buttonTitle: string; onCreate: () => void } | undefined;
-    if (canCreate) {
-        createNewConfig = {
-            buttonTitle: 'New plugin',
-            onCreate: () => navigate('/plugins/builder')
-        };
-    }
-
-    let headerActions: React.ReactNode;
-    if (canCreate) {
-        headerActions = (
-            <>
-                <input
-                    ref={importInputRef}
-                    type='file'
-                    accept='.zip'
-                    onChange={handleImport}
-                    style={{ display: 'none' }}
-                />
-                <Button
-                    variant='toggle'
-                    intent='neutral'
-                    className='import-plugin-btn transition-fast'
-                    onClick={triggerImportFileSelect}
-                    disabled={isImporting}
-                    isLoading={isImporting}
-                    leftIcon={<RiUploadLine size={18} />}
-                >
-                    Import
-                </Button>
-                <Button
-                    variant='toggle'
-                    intent='neutral'
-                    className='transition-fast'
-                    onClick={openRegistryBrowser}
-                    leftIcon={<RiStore2Line size={18} />}
-                >
-                    Browse registry
-                </Button>
-            </>
-        );
-    }
-
-    const columns: ColumnConfig<Plugin>[] = useMemo(() => [
-        {
-            key: 'modifier.name',
-            title: 'Name',
-            sortable: true,
-            render: (_, row) => {
-                const plugin = row as PluginListingRow;
-                return (
-                    <Text as='span' size='md' weight='medium' className='plugin-name-link'>
-                        {plugin.modifier!.name}
-                    </Text>
-                );
-            },
-            skeleton: {
-                variant: 'text',
-                width: 160
-            }
-        },
-        {
-            key: 'modifier.version',
-            title: 'Version',
-            sortable: true,
-            render: (_, row) => (row as PluginListingRow).modifier?.version,
-            skeleton: {
-                variant: 'text',
-                width: 70
-            }
-        },
-        statusColumn<Plugin>('status', 'Status', {
-            sortable: true,
-            width: 80
-        }),
-        {
-            key: 'exposures',
-            title: 'Exposures',
-            render: (_, row) => (
-                <Text as='span' size='sm' weight='bold' className='exposure-count'>
-                    {((row as PluginListingRow).exposures ?? []).length}
-                </Text>
-            ),
-            skeleton: {
-                variant: 'text',
-                width: 60
-            }
-        },
-        dateColumn<Plugin>('createdAt', 'Created', { width: 100 })
-    ], [navigate]);
+        return [
+            ...baseOptions.filter((option) => !option.destructive),
+            ...statusOptions,
+            ...baseOptions.filter((option) => option.destructive)
+        ];
+    }, [getBaseMenuOptions, canUpdate, handleStatusChange]);
 
     return (
         <>
             <DocumentListing<Plugin>
                 title='Plugins'
                 queryKey={PLUGIN_QUERY_KEYS.catalog()}
-                columns={columns}
-                fetchData={fetchData}
+                columns={COLUMNS}
+                fetchData={fetchPlugins}
                 defaultLimit={20}
                 getMenuOptions={getMenuOptions}
                 onItemClick={(plugin) => {
@@ -340,12 +249,54 @@ const PluginsListing = () => {
                     return true;
                 }}
                 emptyMessage='No plugins found. Create your first plugin!'
-                createNew={createNewConfig}
-                headerActions={headerActions}
+                createNew={canCreate ? {
+                    buttonTitle: 'New plugin',
+                    onCreate: () => navigate('/plugins/builder')
+                } : undefined}
+                headerActions={canCreate && (
+                    <>
+                        <input
+                            ref={importInputRef}
+                            type='file'
+                            accept='.zip'
+                            onChange={handleImport}
+                            style={{ display: 'none' }}
+                        />
+                        <Button
+                            variant='toggle'
+                            intent='neutral'
+                            className='import-plugin-btn transition-fast'
+                            onClick={() => importInputRef.current?.click()}
+                            disabled={importPluginMutation.isPending}
+                            isLoading={importPluginMutation.isPending}
+                            leftIcon={<RiUploadLine size={18} />}
+                        >
+                            Import
+                        </Button>
+                        <Button
+                            variant='toggle'
+                            intent='neutral'
+                            className='transition-fast'
+                            onClick={() => {
+                                setIsRegistryOpen(true);
+                                openModal(REGISTRY_BROWSER_MODAL_ID);
+                            }}
+                            leftIcon={<RiStore2Line size={18} />}
+                        >
+                            Browse registry
+                        </Button>
+                    </>
+                )}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
             {canCreate && (
-                <RegistryBrowserModal isOpen={isRegistryOpen} onClose={closeRegistryBrowser} />
+                <RegistryBrowserModal
+                    isOpen={isRegistryOpen}
+                    onClose={() => {
+                        setIsRegistryOpen(false);
+                        closeModal(REGISTRY_BROWSER_MODAL_ID);
+                    }}
+                />
             )}
         </>
     );

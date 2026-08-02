@@ -53,6 +53,17 @@ export interface FileWithPath {
     path: string;
 };
 
+export interface ProcessedFileSystemEntry {
+    files: FileWithPath[];
+    folderName: string | null;
+    /**
+     * Entries the browser refused to hand over. A dropped folder can partially
+     * fail, so callers must surface this instead of silently uploading less than
+     * the user selected.
+     */
+    skippedPaths: string[];
+};
+
 const extractFolderName = (fullPath: string): string | null => {
     if (!fullPath) return null;
     const pathParts = fullPath.split('/').filter((part) => part.trim() !== '');
@@ -80,8 +91,9 @@ const readDirectoryEntries = async (dirEntry: FileSystemDirectoryEntry): Promise
 
 export const processFileSystemEntry = async (
     entry: FileSystemEntry
-): Promise<{ files: FileWithPath[]; folderName: string | null }> => {
+): Promise<ProcessedFileSystemEntry> => {
     const files: FileWithPath[] = [];
+    const skippedPaths: string[] = [];
     let folderName: string | null = null;
 
     const processEntry = async (currentEntry: FileSystemEntry): Promise<void> => {
@@ -105,6 +117,7 @@ export const processFileSystemEntry = async (
                     folderName = extractFolderName(currentEntry.fullPath);
                 }
             } catch {
+                skippedPaths.push(currentEntry.fullPath);
             }
         } else if (currentEntry.isDirectory) {
             const dirEntry = currentEntry as FileSystemDirectoryEntry;
@@ -117,6 +130,7 @@ export const processFileSystemEntry = async (
 
                 await Promise.all(entries.map((subEntry) => processEntry(subEntry)));
             } catch {
+                skippedPaths.push(currentEntry.fullPath);
             }
         }
     };
@@ -124,6 +138,13 @@ export const processFileSystemEntry = async (
     await processEntry(entry);
     return {
         files,
-        folderName
+        folderName,
+        skippedPaths
     };
+};
+
+export const describeSkippedEntries = (skippedPaths: string[]): string | null => {
+    if (skippedPaths.length === 0) return null;
+    if (skippedPaths.length === 1) return `${skippedPaths[0]} could not be read and was skipped.`;
+    return `${skippedPaths.length} items could not be read and were skipped.`;
 };

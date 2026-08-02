@@ -1,33 +1,24 @@
 import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
-import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/listing';
-export type { ListingRowByAnalysisData };
+import type {
+    GetAnalysisListingExportOptionsResponse,
+    ListingRowByAnalysisData
+} from '@volt/contracts/modules/plugin/listing';
 
 export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
     teamId: string;
 }
 
-import type {
-    AnalysisListingExportOption,
-    AnalysisSubListingExportOption
-} from '@volt/contracts/modules/plugin/listing';
-
-export type AnalysisListingExportOptionView = AnalysisListingExportOption;export interface GetAnalysisListingExportOptionsOutput {
-    analysisId: string;
-    hasConfig: boolean;
-    listings: AnalysisListingExportOptionView[];
-    subListings: AnalysisSubListingExportOption[];
-}
+export type GetAnalysisListingExportOptionsOutput = GetAnalysisListingExportOptionsResponse;
 
 export interface GetListingRowsByAnalysisIdInput {
     analysisId: string;
     teamId: string;
     page?: number;
     limit?: number;
-    sortAsc?: boolean;
 }
 
-export interface GetListingRowsByAnalysisIdOutput extends PaginatedResult<ListingRowByAnalysisData> {}
+export type GetListingRowsByAnalysisIdOutput = PaginatedResult<ListingRowByAnalysisData>;
 
 export interface ExportListingRowsByAnalysisIdInput {
     analysisId: string;
@@ -36,7 +27,6 @@ export interface ExportListingRowsByAnalysisIdInput {
     includeConfig?: boolean;
     selectedListingIds?: string[];
     selectedSubListingIds?: string[];
-    sortAsc?: boolean;
 }
 
 export interface AnalysisListingExportData {
@@ -58,7 +48,6 @@ export interface AnalysisSubListingExportData {
 export interface ExportListingRowsByAnalysisIdOutput {
     analysisId: string;
     teamClusterId?: string;
-    format: ExportType;
     config?: Record<string, unknown>;
     listings: AnalysisListingExportData[];
     subListings: AnalysisSubListingExportData[];
@@ -71,7 +60,7 @@ export interface SummarizeAnalysisResultInput {
     maxRows?: number;
 }
 
-export interface NumericColumnStats {
+interface NumericColumnStats {
     kind: 'numeric';
     count: number;
     nullCount: number;
@@ -86,7 +75,7 @@ interface CategoricalColumnValue {
     count: number;
 }
 
-export interface CategoricalColumnStats {
+interface CategoricalColumnStats {
     kind: 'categorical';
     count: number;
     nullCount: number;
@@ -121,28 +110,16 @@ export interface SummarizeAnalysisResultOutput {
     note?: string;
 }
 
-interface ListingPaginationInput {
-    page?: number;
-    limit?: number;
-}
-
-interface ListingPagination {
-    page: number;
-    limit: number;
-}
-
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
-export const resolveListingPagination = ({
-    page,
-    limit
-}: ListingPaginationInput): ListingPagination => {
+/** Listing pages are capped so a single request cannot pull a whole result set. */
+export const resolveListingPagination = (
+    { page, limit }: { page?: number; limit?: number }
+): { page: number; limit: number } => {
     return {
         page: Math.max(DEFAULT_PAGE, Number(page) || DEFAULT_PAGE),
         limit: Math.min(MAX_LIMIT, Math.max(1, Number(limit) || DEFAULT_LIMIT))
     };
 };
-
-export type AnalysisSubListingExportOptionView = AnalysisSubListingExportOption;

@@ -3,7 +3,7 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-interface AnalysisExecutionMetadata {
+export interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
 }
 
@@ -11,8 +11,19 @@ type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
     [ANALYSIS_EXECUTION_METADATA_KEY]?: AnalysisExecutionMetadata;
 };
 
+/**
+ * Our own execution metadata, stashed on the analysis config by the canvas when
+ * a run is scoped to a subset of frames. Written and read only by us, so the
+ * declared shape is taken at face value.
+ */
+export const readAnalysisExecutionMetadata = (
+    config: Analysis['config'] | undefined
+): AnalysisExecutionMetadata | undefined => {
+    return (config as AnalysisConfigWithExecutionMetadata | undefined)?.[ANALYSIS_EXECUTION_METADATA_KEY];
+};
+
 export const extractTrajectoryTimesteps = (trajectory?: Trajectory | null): number[] => {
-    if (!trajectory?.frames?.length) {
+    if (!trajectory) {
         return [];
     }
 
@@ -46,6 +57,10 @@ export const getNearestTimestep = (
     }, availableTimesteps[0]);
 };
 
+/**
+ * A scope that covers every available frame is the same as no scope at all, so
+ * it collapses to `undefined` and callers stop special-casing it.
+ */
 export const normalizeSelectedTimesteps = (
     selectedTimesteps: number[] | undefined,
     availableTimesteps: number[]
@@ -58,11 +73,8 @@ export const normalizeSelectedTimesteps = (
     const sanitizedTimesteps = Array.from(
         new Set(selectedTimesteps.filter((timestep) => availableTimestepsSet.has(timestep)))
     ).sort((left, right) => left - right);
-    if (!sanitizedTimesteps.length) {
-        return undefined;
-    }
 
-    if (sanitizedTimesteps.length === availableTimesteps.length) {
+    if (!sanitizedTimesteps.length || sanitizedTimesteps.length === availableTimesteps.length) {
         return undefined;
     }
 
@@ -73,14 +85,8 @@ export const getSelectedTimestepsForAnalysis = (
     analysis: Analysis | undefined,
     trajectoryTimesteps: number[]
 ): number[] | undefined => {
-    if (!analysis) {
-        return undefined;
-    }
-
-    if (!analysis.config) {
-        return undefined;
-    }
-
-    const selectedTimesteps = (analysis.config as AnalysisConfigWithExecutionMetadata)[ANALYSIS_EXECUTION_METADATA_KEY]?.selectedTimesteps;
-    return normalizeSelectedTimesteps(selectedTimesteps, trajectoryTimesteps);
+    return normalizeSelectedTimesteps(
+        readAnalysisExecutionMetadata(analysis?.config)?.selectedTimesteps,
+        trajectoryTimesteps
+    );
 };

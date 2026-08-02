@@ -36,7 +36,7 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                 try {
                     await onSendFiles(files);
                     clear();
-                } catch (_error) {
+                } catch {
                     return;
                 }
             }
@@ -62,33 +62,15 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
         }
     };
 
-    const handleEmojiSelect = (close: () => void, emoji: string) => {
-        setMessage((prev) => prev + emoji);
-        close();
-    };
-
-    const renderFilePreviewMedia = (index: number) => {
-        const item = previews[index];
-        if (!item) return null;
-
-        if (item.preview) {
-            return <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail f-shrink-0' />;
-        }
-
-        return (
-            <Box display='flex' shrink='0' className='flex-center chat-file-preview-icon'>
-                <IoDocumentOutline size={20} className='color-muted' />
-            </Box>
-        );
-    };
-
-    const renderEmojiPicker = (close: () => void) => (
-        <EmojiPicker onSelect={(emoji: string) => handleEmojiSelect(close, emoji)} />
-    );
-
     const renderFilePreview = (item: typeof previews[number], index: number) => (
         <Row key={index} gap='075' className='chat-file-preview-item'>
-            {renderFilePreviewMedia(index)}
+            {item.preview ? (
+                <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail f-shrink-0' />
+            ) : (
+                <Box display='flex' shrink='0' className='flex-center chat-file-preview-icon'>
+                    <IoDocumentOutline size={20} className='color-muted' />
+                </Box>
+            )}
             <Stack flex='1' overflow='hidden'>
                 <Text as='p' size='md' weight='medium' className='chat-file-preview-name'>
                     {item.file.name}
@@ -144,7 +126,12 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                         </IconButton>
                     }
                 >
-                    {renderEmojiPicker}
+                    {(close: () => void) => (
+                        <EmojiPicker onSelect={(emoji: string) => {
+                            setMessage((previous) => previous + emoji);
+                            close();
+                        }} />
+                    )}
                 </Popover>
 
                 <Tooltip content='Send'>

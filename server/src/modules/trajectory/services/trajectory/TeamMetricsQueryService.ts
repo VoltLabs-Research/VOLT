@@ -1,3 +1,7 @@
+import { In } from 'typeorm';
+import Analysis from '@modules/analysis/models/Analysis';
+import Trajectory from '@modules/trajectory/models/Trajectory';
+
 export interface TeamMetricsSnapshot {
     totals: Record<string, number>;
     lastMonth: Record<string, number>;
@@ -6,10 +10,6 @@ export interface TeamMetricsSnapshot {
         [series: string]: number[] | string[];
     };
 }
-
-import { In } from 'typeorm';
-import Analysis from '@modules/analysis/models/Analysis';
-import Trajectory from '@modules/trajectory/models/Trajectory';
 
 const MAX_QUERY_LIMIT = 10000;
 const ROLLING_WEEKS = 12;
@@ -94,9 +94,7 @@ class TeamMetricsQueryService {
 
         const trajectoryBuckets = createBuckets();
         for (const trajectory of trajectories) {
-            if (trajectory.createdAt) {
-                updateBuckets(trajectoryBuckets, trajectory.createdAt, window);
-            }
+            updateBuckets(trajectoryBuckets, trajectory.createdAt, window);
         }
 
         const trajectoryIds = trajectories.map((trajectory) => trajectory.id);
@@ -110,9 +108,7 @@ class TeamMetricsQueryService {
         const analysisBuckets = createBuckets();
 
         for (const analysis of analyses) {
-            if (analysis.createdAt) {
-                updateBuckets(analysisBuckets, analysis.createdAt, window);
-            }
+            updateBuckets(analysisBuckets, analysis.createdAt, window);
         }
 
         const totals: Record<string, number> = {

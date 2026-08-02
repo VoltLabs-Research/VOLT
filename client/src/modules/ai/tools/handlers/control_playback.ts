@@ -1,26 +1,13 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface ControlPlaybackInput {
-    action?: 'play' | 'pause' | 'stop';
-}
+import type { ControlPlaybackInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
     name: 'control_playback',
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const action = input.action;
-        if (action !== 'play' && action !== 'pause' && action !== 'stop') {
-            return {
-                ok: false,
-                summary: 'No valid playback action was given.',
-                reason: 'invalid_action',
-                hint: 'Provide action as one of: "play", "pause", "stop".'
-            };
-        }
-
-        const bridge = ctx.getCanvasBridge();
+        const { action } = input;
         const store = useEditorStore.getState();
 
         if (action === 'play') {
@@ -35,8 +22,8 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
                 };
             }
 
-            const { trajectoryId, timesteps } = bridge;
-            if (!trajectoryId || !Array.isArray(timesteps) || timesteps.length === 0) {
+            const { trajectoryId, timesteps } = ctx.getCanvasBridge();
+            if (!trajectoryId || timesteps.length === 0) {
                 return {
                     ok: false,
                     summary: 'Cannot start playback — no trajectory frames are loaded.',
@@ -79,12 +66,11 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
                 icon: 'play'
             };
         }
-        const action = input.action;
-        if (action === 'play') return {
+        if (input.action === 'play') return {
             label: 'Started playback',
             icon: 'play'
         };
-        if (action === 'pause') return {
+        if (input.action === 'pause') return {
             label: 'Paused playback',
             icon: 'pause'
         };

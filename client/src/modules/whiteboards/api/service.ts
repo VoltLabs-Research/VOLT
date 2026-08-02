@@ -10,6 +10,7 @@ import {
 
 import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { WhiteboardStoredScene } from '@/modules/whiteboards/contracts/excalidraw';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import type { WhiteboardFolder } from '@volt/contracts/modules/whiteboards/domain';
 
@@ -41,10 +42,6 @@ export interface UpdateWhiteboardParams {
 
 interface WhiteboardIdParams {
     whiteboardId: string;
-}
-
-interface SaveStateParams extends WhiteboardIdParams {
-    state: unknown;
 }
 
 interface UploadAssetParams extends WhiteboardIdParams {
@@ -94,10 +91,7 @@ const endpoints = {
     moveWhiteboard: patch<MoveWhiteboardParams, Whiteboard>('/whiteboards/:whiteboardId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getWhiteboardState: get<WhiteboardIdParams, unknown>('/whiteboards/:whiteboardId/state', { unwrap: 'raw' }),
-    saveWhiteboardState: patch<SaveStateParams, void>('/whiteboards/:whiteboardId/state', {
-        body: ({ state }) => state as Record<string, unknown>
-    }),
+    getWhiteboardState: get<WhiteboardIdParams, WhiteboardStoredScene>('/whiteboards/:whiteboardId/state', { unwrap: 'raw' }),
     uploadWhiteboardAsset: custom<UploadAssetParams, UploadAssetResult>(async ({ getClient }, params) => {
         const response = await getClient().request<CreateAssetUploadApiResponse>(
             'POST',

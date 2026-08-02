@@ -1,14 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import LatexService from '@modules/latex/services/LatexService';
 import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
-import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
-import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import { ackError, ackOk } from '@modules/socket/socket/socket-ack';
 import logger from '@shared/infrastructure/logger';
+import LatexFileSessionStore from '@modules/latex/socket/LatexFileSessionStore';
+import type { SocketAck } from '@modules/socket/socket/socket-ack';
+import type { LatexFileSession } from '@modules/latex/socket/LatexFileSessionStore';
 import type {
     LatexCloseDocumentPayload,
     LatexFileJoinPayload,
@@ -19,64 +19,7 @@ import type {
 } from './LatexSocketPayloads';
 import * as Y from 'yjs';
 
-const PERSIST_DEBOUNCE_MS = 500;
-
-const buildSaveKey = (documentId: string, fileId: string): string => `${documentId}:${fileId}`;
-const LATEX_Y_TEXT_NAME = 'content';
-const SERVER_INIT_ORIGIN = 'server:init';
-
-const JOINED_FILE_KEYS = 'latexJoinedFileKeys';
-
-const AI_ORIGIN: unique symbol = Symbol('latex:ai');
-
-interface TextSplice {
-    index: number;
-    deleteCount: number;
-    insertText: string;
-}
-
-const computeTextSplice = (currentText: string, nextText: string): TextSplice => {
-    let prefixLength = 0;
-    const minLength = Math.min(currentText.length, nextText.length);
-
-    while (
-        prefixLength < minLength
-        && currentText.charCodeAt(prefixLength) === nextText.charCodeAt(prefixLength)
-    ) {
-        prefixLength += 1;
-    }
-
-    let currentSuffixIndex = currentText.length - 1;
-    let nextSuffixIndex = nextText.length - 1;
-    while (
-        currentSuffixIndex >= prefixLength
-        && nextSuffixIndex >= prefixLength
-        && currentText.charCodeAt(currentSuffixIndex) === nextText.charCodeAt(nextSuffixIndex)
-    ) {
-        currentSuffixIndex -= 1;
-        nextSuffixIndex -= 1;
-    }
-
-    return {
-        index: prefixLength,
-        deleteCount: currentSuffixIndex - prefixLength + 1,
-        insertText: nextText.slice(prefixLength, nextSuffixIndex + 1)
-    };
-};
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
-
-interface LatexFileSession {
-    documentId: string;
-    teamId: string;
-    fileId: string;
-    doc: Y.Doc;
-    text: Y.Text;
-}
+const JOINED_FILES = 'latexJoinedFiles';
 
 interface LatexFileJoinAck {
     documentId: string;
@@ -85,31 +28,17 @@ interface LatexFileJoinAck {
     update: number[];
 }
 
-const ackOk = <T>(data: T): SocketAck<T> => ({
-    ok: true,
-    data
-});
-const ackError = (error: string): SocketAck<never> => ({
-    ok: false,
-    error
-});
+type JoinedLatexFile = Pick<LatexFileSession, 'documentId' | 'fileId'>;
+
+const NOT_A_TEAM_MEMBER = 'You are not a member of this team';
+const FILE_NOT_FOUND = 'LaTeX file not found';
 
 class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
-    private readonly saveTimers = new Map<string, NodeJS.Timeout>();
-
-    private readonly fileSessions = new Map<string, LatexFileSession>();
-
-    #service = new LatexService();
-
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry
-    ) {
-        super(emitter, roomManager, eventRegistry);
-    }
+    #sessions = new LatexFileSessionStore((session, update, origin) => {
+        this.broadcastFileUpdate(session, update, origin);
+    });
 
     onConnection(connection: ISocketConnection): void {
         if (!connection.user) {
@@ -125,22 +54,14 @@ class LatexSocketModule extends BaseSocketModule {
         this.registerDisconnect(connection);
         this.wirePresenceOnDisconnect(
             connection,
-            (conn) => this.getRoomFromConnection(conn),
+            this.getRoomFromConnection,
             'latex_users_update',
             this.toPresenceUser
         );
     }
 
     async onShutdown(): Promise<void> {
-        await Promise.all(Array.from(this.fileSessions.values()).map((session) => (
-            this.persistContent(session.documentId, session.teamId, session.fileId, session.text.toString())
-        )));
-
-        for (const timer of this.saveTimers.values()) {
-            clearTimeout(timer);
-        }
-        this.saveTimers.clear();
-        this.fileSessions.clear();
+        await this.#sessions.flush();
     }
 
     public async applyAiContentToFile(
@@ -149,41 +70,16 @@ class LatexSocketModule extends BaseSocketModule {
         fileId: string,
         content: string
     ): Promise<void> {
-        const key = buildSaveKey(documentId, fileId);
-        const session = this.fileSessions.get(key);
-
-        if (!session || session.teamId !== teamId) {
-            return;
-        }
-
-        const currentText = session.text.toString();
-        if (currentText === content) {
-            return;
-        }
-
-        const splice = computeTextSplice(currentText, content);
-        session.doc.transact(() => {
-            if (splice.deleteCount > 0) {
-                session.text.delete(splice.index, splice.deleteCount);
-            }
-            if (splice.insertText.length > 0) {
-                session.text.insert(splice.index, splice.insertText);
-            }
-        }, AI_ORIGIN);
+        await this.#sessions.applyAiContent(documentId, teamId, fileId, content);
     }
 
     private registerOpenDocument(connection: ISocketConnection): void {
         this.on<LatexOpenDocumentPayload>(connection.id, 'latex_open_document', async (conn, payload) => {
-            if (!conn.user?.teams?.includes(payload.teamId)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                    'You are not a member of this team'
-                );
+            if (!this.isTeamMember(conn, payload.teamId)) {
                 return;
             }
 
-            const { documentId, teamId } = payload;
+            const { documentId } = payload;
             const prevDocId = conn.data['latexDocumentId'] as string | undefined;
 
             if (prevDocId && prevDocId !== documentId) {
@@ -194,7 +90,6 @@ class LatexSocketModule extends BaseSocketModule {
 
             const room = this.buildRoomId(documentId);
             conn.data['latexDocumentId'] = documentId;
-            conn.data['latexTeamId'] = teamId;
 
             await this.joinRoom(conn.id, room);
             await this.broadcastPresence(room, 'latex_users_update', this.toPresenceUser);
@@ -207,7 +102,6 @@ class LatexSocketModule extends BaseSocketModule {
             await this.leaveRoom(conn.id, room);
 
             delete conn.data['latexDocumentId'];
-            delete conn.data['latexTeamId'];
 
             await this.broadcastPresence(room, 'latex_users_update', this.toPresenceUser);
 
@@ -217,12 +111,7 @@ class LatexSocketModule extends BaseSocketModule {
 
     private registerUpdateContent(connection: ISocketConnection): void {
         this.on<LatexUpdateContentPayload>(connection.id, 'latex_update_content', (conn, payload) => {
-            if (!conn.user?.teams?.includes(payload.teamId)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                    'You are not a member of this team'
-                );
+            if (!this.isTeamMember(conn, payload.teamId)) {
                 return;
             }
 
@@ -230,11 +119,7 @@ class LatexSocketModule extends BaseSocketModule {
             const room = this.buildRoomId(documentId);
 
             if (!this.roomManager.isInRoom(conn.id, room)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    'Socket has not opened this document'
-                );
+                this.emitErrorToSocket(conn.id, ErrorCodes.VALIDATION_INVALID_INPUT, 'Socket has not opened this document');
                 return;
             }
 
@@ -246,35 +131,29 @@ class LatexSocketModule extends BaseSocketModule {
                 senderId: conn.user?._id
             });
 
-            this.schedulePersist(documentId, teamId, fileId, content);
+            this.#sessions.schedulePersist(documentId, teamId, fileId, content);
         });
     }
 
     private registerFileJoin(connection: ISocketConnection): void {
         this.on<LatexFileJoinPayload, SocketAck<LatexFileJoinAck>>(connection.id, 'latex_file_join', async (conn, payload) => {
-            if (!conn.user?.teams?.includes(payload.teamId)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                    'You are not a member of this team'
-                );
-                return ackError('You are not a member of this team');
+            if (!this.isTeamMember(conn, payload.teamId)) {
+                return ackError(NOT_A_TEAM_MEMBER);
             }
 
-            const session = await this.getOrCreateFileSession(
+            const session = await this.#sessions.acquire(
                 payload.documentId,
                 payload.teamId,
                 payload.fileId
             );
 
             if (!session) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
-                return ackError('LaTeX file not found');
+                return this.reject(conn.id, ErrorCodes.LATEX_FILE_NOT_FOUND, FILE_NOT_FOUND);
             }
 
             const room = this.buildFileRoomId(payload.documentId, payload.fileId);
             await this.joinRoom(conn.id, room);
-            this.trackJoinedFileKey(conn, payload.documentId, payload.fileId);
+            this.trackJoinedFile(conn, payload.documentId, payload.fileId);
 
             return ackOk({
                 documentId: payload.documentId,
@@ -288,45 +167,33 @@ class LatexSocketModule extends BaseSocketModule {
     private registerFileLeave(connection: ISocketConnection): void {
         this.on<LatexFileLeavePayload>(connection.id, 'latex_file_leave', async (conn, payload) => {
             await this.leaveRoom(conn.id, this.buildFileRoomId(payload.documentId, payload.fileId));
-            this.untrackJoinedFileKey(conn, payload.documentId, payload.fileId);
+            this.untrackJoinedFile(conn, payload.documentId, payload.fileId);
             await this.releaseFileSessionIfIdle(payload.documentId, payload.fileId);
         });
     }
 
     private registerFileUpdate(connection: ISocketConnection): void {
         this.on<LatexFileUpdatePayload>(connection.id, 'latex_file_update', async (conn, payload) => {
-            if (!conn.user?.teams?.includes(payload.teamId)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                    'You are not a member of this team'
-                );
-                return ackError('You are not a member of this team');
+            if (!this.isTeamMember(conn, payload.teamId)) {
+                return ackError(NOT_A_TEAM_MEMBER);
             }
 
             const room = this.buildFileRoomId(payload.documentId, payload.fileId);
             if (!this.roomManager.isInRoom(conn.id, room)) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    'Socket has not joined this LaTeX file'
-                );
-                return ackError('Socket has not joined this LaTeX file');
+                return this.reject(conn.id, ErrorCodes.VALIDATION_INVALID_INPUT, 'Socket has not joined this LaTeX file');
             }
 
-            const session = await this.getOrCreateFileSession(
+            const session = await this.#sessions.acquire(
                 payload.documentId,
                 payload.teamId,
                 payload.fileId
             );
 
             if (!session) {
-                this.emitErrorToSocket(conn.id, ErrorCodes.LATEX_FILE_NOT_FOUND, 'LaTeX file not found');
-                return ackError('LaTeX file not found');
+                return this.reject(conn.id, ErrorCodes.LATEX_FILE_NOT_FOUND, FILE_NOT_FOUND);
             }
 
-            const update = new Uint8Array(payload.update);
-            Y.applyUpdate(session.doc, update, conn.id);
+            Y.applyUpdate(session.doc, new Uint8Array(payload.update), conn.id);
             return ackOk({
                 documentId: payload.documentId,
                 fileId: payload.fileId
@@ -336,168 +203,78 @@ class LatexSocketModule extends BaseSocketModule {
 
     private registerDisconnect(connection: ISocketConnection): void {
         this.onDisconnect(connection.id, async (conn) => {
-            const joinedKeys = conn.data[JOINED_FILE_KEYS] as Set<string> | undefined;
-            if (!joinedKeys || joinedKeys.size === 0) {
+            const joinedFiles = this.joinedFilesOf(conn);
+            if (!joinedFiles || joinedFiles.size === 0) {
                 return;
             }
 
-            await Promise.all(Array.from(joinedKeys).map((key) => {
-                const session = this.fileSessions.get(key);
-                if (!session) {
-                    return undefined;
-                }
-                return this.releaseFileSessionIfIdle(session.documentId, session.fileId);
-            }));
-            joinedKeys.clear();
+            await Promise.all(Array.from(joinedFiles.values()).map((joined) => (
+                this.releaseFileSessionIfIdle(joined.documentId, joined.fileId)
+            )));
+            joinedFiles.clear();
         });
     }
 
-    private trackJoinedFileKey(connection: ISocketConnection, documentId: string, fileId: string): void {
-        const key = buildSaveKey(documentId, fileId);
-        let joinedKeys = connection.data[JOINED_FILE_KEYS] as Set<string> | undefined;
-        if (!joinedKeys) {
-            joinedKeys = new Set<string>();
-            connection.data[JOINED_FILE_KEYS] = joinedKeys;
+    private isTeamMember(connection: ISocketConnection, teamId: string): boolean {
+        if (connection.user?.teams?.includes(teamId)) {
+            return true;
         }
-        joinedKeys.add(key);
+
+        this.emitErrorToSocket(connection.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, NOT_A_TEAM_MEMBER);
+        return false;
     }
 
-    private untrackJoinedFileKey(connection: ISocketConnection, documentId: string, fileId: string): void {
-        const joinedKeys = connection.data[JOINED_FILE_KEYS] as Set<string> | undefined;
-        joinedKeys?.delete(buildSaveKey(documentId, fileId));
+    private reject(socketId: string, code: string, message: string): SocketAck<never> {
+        this.emitErrorToSocket(socketId, code, message);
+        return ackError(message);
     }
 
-    private async getOrCreateFileSession(
-        documentId: string,
-        teamId: string,
-        fileId: string
-    ): Promise<LatexFileSession | null> {
-        const key = buildSaveKey(documentId, fileId);
-        const existing = this.fileSessions.get(key);
-        if (existing) {
-            return existing.teamId === teamId ? existing : null;
-        }
+    private joinedFilesOf(connection: ISocketConnection): Map<string, JoinedLatexFile> | undefined {
+        return connection.data[JOINED_FILES] as Map<string, JoinedLatexFile> | undefined;
+    }
 
-        const files = await this.#service.listFiles({
-            teamId,
-            documentId
-        }).catch((error: unknown) => {
-            logger.warn(`@latex-socket - failed to load files for document ${documentId}: ${(error as Error).message}`);
-            return null;
-        });
-        if (!files) {
-            return null;
+    private trackJoinedFile(connection: ISocketConnection, documentId: string, fileId: string): void {
+        let joinedFiles = this.joinedFilesOf(connection);
+        if (!joinedFiles) {
+            joinedFiles = new Map<string, JoinedLatexFile>();
+            connection.data[JOINED_FILES] = joinedFiles;
         }
-
-        const file = files.find((candidate) => candidate._id === fileId);
-        if (!file) {
-            return null;
-        }
-
-        const doc = new Y.Doc();
-        const text = doc.getText(LATEX_Y_TEXT_NAME);
-        if (file.content) {
-            doc.transact(() => {
-                text.insert(0, file.content);
-            }, SERVER_INIT_ORIGIN);
-        }
-
-        const session: LatexFileSession = {
+        joinedFiles.set(this.buildFileRoomId(documentId, fileId), {
             documentId,
-            teamId,
-            fileId,
-            doc,
-            text
+            fileId
+        });
+    }
+
+    private untrackJoinedFile(connection: ISocketConnection, documentId: string, fileId: string): void {
+        this.joinedFilesOf(connection)?.delete(this.buildFileRoomId(documentId, fileId));
+    }
+
+    private broadcastFileUpdate(session: LatexFileSession, update: Uint8Array, origin: unknown): void {
+        const room = this.buildFileRoomId(session.documentId, session.fileId);
+        const payload = {
+            documentId: session.documentId,
+            fileId: session.fileId,
+            update: Array.from(update)
         };
 
-        doc.on('update', (update: Uint8Array, origin: unknown) => {
-            if (origin === SERVER_INIT_ORIGIN) {
-                return;
-            }
+        if (typeof origin === 'string') {
+            this.emitToRoomExcept(origin, room, 'latex_file_update_applied', {
+                ...payload,
+                senderId: origin
+            });
+            return;
+        }
 
-            const room = this.buildFileRoomId(documentId, fileId);
-            if (typeof origin === 'string') {
-                this.emitToRoomExcept(origin, room, 'latex_file_update_applied', {
-                    documentId,
-                    fileId,
-                    update: Array.from(update),
-                    senderId: origin
-                });
-            } else {
-                this.emitToRoom(room, 'latex_file_update_applied', {
-                    documentId,
-                    fileId,
-                    update: Array.from(update)
-                });
-            }
-
-            if (origin === AI_ORIGIN) {
-                return;
-            }
-
-            this.schedulePersist(documentId, teamId, fileId, text.toString());
-        });
-
-        this.fileSessions.set(key, session);
-        return session;
+        this.emitToRoom(room, 'latex_file_update_applied', payload);
     }
 
     private async releaseFileSessionIfIdle(documentId: string, fileId: string): Promise<void> {
-        const room = this.buildFileRoomId(documentId, fileId);
-        const sockets = await this.roomManager.getSocketsInRoom(room);
+        const sockets = await this.roomManager.getSocketsInRoom(this.buildFileRoomId(documentId, fileId));
         if (sockets.length > 0) {
             return;
         }
 
-        const key = buildSaveKey(documentId, fileId);
-        const session = this.fileSessions.get(key);
-        if (!session) {
-            return;
-        }
-
-        const timer = this.saveTimers.get(key);
-        if (timer) {
-            clearTimeout(timer);
-            this.saveTimers.delete(key);
-        }
-
-        await this.persistContent(session.documentId, session.teamId, session.fileId, session.text.toString());
-        session.doc.destroy();
-        this.fileSessions.delete(key);
-    }
-
-    private schedulePersist(documentId: string, teamId: string, fileId: string, content: string): void {
-        const saveKey = buildSaveKey(documentId, fileId);
-        const existing = this.saveTimers.get(saveKey);
-
-        if (existing) {
-            clearTimeout(existing);
-        }
-
-        const timer = setTimeout(() => {
-            this.saveTimers.delete(saveKey);
-            this.persistContent(documentId, teamId, fileId, content);
-        }, PERSIST_DEBOUNCE_MS);
-
-        this.saveTimers.set(saveKey, timer);
-    }
-
-    private async persistContent(
-        documentId: string,
-        teamId: string,
-        fileId: string,
-        content: string
-    ): Promise<void> {
-        try {
-            await this.#service.updateFile({
-                teamId,
-                documentId,
-                fileId,
-                content
-            });
-        } catch (error) {
-            logger.error(`@latex-socket - auto-save error for document ${documentId}: ${error}`);
-        }
+        await this.#sessions.release(documentId, fileId);
     }
 
     private buildRoomId(documentId: string): string {
@@ -508,10 +285,10 @@ class LatexSocketModule extends BaseSocketModule {
         return `latex-file-${documentId}-${fileId}`;
     }
 
-    private getRoomFromConnection(connection: ISocketConnection): string | undefined {
+    private readonly getRoomFromConnection = (connection: ISocketConnection): string | undefined => {
         const id = connection.data['latexDocumentId'] as string | undefined;
         return id ? this.buildRoomId(id) : undefined;
-    }
+    };
 
     private readonly toPresenceUser = (connection: ISocketConnection): PresenceUser => ({
         id: connection.user?._id ?? connection.id,

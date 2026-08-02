@@ -18,17 +18,9 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const skipNextMessageLoadRef = useRef(false);
 
     const modelSelection = useAIModelSelection(teamId);
+    const conversationMessages = useAIConversationMessages(teamId, conversationId);
 
-    const {
-        conversationMessages,
-        messagesQueryParams,
-        messagesResult,
-        isMessagesLoading,
-        messagesError,
-        loadConversationMessages
-    } = useAIConversationMessages(teamId, conversationId);
-
-    const conversationsHook = useAIConversations(teamId, conversationId, {
+    const conversations = useAIConversations(teamId, conversationId, {
         navigateOnConversationChange: options.navigateOnConversationChange,
         onConversationChange: options.onConversationChange,
         onConversationCreated: () => {
@@ -42,9 +34,9 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         conversationId,
         canSendMessage: modelSelection.canSendMessage,
         selectedModelRef: modelSelection.selectedModelRef,
-        conversationMessages,
-        messagesQueryParams,
-        messagesResult,
+        conversationMessages: conversationMessages.conversationMessages,
+        messagesQueryParams: conversationMessages.messagesQueryParams,
+        messagesResult: conversationMessages.messagesResult,
         skipNextMessageLoadRef
     });
 
@@ -52,39 +44,10 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         selectedTeam,
         accessDenied,
         accessDeniedMessage,
-
-        configuredProviderCatalog: modelSelection.configuredProviderCatalog,
-        availableModelsForProvider: modelSelection.availableModelsForProvider,
-        selectedProvider: modelSelection.selectedProvider,
-        selectedModel: modelSelection.selectedModel,
-        noProviderConfigured: modelSelection.noProviderConfigured,
-        canSendMessage: modelSelection.canSendMessage,
-        isProviderCatalogLoading: modelSelection.isProviderCatalogLoading,
-        providerCatalogError: modelSelection.providerCatalogError,
-        loadProviderCatalog: modelSelection.loadProviderCatalog,
-        setSelectedProvider: modelSelection.setSelectedProvider,
-        setSelectedModel: modelSelection.setSelectedModel,
-
-        activeConversation: conversationsHook.activeConversation,
-        conversations: conversationsHook.conversations,
-        isConversationsLoading: conversationsHook.isConversationsLoading,
-        conversationsError: conversationsHook.conversationsError,
-        loadConversations: conversationsHook.loadConversations,
-        handleSelectConversation: conversationsHook.handleSelectConversation,
-        handleCreateConversation: conversationsHook.handleCreateConversation,
-        handleDeleteConversation: conversationsHook.handleDeleteConversation,
-        handleRenameConversation: conversationsHook.handleRenameConversation,
-
-        isMessagesLoading,
-        messagesError,
-        loadConversationMessages,
-
-        messages: chatStream.messages,
-        isSendingMessage: chatStream.isSendingMessage,
-        sendMessageError: chatStream.sendMessageError,
-        handleSendMessage: chatStream.handleSendMessage,
-        stopStreaming: chatStream.stopStreaming,
-        addToolApprovalResponse: chatStream.addToolApprovalResponse
+        ...modelSelection,
+        ...conversationMessages,
+        ...conversations,
+        ...chatStream
     };
 };
 

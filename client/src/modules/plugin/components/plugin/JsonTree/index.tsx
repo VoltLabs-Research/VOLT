@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { JsonView, darkStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { isRecord } from '@/shared/utils/type-guards';
@@ -17,12 +17,8 @@ interface JsonTreeProps {
     defaultExpanded?: boolean;
 }
 
-const isTruncatedArray = (value: unknown): value is TruncatedArray => {
-    if (!isRecord(value)) {
-        return false;
-    }
-    return '_truncated' in value && value._truncated === true;
-};
+const isTruncatedArray = (value: unknown): value is TruncatedArray =>
+    isRecord(value) && value._truncated === true;
 
 const normalizeValue = (value: unknown): unknown => {
     if (value === null || value === undefined) {
@@ -49,19 +45,6 @@ const normalizeValue = (value: unknown): unknown => {
     return value;
 };
 
-const normalizeData = (data: JsonTreeData): JsonTreeData => {
-    if (Array.isArray(data)) {
-        return data.map(normalizeValue);
-    }
-
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-        result[key] = normalizeValue(value);
-    }
-
-    return result;
-};
-
 const JSON_TREE_STYLES = {
     ...darkStyles,
     container: 'json-tree-container',
@@ -82,14 +65,9 @@ const JSON_TREE_STYLES = {
 };
 
 const JsonTree = ({ data, defaultExpanded = true }: JsonTreeProps) => {
-    const normalized = useMemo(() => normalizeData(data), [data]);
-
-    const shouldExpandNode = useMemo(() => {
-        if (!defaultExpanded) {
-            return () => false;
-        }
-        return (level: number) => level < 2;
-    }, [defaultExpanded]);
+    // Memoised: normalising walks the whole payload, which can be large.
+    const normalized = useMemo(() => normalizeValue(data) as JsonTreeData, [data]);
+    const shouldExpandNode = useCallback((level: number) => defaultExpanded && level < 2, [defaultExpanded]);
 
     return (
         <JsonView

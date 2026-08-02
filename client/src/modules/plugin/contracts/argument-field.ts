@@ -1,8 +1,6 @@
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
+import type { InputHTMLAttributes } from 'react';
 import type { FormFieldChangeHandler } from '@/shared/contracts/form-field';
 import type { SelectOption } from '@voltstack/bravais';
-
-export type ArgumentFieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
 
 export interface ArgumentFieldProps {
     label: string;

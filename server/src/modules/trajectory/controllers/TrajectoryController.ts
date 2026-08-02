@@ -5,13 +5,9 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
-import {
-    sendTrajectoryPreview,
-    sendTrajectoryPreviewError
-} from '@modules/trajectory/controllers/trajectory-preview-response';
+import { respondWithTrajectoryPreview } from '@modules/trajectory/controllers/trajectory-preview-response';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
@@ -160,16 +156,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        try {
-            const value = await this.service.getPreview(this.params(req));
-            sendTrajectoryPreview(res, value);
-        } catch (error) {
-            logger.error(error);
-            if (res.headersSent) {
-                throw error;
-            }
-            sendTrajectoryPreviewError(res, error);
-        }
+        await respondWithTrajectoryPreview(res, () => this.service.getPreview(this.params(req)));
     }
 
     @Route(trajectoryRoutes.downloadAnalyses)

@@ -20,6 +20,7 @@
         "paths": {
             "@volt/contracts/*": ["../contracts/src/*"],
             "@/*": ["src/*"],
+            "typia": ["./node_modules/typia"],
             "react": ["./node_modules/@types/react"],
             "react/*": ["./node_modules/@types/react/*"],
             "react-dom": ["./node_modules/@types/react-dom"],

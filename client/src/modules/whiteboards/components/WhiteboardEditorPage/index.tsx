@@ -1,134 +1,21 @@
-import { Box, Button, Row, Stack } from '@voltstack/bravais';
-import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
+import { Button, Row } from '@voltstack/bravais';
+import WhiteboardEditorSkeleton from './WhiteboardEditorSkeleton';
+import useWhiteboardCanvasBridge from '@/modules/whiteboards/hooks/use-whiteboard-canvas-bridge';
+import useWhiteboardImageInsertion from '@/modules/whiteboards/hooks/use-whiteboard-image-insertion';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
-import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
-import { insertWhiteboardImages } from '@/modules/whiteboards/utils/excalidraw-images';
-import { applyWhiteboardDrawRequest } from '@/modules/whiteboards/utils/whiteboard-draw';
-import { useWhiteboardEditorHandleStore } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
-import type { WhiteboardDrawRequest } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
-import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utils/whiteboard-image-files';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
-import {
-    filterPersistableAppState,
-    normalizeWhiteboardRuntimeAppState
-} from '@/modules/whiteboards/utils/whiteboards';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import type { ChangeEvent, ClipboardEvent, CSSProperties, DragEvent, ReactNode } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type {
-    ExcalidrawAPI,
-    ExcalidrawChangeAppState,
-    ExcalidrawChangeElements,
-    ExcalidrawChangeFiles,
-    ExcalidrawChangeHandler,
-    ExcalidrawProps,
-    RenderTopRightUI
-} from '@/modules/whiteboards/contracts/excalidraw';
+import type { RenderTopRightUI } from '@/modules/whiteboards/contracts/excalidraw';
 import { ImagePlus } from 'lucide-react';
-import { sileo } from 'sileo';
 import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
 
 const AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS = 250;
-
-const loadingShellStyles = {
-    root: {
-        width: 'min(1200px, calc(100vw - 2rem))',
-        height: 'min(780px, calc(100dvh - 2rem))',
-        padding: '1rem',
-        borderRadius: '1.25rem',
-        border: '1px solid var(--color-border-primary)',
-        background: 'linear-gradient(180deg, var(--color-surface-primary) 0%, var(--color-surface-secondary) 100%)',
-        boxShadow: 'var(--shadow-card)'
-    },
-    toolbar: {
-        height: '4rem',
-        padding: '0.75rem 1rem',
-        borderRadius: '1rem',
-        border: '1px solid var(--color-border-primary)',
-        background: 'var(--color-surface-secondary)'
-    },
-    chip: {
-        height: '0.875rem',
-        borderRadius: '999px',
-        background: 'var(--color-surface-tertiary)'
-    },
-    sidebar: {
-        width: '18rem',
-        minWidth: '15rem',
-        padding: '1rem',
-        borderRadius: '1rem',
-        border: '1px solid var(--color-border-primary)',
-        background: 'var(--color-surface-secondary)'
-    },
-    canvas: {
-        minHeight: '24rem',
-        flex: 1,
-        padding: '1rem',
-        borderRadius: '1rem',
-        border: '1px solid var(--color-border-primary)',
-        background: 'radial-gradient(circle at top left, var(--color-surface-tertiary) 0%, var(--color-surface-primary) 60%)'
-    },
-    line: {
-        width: '100%',
-        height: '0.875rem',
-        borderRadius: '999px',
-        background: 'var(--color-surface-tertiary)'
-    },
-    floatingPanel: {
-        width: '18rem',
-        maxWidth: '100%',
-        padding: '0.875rem 1rem',
-        borderRadius: '1rem',
-        border: '1px solid var(--color-border-primary)',
-        background: 'var(--color-surface-secondary)'
-    },
-    aiButton: {
-        border: '1px solid var(--color-border-primary)',
-        borderRadius: '999px',
-        padding: '0.5rem 0.875rem',
-        background: 'var(--color-surface-secondary)',
-        color: 'var(--color-text-primary)',
-        font: 'inherit',
-        cursor: 'pointer'
-    }
-} satisfies Record<string, CSSProperties>;
-
-const syncSceneFiles = (api: ExcalidrawAPI, files?: Record<string, unknown>) => {
-    if (!files) {
-        return;
-    }
-
-    const nextFiles = Object.values(files);
-    if (nextFiles.length === 0) {
-        return;
-    }
-
-    api.addFiles(nextFiles as Parameters<ExcalidrawAPI['addFiles']>[0]);
-};
-
-const createSceneSignature = (elements: Record<string, unknown>[], appState: Record<string, unknown>) => {
-    const elementSignature = elements.map((element) => [
-        element.id,
-        element.version,
-        element.versionNonce,
-        element.updated,
-        element.isDeleted
-    ]);
-
-    return JSON.stringify({
-        elements: elementSignature,
-        appState: filterPersistableAppState(appState)
-    });
-};
-
-const EXCALIDRAW_CLIPBOARD_MIME_TYPES = new Set([
-    'application/vnd.excalidraw+json',
-    'application/vnd.excalidrawlib+json'
-]);
 
 const WhiteboardCanvas = lazy(
     () => import('./WhiteboardCanvas')
@@ -138,142 +25,34 @@ const LazyAIFloatingAssistantPanel = lazy(
     () => import('@/modules/ai/components/AIFloatingAssistantPanel')
 );
 
-const renderLoadingShell = (): ReactNode => (
-    <Row p='1' className='whiteboard-editor-loading justify-center'>
-        <div style={loadingShellStyles.root} role='status' aria-live='polite' aria-label='Loading whiteboard workspace'>
-            <Stack gap='1' className='h-100'>
-                <Row gap='1' className='justify-between' style={loadingShellStyles.toolbar}>
-                    <Row gap='05' flex='1'>
-                        <div style={{
-                            ...loadingShellStyles.chip,
-                            width: '8rem'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.chip,
-                            width: '5rem'
-                        }} />
-                    </Row>
-                    <Row gap='05'>
-                        <div style={{
-                            ...loadingShellStyles.chip,
-                            width: '2.5rem'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.chip,
-                            width: '2.5rem'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.chip,
-                            width: '2.5rem'
-                        }} />
-                    </Row>
-                </Row>
-
-                <Box display='flex' gap='1' flex='1' style={{ flexWrap: 'wrap' }}>
-                    <Stack gap='075' style={loadingShellStyles.sidebar}>
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '70%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '100%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '88%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '92%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '74%'
-                        }} />
-                    </Stack>
-
-                    <Stack gap='1' className='justify-between' style={loadingShellStyles.canvas}>
-                        <Box display='flex' gap='05'>
-                            <div style={{
-                                ...loadingShellStyles.chip,
-                                width: '6rem'
-                            }} />
-                            <div style={{
-                                ...loadingShellStyles.chip,
-                                width: '4rem'
-                            }} />
-                        </Box>
-                        <Box display='flex' className='justify-center'>
-                            <div style={{
-                                ...loadingShellStyles.line,
-                                width: '72%',
-                                height: '1rem'
-                            }} />
-                        </Box>
-                        <Box display='flex' align='end' gap='1' className='justify-between'>
-                            <div style={{
-                                ...loadingShellStyles.line,
-                                width: '28%',
-                                height: '9rem',
-                                borderRadius: '1rem'
-                            }} />
-                            <div style={{
-                                ...loadingShellStyles.line,
-                                width: '38%',
-                                height: '13rem',
-                                borderRadius: '1rem'
-                            }} />
-                            <div style={{
-                                ...loadingShellStyles.line,
-                                width: '22%',
-                                height: '7rem',
-                                borderRadius: '1rem'
-                            }} />
-                        </Box>
-                    </Stack>
-                </Box>
-
-                <Box display='flex' className='justify-end'>
-                    <Stack gap='05' style={loadingShellStyles.floatingPanel}>
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '45%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '100%'
-                        }} />
-                        <div style={{
-                            ...loadingShellStyles.line,
-                            width: '82%'
-                        }} />
-                    </Stack>
-                </Box>
-            </Stack>
-        </div>
-    </Row>
-);
-
 const WhiteboardEditorPage = () => {
     const { whiteboardId } = useParams<{ whiteboardId: string }>();
     const navigate = useNavigate();
     const resolvedWhiteboardId = whiteboardId ?? '';
-    const excalidrawApiRef = useRef<ExcalidrawAPI | null>(null);
-    const pendingSceneRef = useRef<{ elements: Record<string, unknown>[]; appState: Record<string, unknown>; files?: Record<string, unknown>; } | null>(null);
-    const ignoredSceneSignatureRef = useRef<string | null>(null);
-    const imageFileInputRef = useRef<HTMLInputElement | null>(null);
     const [shouldRenderAIAssistant, setShouldRenderAIAssistant] = useState(false);
 
     const {
         whiteboard,
-        initialState,
         isLoading,
-        handleChange,
-        mergeRemoteState,
+        excalidrawApiRef,
+        excalidrawInitialData,
         generateIdForFile,
+        prepareImageAsset,
+        handleExcalidrawChange,
+        handleExcalidrawAPI
+    } = useWhiteboardCanvasBridge({ whiteboardId: resolvedWhiteboardId });
+
+    const {
+        imageFileInputRef,
+        handleOpenImagePicker,
+        handleImagePickerChange,
+        handleCanvasDragOver,
+        handleCanvasDrop,
+        handleCanvasPasteCapture
+    } = useWhiteboardImageInsertion({
+        excalidrawApiRef,
         prepareImageAsset
-    } = useWhiteboardEditor({ whiteboardId: resolvedWhiteboardId });
+    });
 
     usePageTitle(whiteboard?.title ?? 'Whiteboard');
     useDashboardWorkspaceChrome({ hideHeader: true });
@@ -287,187 +66,9 @@ const WhiteboardEditorPage = () => {
         enabled: Boolean(resolvedWhiteboardId) && !isLoading
     });
 
-    const handleRemoteState = useCallback(
-        async (
-            elements: Record<string, unknown>[],
-            appState: Record<string, unknown>,
-            revision: number,
-            elementOrder?: string[]
-        ) => {
-            const mergedState = await mergeRemoteState(elements, appState, revision, elementOrder);
-            const scene = {
-                elements: mergedState.elements,
-                appState: mergedState.appState,
-                files: mergedState.files
-            };
-
-            pendingSceneRef.current = scene;
-
-            if (!excalidrawApiRef.current) {
-                return;
-            }
-
-            ignoredSceneSignatureRef.current = createSceneSignature(scene.elements, scene.appState);
-            syncSceneFiles(excalidrawApiRef.current, scene.files);
-            excalidrawApiRef.current.updateScene({
-                elements: scene.elements as unknown as ExcalidrawChangeElements,
-                appState: normalizeWhiteboardRuntimeAppState(scene.appState) as unknown as ExcalidrawChangeAppState
-            });
-        },
-        [mergeRemoteState]
-    );
-
-    const { sendDelta } = useWhiteboardSync({
-        whiteboardId,
-        enabled: Boolean(resolvedWhiteboardId),
-        onRemoteState: handleRemoteState
-    });
-
-    const handleExcalidrawChange = useCallback<ExcalidrawChangeHandler>(
-        (elements: ExcalidrawChangeElements, appState: ExcalidrawChangeAppState, files?: ExcalidrawChangeFiles) => {
-            const mutableElements = elements as unknown as Record<string, unknown>[];
-            const mutableAppState = appState as unknown as Record<string, unknown>;
-            const currentSceneSignature = createSceneSignature(mutableElements, mutableAppState);
-
-            if (ignoredSceneSignatureRef.current === currentSceneSignature) {
-                ignoredSceneSignatureRef.current = null;
-                return;
-            }
-
-            handleChange(
-                mutableElements,
-                mutableAppState,
-                (files ?? undefined) as Record<string, unknown> | undefined
-            );
-            sendDelta(mutableElements, mutableAppState);
-        },
-        [handleChange, sendDelta]
-    );
-
-    const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {
-        excalidrawApiRef.current = api;
-        const pendingScene = pendingSceneRef.current;
-        if (!pendingScene) {
-            return;
-        }
-
-        ignoredSceneSignatureRef.current = createSceneSignature(pendingScene.elements, pendingScene.appState);
-        syncSceneFiles(api, pendingScene.files);
-        api.updateScene({
-            elements: pendingScene.elements as unknown as ExcalidrawChangeElements,
-            appState: normalizeWhiteboardRuntimeAppState(pendingScene.appState) as unknown as ExcalidrawChangeAppState
-        });
-    }, []);
-
-    const registerEditorHandle = useWhiteboardEditorHandleStore((state) => state.register);
-    const unregisterEditorHandle = useWhiteboardEditorHandleStore((state) => state.unregister);
-
-    useEffect(() => {
-        if (!resolvedWhiteboardId) {
-            return;
-        }
-
-        registerEditorHandle({
-            whiteboardId: resolvedWhiteboardId,
-            isReady: () => Boolean(excalidrawApiRef.current),
-            draw: (request: WhiteboardDrawRequest) => {
-                const api = excalidrawApiRef.current;
-                if (!api) {
-                    return { drawn: 0 };
-                }
-                return applyWhiteboardDrawRequest(api, request);
-            }
-        });
-
-        return () => {
-            unregisterEditorHandle();
-        };
-    }, [resolvedWhiteboardId, registerEditorHandle, unregisterEditorHandle]);
-
     const handleBack = useCallback(() => navigate('/dashboard/whiteboards'), [navigate]);
 
-    const handleInsertImageFiles = useCallback(async (
-        files: File[],
-        insertionPoint?: { clientX: number; clientY: number; }
-    ): Promise<number> => {
-        const api = excalidrawApiRef.current;
-        if (!api) {
-            return 0;
-        }
-
-        try {
-            return await insertWhiteboardImages({
-                api,
-                files,
-                prepareFile: prepareImageAsset,
-                insertionPoint
-            });
-        } catch {
-            sileo.error({ title: 'Failed to insert image' });
-            return 0;
-        }
-    }, [prepareImageAsset]);
-
-    const handleOpenImagePicker = useCallback(() => {
-        imageFileInputRef.current?.click();
-    }, []);
-
-    const handleImagePickerChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        const imageFiles = extractWhiteboardImageFiles(event.currentTarget.files);
-        event.currentTarget.value = '';
-
-        if (imageFiles.length === 0) {
-            return;
-        }
-
-        await handleInsertImageFiles(imageFiles);
-    }, [handleInsertImageFiles]);
-
-    const handleCanvasDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
-        const imageFiles = extractWhiteboardImageFiles(event.dataTransfer?.files);
-        if (imageFiles.length === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-    }, []);
-
-    const handleCanvasDrop = useCallback(async (event: DragEvent<HTMLDivElement>) => {
-        const imageFiles = extractWhiteboardImageFiles(event.dataTransfer?.files);
-        if (imageFiles.length === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        await handleInsertImageFiles(imageFiles, {
-            clientX: event.clientX,
-            clientY: event.clientY
-        });
-    }, [handleInsertImageFiles]);
-
-    const handleCanvasPasteCapture = useCallback(async (event: ClipboardEvent<HTMLDivElement>) => {
-        const clipboardTypes = new Set(Array.from(event.clipboardData?.types ?? []));
-        if (Array.from(EXCALIDRAW_CLIPBOARD_MIME_TYPES).some((mimeType) => clipboardTypes.has(mimeType))) {
-            return;
-        }
-
-        const imageFiles = extractWhiteboardImageFiles(event.clipboardData?.files);
-        if (imageFiles.length === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        await handleInsertImageFiles(imageFiles);
-    }, [handleInsertImageFiles]);
-
     useEffect(() => {
-        if (shouldRenderAIAssistant) {
-            return;
-        }
-
         const idleCallbackHandle = requestIdleCallbackHandle(() => {
             setShouldRenderAIAssistant(true);
         }, { fallbackDelayMs: AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS });
@@ -475,7 +76,7 @@ const WhiteboardEditorPage = () => {
         return () => {
             idleCallbackHandle.cancel();
         };
-    }, [shouldRenderAIAssistant]);
+    }, []);
 
     let aiAssistantControl: ReactNode = null;
     if (shouldRenderAIAssistant) {
@@ -484,7 +85,7 @@ const WhiteboardEditorPage = () => {
                 <button
                     type='button'
                     disabled
-                    style={loadingShellStyles.aiButton}
+                    className='whiteboard-ai-loading-button'
                     aria-label='Loading the Volt AI assistant'
                 >
                     Loading AI...
@@ -537,12 +138,6 @@ const WhiteboardEditorPage = () => {
         return null;
     }
 
-    const excalidrawInitialData = {
-        elements: initialState?.elements ?? [],
-        appState: normalizeWhiteboardRuntimeAppState(initialState?.appState ?? {}),
-        files: initialState?.files
-    } as unknown as ExcalidrawProps['initialData'];
-
     return (
         <div className='whiteboard-editor-root'>
             <span className='whiteboard-presence-live-region' aria-live='polite' aria-atomic='true'>
@@ -557,9 +152,9 @@ const WhiteboardEditorPage = () => {
                 onChange={handleImagePickerChange}
             />
             {isLoading ? (
-                renderLoadingShell()
+                <WhiteboardEditorSkeleton />
             ) : (
-                <Suspense fallback={renderLoadingShell()}>
+                <Suspense fallback={<WhiteboardEditorSkeleton />}>
                     <WhiteboardCanvas
                         name={whiteboard?.title ?? 'Untitled Whiteboard'}
                         initialData={excalidrawInitialData}

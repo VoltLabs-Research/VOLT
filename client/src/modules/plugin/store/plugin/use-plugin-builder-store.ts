@@ -1,57 +1,30 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
-import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
+import { collectWorkflowErrors, isConnectionAllowed } from '@/modules/plugin/store/plugin/builder-graph-rules';
+import { createNode } from '@/modules/plugin/utils/plugin/node-registry';
+import {
+    DEFAULT_EDGE_STYLE,
+    toBuilderEdges,
+    toBuilderNodes,
+    toWorkflowEdges,
+    toWorkflowNodes
+} from '@/modules/plugin/store/plugin/builder-graph-mapping';
+import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import type { IWorkflow, INodeData } from '@volt/contracts/modules/plugin/workflow';
-import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
-import { NODE_CONFIGS, createNode } from '@/modules/plugin/utils/plugin/node-registry';
-
-type ValidationResult = {
-    valid: boolean;
-    errors: string[];
-};
-
-type BuilderHistoryState = {
-    nodes: Node<INodeData>[];
-    edges: Edge[];
-    graphVersion: number;
-};
-
-const DEFAULT_EDGE_STYLE = {
-    animated: true,
-    style: {
-        stroke: '#64748b',
-        strokeWidth: 2
-    }
-};
-
-const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges' | 'graphVersion'>): BuilderHistoryState => {
-    return {
-        nodes: state.nodes.map((node) => ({
-            id: node.id,
-            type: node.type,
-            position: node.position,
-            data: node.data
-        })) as Node<INodeData>[],
-        edges: state.edges.map((edge) => ({
-            id: edge.id,
-            source: edge.source,
-            target: edge.target,
-            sourceHandle: edge.sourceHandle ?? undefined,
-            targetHandle: edge.targetHandle ?? undefined,
-            ...DEFAULT_EDGE_STYLE
-        })),
-        graphVersion: state.graphVersion
-    };
-};
+import type { NodeType } from '@volt/contracts/modules/plugin/enums';
 
 interface PluginBuilderState {
     nodes: Node<INodeData>[];
     edges: Edge[];
     selectedNode: Node<INodeData> | null;
     isSaving: boolean;
-    saveError: string | null;
-    validationResult: ValidationResult | null;
+    validationErrors: string[];
+    /**
+     * Bumped on every structural change. Undo steps are collapsed by comparing
+     * this instead of diffing the graph, which also keeps node *data* edits from
+     * being recorded as separate history entries.
+     */
     graphVersion: number;
 }
 
@@ -70,7 +43,6 @@ interface PluginBuilderActions {
     loadWorkflow: (workflow: IWorkflow) => void;
     clearWorkflow: () => void;
     setSaving: (value: boolean) => void;
-    setSaveError: (error: string | null) => void;
     undo: () => void;
     redo: () => void;
     reset: () => void;
@@ -78,56 +50,33 @@ interface PluginBuilderActions {
 
 type PluginBuilderStore = PluginBuilderState & PluginBuilderActions;
 
+type BuilderHistoryState = Pick<PluginBuilderState, 'nodes' | 'edges' | 'graphVersion'>;
+
 const initialState: PluginBuilderState = {
     nodes: [],
     edges: [],
     selectedNode: null,
     isSaving: false,
-    saveError: null,
-    validationResult: null,
+    validationErrors: [],
     graphVersion: 0
 };
 
-const areHistoryStatesEqual = (pastState: BuilderHistoryState, currentState: BuilderHistoryState) => {
-    return pastState.graphVersion === currentState.graphVersion;
-};
-
-const bumpGraphVersion = (currentVersion: number): number => currentVersion + 1;
+const serializeHistoryState = (state: PluginBuilderState): BuilderHistoryState => ({
+    nodes: toBuilderNodes(state.nodes),
+    edges: toBuilderEdges(state.edges),
+    graphVersion: state.graphVersion
+});
 
 const hasNodeDataChanges = (currentData: INodeData, nextData: Partial<INodeData>): boolean => {
-    const nextEntries = Object.entries(nextData);
-
-    if (nextEntries.length === 0) {
-        return false;
-    }
-
-    return nextEntries.some(([key, value]) => !Object.is(currentData[key], value));
+    return Object.entries(nextData).some(([key, value]) => !Object.is(currentData[key], value));
 };
 
 export const usePluginBuilderStore = create<PluginBuilderStore>()(
     temporal<PluginBuilderStore, [], [], BuilderHistoryState>(
         (set, get) => {
-            const _validate = () => {
+            const _revalidate = () => {
                 const { nodes, edges } = get();
-                const errors: string[] = [];
-                const nodeTypes = nodes.map((n) => n.type);
-
-                if (!nodeTypes.includes('modifier')) {
-                    errors.push('Missing Modifier node — required as the plugin entry point.');
-                }
-                if (nodeTypes.includes('modifier') && !edges.some((e) => {
-                    const src = nodes.find((n) => n.id === e.source);
-                    return src?.type === 'modifier';
-                })) {
-                    if (nodes.length > 1) errors.push('Modifier node has no outgoing connections.');
-                }
-
-                set({
-                    validationResult: {
-                        valid: errors.length === 0,
-                        errors
-                    }
-                });
+                set({ validationErrors: collectWorkflowErrors(nodes, edges) });
             };
 
             const _runWithoutHistory = (callback: () => void) => {
@@ -142,6 +91,7 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                 }
             };
 
+            /** Applies a structural change, or nothing at all when the updater declines. */
             const _setGraphState = (updater: (state: PluginBuilderState) => Partial<PluginBuilderState> | null) => {
                 const currentState = get();
                 const nextState = updater(currentState);
@@ -152,10 +102,17 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
 
                 set({
                     ...nextState,
-                    graphVersion: bumpGraphVersion(currentState.graphVersion)
+                    graphVersion: currentState.graphVersion + 1
                 });
 
-                _validate();
+                _revalidate();
+            };
+
+            const _resetGraph = () => {
+                _runWithoutHistory(() => {
+                    set(initialState);
+                });
+                _revalidate();
             };
 
             return {
@@ -175,30 +132,7 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
 
             validateConnection(connection) {
                 const { nodes, edges } = get();
-                const { source, target } = connection;
-
-                if (!source || !target || source === target) return false;
-
-                const srcNode = nodes.find((n) => n.id === source);
-                const tgtNode = nodes.find((n) => n.id === target);
-
-                if (!srcNode?.type || !tgtNode?.type) return false;
-
-                const srcConfig = NODE_CONFIGS[srcNode.type as NodeType];
-                const tgtConfig = NODE_CONFIGS[tgtNode.type as NodeType];
-
-                if (!srcConfig || !tgtConfig) return false;
-                if (!srcConfig.allowedConnections.to.includes(tgtNode.type as NodeType)) return false;
-                if (!tgtConfig.allowedConnections.from.includes(srcNode.type as NodeType)) return false;
-                if (edges.some((e) => e.source === source && e.target === target)) return false;
-
-                const tgtLimit = typeof tgtConfig.inputs === 'number' ? tgtConfig.inputs : 1;
-                if (tgtLimit !== -1 && edges.filter((e) => e.target === target).length >= tgtLimit) return false;
-
-                const srcLimit = srcConfig.outputs;
-                if (srcLimit !== -1 && edges.filter((e) => e.source === source).length >= srcLimit) return false;
-
-                return true;
+                return isConnectionAllowed(nodes, edges, connection);
             },
 
             onConnect(connection) {
@@ -206,8 +140,8 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
 
                 const edge: Edge = {
                     id: `e-${connection.source}-${connection.target}-${connection.sourceHandle ?? 's'}-${connection.targetHandle ?? 't'}`,
-                    source: connection.source!,
-                    target: connection.target!,
+                    source: connection.source,
+                    target: connection.target,
                     sourceHandle: connection.sourceHandle ?? undefined,
                     targetHandle: connection.targetHandle ?? undefined,
                     ...DEFAULT_EDGE_STYLE
@@ -238,31 +172,27 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                         ...targetNode.data,
                         ...data
                     };
-                    const nodes = state.nodes.map((node) =>
-                        node.id === nodeId ? {
-                            ...node,
-                            data: mergedNodeData
-                        } : node
-                    );
-                    const selectedNode = state.selectedNode?.id === nodeId
-                        ? {
-                            ...state.selectedNode,
-                            data: mergedNodeData
-                        }
-                        : state.selectedNode;
 
                     return {
-                        nodes,
-                        selectedNode
+                        nodes: state.nodes.map((node) =>
+                            node.id === nodeId ? {
+                                ...node,
+                                data: mergedNodeData
+                            } : node
+                        ),
+                        selectedNode: state.selectedNode?.id === nodeId
+                            ? {
+                                ...state.selectedNode,
+                                data: mergedNodeData
+                            }
+                            : state.selectedNode
                     };
                 });
             },
 
             deleteNode: (nodeId) => {
                 _setGraphState((state) => {
-                    const hasNode = state.nodes.some((node) => node.id === nodeId);
-
-                    if (!hasNode) {
+                    if (!state.nodes.some((node) => node.id === nodeId)) {
                         return null;
                     }
 
@@ -278,45 +208,8 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                 const { nodes, edges } = get();
 
                 return {
-                    nodes: nodes.map((n) => {
-                        const pluginNode = n.type === NodeType.PLUGIN ? n.data.pluginNode : undefined;
-                        const pluginId = pluginNode?.pluginId?.trim() ?? '';
-                        const argumentReference = pluginNode?.argumentReference?.trim() ?? '';
-                        const executionMode = pluginNode?.executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE
-                            ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
-                            : pluginNode?.executionMode === PluginNodeExecutionMode.MANUAL
-                                ? PluginNodeExecutionMode.MANUAL
-                                : !pluginId && argumentReference
-                                    ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
-                                    : PluginNodeExecutionMode.MANUAL;
-
-                        return {
-                            id: n.id,
-                            type: n.type as NodeType,
-                            position: {
-                                x: n.position.x,
-                                y: n.position.y
-                            },
-                            data: pluginNode
-                                ? {
-                                    ...n.data,
-                                    pluginNode: {
-                                        ...pluginNode,
-                                        pluginId,
-                                        argumentReference,
-                                        executionMode
-                                    }
-                                }
-                                : n.data
-                        };
-                    }),
-                    edges: edges.map((e) => ({
-                        id: e.id,
-                        source: e.source,
-                        target: e.target,
-                        sourceHandle: e.sourceHandle ?? undefined,
-                        targetHandle: e.targetHandle ?? undefined
-                    })),
+                    nodes: toWorkflowNodes(nodes),
+                    edges: toWorkflowEdges(edges),
                     viewport: {
                         x: 0,
                         y: 0,
@@ -328,60 +221,38 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
             loadWorkflow(workflow) {
                 _runWithoutHistory(() => {
                     set({
-                        nodes: workflow.nodes.map((n) => ({
-                            id: n.id,
-                            type: n.type,
-                            position: n.position,
-                            data: n.data
-                        })) as Node<INodeData>[],
-                        edges: workflow.edges.map((e) => ({
-                            id: e.id,
-                            source: e.source,
-                            target: e.target,
-                            sourceHandle: e.sourceHandle,
-                            targetHandle: e.targetHandle,
-                            ...DEFAULT_EDGE_STYLE
-                        })),
+                        nodes: toBuilderNodes(workflow.nodes),
+                        edges: toBuilderEdges(workflow.edges),
                         selectedNode: null
                     });
                 });
-                _validate();
+                _revalidate();
             },
 
-            clearWorkflow: () => {
-                _runWithoutHistory(() => {
-                    set(initialState);
-                });
-                _validate();
-            },
+            clearWorkflow: _resetGraph,
+
+            // The team-switch teardown in `application-store-cleanups` resets
+            // every store through this name.
+            reset: _resetGraph,
 
             setSaving: (value) => set({ isSaving: value }),
-
-            setSaveError: (error) => set({ saveError: error }),
 
             undo: () => {
                 usePluginBuilderStore.temporal.getState().undo();
                 set({ selectedNode: null });
-                _validate();
+                _revalidate();
             },
 
             redo: () => {
                 usePluginBuilderStore.temporal.getState().redo();
                 set({ selectedNode: null });
-                _validate();
-            },
-
-            reset: () => {
-                _runWithoutHistory(() => {
-                    set(initialState);
-                });
-                _validate();
+                _revalidate();
             }
             };
         },
         {
             partialize: serializeHistoryState,
-            equality: areHistoryStatesEqual,
+            equality: (pastState, currentState) => pastState.graphVersion === currentState.graphVersion,
             limit: 50
         }
     )

@@ -1,10 +1,12 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AuthService from '@modules/auth/services/AuthService';
 import type { UpdateProfileInput } from '@volt/contracts/modules/auth/ai-tools';
 
+@AIToolProvider()
 export default class AuthAIToolController extends AIToolController {
     #service = new AuthService();
 

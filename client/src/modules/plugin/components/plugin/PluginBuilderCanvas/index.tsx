@@ -10,6 +10,7 @@ import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
 import { Box } from '@voltstack/bravais';
+import type { SaveStatus } from '@voltstack/bravais';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -44,13 +45,7 @@ const useCanvasThemeColors = () => {
     const [colors, setColors] = useState(resolveThemeColors);
 
     useEffect(() => {
-        const observer = new MutationObserver((mutations) => {
-            for (const m of mutations) {
-                if (m.attributeName === 'data-theme') {
-                    setColors(resolveThemeColors());
-                }
-            }
-        });
+        const observer = new MutationObserver(() => setColors(resolveThemeColors()));
         observer.observe(document.documentElement, {
             attributes: true,
             attributeFilter: ['data-theme']
@@ -62,7 +57,7 @@ const useCanvasThemeColors = () => {
 };
 
 interface PluginBuilderCanvasProps {
-    saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+    saveStatus: SaveStatus;
     onSave: () => void;
 }
 

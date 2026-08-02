@@ -9,10 +9,9 @@ import type {
 } from '@shared/contracts/ports/IContainerService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
-interface RuntimeContainerSummary {
+export interface RuntimeContainerSummary {
     Id: string;
     State?: string;
-    Status?: string;
 }
 
 type ContainerRuntimeAction = 'start' | 'stop' | 'restart';
@@ -21,29 +20,58 @@ interface ReadContainerFileResponse {
     contents: string;
 }
 
-const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
-const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
+/**
+ * Stats and process listings are polled by every open container view, so they
+ * are cached briefly and concurrent callers share one in-flight command instead
+ * of each waking the daemon.
+ */
+class DaemonCommandCache<T> {
+    private readonly entries = new Map<string, { expiresAt: number; value: T }>();
+    private readonly pending = new Map<string, Promise<T>>();
+
+    constructor(private readonly ttlMs: number) {}
+
+    async read(cacheKey: string, load: () => Promise<T>): Promise<T> {
+        const cached = this.entries.get(cacheKey);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.value;
+        }
+
+        const pending = this.pending.get(cacheKey);
+        if (pending) {
+            return pending;
+        }
+
+        const loadPromise = load().then((value) => {
+            this.entries.set(cacheKey, {
+                expiresAt: Date.now() + this.ttlMs,
+                value
+            });
+            return value;
+        }).finally(() => {
+            this.pending.delete(cacheKey);
+        });
+
+        this.pending.set(cacheKey, loadPromise);
+        return loadPromise;
+    }
+
+    clear(cacheKey: string): void {
+        this.entries.delete(cacheKey);
+        this.pending.delete(cacheKey);
+    }
+}
 
 export class DaemonContainerRuntimeService {
-    private readonly statsCache = new Map<string, {
-        expiresAt: number;
-        value: ContainerStats;
-    }>();
-    private readonly processesCache = new Map<string, {
-        expiresAt: number;
-        value: ContainerProcessInfo[];
-    }>();
-    private readonly pendingStats = new Map<string, Promise<ContainerStats>>();
-    private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
-
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
+    private readonly stats = new DaemonCommandCache<ContainerStats>(3_000);
+    private readonly processes = new DaemonCommandCache<ContainerProcessInfo[]>(5_000);
 
     async listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, ChannelCommands.ContainerList);
+        return teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, ChannelCommands.ContainerList);
     }
 
     async createContainer(teamClusterId: string, config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo> {
-        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerCreate, { ...config }, {
+        const container = await teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerCreate, { ...config }, {
             timeoutMs: 5 * 60 * 1000
         });
         this.clearContainerCache(teamClusterId, container.Id);
@@ -51,65 +79,35 @@ export class DaemonContainerRuntimeService {
     }
 
     async getContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerGet, { containerId });
-    }
-
-    async startContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.applyContainerAction(teamClusterId, containerId, 'start');
-    }
-
-    async stopContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.applyContainerAction(teamClusterId, containerId, 'stop');
-    }
-
-    async restartContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.applyContainerAction(teamClusterId, containerId, 'restart');
+        return teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerGet, { containerId });
     }
 
     async removeContainer(teamClusterId: string, containerId: string): Promise<void> {
-        await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, ChannelCommands.ContainerDelete, { containerId });
+        await teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, ChannelCommands.ContainerDelete, { containerId });
         this.clearContainerCache(teamClusterId, containerId);
     }
 
     async getStats(teamClusterId: string, containerId: string): Promise<ContainerStats> {
-        const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
-        const cachedStats = this.statsCache.get(cacheKey);
-        if (cachedStats && cachedStats.expiresAt > Date.now()) {
-            return cachedStats.value;
-        }
-
-        const pendingStats = this.pendingStats.get(cacheKey);
-        if (pendingStats) {
-            return pendingStats;
-        }
-
-        const statsPromise = this.teamClusterDaemonClient.command<ContainerStats>(
-            teamClusterId,
-            ChannelCommands.ContainerStats,
-            { containerId }
-        ).then((stats) => {
-            this.statsCache.set(cacheKey, {
-                expiresAt: Date.now() + CONTAINER_STATS_CACHE_TTL_MS,
-                value: stats
-            });
-            return stats;
-        }).finally(() => {
-            this.pendingStats.delete(cacheKey);
+        return this.stats.read(this.buildContainerCacheKey(teamClusterId, containerId), () => {
+            return teamClusterDaemonClient.command<ContainerStats>(teamClusterId, ChannelCommands.ContainerStats, { containerId });
         });
+    }
 
-        this.pendingStats.set(cacheKey, statsPromise);
-        return statsPromise;
+    async getProcesses(teamClusterId: string, containerId: string): Promise<ContainerProcessInfo[]> {
+        return this.processes.read(this.buildContainerCacheKey(teamClusterId, containerId), () => {
+            return teamClusterDaemonClient.command<ContainerProcessInfo[]>(teamClusterId, ChannelCommands.ContainerProcessesList, { containerId });
+        });
     }
 
     async getFiles(teamClusterId: string, containerId: string, path: string): Promise<ContainerFileEntry[]> {
-        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, ChannelCommands.ContainerFilesList, {
+        return teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, ChannelCommands.ContainerFilesList, {
             containerId,
             path
         });
     }
 
     async readFile(teamClusterId: string, containerId: string, path: string): Promise<string> {
-        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, ChannelCommands.ContainerFileRead, {
+        const response = await teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, ChannelCommands.ContainerFileRead, {
             containerId,
             path
         });
@@ -118,41 +116,11 @@ export class DaemonContainerRuntimeService {
     }
 
     async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        return this.teamClusterDaemonClient.attachTerminal(teamClusterId, containerId);
+        return teamClusterDaemonClient.attachTerminal(teamClusterId, containerId);
     }
 
-    async getProcesses(teamClusterId: string, containerId: string): Promise<ContainerProcessInfo[]> {
-        const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
-        const cachedProcesses = this.processesCache.get(cacheKey);
-        if (cachedProcesses && cachedProcesses.expiresAt > Date.now()) {
-            return cachedProcesses.value;
-        }
-
-        const pendingProcesses = this.pendingProcesses.get(cacheKey);
-        if (pendingProcesses) {
-            return pendingProcesses;
-        }
-
-        const processesPromise = this.teamClusterDaemonClient.command<ContainerProcessInfo[]>(
-            teamClusterId,
-            ChannelCommands.ContainerProcessesList,
-            { containerId }
-        ).then((processes) => {
-            this.processesCache.set(cacheKey, {
-                expiresAt: Date.now() + CONTAINER_PROCESSES_CACHE_TTL_MS,
-                value: processes
-            });
-            return processes;
-        }).finally(() => {
-            this.pendingProcesses.delete(cacheKey);
-        });
-
-        this.pendingProcesses.set(cacheKey, processesPromise);
-        return processesPromise;
-    }
-
-    private async applyContainerAction(teamClusterId: string, containerId: string, action: ContainerRuntimeAction): Promise<RuntimeContainerInfo> {
-        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(
+    async applyContainerAction(teamClusterId: string, containerId: string, action: ContainerRuntimeAction): Promise<RuntimeContainerInfo> {
+        const container = await teamClusterDaemonClient.command<RuntimeContainerInfo>(
             teamClusterId,
             ChannelCommands.ContainerUpdate,
             {
@@ -170,10 +138,8 @@ export class DaemonContainerRuntimeService {
 
     private clearContainerCache(teamClusterId: string, containerId: string): void {
         const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
-        this.statsCache.delete(cacheKey);
-        this.processesCache.delete(cacheKey);
-        this.pendingStats.delete(cacheKey);
-        this.pendingProcesses.delete(cacheKey);
+        this.stats.clear(cacheKey);
+        this.processes.clear(cacheKey);
     }
 }
 

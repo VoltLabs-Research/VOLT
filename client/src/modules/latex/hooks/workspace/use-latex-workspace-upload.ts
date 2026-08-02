@@ -13,14 +13,7 @@ interface UseLatexWorkspaceUploadInput{
 }
 
 /** Folder pickers expose the nested path on a non-standard field. */
-const resolveEntryPath = (file: File): string => {
-    if('webkitRelativePath' in file
-        && typeof file.webkitRelativePath === 'string'
-        && file.webkitRelativePath){
-        return file.webkitRelativePath;
-    }
-    return file.name;
-};
+const resolveEntryPath = (file: File): string => file.webkitRelativePath || file.name;
 
 const takeEntries = (
     event: ChangeEvent<HTMLInputElement>,

@@ -15,11 +15,11 @@ interface UseSimulationCellResult {
     accessDeniedMessage: string | undefined;
 };
 
-const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationCellResult => {
-    const { trajectoryId, timestep, enabled = true } = params;
-
-    const shouldFetch = enabled && Boolean(trajectoryId);
-
+const useSimulationCell = ({
+    trajectoryId,
+    timestep,
+    enabled = true
+}: UseSimulationCellParams = {}): UseSimulationCellResult => {
     const {
         data,
         isLoading,
@@ -30,7 +30,7 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
             timestep
         },
         {
-            enabled: shouldFetch,
+            enabled: enabled && Boolean(trajectoryId),
             retry: (failureCount, error) => {
                 if (isAccessDeniedError(error)) {
                     return false;
@@ -41,17 +41,15 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
         }
     );
 
-    const simulationCell = data ?? null;
     const accessDenied = isAccessDeniedError(queryError);
-    const accessDeniedMessage = accessDenied
-        ? reportError(queryError, { surface: ErrorSurface.Silent }).title
-        : undefined;
 
     return {
-        simulationCell,
+        simulationCell: data ?? null,
         isLoading,
         accessDenied,
-        accessDeniedMessage
+        accessDeniedMessage: accessDenied
+            ? reportError(queryError, { surface: ErrorSurface.Silent }).title
+            : undefined
     };
 };
 

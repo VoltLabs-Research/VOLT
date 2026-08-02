@@ -1,18 +1,14 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface OpenPanelInput {
-    sidebarOption?: string;
-    modifier?: string;
-}
+import type { OpenPanelInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const openPanel: ClientToolHandler<OpenPanelInput> = {
     name: 'open_panel',
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const sidebarOption = typeof input.sidebarOption === 'string' ? input.sidebarOption.trim() : '';
-        const modifier = typeof input.modifier === 'string' ? input.modifier.trim() : '';
+        const sidebarOption = input.sidebarOption?.trim();
+        const modifier = input.modifier?.trim();
 
         if (!sidebarOption && !modifier) {
             return {

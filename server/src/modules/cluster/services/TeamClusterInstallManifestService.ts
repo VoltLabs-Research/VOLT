@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type {
@@ -118,7 +119,7 @@ class TeamClusterInstallManifestService {
     private requireInstallRoot(installRoot: string): string {
         const normalizedInstallRoot = normalizeTeamClusterInstallRoot(installRoot);
         if (!normalizedInstallRoot) {
-            throw ApplicationError.badRequest('TeamCluster::InvalidInstallRoot', 'Install root is required');
+            throw ApplicationError.badRequest(ErrorCodes.TEAM_CLUSTER_INVALID_INSTALL_ROOT, 'Install root is required');
         }
 
         return normalizedInstallRoot;
@@ -152,7 +153,7 @@ class TeamClusterInstallManifestService {
         });
 
         if (!updateResult.affected) {
-            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
+            throw ApplicationError.notFound(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 'Team cluster not found');
         }
     }
 }

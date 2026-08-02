@@ -35,8 +35,7 @@ const DemoProvisioningPage = () => {
 
     const [hasTriggered, setHasTriggered] = useState(false);
     const [isWaiting, setIsWaiting] = useState(false);
-    const [hasFailed, setHasFailed] = useState(false);
-    const [hasTimedOut, setHasTimedOut] = useState(false);
+    const [failure, setFailure] = useState<'error' | 'timeout' | null>(null);
     const [remainingMs, setRemainingMs] = useState(POLL_TIMEOUT_MS);
     const startedAtRef = useRef<number | null>(null);
 
@@ -65,7 +64,7 @@ const DemoProvisioningPage = () => {
                 },
                 onError: (error) => {
                     setIsWaiting(false);
-                    setHasFailed(true);
+                    setFailure('error');
                     reportError(error, {
                         surface: ErrorSurface.Toast,
                         fallbackTitle: 'Demo provisioning failed',
@@ -88,8 +87,7 @@ const DemoProvisioningPage = () => {
             if (remaining <= 0) {
                 setRemainingMs(0);
                 setIsWaiting(false);
-                setHasFailed(true);
-                setHasTimedOut(true);
+                setFailure('timeout');
                 sileo.error({
                     title: 'Provisioning timed out',
                     description: 'Please try again or connect your own cluster.'
@@ -125,8 +123,7 @@ const DemoProvisioningPage = () => {
     }, [isWaiting, teamClustersQuery.data, teamClustersQuery.isSuccess, navigate, setFromCluster]);
 
     const handleRetry = () => {
-        setHasFailed(false);
-        setHasTimedOut(false);
+        setFailure(null);
         setRemainingMs(POLL_TIMEOUT_MS);
         setHasTriggered(false);
     };
@@ -135,19 +132,16 @@ const DemoProvisioningPage = () => {
         return <Navigate to='/onboarding/cluster/setup' replace />;
     }
 
-    if (hasFailed) {
-        const failureTitle = hasTimedOut ? 'Demo provisioning timed out' : 'Demo provisioning failed';
-        const failureDescription = hasTimedOut
-            ? 'We couldn’t spin up a demo cluster in time. This can happen under load — retry, or connect your own cluster instead.'
-            : 'We couldn’t spin up a demo cluster. You can retry, or connect your own cluster instead.';
-
+    if (failure) {
         return (
             <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
                 <Stack gap='1' align='center' justify='center' className='min-h-screen'>
                     <RecoveryState
                         tone={RecoveryStateTone.Error}
-                        title={failureTitle}
-                        description={failureDescription}
+                        title={failure === 'timeout' ? 'Demo provisioning timed out' : 'Demo provisioning failed'}
+                        description={failure === 'timeout'
+                            ? 'We couldn’t spin up a demo cluster in time. This can happen under load — retry, or connect your own cluster instead.'
+                            : 'We couldn’t spin up a demo cluster. You can retry, or connect your own cluster instead.'}
                         retryLabel='Try again'
                         onRetry={handleRetry}
                     />
@@ -159,15 +153,13 @@ const DemoProvisioningPage = () => {
         );
     }
 
-    const elapsedRate = (POLL_TIMEOUT_MS - remainingMs) / POLL_TIMEOUT_MS;
-
     return (
         <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
             <Stack align='center' justify='center' gap='1-5' className='min-h-screen'>
                 <ProcessingLoader
                     isVisible
                     showProgress
-                    completionRate={elapsedRate}
+                    completionRate={(POLL_TIMEOUT_MS - remainingMs) / POLL_TIMEOUT_MS}
                     message={`Provisioning your demo cluster… ${formatRemaining(remainingMs)} remaining`}
                 />
             </Stack>

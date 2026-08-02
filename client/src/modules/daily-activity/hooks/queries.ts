@@ -6,13 +6,11 @@ interface DailyActivityQueryParams extends GetDailyActivityParams {
     teamId: string;
 }
 
-type DailyActivityQueryKeys = {
+const KEYS = buildKeys<{
     activity: DailyActivityQueryParams;
-};
+}>('daily-activity');
 
-const KEYS = buildKeys<DailyActivityQueryKeys>('daily-activity');
-
-export const dailyActivityQuery = createQuery<DailyActivityQueryParams, Awaited<ReturnType<typeof service.getDailyActivity>>>(
+export const dailyActivityQuery = createQuery(
     KEYS.activity,
     ({ range, scope }) => service.getDailyActivity({
         range,

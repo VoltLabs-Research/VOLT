@@ -7,12 +7,7 @@ import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealt
 import TeamJobsService, { type TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 
-interface RemoveRunningJobsInput {
-    teamId: string;
-    trajectoryId: string;
-}
-
-interface RetryFailedJobsInput {
+interface TeamTrajectoryRef {
     teamId: string;
     trajectoryId: string;
 }
@@ -20,18 +15,10 @@ interface RetryFailedJobsInput {
 interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
 
 export default class JobsService {
-    #maintenance = teamJobMaintenanceService;
+    #realtimeSync = new TeamJobsRealtimeSyncService(new TeamJobsService(), socketIOEmitter);
 
-    #realtimeSyncCache?: TeamJobsRealtimeSyncService;
-    get #realtimeSync(): TeamJobsRealtimeSyncService {
-        return (this.#realtimeSyncCache ??= new TeamJobsRealtimeSyncService(
-            new TeamJobsService(),
-            socketIOEmitter
-        ));
-    }
-
-    async removeRunningJobs(input: RemoveRunningJobsInput): Promise<RemoveRunningJobsResult> {
-        const outcome = await this.#maintenance.removeJobsForTrajectory(input.teamId, input.trajectoryId);
+    async removeRunningJobs(input: TeamTrajectoryRef): Promise<RemoveRunningJobsResult> {
+        const outcome = await teamJobMaintenanceService.removeJobsForTrajectory(input.teamId, input.trajectoryId);
         const snapshot = await this.#realtimeSync.broadcastSnapshot(input.teamId);
 
         return {
@@ -40,7 +27,7 @@ export default class JobsService {
         };
     }
 
-    async retryFailedJobs(input: RetryFailedJobsInput): Promise<RetryTeamJobsResult> {
-        return this.#maintenance.retryFailedJobsForTrajectory(input.teamId, input.trajectoryId);
+    async retryFailedJobs(input: TeamTrajectoryRef): Promise<RetryTeamJobsResult> {
+        return teamJobMaintenanceService.retryFailedJobsForTrajectory(input.teamId, input.trajectoryId);
     }
 }

@@ -1,9 +1,7 @@
-export interface LatexFileEntry {
-    _id: string;
-    name: string;
-    path: string;
-    content: string;
-    isEntrypoint: boolean;
+import type { LatexFile } from '@volt/contracts/modules/latex/domain';
+import type { FileWithPath } from '@/shared/utils/file';
+
+export interface LatexFileEntry extends Pick<LatexFile, '_id' | 'name' | 'path' | 'content' | 'isEntrypoint'> {
     isSelected: boolean;
 }
 
@@ -17,10 +15,7 @@ export interface LatexWorkspaceAssetSelection {
     id: string;
 }
 
-export interface WorkspaceUploadEntry {
-    file: File;
-    path: string;
-}
+export type WorkspaceUploadEntry = FileWithPath;
 
 export type LatexWorkspaceSelection =
     | LatexWorkspaceFileSelection
@@ -48,7 +43,6 @@ export interface PendingRemoteFileUpdate {
     content: string;
     timestamp: number;
 }
-
 
 export interface RenameTarget {
     id: string;

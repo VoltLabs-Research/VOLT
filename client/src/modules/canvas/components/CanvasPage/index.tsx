@@ -1,87 +1,62 @@
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
-import { useCanvasBridgeStore } from '../../store/use-canvas-bridge-store';
-import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import useAnalysisStatus from '../../hooks/use-analysis-status';
-import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../hooks/use-canvas-coordinator';
 import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
-import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-workspace';
-import useLiveModelDrag from '@/modules/canvas/collaboration/use-live-model-drag';
-import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
-import WorkspaceCursorsOverlay from '../WorkspaceCursorsOverlay';
-import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
-import useDownloadPluginListing from '../../hooks/use-download-plugin-listing';
+import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
 import useViewportNarrow from '../../hooks/use-viewport-narrow';
-import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
+
+import useAnalysisDiscoveryTourGate from './use-analysis-discovery-tour-gate';
+import useCanvasAccessPublication from './use-canvas-access-publication';
+import useCanvasBridgeRegistration from './use-canvas-bridge-registration';
+import useCanvasCollaboration from './use-canvas-collaboration';
+import useCanvasDownloads from './use-canvas-downloads';
+import useCanvasScrollLock from './use-canvas-scroll-lock';
+import useLocalGlbViewer from './use-local-glb-viewer';
+import useRasterContainerSelections from './use-raster-container-selections';
+import useTrajectoryShareInfo from './use-trajectory-share-info';
+import useViewportBodyContent from './use-viewport-body-content';
+import CanvasRightPanelRegion from './CanvasRightPanelRegion';
+import CanvasTimelineDock from './CanvasTimelineDock';
+import CanvasToolbarActions from './CanvasToolbarActions';
+import LocalViewerFrameControls from './LocalViewerFrameControls';
+
+import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
+import AnalysisListingDownloadModal from '../AnalysisListingDownloadModal';
+import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import CanvasBanners from '../CanvasBanners';
-import PreloadingOverlay from '../PreloadingOverlay';
-import ResizeHandle from '../ResizeHandle';
-import ExposureSettingsWidget from '../ExposureSettingsWidget';
-import ShortcutFeedback from '../ShortcutFeedback';
-import AnalysisListingDownloadModal, {
-    ANALYSIS_LISTING_DOWNLOAD_MODAL_ID
-} from '../AnalysisListingDownloadModal';
 import CommandPalette from '../CommandPalette';
+import ExposureSettingsWidget from '../ExposureSettingsWidget';
 import PluginResultsViewer from '../PluginResultsViewer';
-import RightPanel from '../RightPanel';
+import PreloadingOverlay from '../PreloadingOverlay';
+import ShortcutFeedback from '../ShortcutFeedback';
 import StatusBar from '../StatusBar';
-import Timeline from '../Timeline';
 import TopToolbar from '../TopToolbar';
 import Viewport from '../Viewport';
-import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
-import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
-import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
-import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
+import WorkspaceCursorsOverlay from '../WorkspaceCursorsOverlay';
 
-import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useAuthStore } from '@/modules/auth/store/use-auth-store';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
-import { Download, ExternalLink, PanelRight } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useShallow } from 'zustand/react/shallow';
-import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import NotFoundState from '@/shared/ui/components/NotFoundState';
-import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { EmptyState, Box, Button, openModal, Row, Stack, Tooltip } from '@voltstack/bravais';
 import ErrorBoundary from '@/shared/ui/components/ErrorBoundary';
-import { useMedia } from '@voltstack/bravais';
+import NotFoundState from '@/shared/ui/components/NotFoundState';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
+import { Box, Stack } from '@voltstack/bravais';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
+import type { CSSProperties, RefObject } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import type { DownloadAnalysisListingParams } from '@/modules/canvas/hooks/use-download-plugin-listing';
-import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/contracts/container-selection';
 
 import './CanvasPage.css';
-import { createInitialRasterContainerSelections } from '@/modules/raster/contracts/container-selection';
-import { clampFrameIndex, fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utils/local-glb-manifest';
-
-import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utils/local-glb-manifest';
-import type { CanvasExposureDownloadParams } from '@/modules/canvas/components/canvas-panel-props';
-
-interface CanvasLocationState {
-    entry?: string;
-    teamId?: string;
-}
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
-    const { trajectoryId: rawTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
-    const location = useLocation();
-    const currentUser = useCurrentUser();
-    const isAuthInitialized = useAuthStore((state) => state.isInitialized);
-    const hasAuthToken = useAuthStore((state) => state.hasToken);
-    const effectiveTrajectoryId = rawTrajectoryId;
-    const trajectoryId = effectiveTrajectoryId ?? '';
-    const isLocalGlbViewer = !effectiveTrajectoryId;
+    const { trajectoryId: routeTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
+    const trajectoryId = routeTrajectoryId ?? '';
+    const isLocalGlbViewer = !routeTrajectoryId;
 
     useCanvasCleanup();
     const {
@@ -98,64 +73,34 @@ const CanvasPage = () => {
         accessDeniedMessage
     } = useCanvasCoordinator({ trajectoryId });
 
-    const setCanvasAccess = useCanvasAccessStore((state) => state.setAccess);
-    const resetCanvasAccess = useCanvasAccessStore((state) => state.reset);
+    const {
+        canCollaborate,
+        hasResolvedAccess,
+        canMutateCanvas,
+        isReadOnlyCanvas
+    } = useCanvasAccessPublication({
+        trajectoryId,
+        access: canvasAccess,
+        isLocalGlbViewer
+    });
 
-    useEffect(() => {
-        if (!canvasAccess || !trajectoryId) {
-            return;
-        }
-
-        const mode = canvasAccess.hasTeamMembership ? 'rbac' : 'public';
-        const canMutate = canvasAccess.hasTeamMembership;
-
-        setCanvasAccess({
-            mode,
-            trajectoryId,
-            teamId: undefined,
-            canMutate,
-            canCollaborate: canMutate,
-            isGuest: !canvasAccess.hasTeamMembership,
-            hasTeamMembership: canvasAccess.hasTeamMembership
-        });
-    }, [canvasAccess, trajectoryId, setCanvasAccess]);
-
-    useEffect(() => {
-        return () => {
-            resetCanvasAccess();
-        };
-    }, [resetCanvasAccess]);
     const viewportContainerRef = useRef<HTMLDivElement | null>(null);
-    const canCollaborate = useCanvasCanCollaborate();
     const isNarrowViewport = useViewportNarrow();
     const {
         peersInLobby,
         collaborationOwner,
         ownerId: workspaceOwnerId,
         isOwner: isWorkspaceOwner,
-        navigateToWorkspace
-    } = useCanvasWorkspace({
+        cursors: workspaceCursors,
+        navigateToWorkspace,
+        leaveCollaboration
+    } = useCanvasCollaboration({
         trajectoryId,
         ownerId: ownerIdParam,
-        enabled: !!trajectoryId && canCollaborate
-    });
-    const navigate = useNavigate();
-    const leaveCollaboration = useCallback(() => {
-        if (!trajectoryId) return;
-        navigate(`/canvas/${trajectoryId}`, { replace: true });
-    }, [navigate, trajectoryId]);
-    const { cursors: workspaceCursors } = useWorkspaceCursors({
-        trajectoryId,
-        ownerId: workspaceOwnerId,
-        enabled: !!trajectoryId && !!workspaceOwnerId && canCollaborate,
+        enabled: canCollaborate,
         containerRef: viewportContainerRef
     });
-    useLiveModelDrag({
-        trajectoryId,
-        ownerId: workspaceOwnerId,
-        isOwner: isWorkspaceOwner,
-        enabled: !!trajectoryId && !!workspaceOwnerId && canCollaborate
-    });
+
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading && !isNarrowViewport
     });
@@ -168,9 +113,6 @@ const CanvasPage = () => {
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
-    
-    
-    
     useEffect(() => {
         if (currentScope !== 'canvas') {
             setCurrentScope('canvas');
@@ -188,37 +130,13 @@ const CanvasPage = () => {
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
 
-    const activeScene = useEditorStore((s) => s.activeScene);
-    const registerCanvasBridge = useCanvasBridgeStore((s) => s.register);
-    const unregisterCanvasBridge = useCanvasBridgeStore((s) => s.unregister);
-
-    useEffect(() => {
-        if (isLocalGlbViewer || !trajectoryId) {
-            return;
-        }
-
-        const activeSceneId = activeScene ? `${activeScene.source}:${activeScene.sceneType}` : null;
-
-        registerCanvasBridge({
-            trajectoryId,
-            timesteps: availableTimesteps ?? [],
-            currentTimestep,
-            activeSceneId,
-            sceneRef
-        });
-
-        return () => {
-            unregisterCanvasBridge();
-        };
-    }, [
-        isLocalGlbViewer,
+    useCanvasBridgeRegistration({
         trajectoryId,
-        availableTimesteps,
+        timesteps: availableTimesteps,
         currentTimestep,
-        activeScene,
-        registerCanvasBridge,
-        unregisterCanvasBridge
-    ]);
+        sceneRef
+    });
+
     const {
         analysisId,
         showGrid,
@@ -226,61 +144,35 @@ const CanvasPage = () => {
         resultsPluginId,
         showWidgets,
         searchParams,
-        updateSearchParams,
         activeWorkspace,
-        selectedNotebookId,
-        setActiveWorkspace,
-        setSelectedNotebookId
+        setActiveWorkspace
     } = useCanvasUrlState();
-    const localGlbUrl = useLocalGlbStore((s) => s.localGlbUrl);
-    const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
     const showStatusBar = searchParams.get('statusBar') !== 'false';
-    const hasResolvedCanvasAccess = isLocalGlbViewer || Boolean(canvasAccess);
-    const canMutateCanvas = isLocalGlbViewer || Boolean(canvasAccess?.hasTeamMembership);
-    const isReadOnlyCanvas = !isLocalGlbViewer && hasResolvedCanvasAccess && !canMutateCanvas;
     const isRasterWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Raster;
     const isScriptingWorkspace = !isLocalGlbViewer && canMutateCanvas && activeWorkspace === CanvasWorkspace.Scripting;
-    const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
+
+    const localGlbViewer = useLocalGlbViewer(isLocalGlbViewer);
+    const raster = useRasterContainerSelections();
     const {
-        downloadTrajectoryAnalyses,
-        isDownloading: isDownloadingTrajectoryAnalyses
-    } = useDownloadTrajectoryAnalyses();
-    const { statusMap } = useAnalysisStatus({
-        trajectoryId: trajectory?._id,
-        enabled: !!trajectory?._id
+        isDownloading,
+        downloadListing,
+        downloadAnalysisListings,
+        analysisDownloadTargetId,
+        openAnalysisDownloadModal,
+        closeAnalysisDownloadModal,
+        downloadAllTrajectoryAnalyses,
+        canDownloadAnalysisListing,
+        canDownloadTrajectoryAnalyses
+    } = useCanvasDownloads({
+        trajectory,
+        analysisId
     });
+
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
-    const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
-    const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
-    const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
     const [analysisDiscoveryTourActive, setAnalysisDiscoveryTourActive] = useState(false);
-    const [localManifest, setLocalManifest] = useState<ResolvedLocalGlbManifest | null>(null);
-    const [localManifestError, setLocalManifestError] = useState<string | null>(null);
-    const [isLocalManifestLoading, setIsLocalManifestLoading] = useState(false);
 
-    const localManifestUrl = isLocalGlbViewer ? searchParams.get('manifest')?.trim() || null : null;
-    const localGlbQueryUrl = useMemo(() => {
-        if (!isLocalGlbViewer) {
-            return null;
-        }
-
-        const rawUrl = searchParams.get('url')?.trim();
-        if (!rawUrl) {
-            return null;
-        }
-
-        return resolveLocalGlbUrl(rawUrl);
-    }, [isLocalGlbViewer, searchParams]);
-    const localFrameParam = searchParams.get('frame');
-
-    const handleScriptingNotebookIdChange = useCallback((resolvedNotebookId: string) => {
-        if (!resolvedNotebookId || selectedNotebookId === resolvedNotebookId) {
-            return;
-        }
-
-        setSelectedNotebookId(resolvedNotebookId, { replace: true });
-    }, [selectedNotebookId, setSelectedNotebookId]);
+    useCanvasScrollLock(isNarrowViewport && !isLocalGlbViewer);
 
     useEffect(() => {
         if (!isNarrowViewport || isScriptingWorkspace) {
@@ -289,153 +181,26 @@ const CanvasPage = () => {
     }, [isNarrowViewport, isScriptingWorkspace]);
 
     useEffect(() => {
-        if (!isNarrowViewport || isLocalGlbViewer || !trajectoryId) {
+        if (activeWorkspace === CanvasWorkspace.Scene) {
             return;
         }
 
-        const { body, documentElement } = document;
-        const scrollY = window.scrollY;
-        const previousBodyStyle = {
-            position: body.style.position,
-            top: body.style.top,
-            left: body.style.left,
-            right: body.style.right,
-            width: body.style.width,
-            overflow: body.style.overflow,
-            overscrollBehavior: body.style.overscrollBehavior
-        };
-        const previousDocumentStyle = {
-            overflow: documentElement.style.overflow,
-            overscrollBehavior: documentElement.style.overscrollBehavior
-        };
-
-        body.style.position = 'fixed';
-        body.style.top = `-${scrollY}px`;
-        body.style.left = '0';
-        body.style.right = '0';
-        body.style.width = '100%';
-        body.style.overflow = 'hidden';
-        body.style.overscrollBehavior = 'none';
-        documentElement.style.overflow = 'hidden';
-        documentElement.style.overscrollBehavior = 'none';
-
-        return () => {
-            body.style.position = previousBodyStyle.position;
-            body.style.top = previousBodyStyle.top;
-            body.style.left = previousBodyStyle.left;
-            body.style.right = previousBodyStyle.right;
-            body.style.width = previousBodyStyle.width;
-            body.style.overflow = previousBodyStyle.overflow;
-            body.style.overscrollBehavior = previousBodyStyle.overscrollBehavior;
-            documentElement.style.overflow = previousDocumentStyle.overflow;
-            documentElement.style.overscrollBehavior = previousDocumentStyle.overscrollBehavior;
-            window.scrollTo(0, scrollY);
-        };
-    }, [isLocalGlbViewer, isNarrowViewport, trajectoryId]);
-
-    useEffect(() => {
-        if (!isLocalGlbViewer) {
+        const isWorkspaceUnavailable = isLocalGlbViewer
+            || (activeWorkspace === CanvasWorkspace.Scripting && hasResolvedAccess && !canMutateCanvas);
+        if (!isWorkspaceUnavailable) {
             return;
         }
 
         setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
-    }, [isLocalGlbViewer, setActiveWorkspace]);
-
-    useEffect(() => {
-        if (!hasResolvedCanvasAccess || canMutateCanvas || activeWorkspace !== CanvasWorkspace.Scripting) {
-            return;
-        }
-
-        setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
-    }, [activeWorkspace, canMutateCanvas, hasResolvedCanvasAccess, setActiveWorkspace]);
-
-    const wasLocalGlbViewerRef = useRef(isLocalGlbViewer);
-    useEffect(() => {
-        const wasLocalGlbViewer = wasLocalGlbViewerRef.current;
-        if (wasLocalGlbViewer && !isLocalGlbViewer) {
-            clearLocalGlb();
-        }
-
-        wasLocalGlbViewerRef.current = isLocalGlbViewer;
-    }, [clearLocalGlb, isLocalGlbViewer]);
+    }, [activeWorkspace, canMutateCanvas, hasResolvedAccess, isLocalGlbViewer, setActiveWorkspace]);
 
     useEffect(() => {
         const editorState = useEditorStore.getState();
         editorState.resetPlayback();
         editorState.resetModel();
-    }, [trajectoryId, isLocalGlbViewer]);
+    }, [trajectoryId]);
 
-    useEffect(() => {
-        if (!isLocalGlbViewer || !localManifestUrl) {
-            setLocalManifest(null);
-            setLocalManifestError(null);
-            setIsLocalManifestLoading(false);
-            return;
-        }
-
-        const abortController = new AbortController();
-        setIsLocalManifestLoading(true);
-        setLocalManifest(null);
-        setLocalManifestError(null);
-
-        fetchLocalGlbManifest(resolveLocalGlbUrl(localManifestUrl), abortController.signal)
-            .then((nextManifest) => {
-                setLocalManifest(nextManifest);
-            })
-            .catch((error: unknown) => {
-                if (abortController.signal.aborted) {
-                    return;
-                }
-
-                setLocalManifest(null);
-                setLocalManifestError(error instanceof Error ? error.message : 'Unexpected manifest error.');
-            })
-            .finally(() => {
-                if (!abortController.signal.aborted) {
-                    setIsLocalManifestLoading(false);
-                }
-            });
-
-        return () => {
-            abortController.abort();
-        };
-    }, [isLocalGlbViewer, localManifestUrl]);
-
-    const localManifestFrameIndex = useMemo(() => {
-        if (!localManifest || localManifest.frames.length === 0) {
-            return 0;
-        }
-
-        const requestedFrame = Number(localFrameParam);
-        if (Number.isFinite(requestedFrame)) {
-            return clampFrameIndex(requestedFrame, localManifest.frames.length);
-        }
-
-        return localManifest.initialFrame;
-    }, [localFrameParam, localManifest]);
-
-    const localManifestFrame = useMemo(() => {
-        if (!localManifest || localManifest.frames.length === 0) {
-            return null;
-        }
-
-        return localManifest.frames[localManifestFrameIndex] ?? localManifest.frames[0] ?? null;
-    }, [localManifest, localManifestFrameIndex]);
-
-    const forcedGlbUrl = isLocalGlbViewer
-        ? localManifestFrame?.url ?? localGlbQueryUrl ?? localGlbUrl
-        : null;
-
-    const setLocalManifestFrameIndex = useCallback((nextIndex: number) => {
-        if (!localManifest || localManifest.frames.length === 0) {
-            return;
-        }
-
-        const clampedIndex = clampFrameIndex(nextIndex, localManifest.frames.length);
-        updateSearchParams({ frame: clampedIndex }, { replace: true });
-    }, [localManifest, updateSearchParams]);
-
-    const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
+    const hasFrames = Boolean(trajectory?.frames.length);
     const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
     const showNoFramesState = Boolean(
         !isLocalGlbViewer
@@ -444,17 +209,17 @@ const CanvasPage = () => {
         && trajectory
         && !hasFrames
     );
-    const isTrajectoryProcessingFailed = trajectory?.status === 'failed';
-    const showLoading = useMemo(() =>
-        isLocalGlbViewer
-            ? false
-            : trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
-        [isLocalGlbViewer, isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
+    const isSceneSubstituted = isScriptingWorkspace || isRasterWorkspace || showNoFramesState;
+    const showsTrajectoryScene = !isLocalGlbViewer && !isSceneSubstituted;
+    const isTrajectoryLoading = trajectoryLoading
+        || !trajectory
+        || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
+    const overlayActive = Boolean(
+        !isLocalGlbViewer
+        && !showNoFramesState
+        && (isTrajectoryLoading || isPreloading)
+        && !analysisDiscoveryTourActive
     );
-    const rawOverlayActive = !isLocalGlbViewer && !showNoFramesState && (showLoading || isPreloading);
-    const overlayActive = rawOverlayActive && !analysisDiscoveryTourActive;
-    const overlayTitle = isPreloading ? 'Setting up your scene…' : 'Loading trajectory…';
-    const overlayProgress = isPreloading ? preloadProgress : undefined;
 
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
@@ -474,311 +239,65 @@ const CanvasPage = () => {
         storageKey: 'volt:canvas:timeline-panel-size'
     });
 
-    const handleDownloadExposureListing = useCallback((params: CanvasExposureDownloadParams) => {
-        downloadListing(params);
-    }, [downloadListing]);
-
-    const handleBackToTrajectories = useCallback(() => {
-        navigate('/dashboard/trajectories/list');
-    }, [navigate]);
-
-    const handleAnalysisDiscoveryTourComplete = useCallback(() => {
+    const closeRightDrawer = useCallback(() => {
         setRightDrawerOpen(false);
     }, []);
 
-    const handleUpdateRasterContainerSelection = useCallback((containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => {
-        setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
-            if (selection.id !== containerId) {
-                return selection;
-            }
+    const shareInfo = useTrajectoryShareInfo(trajectory);
 
-            return {
-                ...selection,
-                ...updates
-            };
-        }));
-    }, []);
-
-    const selectedAnalysisStatus = useMemo(() => {
-        if (!analysisId) {
-            return undefined;
-        }
-
-        const selectedAnalysis = findCachedAnalysisById({
-            analysisId,
-            trajectoryId: trajectory?._id,
-            fallbackAnalyses: trajectory?.analysis ?? []
-        });
-
-        return statusMap.get(analysisId)?.status ?? normalizeCanvasAnalysisStatus(selectedAnalysis?.status);
-    }, [analysisId, statusMap, trajectory?._id, trajectory?.analysis]);
-
-    const selectedTeamId = useSelectedTeamId();
-    const { canAccess: canAccessTeamPermissions } = useTeamPermissions();
-    const trajectoryTeamId = useMemo(() => {
-        const team = trajectory?.team;
-        if (!team) {
-            return undefined;
-        }
-        if (typeof team === 'string') {
-            return team;
-        }
-        if (typeof team === 'object' && '_id' in team) {
-            return team._id;
-        }
-        return undefined;
-    }, [trajectory?.team]);
-
-    const shareInfo = useMemo(() => {
-        if (isLocalGlbViewer || !trajectory?._id) {
-            return undefined;
-        }
-
-        const isTeamOwner = Boolean(
-            selectedTeamId
-            && trajectoryTeamId
-            && selectedTeamId === trajectoryTeamId
-        );
-        const canManageVisibility = isTeamOwner
-            && canAccessTeamPermissions(['trajectory:update']);
-
-        return {
-            trajectoryId: trajectory._id,
-            isPublic: Boolean(trajectory.isPublic),
-            canManageVisibility
-        };
-    }, [canAccessTeamPermissions, isLocalGlbViewer, selectedTeamId, trajectory?._id, trajectory?.isPublic, trajectoryTeamId]);
-
-    const cameFromDiscoverTeam = useMemo(() => {
-        const state = location.state as CanvasLocationState | null;
-        return state?.entry === 'discover-team';
-    }, [location.state]);
-    const hasDiscoverableAnalyses = !isAnalysesLoading && analyses.length > 0;
-    const isAnalysisDiscoveryTourIdentityReady = isAuthInitialized && (!hasAuthToken || Boolean(currentUser?._id));
-    const shouldShowAnalysisDiscoveryTour = Boolean(
-        cameFromDiscoverTeam
-        && hasDiscoverableAnalyses
-        && isAnalysisDiscoveryTourIdentityReady
-        && !isLocalGlbViewer
-        && !isScriptingWorkspace
-        && !isRasterWorkspace
-        && !showNoFramesState
-        && !overlayActive
-        && trajectory?._id
-    );
-    const analysisDiscoveryTourStorageScopeId = currentUser?._id ?? 'anonymous';
-
-    const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
-    const canDownloadTrajectoryAnalyses = Boolean(
-        trajectory?._id
-        && !isDownloadingTrajectoryAnalyses
-    );
-    const isMobileViewport = useMedia('(max-width: 768px)');
-
-    const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
-        const resolvedAnalysisId = targetAnalysisId ?? analysisId;
-
-        if (!resolvedAnalysisId) {
-            return;
-        }
-
-        setDownloadAnalysisModalTargetId(resolvedAnalysisId);
-        openModal(ANALYSIS_LISTING_DOWNLOAD_MODAL_ID);
-    }, [analysisId]);
-
-    const handleConfirmAnalysisDownload = useCallback((params: DownloadAnalysisListingParams) => {
-        return downloadAnalysisListings({
-            ...params,
-            format: params.format ?? 'csv'
-        });
-    }, [downloadAnalysisListings]);
-
-    const handleDownloadTrajectoryAnalyses = useCallback(() => {
-        if (!trajectory?._id) {
-            return;
-        }
-
-        void downloadTrajectoryAnalyses({
-            trajectoryId: trajectory._id,
-            filename: trajectory.name || trajectory._id
-        });
-    }, [downloadTrajectoryAnalyses, trajectory?._id, trajectory?.name]);
-
-    const scriptingHeaderAction = useMemo(() => (
-        isScriptingWorkspace && scriptingJupyterUrl
-            ? (
-                <Tooltip content="Open Jupyter in new tab">
-                    <Button
-                        variant="ghost"
-                        intent="canvas"
-                        shape="rounded"
-                        size="sm"
-                        className="font-size-05 canvas-btn-compact"
-                        leftIcon={<ExternalLink size={12} />}
-                        onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
-                    >
-                        Open in New Tab
-                    </Button>
-                </Tooltip>
-            )
-            : null
-    ), [isScriptingWorkspace, scriptingJupyterUrl]);
+    const analysisDiscoveryTour = useAnalysisDiscoveryTourGate({
+        analyses,
+        isAnalysesLoading,
+        isSceneInteractive: showsTrajectoryScene && !overlayActive && Boolean(trajectory?._id)
+    });
 
     const toolbarContextualActions = useMemo(() => (
-        (canDownloadAnalysisListing || scriptingHeaderAction)
-            ? (
-                <Row gap='05'>
-                    {canDownloadAnalysisListing && (
-                        <Tooltip content="Download analysis listings">
-                            <Button
-                                variant="ghost"
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="font-size-05 canvas-btn-compact"
-                                leftIcon={<Download size={12} />}
-                                onClick={() => handleDownloadAnalysisListing()}
-                                isLoading={isDownloading}
-                            >
-                                Download Analysis
-                            </Button>
-                        </Tooltip>
-                    )}
-                    {scriptingHeaderAction}
-                </Row>
-            )
-            : null
-    ), [canDownloadAnalysisListing, scriptingHeaderAction, isDownloading, handleDownloadAnalysisListing]);
+        <CanvasToolbarActions
+            canDownloadAnalysis={canDownloadAnalysisListing}
+            isDownloadingAnalysis={isDownloading}
+            jupyterUrl={isScriptingWorkspace ? scriptingJupyterUrl : null}
+            onDownloadAnalysis={openAnalysisDownloadModal}
+        />
+    ), [canDownloadAnalysisListing, isDownloading, isScriptingWorkspace, openAnalysisDownloadModal, scriptingJupyterUrl]);
 
-    const viewportBodyContent = useMemo(() => {
-        if (isRasterWorkspace) {
-            return (
-                <CanvasRasterViewport
-                    trajectoryId={trajectoryId}
-                    trajectory={trajectory}
-                    currentTimestep={currentTimestep}
-                    containerSelections={rasterContainerSelections}
-                    onUpdateContainerSelection={handleUpdateRasterContainerSelection}
-                />
-            );
-        }
-
-        if (isScriptingWorkspace) {
-            return (
-                <ScriptingWorkspace
-                    trajectoryId={trajectoryId}
-                    notebookId={selectedNotebookId}
-                    onJupyterUrlChange={setScriptingJupyterUrl}
-                    onNotebookIdChange={handleScriptingNotebookIdChange}
-                />
-            );
-        }
-
-        if (isLocalGlbViewer && isLocalManifestLoading) {
-            return (
-                <Row justify='center' width='max' height='max'>
-                    <EmptyState
-                        title='Loading scene manifest'
-                        description='Resolving local viewer frames.'
-                    />
-                </Row>
-            );
-        }
-
-        if (isLocalGlbViewer && localManifestError) {
-            return (
-                <Row justify='center' width='max' height='max'>
-                    <EmptyState
-                        title='Failed to load local scene manifest'
-                        description={localManifestError}
-                    />
-                </Row>
-            );
-        }
-
-        if (isLocalGlbViewer && !forcedGlbUrl) {
-            return (
-                <Row justify='center' width='max' height='max'>
-                    <EmptyState
-                        title='Drop a GLB file to preview'
-                        description='Use the dashboard dropzone, or open /canvas/glb?url=... or /canvas/glb?manifest=....'
-                    />
-                </Row>
-            );
-        }
-
-        if (showNoFramesState) {
-            if (isTrajectoryProcessingFailed) {
-                return (
-                    <Row justify='center' width='max' height='max' className='canvas-viewport-state'>
-                        <RecoveryState
-                            tone={RecoveryStateTone.Error}
-                            title="Couldn't process this trajectory"
-                            description='Ingestion failed for this file. It may be an unsupported format or contain no readable timesteps. Supported uploads are LAMMPS dump/data files (.dump, .lammpstrj, .data, .lammps).'
-                            retryLabel='Back to trajectories'
-                            onRetry={handleBackToTrajectories}
-                        />
-                    </Row>
-                );
-            }
-
-            return (
-                <Row justify='center' width='max' height='max' className='canvas-viewport-state'>
-                    <EmptyState
-                        title='No timesteps yet'
-                        description='This trajectory finished uploading but has no timesteps processed yet. Once ingestion completes they will appear here automatically.'
-                    />
-                </Row>
-            );
-        }
-
-        return undefined;
-    }, [
-        isRasterWorkspace,
-        trajectoryId,
+    const viewportBodyContent = useViewportBodyContent({
         trajectory,
+        trajectoryId,
         currentTimestep,
-        rasterContainerSelections,
-        handleUpdateRasterContainerSelection,
+        isRasterWorkspace,
         isScriptingWorkspace,
-        selectedNotebookId,
-        setScriptingJupyterUrl,
-        handleScriptingNotebookIdChange,
         isLocalGlbViewer,
-        isLocalManifestLoading,
-        localManifestError,
-        forcedGlbUrl,
+        isLocalManifestLoading: localGlbViewer.isManifestLoading,
+        localManifestError: localGlbViewer.manifestError,
+        forcedGlbUrl: localGlbViewer.forcedGlbUrl,
         showNoFramesState,
-        isTrajectoryProcessingFailed,
-        handleBackToTrajectories
-    ]);
+        rasterContainerSelections: raster.selections,
+        onUpdateRasterContainerSelection: raster.updateSelection,
+        onJupyterUrlChange: setScriptingJupyterUrl
+    });
 
     const analysisOverlay = useMemo(() => (
-        !isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
+        showsTrajectoryScene
             ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} currentTimestep={currentTimestep} />
             : undefined
-    ), [isLocalGlbViewer, isScriptingWorkspace, isRasterWorkspace, showNoFramesState, trajectory, analysisId, currentTimestep]);
+    ), [showsTrajectoryScene, trajectory, analysisId, currentTimestep]);
+
+    if (accessDenied || trajectoryMissing) {
+        return (
+            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
+                {accessDenied
+                    ? (
+                        <AccessDenied
+                            title={accessDeniedMessage ?? 'Access denied'}
+                            description='You do not have permission to view this trajectory. Ask a team administrator to grant you access.'
+                        />
+                    )
+                    : <NotFoundState />}
+            </Box>
+        );
+    }
 
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport && !isScriptingWorkspace ? rightPanel.size : 0;
-
-    if (accessDenied) {
-        return (
-            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
-                <AccessDenied
-                    title={accessDeniedMessage ?? 'Access denied'}
-                    description='You do not have permission to view this trajectory. Ask a team administrator to grant you access.'
-                />
-            </Box>
-        );
-    }
-
-    if (trajectoryMissing) {
-        return (
-            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
-                <NotFoundState />
-            </Box>
-        );
-    }
 
     return (
         <Box
@@ -788,12 +307,12 @@ const CanvasPage = () => {
             overflow='hidden'
             position='relative'
             className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`}
-            style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as React.CSSProperties}
+            style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as CSSProperties}
         >
             <PreloadingOverlay
-                active={Boolean(overlayActive)}
-                title={overlayTitle}
-                progress={overlayProgress}
+                active={overlayActive}
+                title={isPreloading ? 'Setting up your scene…' : 'Loading trajectory…'}
+                progress={isPreloading ? preloadProgress : undefined}
             />
 
             {isNarrowViewport && rightDrawerOpen && (
@@ -801,7 +320,7 @@ const CanvasPage = () => {
                     type='button'
                     className='canvas-panel-drawer-backdrop'
                     aria-label='Close panel'
-                    onClick={() => setRightDrawerOpen(false)}
+                    onClick={closeRightDrawer}
                 />
             )}
 
@@ -809,7 +328,7 @@ const CanvasPage = () => {
                 <TopToolbar
                     trajectory={trajectory}
                     canDownloadAnalyses={canDownloadTrajectoryAnalyses}
-                    onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
+                    onDownloadAnalyses={downloadAllTrajectoryAnalyses}
                     localGlbMode={isLocalGlbViewer}
                     canMutateCanvas={canMutateCanvas}
                     workspacePeers={peersInLobby}
@@ -828,7 +347,7 @@ const CanvasPage = () => {
                 )}
 
                 <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-stage">
-                    <Box display='flex' direction='column' position='absolute' inset='0' overflow='hidden' className="canvas-center-viewport" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
+                    <Box display='flex' direction='column' position='absolute' inset='0' overflow='hidden' className="canvas-center-viewport" ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -841,15 +360,15 @@ const CanvasPage = () => {
                                 currentTimestep={currentTimestep}
                                 sceneConfig={sceneConfig}
                                 analysisId={analysisId}
-                                forcedGlbUrl={forcedGlbUrl}
+                                forcedGlbUrl={localGlbViewer.forcedGlbUrl}
                                 showGrid={showGrid}
                                 showGizmo={showGizmo}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={analysisOverlay}
-                                hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}
-                                renderScene={!isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState}
-                                showSceneActions={!isRasterWorkspace && !isScriptingWorkspace && !showNoFramesState}
+                                hideGradient={isSceneSubstituted}
+                                renderScene={!isSceneSubstituted}
+                                showSceneActions={!isSceneSubstituted}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay
@@ -859,91 +378,26 @@ const CanvasPage = () => {
                     </Box>
 
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
-                        <Stack
-                            id="canvas-center-timeline"
-                            className="canvas-center-timeline"
-                            data-tour-id="canvas-timeline"
-                            style={!isNarrowViewport ? { '--canvas-timeline-size': `${timelinePanel.size}px` } as React.CSSProperties : undefined}
-                        >
-                            {!isNarrowViewport && (
-                                <Box position='absolute' className="canvas-resize-rail canvas-resize-rail--bottom" style={{
-                                    top: 0,
-                                    left: 0,
-                                    right: 0
-                                }}>
-                                    <ResizeHandle
-                                        direction={ResizeDirection.Vertical}
-                                        isDragging={timelinePanel.isDragging}
-                                        label="Resize timeline"
-                                        controls="canvas-center-timeline"
-                                        {...timelinePanel.handleProps}
-                                    />
-                                </Box>
-                            )}
-                            <Timeline
-                                sceneRef={sceneRef}
-                                trajectory={trajectory}
-                                trajectoryId={trajectoryId}
-                                currentTimestep={currentTimestep}
-                                availableTimesteps={availableTimesteps}
-                                selectedAnalysisTimesteps={selectedAnalysisTimesteps}
-                                analysisId={analysisId}
-                                disableContextualTips={isNarrowViewport}
-                                onDownloadExposureListing={handleDownloadExposureListing}
-                            />
-                        </Stack>
+                        <CanvasTimelineDock
+                            panel={timelinePanel}
+                            isNarrowViewport={isNarrowViewport}
+                            sceneRef={sceneRef}
+                            trajectory={trajectory}
+                            trajectoryId={trajectoryId}
+                            currentTimestep={currentTimestep}
+                            availableTimesteps={availableTimesteps}
+                            selectedAnalysisTimesteps={selectedAnalysisTimesteps}
+                            analysisId={analysisId}
+                            onDownloadExposureListing={downloadListing}
+                        />
                     )}
-                    {isLocalGlbViewer && localManifest && localManifest.frames.length > 1 && (
-                        <Stack id="canvas-center-timeline" className="canvas-center-timeline canvas-center-timeline--local">
-                            <div className='canvas-local-viewer-controls'>
-                                <div className='canvas-local-viewer-controls__meta'>
-                                    <div className='canvas-local-viewer-controls__title'>
-                                        {localManifest.title || 'Local scene sequence'}
-                                    </div>
-                                    <div className='canvas-local-viewer-controls__subtitle'>
-                                        {localManifestFrame?.label
-                                            || (localManifestFrame?.timestep !== undefined
-                                                ? `t=${localManifestFrame.timestep}`
-                                                : `Frame ${localManifestFrameIndex + 1}`)}
-                                    </div>
-                                </div>
-                                <div className='canvas-local-viewer-controls__transport'>
-                                    <Button
-                                        variant='outline'
-                                        intent='canvas'
-                                        size='sm'
-                                        shape='rounded'
-                                        onClick={() => setLocalManifestFrameIndex(localManifestFrameIndex - 1)}
-                                        disabled={localManifestFrameIndex <= 0}
-                                    >
-                                        Prev
-                                    </Button>
-                                    <input
-                                        className='canvas-local-viewer-controls__slider'
-                                        type='range'
-                                        min='0'
-                                        max={String(localManifest.frames.length - 1)}
-                                        step='1'
-                                        value={String(localManifestFrameIndex)}
-                                        onChange={(event) => setLocalManifestFrameIndex(Number(event.currentTarget.value))}
-                                        aria-label='Select local scene frame'
-                                    />
-                                    <Button
-                                        variant='outline'
-                                        intent='canvas'
-                                        size='sm'
-                                        shape='rounded'
-                                        onClick={() => setLocalManifestFrameIndex(localManifestFrameIndex + 1)}
-                                        disabled={localManifestFrameIndex >= localManifest.frames.length - 1}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
-                                <div className='canvas-local-viewer-controls__index'>
-                                    {localManifestFrameIndex + 1} / {localManifest.frames.length}
-                                </div>
-                            </div>
-                        </Stack>
+                    {isLocalGlbViewer && (
+                        <LocalViewerFrameControls
+                            manifest={localGlbViewer.manifest}
+                            frame={localGlbViewer.frame}
+                            frameIndex={localGlbViewer.frameIndex}
+                            onSelectFrame={localGlbViewer.setFrameIndex}
+                        />
                     )}
                 </Stack>
 
@@ -957,64 +411,23 @@ const CanvasPage = () => {
             </Stack>
 
             {!isLocalGlbViewer && !isScriptingWorkspace && (
-                <>
-                    {isNarrowViewport && (
-                        <button
-                            type='button'
-                            className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
-                            onClick={() => setRightDrawerOpen((open) => !open)}
-                            aria-label={rightDrawerOpen ? 'Close canvas panel' : 'Open canvas panel'}
-                            title={rightDrawerOpen ? 'Close canvas panel' : 'Open canvas panel'}
-                            aria-expanded={rightDrawerOpen}
-                            aria-controls='canvas-right-panel'
-                            data-tour-id='canvas-analysis-panel-toggle'
-                        >
-                            <PanelRight size={14} aria-hidden='true' />
-                        </button>
-                    )}
-                    {!isNarrowViewport && (
-                        <Box
-                            position='absolute'
-                            className="canvas-resize-rail canvas-resize-rail--right"
-                            style={{
-                                top: 0,
-                                bottom: 0,
-                                right: rightPanel.size
-                            }}
-                        >
-                            <ResizeHandle
-                                direction={ResizeDirection.Horizontal}
-                                isDragging={rightPanel.isDragging}
-                                label="Resize right sidebar"
-                                controls="canvas-right-panel"
-                                {...rightPanel.handleProps}
-                            />
-                        </Box>
-                    )}
-                    <Stack
-                        id="canvas-right-panel"
-                        position='absolute'
-                        className="canvas-right-panel-container canvas-overlay-glass"
-                        style={{ width: rightPanel.size }}
-                        data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}
-                        data-analysis-compact={isMobileViewport ? 'true' : undefined}
-                    >
-                        <RightPanel
-                            trajectory={trajectory}
-                            trajectoryId={trajectoryId}
-                            analysisId={analysisId}
-                            currentTimestep={currentTimestep}
-                            canMutateCanvas={canMutateCanvas}
-                            compactAnalysisOnly={isMobileViewport}
-                            onDownloadAnalysis={handleDownloadAnalysisListing}
-                            onDownloadExposureListing={handleDownloadExposureListing}
-                            rasterContainerSelections={rasterContainerSelections}
-                            activeRasterContainerId={activeRasterContainerId}
-                            onSetActiveRasterContainer={setActiveRasterContainerId}
-                            onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
-                        />
-                    </Stack>
-                </>
+                <CanvasRightPanelRegion
+                    panel={rightPanel}
+                    isNarrowViewport={isNarrowViewport}
+                    isDrawerOpen={rightDrawerOpen}
+                    onDrawerOpenChange={setRightDrawerOpen}
+                    trajectory={trajectory}
+                    trajectoryId={trajectoryId}
+                    analysisId={analysisId}
+                    currentTimestep={currentTimestep}
+                    canMutateCanvas={canMutateCanvas}
+                    onDownloadAnalysis={openAnalysisDownloadModal}
+                    onDownloadExposureListing={downloadListing}
+                    rasterContainerSelections={raster.selections}
+                    activeRasterContainerId={raster.activeContainerId}
+                    onSetActiveRasterContainer={raster.setActiveContainerId}
+                    onUpdateRasterContainerSelection={raster.updateSelection}
+                />
             )}
             {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
                 <PluginResultsViewer
@@ -1023,22 +436,22 @@ const CanvasPage = () => {
                 />
             )}
             <AnalysisListingDownloadModal
-                analysisId={downloadAnalysisModalTargetId}
+                analysisId={analysisDownloadTargetId}
                 isDownloading={isDownloading}
-                onDownload={handleConfirmAnalysisDownload}
-                onClose={() => setDownloadAnalysisModalTargetId(null)}
+                onDownload={downloadAnalysisListings}
+                onClose={closeAnalysisDownloadModal}
             />
             <CommandPalette />
             <ShortcutFeedback />
             <ExposureSettingsWidget />
             <CanvasAnalysisDiscoveryTour
-                enabled={shouldShowAnalysisDiscoveryTour}
-                storageScopeId={analysisDiscoveryTourStorageScopeId}
+                enabled={analysisDiscoveryTour.enabled}
+                storageScopeId={analysisDiscoveryTour.storageScopeId}
                 isMobile={isNarrowViewport}
                 rightDrawerOpen={rightDrawerOpen}
                 onRightDrawerOpenChange={setRightDrawerOpen}
                 onActiveChange={setAnalysisDiscoveryTourActive}
-                onComplete={handleAnalysisDiscoveryTourComplete}
+                onComplete={closeRightDrawer}
             />
 
         </Box>

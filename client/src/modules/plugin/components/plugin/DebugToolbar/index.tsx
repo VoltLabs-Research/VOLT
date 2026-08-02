@@ -4,13 +4,37 @@ import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumen
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
+import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utils/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
-import type { ArgumentsNodeData } from '@/modules/plugin/contracts/debug';
+import type { ReactNode } from 'react';
 import './DebugToolbar.css';
+
+interface DebugControlButtonProps {
+    tooltip: string;
+    onClick: () => void;
+    disabled: boolean;
+    children: ReactNode;
+}
+
+const DebugControlButton = ({ tooltip, onClick, disabled, children }: DebugControlButtonProps) => (
+    <Tooltip content={tooltip} placement='bottom'>
+        <Button
+            variant='ghost'
+            intent='neutral'
+            iconOnly
+            size='sm'
+            onClick={onClick}
+            disabled={disabled}
+        >
+            {children}
+        </Button>
+    </Tooltip>
+);
+
+const formatDuration = (totalDuration: number): string =>
+    totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`;
 
 const DebugToolbar = () => {
     const {
@@ -42,72 +66,34 @@ const DebugToolbar = () => {
 
     const nodes = usePluginBuilderStore((s) => s.nodes);
 
-    const hasConfigurableArgs = useMemo(() => {
-        const argsNode = nodes.find((n) => n.type === NodeType.ARGUMENTS);
-        if (!argsNode) {
-            return false;
-        }
-
-        const argsNodeData = argsNode.data as ArgumentsNodeData;
-        const argumentDefinitions = argsNodeData?.arguments?.arguments;
-        if (!argumentDefinitions) {
-            return false;
-        }
-
-        return argumentDefinitions.some(isUserConfigurableArgument);
-    }, [nodes]);
-
-    const handleTrajectoryChange = useCallback((value: string) => {
-        setSelectedTrajectory(value || null);
-    }, [setSelectedTrajectory]);
-
-    const handleFrameChange = useCallback((value: string) => {
-        setSelectedTimestep(value ? Number(value) : null);
-    }, [setSelectedTimestep]);
+    const argumentDefinitions = nodes.find((n) => n.type === NodeType.ARGUMENTS)?.data.arguments?.arguments;
+    const hasConfigurableArgs = !!argumentDefinitions?.some(isUserConfigurableArgument);
 
     const canStart = !isDebugging && !isStarting && !!selectedTrajectoryId && selectedTimestep !== null;
-
-    const trajectoryOptions = useMemo(() => {
-        return trajectories.map((t) => ({
-            value: t._id,
-            title: t.name
-        }));
-    }, [trajectories]);
-
-    const frameOptions = useMemo(() => {
-        return frames.map((f) => ({
-            value: String(f.timestep),
-            title: `t=${f.timestep} (${f.natoms} atoms)`
-        }));
-    }, [frames]);
-    const canStep = isDebugging && isPaused;
-    const canContinue = isDebugging && isPaused;
+    const canAdvance = isDebugging && isPaused;
     const canStop = isDebugging || isStarting;
 
-    const handlePlayClick = useCallback(() => {
+    const handlePlayClick = () => {
         if (hasConfigurableArgs) {
             setShowArgumentsPanel(true);
         } else {
             startDebug();
         }
-    }, [hasConfigurableArgs, setShowArgumentsPanel, startDebug]);
+    };
 
-    const handleStartFromPanel = useCallback(() => {
-        startDebug();
-    }, [startDebug]);
+    const currentNodeType = currentNodeId
+        ? executionOrder.find((node) => node.nodeId === currentNodeId)?.type ?? null
+        : null;
+    const currentNodeLabel = currentNodeType
+        ? NODE_CONFIGS[currentNodeType as NodeType]?.label ?? currentNodeType
+        : null;
 
-    let currentNodeType: string | null = null;
-    if (currentNodeId) {
-        currentNodeType = executionOrder.find((node) => node.nodeId === currentNodeId)?.type ?? null;
+    const completedCount = Object.values(nodeStates).filter((s) => s.status === DebugNodeStatus.Completed).length;
+
+    let startTooltip = 'Select trajectory & frame first';
+    if (canStart) {
+        startTooltip = hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)';
     }
-
-    let currentNodeLabel: string | null = null;
-    if (currentNodeType) {
-        const resolvedNodeType = currentNodeType as NodeType;
-        currentNodeLabel = NODE_CONFIGS[resolvedNodeType]?.label ?? currentNodeType;
-    }
-
-    const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
     return (
         <Stack align='center' position='absolute' zIndex='10' top='1' className='center-x debug-toolbar-wrapper'>
@@ -120,9 +106,12 @@ const DebugToolbar = () => {
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
                 <Select
-                    options={trajectoryOptions}
+                    options={trajectories.map((trajectory) => ({
+                        value: trajectory._id,
+                        title: trajectory.name
+                    }))}
                     value={selectedTrajectoryId || null}
-                    onChange={handleTrajectoryChange}
+                    onChange={(value: string) => setSelectedTrajectory(value || null)}
                     placeholder={trajLoading ? 'Loading...' : 'Trajectory'}
                     disabled={isDebugging || isStarting}
                     isLoading={trajLoading}
@@ -130,9 +119,12 @@ const DebugToolbar = () => {
                 />
 
                 <Select
-                    options={frameOptions}
+                    options={frames.map((frame) => ({
+                        value: String(frame.timestep),
+                        title: `t=${frame.timestep} (${frame.natoms} atoms)`
+                    }))}
                     value={selectedTimestep !== null ? String(selectedTimestep) : null}
-                    onChange={handleFrameChange}
+                    onChange={(value: string) => setSelectedTimestep(value ? Number(value) : null)}
                     placeholder='Frame'
                     disabled={!selectedTrajectoryId || isDebugging || isStarting}
                     className='debug-toolbar-select'
@@ -141,57 +133,21 @@ const DebugToolbar = () => {
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
                 <Row gap='025'>
-                    <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
-                            onClick={handlePlayClick}
-                            disabled={!canStart}
-                        >
-                            {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
-                        </Button>
-                    </Tooltip>
+                    <DebugControlButton tooltip={startTooltip} onClick={handlePlayClick} disabled={!canStart}>
+                        {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
+                    </DebugControlButton>
 
-                    <Tooltip content='Step to next node' placement='bottom'>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
-                            onClick={step}
-                            disabled={!canStep}
-                        >
-                            <StepForward size={14} />
-                        </Button>
-                    </Tooltip>
+                    <DebugControlButton tooltip='Step to next node' onClick={step} disabled={!canAdvance}>
+                        <StepForward size={14} />
+                    </DebugControlButton>
 
-                    <Tooltip content='Continue (run all remaining)' placement='bottom'>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
-                            onClick={continueAll}
-                            disabled={!canContinue}
-                        >
-                            <FastForward size={14} />
-                        </Button>
-                    </Tooltip>
+                    <DebugControlButton tooltip='Continue (run all remaining)' onClick={continueAll} disabled={!canAdvance}>
+                        <FastForward size={14} />
+                    </DebugControlButton>
 
-                    <Tooltip content='Stop debug session' placement='bottom'>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
-                            onClick={stop}
-                            disabled={!canStop}
-                        >
-                            <Square size={14} />
-                        </Button>
-                    </Tooltip>
+                    <DebugControlButton tooltip='Stop debug session' onClick={stop} disabled={!canStop}>
+                        <Square size={14} />
+                    </DebugControlButton>
                 </Row>
             </Row>
 
@@ -219,13 +175,13 @@ const DebugToolbar = () => {
                 </>
             )}
 
-            <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
+            <DebugArgumentsPanel onStart={startDebug} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
                 <Stack mt='1' textAlign='center' className='debug-toolbar-below-status'>
                     {totalDuration !== null && totalDuration >= 0 && (
                         <Text as='p' size='sm' className='debug-toolbar-status--completed'>
-                            Completed in {totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`}
+                            Completed in {formatDuration(totalDuration)}
                         </Text>
                     )}
                     {sessionError && (

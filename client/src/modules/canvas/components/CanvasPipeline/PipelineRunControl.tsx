@@ -20,12 +20,11 @@ import SelectedTimestepsField from '../SelectedTimestepsField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
     AnalysisPluginStageConfig,
     ExpressionSelectStageConfig,
-    PipelineStage,
-    PipelineStageKind
+    PipelineStage
 } from '../../store/canvas-pipeline';
 import type { PipelineStageInput } from '@/modules/plugin/api/services/plugin-service';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -39,26 +38,24 @@ interface PipelineRunControlProps {
 }
 
 const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
-    const kind: PipelineStageKind | null = stageTypeToPipelineKind(stage.type);
+    const kind = stageTypeToPipelineKind(stage.type);
     if (!kind) return null;
 
     if (stage.type === 'analysis-plugin') {
         const config = stage.config as AnalysisPluginStageConfig;
-        if (!config.pluginId) return null;
         return {
             kind,
             pluginId: config.pluginId,
-            config: config.argValues ?? {}
+            config: config.argValues
         };
     }
 
     if (stage.type === 'expression-select') {
         const config = stage.config as ExpressionSelectStageConfig;
-        const expression = config.expression?.trim();
-        
+        const expression = config.expression.trim();
+        // Only the destructive variant runs on the cluster; colouring stays client-side.
         if (!expression || config.action !== 'delete') return null;
-        
-        
+
         return {
             kind,
             config: { expression: `!(${expression})` }
@@ -67,7 +64,7 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
 
     return {
         kind,
-        config: stage.config as unknown as Record<string, unknown>
+        config: stage.config as Record<string, unknown>
     };
 };
 
@@ -98,17 +95,12 @@ const PipelineRunControl = ({
     const { executionTeamClusters, teamClusterOptions, hasTeamClusterOptions } =
         usePluginExecutionClusterOptions(teamClustersResponse?.data);
 
+    // Memoised because a trajectory can carry thousands of timesteps.
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
-    const pluginNameById = useMemo(
-        () => new Map(modifiers.map((m) => [m.pluginId, m.name])),
-        [modifiers]
-    );
-    const pluginNameByKey = useMemo(
-        () => new Map(modifiers
-            .map((m) => [m.plugin.modifier?.key, m.name] as const)
-            .filter((entry): entry is [string, string] => typeof entry[0] === 'string')),
-        [modifiers]
-    );
+    const pluginNameById = new Map(modifiers.map((m) => [m.pluginId, m.name]));
+    const pluginNameByKey = new Map(modifiers
+        .map((m) => [m.plugin.modifier?.key, m.name] as const)
+        .filter((entry): entry is [string, string] => entry[0] !== undefined));
 
     const [selectedClusterId, setSelectedClusterId] = useState('');
     const [selectedTimesteps, setSelectedTimesteps] = useState<number[] | undefined>(() => {
@@ -118,15 +110,7 @@ const PipelineRunControl = ({
     });
 
     const resolvedClusterId = resolvePluginExecutionClusterId(selectedClusterId, executionTeamClusters);
-
-    const enabledOrderedStages = useMemo(
-        () => stages.filter((stage) => isOrderedPipelineStage(stage) && stage.enabled),
-        [stages]
-    );
-
-    const handleSelectedTimestepsChange = useCallback((next?: number[]) => {
-        setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps));
-    }, [availableTimesteps]);
+    const enabledOrderedStages = stages.filter((stage) => isOrderedPipelineStage(stage) && stage.enabled);
 
     const canExecute = Boolean(
         canMutateCanvas
@@ -136,7 +120,9 @@ const PipelineRunControl = ({
         && !executePipelineMutation.isPending
     );
 
-    const handleExecute = useCallback(async () => {
+    const pluginStageName = (pluginId: string): string => pluginNameById.get(pluginId) ?? pluginId;
+
+    const handleExecute = async () => {
         if (!trajectoryId) return;
 
         const stagePayloads = enabledOrderedStages
@@ -151,17 +137,15 @@ const PipelineRunControl = ({
             return;
         }
 
-        const prerequisiteStages: PrerequisiteStage[] = enabledOrderedStages
-            .filter((stage) => stage.type === 'analysis-plugin')
-            .map((stage) => {
-                const pluginId = (stage.config as AnalysisPluginStageConfig).pluginId;
-                const plugin = pluginsById[pluginId];
-                return {
-                    pluginKey: plugin?.modifier?.key ?? '',
-                    pluginName: pluginNameById.get(pluginId) ?? pluginId ?? 'Analysis',
-                    requires: collectRequiredPluginGroups(getPluginArguments(pluginId))
-                };
-            });
+        const pluginStages = enabledOrderedStages.filter((stage) => stage.type === 'analysis-plugin');
+        const prerequisiteStages: PrerequisiteStage[] = pluginStages.map((stage) => {
+            const { pluginId } = stage.config as AnalysisPluginStageConfig;
+            return {
+                pluginKey: pluginsById[pluginId]?.modifier?.key ?? '',
+                pluginName: pluginStageName(pluginId),
+                requires: collectRequiredPluginGroups(getPluginArguments(pluginId))
+            };
+        });
 
         const unsatisfied = findUnsatisfiedPrerequisites(prerequisiteStages);
         if (unsatisfied.length > 0) {
@@ -184,25 +168,18 @@ const PipelineRunControl = ({
 
             markStagesExecuted(enabledOrderedStages.map((stage) => stage.id), trajectoryId);
 
-            const pluginStageNames = enabledOrderedStages
-                .filter((stage) => stage.type === 'analysis-plugin')
-                .map((stage) => {
-                    const pluginId = (stage.config as AnalysisPluginStageConfig).pluginId;
-                    return pluginNameById.get(pluginId) ?? pluginId ?? 'Analysis';
-                });
-
             const pendingStore = usePendingPluginExecutionsStore.getState();
             const viewTimestep = selectedTimesteps?.[0]
                 ?? getNearestTimestep(currentTimestep, availableTimesteps);
             analysisIds.forEach((analysisId, index) => {
+                const stage = pluginStages[index];
                 pendingStore.register({
                     analysisId,
                     trajectoryId,
-                    pluginName: pluginStageNames[index] ?? 'Analysis',
+                    pluginName: stage
+                        ? pluginStageName((stage.config as AnalysisPluginStageConfig).pluginId)
+                        : 'Analysis',
                     timestep: viewTimestep,
-                    
-                    
-                    
                     autoSelect: true
                 });
             });
@@ -220,12 +197,7 @@ const PipelineRunControl = ({
                 description: 'Please try again.'
             });
         }
-    }, [
-        trajectoryId, enabledOrderedStages, executePipelineMutation, resolvedClusterId,
-        selectedTimesteps, currentTimestep, markStagesExecuted, pluginNameById,
-        pluginNameByKey, pluginsById, getPluginArguments,
-        availableTimesteps, onClose
-    ]);
+    };
 
     return (
         <Stack gap='075' className='canvas-pipeline-run'>
@@ -252,7 +224,7 @@ const PipelineRunControl = ({
             <SelectedTimestepsField
                 availableTimesteps={availableTimesteps}
                 selectedTimesteps={selectedTimesteps}
-                onChange={handleSelectedTimestepsChange}
+                onChange={(next) => setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps))}
             />
 
             <Button

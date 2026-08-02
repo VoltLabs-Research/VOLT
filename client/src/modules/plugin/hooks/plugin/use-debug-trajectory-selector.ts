@@ -1,6 +1,5 @@
 import { debugTrajectoriesQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
-import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -18,27 +17,18 @@ const readSelectedTimestep = (value: string | null): number | null => {
 
 const useDebugTrajectorySelector = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const trajectoryQuery = debugTrajectoriesQuery(undefined, {
-        meta: { checkAccessDeniedError }
-    });
+    const trajectoryQuery = debugTrajectoriesQuery(undefined);
 
     const selectedTrajectoryId = searchParams.get(DEBUG_TRAJECTORY_PARAM) || null;
     const selectedTimestepParam = searchParams.get(DEBUG_TIMESTEP_PARAM);
-    const selectedTimestep = useMemo(() => {
-        return readSelectedTimestep(selectedTimestepParam);
-    }, [selectedTimestepParam]);
+    const selectedTimestep = readSelectedTimestep(selectedTimestepParam);
     const trajectories = trajectoryQuery.data ?? [];
-    const isLoading = trajectoryQuery.isLoading;
+
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, replace = false) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), { replace });
     }, [setSearchParams]);
 
-    const error = useMemo(() => {
-        if (!trajectoryQuery.error) return null;
-        return trajectoryQuery.error.message || 'Failed to load trajectories';
-    }, [trajectoryQuery.error]);
-
+    // Memoised: both identities are load-bearing dependencies of the effects below.
     const selectedTrajectory = useMemo(() => {
         return trajectories.find((trajectory) => trajectory._id === selectedTrajectoryId) || null;
     }, [trajectories, selectedTrajectoryId]);
@@ -97,10 +87,7 @@ const useDebugTrajectorySelector = () => {
         selectedTimestep,
         setSelectedTrajectory,
         setSelectedTimestep,
-        isLoading,
-        error,
-        accessDenied,
-        accessDeniedMessage
+        isLoading: trajectoryQuery.isLoading
     };
 };
 

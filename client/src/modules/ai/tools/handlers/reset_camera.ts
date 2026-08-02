@@ -1,14 +1,12 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 
-type ResetCameraInput = Record<string, never>;
-
-const resetCamera: ClientToolHandler<ResetCameraInput> = {
+const resetCamera: ClientToolHandler = {
     name: 'reset_camera',
     needsViewer: true,
 
     run(_input, ctx): ClientToolResult {
-        const bridge = ctx.getCanvasBridge();
+        const { resetCamera: resetCameraHandle } = ctx.getCanvasBridge();
 
         ctx.markViewerActing();
 
@@ -16,10 +14,8 @@ const resetCamera: ClientToolHandler<ResetCameraInput> = {
         editor.camera.reset();
         editor.orbitControls.reset();
 
-        const usedImperative = typeof bridge.resetCamera === 'function';
-        if (usedImperative) {
-            bridge.resetCamera?.();
-        }
+        const usedImperative = resetCameraHandle !== null;
+        resetCameraHandle?.();
 
         return {
             ok: true,

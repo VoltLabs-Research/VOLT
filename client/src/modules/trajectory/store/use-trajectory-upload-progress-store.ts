@@ -26,10 +26,7 @@ interface TrajectoryUploadProgressState {
     removeUpload: (id: string) => void;
 }
 
-const clampProgress = (progress: number): number => {
-    if (!Number.isFinite(progress)) return 0;
-    return Math.min(1, Math.max(0, progress));
-};
+const clampProgress = (progress: number): number => Math.min(1, Math.max(0, progress));
 
 export const useTrajectoryUploadProgressStore = create<TrajectoryUploadProgressState>((set) => ({
     uploads: [],

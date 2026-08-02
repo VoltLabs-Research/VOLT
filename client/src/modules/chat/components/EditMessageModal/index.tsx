@@ -1,5 +1,5 @@
 import { Box, Modal, closeModal } from '@voltstack/bravais';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import type { KeyboardEvent } from 'react';
 import './EditMessageModal.css';
@@ -7,7 +7,7 @@ import './EditMessageModal.css';
 interface EditMessageModalProps {
     messageId: string | null;
     initialContent: string;
-    onSave: (messageId: string, newContent: string) => Promise<void>;
+    onSave: (messageId: string, newContent: string) => Promise<unknown>;
     onClose: () => void;
 }
 
@@ -19,51 +19,45 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
     const [isLoading, setIsLoading] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const focusTextarea = () => {
-        textareaRef.current?.focus();
-        textareaRef.current?.select();
-    };
-
     useEffect(() => {
         setContent(initialContent);
 
         if (initialContent && textareaRef.current) {
             setTimeout(() => {
-                focusTextarea();
+                textareaRef.current?.focus();
+                textareaRef.current?.select();
             }, 100);
         }
     }, [initialContent]);
 
-    const handleSave = useCallback(async () => {
+    const handleCancel = () => {
+        closeModal(EDIT_MESSAGE_MODAL_ID);
+        onClose();
+    };
+
+    const handleSave = async () => {
         if (!messageId || !content.trim() || content === initialContent) {
-            closeModal(EDIT_MESSAGE_MODAL_ID);
-            onClose();
+            handleCancel();
             return;
         }
 
         setIsLoading(true);
         try {
             await onSave(messageId, content.trim());
-            closeModal(EDIT_MESSAGE_MODAL_ID);
-            onClose();
+            handleCancel();
         } finally {
             setIsLoading(false);
         }
-    }, [messageId, content, initialContent, onSave, onClose]);
+    };
 
-    const handleCancel = useCallback(() => {
-        closeModal(EDIT_MESSAGE_MODAL_ID);
-        onClose();
-    }, [onClose]);
-
-    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSave();
         } else if (e.key === 'Escape') {
             handleCancel();
         }
-    }, [handleSave, handleCancel]);
+    };
 
     return (
         <Modal

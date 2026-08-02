@@ -1,5 +1,4 @@
 import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/modules/plugin/hooks/listing/queries';
-import { isAccessDeniedError } from '@/shared/errors/core';
 import { ExportType } from '@/modules/plugin/api/services/listing-service';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
@@ -49,10 +48,6 @@ const useDownloadPluginListing = () => {
     const downloadListing = useCallback(async (params: DownloadPluginListingParams): Promise<boolean> => {
         const { pluginId, exposureId, analysisId, trajectoryId, exposureName, format = 'json' } = params;
 
-        if (!pluginId || !exposureId) {
-            return false;
-        }
-
         try {
             await showPromise(
                 (async () => {
@@ -72,11 +67,7 @@ const useDownloadPluginListing = () => {
                 DOWNLOAD_LISTING_TOAST
             );
             return true;
-        } catch(error: unknown) {
-            if (isAccessDeniedError(error)) {
-                return false;
-            }
-
+        } catch {
             return false;
         }
     }, [exportListingMutation]);
@@ -111,11 +102,7 @@ const useDownloadPluginListing = () => {
                 DOWNLOAD_ANALYSIS_LISTINGS_TOAST
             );
             return true;
-        } catch(error: unknown) {
-            if (isAccessDeniedError(error)) {
-                return false;
-            }
-
+        } catch {
             return false;
         }
     }, [getExtensionFromBlob, exportListingByAnalysisMutation]);

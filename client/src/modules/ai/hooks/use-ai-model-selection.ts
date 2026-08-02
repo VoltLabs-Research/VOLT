@@ -1,8 +1,8 @@
 import { useTeamAIIntegrationModelsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
-import type { TeamAIModelListItem, TeamAIProviderModels } from '@volt/contracts/modules/team/domain';
+import type { TeamAIModelListItem } from '@volt/contracts/modules/team/domain';
 
 const createModelSelectionKey = (provider: AIProvider, modelId: string): string => (
     `${provider}::${modelId}`
@@ -20,18 +20,6 @@ const useAIModelSelection = (teamId: string | null) => {
         enabled: Boolean(teamId)
     });
 
-    const integrations = useMemo(() => {
-        return teamAIIntegrationsQuery.data?.integrations.map((integration) => ({
-            provider: integration.provider,
-            isEnabled: integration.isEnabled,
-            hasApiKey: integration.hasApiKey
-        })) ?? [];
-    }, [teamAIIntegrationsQuery.data]);
-
-    const providerCatalog: TeamAIProviderModels[] = useMemo(() => {
-        return teamAIIntegrationModelsQuery.data?.providers ?? [];
-    }, [teamAIIntegrationModelsQuery.data]);
-
     const isProviderCatalogLoading = teamAIIntegrationsQuery.isLoading || teamAIIntegrationModelsQuery.isLoading;
     let providerCatalogError: string | null = null;
     if (teamAIIntegrationsQuery.error || teamAIIntegrationModelsQuery.error) {
@@ -40,17 +28,17 @@ const useAIModelSelection = (teamId: string | null) => {
 
     const enabledProviders = useMemo(() => {
         return new Set(
-            integrations
+            (teamAIIntegrationsQuery.data?.integrations ?? [])
                 .filter((integration) => integration.isEnabled && integration.hasApiKey)
                 .map((integration) => integration.provider)
         );
-    }, [integrations]);
+    }, [teamAIIntegrationsQuery.data]);
 
     const configuredProviderCatalog = useMemo(() => {
-        return providerCatalog.filter((provider) => (
+        return (teamAIIntegrationModelsQuery.data?.providers ?? []).filter((provider) => (
             enabledProviders.has(provider.provider) && provider.models.length > 0
         ));
-    }, [enabledProviders, providerCatalog]);
+    }, [enabledProviders, teamAIIntegrationModelsQuery.data]);
 
     const availableModelsForProvider = useMemo<TeamAIModelListItem[]>(() => {
         return configuredProviderCatalog
@@ -64,13 +52,7 @@ const useAIModelSelection = (teamId: string | null) => {
             ))
             .sort((left, right) => {
                 if (left.isDefault !== right.isDefault) {
-                    let sortOrder = 1;
-
-                    if (left.isDefault) {
-                        sortOrder = -1;
-                    }
-
-                    return sortOrder;
+                    return left.isDefault ? -1 : 1;
                 }
 
                 if (left.providerName !== right.providerName) {
@@ -88,8 +70,6 @@ const useAIModelSelection = (teamId: string | null) => {
         )) || null;
     }, [availableModelsForProvider, selectedModel]);
 
-    const selectedProvider = selectedModelDefinition?.provider || null;
-
     const noProviderConfigured = Boolean(
         teamId
         && !isProviderCatalogLoading
@@ -102,12 +82,10 @@ const useAIModelSelection = (teamId: string | null) => {
         && !noProviderConfigured
     );
 
-    useEffect(() => {
-        selectedModelRef.current = {
-            provider: selectedModelDefinition?.provider,
-            model: selectedModelDefinition?.id
-        };
-    }, [selectedModelDefinition?.id, selectedModelDefinition?.provider]);
+    selectedModelRef.current = {
+        provider: selectedModelDefinition?.provider,
+        model: selectedModelDefinition?.id
+    };
 
     useEffect(() => {
         if (!availableModelsForProvider.length) {
@@ -129,21 +107,8 @@ const useAIModelSelection = (teamId: string | null) => {
         });
     }, [availableModelsForProvider]);
 
-    const setSelectedProvider = useCallback((provider: AIProvider) => {
-        const providerModels = availableModelsForProvider.filter((model) => model.provider === provider);
-        if (!providerModels.length) {
-            setSelectedModel(null);
-            return;
-        }
-
-        const defaultModel = providerModels.find((model) => model.isDefault) || providerModels[0];
-        setSelectedModel(createModelSelectionKey(defaultModel.provider, defaultModel.id));
-    }, [availableModelsForProvider]);
-
     return {
         selectedModel,
-        selectedProvider,
-        configuredProviderCatalog,
         availableModelsForProvider,
         noProviderConfigured,
         canSendMessage,
@@ -156,8 +121,7 @@ const useAIModelSelection = (teamId: string | null) => {
             ]);
         },
         selectedModelRef,
-        setSelectedModel,
-        setSelectedProvider
+        setSelectedModel
     };
 };
 

@@ -41,11 +41,15 @@ export type CreateTeamClusterTransferRequestParams = TeamClusterScopedParams & C
 
 export type UpdateTeamClusterQueueConcurrencyParams = TeamClusterScopedParams & UpdateTeamClusterQueueConcurrencyInput;
 
-export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
+export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;
+
+export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
 
 export type ProvisionDemoTeamClusterParams = TeamScopedParams;
 
-export type DeleteDemoTeamClusterParams = TeamScopedParams;export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
+export type DeleteDemoTeamClusterParams = TeamScopedParams;
+
+export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
 
 export type ListTeamClustersResponse = PaginatedResponse<TeamCluster>;
 
@@ -55,9 +59,9 @@ export interface ListTeamClusterTransferJobsParams extends TeamClusterScopedPara
 
 export type ListTeamClusterTransferJobsResponse = PaginatedResponse<ClusterTransferJob>;
 
-export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
+export const requestClusterHistory = async (minutes: number, clusterId: string): Promise<void> => {
     await emitWithReport(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, {
-        minutes: minutes ?? 5,
+        minutes,
         clusterId
     });
 };

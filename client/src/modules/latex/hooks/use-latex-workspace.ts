@@ -1,222 +1,122 @@
 import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
-import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
-import { invalidateLatexFilesQuery, latexDocumentQuery, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import { latexDocumentQuery, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
+import useLatexAutoCompile from '@/modules/latex/hooks/workspace/use-latex-auto-compile';
+import useLatexAutosave from '@/modules/latex/hooks/workspace/use-latex-autosave';
+import useLatexCollaborativeEditing from '@/modules/latex/hooks/workspace/use-latex-collaborative-editing';
 import useLatexCompile from '@/modules/latex/hooks/workspace/use-latex-compile';
+import useLatexEditorGroups from '@/modules/latex/hooks/workspace/use-latex-editor-groups';
 import useLatexExport from '@/modules/latex/hooks/workspace/use-latex-export';
+import useLatexFileEditorStates from '@/modules/latex/hooks/workspace/use-latex-file-editor-states';
 import useLatexWorkspaceUpload from '@/modules/latex/hooks/workspace/use-latex-workspace-upload';
-import type {
-    LatexFileEntry,
-    LatexWorkspaceSelection,
-    LatexWorkspaceTab,
-    LatexEditorGroupId,
-    LatexEditorGroup,
-    FileEditorState,
-    PendingRemoteFileUpdate
-} from '@/modules/latex/contracts/workspace';
-import {
-    AUTOSAVE_DELAY,
-    LIVE_COMPILE_DELAY,
-    TEX_EXTENSION,
-    PRIMARY_EDITOR_GROUP_ID,
-    SECONDARY_EDITOR_GROUP_ID,
-    isSameSelection,
-    isSameTab,
-    createEditorGroup,
-    createFileEditorState
-} from './workspace/editor-helpers';
-import {
-    RENAME_TOAST
-} from './workspace/toasts';
+import { isTexFile } from '@/modules/latex/hooks/workspace/editor-helpers';
+import { RENAME_TOAST } from '@/modules/latex/hooks/workspace/toasts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
-import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
+
+import type { LatexEditorGroupId, LatexFileEntry } from '@/modules/latex/contracts/workspace';
 import type { LatexFile } from '@volt/contracts/modules/latex/domain';
 
-interface UseLatexWorkspaceInput {
+interface UseLatexWorkspaceInput{
     documentId: string;
 }
 
-export type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab, LatexEditorGroupId } from '@/modules/latex/contracts/workspace';
-
+/**
+ * Composition root of the LaTeX workspace. Owns nothing itself: it wires the
+ * document query, the file and asset stores, the editor buffers, the tab groups,
+ * collaboration, autosave, compilation and exports into the single object the
+ * workspace page renders from.
+ */
 const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const teamId = useSelectedTeamId();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const documentQueryResult = latexDocumentQuery({ documentId }, { enabled: !!documentId });
-
-    const latexDocument = documentQueryResult.data;
-    const isLoading = documentQueryResult.isLoading;
-    const [editorGroupsState, setEditorGroupsState] = useState<Record<LatexEditorGroupId, LatexEditorGroup>>({
-        [PRIMARY_EDITOR_GROUP_ID]: createEditorGroup(PRIMARY_EDITOR_GROUP_ID),
-        [SECONDARY_EDITOR_GROUP_ID]: createEditorGroup(SECONDARY_EDITOR_GROUP_ID)
-    });
-    const [activeEditorGroupId, setActiveEditorGroupId] = useState<LatexEditorGroupId>(PRIMARY_EDITOR_GROUP_ID);
-    const [isEditorSplit, setIsEditorSplit] = useState(false);
-    const [fileEditorStates, setFileEditorStates] = useState<Record<string, FileEditorState>>({});
-    const [pendingRemoteUpdates, setPendingRemoteUpdates] = useState<Record<string, PendingRemoteFileUpdate>>({});
     const [isWorkspaceImportInProgress, setIsWorkspaceImportInProgress] = useState(false);
 
-    const fileEditorStatesRef = useRef<Record<string, FileEditorState>>({});
-    const sendContentUpdateRef = useRef<((content: string, fileId: string) => void) | null>(null);
-    const applyLocalContentChangeRef = useRef<((fileId: string, content: string) => boolean) | null>(null);
-    const autosaveTimersRef = useRef<Record<string, number>>({});
-    const liveCompileTimerRef = useRef<number | null>(null);
-    const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
-    const hasBootstrappedSelectionRef = useRef(false);
-
-    
-    const latexFileIdsRef = useRef<Set<string>>(new Set());
-
-    
-    const prevFileIdsRef = useRef<Set<string>>(new Set());
-
-    const isTexFile = useCallback((name: string): boolean => name.toLowerCase().endsWith(TEX_EXTENSION), []);
-
-    useEffect(() => {
-        fileEditorStatesRef.current = fileEditorStates;
-    }, [fileEditorStates]);
-
-    useEffect(() => {
-        lastTexWorkspaceFingerprintRef.current = null;
-    }, [documentId]);
-
+    const documentQueryResult = latexDocumentQuery({ documentId }, { enabled: !!documentId });
+    const latexDocument = documentQueryResult.data;
     const { mutateAsync: updateDocument } = useUpdateLatexDocumentMutation();
-
-    const updateEditorGroup = useCallback((
-        groupId: LatexEditorGroupId,
-        updater: (group: LatexEditorGroup) => LatexEditorGroup
-    ): void => {
-        setEditorGroupsState((currentGroups) => ({
-            ...currentGroups,
-            [groupId]: updater(currentGroups[groupId])
-        }));
-    }, []);
-
-    const getNextSelectionAfterClose = useCallback((
-        tabs: LatexWorkspaceTab[],
-        tabToClose: LatexWorkspaceTab,
-        currentSelection: LatexWorkspaceSelection
-    ): LatexWorkspaceSelection => {
-        if (!isSameSelection(currentSelection, tabToClose)) {
-            return currentSelection;
-        }
-
-        const tabIndex = tabs.findIndex((currentTab) => isSameTab(currentTab, tabToClose));
-        if (tabIndex < 0) {
-            return currentSelection;
-        }
-
-        const nextTabs = tabs.filter((_, index) => index !== tabIndex);
-        return nextTabs[tabIndex] ?? nextTabs[tabIndex - 1] ?? null;
-    }, []);
-
-    const handleOpenTab = useCallback((tab: LatexWorkspaceTab, targetGroupId: LatexEditorGroupId = activeEditorGroupId): void => {
-        hasBootstrappedSelectionRef.current = true;
-        updateEditorGroup(targetGroupId, (group) => ({
-            ...group,
-            openTabs: group.openTabs.some((currentTab) => isSameTab(currentTab, tab))
-                ? group.openTabs
-                : [...group.openTabs, tab],
-            selection: tab
-        }));
-        setActiveEditorGroupId(targetGroupId);
-    }, [activeEditorGroupId, updateEditorGroup]);
-
-    const handleSelectTab = useCallback((groupId: LatexEditorGroupId, tab: LatexWorkspaceTab): void => {
-        updateEditorGroup(groupId, (group) => ({
-            ...group,
-            selection: tab
-        }));
-        setActiveEditorGroupId(groupId);
-    }, [updateEditorGroup]);
-
-    const handleCloseTab = useCallback(async (groupId: LatexEditorGroupId, tabToClose: LatexWorkspaceTab): Promise<void> => {
-        if (tabToClose.type === 'file' && fileEditorStatesRef.current[tabToClose.id]?.isDirty) {
-            const confirmed = await confirmAction({
-                title: 'Discard unsaved changes?',
-                description: 'This file has changes that have not been saved yet. Closing the tab will discard them.',
-                confirmText: 'Close anyway',
-                tone: ConfirmActionTone.Danger
-            });
-
-            if (!confirmed) {
-                return;
-            }
-        }
-
-        updateEditorGroup(groupId, (group) => ({
-            ...group,
-            openTabs: group.openTabs.filter((currentTab) => !isSameTab(currentTab, tabToClose)),
-            selection: getNextSelectionAfterClose(group.openTabs, tabToClose, group.selection)
-        }));
-    }, [getNextSelectionAfterClose, updateEditorGroup]);
-
-    const handleFileSelected = useCallback((file: LatexFile): void => {
-        setFileEditorStates((currentStates) => currentStates[file._id]
-            ? currentStates
-            : {
-                ...currentStates,
-                [file._id]: createFileEditorState(file.content)
-            });
-        handleOpenTab({
-            type: 'file',
-            id: file._id
-        });
-    }, [handleOpenTab]);
 
     const {
         files: latexFiles,
         isLoading: isLoadingFiles,
         isSaving,
-        handleCreateFile,
+        handleCreateFile: createFileWithToast,
         createFileWithoutSelection,
         handleDeleteFile,
         handleSetEntrypoint,
         handleRenameFile,
         deleteFile,
         updateFile
-    } = useLatexFiles({
-        documentId,
-        onFileSelected: handleFileSelected
+    } = useLatexFiles({ documentId });
+
+    const {
+        assets,
+        rawAssets,
+        isUploading,
+        fileInputRef,
+        folderInputRef,
+        uploadEntriesWithoutToast,
+        handleDeleteAsset,
+        handleRenameAsset,
+        handleCreateFolder,
+        deleteAsset,
+        updateAsset
+    } = useLatexAssets({ documentId });
+
+    const editorStates = useLatexFileEditorStates(latexFiles);
+    const groups = useLatexEditorGroups({
+        files: latexFiles,
+        assets,
+        fileEditorStatesRef: editorStates.fileEditorStatesRef
     });
-
-    useEffect(() => {
-        latexFileIdsRef.current = new Set(latexFiles.map((file) => file._id));
-    }, [latexFiles]);
-
-    const editorGroups = useMemo<LatexEditorGroup[]>(() => {
-        return isEditorSplit
-            ? [editorGroupsState[PRIMARY_EDITOR_GROUP_ID], editorGroupsState[SECONDARY_EDITOR_GROUP_ID]]
-            : [editorGroupsState[PRIMARY_EDITOR_GROUP_ID]];
-    }, [editorGroupsState, isEditorSplit]);
-
-    const activeEditorGroup = editorGroupsState[activeEditorGroupId] ?? editorGroupsState[PRIMARY_EDITOR_GROUP_ID];
-    const selection = activeEditorGroup.selection;
-
-    const activeFile = useMemo(
-        () => selection?.type === 'file'
-            ? latexFiles.find((file) => file._id === selection.id) ?? null
-            : null,
-        [latexFiles, selection]
-    );
-
-    const hasCompilableTexFile = useMemo(
-        () => latexFiles.some((file) => isTexFile(file.name)),
-        [isTexFile, latexFiles]
-    );
 
     const {
         compileSilently,
         compiledPdfUrl,
         compiledPdfBlob,
         compileError,
-        isCompiling,
-        revokePdfUrl
+        isCompiling
     } = useLatexCompile({
         documentId,
-        hasCompilableTexFile
+        hasCompilableTexFile: latexFiles.some((file) => isTexFile(file.name))
+    });
+
+    const { scheduleLiveCompile } = useLatexAutoCompile({
+        documentId,
+        files: latexFiles,
+        isWorkspaceSettled: !documentQueryResult.isLoading
+            && !isLoadingFiles
+            && !isWorkspaceImportInProgress
+            && !!latexDocument,
+        compileSilently
+    });
+
+    const { clearAutosaveTimer, scheduleFileAutosave } = useLatexAutosave({
+        documentId,
+        files: latexFiles,
+        fileEditorStatesRef: editorStates.fileEditorStatesRef,
+        commitSavedContent: editorStates.commitSavedContent,
+        updateFile,
+        compileSilently,
+        checkAccessDeniedError
+    });
+
+    const {
+        collaborators,
+        applyFileContentUpdate,
+        applyPendingRemoteUpdate,
+        dismissPendingRemoteUpdate
+    } = useLatexCollaborativeEditing({
+        documentId,
+        teamId: teamId ?? undefined,
+        files: latexFiles,
+        openCollaborativeFileIds: groups.openCollaborativeFileIds,
+        editorStates,
+        clearAutosaveTimer,
+        scheduleFileAutosave,
+        scheduleLiveCompile
     });
 
     const {
@@ -231,669 +131,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         compiledPdfBlob,
         compileSilently
     });
-
-    const texWorkspaceFingerprint = useMemo(
-        () => latexFiles
-            .filter((file) => isTexFile(file.name))
-            .map((file) => `${file._id}:${file.name}:${file.path}:${file.isEntrypoint}`)
-            .join('|'),
-        [isTexFile, latexFiles]
-    );
-
-    const scheduleLiveCompile = useCallback((): void => {
-        if (liveCompileTimerRef.current) {
-            window.clearTimeout(liveCompileTimerRef.current);
-        }
-
-        liveCompileTimerRef.current = window.setTimeout(() => {
-            liveCompileTimerRef.current = null;
-            compileSilently();
-        }, LIVE_COMPILE_DELAY);
-    }, [compileSilently]);
-
-    const clearAutosaveTimer = useCallback((fileId: string): void => {
-        const existingTimer = autosaveTimersRef.current[fileId];
-        if (!existingTimer) {
-            return;
-        }
-
-        window.clearTimeout(existingTimer);
-        delete autosaveTimersRef.current[fileId];
-    }, []);
-
-    const applyRemoteFileContent = useCallback((fileId: string, content: string): void => {
-        clearAutosaveTimer(fileId);
-        setPendingRemoteUpdates((currentUpdates) => {
-            if (!(fileId in currentUpdates)) {
-                return currentUpdates;
-            }
-
-            const nextUpdates = { ...currentUpdates };
-            delete nextUpdates[fileId];
-            return nextUpdates;
-        });
-        setFileEditorStates((currentStates) => ({
-            ...currentStates,
-            [fileId]: {
-                ...(currentStates[fileId] ?? createFileEditorState(content)),
-                content,
-                lastSavedContent: content,
-                remoteContent: content,
-                isDirty: false
-            }
-        }));
-    }, [clearAutosaveTimer]);
-
-    const scheduleFileAutosave = useCallback((fileId: string, content: string): void => {
-        const existingTimer = autosaveTimersRef.current[fileId];
-        if (existingTimer) {
-            window.clearTimeout(existingTimer);
-        }
-
-        const currentState = fileEditorStatesRef.current[fileId];
-        if (!currentState || content === currentState.lastSavedContent) {
-            return;
-        }
-
-        autosaveTimersRef.current[fileId] = window.setTimeout(() => {
-            const saveFile = async (): Promise<void> => {
-                try {
-                    const latestState = fileEditorStatesRef.current[fileId];
-                    if (!latestState || latestState.content !== content || latestState.lastSavedContent === content) {
-                        return;
-                    }
-
-                    await updateFile({
-                        documentId,
-                        fileId,
-                        content
-                    });
-
-                    setFileEditorStates((currentStates) => {
-                        const state = currentStates[fileId];
-                        if (!state) {
-                            return currentStates;
-                        }
-
-                        return {
-                            ...currentStates,
-                            [fileId]: {
-                                ...state,
-                                lastSavedContent: content,
-                                isDirty: state.content !== content
-                            }
-                        };
-                    });
-
-                    await compileSilently();
-                } catch (error) {
-                    checkAccessDeniedError(error);
-                    sileo.error({ title: 'Failed to save file' });
-                } finally {
-                    delete autosaveTimersRef.current[fileId];
-                }
-            };
-
-            saveFile();
-        }, AUTOSAVE_DELAY);
-    }, [checkAccessDeniedError, compileSilently, documentId, updateFile]);
-
-    const applyFileContentUpdate = useCallback((targetSelection: LatexWorkspaceSelection, content: string): void => {
-        if (!targetSelection || targetSelection.type !== 'file') return;
-        const file = latexFiles.find((currentFile) => currentFile._id === targetSelection.id);
-        if (!file) return;
-        const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
-        const isRemoteEcho = content === currentState.remoteContent;
-        const appliedCollaboratively = isRemoteEcho
-            ? true
-            : applyLocalContentChangeRef.current?.(file._id, content) ?? false;
-        setFileEditorStates((currentStates) => ({
-            ...currentStates,
-            [file._id]: {
-                ...currentState,
-                content,
-                lastSavedContent: appliedCollaboratively ? content : currentState.lastSavedContent,
-                isDirty: appliedCollaboratively ? false : content !== currentState.lastSavedContent,
-                remoteContent: isRemoteEcho || appliedCollaboratively ? content : currentState.remoteContent
-            }
-        }));
-        if (!isRemoteEcho && !appliedCollaboratively) sendContentUpdateRef.current?.(content, file._id);
-        if (appliedCollaboratively) {
-            clearAutosaveTimer(file._id);
-            if (!isRemoteEcho && isTexFile(file.name)) {
-                scheduleLiveCompile();
-            }
-        } else {
-            scheduleFileAutosave(file._id, content);
-        }
-    }, [clearAutosaveTimer, isTexFile, latexFiles, scheduleFileAutosave, scheduleLiveCompile]);
-
-    const handleInsertAssetRef = useCallback((ref: string): void => {
-        if (!selection || selection.type !== 'file') return;
-        const file = latexFiles.find((currentFile) => currentFile._id === selection.id);
-        if (!file) return;
-        const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
-        applyFileContentUpdate(selection, `${currentState.content}\n${ref}`);
-    }, [applyFileContentUpdate, latexFiles, selection]);
-
-    const {
-        assets,
-        rawAssets,
-        isUploading,
-        fileInputRef,
-        folderInputRef,
-        uploadEntriesWithoutToast,
-        handleDeleteAsset,
-        handleRenameAsset,
-        handleCreateFolder,
-        deleteAsset,
-        updateAsset
-    } = useLatexAssets({
-        documentId,
-        onInsertRef: handleInsertAssetRef
-    });
-
-    const activeAsset = useMemo(
-        () => selection?.type === 'asset'
-            ? assets.find((asset) => asset._id === selection.id) ?? null
-            : null,
-        [assets, selection]
-    );
-
-    const selectedAssetId = selection?.type === 'asset' ? selection.id : null;
-
-    const handleRemoteContentUpdate = useCallback((content: string, _timestamp: number, fileId: string): void => {
-        if (!latexFileIdsRef.current.has(fileId)) {
-            invalidateLatexFilesQuery({ documentId });
-            return;
-        }
-
-        setFileEditorStates((currentStates) => {
-            const currentState = currentStates[fileId] ?? createFileEditorState(content);
-            const hasConflict = currentState.isDirty && currentState.content !== content;
-
-            if (hasConflict) {
-                setPendingRemoteUpdates((currentUpdates) => ({
-                    ...currentUpdates,
-                    [fileId]: {
-                        content,
-                        timestamp: _timestamp
-                    }
-                }));
-                return currentStates;
-            }
-
-            clearAutosaveTimer(fileId);
-            setPendingRemoteUpdates((currentUpdates) => {
-                if (!(fileId in currentUpdates)) {
-                    return currentUpdates;
-                }
-
-                const nextUpdates = { ...currentUpdates };
-                delete nextUpdates[fileId];
-                return nextUpdates;
-            });
-
-            return {
-                ...currentStates,
-                [fileId]: {
-                    ...currentState,
-                    content,
-                    lastSavedContent: content,
-                    remoteContent: content,
-                    isDirty: false
-                }
-            };
-        });
-    }, [clearAutosaveTimer, documentId]);
-
-    const {
-        collaborators,
-        sendContentUpdate,
-        ensureFileSession,
-        applyLocalContentChange
-    } = useLatexDocumentSocket({
-        documentId,
-        teamId: teamId ?? undefined,
-        enabled: !!documentId && !!teamId,
-        onRemoteContentUpdate: handleRemoteContentUpdate
-    });
-
-    useEffect(() => {
-        sendContentUpdateRef.current = sendContentUpdate;
-    }, [sendContentUpdate]);
-
-    useEffect(() => {
-        applyLocalContentChangeRef.current = applyLocalContentChange;
-    }, [applyLocalContentChange]);
-
-    const openCollaborativeFileIds = useMemo(() => {
-        const ids = new Set<string>();
-
-        Object.values(editorGroupsState).forEach((group) => {
-            if (group.selection?.type === 'file') {
-                ids.add(group.selection.id);
-            }
-
-            group.openTabs.forEach((tab) => {
-                if (tab.type === 'file') {
-                    ids.add(tab.id);
-                }
-            });
-        });
-
-        return Array.from(ids);
-    }, [editorGroupsState]);
-
-    useEffect(() => {
-        if (!documentId || !teamId || openCollaborativeFileIds.length === 0) {
-            return;
-        }
-
-        openCollaborativeFileIds.forEach((fileId) => {
-            const file = latexFiles.find((currentFile) => currentFile._id === fileId);
-            if (!file) {
-                return;
-            }
-
-            const initialContent = fileEditorStatesRef.current[fileId]?.content ?? file.content;
-            ensureFileSession(fileId, initialContent).then((joined) => {
-                if (!joined) {
-                    return;
-                }
-
-                const latestContent = fileEditorStatesRef.current[fileId]?.content ?? initialContent;
-                if (latestContent !== initialContent) {
-                    applyLocalContentChangeRef.current?.(fileId, latestContent);
-                }
-            });
-        });
-    }, [documentId, ensureFileSession, latexFiles, openCollaborativeFileIds, teamId]);
-
-    const isSelectionAvailable = useCallback((candidate: LatexWorkspaceSelection): candidate is LatexWorkspaceTab => {
-        if (!candidate) {
-            return false;
-        }
-
-        return candidate.type === 'file'
-            ? latexFiles.some((file) => file._id === candidate.id)
-            : assets.some((asset) => asset._id === candidate.id);
-    }, [assets, latexFiles]);
-
-    const activeFileEditorState = activeFile
-        ? fileEditorStates[activeFile._id] ?? createFileEditorState(activeFile.content)
-        : null;
-    const activePendingRemoteUpdate = activeFile ? pendingRemoteUpdates[activeFile._id] ?? null : null;
-
-    const editorContent = activeFileEditorState?.content ?? '';
-    const dirtyFileIds = useMemo(
-        () => Object.entries(fileEditorStates)
-            .filter(([, state]) => state.isDirty)
-            .map(([fileId]) => fileId),
-        [fileEditorStates]
-    );
-    const isDirty = dirtyFileIds.length > 0;
-
-    useEffect(() => {
-        if (!documentQueryResult.error) return;
-        checkAccessDeniedError(documentQueryResult.error);
-    }, [checkAccessDeniedError, documentQueryResult.error]);
-
-    useEffect(() => {
-        const autosaveTimers = autosaveTimersRef.current;
-
-        return () => {
-            revokePdfUrl();
-
-            if (liveCompileTimerRef.current) {
-                window.clearTimeout(liveCompileTimerRef.current);
-                liveCompileTimerRef.current = null;
-            }
-
-            Object.values(autosaveTimers).forEach((timerId) => {
-                window.clearTimeout(timerId);
-            });
-        };
-    }, []);
-
-    useEffect(() => {
-        setFileEditorStates((currentStates) => {
-            let hasChanged = false;
-            const nextStates: Record<string, FileEditorState> = {};
-            const nextFileIds = new Set(latexFiles.map((file) => file._id));
-
-            latexFiles.forEach((file) => {
-                const currentState = currentStates[file._id];
-                if (!currentState) {
-                    nextStates[file._id] = createFileEditorState(file.content);
-                    hasChanged = true;
-                    return;
-                }
-
-                if (currentState.isDirty) {
-                    nextStates[file._id] = currentState;
-                    return;
-                }
-
-                if (
-                    currentState.content !== file.content
-                    || currentState.lastSavedContent !== file.content
-                    || currentState.remoteContent !== file.content
-                ) {
-                    nextStates[file._id] = createFileEditorState(file.content);
-                    hasChanged = true;
-                    return;
-                }
-
-                nextStates[file._id] = currentState;
-            });
-
-            Object.keys(currentStates).forEach((fileId) => {
-                if (nextFileIds.has(fileId)) {
-                    return;
-                }
-
-                const existingTimer = autosaveTimersRef.current[fileId];
-                if (existingTimer) {
-                    window.clearTimeout(existingTimer);
-                    delete autosaveTimersRef.current[fileId];
-                }
-                hasChanged = true;
-            });
-
-            return hasChanged ? nextStates : currentStates;
-        });
-    }, [latexFiles]);
-
-    useEffect(() => {
-        const nextFileIds = new Set(latexFiles.map((file) => file._id));
-
-        setPendingRemoteUpdates((currentUpdates) => {
-            let hasChanges = false;
-            const nextUpdates: Record<string, PendingRemoteFileUpdate> = {};
-
-            Object.entries(currentUpdates).forEach(([fileId, update]) => {
-                if (!nextFileIds.has(fileId)) {
-                    hasChanges = true;
-                    return;
-                }
-
-                nextUpdates[fileId] = update;
-            });
-
-            return hasChanges ? nextUpdates : currentUpdates;
-        });
-    }, [latexFiles]);
-
-    
-    useEffect(() => {
-        const currentIds = new Set(latexFiles.map((file) => file._id));
-        const prevIds = prevFileIdsRef.current;
-
-        if (isWorkspaceImportInProgress) {
-            prevFileIdsRef.current = currentIds;
-            return;
-        }
-
-        if (prevIds.size > 0) {
-            for (const file of latexFiles) {
-                if (!prevIds.has(file._id)) {
-                    handleFileSelected(file);
-                    break;
-                }
-            }
-        }
-
-        prevFileIdsRef.current = currentIds;
-    }, [handleFileSelected, isWorkspaceImportInProgress, latexFiles]);
-
-    useEffect(() => {
-        setEditorGroupsState((currentGroups) => {
-            let hasChanges = false;
-            const nextGroups = { ...currentGroups };
-
-            for (const groupId of [PRIMARY_EDITOR_GROUP_ID, SECONDARY_EDITOR_GROUP_ID] as const) {
-                const currentGroup = currentGroups[groupId];
-                const validTabs = currentGroup.openTabs.filter((tab) => isSelectionAvailable(tab));
-                const nextSelection = currentGroup.selection && isSelectionAvailable(currentGroup.selection)
-                    ? currentGroup.selection
-                    : (validTabs[validTabs.length - 1] ?? null);
-
-                if (
-                    validTabs.length !== currentGroup.openTabs.length
-                    || !isSameSelection(nextSelection, currentGroup.selection)
-                ) {
-                    nextGroups[groupId] = {
-                        ...currentGroup,
-                        openTabs: validTabs,
-                        selection: nextSelection
-                    };
-                    hasChanges = true;
-                }
-            }
-
-            return hasChanges ? nextGroups : currentGroups;
-        });
-    }, [isSelectionAvailable]);
-
-    useEffect(() => {
-        const primaryGroup = editorGroupsState[PRIMARY_EDITOR_GROUP_ID];
-
-        if (
-            primaryGroup.selection
-            || primaryGroup.openTabs.length > 0
-            || hasBootstrappedSelectionRef.current
-            || (latexFiles.length === 0 && assets.length === 0)
-        ) {
-            return;
-        }
-
-        hasBootstrappedSelectionRef.current = true;
-
-        const firstFile = latexFiles.find((file) => file.isEntrypoint)
-            ?? latexFiles.find((file) => isTexFile(file.name))
-            ?? latexFiles[0];
-        if (firstFile) {
-            handleOpenTab({
-                type: 'file',
-                id: firstFile._id
-            }, PRIMARY_EDITOR_GROUP_ID);
-            return;
-        }
-
-        if (assets[0]) {
-            handleOpenTab({
-                type: 'asset',
-                id: assets[0]._id
-            }, PRIMARY_EDITOR_GROUP_ID);
-        }
-    }, [assets, editorGroupsState, handleOpenTab, isTexFile, latexFiles]);
-
-    useEffect(() => {
-        if (!isEditorSplit && activeEditorGroupId === SECONDARY_EDITOR_GROUP_ID) {
-            setActiveEditorGroupId(PRIMARY_EDITOR_GROUP_ID);
-        }
-    }, [activeEditorGroupId, isEditorSplit]);
-
-    useEffect(() => {
-        if (isLoading || isLoadingFiles || isWorkspaceImportInProgress) {
-            return;
-        }
-
-        if (!latexDocument || lastTexWorkspaceFingerprintRef.current === texWorkspaceFingerprint) {
-            return;
-        }
-
-        lastTexWorkspaceFingerprintRef.current = texWorkspaceFingerprint;
-
-        compileSilently();
-    }, [compileSilently, isLoading, isLoadingFiles, isWorkspaceImportInProgress, latexDocument, texWorkspaceFingerprint]);
-
-    const handleEditorChange = useCallback((value: string | undefined): void => {
-        applyFileContentUpdate(selection, value ?? '');
-    }, [applyFileContentUpdate, selection]);
-
-    const handleEditorChangeForGroup = useCallback((groupId: LatexEditorGroupId, value: string | undefined): void => {
-        const groupSelection = editorGroupsState[groupId]?.selection ?? null;
-        applyFileContentUpdate(groupSelection, value ?? '');
-        setActiveEditorGroupId(groupId);
-    }, [applyFileContentUpdate, editorGroupsState]);
-
-    const handleRenameDocument = useCallback(async (title: string): Promise<void> => {
-        try {
-            await updateDocument({
-                documentId,
-                title
-            });
-            sileo.success(RENAME_TOAST.success);
-        } catch (error) {
-            checkAccessDeniedError(error);
-            sileo.error(RENAME_TOAST.error);
-        }
-    }, [checkAccessDeniedError, documentId, updateDocument]);
-
-    const handleSelectFileById = useCallback((fileId: string): void => {
-        const file = latexFiles.find((currentFile) => currentFile._id === fileId);
-        if (file) {
-            handleFileSelected(file);
-        }
-    }, [handleFileSelected, latexFiles]);
-
-    const handleSelectAssetById = useCallback((assetId: string): void => {
-        const asset = assets.find((currentAsset) => currentAsset._id === assetId);
-        if (asset) {
-            handleOpenTab({
-                type: 'asset',
-                id: asset._id
-            });
-        }
-    }, [assets, handleOpenTab]);
-
-    const handleFocusEditorGroup = useCallback((groupId: LatexEditorGroupId): void => {
-        setActiveEditorGroupId(groupId);
-    }, []);
-
-    const handleDuplicateTabToGroup = useCallback((tab: LatexWorkspaceTab, targetGroupId: LatexEditorGroupId): void => {
-        setIsEditorSplit((currentValue) => currentValue || targetGroupId === SECONDARY_EDITOR_GROUP_ID);
-        handleOpenTab(tab, targetGroupId);
-    }, [handleOpenTab]);
-
-    const handleSplitEditorDown = useCallback((tab?: LatexWorkspaceTab): void => {
-        const sourceTab = tab ?? activeEditorGroup.selection;
-        if (!sourceTab) {
-            return;
-        }
-
-        handleDuplicateTabToGroup(sourceTab, SECONDARY_EDITOR_GROUP_ID);
-    }, [activeEditorGroup.selection, handleDuplicateTabToGroup]);
-
-    const handleDuplicateTabToOtherGroup = useCallback((groupId: LatexEditorGroupId, tab: LatexWorkspaceTab): void => {
-        const targetGroupId = groupId === PRIMARY_EDITOR_GROUP_ID
-            ? SECONDARY_EDITOR_GROUP_ID
-            : PRIMARY_EDITOR_GROUP_ID;
-
-        handleDuplicateTabToGroup(tab, targetGroupId);
-    }, [handleDuplicateTabToGroup]);
-
-    const handleCloseSecondaryEditorGroup = useCallback((): void => {
-        setEditorGroupsState((currentGroups) => {
-            const primaryGroup = currentGroups[PRIMARY_EDITOR_GROUP_ID];
-            const secondaryGroup = currentGroups[SECONDARY_EDITOR_GROUP_ID];
-            const nextPrimaryTabs = [...primaryGroup.openTabs];
-
-            for (const tab of secondaryGroup.openTabs) {
-                if (!nextPrimaryTabs.some((currentTab) => isSameTab(currentTab, tab))) {
-                    nextPrimaryTabs.push(tab);
-                }
-            }
-
-            return {
-                ...currentGroups,
-                [PRIMARY_EDITOR_GROUP_ID]: {
-                    ...primaryGroup,
-                    openTabs: nextPrimaryTabs,
-                    selection: primaryGroup.selection ?? secondaryGroup.selection ?? nextPrimaryTabs[nextPrimaryTabs.length - 1] ?? null
-                },
-                [SECONDARY_EDITOR_GROUP_ID]: createEditorGroup(SECONDARY_EDITOR_GROUP_ID)
-            };
-        });
-
-        setIsEditorSplit(false);
-        setActiveEditorGroupId(PRIMARY_EDITOR_GROUP_ID);
-    }, []);
-
-    const handleReorderTabs = useCallback((
-        groupId: LatexEditorGroupId,
-        activeTab: LatexWorkspaceTab,
-        overTab: LatexWorkspaceTab | null,
-        position: 'before' | 'after' | 'end'
-    ): void => {
-        updateEditorGroup(groupId, (group) => {
-            if (overTab && isSameTab(activeTab, overTab)) {
-                return group;
-            }
-
-            const activeIndex = group.openTabs.findIndex((tab) => isSameTab(tab, activeTab));
-            if (activeIndex < 0) {
-                return group;
-            }
-
-            const nextTabs = [...group.openTabs];
-            const [draggedTab] = nextTabs.splice(activeIndex, 1);
-
-            if (!draggedTab) {
-                return group;
-            }
-
-            if (!overTab || position === 'end') {
-                nextTabs.push(draggedTab);
-                return {
-                    ...group,
-                    openTabs: nextTabs
-                };
-            }
-
-            const overIndex = nextTabs.findIndex((tab) => isSameTab(tab, overTab));
-            if (overIndex < 0) {
-                nextTabs.push(draggedTab);
-                return {
-                    ...group,
-                    openTabs: nextTabs
-                };
-            }
-
-            const insertionIndex = position === 'before'
-                ? overIndex
-                : overIndex + 1;
-
-            nextTabs.splice(insertionIndex, 0, draggedTab);
-            return {
-                ...group,
-                openTabs: nextTabs
-            };
-        });
-    }, [updateEditorGroup]);
-
-    const getEditorContentForSelection = useCallback((targetSelection: LatexWorkspaceSelection): string => {
-        if (!targetSelection || targetSelection.type !== 'file') {
-            return '';
-        }
-
-        const file = latexFiles.find((currentFile) => currentFile._id === targetSelection.id);
-        if (!file) {
-            return '';
-        }
-
-        return (fileEditorStates[targetSelection.id] ?? createFileEditorState(file.content)).content;
-    }, [fileEditorStates, latexFiles]);
-
-    const getPendingRemoteUpdateForSelection = useCallback((targetSelection: LatexWorkspaceSelection): PendingRemoteFileUpdate | null => {
-        if (!targetSelection || targetSelection.type !== 'file') {
-            return null;
-        }
-
-        return pendingRemoteUpdates[targetSelection.id] ?? null;
-    }, [pendingRemoteUpdates]);
 
     const runWorkspaceImport = useCallback(async <T,>(operation: () => Promise<T>): Promise<T> => {
         setIsWorkspaceImportInProgress(true);
@@ -915,6 +152,68 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         uploadEntriesWithoutToast
     });
 
+    const { seedFileState } = editorStates;
+    const { editorGroupsState, handleFocusEditorGroup, handleOpenTab, selection } = groups;
+
+    const handleFileSelected = useCallback((file: LatexFile): void => {
+        seedFileState(file._id, file.content);
+        handleOpenTab({
+            type: 'file',
+            id: file._id
+        });
+    }, [handleOpenTab, seedFileState]);
+
+    const handleCreateFile = useCallback(async (name: string, path?: string, content?: string): Promise<LatexFile | null> => {
+        const created = await createFileWithToast(name, path, content);
+        if (created) {
+            handleFileSelected(created);
+        }
+
+        return created;
+    }, [createFileWithToast, handleFileSelected]);
+
+    const handleSelectFileById = useCallback((fileId: string): void => {
+        const file = latexFiles.find((currentFile) => currentFile._id === fileId);
+        if (file) {
+            handleFileSelected(file);
+        }
+    }, [handleFileSelected, latexFiles]);
+
+    const handleSelectAssetById = useCallback((assetId: string): void => {
+        handleOpenTab({
+            type: 'asset',
+            id: assetId
+        });
+    }, [handleOpenTab]);
+
+    const handleEditorChangeForGroup = useCallback((groupId: LatexEditorGroupId, value: string | undefined): void => {
+        applyFileContentUpdate(editorGroupsState[groupId].selection, value ?? '');
+        handleFocusEditorGroup(groupId);
+    }, [applyFileContentUpdate, editorGroupsState, handleFocusEditorGroup]);
+
+    const handleInsertAssetRef = useCallback((ref: string): void => {
+        if (selection?.type !== 'file') return;
+
+        const file = latexFiles.find((currentFile) => currentFile._id === selection.id);
+        if (!file) return;
+
+        const currentContent = editorStates.fileEditorStatesRef.current[file._id]?.content ?? file.content;
+        applyFileContentUpdate(selection, `${currentContent}\n${ref}`);
+    }, [applyFileContentUpdate, editorStates.fileEditorStatesRef, latexFiles, selection]);
+
+    const handleRenameDocument = useCallback(async (title: string): Promise<void> => {
+        try {
+            await updateDocument({
+                documentId,
+                title
+            });
+            sileo.success(RENAME_TOAST.success);
+        } catch (error) {
+            checkAccessDeniedError(error);
+            sileo.error(RENAME_TOAST.error);
+        }
+    }, [checkAccessDeniedError, documentId, updateDocument]);
+
     const files = useMemo<LatexFileEntry[]>(
         () => latexFiles.map((file) => ({
             _id: file._id,
@@ -924,44 +223,45 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
             isEntrypoint: isTexFile(file.name) && file.isEntrypoint,
             isSelected: selection?.type === 'file' && selection.id === file._id
         })),
-        [isTexFile, latexFiles, selection]
+        [latexFiles, selection]
     );
 
-    const applyPendingRemoteUpdate = useCallback((fileId: string): void => {
-        const pendingUpdate = pendingRemoteUpdates[fileId];
-        if (!pendingUpdate) {
+    useEffect(() => {
+        if (documentQueryResult.error) {
+            checkAccessDeniedError(documentQueryResult.error);
+        }
+    }, [checkAccessDeniedError, documentQueryResult.error]);
+
+    /**
+     * A file that appears on its own - a collaborator's upload, an unzipped import -
+     * is opened for the user. Imports are skipped so a 40-file archive does not
+     * fight the tab bar.
+     */
+    const previousFileIdsRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        const currentIds = new Set(latexFiles.map((file) => file._id));
+        const previousIds = previousFileIdsRef.current;
+        previousFileIdsRef.current = currentIds;
+
+        if (isWorkspaceImportInProgress || previousIds.size === 0) {
             return;
         }
 
-        applyRemoteFileContent(fileId, pendingUpdate.content);
-    }, [applyRemoteFileContent, pendingRemoteUpdates]);
-
-    const dismissPendingRemoteUpdate = useCallback((fileId: string): void => {
-        setPendingRemoteUpdates((currentUpdates) => {
-            if (!(fileId in currentUpdates)) {
-                return currentUpdates;
-            }
-
-            const nextUpdates = { ...currentUpdates };
-            delete nextUpdates[fileId];
-            return nextUpdates;
-        });
-    }, []);
+        const appearedFile = latexFiles.find((file) => !previousIds.has(file._id));
+        if (appearedFile) {
+            handleFileSelected(appearedFile);
+        }
+    }, [handleFileSelected, isWorkspaceImportInProgress, latexFiles]);
 
     return {
         latexDocument,
-        documentId,
-        isLoading: isLoading || isLoadingFiles,
-        activeEditorGroupId,
-        isEditorSplit,
-        editorGroups,
-        activeFile,
-        activeAsset,
-        selection,
-        openTabs: activeEditorGroup.openTabs,
-        editorContent,
-        isDirty,
-        dirtyFileIds,
+        isLoading: documentQueryResult.isLoading || isLoadingFiles,
+        activeEditorGroupId: groups.activeEditorGroupId,
+        isEditorSplit: groups.isEditorSplit,
+        editorGroups: groups.editorGroups,
+        isDirty: editorStates.dirtyFileIds.length > 0,
+        dirtyFileIds: editorStates.dirtyFileIds,
         isSaving,
         isUploading,
         isExportingTex,
@@ -969,36 +269,33 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         isCompiling,
         compiledPdfUrl,
         compileError,
-        activePendingRemoteUpdate,
         accessDenied,
         accessDeniedMessage,
         files,
-        assets,
         rawAssets,
-        selectedAssetId,
+        selectedAssetId: selection?.type === 'asset' ? selection.id : null,
         collaborators,
         fileInputRef,
         folderInputRef,
-        handleEditorChange,
         handleEditorChangeForGroup,
         handleRenameDocument,
         handleExportTex,
         handleExportZip,
         handleExportPdf,
         handleCompile: compileSilently,
-        getEditorContentForSelection,
-        getPendingRemoteUpdateForSelection,
+        getEditorContentForSelection: editorStates.getEditorContentForSelection,
+        getPendingRemoteUpdateForSelection: editorStates.getPendingRemoteUpdateForSelection,
         applyPendingRemoteUpdate,
         dismissPendingRemoteUpdate,
         handleFocusEditorGroup,
         handleSelectFileById,
         handleSelectAssetById,
-        handleSelectTab,
-        handleCloseTab,
-        handleSplitEditorDown,
-        handleDuplicateTabToOtherGroup,
-        handleCloseSecondaryEditorGroup,
-        handleReorderTabs,
+        handleSelectTab: groups.handleSelectTab,
+        handleCloseTab: groups.handleCloseTab,
+        handleSplitEditorDown: groups.handleSplitEditorDown,
+        handleDuplicateTabToOtherGroup: groups.handleDuplicateTabToOtherGroup,
+        handleCloseSecondaryEditorGroup: groups.handleCloseSecondaryEditorGroup,
+        handleReorderTabs: groups.handleReorderTabs,
         handleCreateFile,
         handleCreateFolder,
         handleDeleteFile,

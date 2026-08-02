@@ -46,19 +46,13 @@ export const containersListingResource = createFolderedListingResource({
 });
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    {
-        event: SOCKET_CONTAINER_EVENTS.CREATED,
-        queryKeys: [containerQuery.QUERY_KEYS.lists()]
-    },
-    {
-        event: SOCKET_CONTAINER_EVENTS.UPDATED,
-        queryKeys: [containerQuery.QUERY_KEYS.lists()]
-    },
-    {
-        event: SOCKET_CONTAINER_EVENTS.DELETED,
-        queryKeys: [containerQuery.QUERY_KEYS.lists()]
-    }
-];
+    SOCKET_CONTAINER_EVENTS.CREATED,
+    SOCKET_CONTAINER_EVENTS.UPDATED,
+    SOCKET_CONTAINER_EVENTS.DELETED
+].map((event) => ({
+    event,
+    queryKeys: [containerQuery.QUERY_KEYS.lists()]
+}));
 
 const START_CONTAINER_TOAST = createCrudToastOptions({
     action: 'Starting',

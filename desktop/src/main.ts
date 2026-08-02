@@ -2,12 +2,11 @@ import { app, BrowserWindow, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import AppConfig, { WindowBounds } from '@/services/AppConfig';
-import { createSourceResolver } from '@/services/sources';
+import SourceResolver from '@/services/SourceResolver';
 import Deploy from '@/services/Deploy';
-import DockerPreflight from '@/services/DockerPreflight';
-import RemoteProbe from '@/services/RemoteProbe';
-import AppPaths from '@/services/AppPaths';
+import { resolveAppPaths } from '@/services/AppPaths';
 import bus from '@/services/EventBus';
+import { applyWindowSecurity } from '@/services/WindowSecurity';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -15,6 +14,20 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL'];
+
+/*
+ * Nothing in the main process is behind a request handler, so an unhandled
+ * rejection here has no natural place to surface: Electron would take the app
+ * down and the window would simply vanish with no diagnostic. Log and keep the
+ * shell alive instead.
+ */
+process.on('unhandledRejection', (reason: unknown) => {
+    console.error('[main] unhandled rejection:', reason instanceof Error ? reason.stack ?? reason.message : reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+    console.error('[main] uncaught exception:', error.stack ?? error.message);
+});
 
 const MIN_WIDTH = 940;
 const MIN_HEIGHT = 640;
@@ -47,27 +60,33 @@ const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     };
 };
 
+/*
+ * A rejected navigation is expected whenever a newer one supersedes it, and the
+ * real failures are already reported through `did-fail-load`, so the promise only
+ * needs to be kept from escaping as an unhandled rejection.
+ */
 const loadShell = (win: BrowserWindow, hash?: string): void => {
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
-    if(devUrl){
-        win.loadURL(hash ? `${devUrl}#${hash}` : devUrl);
-    }else{
-        win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined);
-    }
+    const navigation = devUrl
+        ? win.loadURL(hash ? `${devUrl}#${hash}` : devUrl)
+        : win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined);
+
+    void navigation.catch(() => undefined);
 };
 
 const visibleBounds = (bounds: WindowBounds | null): WindowBounds | null => {
-    if(!bounds || typeof bounds.x !== 'number' || typeof bounds.y !== 'number') return bounds;
+    if(!bounds || bounds.x === undefined || bounds.y === undefined) return bounds;
+    const { x, y, width, height } = bounds;
     const onScreen = screen.getAllDisplays().some((display) => {
         const area = display.workArea;
-        return bounds.x! < area.x + area.width
-            && bounds.x! + bounds.width > area.x
-            && bounds.y! < area.y + area.height
-            && bounds.y! + bounds.height > area.y;
+        return x < area.x + area.width
+            && x + width > area.x
+            && y < area.y + area.height
+            && y + height > area.y;
     });
     return onScreen ? bounds : {
-        width: bounds.width,
-        height: bounds.height,
+        width,
+        height,
         maximized: bounds.maximized
     };
 };
@@ -76,8 +95,8 @@ const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
     const win = new BrowserWindow({
         width: Math.max(initialBounds?.width ?? 1600, MIN_WIDTH),
         height: Math.max(initialBounds?.height ?? 1000, MIN_HEIGHT),
-        ...(typeof initialBounds?.x === 'number' ? { x: initialBounds.x } : {}),
-        ...(typeof initialBounds?.y === 'number' ? { y: initialBounds.y } : {}),
+        ...(initialBounds?.x !== undefined ? { x: initialBounds.x } : {}),
+        ...(initialBounds?.y !== undefined ? { y: initialBounds.y } : {}),
         minWidth: MIN_WIDTH,
         minHeight: MIN_HEIGHT,
         show: false,
@@ -124,25 +143,40 @@ const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
 };
 
 app.whenReady().then(async () => {
-    const paths = new AppPaths();
+    const paths = resolveAppPaths();
 
     const appConfig = new AppConfig({ configFile: paths.configFile });
-
-    const sources = createSourceResolver(appConfig, paths.downloadDir);
-
-    const docker = new DockerPreflight();
 
     const deploy = new Deploy({
         composeFile: paths.composeFile,
         appConfig,
-        sources,
-        docker
+        sources: new SourceResolver({
+            appConfig,
+            downloadDir: paths.downloadDir
+        })
     });
-
-    const remote = new RemoteProbe();
 
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
     const win = createWindow(initialBounds);
+
+    /*
+     * The window navigates to the VOLT client, which may be a remote endpoint the
+     * user named, so it needs an explicit allowlist rather than following whatever
+     * the loaded page links to.
+     */
+    applyWindowSecurity(win, {
+        allowedOrigins: async () => {
+            const deployment = await appConfig.getDeployment();
+            const remoteClientUrl = deployment?.mode === 'remote' ? deployment.remote?.clientUrl : undefined;
+            if(!remoteClientUrl) return [];
+
+            try{
+                return [new URL(remoteClientUrl).origin];
+            }catch{
+                return [];
+            }
+        }
+    });
 
     
     let persistTimer: NodeJS.Timeout | null = null;
@@ -173,11 +207,8 @@ app.whenReady().then(async () => {
     registerIpc(win, {
         deploy,
         appConfig,
-        docker,
-        remote,
         loadShell: (hash?: string) => loadShell(win, hash)
     });
-
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();
         win.focus();

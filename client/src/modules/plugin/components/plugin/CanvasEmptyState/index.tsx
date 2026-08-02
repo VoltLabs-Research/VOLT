@@ -2,17 +2,11 @@ import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
-import { useCallback } from 'react';
+
+const WORKFLOW_STEPS = ['Modifier', 'Arguments', 'Context', 'ForEach', 'Entrypoint', 'Exposure'];
 
 const CanvasEmptyState = () => {
     const addNode = usePluginBuilderStore((state) => state.addNode);
-
-    const handleAddModifier = useCallback(() => {
-        addNode(NodeType.MODIFIER, {
-            x: 250,
-            y: 250
-        });
-    }, [addNode]);
 
     return (
         <Box position='absolute' inset='0' display='flex' zIndex='10' className='flex-center canvas-empty-state'>
@@ -35,13 +29,16 @@ const CanvasEmptyState = () => {
                     variant='solid'
                     size='sm'
                     rightIcon={<ArrowRight size={16} />}
-                    onClick={handleAddModifier}
+                    onClick={() => addNode(NodeType.MODIFIER, {
+                        x: 250,
+                        y: 250
+                    })}
                 >
                     Add Modifier Node
                 </Button>
 
                 <Row wrap justify='center' gap='025' width='max' className='canvas-empty-state-flow'>
-                    {['Modifier', 'Arguments', 'Context', 'ForEach', 'Entrypoint', 'Exposure'].map((step, i, arr) => (
+                    {WORKFLOW_STEPS.map((step, i, arr) => (
                         <Row as='span' key={step} gap='025' className='color-muted font-size-1'>
                             {step}
                             {i < arr.length - 1 && <ChevronRight size={10} />}

@@ -1,3 +1,6 @@
+import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { encrypt } from '@shared/infrastructure/utilities/crypto';
 import {
     TeamClusterStatus,
     type TeamClusterProps,
@@ -7,6 +10,7 @@ import {
     type TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
+import { isUniqueViolation } from '@shared/infrastructure/persistence/unique-violation';
 
 const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
     analysis: 8,
@@ -66,10 +70,6 @@ interface PlaintextTeamClusterServices {
     };
 }
 
-type TeamClusterEncryptor = {
-    encrypt(value: string): Promise<string>;
-};
-
 export const createServiceCredentials = (serviceName: string): GeneratedServiceCredentials => {
     const suffix = crypto.randomBytes(4).toString('hex');
 
@@ -84,7 +84,6 @@ export const createDaemonPassword = (): string => {
 };
 
 export const encryptTeamClusterServices = async (
-    cipher: TeamClusterEncryptor,
     services: PlaintextTeamClusterServices
 ): Promise<TeamClusterProps['services']> => {
     const [
@@ -96,13 +95,13 @@ export const encryptTeamClusterServices = async (
         encryptedMongodbPassword,
         encryptedDaemonPassword
     ] = await Promise.all([
-        cipher.encrypt(services.minio.username),
-        cipher.encrypt(services.minio.password),
-        cipher.encrypt(services.redis.username),
-        cipher.encrypt(services.redis.password),
-        cipher.encrypt(services.mongodb.username),
-        cipher.encrypt(services.mongodb.password),
-        cipher.encrypt(services.daemon.password)
+        encrypt(services.minio.username),
+        encrypt(services.minio.password),
+        encrypt(services.redis.username),
+        encrypt(services.redis.password),
+        encrypt(services.mongodb.username),
+        encrypt(services.mongodb.password),
+        encrypt(services.daemon.password)
     ]);
 
     return {
@@ -159,4 +158,33 @@ export const buildTeamClusterProps = (params: {
         createdAt: now,
         updatedAt: now
     };
+};
+
+
+export const TEAM_CLUSTER_NAME_CONFLICT_CODE = 'TeamCluster::AlreadyExists';
+
+/**
+ * Persists freshly built props, translating the (team, name) and one-demo-per-team
+ * unique indexes into a conflict the caller can branch on.
+ */
+export const insertTeamCluster = async (props: TeamClusterProps): Promise<TeamClusterEntity> => {
+    const {
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        effectiveCapabilities: _effectiveCapabilities,
+        ...columns
+    } = props;
+
+    try {
+        return await TeamClusterEntity.create({ ...columns }).save();
+    } catch (error: unknown) {
+        if (isUniqueViolation(error)) {
+            throw ApplicationError.conflict(
+                TEAM_CLUSTER_NAME_CONFLICT_CODE,
+                'A team cluster with this name already exists'
+            );
+        }
+
+        throw error;
+    }
 };

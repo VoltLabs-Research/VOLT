@@ -7,49 +7,26 @@ import {
 import { closeModal, openModal } from '@voltstack/bravais';
 import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { useMemo } from 'react';
 import type { ActiveSession } from '@volt/contracts/modules/session/domain';
 
 export const REVOKE_ALL_MODAL_ID = 'revoke-all-sessions-modal';
 
-const LOGIN_ACTIVITY_LIMIT = 20;
-
-const buildRevokeImpactDescription = (session: ActiveSession): string => {
-    const device = `${session.browser} on ${session.os}`.trim();
-    const location = session.ip ? ` (${session.ip})` : '';
-
-    return `${device}${location} will be logged out immediately and must authenticate again.`;
-};
-
 const useSessionData = () => {
     const activeSessionsResult = activeSessionsQuery(undefined);
-    const loginActivityResult = loginActivityQuery(LOGIN_ACTIVITY_LIMIT);
+    const loginActivityResult = loginActivityQuery(undefined);
     const revokeSessionMutation = useRevokeSessionMutation();
     const revokeAllOtherSessionsMutation = useRevokeAllOtherSessionsMutation();
 
     const sessions = activeSessionsResult.data ?? [];
-    const activities = loginActivityResult.data?.activities ?? [];
-    const isRevoking = revokeSessionMutation.isPending || revokeAllOtherSessionsMutation.isPending;
-
-    const otherSessionsCount = useMemo(
-        () => sessions.filter((session) => !session.isCurrent).length,
-        [sessions]
-    );
-
-    const openRevokeAllSessionsModal = () => {
-        openModal(REVOKE_ALL_MODAL_ID);
-    };
 
     const closeRevokeAllSessionsModal = () => {
         closeModal(REVOKE_ALL_MODAL_ID);
     };
 
     const revokeSession = async (session: ActiveSession) => {
-        if (!session._id) return;
-
         const confirmed = await confirmAction({
             title: 'Revoke this session?',
-            description: buildRevokeImpactDescription(session),
+            description: `${session.browser} on ${session.os} (${session.ip}) will be logged out immediately and must authenticate again.`,
             confirmText: 'Revoke',
             tone: ConfirmActionTone.Danger
         });
@@ -75,12 +52,12 @@ const useSessionData = () => {
 
     return {
         sessions,
-        activities,
-        otherSessionsCount,
-        isRevoking,
+        activities: loginActivityResult.data?.activities ?? [],
+        otherSessionsCount: sessions.filter((session) => !session.isCurrent).length,
+        isRevoking: revokeSessionMutation.isPending || revokeAllOtherSessionsMutation.isPending,
         loadingSessions: activeSessionsResult.isLoading,
         loadingActivity: loginActivityResult.isLoading,
-        openRevokeAllSessionsModal,
+        openRevokeAllSessionsModal: () => openModal(REVOKE_ALL_MODAL_ID),
         closeRevokeAllSessionsModal,
         revokeSession,
         revokeAllOtherSessions

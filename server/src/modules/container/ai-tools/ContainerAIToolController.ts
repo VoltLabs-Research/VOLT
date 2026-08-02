@@ -1,8 +1,13 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
+import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ContainerService from '@modules/container/services/ContainerService';
+import { createContainer, deleteContainer } from '@modules/container/services/container-provisioning';
+import { updateContainer } from '@modules/container/services/container-runtime-updates';
+import { createContainerPortAccessUrl } from '@modules/container/services/container-port-access';
+import containerRuntimeInspectionService from '@modules/container/services/ContainerRuntimeInspectionService';
 import type {
     ContainerRefInput,
     CreateContainerInput,
@@ -15,6 +20,7 @@ import type {
     UpdateContainerInput
 } from '@volt/contracts/modules/container/ai-tools';
 
+@AIToolProvider()
 export default class ContainerAIToolController extends AIToolController {
     #service = new ContainerService();
 
@@ -25,7 +31,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<CreateContainerInput>()
     })
     createContainer(input: CreateContainerInput & AIToolScope) {
-        return this.#service.create(input.teamId, input.userId, input);
+        return createContainer(input.teamId, input.userId, input);
     }
 
     @AITool({
@@ -37,7 +43,7 @@ export default class ContainerAIToolController extends AIToolController {
     async listContainers(input: ListContainersInput & AIToolScope) {
         // typia validates but does not transform, so the documented defaults are
         // applied here; an absent key does not override them on spread.
-        const { total, data } = await this.#service.list(input.teamId, input.userId, {
+        const { total, data } = await this.#service.list(input.teamId, {
             page: 1,
             limit: 50,
             ...input
@@ -65,7 +71,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<ContainerRefInput>()
     })
     getContainerStats(input: ContainerRefInput & AIToolScope) {
-        return this.#service.getStats(input.teamId, input.containerId);
+        return containerRuntimeInspectionService.getStats(input.teamId, input.containerId);
     }
 
     @AITool({
@@ -75,7 +81,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<ContainerRefInput>()
     })
     getContainerProcesses(input: ContainerRefInput & AIToolScope) {
-        return this.#service.getProcesses(input.teamId, input.containerId);
+        return containerRuntimeInspectionService.getProcesses(input.teamId, input.containerId);
     }
 
     @AITool({
@@ -86,7 +92,7 @@ export default class ContainerAIToolController extends AIToolController {
     })
     listContainerFiles(input: ListContainerFilesInput & AIToolScope) {
         // `path` is positional here, so the documented default cannot ride along on a spread.
-        return this.#service.getFiles(input.teamId, input.containerId, input.path ?? '/');
+        return containerRuntimeInspectionService.getFiles(input.teamId, input.containerId, input.path ?? '/');
     }
 
     @AITool({
@@ -96,7 +102,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<ReadContainerFileInput>()
     })
     readContainerFile(input: ReadContainerFileInput & AIToolScope) {
-        return this.#service.readFile(input.teamId, input.containerId, input.path);
+        return containerRuntimeInspectionService.readFile(input.teamId, input.containerId, input.path);
     }
 
     @AITool({
@@ -106,7 +112,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<GetContainerPortAccessUrlInput>()
     })
     async getContainerPortAccessUrl(input: GetContainerPortAccessUrlInput & AIToolScope) {
-        const accessUrl = await this.#service.createPortAccessUrl(input.teamId, input.containerId, input.port, input.userId);
+        const accessUrl = await createContainerPortAccessUrl(input.teamId, input.containerId, input.port, input.userId);
         return {
             summary: `Generated a temporary access URL for port ${input.port}.`,
             data: accessUrl
@@ -120,7 +126,7 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateContainerInput>()
     })
     updateContainer(input: UpdateContainerInput & AIToolScope) {
-        return this.#service.update(input.teamId, input.containerId, {});
+        return updateContainer(input.teamId, input.containerId, {});
     }
 
     @AITool({
@@ -147,6 +153,6 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteContainerInput>()
     })
     deleteContainer(input: DeleteContainerInput & AIToolScope) {
-        return this.#service.delete(input.teamId, input.containerId, input.userId);
+        return deleteContainer(input.teamId, input.containerId, input.userId);
     }
 }

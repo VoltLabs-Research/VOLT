@@ -4,7 +4,9 @@ import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatMessage, ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessageScopedParams, ChatScopedParams } from '@/modules/chat/contracts/api-params';
-import type { EditMessageInput } from '@volt/contracts/modules/chat/http';export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
+import type { EditMessageInput } from '@volt/contracts/modules/chat/http';
+
+export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
 
 export interface GetChatMessagesInput extends ChatScopedParams {
     page: number;
@@ -60,5 +62,3 @@ export default createService({
         }
     }
 }, endpoints);
-
-export type DeleteMessageInput = ChatMessageScopedParams;

@@ -1,30 +1,16 @@
-import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/query';
+import { buildKeys, createInfiniteQuery, createMutation, queryClient } from '@/shared/query';
 import messageService from '../../api/services/message-service';
-import type { InfiniteData, QueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
-import type { ChatScopedParams } from '@/modules/chat/contracts/api-params';
-import type { DeleteMessageInput, EditMessageParams, GetChatMessagesInput, MessageReactionInput, SendFileMessageInput, SendMessageInput } from '../../api/services/message-service';
+import type { ChatMessageScopedParams, ChatScopedParams } from '@/modules/chat/contracts/api-params';
+import type { EditMessageParams, MessageReactionInput, SendFileMessageInput, SendMessageInput } from '../../api/services/message-service';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
 
-interface InfiniteMessagesParams {
-    chatId: string;
-}
-
 type MessageQueryKeyMap = {
-    messages: GetChatMessagesInput;
-    infiniteMessages: InfiniteMessagesParams;
+    infiniteMessages: ChatScopedParams;
 };
-
-interface UseChatMessagesInfiniteQueryParams {
-    chatId: string;
-    limit?: number;
-}
-
-interface UseChatMessagesInfiniteQueryOptions {
-    enabled?: boolean;
-}
 
 const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 
@@ -32,15 +18,13 @@ export const useMarkAsReadMutation = createMutation<void, ChatScopedParams>(mess
 export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInput>(messageService.sendMessage);
 export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInput>(messageService.sendFileMessage);
 export const useEditMessageMutation = createMutation<ChatMessage, EditMessageParams>(messageService.editMessage);
-export const useDeleteMessageMutation = createMutation<void, DeleteMessageInput>(messageService.deleteMessage);
+export const useDeleteMessageMutation = createMutation<void, ChatMessageScopedParams>(messageService.deleteMessage);
 export const useSetReactionMutation = createMutation<ChatMessage, MessageReactionInput>(messageService.setReaction);
 export const useRemoveReactionMutation = createMutation<ChatMessage, MessageReactionInput>(messageService.removeReaction);
 
-const getChatMessagesInfiniteQueryKey = (chatId: string) => KEYS.infiniteMessages({ chatId });
-
-const chatMessages = createInfiniteQuery(
+export const useChatMessagesInfiniteQuery = createInfiniteQuery(
     KEYS.infiniteMessages,
-    ({ chatId }, { page, limit }) => messageService.getMessages({
+    ({ chatId }: ChatScopedParams, { page, limit }) => messageService.getMessages({
         chatId,
         page,
         limit
@@ -48,20 +32,11 @@ const chatMessages = createInfiniteQuery(
     { defaultLimit: DEFAULT_MESSAGES_LIMIT }
 );
 
-export const useChatMessagesInfiniteQuery = (
-    params: UseChatMessagesInfiniteQueryParams,
-    options?: UseChatMessagesInfiniteQueryOptions
-) => {
-    return chatMessages({ chatId: params.chatId }, {
-        enabled: options?.enabled
-    });
-};
-
-export const addMessageToCache = (queryClient: QueryClient, chatId: string | null | undefined, message: ChatMessage) => {
+export const addMessageToCache = (chatId: string | null, message: ChatMessage) => {
     if (!chatId) return;
 
     queryClient.setQueryData<InfiniteData<PaginatedResponse<ChatMessage>>>(
-        getChatMessagesInfiniteQueryKey(chatId),
+        KEYS.infiniteMessages({ chatId }),
         (current) => {
             if (!current) return current;
 
@@ -74,11 +49,6 @@ export const addMessageToCache = (queryClient: QueryClient, chatId: string | nul
             }
 
             const lastPageIndex = current.pages.length - 1;
-            const lastPage = current.pages[lastPageIndex];
-
-            if (!lastPage) {
-                return current;
-            }
 
             return {
                 ...current,
@@ -99,15 +69,14 @@ export const addMessageToCache = (queryClient: QueryClient, chatId: string | nul
 };
 
 export const updateMessageInCache = (
-    queryClient: QueryClient,
-    chatId: string | null | undefined,
+    chatId: string | null,
     messageId: string,
     updates: Partial<ChatMessage>
 ) => {
     if (!chatId) return;
 
     queryClient.setQueryData<InfiniteData<PaginatedResponse<ChatMessage>>>(
-        getChatMessagesInfiniteQueryKey(chatId),
+        KEYS.infiniteMessages({ chatId }),
         (current) => {
             if (!current) return current;
 
@@ -132,6 +101,6 @@ export const updateMessageInCache = (
     );
 };
 
-export const removeChatMessagesFromCache = (queryClient: QueryClient, chatId: string) => {
-    queryClient.removeQueries({ queryKey: getChatMessagesInfiniteQueryKey(chatId) });
+export const removeChatMessagesFromCache = (chatId: string) => {
+    queryClient.removeQueries({ queryKey: KEYS.infiniteMessages({ chatId }) });
 };

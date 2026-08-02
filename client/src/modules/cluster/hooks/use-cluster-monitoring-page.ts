@@ -1,10 +1,8 @@
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
-import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
 import { resolveSelectedClusterId } from '@/modules/cluster/utils/resolve-selected-cluster-id';
 import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 const useClusterMonitoringPage = () => {
     const state = useClusterPageState();
@@ -41,14 +39,6 @@ const useClusterMonitoringPage = () => {
         }
     }, [navigate, params.clusterId, resolvedRouteClusterId, state.selectedClusterId, state.setSelectedClusterId]);
 
-    const metricsByClusterId = useMemo<Record<string, ClusterMetrics>>(() => {
-        return metricsState.clusters.reduce<Record<string, ClusterMetrics>>((acc, cluster) => {
-            const clusterId = resolveClusterMetricId(cluster);
-            acc[clusterId] = cluster;
-            return acc;
-        }, {});
-    }, [metricsState.clusters]);
-
     const selectedCluster = useMemo(() => {
         if (!resolvedRouteClusterId) {
             return null;
@@ -57,21 +47,12 @@ const useClusterMonitoringPage = () => {
         return state.clusters.find((cluster) => cluster._id === resolvedRouteClusterId) ?? null;
     }, [resolvedRouteClusterId, state.clusters]);
 
-    const metrics = useMemo(() => {
-        if (!metricsState.isConnected || !resolvedRouteClusterId) {
-            return null;
-        }
-
-        return metricsByClusterId[resolvedRouteClusterId] ?? null;
-    }, [metricsByClusterId, metricsState.isConnected, resolvedRouteClusterId]);
-
     return {
         ...state,
         selectedCluster,
         selectedClusterId: resolvedRouteClusterId,
-        metrics,
+        metrics: metricsState.isConnected && resolvedRouteClusterId ? metricsState.metrics : null,
         history: metricsState.history,
-        metricsByClusterId,
         hasClusters: state.clusters.length > 0,
         isMetricsConnected: metricsState.isConnected
     };

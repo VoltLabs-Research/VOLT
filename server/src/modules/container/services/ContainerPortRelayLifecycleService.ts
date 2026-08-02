@@ -1,12 +1,12 @@
 import Container from '@modules/container/models/Container';
-import containerPortProxyRelayService, { ContainerPortProxyRelayService } from '@modules/container/services/ContainerPortProxyRelayService';
+import containerPortProxyRelayService from '@modules/container/services/ContainerPortProxyRelayService';
+import { toRelayTargets } from '@modules/container/services/container-network';
 import logger from '@shared/infrastructure/logger';
 
-export class ContainerPortRelayLifecycleService{
-    constructor(
-        private readonly relayService: ContainerPortProxyRelayService
-    ){}
+/* Relays only exist in this process's memory, so every published port of every
+   surviving container has to be re-bound on boot and released on shutdown. */
 
+export class ContainerPortRelayLifecycleService{
     async start(): Promise<void>{
         const containers = await Container.find();
         const relays = containers.flatMap((container) => {
@@ -14,25 +14,21 @@ export class ContainerPortRelayLifecycleService{
                 return [];
             }
 
-            return container.ports
-                .filter((port) => (port.public ?? 0) > 0)
-                .map((port) => ({
-                    teamId: container.team as string,
-                    containerId: container.id,
-                    teamClusterId: container.teamCluster,
-                    internalIp: container.internalIp as string,
-                    privatePort: port.private,
-                    publicPort: port.public as number
-                }));
+            return toRelayTargets({
+                teamId: container.team,
+                containerId: container.id,
+                teamClusterId: container.teamCluster,
+                internalIp: container.internalIp
+            }, container.ports);
         });
 
-        await this.relayService.ensureContainerRelays(relays);
+        await containerPortProxyRelayService.ensureContainerRelays(relays);
         logger.info(`@container-port-relay: started ${relays.length} public port relay${relays.length === 1 ? '' : 's'}`);
     }
 
     async stop(): Promise<void>{
-        await this.relayService.stopAll();
+        await containerPortProxyRelayService.stopAll();
     }
 }
 
-export default new ContainerPortRelayLifecycleService(containerPortProxyRelayService);
+export default new ContainerPortRelayLifecycleService();

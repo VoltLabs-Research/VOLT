@@ -9,10 +9,10 @@ import type {
     ISocketConnectionUser,
     ISocketModule
 } from '@modules/socket/socket/ISocketModule';
-import SocketIOEmitter, { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry, { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager, { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
-import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
+import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import logger from '@shared/infrastructure/logger';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -23,11 +23,6 @@ import { Server, Socket } from 'socket.io';
 
 interface SocketConnectionRuntimeData extends ISocketConnectionData {
     traceId?: string;
-    connectedAt?: number;
-    authenticatedAt?: number;
-    authDurationMs?: number;
-    authState?: ISocketAuthenticationResult['state'];
-    authReason?: ISocketAuthenticationResult['reason'];
 }
 
 const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
@@ -36,6 +31,38 @@ interface AuthenticatedSocket extends Socket{
     user?: ISocketConnectionUser | null;
 }
 
+const resolveSocketTraceId = (socket: Socket): string => {
+    const headerTraceId = socket.handshake.headers[TRACE_ID_HEADER];
+    // socket.io types `handshake.auth` values as `any`.
+    const authTraceId: unknown = socket.handshake.auth?.traceId;
+    const traceId = (Array.isArray(headerTraceId) ? headerTraceId[0] : headerTraceId)
+        ?? (typeof authTraceId === 'string' ? authTraceId : undefined);
+
+    return traceId?.trim() || randomUUID();
+};
+
+const createSocketAuthenticationError = (auth: ISocketAuthenticationResult): Error => {
+    const code = auth.reason === 'user_not_found'
+        ? ErrorCodes.USER_NOT_FOUND
+        : ErrorCodes.AUTHENTICATION_UNAUTHORIZED;
+    const details = auth.reason === 'password_changed'
+        ? 'Socket token is no longer valid after password change'
+        : code;
+    const error = new Error(details) as Error & {
+        data?: {
+            code: string;
+            reason?: ISocketAuthenticationResult['reason'];
+        };
+    };
+
+    error.data = {
+        code,
+        reason: auth.reason
+    };
+
+    return error;
+};
+
 export class SocketGateway{
     private io?: Server;
     private adapterPub?: Redis;
@@ -43,16 +70,7 @@ export class SocketGateway{
     private initialized = false;
     private modules: ISocketModule[] = [];
 
-    private pingTimeout = 20_000;
-    private pingInterval = 10_000;
-
     #tokenService = new JwtTokenService();
-
-    constructor(
-        private socketEmitter: SocketIOEmitter,
-        private socketRoomManager: SocketIORoomManager,
-        private socketEventRegistry: SocketIOEventRegistry
-    ){}
 
     register(module: ISocketModule): this{
         this.modules.push(module);
@@ -72,8 +90,8 @@ export class SocketGateway{
                 methods: ['GET', 'POST']
             },
             transports: ['websocket', 'polling'],
-            pingTimeout: this.pingTimeout,
-            pingInterval: this.pingInterval,
+            pingTimeout: 20_000,
+            pingInterval: 10_000,
             perMessageDeflate: {
                 threshold: 1024,
                 zlibDeflateOptions: { chunkSize: 16 * 1024 },
@@ -89,8 +107,8 @@ export class SocketGateway{
             requestsTimeout: 10000
         }));
 
-        this.socketEmitter.setServer(this.io);
-        this.socketRoomManager.setServer(this.io);
+        socketIOEmitter.setServer(this.io);
+        socketIORoomManager.setServer(this.io);
 
         this.io.use(async (socket, next) => {
             await this.authenticateSocket(socket, next);
@@ -105,26 +123,24 @@ export class SocketGateway{
     }
 
     private handleConnection(socket: Socket): void{
-        const socketData = this.getSocketConnectionData(socket);
+        const socketData = socket.data as SocketConnectionRuntimeData;
 
         logger.info(`@socket-gateway - connected socketId=${socket.id} traceId=${socketData.traceId} userId=${socketData.auth?.user?._id}`);
 
-        socket.data = socketData;
+        socketIOEmitter.registerConnection(socket);
+        socketIORoomManager.registerConnection(socket);
+        socketIOEventRegistry.registerConnection(socket);
 
-        this.socketEmitter.registerConnection(socket);
-        this.socketRoomManager.registerConnection(socket);
-        this.socketEventRegistry.registerConnection(socket);
-
-        const connection = socketConnectionMapper.toDomain(socket);
+        const connection = toSocketConnection(socket);
 
         for(const module of this.modules){
             module.onConnection(connection);
         }
 
-        this.socketEventRegistry.onDisconnect(socket.id, () => {
-            this.socketEmitter.unregisterConnection(socket.id);
-            this.socketRoomManager.unregisterConnection(socket.id);
-            this.socketEventRegistry.unregisterConnection(socket.id);
+        socketIOEventRegistry.onDisconnect(socket.id, () => {
+            socketIOEmitter.unregisterConnection(socket.id);
+            socketIORoomManager.unregisterConnection(socket.id);
+            socketIOEventRegistry.unregisterConnection(socket.id);
             logger.info(`@socket-gateway - disconnected socketId=${socket.id} traceId=${socketData.traceId}`);
         });
     }
@@ -139,15 +155,12 @@ export class SocketGateway{
         try{
             if (this.io) {
                 this.io.disconnectSockets(true);
-                let closeTimeout: NodeJS.Timeout | null = null;
+                let closeTimeout: NodeJS.Timeout | undefined;
 
                 await Promise.race([
                     new Promise<void>((resolve) => {
                         this.io?.close(() => {
-                            if (closeTimeout) {
-                                clearTimeout(closeTimeout);
-                            }
-
+                            clearTimeout(closeTimeout);
                             resolve();
                         });
                     }),
@@ -164,17 +177,13 @@ export class SocketGateway{
         }catch{
         }
 
-        try{
-            await this.adapterPub?.quit();
-        }catch(error){
-            logger.warn(error, '@socket-gateway - failed to quit Redis pub client');
-        }
-
-        try{
-            await this.adapterSub?.quit();
-        }catch(error){
-            logger.warn(error, '@socket-gateway - failed to quit Redis sub client');
-        }
+        await Promise.all([this.adapterPub, this.adapterSub].map(async (client) => {
+            try{
+                await client?.quit();
+            }catch(error){
+                logger.warn(error, '@socket-gateway - failed to quit Redis client');
+            }
+        }));
 
         this.io = undefined;
         this.adapterPub = undefined;
@@ -225,19 +234,17 @@ export class SocketGateway{
             };
         }
 
-        const socketUser: ISocketConnectionUser = {
-            _id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            avatar: user.avatar ?? undefined,
-            teams: user.teams ?? [],
-            role: user.role
-        };
-
         return {
             state: 'authenticated',
-            user: socketUser
+            user: {
+                _id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                avatar: user.avatar ?? undefined,
+                teams: user.teams ?? [],
+                role: user.role
+            }
         };
     }
 
@@ -245,100 +252,42 @@ export class SocketGateway{
         socket: AuthenticatedSocket,
         next: (error?: Error) => void
     ): Promise<void>{
-        try{
-            const socketData = this.getSocketConnectionData(socket);
-            const startedAt = Date.now();
-            const token = socket.handshake.auth?.token;
-            socketData.traceId = this.resolveSocketTraceId(socket);
-            socketData.connectedAt = socketData.connectedAt ?? startedAt;
+        const socketData = socket.data as SocketConnectionRuntimeData;
+        socketData.traceId = resolveSocketTraceId(socket);
 
-            const auth = await this.authenticateSocketConnection(token);
+        try{
+            const startedAt = Date.now();
+            const auth = await this.authenticateSocketConnection(socket.handshake.auth?.token);
 
             socketData.auth = auth;
-            socketData.authenticatedAt = Date.now();
-            socketData.authDurationMs = socketData.authenticatedAt - startedAt;
-            socketData.authState = auth.state;
-            socketData.authReason = auth.reason;
 
             if(auth.state === 'guest'){
                 socket.user = null;
-                logger.info(`@socket-auth outcome=${'guest'} socketId=${socket.id} traceId=${socketData.traceId} durationMs=${socketData.authDurationMs}`);
+                logger.info(`@socket-auth outcome=guest socketId=${socket.id} traceId=${socketData.traceId} durationMs=${Date.now() - startedAt}`);
                 return next();
             }
 
             if(auth.state === 'rejected' || !auth.user){
                 socket.user = null;
-                logger.warn(`@socket-auth outcome=${'rejected'} reason=${auth.reason} socketId=${socket.id} traceId=${socketData.traceId}`);
-                return next(this.createSocketAuthenticationError(auth));
+                logger.warn(`@socket-auth outcome=rejected reason=${auth.reason} socketId=${socket.id} traceId=${socketData.traceId}`);
+                return next(createSocketAuthenticationError(auth));
             }
 
             socket.user = auth.user;
 
-            logger.info(`@socket-auth outcome=${'authenticated'} socketId=${socket.id} userId=${auth.user._id} traceId=${socketData.traceId}`);
+            logger.info(`@socket-auth outcome=authenticated socketId=${socket.id} userId=${auth.user._id} traceId=${socketData.traceId}`);
             next();
-        }catch(error){
+        }catch{
             socket.user = null;
-            logger.error(`@socket-auth socketId=${socket.id} traceId=${this.getSocketConnectionData(socket).traceId}`);
-            next(this.createSocketAuthenticationError({
+            logger.error(`@socket-auth socketId=${socket.id} traceId=${socketData.traceId}`);
+            next(createSocketAuthenticationError({
                 state: 'rejected',
                 reason: 'invalid_token'
             }));
         }
     }
-
-    private createSocketAuthenticationError(auth: ISocketAuthenticationResult): Error {
-        const code = auth.reason === 'user_not_found'
-            ? ErrorCodes.USER_NOT_FOUND
-            : ErrorCodes.AUTHENTICATION_UNAUTHORIZED;
-        const details = auth.reason === 'password_changed'
-            ? 'Socket token is no longer valid after password change'
-            : auth.reason === 'user_not_found'
-                ? ErrorCodes.USER_NOT_FOUND
-                : ErrorCodes.AUTHENTICATION_UNAUTHORIZED;
-        const error = new Error(details) as Error & {
-            data?: {
-                code: string;
-                reason?: ISocketAuthenticationResult['reason'];
-            };
-        };
-
-        error.data = {
-            code,
-            reason: auth.reason
-        };
-
-        return error;
-    }
-
-    private getSocketConnectionData(socket: Socket): SocketConnectionRuntimeData {
-        return socket.data as SocketConnectionRuntimeData;
-    }
-
-    private resolveSocketTraceId(socket: Socket): string {
-        const headerTraceId = socket.handshake.headers[TRACE_ID_HEADER];
-
-        if (Array.isArray(headerTraceId)) {
-            const traceId = headerTraceId[0]?.trim();
-
-            if (traceId) {
-                return traceId;
-            }
-        }
-
-        if (typeof headerTraceId === 'string' && headerTraceId.trim()) {
-            return headerTraceId.trim();
-        }
-
-        const authTraceId = socket.handshake.auth?.traceId;
-
-        if (typeof authTraceId === 'string' && authTraceId.trim()) {
-            return authTraceId.trim();
-        }
-
-        return randomUUID();
-    }
 }
 
-const socketGateway = new SocketGateway(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
+const socketGateway = new SocketGateway();
 
 export default socketGateway;

@@ -1,13 +1,5 @@
-import {
-    type TeamClusterServiceExposure
-} from '@shared/contracts/types/TeamClusterExposure';
+import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
 import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports';
-import { EventEmitter } from 'node:events';
-
-interface ExposureRegistryChangeEvent {
-    teamClusterId: string;
-    exposures: TeamClusterServiceExposure[];
-}
 
 const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
     return `${teamClusterId}:${exposureId}`;
@@ -16,10 +8,9 @@ const buildRegistryKey = (teamClusterId: string, exposureId: string): string => 
 class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryServicePort {
     private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
     private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();
-    private readonly events = new EventEmitter();
 
     replaceTeamClusterExposures(teamClusterId: string, exposures: TeamClusterServiceExposure[]): void {
-        this.clearTeamCluster(teamClusterId, false);
+        this.clearTeamCluster(teamClusterId);
 
         const registryKeys = new Set<string>();
         for (const exposure of exposures) {
@@ -29,10 +20,9 @@ class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistry
         }
 
         this.registryKeysByTeamClusterId.set(teamClusterId, registryKeys);
-        this.emitChanged(teamClusterId);
     }
 
-    clearTeamCluster(teamClusterId: string, emitEvent: boolean = true): void {
+    clearTeamCluster(teamClusterId: string): void {
         const registryKeys = this.registryKeysByTeamClusterId.get(teamClusterId);
         if (registryKeys) {
             for (const registryKey of registryKeys) {
@@ -41,9 +31,6 @@ class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistry
         }
 
         this.registryKeysByTeamClusterId.delete(teamClusterId);
-        if (emitEvent) {
-            this.emitChanged(teamClusterId);
-        }
     }
 
     listTeamClusterExposures(teamClusterId: string): TeamClusterServiceExposure[] {
@@ -61,13 +48,6 @@ class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistry
         }
 
         return exposures;
-    }
-
-    private emitChanged(teamClusterId: string): void {
-        this.events.emit('changed', {
-            teamClusterId,
-            exposures: this.listTeamClusterExposures(teamClusterId)
-        } satisfies ExposureRegistryChangeEvent);
     }
 }
 

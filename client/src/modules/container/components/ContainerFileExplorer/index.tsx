@@ -6,8 +6,8 @@ import FileExplorer from '@/shared/ui/components/FileExplorer';
 import FileExplorerRow from '@/shared/ui/components/FileExplorer/FileExplorerRow';
 import RefreshButton from '@/shared/ui/components/RefreshButton';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
-import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import type { ContainerFile } from '@volt/contracts/modules/container/domain';
 import './ContainerFileExplorer.css';
 
@@ -25,14 +25,10 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         resetParamKeys: ['file']
     });
 
-    const { data: filesResponse, isLoading, error: filesError, refetch: refetchFiles, isFetching } = useContainerFilesQuery(
-        {
-            containerId,
-            path: remoteExplorer.path
-        },
-        { enabled: !!containerId }
-    );
-    const files = filesResponse?.files ?? [];
+    const { data: filesResponse, isLoading, error: filesError, refetch: refetchFiles, isFetching } = useContainerFilesQuery({
+        containerId,
+        path: remoteExplorer.path
+    });
     const filesErrorMessage = filesError
         ? reportError(filesError, {
             surface: ErrorSurface.Silent,
@@ -41,7 +37,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         : null;
 
     const explorer = remoteExplorer.bindState<ContainerFile>({
-        entries: files,
+        entries: filesResponse?.files ?? [],
         cwd: remoteExplorer.path,
         isLoading,
         error: filesErrorMessage,
@@ -56,22 +52,20 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             containerId,
             path: filePath
         },
-        { enabled: !!containerId && !!viewingFile && !!filePath }
+        { enabled: !!filePath }
     );
     const fileContent = fileContentResponse?.content;
 
-    const handleFileClick = (fileName: string) => {
+    const updateViewingFile = (fileName: string | null) => {
         setSearchParams((previousParams) => {
             const nextParams = new URLSearchParams(previousParams);
-            nextParams.set('file', fileName);
-            return nextParams;
-        });
-    };
 
-    const closeFileViewer = () => {
-        setSearchParams((previousParams) => {
-            const nextParams = new URLSearchParams(previousParams);
-            nextParams.delete('file');
+            if (fileName === null) {
+                nextParams.delete('file');
+            } else {
+                nextParams.set('file', fileName);
+            }
+
             return nextParams;
         });
     };
@@ -85,29 +79,23 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             return;
         }
 
-        handleFileClick(file.name);
+        updateViewingFile(file.name);
     };
 
-    const renderFileIcon = (isDirectory: boolean) => {
-        if (isDirectory) {
-            return <IoFolderOutline />;
-        }
+    const renderFileViewer = (body: ReactNode) => (
+        <Stack height='max' gap='1'>
+            <Row className='container-file-viewer-header' gap='1'>
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={() => updateViewingFile(null)}>
+                    Back
+                </Button>
+                <span>{viewingFile}</span>
+            </Row>
+            {body}
+        </Stack>
+    );
 
-        return <IoDocumentOutline />;
-    };
-
-    if(viewingFile && fileContent !== undefined && fileContent !== null){
-        return (
-            <Stack height='max' gap='1'>
-                <Row className='container-file-viewer-header' gap='1'>
-                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={closeFileViewer}>
-                        Back
-                    </Button>
-                    <span>{viewingFile}</span>
-                </Row>
-                <pre className='container-file-content overflow-auto flex-1 p-1'>{fileContent}</pre>
-            </Stack>
-        );
+    if(viewingFile && fileContent !== undefined){
+        return renderFileViewer(<pre className='container-file-content overflow-auto flex-1 p-1'>{fileContent}</pre>);
     }
 
     if (viewingFile && fileContentError) {
@@ -116,62 +104,40 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             fallbackTitle: 'Failed to open file'
         }).title;
 
-        return (
-            <Stack height='max' gap='1'>
-                <Row className='container-file-viewer-header' gap='1'>
-                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={closeFileViewer}>
-                        Back
-                    </Button>
-                    <span>{viewingFile}</span>
-                </Row>
-                <Text as='p' className='container-file-empty-folder'>{message}</Text>
-            </Stack>
-        );
+        return renderFileViewer(<Text as='p' className='container-file-empty-folder'>{message}</Text>);
     }
-
-    const columns = useMemo(() => {
-        return (
-            <>
-                <span>Name</span>
-                <span>Type</span>
-                <span>Size</span>
-                <span>Modified</span>
-            </>
-        );
-    }, []);
-
-    const explorerHeaderLeft = useMemo(() => {
-        return (
-            <Row gap='1' flex='1'>
-                <Tooltip content='Go to Parent Directory' placement='bottom'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Go to parent directory' title='Go to parent directory' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
-                        <IoArrowBack />
-                    </Button>
-                </Tooltip>
-                <span className='container-file-current-path'>{explorer.cwd}</span>
-            </Row>
-        );
-    }, [explorer.cwd, explorer.goUp, explorer.isAtRoot]);
-
-    const explorerHeaderRight = useMemo(() => {
-        return (
-            <RefreshButton
-                label='Refresh'
-                variant='outline'
-                intent='white'
-                onClick={() => {
-                    explorer.refresh();
-                }}
-                isLoading={explorer.isRefreshing}
-            />
-        );
-    }, [explorer.isRefreshing, explorer.refresh]);
 
     return (
         <FileExplorer
-            headerLeft={explorerHeaderLeft}
-            headerRight={explorerHeaderRight}
-            columns={columns}
+            headerLeft={
+                <Row gap='1' flex='1'>
+                    <Tooltip content='Go to Parent Directory' placement='bottom'>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Go to parent directory' title='Go to parent directory' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
+                            <IoArrowBack />
+                        </Button>
+                    </Tooltip>
+                    <span className='container-file-current-path'>{explorer.cwd}</span>
+                </Row>
+            }
+            headerRight={
+                <RefreshButton
+                    label='Refresh'
+                    variant='outline'
+                    intent='white'
+                    onClick={() => {
+                        explorer.refresh();
+                    }}
+                    isLoading={explorer.isRefreshing}
+                />
+            }
+            columns={
+                <>
+                    <span>Name</span>
+                    <span>Type</span>
+                    <span>Size</span>
+                    <span>Modified</span>
+                </>
+            }
             isLoading={explorer.isLoading}
             isEmpty={!explorer.error && explorer.entries.length === 0}
             emptyMessage='Empty folder'
@@ -187,7 +153,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 return (
                     <FileExplorerRow
                         key={`${file.name}-${file.isDirectory ? 'dir' : 'file'}`}
-                        icon={renderFileIcon(file.isDirectory)}
+                        icon={file.isDirectory ? <IoFolderOutline /> : <IoDocumentOutline />}
                         name={file.name}
                         type={file.isDirectory ? 'Folder' : 'File'}
                         size={file.size || undefined}

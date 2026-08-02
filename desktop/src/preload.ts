@@ -25,7 +25,6 @@ contextBridge.exposeInMainWorld('volt', {
         confirm: (options: object) => ipcRenderer.invoke('dialog:confirm', options)
     },
     app: {
-        voltUrl: () => ipcRenderer.invoke('app:voltUrl'),
         openClient: () => ipcRenderer.invoke('app:openClient'),
         openShell: (intent?: string) => ipcRenderer.invoke('app:openShell', intent)
     },
@@ -47,8 +46,12 @@ contextBridge.exposeInMainWorld('volt', {
         maximize: () => ipcRenderer.invoke('window:maximize'),
         close: () => ipcRenderer.invoke('window:close')
     },
-    on: (channel: keyof AppEvents, cb: (p: any) => void) => {
-        const handler = (_: IpcRendererEvent, payload: any) => cb(payload);
+    /*
+     * Keyed on `AppEvents` so a channel and its payload cannot drift apart: the
+     * renderer's callback is typed by the channel it subscribes to.
+     */
+    on: <K extends keyof AppEvents>(channel: K, cb: (payload: AppEvents[K]) => void) => {
+        const handler = (_: IpcRendererEvent, payload: AppEvents[K]): void => cb(payload);
         ipcRenderer.on(channel, handler);
         return () => ipcRenderer.removeListener(channel, handler);
     }

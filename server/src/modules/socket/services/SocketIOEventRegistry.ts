@@ -1,24 +1,16 @@
 import type { ISocketConnection, SocketEventHandler } from '@modules/socket/socket/ISocketModule';
-import socketConnectionMapper from '@modules/socket/socket/SocketConnectionMapper';
+import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
 import { Socket } from 'socket.io';
 
 export default class SocketIOEventRegistry {
     private sockets: Map<string, Socket> = new Map();
     private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
 
-    registerConnection(socket: unknown): void{
-        this.registerSocket(socket as Socket);
-    }
-
-    unregisterConnection(socketId: string): void{
-        this.unregisterSocket(socketId);
-    }
-
-    private registerSocket(socket: Socket): void{
+    registerConnection(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
-    private unregisterSocket(socketId: string): void{
+    unregisterConnection(socketId: string): void{
         this.sockets.delete(socketId);
         this.disconnectHandlers.delete(socketId);
     }
@@ -33,8 +25,7 @@ export default class SocketIOEventRegistry {
 
         socket.on(event, async (payload: T, ack?: (...args: unknown[]) => void) => {
             try {
-                const connection = socketConnectionMapper.toDomain(socket);
-                const result = await handler(connection, payload);
+                const result = await handler(toSocketConnection(socket), payload);
                 if(typeof ack === 'function'){
                     ack(result === undefined ? { ok: true } : result);
                 }
@@ -62,11 +53,9 @@ export default class SocketIOEventRegistry {
             this.disconnectHandlers.set(socketId, handlers);
 
             socket.on('disconnect', async () => {
-                const connection = socketConnectionMapper.toDomain(socket);
                 const fns = this.disconnectHandlers.get(socketId);
-                if (!fns) {
-                    return;
-                }
+                if(!fns) return;
+                const connection = toSocketConnection(socket);
                 await Promise.all(fns.map((fn) => fn(connection)));
             });
         }

@@ -7,25 +7,11 @@ import type {
     ISocketConnection,
     ISocketConnectionUser
 } from '@modules/socket/socket/ISocketModule';
+import { ackError, ackOk } from '@modules/socket/socket/socket-ack';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
-import TeamMember from '@modules/team/models/TeamMember';
+import { isTeamMember } from '@modules/team/services/team/team-membership-guard';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
-
-interface SocketAck<T = unknown> {
-    ok: boolean;
-    data?: T;
-    error?: string;
-}
-
-const ackOk = <T>(data?: T): SocketAck<T> => ({
-    ok: true,
-    data
-});
-const ackError = (error: string): SocketAck<never> => ({
-    ok: false,
-    error
-});
 
 class TeamSubscriptionSocketModule extends BaseSocketModule {
     public readonly name = 'TeamSubscriptionSocketModule';
@@ -46,10 +32,7 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return ackError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
             }
 
-            const isMember = await TeamMember.existsBy({
-                user: currentUserId,
-                team: payload.teamId
-            });
+            const isMember = await isTeamMember(payload.teamId, currentUserId);
 
             if (!isMember) {
                 this.emitErrorToSocket(
@@ -71,7 +54,7 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
             }
 
             await this.joinRoom(conn.id, roomName);
-            socketTeamSubscriptionCoordinator.setCurrentTeamId(conn, payload.teamId);
+            conn.data.currentTeamId = payload.teamId;
 
             await socketTeamSubscriptionCoordinator.notify({
                 connection: conn,
@@ -102,34 +85,28 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
 
         await addTeamToUser(userId, teamId);
 
-        const nextTeams = this.mergeTeamId(connection.user?.teams, teamId);
+        const teams = Array.from(new Set([...(connection.user?.teams ?? []), teamId]));
         const auth = connection.data.auth;
-        const authUser = auth?.user;
-
-        if (auth && authUser) {
-            connection.data.auth = {
-                ...auth,
-                user: {
-                    ...authUser,
-                    teams: this.mergeTeamId(authUser.teams, teamId)
-                }
-            };
-        }
-
         const nativeSocket = connection.nativeSocket as (typeof connection.nativeSocket & {
             user?: ISocketConnectionUser;
         });
 
+        if (auth?.user) {
+            connection.data.auth = {
+                ...auth,
+                user: {
+                    ...auth.user,
+                    teams
+                }
+            };
+        }
+
         if (nativeSocket?.user) {
             nativeSocket.user = {
                 ...nativeSocket.user,
-                teams: nextTeams
+                teams
             };
         }
-    }
-
-    private mergeTeamId(teams: string[] | undefined, teamId: string): string[] {
-        return Array.from(new Set([...(teams ?? []), teamId]));
     }
 }
 

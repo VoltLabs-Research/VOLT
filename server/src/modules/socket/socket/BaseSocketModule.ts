@@ -1,4 +1,3 @@
-import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import type {
     ISocketConnection,
@@ -9,35 +8,6 @@ import type {
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-
-interface SocketErrorEnvelope {
-    code: ErrorCode;
-    details?: string;
-}
-
-const resolveSocketErrorCode = (value: ErrorCode | string): ErrorCode => {
-    if (isErrorCode(value)) {
-        return value;
-    }
-
-    return ErrorCodes.INTERNAL_SERVER_ERROR;
-};
-
-const createSocketErrorEnvelope = (
-    code: ErrorCode | string,
-    details?: string
-): SocketErrorEnvelope => {
-    const resolvedCode = resolveSocketErrorCode(code);
-    const errorEnvelope: SocketErrorEnvelope = {
-        code: resolvedCode
-    };
-
-    if (details) {
-        errorEnvelope.details = details;
-    }
-
-    return errorEnvelope;
-};
 
 export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;
@@ -93,13 +63,15 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToSocket(socketId, event, data);
     }
 
-
     protected emitErrorToSocket(
         socketId: string,
         code: ErrorCode | string,
         details?: string
     ): void {
-        this.emitToSocket(socketId, 'error', createSocketErrorEnvelope(code, details));
+        this.emitToSocket(socketId, 'error', {
+            code,
+            details
+        });
     }
 
     protected emitToRoomExcept(
@@ -111,27 +83,15 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToRoomExcept(socketId, room, event, data);
     }
 
-    protected broadcast(event: string, data: unknown): void{
-        this.emitter.broadcast(event, data);
-    }
-
-    protected async collectPresence(
-        room: string,
-        userExtractor: (connection: ISocketConnection) => PresenceUser
-    ): Promise<PresenceUser[]> {
-        return this.roomManager.collectPresence(room, userExtractor);
-    }
-
     protected async broadcastPresence(
         room: string,
         updateEvent: string,
         userExtractor: (connection: ISocketConnection) => PresenceUser
     ): Promise<void>{
-        const users = await this.collectPresence(room, userExtractor);
-        this.emitToRoom(room, updateEvent, users);
+        this.emitToRoom(room, updateEvent, await this.roomManager.collectPresence(room, userExtractor));
     }
 
-    protected wirePresenceSubscription<TPayload extends Record<string, unknown>>(
+    protected wirePresenceSubscription<TPayload>(
         connection: ISocketConnection,
         cfg: {
             event: string;
@@ -143,7 +103,7 @@ export default abstract class BaseSocketModule implements ISocketModule{
         }
     ): void {
         this.on<TPayload>(connection.id, cfg.event, async (conn, payload) => {
-            const prev = cfg.previousOf?.(payload);
+            const prev = cfg.previousOf(payload);
             if(prev){
                 await this.leaveRoom(conn.id, prev);
                 await this.broadcastPresence(prev, cfg.updateEvent, cfg.userExtractor);

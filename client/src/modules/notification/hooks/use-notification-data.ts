@@ -1,59 +1,33 @@
-import { useMarkAllReadMutation, useNotificationsInfiniteQuery, DEFAULT_LIMIT } from './queries';
+import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
 import useNotificationSocket from './use-notification-socket';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { useCallback, useMemo } from 'react';
-import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 const useNotificationData = () => {
     useNotificationSocket();
 
-    const infiniteQuery = useNotificationsInfiniteQuery(
-        { limit: DEFAULT_LIMIT }
-    );
-
-    const allNotifications = useMemo((): Notification[] => {
-        if (!infiniteQuery.data) {
-            return [];
-        }
-
-        return infiniteQuery.data.pages.flatMap((page) => page.data);
-    }, [infiniteQuery.data]);
-
-    const unreadCount = useMemo(() => {
-        return allNotifications.filter((notification) => !notification.read).length;
-    }, [allNotifications]);
-
+    const infiniteQuery = useNotificationsInfiniteQuery();
     const markAllReadMutation = useMarkAllReadMutation();
 
-    const fetchNotifications = useCallback(() => {
-        return infiniteQuery.refetch();
-    }, [infiniteQuery]);
+    const notifications = infiniteQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
-    const loadMore = useCallback(() => {
-        if (!infiniteQuery.isFetchingNextPage && infiniteQuery.hasNextPage) {
-            infiniteQuery.fetchNextPage();
-        }
-    }, [infiniteQuery]);
-
-    const markAllAsRead = useCallback(async () => {
-        try {
-            await showPromise(markAllReadMutation.mutateAsync(), {
+    return {
+        notifications,
+        unreadCount: notifications.filter((notification) => !notification.read).length,
+        fetchNotifications: () => infiniteQuery.refetch(),
+        loadMore: () => {
+            if (!infiniteQuery.isFetchingNextPage && infiniteQuery.hasNextPage) {
+                infiniteQuery.fetchNextPage();
+            }
+        },
+        markAllAsRead: () => {
+            void showPromise(markAllReadMutation.mutateAsync(), {
                 loading: { title: 'Marking notifications as read...' },
                 success: { title: 'All notifications marked as read' },
                 error: { title: 'Failed to mark notifications as read' }
-            });
-        } catch {
-        }
-    }, [markAllReadMutation]);
-
-    return {
-        notifications: allNotifications,
-        unreadCount,
-        fetchNotifications,
-        loadMore,
-        markAllAsRead,
+            }).catch(() => undefined);
+        },
         isMarkingAllAsRead: markAllReadMutation.isPending,
-        hasMore: !!infiniteQuery.hasNextPage,
+        hasMore: infiniteQuery.hasNextPage,
         isLoading: infiniteQuery.isLoading
     };
 };

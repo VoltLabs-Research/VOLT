@@ -82,7 +82,6 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const { data: processes = [], isLoading, isError, error, refetch } = useContainerProcessesQuery(containerId, {
-        enabled: !!containerId,
         refetchInterval: () => {
             return document.hidden ? false : 10000;
         },
@@ -117,12 +116,11 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     }
 
     if(isError && mappedProcesses.length === 0){
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch processes';
         return (
             <Stack className='flex-center color-muted' height='max' gap='1' p='2' textAlign='center'>
                 <RecoveryState
                     title='Unable to load running processes'
-                    description={errorMessage}
+                    description={error?.message ?? 'Failed to fetch processes'}
                     tone={RecoveryStateTone.Error}
                     onRetry={() => {
                         refetch().catch(() => undefined);

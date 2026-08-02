@@ -18,9 +18,6 @@ class TeamPresenceSocketModule extends BaseSocketModule {
 
     private readonly teamPresenceService = new TeamPresenceService();
     private readonly teamRoomPresenceService = new TeamRoomPresenceService();
-    private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
-
-        private readonly eventBus = eventBus;
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
@@ -28,7 +25,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
 
     async onInit(): Promise<void> {
         logger.info('[TeamPresenceSocketModule] Initialized');
-        this.unsubscribeFromTeamSubscription = this.teamSubscriptionService.subscribe(async ({ connection, subscription }) => {
+        this.unsubscribeFromTeamSubscription = socketTeamSubscriptionCoordinator.subscribe(async ({ connection, subscription }) => {
             await this.handleTeamSubscription(connection, {
                 teamId: subscription.teamId,
                 previousTeamId: subscription.previousTeamId
@@ -58,13 +55,13 @@ class TeamPresenceSocketModule extends BaseSocketModule {
                 await this.leaveRoom(conn.id, `team:${payload.teamId}`);
             }
 
-            if (this.teamSubscriptionService.getCurrentTeamId(conn) === payload.teamId) {
-                this.teamSubscriptionService.clearCurrentTeamId(conn);
+            if (socketTeamSubscriptionCoordinator.getCurrentTeamId(conn) === payload.teamId) {
+                socketTeamSubscriptionCoordinator.clearCurrentTeamId(conn);
             }
         });
 
         this.onDisconnect(connection.id, async (conn) => {
-            this.teamSubscriptionService.clearCurrentTeamId(conn);
+            socketTeamSubscriptionCoordinator.clearCurrentTeamId(conn);
             await this.handleDisconnection(conn.id);
         });
     }
@@ -105,7 +102,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
 
     private async updateUserActivity(teamId: string, userId: string, minutes: number): Promise<void> {
         try {
-            await this.eventBus.emit('user-activity.recorded', {
+            await eventBus.emit('user-activity.recorded', {
                 teamId,
                 userId,
                 minutes

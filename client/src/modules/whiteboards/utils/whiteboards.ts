@@ -1,5 +1,5 @@
 import { reconcileElements } from '@excalidraw/excalidraw';
-import type { WhiteboardAppState, WhiteboardElement } from '@/modules/whiteboards/contracts/excalidraw';
+import type { WhiteboardAppState, WhiteboardElement, WhiteboardFiles } from '@/modules/whiteboards/contracts/excalidraw';
 
 const PERSISTABLE_APP_STATE_KEYS = new Set([
     'viewBackgroundColor',
@@ -55,29 +55,6 @@ const normalizeWhiteboardCollaborators = (
     return nextAppState;
 };
 
-const getElementId = (element: WhiteboardElement): string | null => {
-    const id = element.id;
-    return typeof id === 'string' && id.length > 0 ? id : null;
-};
-
-const getElementVersion = (element: WhiteboardElement): number => {
-    return typeof element.version === 'number' && Number.isFinite(element.version)
-        ? element.version
-        : 0;
-};
-
-const getElementUpdated = (element: WhiteboardElement): number => {
-    return typeof element.updated === 'number' && Number.isFinite(element.updated)
-        ? element.updated
-        : 0;
-};
-
-const getElementVersionNonce = (element: WhiteboardElement): number => {
-    return typeof element.versionNonce === 'number' && Number.isFinite(element.versionNonce)
-        ? element.versionNonce
-        : 0;
-};
-
 const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: WhiteboardElement): boolean => {
     try {
         return JSON.stringify(current) === JSON.stringify(incoming);
@@ -87,17 +64,7 @@ const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: White
 };
 
 const areStringArraysEqual = (left: string[], right: string[]): boolean => {
-    if (left.length !== right.length) {
-        return false;
-    }
-
-    for (let index = 0; index < left.length; index += 1) {
-        if (left[index] !== right[index]) {
-            return false;
-        }
-    }
-
-    return true;
+    return left.length === right.length && left.every((value, index) => value === right[index]);
 };
 
 const buildOrderedElements = (
@@ -162,17 +129,17 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
         return true;
     }
 
-    const versionDelta = getElementVersion(incoming) - getElementVersion(current);
+    const versionDelta = incoming.version - current.version;
     if (versionDelta !== 0) {
         return versionDelta > 0;
     }
 
-    const updatedDelta = getElementUpdated(incoming) - getElementUpdated(current);
+    const updatedDelta = incoming.updated - current.updated;
     if (updatedDelta !== 0) {
         return updatedDelta > 0;
     }
 
-    const versionNonceDelta = getElementVersionNonce(incoming) - getElementVersionNonce(current);
+    const versionNonceDelta = incoming.versionNonce - current.versionNonce;
     if (versionNonceDelta !== 0) {
         return versionNonceDelta > 0;
     }
@@ -180,10 +147,8 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
     return !hasEquivalentElementPayload(current, incoming);
 };
 
-export const filterPersistableAppState = (
-    appState: Record<string, unknown>
-): Record<string, unknown> => {
-    const result: Record<string, unknown> = {};
+export const filterPersistableAppState = (appState: WhiteboardAppState): WhiteboardAppState => {
+    const result: WhiteboardAppState = {};
     for (const key of PERSISTABLE_APP_STATE_KEYS) {
         if (key in appState) {
             result[key] = appState[key];
@@ -207,9 +172,7 @@ export const normalizeWhiteboardRuntimeAppState = (
     appState: WhiteboardAppState
 ): WhiteboardAppState => normalizeWhiteboardCollaborators(appState, { ...appState });
 
-export const cloneWhiteboardFiles = <TFiles extends Record<string, unknown> | undefined>(
-    files: TFiles
-): TFiles => cloneSerializable(files);
+export const cloneWhiteboardFiles = (files: WhiteboardFiles): WhiteboardFiles => cloneSerializable(files);
 
 export const mergeWhiteboardElements = (
     currentElements: WhiteboardElement[],
@@ -221,28 +184,18 @@ export const mergeWhiteboardElements = (
     const incomingOrder: string[] = [];
 
     for (const element of currentElements) {
-        const id = getElementId(element);
-        if (!id) {
-            continue;
-        }
-
-        merged.set(id, element);
-        currentOrder.push(id);
+        merged.set(element.id, element);
+        currentOrder.push(element.id);
     }
 
     for (const element of incomingElements) {
-        const id = getElementId(element);
-        if (!id) {
-            continue;
-        }
-
-        incomingOrder.push(id);
-        if (shouldReplaceElement(merged.get(id), element)) {
-            merged.set(id, element);
+        incomingOrder.push(element.id);
+        if (shouldReplaceElement(merged.get(element.id), element)) {
+            merged.set(element.id, element);
         }
     }
 
-    if (Array.isArray(incomingElementOrder) && incomingElementOrder.length > 0) {
+    if (incomingElementOrder?.length) {
         return reconcileWhiteboardElements(
             currentElements,
             buildOrderedElements(merged, incomingElementOrder, currentOrder)
@@ -256,9 +209,9 @@ export const mergeWhiteboardElements = (
 };
 
 export const mergeWhiteboardAppState = (
-    currentAppState: Record<string, unknown>,
-    incomingAppState: Record<string, unknown>
-): Record<string, unknown> => ({
+    currentAppState: WhiteboardAppState,
+    incomingAppState: WhiteboardAppState
+): WhiteboardAppState => ({
     ...currentAppState,
     ...filterPersistableAppState(incomingAppState)
 });
@@ -275,23 +228,13 @@ export const computeWhiteboardSceneDelta = (
     const changedElements: WhiteboardElement[] = [];
 
     for (const element of currentElements) {
-        const id = getElementId(element);
-        if (!id) {
-            continue;
-        }
-
-        currentElementsById.set(id, element);
-        currentOrder.push(id);
+        currentElementsById.set(element.id, element);
+        currentOrder.push(element.id);
     }
 
     for (const element of nextElements) {
-        const id = getElementId(element);
-        if (!id) {
-            continue;
-        }
-
-        nextOrder.push(id);
-        const currentElement = currentElementsById.get(id);
+        nextOrder.push(element.id);
+        const currentElement = currentElementsById.get(element.id);
         if (!currentElement || !hasEquivalentElementPayload(currentElement, element)) {
             changedElements.push(element);
         }
@@ -321,9 +264,8 @@ export const extractWhiteboardFileIds = (elements: WhiteboardElement[]): string[
     const fileIds = new Set<string>();
 
     for (const element of elements) {
-        const fileId = element.fileId;
-        if (typeof fileId === 'string' && fileId.length > 0) {
-            fileIds.add(fileId);
+        if (element.fileId) {
+            fileIds.add(element.fileId);
         }
     }
 

@@ -39,13 +39,9 @@ const ThemeSelector = () => {
 
     const selectedIndex = options.findIndex((option) => option.theme === preference);
 
-    const focusOption = (index: number): void => {
-        optionRefs.current[index]?.focus();
-    };
-
     const selectOption = (index: number): void => {
         setTheme(options[index].theme);
-        focusOption(index);
+        optionRefs.current[index]?.focus();
     };
 
     const handleKeyDown = (index: number) => (event: KeyboardEvent<HTMLButtonElement>): void => {

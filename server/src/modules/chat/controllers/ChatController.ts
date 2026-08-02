@@ -6,7 +6,9 @@ import { checkTeamMembership } from '@modules/team/controllers/middleware/check-
 import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
 import { uploadToStorage } from '@modules/chat/controllers/ChatFileUploadMiddleware';
 import ChatService from '@modules/chat/services/ChatService';
+import ChatMessageService from '@modules/chat/services/ChatMessageService';
 import { chatRoutes } from '@volt/contracts/modules/chat/routes';
+import type { ChatFileUpload } from '@modules/chat/contracts/chat-message';
 import type {
     GetOrCreateDirectChatInput,
     CreateGroupChatInput,
@@ -18,19 +20,11 @@ import type {
     EditMessageInput
 } from '@volt/contracts/modules/chat/http';
 
-interface ChatFileBody {
-    fileData: {
-        filename: string;
-        originalName: string;
-        size: number;
-        mimetype: string;
-        url: string;
-    };
-}
-
 @Middleware(protect)
 export default class ChatController extends Controller {
     #service = new ChatService();
+
+    #messages = new ChatMessageService();
 
     @Route(chatRoutes.listUserChats)
     listUserChats(@CurrentUser() userId: string) {
@@ -92,11 +86,11 @@ export default class ChatController extends Controller {
     }
 
     @Route(chatRoutes.leaveGroup)
-    async leaveGroup(
+    leaveGroup(
         @Param('chatId') chatId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.leaveGroup(userId, chatId);
+        return this.#service.leaveGroup(userId, chatId);
     }
 
     @Route(chatRoutes.listMessages)
@@ -105,7 +99,7 @@ export default class ChatController extends Controller {
         @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#service.getChatMessages(userId, chatId, query);
+        return this.#messages.getChatMessages(userId, chatId, query);
     }
 
     @Route(chatRoutes.sendMessage)
@@ -115,15 +109,15 @@ export default class ChatController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: SendChatMessageInput
     ){
-        return this.#service.sendChatMessage(userId, chatId, body);
+        return this.#messages.sendChatMessage(userId, chatId, body);
     }
 
     @Route(chatRoutes.markMessagesAsRead)
-    async markMessagesAsRead(
+    markMessagesAsRead(
         @Param('chatId') chatId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.markMessagesAsRead(userId, chatId);
+        return this.#messages.markMessagesAsRead(userId, chatId);
     }
 
     @Route(chatRoutes.editMessage)
@@ -133,16 +127,16 @@ export default class ChatController extends Controller {
         @CurrentUser() userId: string,
         @Body() body: EditMessageInput
     ) {
-        return this.#service.editMessage(userId, chatId, messageId, body.content);
+        return this.#messages.editMessage(userId, chatId, messageId, body.content);
     }
 
     @Route(chatRoutes.deleteMessage)
-    async deleteMessage(
+    deleteMessage(
         @Param('chatId') chatId: string,
         @Param('messageId') messageId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteMessage(userId, chatId, messageId);
+        return this.#messages.deleteMessage(userId, chatId, messageId);
     }
 
     @Route(chatRoutes.setMessageReaction)
@@ -152,7 +146,7 @@ export default class ChatController extends Controller {
         @Param('emoji') emoji: string,
         @CurrentUser() userId: string
     ) {
-        return this.#service.setMessageReaction(userId, chatId, messageId, emoji);
+        return this.#messages.setMessageReaction(userId, chatId, messageId, emoji);
     }
 
     @Route(chatRoutes.removeMessageReaction)
@@ -162,7 +156,7 @@ export default class ChatController extends Controller {
         @Param('emoji') emoji: string,
         @CurrentUser() userId: string
     ) {
-        return this.#service.removeMessageReaction(userId, chatId, messageId, emoji);
+        return this.#messages.removeMessageReaction(userId, chatId, messageId, emoji);
     }
 
     @Route(chatRoutes.sendFileMessage)
@@ -171,8 +165,8 @@ export default class ChatController extends Controller {
     sendFileMessage(
         @Param('chatId') chatId: string,
         @CurrentUser() userId: string,
-        @Body() body: ChatFileBody
+        @Body() body: { fileData: ChatFileUpload }
     ){
-        return this.#service.sendFileMessage(userId, chatId, body.fileData);
+        return this.#messages.sendFileMessage(userId, chatId, body.fileData);
     }
 }

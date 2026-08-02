@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utils/container-form';
-import type { ContainerConfig } from '../../hooks/use-create-container-form';
+import type { ContainerConfig } from '@/modules/container/contracts/forms';
 import type { Team } from '@volt/contracts/modules/team/domain';
 import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 

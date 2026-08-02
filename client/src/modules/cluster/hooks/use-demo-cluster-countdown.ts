@@ -3,20 +3,17 @@ import { useCallback, useEffect, useState } from 'react';
 interface DemoCountdownSnapshot {
     minutes: number;
     seconds: number;
-    totalMs: number;
     expired: boolean;
 }
 
 export const useDemoClusterCountdown = (expiresAt: Date | null | undefined): DemoCountdownSnapshot => {
-    const rawExpiresAtMs = expiresAt?.getTime();
-    const expiresAtMs = Number.isFinite(rawExpiresAtMs) ? rawExpiresAtMs : undefined;
+    const expiresAtMs = expiresAt?.getTime();
 
     const compute = useCallback((): DemoCountdownSnapshot => {
         if (expiresAtMs === undefined) {
             return {
                 minutes: 0,
                 seconds: 0,
-                totalMs: 0,
                 expired: false
             };
         }
@@ -25,7 +22,6 @@ export const useDemoClusterCountdown = (expiresAt: Date | null | undefined): Dem
         return {
             minutes: Math.floor(totalSeconds / 60),
             seconds: totalSeconds % 60,
-            totalMs,
             expired: totalMs === 0
         };
     }, [expiresAtMs]);

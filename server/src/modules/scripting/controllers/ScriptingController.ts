@@ -5,6 +5,7 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
+import ScriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
 import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { scriptingRoutes } from '@volt/contracts/modules/scripting/routes';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
@@ -20,6 +21,7 @@ import type { Response } from 'express';
 @Middleware(protect, teamScoped(Resource.SCRIPTING))
 export default class ScriptingController extends Controller {
     #service = new ScriptingService();
+    #sessions = new ScriptingSessionService();
 
     @Route(scriptingRoutes.listNotebooks)
     listNotebooks(
@@ -84,7 +86,7 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.getSessionStatus({
+        const value = await this.#sessions.getSessionStatus({
             teamId,
             notebookId,
             userId
@@ -92,14 +94,7 @@ export default class ScriptingController extends Controller {
         const { accessGrant, ...response } = value;
 
         if (accessGrant) {
-            setJupyterProxyAccessCookie(
-                req,
-                res,
-                accessGrant.token,
-                accessGrant.teamId,
-                accessGrant.runtimeNotebookId,
-                accessGrant.maxAgeMs
-            );
+            setJupyterProxyAccessCookie(req, res, accessGrant);
         }
 
         BaseResponse.success(res, response);
@@ -112,13 +107,13 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.deleteSession({
+        const value = await this.#sessions.deleteSession({
             teamId,
             notebookId
         });
         const { runtimeNotebookId, ...response } = value;
 
-        if (runtimeNotebookId && teamId) {
+        if (runtimeNotebookId) {
             clearJupyterProxyAccessCookie(req, res, teamId, runtimeNotebookId);
         }
 
@@ -133,7 +128,7 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.createJupyterSession({
+        const value = await this.#sessions.createJupyterSession({
             teamId,
             userId,
             notebookId: body.notebookId,
@@ -143,14 +138,7 @@ export default class ScriptingController extends Controller {
 
         const { accessGrant, ...response } = value;
         if (accessGrant) {
-            setJupyterProxyAccessCookie(
-                req,
-                res,
-                accessGrant.token,
-                accessGrant.teamId,
-                accessGrant.runtimeNotebookId,
-                accessGrant.maxAgeMs
-            );
+            setJupyterProxyAccessCookie(req, res, accessGrant);
         }
 
         BaseResponse.success(res, response, 201);

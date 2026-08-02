@@ -1,12 +1,51 @@
 import SecretKeyUsageLog from '@modules/team/models/SecretKeyUsageLog';
-import type { SecretKeyUsageLogProps } from '@modules/team/contracts/secret-key-usage-log';
-import type {
-    KeyUsageAnalytics,
-    TeamUsageAnalytics,
-    TeamUsageOverviewAnalytics
-} from '@modules/team/services/secret-key/SecretKeyUsageAnalytics';
-import type { SecretKeyEndpointStat } from '@modules/team/services/secret-key/SecretKeyUsageMetrics';
+import type { SecretKeyEndpointStat, SecretKeyStatusCodeStat } from '@volt/contracts/modules/team/domain';
 import type { SelectQueryBuilder } from 'typeorm';
+
+export interface SecretKeyUsageOverview{
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+}
+
+export interface SecretKeyUsagePerKey{
+    secretKeyId: string;
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+    lastRequestAt: Date | null;
+}
+
+export interface SecretKeyUsageRequest{
+    method: string;
+    path: string;
+    statusCode: number;
+    responseTime: number;
+    ip: string;
+    createdAt: Date;
+}
+
+export interface UsageCountByLabel{
+    label: string;
+    count: number;
+}
+
+export interface TeamUsageAnalytics{
+    overview: SecretKeyUsageOverview;
+    perKey: SecretKeyUsagePerKey[];
+    daily: Array<{ date: string; secretKeyId: string; count: number }>;
+    topEndpoints: SecretKeyEndpointStat[];
+}
+
+export interface KeyUsageAnalytics{
+    overview: SecretKeyUsageOverview & { requests24h: number; requests7d: number };
+    hourly: UsageCountByLabel[];
+    daily: UsageCountByLabel[];
+    endpoints: SecretKeyEndpointStat[];
+    statusDistribution: SecretKeyStatusCodeStat[];
+    peakHour: number | null;
+    recentRequests: SecretKeyUsageRequest[];
+}
 
 const SUCCESS_REQUESTS = 'SUM(CASE WHEN log.statusCode >= 200 AND log.statusCode < 300 THEN 1 ELSE 0 END)';
 const TOTAL_REQUESTS = 'COUNT(log.id)';
@@ -21,15 +60,8 @@ interface AggregatedOverviewRow{
     avgResponseTime: number | string | null;
 }
 
-interface AggregatedCountRow{
-    totalRequests: number | string | null;
-}
-
-interface AggregatedPerKeyRow{
+interface AggregatedPerKeyRow extends AggregatedOverviewRow{
     secretKeyId: string;
-    totalRequests: number | string | null;
-    successRequests: number | string | null;
-    avgResponseTime: number | string | null;
     lastRequestAt: Date | string | null;
 }
 
@@ -85,7 +117,7 @@ const toDate = (value: Date | string | null | undefined): Date | null => {
 
 const roundToTenth = (value: number): number => Math.round(value * 10) / 10;
 
-const successRateOf = (successRequests: number, count: number): number => (
+export const successRateOf = (successRequests: number, count: number): number => (
     count === 0 ? 0 : roundToTenth((successRequests / count) * 100)
 );
 
@@ -95,7 +127,7 @@ const scopedQuery = (scope: 'team' | 'secretKey', scopeId: string, since: Date):
         .andWhere('log.createdAt >= :since', { since })
 );
 
-const readOverview = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<TeamUsageOverviewAnalytics> => {
+const readOverview = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<SecretKeyUsageOverview> => {
     const row = await query
         .select(TOTAL_REQUESTS, 'totalRequests')
         .addSelect(SUCCESS_REQUESTS, 'successRequests')
@@ -112,7 +144,7 @@ const readOverview = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promi
 const readRequestCount = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Promise<number> => {
     const row = await query
         .select(TOTAL_REQUESTS, 'totalRequests')
-        .getRawOne<AggregatedCountRow>();
+        .getRawOne<Pick<AggregatedOverviewRow, 'totalRequests'>>();
 
     return toNumber(row?.totalRequests);
 };
@@ -159,7 +191,9 @@ const readDailyLabels = async (query: SelectQueryBuilder<SecretKeyUsageLog>): Pr
         .getRawMany<AggregatedLabelRow>();
 };
 
-export const logSecretKeyUsageRequest = async (data: Omit<SecretKeyUsageLogProps, 'createdAt'>): Promise<void> => {
+export const logSecretKeyUsageRequest = async (
+    data: Pick<SecretKeyUsageLog, 'secretKey' | 'team' | 'method' | 'path' | 'statusCode' | 'responseTime' | 'ip' | 'userAgent'>
+): Promise<void> => {
     await SecretKeyUsageLog.create({ ...data }).save();
 };
 

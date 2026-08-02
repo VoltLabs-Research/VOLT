@@ -1,5 +1,4 @@
 import { Button, CollapsibleSection } from '@voltstack/bravais';
-import { useCallback } from 'react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
@@ -51,16 +50,12 @@ const IfStatementEditor = ({ node }: EditorProps) => {
         createDefaultCondition
     );
 
-    const getConditionTitle = useCallback((_: ICondition, index: number) => {
-        return `Condition ${index + 1}`;
-    }, []);
-
     return (
         <>
             {conditions.map((condition, index) => (
                 <CollapsibleSection
                     key={index}
-                    title={getConditionTitle(condition, index)}
+                    title={`Condition ${index + 1}`}
                     defaultExpanded={index === 0}
                     onDelete={() => removeItem(index)}
                 >
@@ -110,7 +105,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                 </CollapsibleSection>
             ))}
 
-            <div  style={{ marginTop: conditions.length > 0 ? '0.5rem' : 0 }}>
+            <div style={{ marginTop: conditions.length > 0 ? '0.5rem' : 0 }}>
                 <Button
                     variant='outline'
                     intent='neutral'

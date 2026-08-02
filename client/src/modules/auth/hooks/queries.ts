@@ -6,66 +6,54 @@ import queryClient from '@/shared/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import type {
     UpdatePasswordInput,
-    SignInInput
+    SignInInput,
+    SignUpInput
 } from '@volt/contracts/modules/auth/http';
 import type {
     AuthSession,
     CheckEmailResponse,
-    OAuthProviders,
     User
 } from '@volt/contracts/modules/auth/domain';
 import type {
     CheckEmailParams,
-    SignUpFormInput,
     UpdateMeInput
 } from '../contracts/forms';
-import type { QueryOptions } from '@/shared/query';
 
-type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>;
-
-const KEYS = buildKeys<AuthQueryKeyMap>('auth');
+const KEYS = buildKeys<Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>>('auth');
 
 registerPreservedQueryKey(KEYS.currentUser()[0] as string);
 
-const currentUser = createQuery(KEYS.currentUser, () => service.getMe({}));
+export const currentUserQuery = createQuery(KEYS.currentUser, () => service.getMe({}));
 export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.getPasswordInfo({}));
 const oauthProviders = createQuery(KEYS.oauthProviders, () => service.getAvailableOAuthProviders({}));
 
-export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, {
-    staleTime: Infinity,
-    ...options
-});
-export const useOAuthProvidersQuery = (options?: QueryOptions<OAuthProviders>) =>
-    oauthProviders(undefined, {
-        staleTime: Infinity,
-        ...options
-    });
-export const fetchCurrentUser = () => currentUser.fetch(undefined, { staleTime: 0 });
+export const useOAuthProvidersQuery = () => oauthProviders(undefined, { staleTime: Infinity });
+export const fetchCurrentUser = () => currentUserQuery.fetch(undefined, { staleTime: 0 });
 export const clearCurrentUserQueryData = async () => {
     await queryClient.cancelQueries({ queryKey: KEYS.currentUser() });
-    currentUser.clear(undefined);
+    currentUserQuery.clear(undefined);
 };
 
 export const useSignInMutation = createMutation<AuthSession, SignInInput>(
     service.signIn,
-    (data) => currentUser.set(undefined, data.user)
+    (data) => currentUserQuery.set(undefined, data.user)
 );
 
-export const useSignUpMutation = createMutation<AuthSession, SignUpFormInput>(
+export const useSignUpMutation = createMutation<AuthSession, SignUpInput>(
     service.signUp,
-    (data) => currentUser.set(undefined, data.user)
+    (data) => currentUserQuery.set(undefined, data.user)
 );
 
 export const useCheckEmailMutation = createMutation<CheckEmailResponse, CheckEmailParams>(service.checkEmail);
 
 export const useUpdateMeMutation = createMutation<User, UpdateMeInput>(
     service.updateMe,
-    (data) => currentUser.set(undefined, data)
+    (data) => currentUserQuery.set(undefined, data)
 );
 
 export const useDeleteMeMutation = createMutation<void, void>(
     () => service.deleteMe({}),
-    () => currentUser.clear(undefined)
+    () => currentUserQuery.clear(undefined)
 );
 
 export const useChangePasswordMutation = createMutation<AuthSession, UpdatePasswordInput>(
@@ -76,7 +64,7 @@ export const useChangePasswordMutation = createMutation<AuthSession, UpdatePassw
     },
     (data) => {
         updateSocketAuthToken(data.token);
-        currentUser.set(undefined, data.user);
+        currentUserQuery.set(undefined, data.user);
         passwordInfoQuery.invalidate(undefined);
     }
 );

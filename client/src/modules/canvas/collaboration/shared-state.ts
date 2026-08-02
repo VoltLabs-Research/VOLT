@@ -2,31 +2,36 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import type { EditorStore } from '@/modules/canvas/store/editor/types';
 
-type Plain = Record<string, unknown>;
+/** Store fields shared verbatim between collaborators. */
+type SharedValueKey =
+    | 'activeScene'
+    | 'activeScenes'
+    | 'activeModel'
+    | 'sceneVisualOverrides'
+    | 'showSimulationCell'
+    | 'pointSizeMultiplier'
+    | 'pointCloudSettings'
+    | 'isPointCloudScene'
+    | 'currentTimestep'
+    | 'isPlaying'
+    | 'playSpeed'
+    | 'rangeStart'
+    | 'rangeEnd'
+    | 'modelDragOffsets';
 
-export interface SharedCanvasState {
-    activeScene?: unknown;
-    activeScenes?: unknown[];
-    activeModel?: unknown;
-    sceneVisualOverrides?: Plain;
-    showSimulationCell?: boolean;
-    pointSizeMultiplier?: number;
-    pointCloudSettings?: Plain;
-    isPointCloudScene?: boolean;
-    currentTimestep?: number;
-    isPlaying?: boolean;
-    playSpeed?: number;
-    rangeStart?: number;
-    rangeEnd?: number;
-    modelDragOffsets?: Record<string, { x: number; y: number; z: number }>;
-    lights?: Plain;
-    effects?: Plain;
-    grid?: Plain;
-    environment?: Plain;
-    rendererSettings?: Plain;
-    performanceSettings?: Plain;
-    configuration?: Plain;
-}
+/** Store slices shared as a data-only subset, merged onto the local slice. */
+type SharedSliceKey =
+    | 'lights'
+    | 'effects'
+    | 'grid'
+    | 'environment'
+    | 'rendererSettings'
+    | 'performanceSettings'
+    | 'configuration';
+
+export type SharedCanvasState =
+    Partial<Pick<EditorStore, SharedValueKey>>
+    & { [Key in SharedSliceKey]?: Partial<EditorStore[Key]> };
 
 const LIGHTS_DATA_KEYS = ['global', 'directional', 'point', 'spot', 'hemisphere', 'rectArea'] as const;
 
@@ -71,21 +76,15 @@ const RENDERER_DATA_KEYS = ['create', 'runtime'] as const;
 const PERFORMANCE_DATA_KEYS = ['preset', 'dpr', 'performance', 'adaptiveEvents', 'interactionDegrade'] as const;
 const CONFIGURATION_DATA_KEYS = ['activeSidebarOption', 'activeModifier'] as const;
 
-const pickDataFields = (
-    source: object | undefined,
-    keys: readonly string[]
-): Plain | undefined => {
-    if (!source) {
-        return undefined;
-    }
-
-    const record = source as Record<string, unknown>;
-    const output: Plain = {};
+/** Copies the data fields of a slice, leaving its action functions behind. */
+const pickDataFields = <Slice extends object, Key extends keyof Slice>(
+    source: Slice,
+    keys: readonly Key[]
+): Pick<Slice, Key> => {
+    const output = {} as Pick<Slice, Key>;
 
     for (const key of keys) {
-        if (Object.prototype.hasOwnProperty.call(record, key)) {
-            output[key] = record[key];
-        }
+        output[key] = source[key];
     }
 
     return output;
@@ -100,14 +99,14 @@ const stripNonSerializable = <T>(value: T): T => {
 };
 
 export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState => {
-    const payload: SharedCanvasState = {
+    return stripNonSerializable<SharedCanvasState>({
         activeScene: state.activeScene,
         activeScenes: state.activeScenes,
         activeModel: state.activeModel,
-        sceneVisualOverrides: state.sceneVisualOverrides as Plain,
+        sceneVisualOverrides: state.sceneVisualOverrides,
         showSimulationCell: state.showSimulationCell,
         pointSizeMultiplier: state.pointSizeMultiplier,
-        pointCloudSettings: state.pointCloudSettings as unknown as Plain,
+        pointCloudSettings: state.pointCloudSettings,
         isPointCloudScene: state.isPointCloudScene,
         currentTimestep: state.currentTimestep,
         isPlaying: state.isPlaying,
@@ -122,103 +121,35 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
         rendererSettings: pickDataFields(state.rendererSettings, RENDERER_DATA_KEYS),
         performanceSettings: pickDataFields(state.performanceSettings, PERFORMANCE_DATA_KEYS),
         configuration: pickDataFields(state.configuration, CONFIGURATION_DATA_KEYS)
-    };
-
-    return stripNonSerializable(payload);
-};
-
-export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
-    const store = useEditorStore;
-
-    store.setState((state) => {
-        const next: Partial<EditorStore> = {};
-        const record = state as unknown as Record<string, unknown>;
-
-        if (patch.activeScene !== undefined) {
-            next.activeScene = patch.activeScene as EditorStore['activeScene'];
-        }
-
-        if (patch.activeScenes !== undefined) {
-            next.activeScenes = patch.activeScenes as EditorStore['activeScenes'];
-        }
-
-        if (patch.activeModel !== undefined) {
-            next.activeModel = patch.activeModel as EditorStore['activeModel'];
-        }
-
-        if (patch.sceneVisualOverrides !== undefined) {
-            next.sceneVisualOverrides = patch.sceneVisualOverrides as EditorStore['sceneVisualOverrides'];
-        }
-
-        if (patch.showSimulationCell !== undefined) {
-            next.showSimulationCell = patch.showSimulationCell;
-        }
-
-        if (patch.pointSizeMultiplier !== undefined) {
-            next.pointSizeMultiplier = patch.pointSizeMultiplier;
-        }
-
-        if (patch.pointCloudSettings !== undefined) {
-            next.pointCloudSettings = patch.pointCloudSettings as unknown as EditorStore['pointCloudSettings'];
-        }
-
-        if (patch.isPointCloudScene !== undefined) {
-            next.isPointCloudScene = patch.isPointCloudScene;
-        }
-
-        if (patch.currentTimestep !== undefined) {
-            next.currentTimestep = patch.currentTimestep;
-        }
-
-        if (patch.isPlaying !== undefined) {
-            next.isPlaying = patch.isPlaying;
-        }
-
-        if (patch.playSpeed !== undefined) {
-            next.playSpeed = patch.playSpeed;
-        }
-
-        if (patch.rangeStart !== undefined) {
-            next.rangeStart = patch.rangeStart;
-        }
-
-        if (patch.rangeEnd !== undefined) {
-            next.rangeEnd = patch.rangeEnd;
-        }
-
-        if (patch.modelDragOffsets !== undefined) {
-            next.modelDragOffsets = patch.modelDragOffsets;
-        }
-
-        mergeSlice(next, 'lights', patch.lights, record);
-        mergeSlice(next, 'effects', patch.effects, record);
-        mergeSlice(next, 'grid', patch.grid, record);
-        mergeSlice(next, 'environment', patch.environment, record);
-        mergeSlice(next, 'rendererSettings', patch.rendererSettings, record);
-        mergeSlice(next, 'performanceSettings', patch.performanceSettings, record);
-        mergeSlice(next, 'configuration', patch.configuration, record);
-
-        return next;
     });
 };
 
-const mergeSlice = (
-    next: Partial<EditorStore>,
-    key: keyof EditorStore,
-    patchSlice: Plain | undefined,
-    record: Record<string, unknown>
-): void => {
-    if (!patchSlice) {
-        return;
-    }
+/**
+ * Shared values land on the store as sent; shared slices are merged so the
+ * action functions and any unshared fields of the local slice survive.
+ */
+export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
+    useEditorStore.setState((state) => {
+        const {
+            lights,
+            effects,
+            grid,
+            environment,
+            rendererSettings,
+            performanceSettings,
+            configuration,
+            ...values
+        } = patch;
 
-    const currentSlice = record[key as string];
-    if (!currentSlice || typeof currentSlice !== 'object') {
-        return;
-    }
-
-    (next as Record<string, unknown>)[key as string] = {
-        ...(currentSlice as Plain),
-        ...patchSlice
-    };
+        return {
+            ...values,
+            ...(lights && { lights: { ...state.lights, ...lights } }),
+            ...(effects && { effects: { ...state.effects, ...effects } }),
+            ...(grid && { grid: { ...state.grid, ...grid } }),
+            ...(environment && { environment: { ...state.environment, ...environment } }),
+            ...(rendererSettings && { rendererSettings: { ...state.rendererSettings, ...rendererSettings } }),
+            ...(performanceSettings && { performanceSettings: { ...state.performanceSettings, ...performanceSettings } }),
+            ...(configuration && { configuration: { ...state.configuration, ...configuration } })
+        };
+    });
 };

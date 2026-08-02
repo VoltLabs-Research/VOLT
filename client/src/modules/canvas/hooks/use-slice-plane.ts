@@ -1,35 +1,19 @@
-import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
+import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
+import { parseNumericInput } from '@/modules/canvas/utils/parse-numeric-input';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { SlicePlaneNormalAxis } from '@/modules/fractal/contracts/scene';
 import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
-const isFiniteNumericInput = (value: string): boolean => {
-    if (value.trim() === '') {
-        return false;
-    }
+type FieldChangeHandler = (fieldKey: string, value: string | number | boolean) => void;
 
-    return Number.isFinite(Number(value));
-};
+/**
+ * Keeps the slice plane fields editable as text while the user types, committing
+ * to the pipeline stage only once the input parses as a number.
+ */
+const useSlicePlane = (stageId: string, trajectoryId?: string) => {
+    const { config, patch } = useStageConfig<SlicePlaneStageConfig>(stageId, trajectoryId);
 
-interface UseSlicePlaneReturn {
-    distanceInput: string;
-    normalInputs: Record<SlicePlaneNormalAxis, string>;
-    reverseOrientation: boolean;
-    visualizePlane: boolean;
-    handleDistanceChange: (_fieldKey: string, value: string | number | boolean) => void;
-    handleNormalChange: (axis: SlicePlaneNormalAxis) => (_fieldKey: string, value: string | number | boolean) => void;
-    handleReverseOrientationChange: (_fieldKey: string, value: string | number | boolean) => void;
-    handleVisualizePlaneChange: (_fieldKey: string, value: string | number | boolean) => void;
-}
-
-const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneReturn => {
-    const stage = useCanvasPipelineStore((s) =>
-        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
-    );
-    const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
-
-    const config = stage?.config as SlicePlaneStageConfig | undefined;
     const distance = config?.distance ?? 0;
     const normal = useMemo(
         () => config?.normal ?? {
@@ -39,8 +23,6 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
         },
         [config?.normal]
     );
-    const reverseOrientation = config?.reverseOrientation ?? false;
-    const visualizePlane = config?.visualizePlane ?? false;
 
     const [distanceInput, setDistanceInput] = useState(() => String(distance));
     const [normalInputs, setNormalInputs] = useState<Record<SlicePlaneNormalAxis, string>>(() => ({
@@ -61,51 +43,47 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
         });
     }, [normal.x, normal.y, normal.z]);
 
-    const patch = useCallback((next: Partial<SlicePlaneStageConfig>) => {
-        updateStageConfig(stageId, next, trajectoryId);
-    }, [stageId, trajectoryId, updateStageConfig]);
-
-    const handleDistanceChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
+    const handleDistanceChange: FieldChangeHandler = (_fieldKey, value) => {
         const nextValue = String(value);
         setDistanceInput(nextValue);
-        if (!isFiniteNumericInput(nextValue)) return;
-        patch({ distance: Number(nextValue) });
-    }, [patch]);
 
-    const handleNormalChange = useCallback((axis: SlicePlaneNormalAxis) => {
-        return (_fieldKey: string, value: string | number | boolean) => {
+        const parsed = parseNumericInput(nextValue);
+        if (parsed === null) return;
+        patch({ distance: parsed });
+    };
+
+    const handleNormalChange = (axis: SlicePlaneNormalAxis): FieldChangeHandler => {
+        return (_fieldKey, value) => {
             const nextValue = String(value);
             setNormalInputs((current) => ({
                 ...current,
                 [axis]: nextValue
             }));
-            if (!isFiniteNumericInput(nextValue)) return;
+
+            const parsed = parseNumericInput(nextValue);
+            if (parsed === null) return;
             patch({
                 normal: {
                     ...normal,
-                    [axis]: Number(nextValue)
+                    [axis]: parsed
                 }
             });
         };
-    }, [normal, patch]);
-
-    const handleReverseOrientationChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
-        patch({ reverseOrientation: Boolean(value) });
-    }, [patch]);
-
-    const handleVisualizePlaneChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
-        patch({ visualizePlane: Boolean(value) });
-    }, [patch]);
+    };
 
     return {
         distanceInput,
         normalInputs,
-        reverseOrientation,
-        visualizePlane,
+        reverseOrientation: config?.reverseOrientation ?? false,
+        visualizePlane: config?.visualizePlane ?? false,
         handleDistanceChange,
         handleNormalChange,
-        handleReverseOrientationChange,
-        handleVisualizePlaneChange
+        handleReverseOrientationChange: ((_fieldKey, value) => {
+            patch({ reverseOrientation: Boolean(value) });
+        }) satisfies FieldChangeHandler,
+        handleVisualizePlaneChange: ((_fieldKey, value) => {
+            patch({ visualizePlane: Boolean(value) });
+        }) satisfies FieldChangeHandler
     };
 };
 

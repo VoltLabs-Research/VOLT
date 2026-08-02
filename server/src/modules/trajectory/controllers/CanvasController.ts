@@ -5,13 +5,9 @@ import { authenticateOptional } from '@modules/auth/controllers/middleware/authe
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import PublicCanvasService from '@modules/trajectory/services/PublicCanvasService';
-import {
-    sendTrajectoryPreview,
-    sendTrajectoryPreviewError
-} from '@modules/trajectory/controllers/trajectory-preview-response';
+import { respondWithTrajectoryPreview } from '@modules/trajectory/controllers/trajectory-preview-response';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
@@ -45,16 +41,10 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        try {
-            const value = await this.#canvas.preview(this.params(req, this.withOptionalUserId));
-            sendTrajectoryPreview(res, value);
-        } catch (error) {
-            logger.error(error);
-            if (res.headersSent) {
-                throw error;
-            }
-            sendTrajectoryPreviewError(res, error);
-        }
+        await respondWithTrajectoryPreview(
+            res,
+            () => this.#canvas.preview(this.params(req, this.withOptionalUserId))
+        );
     }
 
     @Route(trajectoryRoutes.canvasAnalyses)
@@ -82,21 +72,11 @@ export default class CanvasController extends TrajectoryControllerBase {
     ): Promise<void>{
         const output = await this.#canvas.glb(this.params(req, this.withGlbRequestContext));
 
-        const headers: Record<string, string> = {
-            'Content-Type': 'model/gltf-binary',
-            'Content-Disposition': `attachment; filename="${output.objectName}"`,
-            'Cache-Control': 'public, max-age=31536000, immutable'
-        };
-
-        if (output.contentEncoding && output.contentEncoding !== 'identity') {
-            headers['X-Volt-Resource-Encoding'] = output.contentEncoding;
-        }
-
-        if ((output.size ?? 0) > 0) {
-            headers['Content-Length'] = String(output.size);
-        }
-
-        await pipeStreamToResponse(res, output.stream, headers);
+        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders({
+            contentEncoding: output.contentEncoding,
+            contentLength: output.size,
+            objectName: output.objectName
+        }));
     }
 
     @Route(trajectoryRoutes.canvasRasterFrame)
@@ -166,7 +146,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.#canvas.coloredModelStream(this.params(req, this.withOptionalUserId));
-        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders(output));
+        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterProperties)
@@ -202,7 +182,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await this.#canvas.filteredModelStream(this.params(req, this.withOptionalUserId));
-        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders(output));
+        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
     }
 
     @Route(trajectoryRoutes.canvasPlugin)

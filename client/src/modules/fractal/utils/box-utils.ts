@@ -61,16 +61,3 @@ export const getGroundOffset = (boxBounds?: BoxBounds, transforms?: BoxTransform
     const minZWorld = (boxBounds.zlo * transforms.scale) + transforms.position.z;
     return -minZWorld;
 };
-
-export const buildCellBoxTransforms = (transforms?: BoxTransforms, groundOffset = 0) => {
-    if (!transforms) return undefined;
-    return {
-        scale: transforms.scale,
-        position: {
-            x: transforms.position.x,
-            y: transforms.position.y,
-            z: transforms.position.z
-        },
-        groundOffset
-    };
-};

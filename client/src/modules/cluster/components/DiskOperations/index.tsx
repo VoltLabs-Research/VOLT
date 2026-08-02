@@ -14,19 +14,13 @@ import {
 import { HardDrive } from 'lucide-react';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
-interface DiskOperationsDataPoint {
-    read: number;
-    write: number;
-    iops: number;
-}
-
 interface DiskOperationsProps {
     history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
 }
 
 const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
-    const chartData = useMemo<DiskOperationsDataPoint[]>(() => {
+    const chartData = useMemo(() => {
         return history
             .filter((point) => point.diskOperations)
             .map((point) => ({
@@ -36,13 +30,7 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
             }));
     }, [history]);
 
-    const currentValues = useMemo(() => ({
-        read: metrics?.diskOperations?.read ?? 0,
-        write: metrics?.diskOperations?.write ?? 0,
-        speed: metrics?.diskOperations?.speed ?? 0
-    }), [metrics]);
-
-    const currentThroughput = currentValues.read + currentValues.write;
+    const currentThroughput = (metrics?.diskOperations?.read ?? 0) + (metrics?.diskOperations?.write ?? 0);
 
     const peakThroughput = useMemo(() => {
         if (chartData.length === 0) return 0;

@@ -1,28 +1,11 @@
 import { useCallback, useMemo } from 'react';
-import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
-import {
-    fetchPluginListing,
-    usePluginListingQuery
-} from './queries';
-import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/contracts/menu';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
-import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
-import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
-import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
+import { fetchPluginListing, usePluginListingQuery } from './queries';
+import useDeletePluginListingAnalyses from './use-delete-plugin-listing-analyses';
+import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
+import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';
 import { useNavigate } from 'react-router-dom';
-
-interface UsePluginListingParams {
-    pluginId: string;
-    exposureName?: string;
-    exposureId?: string;
-    trajectoryId?: string;
-    analysisId?: string;
-    teamId?: string;
-    showTrajectoryColumn?: boolean;
-    onDeleteRows?: (rows: ListingRow[]) => Promise<void> | void;
-}
+import type { MenuOption } from '@/shared/contracts/menu';
+import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 
 interface PluginListingContext {
     pluginId: string;
@@ -33,14 +16,8 @@ interface PluginListingContext {
     teamId?: string;
 }
 
-interface UsePluginListingReturn {
-    columns: ColumnConfig[];
-    context: PluginListingContext;
-    isEnabled: boolean;
-    resolvedExposureName?: string;
-    subListingNames: string[];
-    fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
-    getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
+interface UsePluginListingParams extends PluginListingContext {
+    showTrajectoryColumn?: boolean;
 }
 
 const usePluginListing = ({
@@ -50,13 +27,12 @@ const usePluginListing = ({
     trajectoryId,
     analysisId,
     teamId,
-    showTrajectoryColumn,
-    onDeleteRows
-}: UsePluginListingParams): UsePluginListingReturn => {
+    showTrajectoryColumn
+}: UsePluginListingParams) => {
     const navigate = useNavigate();
+    const deleteRows = useDeletePluginListingAnalyses();
 
-    const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
-
+    // `context` is part of the pagination query key, so its identity must be stable.
     const context: PluginListingContext = useMemo(() => ({
         pluginId,
         exposureName,
@@ -83,38 +59,15 @@ const usePluginListing = ({
         }
     );
 
-    const dynamicColumns = useMemo<ColumnConfig[]>(() => {
-        const cols = listingMetaQuery.data?._meta?.columns;
-        if (!cols?.length) {
-            return [];
-        }
+    const listingMeta = listingMetaQuery.data?._meta;
 
-        return cols.map((column: ColumnConfig) => {
-            const key = String(column?.key || column?.label || '');
-            const title = column?.title || (column?.label ? formatSnakeCaseToTitle(column.label) : key);
-            return {
-                key,
-                title,
-                sortable: Boolean(column?.sortable)
-            };
-        });
-    }, [listingMetaQuery.data?._meta?.columns]);
+    const columns = useMemo(
+        () => normalizeListingColumns(listingMeta?.columns, showTrajectoryColumn ?? !trajectoryId),
+        [listingMeta?.columns, showTrajectoryColumn, trajectoryId]
+    );
 
-    const columns = useMemo(() => {
-        if (shouldShowTrajectory) {
-            return dynamicColumns;
-        }
-
-        return dynamicColumns.filter((column) => String(column.key) !== 'trajectoryName');
-    }, [dynamicColumns, shouldShowTrajectory]);
-
-    const resolvedExposureName = listingMetaQuery.data?._meta?.exposureName ?? exposureName;
-    const subListingNames = listingMetaQuery.data?._meta?.subListingNames ?? [];
-
-    const fetchData = useCallback(async (
-        params: { page: number; limit: number } & PluginListingContext
-    ): Promise<PaginatedResponse<ListingRow>> => {
-        const response = await fetchPluginListing({
+    const fetchData = useCallback((params: { page: number; limit: number } & PluginListingContext) => {
+        return fetchPluginListing({
             pluginId: params.pluginId,
             exposureName: params.exposureName,
             exposureId: params.exposureId,
@@ -123,75 +76,25 @@ const usePluginListing = ({
             page: params.page,
             limit: params.limit
         });
-
-        return {
-            status: 'success',
-            data: response.data,
-            pagination: response.pagination,
-            _meta: response._meta
-        };
     }, []);
-
-    const handleDelete = useCallback(async (rows: ListingRow[]) => {
-        await onDeleteRows?.(rows);
-    }, [onDeleteRows]);
-
-    const handleViewSubListing = useCallback((item: ListingRow, subListingName: string) => {
-        if (!item.trajectoryId || !item.analysisId || !item.exposureId || item.timestep === undefined) return;
-
-        navigate(buildSubListingsPath({
-            trajectoryId: item.trajectoryId,
-            analysisId: item.analysisId,
-            exposureId: item.exposureId,
-            timestep: item.timestep,
-            subListingNames,
-            activeSubListingName: subListingName
-        }));
-    }, [navigate, subListingNames]);
 
     const getMenuOptions = useCallback((item: ListingRow, selectedItems: ListingRow[]): MenuOption[] => {
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];
-        const isMultipleSelection = targetRows.length > 1;
-        const options: MenuOption[] = [];
 
-        if (!isMultipleSelection && item.trajectoryId && item.analysisId && item.timestep !== undefined) {
-            options.push({
-                label: 'Inspect Atoms',
-                icon: RiEyeLine,
-                onClick: () => navigate(buildAtomsViewerPath({
-                    trajectoryId: item.trajectoryId!,
-                    analysisId: item.analysisId,
-                    timestep: item.timestep!
-                }))
-            });
-
-            for (const name of subListingNames) {
-                options.push({
-                    label: `View ${formatSnakeCaseToTitle(name)}`,
-                    icon: RiTableLine,
-                    onClick: () => handleViewSubListing(item, name)
-                });
-            }
-        }
-
-        if (item.analysisId && onDeleteRows) {
-            options.push({
-                label: 'Delete',
-                icon: RiDeleteBin6Line,
-                onClick: () => handleDelete(targetRows),
-                destructive: true
-            });
-        }
-
-        return options;
-    }, [handleDelete, handleViewSubListing, navigate, onDeleteRows, subListingNames]);
+        return buildListingRowMenuOptions({
+            row: item,
+            subListingNames: listingMeta?.subListingNames ?? [],
+            navigate,
+            allowRowNavigation: targetRows.length === 1,
+            onDelete: () => deleteRows(targetRows)
+        });
+    }, [deleteRows, navigate, listingMeta?.subListingNames]);
 
     return {
         columns,
         context,
         isEnabled,
-        resolvedExposureName,
-        subListingNames,
+        resolvedExposureName: listingMeta?.exposureName ?? exposureName,
         fetchData,
         getMenuOptions
     };

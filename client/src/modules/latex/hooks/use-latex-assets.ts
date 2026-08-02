@@ -7,13 +7,12 @@ import {
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME, splitWorkspacePath } from '@/modules/latex/utils/workspace';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { LatexAsset } from '@volt/contracts/modules/latex/domain';
 import type { FileWithPath } from '@/shared/utils/file';
 
 interface UseLatexAssetsInput {
     documentId: string;
-    onInsertRef?: (ref: string) => void;
 }
 
 const DELETE_TOAST = {
@@ -51,18 +50,26 @@ const CREATE_FOLDER_TOAST = {
     error: { title: 'Failed to create folder' }
 };
 
+/** Shared so the loading state does not hand out a fresh array identity each render. */
+const NO_ASSETS: LatexAsset[] = [];
+
 const useLatexAssets = ({ documentId }: UseLatexAssetsInput) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
 
     const assetsQueryResult = latexAssetsQuery({ documentId }, { enabled: !!documentId });
-    const assets = assetsQueryResult.data ?? [];
+    const assets = assetsQueryResult.data ?? NO_ASSETS;
 
     const { mutateAsync: uploadAsset, isPending: isUploading } = useUploadLatexAssetMutation();
     const { mutateAsync: deleteAsset } = useDeleteLatexAssetMutation();
     const { mutateAsync: updateAsset } = useUpdateLatexAssetMutation();
 
-    const visibleAssets = assets.filter((asset) => !isFolderPlaceholderAsset(asset));
+    // Stable identity: the workspace prunes tabs and bootstraps its selection from this
+    // list inside effects, which would otherwise re-run on every render.
+    const visibleAssets = useMemo(
+        () => assets.filter((asset) => !isFolderPlaceholderAsset(asset)),
+        [assets]
+    );
 
     const uploadSingleAsset = useCallback(async (entry: FileWithPath) => {
         const result = await uploadAsset({

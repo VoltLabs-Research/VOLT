@@ -5,14 +5,14 @@ export interface ScriptingJupyterAccessGrant {
     maxAgeMs: number;
 }
 
-interface ScriptingJupyterAccessGrantCarrier {
-    readonly accessGrant?: ScriptingJupyterAccessGrant;
+export interface ScriptingJupyterAccessGrantCarrier {
+    accessGrant: ScriptingJupyterAccessGrant;
 }
 
 export const attachScriptingJupyterAccessGrant = <T extends object>(
     value: T,
     accessGrant: ScriptingJupyterAccessGrant
-): T & Required<ScriptingJupyterAccessGrantCarrier> => {
+): T & ScriptingJupyterAccessGrantCarrier => {
     Object.defineProperty(value, 'accessGrant', {
         configurable: false,
         enumerable: false,
@@ -20,5 +20,5 @@ export const attachScriptingJupyterAccessGrant = <T extends object>(
         writable: false
     });
 
-    return value as T & Required<ScriptingJupyterAccessGrantCarrier>;
+    return value as T & ScriptingJupyterAccessGrantCarrier;
 };

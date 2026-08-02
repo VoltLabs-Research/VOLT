@@ -9,12 +9,7 @@ export default class SocketIOEmitter {
         this.io = io;
     }
 
-    registerConnection(socket: unknown): void{
-        this.registerSocket(socket as Socket);
-    }
-
-
-    private registerSocket(socket: Socket): void{
+    registerConnection(socket: Socket): void{
         this.sockets.set(socket.id, socket);
     }
 
@@ -59,18 +54,6 @@ export default class SocketIOEmitter {
         const socket = this.sockets.get(socketId);
         if(!socket) return;
         socket.to(room).emit(event, data);
-    }
-
-    broadcast(
-        event: string,
-        data: unknown
-    ): void{
-        if(!this.io){
-            logger.warn('@socket-io-emitter - cannot broadcast, server not initialized');
-            return;
-        }
-
-        this.io.emit(event, data);
     }
 }
 

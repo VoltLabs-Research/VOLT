@@ -9,6 +9,7 @@ import {
     mergeWhiteboardAppState,
     mergeWhiteboardElements
 } from '@/modules/whiteboards/utils/whiteboards';
+import { createWhiteboardImageAsset } from '@/modules/whiteboards/utils/excalidraw-images';
 import type { PreparedWhiteboardImageAsset } from '@/modules/whiteboards/utils/excalidraw-images';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
@@ -16,60 +17,19 @@ import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import type {
     WhiteboardAppState,
     WhiteboardElements,
-    WhiteboardFiles
+    WhiteboardFiles,
+    WhiteboardStoredScene
 } from '@/modules/whiteboards/contracts/excalidraw';
-
-interface WhiteboardState {
-    elements: WhiteboardElements;
-    appState: WhiteboardAppState;
-    files?: WhiteboardFiles;
-    revision?: number;
-};
-
-interface HydratedWhiteboardFile {
-    id: string;
-    mimeType: string;
-    dataURL: string;
-    created: number;
-};
 
 interface UseWhiteboardEditorProps {
     whiteboardId: string;
 };
 
 const TITLE_SAVE_DEBOUNCE_MS = 1_000;
-const EXCALIDRAW_IMAGE_MIME_TYPES = new Set<PreparedWhiteboardImageAsset['mimeType']>([
-    'image/svg+xml',
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/webp',
-    'image/bmp',
-    'image/x-icon',
-    'image/avif',
-    'image/jfif',
-    'application/octet-stream'
-]);
-
-const blobToDataURL = (blob: Blob): Promise<string> =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-
-const resolveExcalidrawImageMimeType = (mimeType?: string): PreparedWhiteboardImageAsset['mimeType'] => {
-    if (mimeType && EXCALIDRAW_IMAGE_MIME_TYPES.has(mimeType as PreparedWhiteboardImageAsset['mimeType'])) {
-        return mimeType as PreparedWhiteboardImageAsset['mimeType'];
-    }
-
-    return 'image/png';
-};
 
 const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const [whiteboard, setWhiteboard] = useState<Whiteboard | null>(null);
-    const [initialState, setInitialState] = useState<WhiteboardState | null>(null);
+    const [initialState, setInitialState] = useState<WhiteboardStoredScene | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
@@ -80,19 +40,18 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const currentElementsRef = useRef<WhiteboardElements>([]);
     const currentAppStateRef = useRef<WhiteboardAppState>({});
     const currentFilesRef = useRef<WhiteboardFiles>({});
-    const loadingFilesRef = useRef(new Map<string, Promise<HydratedWhiteboardFile>>());
+    const loadingFilesRef = useRef(new Map<string, Promise<PreparedWhiteboardImageAsset>>());
 
-    const updateSceneState = useCallback((nextState: WhiteboardState) => {
+    const updateSceneState = useCallback((nextState: WhiteboardStoredScene) => {
         const resolvedState = {
-            ...nextState,
             elements: cloneWhiteboardElements(nextState.elements),
             appState: cloneWhiteboardAppState(nextState.appState),
             files: cloneWhiteboardFiles(nextState.files ?? {})
-        } satisfies WhiteboardState;
+        } satisfies WhiteboardStoredScene;
 
         currentElementsRef.current = resolvedState.elements;
         currentAppStateRef.current = resolvedState.appState;
-        currentFilesRef.current = resolvedState.files ?? {};
+        currentFilesRef.current = resolvedState.files;
         setInitialState(resolvedState);
     }, []);
 
@@ -127,20 +86,10 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
                 let filePromise = loadingFilesRef.current.get(assetId);
                 if (!filePromise) {
-                    filePromise = (async () => {
-                        const blob = await service.getWhiteboardAsset({
-                            whiteboardId,
-                            assetId
-                        });
-                        const dataURL = await blobToDataURL(blob);
-
-                        return {
-                            id: assetId,
-                            mimeType: blob.type || 'image/png',
-                            dataURL,
-                            created: Date.now()
-                        } satisfies HydratedWhiteboardFile;
-                    })();
+                    filePromise = service.getWhiteboardAsset({
+                        whiteboardId,
+                        assetId
+                    }).then((blob) => createWhiteboardImageAsset(assetId, blob));
 
                     loadingFilesRef.current.set(assetId, filePromise);
                 }
@@ -172,7 +121,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         const load = async () => {
             setIsLoading(true);
             try {
-                const [meta, state] = await Promise.all([
+                const [meta, scene] = await Promise.all([
                     whiteboardQuery.fetch({ whiteboardId }),
                     service.getWhiteboardState({ whiteboardId })
                 ]);
@@ -181,12 +130,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                     return;
                 }
 
-                const parsed = (state as WhiteboardState) ?? {
-                    elements: [],
-                    appState: {},
-                    revision: 0
-                };
-                const files = await hydrateFiles(parsed.elements ?? []);
+                const files = await hydrateFiles(scene.elements);
 
                 if (cancelled) {
                     return;
@@ -194,21 +138,17 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
                 setWhiteboard(meta);
                 titleRef.current = meta.title ?? null;
-                const loadedState = {
-                    elements: parsed.elements ?? [],
-                    appState: filterPersistableAppState(parsed.appState ?? {}),
-                    files,
-                    revision: typeof parsed.revision === 'number' ? parsed.revision : 0
-                } satisfies WhiteboardState;
 
                 updateSceneState({
-                    elements: mergeWhiteboardElements(loadedState.elements, currentElementsRef.current),
-                    appState: mergeWhiteboardAppState(loadedState.appState, currentAppStateRef.current),
+                    elements: mergeWhiteboardElements(scene.elements, currentElementsRef.current),
+                    appState: mergeWhiteboardAppState(
+                        filterPersistableAppState(scene.appState),
+                        currentAppStateRef.current
+                    ),
                     files: {
-                        ...loadedState.files,
+                        ...files,
                         ...currentFilesRef.current
-                    },
-                    revision: loadedState.revision
+                    }
                 });
             } catch {
                 if (!cancelled) {
@@ -258,16 +198,14 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const mergeRemoteState = useCallback(async (
         elements: WhiteboardElements,
         appState: WhiteboardAppState,
-        revision: number,
         elementOrder?: string[]
     ) => {
         const files = await hydrateFiles(elements);
         const nextState = {
             elements: mergeWhiteboardElements(currentElementsRef.current, elements, elementOrder),
             appState: mergeWhiteboardAppState(currentAppStateRef.current, appState),
-            files,
-            revision
-        } satisfies WhiteboardState;
+            files
+        } satisfies WhiteboardStoredScene;
 
         updateSceneState(nextState);
         return nextState;
@@ -296,22 +234,15 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const prepareImageAsset = useCallback(async (file: File): Promise<PreparedWhiteboardImageAsset | null> => {
         try {
-            const result = await service.uploadWhiteboardAsset({
+            const { assetId } = await service.uploadWhiteboardAsset({
                 whiteboardId,
                 file
             });
-            const created = Date.now();
-            const preparedAsset = {
-                id: result.assetId as PreparedWhiteboardImageAsset['id'],
-                mimeType: resolveExcalidrawImageMimeType(file.type),
-                dataURL: await blobToDataURL(file) as PreparedWhiteboardImageAsset['dataURL'],
-                created,
-                lastRetrieved: created
-            } satisfies PreparedWhiteboardImageAsset;
+            const preparedAsset = await createWhiteboardImageAsset(assetId, file);
 
             currentFilesRef.current = {
                 ...currentFilesRef.current,
-                [result.assetId]: preparedAsset
+                [assetId]: preparedAsset
             };
 
             return preparedAsset;

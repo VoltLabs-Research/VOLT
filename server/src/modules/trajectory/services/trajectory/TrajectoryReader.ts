@@ -14,15 +14,11 @@ import type {
     TrajectoryFrameSimulationCellEmbed
 } from '@shared/contracts/types/Trajectory';
 
-type PreviewOutputFactory = (
-    buffer: Buffer
-) => TrajectoryPreviewResult | Promise<TrajectoryPreviewResult>;
-
 interface ReadTrajectoryPreviewInput{
     trajectoryId: string;
     storageClusterId: string;
     objectGatewayClient: ITeamClusterObjectGatewayClient;
-    createOutput: PreviewOutputFactory;
+    createOutput: (buffer: Buffer) => TrajectoryPreviewResult | Promise<TrajectoryPreviewResult>;
 }
 
 const firstSortedPreviewKey = async (
@@ -77,13 +73,23 @@ export const readTrajectoryPreview = async (
         return null;
     }
 
-    const buffer = await input.objectGatewayClient.getBuffer(
-        input.storageClusterId,
-        TEAM_CLUSTER_BUCKETS.RASTERIZER,
-        previewKey
-    );
+    /*
+     * Listing and reading are two round trips, and the rasterizer may still be
+     * writing that object in between: the key can disappear, or the bytes can come
+     * back as a half-written PNG that the decoder rejects. Both mean the preview is
+     * not ready yet, which the caller already reports as a 404.
+     */
+    try{
+        const buffer = await input.objectGatewayClient.getBuffer(
+            input.storageClusterId,
+            TEAM_CLUSTER_BUCKETS.RASTERIZER,
+            previewKey
+        );
 
-    return input.createOutput(buffer);
+        return await input.createOutput(buffer);
+    }catch{
+        return null;
+    }
 };
 
 export const getTrajectoryFrames = async (trajectoryId: string): Promise<TrajectoryFrameView[]> => {
@@ -96,38 +102,24 @@ export const getTrajectoryFrames = async (trajectoryId: string): Promise<Traject
     return frames.map(toTrajectoryFrameView);
 };
 
-class TrajectoryReader{
-    async readPage(
-        teamClusterId: string | undefined,
-        trajectoryId: string,
-        timestep: string | number,
-        page: number,
-        limit: number,
-        analysisId?: string,
-        ownerClusterId?: string
-    ): Promise<AtomPageResult>{
-        if(!teamClusterId){
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
-                `Trajectory ${trajectoryId} must be associated with a team cluster to read atoms`
-            );
-        }
-
-        return trajectoryNativeDaemonService.getAtomsPage({
-            teamClusterId,
-            trajectoryId,
-            timestep,
-            objectKey: this.getDumpObjectKey(trajectoryId, timestep),
-            ownerClusterId,
-            page,
-            limit,
-            analysisId
-        });
-    }
-
-    private getDumpObjectKey(trajectoryId: string, timestep: string | number): string{
-        return buildTrajectoryDumpObjectName(trajectoryId, timestep);
-    }
-}
-
-export default new TrajectoryReader();
+/**
+ * Atoms are always read on a compute cluster; the caller resolves which one.
+ */
+export const readAtomsPage = async (
+    teamClusterId: string,
+    trajectoryId: string,
+    timestep: string | number,
+    page: number,
+    limit: number,
+    analysisId?: string,
+    ownerClusterId?: string
+): Promise<AtomPageResult> => trajectoryNativeDaemonService.getAtomsPage({
+    teamClusterId,
+    trajectoryId,
+    timestep,
+    objectKey: buildTrajectoryDumpObjectName(trajectoryId, timestep),
+    ownerClusterId,
+    page,
+    limit,
+    analysisId
+});

@@ -1,11 +1,9 @@
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 
 export default class TeamRoomPresenceService {
-    #roomManager = socketIORoomManager;
-
     async getOnlineUserIds(teamId: string): Promise<string[]> {
-        const users = await this.#roomManager.collectPresence(
-            this.#getTeamRoomName(teamId),
+        const users = await socketIORoomManager.collectPresence(
+            `team:${teamId}`,
             (connection) => {
                 const id = connection.user?._id ?? connection.userId ?? '';
 
@@ -16,17 +14,10 @@ export default class TeamRoomPresenceService {
             }
         );
 
-        return users
-            .map((user) => user.id)
-            .filter((id): id is string => Boolean(id));
+        return users.map((user) => user.id).filter((id) => Boolean(id));
     }
 
     async isUserOnline(teamId: string, userId: string): Promise<boolean> {
-        const onlineUserIds = await this.getOnlineUserIds(teamId);
-        return onlineUserIds.includes(userId);
-    }
-
-    #getTeamRoomName(teamId: string): string {
-        return `team:${teamId}`;
+        return (await this.getOnlineUserIds(teamId)).includes(userId);
     }
 }

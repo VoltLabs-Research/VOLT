@@ -51,26 +51,25 @@ const renderWorkspaceShell = (content: ReactNode, isBusy = false) => (
     </Stack>
 );
 
-const getContainerStagePendingTitle = (stage: NotebookContainerStage | null): string => {
-    switch (stage) {
-        case 'creating':
-            return 'Creating container';
-        case 'starting':
-            return 'Starting container';
-        default:
-            return 'Preparing scripting workspace';
+interface WorkspacePendingMessage {
+    title: string;
+    description: string;
+};
+
+const CONTAINER_STAGE_PENDING_MESSAGES: Partial<Record<NotebookContainerStage, WorkspacePendingMessage>> = {
+    creating: {
+        title: 'Creating container',
+        description: 'Setting up the Jupyter environment for this workspace.'
+    },
+    starting: {
+        title: 'Starting container',
+        description: 'The container is initializing. Jupyter will be available shortly.'
     }
 };
 
-const getContainerStagePendingDescription = (stage: NotebookContainerStage | null): string => {
-    switch (stage) {
-        case 'creating':
-            return 'Setting up the Jupyter environment for this workspace.';
-        case 'starting':
-            return 'The container is initializing. Jupyter will be available shortly.';
-        default:
-            return 'Preparing the notebook environment. This can take a moment.';
-    }
+const DEFAULT_PENDING_MESSAGE: WorkspacePendingMessage = {
+    title: 'Preparing scripting workspace',
+    description: 'Preparing the notebook environment. This can take a moment.'
 };
 
 const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNotebookIdChange }: ScriptingWorkspaceProps) => {
@@ -113,7 +112,6 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
         <AccessDenied description={accessDeniedMessage} showBack={false} className='w-full h-full' />
     );
 
-    const isDeploymentRequired = Boolean(deploymentRequiredMessage);
     const errorValue = error || deploymentRequiredMessage;
 
     const deploymentRequiredView = renderWorkspaceShell(
@@ -130,7 +128,7 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
     );
 
     const errorView = () => {
-        if (isDeploymentRequired) {
+        if (deploymentRequiredMessage) {
             return deploymentRequiredView;
         }
 
@@ -160,17 +158,15 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
             </Box>
         );
     } else {
-        const pendingTitle = isStartingJupyter
-            ? getContainerStagePendingTitle(containerStage)
-            : 'Preparing scripting workspace';
+        const stagePendingMessage = (containerStage && CONTAINER_STAGE_PENDING_MESSAGES[containerStage]) ?? DEFAULT_PENDING_MESSAGE;
         const pendingDescription = isStartingJupyter
-            ? getContainerStagePendingDescription(containerStage)
+            ? stagePendingMessage.description
             : activeNotebook
                 ? 'Opening the selected notebook in Jupyter. This can take a moment.'
                 : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
 
         contentView = renderWorkspaceShell(renderWorkspaceState({
-            title: pendingTitle,
+            title: isStartingJupyter ? stagePendingMessage.title : DEFAULT_PENDING_MESSAGE.title,
             description: pendingDescription,
             liveMode: 'status'
         }), true);

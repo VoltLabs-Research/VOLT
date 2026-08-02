@@ -3,11 +3,7 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { useEffect, useState } from 'react';
 import type { PresenceUser } from '@volt/contracts/modules/socket/domain';
-
-interface TrajectoryPresencePayload {
-    trajectoryId: string;
-    users: PresenceUser[];
-}
+import type { TrajectoryPresenceUpdateSocketPayload } from '@/modules/socket/events/trajectory';
 
 interface UseTrajectoryPresenceResult {
     users: PresenceUser[];
@@ -25,11 +21,11 @@ export default function useTrajectoryPresence(trajectoryId: string | undefined):
         fireAndForget: true
     });
 
-    useSocketEvent<TrajectoryPresencePayload>(SOCKET_TRAJECTORY_PRESENCE_EVENTS.UPDATE, (data) => {
-        if (data.trajectoryId === trajectoryId) {
-            setUsers(data.users);
-        }
-    }, { enabled: !!trajectoryId });
+    useSocketEvent<TrajectoryPresenceUpdateSocketPayload>(
+        SOCKET_TRAJECTORY_PRESENCE_EVENTS.UPDATE,
+        setUsers,
+        { enabled: !!trajectoryId }
+    );
 
     useEffect(() => {
         setUsers([]);

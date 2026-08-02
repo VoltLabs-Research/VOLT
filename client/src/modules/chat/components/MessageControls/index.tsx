@@ -13,25 +13,13 @@ interface MessageControlsProps {
 }
 
 const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: MessageControlsProps) => {
-    const handleEmojiSelect = (close: () => void, emoji: string) => {
-        onReact(emoji);
-        close();
-    };
-
-    const handleEditClick = (close: () => void) => {
-        onEdit();
-        close();
-    };
-
-    const handleDeleteClick = (close: () => void) => {
-        onDelete();
-        close();
-    };
-
     const renderEmojiPicker = (close: () => void) => (
         <EmojiPicker
             emojis={COMMON_REACTIONS}
-            onSelect={(emoji) => handleEmojiSelect(close, emoji)}
+            onSelect={(emoji) => {
+                onReact(emoji);
+                close();
+            }}
         />
     );
 
@@ -40,13 +28,19 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
             <PopoverMenuItem
                 icon={<IoCreateOutline />}
                 label='Edit'
-                onClick={() => handleEditClick(close)}
+                onClick={() => {
+                    onEdit();
+                    close();
+                }}
             />
             <PopoverMenuItem
                 icon={<IoTrashOutline />}
                 label='Delete'
                 variant='danger'
-                onClick={() => handleDeleteClick(close)}
+                onClick={() => {
+                    onDelete();
+                    close();
+                }}
             />
         </PopoverMenu>
     );

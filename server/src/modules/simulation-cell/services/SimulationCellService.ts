@@ -19,10 +19,6 @@ interface ListSimulationCellsInput {
     timestep?: string;
 }
 
-interface GetSimulationCellByIdInput {
-    simulationCellId: string;
-}
-
 const DEFAULT_LIST_LIMIT = 10;
 
 const TRAJECTORY_REFERENCE_OPTIONS = {
@@ -111,9 +107,9 @@ export default class SimulationCellService{
         return fallback ? toSimulationCellView(fallback) : null;
     }
 
-    async getById(input: GetSimulationCellByIdInput): Promise<PersistedOutput<SimulationCellProps>>{
+    async getById(simulationCellId: string): Promise<PersistedOutput<SimulationCellProps>>{
         const simulationCell = await SimulationCell.findOne({
-            where: { id: input.simulationCellId },
+            where: { id: simulationCellId },
             ...TRAJECTORY_REFERENCE_OPTIONS
         });
 

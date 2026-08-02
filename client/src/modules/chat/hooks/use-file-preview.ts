@@ -1,21 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
-import type { ChangeEvent, RefObject } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 
 interface FilePreview {
     file: File;
     preview: string;
-}
-
-interface UseFilePreviewReturn {
-    files: File[];
-    previews: FilePreview[];
-    inputRef: RefObject<HTMLInputElement | null>;
-    addFiles: (newFiles: File[]) => Promise<void>;
-    removeFile: (index: number) => void;
-    clear: () => void;
-    handleInputChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
-    openFilePicker: () => void;
-    hasFiles: boolean;
 }
 
 const getImagePreview = async (file: File): Promise<string> => {
@@ -41,65 +29,49 @@ const getImagePreview = async (file: File): Promise<string> => {
     });
 };
 
-const useFilePreview = (): UseFilePreviewReturn => {
-    const [files, setFiles] = useState<File[]>([]);
+const useFilePreview = () => {
     const [previews, setPreviews] = useState<FilePreview[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const addFiles = useCallback(async (newFiles: File[]) => {
-        if (newFiles.length === 0) {
-            return;
+    const clearInputValue = () => {
+        if (inputRef.current) {
+            inputRef.current.value = '';
         }
+    };
 
-        setFiles((previousFiles) => [...previousFiles, ...newFiles]);
+    const handleInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const nextFiles = Array.from(event.target.files ?? []);
 
-        const nextPreviews = await Promise.all(newFiles.map(async (file) => {
-            return {
+        if (nextFiles.length > 0) {
+            const nextPreviews = await Promise.all(nextFiles.map(async (file) => ({
                 file,
                 preview: file.type.startsWith('image/') ? await getImagePreview(file) : ''
-            };
-        }));
+            })));
 
-        setPreviews((previousPreviews) => [...previousPreviews, ...nextPreviews]);
-    }, []);
+            setPreviews((previousPreviews) => [...previousPreviews, ...nextPreviews]);
+        }
 
-    const removeFile = useCallback((index: number) => {
-        setFiles((previousFiles) => previousFiles.filter((_, currentIndex) => currentIndex !== index));
+        clearInputValue();
+    };
+
+    const removeFile = (index: number) => {
         setPreviews((previousPreviews) => previousPreviews.filter((_, currentIndex) => currentIndex !== index));
-    }, []);
+    };
 
-    const clear = useCallback(() => {
-        setFiles([]);
+    const clear = () => {
         setPreviews([]);
-
-        if (inputRef.current) {
-            inputRef.current.value = '';
-        }
-    }, []);
-
-    const handleInputChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        const nextFiles = Array.from(event.target.files ?? []);
-        await addFiles(nextFiles);
-
-        if (inputRef.current) {
-            inputRef.current.value = '';
-        }
-    }, [addFiles]);
-
-    const openFilePicker = useCallback(() => {
-        inputRef.current?.click();
-    }, []);
+        clearInputValue();
+    };
 
     return {
-        files,
+        files: previews.map((item) => item.file),
         previews,
         inputRef,
-        addFiles,
         removeFile,
         clear,
         handleInputChange,
-        openFilePicker,
-        hasFiles: files.length > 0
+        openFilePicker: () => inputRef.current?.click(),
+        hasFiles: previews.length > 0
     };
 };
 

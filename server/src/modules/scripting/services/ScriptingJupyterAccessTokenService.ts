@@ -97,7 +97,7 @@ export class ScriptingJupyterAccessTokenService {
         expiresIn: this.expiresIn
     };
 
-    create(input: CreateScriptingJupyterAccessTokenInput): string {
+    private create(input: CreateScriptingJupyterAccessTokenInput): string {
         return jwt.sign({
             type: 'scripting-jupyter',
             teamId: input.teamId,
@@ -113,10 +113,6 @@ export class ScriptingJupyterAccessTokenService {
             runtimeNotebookId: input.runtimeNotebookId,
             maxAgeMs: this.cookieMaxAgeMs
         };
-    }
-
-    getCookieMaxAgeMs(): number {
-        return this.cookieMaxAgeMs;
     }
 
     verify(token: string): VerifiedScriptingJupyterAccessToken | null {

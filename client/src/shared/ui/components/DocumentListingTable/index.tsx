@@ -1,20 +1,19 @@
 import getListingDisplayState from '@/shared/ui/components/DocumentListing/listing-state';
-import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import { buildItemMapByGeneratedId } from '@/shared/ui/components/DocumentListing/dnd-maps';
+import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import TableRow from '@/shared/ui/components/TableRow';
 import { cn } from '@/shared/utils/cn';
 import { Skeleton } from '@voltstack/bravais';
 import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingTable.css';
-import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext } from '@dnd-kit/core';
 import { FileText } from 'lucide-react';
-import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
+import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Identifiable } from '@/shared/contracts/entity';
-import type { DragEndEvent } from '@dnd-kit/core';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
 const COMPACT_MIN_COLUMN_WIDTH = 80;
@@ -22,28 +21,9 @@ const COMPACT_MIN_COLUMN_WIDTH = 80;
 const DEFAULT_COLUMN_GAP = 16;
 const COMPACT_COLUMN_GAP = 8;
 
-const resolveColumnStyle = <TRow,>(
-    col: ColumnConfig<TRow>,
-    fallbackMinWidth: number
-): CSSProperties => {
-    if (col.width !== undefined && col.width > 0) {
-        return {
-            flex: `0 0 ${col.width}px`,
-            minWidth: col.width,
-            maxWidth: col.width
-        };
-    }
+const DRAG_ACTIVATION_DISTANCE = 6;
 
-    const minWidth = col.minWidth !== undefined && col.minWidth > 0
-        ? col.minWidth
-        : fallbackMinWidth;
-    const flex = col.flex !== undefined && col.flex > 0 ? col.flex : 1;
-
-    return {
-        flex: `${flex} 1 ${minWidth}px`,
-        minWidth
-    };
-};
+const INITIAL_SKELETON_ROWS_COUNT = 20;
 
 export interface ColumnConfig<TRow = unknown> {
     key?: string;
@@ -64,6 +44,42 @@ export interface ColumnConfig<TRow = unknown> {
     render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
+};
+
+export const getColumnKey = <TRow,>(col: ColumnConfig<TRow>): string => col.key ?? col.path ?? '';
+
+export const getColumnTitle = <TRow,>(col: ColumnConfig<TRow>): string => (
+    col.title ?? col.label ?? col.key ?? col.path ?? ''
+);
+
+const resolvePositive = (value: number | undefined): number | undefined => (
+    value !== undefined && value > 0 ? value : undefined
+);
+
+const resolveColumnMinWidth = <TRow,>(col: ColumnConfig<TRow>, fallbackMinWidth: number): number => (
+    resolvePositive(col.width) ?? resolvePositive(col.minWidth) ?? fallbackMinWidth
+);
+
+const resolveColumnStyle = <TRow,>(
+    col: ColumnConfig<TRow>,
+    fallbackMinWidth: number
+): CSSProperties => {
+    const fixedWidth = resolvePositive(col.width);
+
+    if(fixedWidth !== undefined){
+        return {
+            flex: `0 0 ${fixedWidth}px`,
+            minWidth: fixedWidth,
+            maxWidth: fixedWidth
+        };
+    }
+
+    const minWidth = resolveColumnMinWidth(col, fallbackMinWidth);
+
+    return {
+        flex: `${resolvePositive(col.flex) ?? 1} 1 ${minWidth}px`,
+        minWidth
+    };
 };
 
 interface DocumentListingTableProps<T extends Identifiable> {
@@ -92,7 +108,32 @@ interface DocumentListingTableProps<T extends Identifiable> {
     compact?: boolean;
 };
 
-const getColumnTitle = <T,>(col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+interface SkeletonRowsProps<T> {
+    count: number;
+    keyPrefix: string;
+    columns: ColumnConfig<T>[];
+    columnStyles: CSSProperties[];
+    columnGap: number;
+};
+
+const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap }: SkeletonRowsProps<T>) => (
+    <>
+        {Array.from({ length: count }).map((_, rowIndex) => (
+            <div key={`${keyPrefix}-${rowIndex}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
+                {columns.map((col, colIdx) => (
+                    <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
+                        <span className='document-listing-cell-value'>
+                            <Skeleton {...(col.skeleton ?? {
+                                variant: 'text',
+                                width: 100
+                            })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
+                        </span>
+                    </div>
+                ))}
+            </div>
+        ))}
+    </>
+);
 
 const MemoizedTableRow = React.memo(TableRow) as typeof TableRow;
 
@@ -121,15 +162,13 @@ const DocumentListingTable = <T extends Identifiable>({
     retryButtonText,
     compact = false
 }: DocumentListingTableProps<T>) => {
-    const bodyRef = useRef<HTMLDivElement | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: dragAndDrop?.activationDistance ?? 6
-            }
-        })
-    );
+    const {
+        sensors,
+        draggableIdByItemId,
+        droppableIdByItemId,
+        dispatchDragEnd
+    } = useListingDragAndDrop(data, dragAndDrop, DRAG_ACTIVATION_DISTANCE);
 
     const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : DEFAULT_MIN_COLUMN_WIDTH;
     const resolvedGap = compact ? COMPACT_COLUMN_GAP : DEFAULT_COLUMN_GAP;
@@ -139,17 +178,15 @@ const DocumentListingTable = <T extends Identifiable>({
     ), [columns, resolvedMinWidth]);
 
     const minContentWidth = useMemo(() => {
-        if (columns.length === 0) return 0;
-        const sum = columns.reduce((acc, col) => {
-            if (col.width !== undefined && col.width > 0) return acc + col.width;
-            return acc + (col.minWidth !== undefined && col.minWidth > 0 ? col.minWidth : resolvedMinWidth);
-        }, 0);
+        if(columns.length === 0) return 0;
+
+        const sum = columns.reduce((acc, col) => acc + resolveColumnMinWidth(col, resolvedMinWidth), 0);
+
         return sum + (columns.length - 1) * resolvedGap;
     }, [columns, resolvedMinWidth, resolvedGap]);
 
-    const rootRef = scrollContainerRef && 'current' in scrollContainerRef ? scrollContainerRef : null;
     const { sentinelRef } = useInfiniteScroll({
-        rootRef,
+        rootRef: scrollContainerRef,
         hasMore,
         isFetchingMore,
         onLoadMore
@@ -157,7 +194,6 @@ const DocumentListingTable = <T extends Identifiable>({
 
     const {
         isInitialLoading,
-        hasNoData,
         shouldShowContent,
         shouldShowEmptyState,
         shouldShowErrorState,
@@ -169,68 +205,10 @@ const DocumentListingTable = <T extends Identifiable>({
         isAccessDenied
     });
 
-    useEffect(() => {
-        setSelectedIds((prev) => {
-            if (prev.size === 0) return prev;
-            const availableIds = new Set(data.map((item) => item._id));
-            const next = new Set<string>();
-            prev.forEach((id) => {
-                if (availableIds.has(id)) {
-                    next.add(id);
-                }
-            });
-            return next.size === prev.size ? prev : next;
-        });
-    }, [data]);
-
     const selectedItems = useMemo(() => {
         if (selectedIds.size === 0) return [];
         return data.filter((item) => selectedIds.has(item._id));
     }, [data, selectedIds]);
-
-    const draggableIdsByItemId = useMemo(() => {
-        const nextMap = new Map<string, string>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const draggableId = dragAndDrop.getDraggableId(item);
-            if (draggableId) {
-                nextMap.set(item._id, draggableId);
-            }
-        });
-
-        return nextMap;
-    }, [data, dragAndDrop]);
-
-    const droppableIdsByItemId = useMemo(() => {
-        const nextMap = new Map<string, string>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const droppableId = dragAndDrop.getDroppableId(item);
-            if (droppableId) {
-                nextMap.set(item._id, droppableId);
-            }
-        });
-
-        return nextMap;
-    }, [data, dragAndDrop]);
-
-    const draggableItemsById = useMemo(() => {
-        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
-            return dragAndDrop?.getDraggableId(item);
-        });
-    }, [data, dragAndDrop]);
-
-    const droppableItemsById = useMemo(() => {
-        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
-            return dragAndDrop?.getDroppableId(item);
-        });
-    }, [data, dragAndDrop]);
 
     const handleRowClick = useCallback((event: React.MouseEvent | React.KeyboardEvent, item: T) => {
         const isMouseEvent = 'ctrlKey' in event && 'metaKey' in event;
@@ -261,24 +239,7 @@ const DocumentListingTable = <T extends Identifiable>({
         });
     }, []);
 
-    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-        if (!dragAndDrop) {
-            return;
-        }
-
-        const activeId = String(event.active.id);
-        const overId = event.over ? String(event.over.id) : null;
-
-        await dragAndDrop.onDragEnd({
-            event,
-            activeId,
-            overId,
-            activeItem: draggableItemsById.get(activeId) ?? null,
-            overItem: overId ? droppableItemsById.get(overId) ?? null : null
-        });
-    }, [dragAndDrop, draggableItemsById, droppableItemsById]);
-
-    const rows = !hasNoData && data.map((item) => (
+    const rows = data.map((item) => (
         <MemoizedTableRow
             key={item._id}
             item={item}
@@ -291,8 +252,8 @@ const DocumentListingTable = <T extends Identifiable>({
             onItemClick={onItemClick}
             onContextMenu={handleRowContextMenu}
             columnGap={resolvedGap}
-            draggableId={draggableIdsByItemId.get(item._id) ?? null}
-            droppableId={droppableIdsByItemId.get(item._id) ?? null}
+            draggableId={draggableIdByItemId.get(item._id) ?? null}
+            droppableId={droppableIdByItemId.get(item._id) ?? null}
         />
     ));
 
@@ -304,7 +265,7 @@ const DocumentListingTable = <T extends Identifiable>({
                     gap: `${resolvedGap}px`
                 }}>
                     {columns.map((col, colIdx) => {
-                        const isSorted = getAriaSort(col) !== 'none';
+                        const columnTitle = getColumnTitle(col);
                         const cellClassName = cn(
                             'document-listing-cell',
                             'header-cell',
@@ -312,59 +273,50 @@ const DocumentListingTable = <T extends Identifiable>({
                             'd-flex',
                             'items-center',
                             'color-secondary',
-                            isSorted ? 'is-sorted' : '',
+                            getAriaSort(col) !== 'none' ? 'is-sorted' : '',
                             col.numeric ? 'is-numeric' : ''
                         );
+                        const heading = (
+                            <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                {getCellTitle(col)}
+                            </h3>
+                        );
                         return (
-                            <div className={cellClassName} key={`header-${getColumnTitle(col)}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
+                            <div className={cellClassName} key={`header-${columnTitle}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
                                 {col.sortable ? (
                                     <button
                                         type='button'
                                         className='document-listing-sort-button d-flex items-center color-secondary'
                                         onClick={() => onCellClick(col)}
-                                        aria-label={`Sort by ${getColumnTitle(col)}`}
+                                        aria-label={`Sort by ${columnTitle}`}
                                     >
-                                        <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
-                                            {getCellTitle(col)}
-                                        </h3>
+                                        {heading}
                                     </button>
-                                ) : (
-                                    <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
-                                        {getCellTitle(col)}
-                                    </h3>
-                                )}
+                                ) : heading}
                             </div>
                         );
                     })}
                 </div>
             )}
 
-            <div ref={bodyRef} className='d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
+            <div className='d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
-                    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                    <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
                         {rows}
                     </DndContext>
                 ) : rows}
 
                 <div ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
 
-                {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
-                    <div key={`fetching-${i}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
-                        {columns.map((col, colIdx) => (
-                            <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? {
-                                flex: 1,
-                                minWidth: 0
-                            }}>
-                                <span className='document-listing-cell-value'>
-                                    <Skeleton {...(col.skeleton ?? {
-                                        variant: 'text',
-                                        width: 100
-                                    })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                ))}
+                {isFetchingMore && (
+                    <SkeletonRows
+                        count={skeletonRowsCount}
+                        keyPrefix='fetching'
+                        columns={columns}
+                        columnStyles={columnStyles}
+                        columnGap={resolvedGap}
+                    />
+                )}
 
                 {shouldShowEmptyState && (
                     <RecoveryState
@@ -398,23 +350,13 @@ const DocumentListingTable = <T extends Identifiable>({
                 {isInitialLoading && (
                     <div className='document-listing-overlay-blur p-absolute inset-0'>
                         <div className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
-                            {Array.from({ length: 20 }).map((_, index) => (
-                                <div key={`loading-skeleton-${index}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
-                                    {columns.map((col, colIdx) => (
-                                        <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? {
-                                            flex: 1,
-                                            minWidth: 0
-                                        }}>
-                                            <span className='document-listing-cell-value'>
-                                                <Skeleton {...(col.skeleton ?? {
-                                                    variant: 'text',
-                                                    width: 100
-                                                })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
+                            <SkeletonRows
+                                count={INITIAL_SKELETON_ROWS_COUNT}
+                                keyPrefix='loading-skeleton'
+                                columns={columns}
+                                columnStyles={columnStyles}
+                                columnGap={resolvedGap}
+                            />
                         </div>
                     </div>
                 )}

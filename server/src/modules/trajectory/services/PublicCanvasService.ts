@@ -9,7 +9,7 @@ import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGate
 import PluginService from '@modules/plugin/services/PluginService';
 import RasterService from '@modules/raster/services/RasterService';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
-import TeamMember from '@modules/team/models/TeamMember';
+import { isTeamMember } from '@modules/team/services/team/team-membership-guard';
 
 import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import { PublicCanvasAccessMode } from '@modules/trajectory/services/TrajectoryServiceTypes';
@@ -17,18 +17,15 @@ import trajectoryDumpStorageService from '@modules/trajectory/services/trajector
 import TrajectoryAccessGuard from '@modules/trajectory/services/trajectory/TrajectoryAccessGuard';
 import {
     ANALYSIS_LIST_MAX_LIMIT,
-    findAnalyses,
-    storageClusterIdOf
+    findAnalyses
 } from '@modules/trajectory/services/trajectory/TrajectoryQueries';
 import { getTrajectoryFrames, readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import { createPreviewOutput } from '@modules/trajectory/services/trajectory/TrajectoryPreviewService';
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-
-import { createHash } from 'node:crypto';
 
 import type Trajectory from '@modules/trajectory/models/Trajectory';
 import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
@@ -36,28 +33,26 @@ import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type {
+    CreateColoredModelInput,
     GetAtomsColumnarOutput,
-    GetColorCodingPropertiesInput,
     GetColorCodingPropertiesOutput,
     GetColorCodingStatsInput,
     GetColorCodingStatsOutput,
-    GetColoredModelStreamInput,
     GetFilteredModelStreamInput,
-    GetParticleFilterPropertiesInput,
     GetParticleFilterPropertiesOutput,
     GetParticleFilterUniqueValuesInput,
     GetParticleFilterUniqueValuesOutput,
-    GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput,
     GetPublicCanvasGLBInput,
     GetPublicCanvasGLBOutput,
     GetPublicCanvasRasterFrameInput,
-    GetTrajectoryByIdOutput,
-    GetTrajectoryPreviewOutput,
     ListTrajectorySceneArtifactsInput,
     PreviewParticleFilterInput,
     PreviewParticleFilterOutput,
-    PublicCanvasBootstrapTrajectoryView
+    PublicCanvasBootstrapTrajectoryView,
+    TrajectoryExposureScope,
+    TrajectoryPreviewResult,
+    TrajectoryRecord
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/GetAnalysisFrameLog';
@@ -70,15 +65,22 @@ import type {
     GetSubListingOutput
 } from '@shared/contracts/operations';
 
+/** Every canvas call is trajectory-scoped; the viewer may be an anonymous guest. */
 interface PublicCanvasRequest{
     trajectoryId: string;
     userId?: string;
 }
 
+type Guest<TInput> = TInput & { userId?: string };
+
 interface AnalysisScopedRequest extends PublicCanvasRequest{
     analysisId: string;
 }
 
+/**
+ * Object-storage misses surface as driver errors; the canvas reports them as a
+ * plain 404 rather than leaking a 500.
+ */
 const notFound = (error: unknown, message: string): never => {
     if(error instanceof ApplicationError) throw error;
     throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, message, 404);
@@ -92,10 +94,10 @@ export default class PublicCanvasService{
     #access = new TrajectoryAccessGuard();
     #trajectories = new TrajectoryService();
     #plugins = new PluginService();
-    #dumpStorage = trajectoryDumpStorageService;
-    #objectGateway = objectGatewayClient;
+    #raster = new RasterService();
+    #simulationCells = new SimulationCellService();
 
-    async bootstrap(input: GetPublicCanvasBootstrapInput): Promise<GetPublicCanvasBootstrapOutput>{
+    async bootstrap(input: PublicCanvasRequest): Promise<GetPublicCanvasBootstrapOutput>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
         const frames = await getTrajectoryFrames(trajectory.id);
 
@@ -110,19 +112,19 @@ export default class PublicCanvasService{
         };
     }
 
-    async trajectory(input: PublicCanvasRequest): Promise<GetTrajectoryByIdOutput>{
+    async trajectory(input: PublicCanvasRequest): Promise<TrajectoryRecord>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
         return this.#trajectories.getById({ trajectoryId: input.trajectoryId });
     }
 
-    async preview(input: PublicCanvasRequest): Promise<GetTrajectoryPreviewOutput>{
+    async preview(input: PublicCanvasRequest): Promise<TrajectoryPreviewResult>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
 
         const preview = await readTrajectoryPreview({
             trajectoryId: input.trajectoryId,
-            storageClusterId: this.#requireStorageCluster(trajectory),
-            objectGatewayClient: this.#objectGateway,
-            createOutput: (buffer) => this.#toPreviewOutput(buffer)
+            storageClusterId: trajectory.storageClusterId,
+            objectGatewayClient,
+            createOutput: createPreviewOutput
         });
         if(!preview) throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404);
 
@@ -131,7 +133,7 @@ export default class PublicCanvasService{
 
     async rasterFrame(input: GetPublicCanvasRasterFrameInput): Promise<DownloadStreamOutput>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return new RasterService().getRasterFramePNG({
+        return this.#raster.getRasterFramePNG({
             trajectoryId: input.trajectoryId,
             teamId: trajectory.team,
             timestep: input.timestep,
@@ -142,7 +144,7 @@ export default class PublicCanvasService{
 
     async rasterMetadata(input: PublicCanvasRequest): Promise<GetRasterMetadataOutput>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return new RasterService().getRasterMetadata({
+        return this.#raster.getRasterMetadata({
             trajectoryId: input.trajectoryId,
             teamId: trajectory.team
         });
@@ -152,7 +154,7 @@ export default class PublicCanvasService{
         try{
             await this.#access.assertReadable(input.trajectoryId, input.userId);
 
-            const response = await this.#dumpStorage.getDumpResponse(input.trajectoryId, input.timestep);
+            const response = await trajectoryDumpStorageService.getDumpResponse(input.trajectoryId, input.timestep);
             const isZstd = response.contentEncoding === 'zstd';
 
             return createDownloadStreamResponse({
@@ -176,12 +178,11 @@ export default class PublicCanvasService{
     async glb(input: GetPublicCanvasGLBInput): Promise<GetPublicCanvasGLBOutput>{
         try{
             const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-            const objectName = buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep);
 
             return await getClusterGlbStream(
-                this.#objectGateway,
-                this.#requireStorageCluster(trajectory),
-                objectName,
+                objectGatewayClient,
+                trajectory.storageClusterId,
+                buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep),
                 { acceptEncoding: input.acceptEncoding }
             );
         }catch(error){
@@ -205,7 +206,7 @@ export default class PublicCanvasService{
             return {
                 ...analysis.props,
                 _id: analysis._id,
-                plugin: extractPluginId(analysis.props.plugin)
+                plugin: analysis.props.plugin
             };
         });
 
@@ -217,59 +218,53 @@ export default class PublicCanvasService{
 
     async simulationCell(input: PublicCanvasRequest & { timestep?: number }): Promise<GetSimulationCellByTrajectoryOutput>{
         const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return new SimulationCellService().getByTrajectory({
+        return this.#simulationCells.getByTrajectory({
             teamId: trajectory.team,
             trajectoryId: input.trajectoryId,
             timestep: input.timestep
         });
     }
 
-    async listSceneArtifacts(input: ListTrajectorySceneArtifactsInput & { userId?: string }): Promise<PaginatedResult<unknown>>{
+    async listSceneArtifacts(input: Guest<ListTrajectorySceneArtifactsInput>): Promise<PaginatedResult<unknown>>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getSceneArtifacts(delegated);
+        return this.#trajectories.getSceneArtifacts(input);
     }
 
-    async colorCodingProperties(input: GetColorCodingPropertiesInput & { userId?: string }): Promise<GetColorCodingPropertiesOutput>{
+    async colorCodingProperties(input: Guest<TrajectoryExposureScope>): Promise<GetColorCodingPropertiesOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getColorCodingProperties(delegated);
+        return this.#trajectories.getColorCodingProperties(input);
     }
 
-    async colorCodingStats(input: GetColorCodingStatsInput & { userId?: string }): Promise<GetColorCodingStatsOutput>{
+    async colorCodingStats(input: Guest<GetColorCodingStatsInput>): Promise<GetColorCodingStatsOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getColorCodingStats(delegated);
+        return this.#trajectories.getColorCodingStats(input);
     }
 
-    async coloredModelStream(input: GetColoredModelStreamInput & { userId?: string }): Promise<StreamableOutput>{
+    async coloredModelStream(input: Guest<CreateColoredModelInput>): Promise<StreamableOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getColoredModelStream(delegated);
+        return this.#trajectories.getColoredModelStream(input);
     }
 
-    async particleFilterProperties(input: GetParticleFilterPropertiesInput & { userId?: string }): Promise<GetParticleFilterPropertiesOutput>{
+    async particleFilterProperties(input: Guest<TrajectoryExposureScope>): Promise<GetParticleFilterPropertiesOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getParticleFilterProperties(delegated);
+        return this.#trajectories.getParticleFilterProperties(input);
     }
 
-    async particleFilterUniqueValues(input: GetParticleFilterUniqueValuesInput & { userId?: string }): Promise<GetParticleFilterUniqueValuesOutput>{
+    async particleFilterUniqueValues(
+        input: Guest<GetParticleFilterUniqueValuesInput>
+    ): Promise<GetParticleFilterUniqueValuesOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getParticleFilterUniqueValues(delegated);
+        return this.#trajectories.getParticleFilterUniqueValues(input);
     }
 
-    async particleFilterPreview(input: PreviewParticleFilterInput & { userId?: string }): Promise<PreviewParticleFilterOutput>{
+    async particleFilterPreview(input: Guest<PreviewParticleFilterInput>): Promise<PreviewParticleFilterOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.previewParticleFilter(delegated);
+        return this.#trajectories.previewParticleFilter(input);
     }
 
-    async filteredModelStream(input: GetFilteredModelStreamInput & { userId?: string }): Promise<StreamableOutput>{
+    async filteredModelStream(input: Guest<GetFilteredModelStreamInput>): Promise<StreamableOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        const { userId: _userId, ...delegated } = input;
-        return this.#trajectories.getFilteredModelStream(delegated);
+        return this.#trajectories.getFilteredModelStream(input);
     }
 
     async atoms(input: PublicCanvasRequest & {
@@ -279,13 +274,7 @@ export default class PublicCanvasService{
         limit?: number;
     }): Promise<GetAtomsColumnarOutput>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return this.#trajectories.getAtoms({
-            trajectoryId: input.trajectoryId,
-            analysisId: input.analysisId,
-            timestep: input.timestep,
-            page: input.page,
-            limit: input.limit
-        });
+        return this.#trajectories.getAtoms(input);
     }
 
     async plugin(input: PublicCanvasRequest & { pluginId: string }): Promise<GetPluginByIdOutput>{
@@ -295,7 +284,7 @@ export default class PublicCanvasService{
             where: { trajectory: input.trajectoryId },
             limit: ANALYSIS_LIST_MAX_LIMIT
         });
-        const pluginAttached = analyses.data.some((analysis) => extractPluginId(analysis.plugin) === input.pluginId);
+        const pluginAttached = analyses.data.some((analysis) => analysis.plugin === input.pluginId);
         if(!pluginAttached) throw ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, 'Plugin not found');
 
         return this.#plugins.getPluginById({ pluginId: input.pluginId });
@@ -382,13 +371,13 @@ export default class PublicCanvasService{
     }
 
     async #hasTeamMembership(teamId: string, userId?: string): Promise<boolean>{
-        if(!userId) return false;
-        return TeamMember.existsBy({
-            team: teamId,
-            user: userId
-        });
+        return isTeamMember(teamId, userId);
     }
 
+    /**
+     * Guards against reading one trajectory's analysis through another's canvas
+     * URL, and optionally against a plugin id that does not own that analysis.
+     */
     async #requireOwnedAnalysis(analysisId: string, trajectoryId: string, pluginId?: string): Promise<AnalysisEntity>{
         const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
         if(!analysis) throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
@@ -400,7 +389,7 @@ export default class PublicCanvasService{
             );
         }
 
-        if(pluginId !== undefined && extractPluginId(analysis.plugin) !== pluginId){
+        if(pluginId !== undefined && analysis.plugin !== pluginId){
             throw ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH,
                 'Analysis does not belong to the requested plugin'
@@ -408,17 +397,6 @@ export default class PublicCanvasService{
         }
 
         return analysis;
-    }
-
-    #requireStorageCluster(trajectory: Trajectory): string{
-        const storageClusterId = storageClusterIdOf(trajectory);
-        if(!storageClusterId){
-            throw ApplicationError.conflict(
-                'Trajectory::StorageClusterRequired',
-                'Trajectory storage cluster is required'
-            );
-        }
-        return storageClusterId;
     }
 
     #toBootstrapTrajectory(trajectory: Trajectory, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryView{
@@ -436,13 +414,6 @@ export default class PublicCanvasService{
                     ? frame.simulationCell
                     : frame.simulationCell?._id) ?? ''
             }))
-        };
-    }
-
-    #toPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutput{
-        return {
-            base64: `data:image/png;base64,${buffer.toString('base64')}`,
-            etag: `"${createHash('sha256').update(buffer).digest('hex')}"`
         };
     }
 }

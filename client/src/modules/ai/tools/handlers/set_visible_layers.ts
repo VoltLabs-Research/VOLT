@@ -2,11 +2,7 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/utils/scene-utils';
 
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
-
-interface SetVisibleLayersInput {
-    layer?: string;
-    visible?: boolean;
-}
+import type { SetVisibleLayersInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const BASE_LAYER_ALIASES = new Set(['atoms', 'particles', 'trajectory', 'default', 'base', 'points']);
 
@@ -15,17 +11,8 @@ const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {
     needsViewer: true,
 
     run(input, ctx): ClientToolResult {
-        const layer = (typeof input.layer === 'string' ? input.layer : '').trim().toLowerCase();
-        const visible = input.visible !== false;
-
-        if (!layer) {
-            return {
-                ok: false,
-                summary: 'No layer specified.',
-                reason: 'missing_layer',
-                hint: 'Pass layer: "atoms" with visible: true/false.'
-            };
-        }
+        const layer = input.layer.trim().toLowerCase();
+        const { visible } = input;
 
         if (!BASE_LAYER_ALIASES.has(layer)) {
             return {
@@ -64,9 +51,8 @@ const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {
                 icon: 'layers'
             };
         }
-        const visible = input.visible !== false;
         return {
-            label: `${visible ? 'Showed' : 'Hid'} atoms layer`,
+            label: `${input.visible ? 'Showed' : 'Hid'} atoms layer`,
             icon: 'layers'
         };
     }

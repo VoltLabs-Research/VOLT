@@ -6,16 +6,18 @@ import useTrajectorySelector from '@/modules/trajectory/hooks/trajectory/use-tra
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
 const PluginListingPage = () => {
     const params = useParams();
     const pluginId = params.pluginId ?? '';
-    const rawExposureId = params.exposureId;
-    let exposureId: string | undefined;
-    if (rawExposureId && rawExposureId !== 'undefined' && rawExposureId !== 'null') {
-        exposureId = rawExposureId;
-    }
     const exposureName = params.exposureName;
-    const trajectoryId = params.trajectoryId ?? null;
+    const trajectoryId = params.trajectoryId;
+    // Stale links can carry the literal strings `undefined` / `null` in the path.
+    const rawExposureId = params.exposureId;
+    const exposureId = rawExposureId && rawExposureId !== 'undefined' && rawExposureId !== 'null'
+        ? rawExposureId
+        : undefined;
+
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const team = useSelectedTeam()!;
@@ -33,48 +35,32 @@ const PluginListingPage = () => {
         };
     }, [queryClient]);
 
-    const handleTrajectoryChange = useCallback((value: string | null) => {
-        if (!exposureId && !exposureName) {
-            return;
-        }
-
-        if (value) {
-            if (exposureId) {
-                navigate(`/dashboard/trajectory/${value}/plugins/${pluginId}/exposure/${exposureId}/listing`);
-                return;
-            }
-            navigate(`/dashboard/trajectory/${value}/plugins/${pluginId}/listing/${exposureName}`);
-            return;
-        }
-
-        if (exposureId) {
-            navigate(`/dashboard/plugins/${pluginId}/exposure/${exposureId}/listing`);
-            return;
-        }
-
-        navigate(`/dashboard/plugins/${pluginId}/listing/${exposureName}`);
-    }, [navigate, pluginId, exposureName, exposureId]);
-
     const handleTrajectorySelect = useCallback((value: string) => {
-        if (value === '') {
-            handleTrajectoryChange(null);
+        if(!exposureId && !exposureName){
             return;
         }
-        handleTrajectoryChange(value);
-    }, [handleTrajectoryChange]);
+
+        const pluginPath = value
+            ? `/dashboard/trajectory/${value}/plugins/${pluginId}`
+            : `/dashboard/plugins/${pluginId}`;
+
+        navigate(exposureId
+            ? `${pluginPath}/exposure/${exposureId}/listing`
+            : `${pluginPath}/listing/${exposureName}`);
+    }, [navigate, pluginId, exposureName, exposureId]);
 
     return (
         <PluginExposureTable
             pluginId={pluginId}
             exposureName={exposureName}
             exposureId={exposureId}
-            trajectoryId={trajectoryId ?? undefined}
+            trajectoryId={trajectoryId}
             teamId={team._id}
             showTrajectoryColumn={!trajectoryId}
             headerActions={
                 <Select
                     options={options}
-                    value={trajectoryId}
+                    value={trajectoryId ?? null}
                     onChange={handleTrajectorySelect}
                     placeholder='All Trajectories'
                     isLoading={isLoading}

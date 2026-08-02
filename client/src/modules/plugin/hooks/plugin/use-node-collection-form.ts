@@ -50,17 +50,11 @@ const useNodeCollectionForm = <T extends object>(
         };
     }, [updateItem]);
 
-    const getItemValue = useCallback(<K extends keyof T>(index: number, field: K): T[K] => {
-        return items[index]?.[field] as T[K];
-    }, [items]);
-
     return {
         items,
         addItem,
-        updateItem,
         removeItem,
         createFieldHandler,
-        getItemValue,
         updateItems
     };
 };

@@ -1,27 +1,29 @@
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
 import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
-import { getPrimaryTrajectory } from '@/modules/scripting/utils/notebooks';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { Text } from '@voltstack/bravais';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
-import type {
-    ScriptingNotebook,
-    ScriptingNotebookTrajectory
-} from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 
 enum NotebooksListingTabId {
     List = 'list',
     Trajectory = 'trajectory'
 };
 
-type NotebookDocument = ScriptingNotebook;
+interface NotebooksListingTabView {
+    columns: ColumnConfig<ScriptingNotebook>[];
+    context: NotebooksListingContext;
+    emptyTitle: string;
+    emptyMessage: string;
+    emptyButtonText: string;
+};
 
 const NOTEBOOK_TABS: DocumentListingTab[] = [
     {
@@ -34,34 +36,18 @@ const NOTEBOOK_TABS: DocumentListingTab[] = [
     }
 ];
 
-const isNotebooksListingTabId = (value: string): value is NotebooksListingTabId => {
-    return value === NotebooksListingTabId.List
-        || value === NotebooksListingTabId.Trajectory;
-};
+/** `trajectory` is only a popover-able document when the server populated it. */
+const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['render']> = (_value, row) => {
+    const trajectory = typeof row.trajectory === 'string' ? null : row.trajectory ?? null;
 
-const getTrajectoryLabel = (trajectory: ScriptingNotebookTrajectory | string | null): string => {
-    if (!trajectory) {
-        return '';
-    }
-
-    if (typeof trajectory === 'string') {
-        return '';
-    }
-
-    return trajectory.name?.trim() || '';
-};
-
-const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['render']> = (_value, row) => {
-    const trajectory = getPrimaryTrajectory(row);
-    const populated = (!trajectory || typeof trajectory === 'string') ? null : trajectory as unknown as Record<string, unknown>;
     return (
-        <PopulatedCellPopover document={populated} modelName='Trajectory'>
-            <span className='font-size-2 color-secondary font-mono'>{getTrajectoryLabel(trajectory)}</span>
+        <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
+            <span className='font-size-2 color-secondary font-mono'>{trajectory?.name?.trim() || ''}</span>
         </PopulatedCellPopover>
     );
 };
 
-const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
+const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'title',
     title: 'Title',
     sortable: true,
@@ -72,7 +58,7 @@ const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
     }
 };
 
-const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
+const TRAJECTORY_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'trajectory',
     title: 'Trajectory',
     sortable: false,
@@ -83,72 +69,34 @@ const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
     }
 };
 
-const CLUSTER_COLUMN = clusterColumn<NotebookDocument>({ width: 150 });
+const CLUSTER_COLUMN = clusterColumn<ScriptingNotebook>({ width: 150 });
 
-const CREATED_BY_COLUMN = userColumn<NotebookDocument>('createdBy', 'Created By');
+const CREATED_BY_COLUMN = userColumn<ScriptingNotebook>('createdBy', 'Created By');
 
-const LAST_OPENED_AT_COLUMN = dateColumn<NotebookDocument>('lastOpenedAt', 'Last Opened At', {
+const LAST_OPENED_AT_COLUMN = dateColumn<ScriptingNotebook>('lastOpenedAt', 'Last Opened At', {
     width: 110,
     withTitle: true,
     fallback: '-'
 });
 
-const LIST_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
-    TITLE_COLUMN,
-    CLUSTER_COLUMN,
-    CREATED_BY_COLUMN,
-    LAST_OPENED_AT_COLUMN
-];
-
-const TRAJECTORY_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
-    TITLE_COLUMN,
-    TRAJECTORY_COLUMN,
-    CLUSTER_COLUMN,
-    CREATED_BY_COLUMN,
-    LAST_OPENED_AT_COLUMN
-];
-
-const resolveColumns = (tab: NotebooksListingTabId): ColumnConfig<NotebookDocument>[] => {
-    if (tab === NotebooksListingTabId.List) {
-        return LIST_NOTEBOOK_COLUMNS;
+const NOTEBOOK_TAB_VIEWS: Record<NotebooksListingTabId, NotebooksListingTabView> = {
+    [NotebooksListingTabId.List]: {
+        columns: [TITLE_COLUMN, CLUSTER_COLUMN, CREATED_BY_COLUMN, LAST_OPENED_AT_COLUMN],
+        context: { scope: ScriptingNotebookScope.General },
+        emptyTitle: 'No notebooks yet',
+        emptyMessage: 'Create a general notebook to start drafting scripts and experiments.',
+        emptyButtonText: 'Create notebook'
+    },
+    [NotebooksListingTabId.Trajectory]: {
+        columns: [TITLE_COLUMN, TRAJECTORY_COLUMN, CLUSTER_COLUMN, CREATED_BY_COLUMN, LAST_OPENED_AT_COLUMN],
+        context: { scope: ScriptingNotebookScope.Trajectory },
+        emptyTitle: 'No trajectory notebooks yet',
+        emptyMessage: 'Open a notebook from a trajectory workspace to keep it tied to a run.',
+        emptyButtonText: 'View general notebooks'
     }
-
-    return TRAJECTORY_NOTEBOOK_COLUMNS;
 };
 
-const resolveScope = (tab: NotebooksListingTabId): ScriptingNotebookScope => {
-    if (tab === NotebooksListingTabId.Trajectory) {
-        return ScriptingNotebookScope.Trajectory;
-    }
-
-    return ScriptingNotebookScope.General;
-};
-
-const getEmptyMessage = (scope: ScriptingNotebookScope): string => {
-    if (scope === ScriptingNotebookScope.Trajectory) {
-        return 'Open a notebook from a trajectory workspace to keep it tied to a run.';
-    }
-
-    return 'Create a general notebook to start drafting scripts and experiments.';
-};
-
-const getEmptyTitle = (scope: ScriptingNotebookScope): string => {
-    if (scope === ScriptingNotebookScope.Trajectory) {
-        return 'No trajectory notebooks yet';
-    }
-
-    return 'No notebooks yet';
-};
-
-const getEmptyButtonText = (scope: ScriptingNotebookScope): string => {
-    if (scope === ScriptingNotebookScope.Trajectory) {
-        return 'View general notebooks';
-    }
-
-    return 'Create notebook';
-};
-
-const getNotebookTitle = (notebook: ScriptingNotebook): string => notebook.title || '';
+const getNotebookTitle = (notebook: ScriptingNotebook): string => notebook.title;
 
 const isNotebookRenameUnchanged = (title: string, notebook: ScriptingNotebook | null): boolean => {
     return title.length > 0 && title === (notebook?.title.trim() || '');
@@ -180,48 +128,41 @@ const NotebooksListing = () => {
         socketInvalidation
     } = useNotebooksListing();
 
-    const scope = resolveScope(activeTab);
-    const columns = useMemo(() => resolveColumns(activeTab), [activeTab]);
-    const context = useMemo<NotebooksListingContext>(() => ({ scope }), [scope]);
-    const createNew = activeTab === NotebooksListingTabId.List
-        ? {
+    const view = NOTEBOOK_TAB_VIEWS[activeTab];
+    const isTrajectoryTab = activeTab === NotebooksListingTabId.Trajectory;
+    const createNew = isTrajectoryTab
+        ? undefined
+        : {
             buttonTitle: 'New Notebook',
             onCreate: handleCreate
-        }
-        : undefined;
-
-    const handleTabChange = useCallback((tabId: string) => {
-        if (isNotebooksListingTabId(tabId)) {
-            setActiveTab(tabId);
-        }
-    }, []);
+        };
 
     const handleEmptyStateAction = useCallback(() => {
-        if (scope === ScriptingNotebookScope.Trajectory) {
+        if (activeTab === NotebooksListingTabId.Trajectory) {
             setActiveTab(NotebooksListingTabId.List);
             return;
         }
 
         handleCreate();
-    }, [handleCreate, scope]);
+    }, [activeTab, handleCreate]);
 
     return (
         <>
-            <DocumentListing<NotebookDocument, NotebooksListingContext>
+            <DocumentListing<ScriptingNotebook, NotebooksListingContext>
                 title='Notebooks'
                 queryKey={queryKey}
-                columns={columns}
-                context={context}
+                columns={view.columns}
+                context={view.context}
                 tabs={NOTEBOOK_TABS}
                 defaultTabId={NotebooksListingTabId.List}
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
                 createNew={createNew}
-                emptyTitle={getEmptyTitle(scope)}
-                emptyMessage={getEmptyMessage(scope)}
-                emptyButtonText={getEmptyButtonText(scope)}
+                emptyTitle={view.emptyTitle}
+                emptyMessage={view.emptyMessage}
+                emptyButtonText={view.emptyButtonText}
                 onEmptyButtonClick={handleEmptyStateAction}
-                onTabChange={handleTabChange}
+                onTabChange={(tabId) => setActiveTab(tabId as NotebooksListingTabId)}
                 socketInvalidation={socketInvalidation}
             />
             <RenameEntityModal

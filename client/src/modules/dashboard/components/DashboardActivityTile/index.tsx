@@ -40,8 +40,8 @@ const buildActivityTileSummary = (activityData: DailyActivity[]): ActivityTileSu
         labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
 
-    const todayActions = series[series.length - 1] ?? 0;
-    const yesterdayActions = series[series.length - 2] ?? 0;
+    const todayActions = series[series.length - 1];
+    const yesterdayActions = series[series.length - 2];
 
     let trendPercent = 0;
     if (yesterdayActions > 0) {

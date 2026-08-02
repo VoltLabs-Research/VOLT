@@ -1,15 +1,9 @@
 import AppConfig from '@/services/AppConfig';
-import Repository from '@/services/Repository';
-import SoftwareUpdater from '@/services/SoftwareUpdater';
+import { fetchLatestRelease } from '@/services/Repository';
+import { installRelease, resolveExtractedPath } from '@/services/SoftwareUpdater';
 import { assertDevPaths } from '@/services/devPaths';
 
-export interface RepoSpec{
-    repo: Repository;
-    envKey: 'VOLT_SOURCE_DIR' | 'CLUSTER_DAEMON_SOURCE_DIR';
-}
-
 export interface SourceResolverProps{
-    repos: RepoSpec[];
     downloadDir: string;
     appConfig: AppConfig;
 }
@@ -28,15 +22,21 @@ export interface RepoUpdateStatus{
     changed: boolean;
 }
 
+const REPOS = [
+    {
+        owner: 'voltlabs-research',
+        repo: 'volt',
+        envKey: 'VOLT_SOURCE_DIR'
+    },
+    {
+        owner: 'voltlabs-research',
+        repo: 'clusterdaemon',
+        envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
+    }
+] as const;
+
 export default class SourceResolver{
     constructor(private readonly props: SourceResolverProps){}
-
-    #updaterFor(repo: Repository){
-        return new SoftwareUpdater({
-            repoId: repo.getId(),
-            downloadDir: this.props.downloadDir
-        });
-    }
 
     async #devSources(): Promise<Record<string, string> | null>{
         const dev = await this.props.appConfig.getActiveDevMode();
@@ -61,18 +61,17 @@ export default class SourceResolver{
         const env: Record<string, string> = {};
         const pending: Array<[string, string]> = [];
         let changed = false;
-        for(const { repo, envKey } of this.props.repos){
-            const updater = this.#updaterFor(repo);
-            const repoId = repo.getId();
-            const latest = await repo.fetchLatestRelease();
+        for(const { owner, repo, envKey } of REPOS){
+            const repoId = `${owner}/${repo}`;
+            const latest = await fetchLatestRelease(owner, repo);
             const installed = await this.props.appConfig.getInstalledReleaseTag(repoId);
 
             if(latest.tag !== installed){
-                env[envKey] = await updater.update(latest);
+                env[envKey] = await installRelease(this.props.downloadDir, repoId, latest);
                 pending.push([repoId, latest.tag]);
                 changed = true;
             }else{
-                env[envKey] = await updater.resolveExtractedPath();
+                env[envKey] = await resolveExtractedPath(this.props.downloadDir, repoId);
             }
         }
 
@@ -98,9 +97,9 @@ export default class SourceResolver{
         };
 
         const repos: RepoUpdateStatus[] = [];
-        for(const { repo } of this.props.repos){
-            const repoId = repo.getId();
-            const latest = await repo.fetchLatestRelease();
+        for(const { owner, repo } of REPOS){
+            const repoId = `${owner}/${repo}`;
+            const latest = await fetchLatestRelease(owner, repo);
             const installed = await this.props.appConfig.getInstalledReleaseTag(repoId);
             repos.push({
                 repoId,
@@ -120,8 +119,8 @@ export default class SourceResolver{
         if(dev) return dev;
 
         const sources: Record<string, string> = {};
-        for(const { repo, envKey } of this.props.repos){
-            sources[envKey] = await this.#updaterFor(repo).resolveExtractedPath();
+        for(const { owner, repo, envKey } of REPOS){
+            sources[envKey] = await resolveExtractedPath(this.props.downloadDir, `${owner}/${repo}`);
         }
         return sources;
     }

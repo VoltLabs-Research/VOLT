@@ -81,17 +81,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     const resultsListId = useId();
     let itemIndex = -1;
 
-    const flattenedEntries = useMemo(() => {
-        return sections.flatMap((section) => section.items.map((item) => ({
-            id: item.id,
-            sectionKey: section.key
-        })));
-    }, [sections]);
-
-    const activeEntry = activeIndex >= 0 ? flattenedEntries[activeIndex] : null;
-    const activeOptionId = activeEntry
-        ? `${resultsListId}-${activeEntry.sectionKey}-${activeEntry.id}`
-        : undefined;
+    const activeOptionId = activeIndex >= 0 ? `${resultsListId}-option-${activeIndex}` : undefined;
 
     useTip('dashboard-global-search', {
         enabled: isFocused && focusTipTrigger > 0,
@@ -121,11 +111,11 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         );
     }, [contextBreadcrumb]);
 
-    const renderItem = (sectionKey: GlobalSearchSectionKey, item: (typeof sections)[number]['items'][number]) => {
+    const renderItem = (item: (typeof sections)[number]['items'][number]) => {
         itemIndex += 1;
         const isActive = itemIndex === activeIndex;
         const isDisabled = item.disabled === true;
-        const optionId = `${resultsListId}-${sectionKey}-${item.id}`;
+        const optionId = `${resultsListId}-option-${itemIndex}`;
 
         return (
             <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}${isDisabled ? ' global-search-item--disabled' : ''}`}>
@@ -152,7 +142,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                     <Text as='p' size='sm' weight='medium'>{title}</Text>
                 </Row>
                 <Stack gap='025' className='global-search-section-items'>
-                    {items.map((item) => renderItem(key, item))}
+                    {items.map(renderItem)}
                 </Stack>
             </Box>
         );
