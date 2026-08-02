@@ -7,6 +7,6 @@ export const toDocumentView = (document: LatexDocumentEntity): LatexDocument => 
     folder: document.folder,
     createdBy: document.createdByRef ?? document.createdBy,
     lastEditedBy: document.lastEditedByRef ?? document.lastEditedBy,
-    createdAt: document.createdAt,
-    updatedAt: document.updatedAt
-}) as unknown as LatexDocument;
+    createdAt: document.createdAt.toISOString(),
+    updatedAt: document.updatedAt.toISOString()
+}) as LatexDocument;

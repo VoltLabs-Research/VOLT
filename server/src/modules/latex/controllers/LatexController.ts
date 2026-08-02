@@ -151,7 +151,7 @@ export default class LatexController extends Controller {
             'Content-Type': output.contentType || 'application/octet-stream',
             'Cache-Control': 'private, max-age=300'
         };
-        if (typeof output.contentLength === 'number') {
+        if (output.contentLength !== undefined) {
             headers['Content-Length'] = String(output.contentLength);
         }
         if (output.contentEncoding) {

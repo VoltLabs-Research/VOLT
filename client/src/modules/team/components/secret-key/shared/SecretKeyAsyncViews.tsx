@@ -1,4 +1,4 @@
-import { Box, Stack, Text } from '@voltstack/bravais';
+import { AsyncBoundary, Box, Stack, Text } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { ReactNode } from 'react';
 
@@ -17,6 +17,17 @@ interface SecretKeyRecoveryViewProps {
 interface SecretKeyEmptyViewProps {
     header: ReactNode;
     message: string;
+}
+
+interface SecretKeyAsyncStateProps {
+    header: ReactNode;
+    isLoading: boolean;
+    error: unknown;
+    loadingView: ReactNode;
+    errorTitle: string;
+    errorFallbackDescription: string;
+    emptyMessage: string;
+    onRetry: () => void;
 }
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
@@ -51,4 +62,44 @@ export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps)
             <Text as='p' size='lg' tone='muted'>{message}</Text>
         </Box>
     </SecretKeyPageShell>
+);
+
+/**
+ * Loading / error / empty boundary shared by the secret key pages, rendered while their
+ * metrics payload is still absent.
+ */
+export const SecretKeyAsyncState = ({
+    header,
+    isLoading,
+    error,
+    loadingView,
+    errorTitle,
+    errorFallbackDescription,
+    emptyMessage,
+    onRetry
+}: SecretKeyAsyncStateProps) => (
+    <AsyncBoundary
+        state={{
+            loading: isLoading,
+            error: error ?? undefined,
+            empty: true
+        }}
+        loading={loadingView}
+        error={(boundaryError: unknown) => (
+            <SecretKeyRecoveryView
+                header={header}
+                title={errorTitle}
+                description={boundaryError instanceof Error ? boundaryError.message : errorFallbackDescription}
+                onRetry={onRetry}
+            />
+        )}
+        empty={(
+            <SecretKeyEmptyView
+                header={header}
+                message={emptyMessage}
+            />
+        )}
+    >
+        {null}
+    </AsyncBoundary>
 );

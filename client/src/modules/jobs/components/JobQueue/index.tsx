@@ -56,7 +56,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
-    const hasFrameTimestep = typeof job.timestep === 'number' && job.timestep >= 0;
+    const hasFrameTimestep = job.timestep !== undefined && job.timestep >= 0;
     const retryJobAnalysis = useRetryJobAnalysis();
     const statusLabel = getJobStatusLabel(job.status);
 

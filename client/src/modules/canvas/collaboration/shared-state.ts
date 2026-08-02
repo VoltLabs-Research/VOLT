@@ -71,11 +71,11 @@ const RENDERER_DATA_KEYS = ['create', 'runtime'] as const;
 const PERFORMANCE_DATA_KEYS = ['preset', 'dpr', 'performance', 'adaptiveEvents', 'interactionDegrade'] as const;
 const CONFIGURATION_DATA_KEYS = ['activeSidebarOption', 'activeModifier'] as const;
 
-const pickDataFields = <TSource, TKey extends string>(
-    source: TSource | undefined,
-    keys: readonly TKey[]
+const pickDataFields = (
+    source: object | undefined,
+    keys: readonly string[]
 ): Plain | undefined => {
-    if (!source || typeof source !== 'object') {
+    if (!source) {
         return undefined;
     }
 
@@ -190,13 +190,13 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.modelDragOffsets = patch.modelDragOffsets;
         }
 
-        mergeSlice(next, state, 'lights', patch.lights, record);
-        mergeSlice(next, state, 'effects', patch.effects, record);
-        mergeSlice(next, state, 'grid', patch.grid, record);
-        mergeSlice(next, state, 'environment', patch.environment, record);
-        mergeSlice(next, state, 'rendererSettings', patch.rendererSettings, record);
-        mergeSlice(next, state, 'performanceSettings', patch.performanceSettings, record);
-        mergeSlice(next, state, 'configuration', patch.configuration, record);
+        mergeSlice(next, 'lights', patch.lights, record);
+        mergeSlice(next, 'effects', patch.effects, record);
+        mergeSlice(next, 'grid', patch.grid, record);
+        mergeSlice(next, 'environment', patch.environment, record);
+        mergeSlice(next, 'rendererSettings', patch.rendererSettings, record);
+        mergeSlice(next, 'performanceSettings', patch.performanceSettings, record);
+        mergeSlice(next, 'configuration', patch.configuration, record);
 
         return next;
     });
@@ -204,7 +204,6 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
 
 const mergeSlice = (
     next: Partial<EditorStore>,
-    state: EditorStore,
     key: keyof EditorStore,
     patchSlice: Plain | undefined,
     record: Record<string, unknown>
@@ -218,11 +217,8 @@ const mergeSlice = (
         return;
     }
 
-    const merged = {
+    (next as Record<string, unknown>)[key as string] = {
         ...(currentSlice as Plain),
         ...patchSlice
-    } as unknown;
-    (next as Record<string, unknown>)[key as string] = merged;
-
-    void state;
+    };
 };

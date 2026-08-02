@@ -4,19 +4,12 @@ import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-q
 import { AI_INTEGRATION_QUERY_KEYS } from './queries';
 import { useMemo } from 'react';
 
-interface TeamScopedPayload {
-    teamId?: string;
-    _teamId?: string;
-}
-
 export default function useTeamAIIntegrationsSocketSync(teamId: string | null | undefined): void {
     const rules = useMemo<SocketInvalidationRule[]>(() => {
         if (!teamId) return [];
 
         const matches = (payload: unknown): boolean => {
-            const scopedPayload = payload as TeamScopedPayload | undefined;
-            const payloadTeamId = scopedPayload?._teamId ?? scopedPayload?.teamId;
-            return payloadTeamId === teamId;
+            return (payload as { teamId?: string }).teamId === teamId;
         };
 
         const queryKeys = [

@@ -14,10 +14,8 @@ import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';
 
 const readHeader = (request: Request, headerName: string): string | undefined => {
-    const value = request.header(headerName);
-    return typeof value === 'string' && value.trim().length > 0
-        ? value.trim()
-        : undefined;
+    const value = request.header(headerName)?.trim();
+    return value || undefined;
 };
 
 const readBooleanHeader = (request: Request, headerName: string): boolean => {
@@ -140,7 +138,7 @@ const applyResponseHeaders = (
     headers: TeamClusterObjectStoreHeadResponse,
     response: Response
 ): void => {
-    if (typeof headers.contentLength === 'number') {
+    if (headers.contentLength !== undefined) {
         response.setHeader('content-length', String(headers.contentLength));
     }
 

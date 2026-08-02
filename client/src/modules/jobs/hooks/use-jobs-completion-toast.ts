@@ -71,7 +71,7 @@ const useJobsCompletionToast = ({
             jobs
                 .filter((job) => job.status !== JobStatus.Completed && job.status !== JobStatus.Failed)
                 .map((job) => job.queueType)
-                .filter((queueType): queueType is string => typeof queueType === 'string' && queueType.length > 0)
+                .filter((queueType): queueType is string => queueType !== undefined && queueType.length > 0)
         ));
         hadActiveJobsRef.current = true;
         hasShownCompletionToastRef.current = false;

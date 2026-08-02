@@ -276,14 +276,14 @@ const ArgumentDefinitionSection = ({
         };
 
         if (isMultiValueVisibilityOperator(nextOperator)) {
-            if (Array.isArray(currentVisibility.values) && currentVisibility.values.length > 0) {
+            if (currentVisibility.values?.length) {
                 nextVisibility.values = currentVisibility.values;
             } else if (currentVisibility.value !== undefined) {
                 nextVisibility.values = [currentVisibility.value];
             }
         } else if (currentVisibility.value !== undefined) {
             nextVisibility.value = currentVisibility.value;
-        } else if (Array.isArray(currentVisibility.values) && currentVisibility.values.length > 0) {
+        } else if (currentVisibility.values?.length) {
             nextVisibility.value = currentVisibility.values[0];
         }
 
@@ -494,7 +494,7 @@ const ArgumentDefinitionSection = ({
         const optionsByArgument = new Map<string, SelectOption>();
         for (const pluginId of targetPluginIds) {
             for (const definition of getPluginArguments(pluginId)) {
-                if (!definition.argument?.trim() || optionsByArgument.has(definition.argument)) {
+                if (!definition.argument.trim() || optionsByArgument.has(definition.argument)) {
                     continue;
                 }
 
@@ -848,7 +848,7 @@ const ArgumentDefinitionSection = ({
                                                 {(argument.pluginReferenceMappings ?? []).map((mapping, mappingIndex) => {
                                                     const targetArgumentOptions = getTargetArgumentOptions(mapping);
                                                     const hasCurrentTargetArgument = targetArgumentOptions.some((option) => option.value === mapping.targetArgument);
-                                                    const targetOptions = hasCurrentTargetArgument || !mapping.targetArgument?.trim()
+                                                    const targetOptions = hasCurrentTargetArgument || !mapping.targetArgument.trim()
                                                         ? targetArgumentOptions
                                                         : [{
                                                             value: mapping.targetArgument,

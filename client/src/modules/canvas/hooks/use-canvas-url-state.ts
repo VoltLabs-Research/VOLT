@@ -12,8 +12,6 @@ interface UpdateOptions {
     replace?: boolean;
 }
 
-const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
-
 const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     if (workspace === CanvasWorkspace.Raster) {
         return CanvasWorkspace.Raster;
@@ -47,10 +45,7 @@ const useCanvasUrlState = () => {
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
-    const requestedWorkspace = searchParams.get('workspace');
-    const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
-        ? resolveCanvasWorkspace(requestedWorkspace)
-        : CanvasWorkspace.Scene;
+    const activeWorkspace = resolveCanvasWorkspace(searchParams.get('workspace'));
 
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, options?: UpdateOptions) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), {

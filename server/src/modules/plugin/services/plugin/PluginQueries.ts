@@ -23,7 +23,7 @@ const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<
             listingExposures: (rest.listingExposures as PluginProjection['listingExposures'] | undefined) ?? projection.listingExposures,
             producesExposures: (rest.producesExposures as PluginProjection['producesExposures'] | undefined) ?? projection.producesExposures,
             requiresExposures: (rest.requiresExposures as PluginProjection['requiresExposures'] | undefined) ?? projection.requiresExposures
-        } as unknown as PluginProps
+        } as PluginProps
     };
 };
 

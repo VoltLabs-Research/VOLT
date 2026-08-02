@@ -7,7 +7,7 @@ import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { BookOpen, Copy } from 'lucide-react';
 import './TeamInvitePanel.css';
 
@@ -54,9 +54,7 @@ export const TeamInvitePanel = ({
         handleCopy
     } = useInviteCode();
 
-    const publicTrajectoriesLink = useMemo(() => {
-        return teamId ? getPublicTrajectoriesLink(teamId) : '';
-    }, [teamId]);
+    const publicTrajectoriesLink = teamId ? getPublicTrajectoriesLink(teamId) : '';
 
     const handleCopyPublicTrajectoriesLink = useCallback(async () => {
         if (!publicTrajectoriesLink) return;
@@ -81,30 +79,6 @@ export const TeamInvitePanel = ({
             label: InviteTab.PublicTrajectories,
             active: activeTab === InviteTab.PublicTrajectories,
             onClick: () => setActiveTab(InviteTab.PublicTrajectories)
-        }
-    ];
-
-    const footerActions = [
-        {
-            label: 'Copy link',
-            icon: <Copy size={16} />,
-            onClick: handleCopy,
-            disabled: !inviteCode
-        },
-        {
-            label: 'Learn more',
-            icon: <BookOpen size={16} />,
-            onClick: () => {},
-            disabled: true
-        }
-    ];
-
-    const publicTrajectoriesFooterActions = [
-        {
-            label: 'Copy link',
-            icon: <Copy size={16} />,
-            onClick: handleCopyPublicTrajectoriesLink,
-            disabled: !publicTrajectoriesLink
         }
     ];
 
@@ -136,11 +110,12 @@ export const TeamInvitePanel = ({
                         />
 
                         <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
-                            {footerActions.map((action, index) => (
-                                <Button key={index} variant='ghost' intent='neutral' size='sm' leftIcon={action.icon} onClick={action.onClick} disabled={action.disabled}>
-                                    {action.label}
-                                </Button>
-                            ))}
+                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Copy size={16} />} onClick={handleCopy} disabled={!inviteCode}>
+                                Copy link
+                            </Button>
+                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<BookOpen size={16} />} disabled>
+                                Learn more
+                            </Button>
                         </Row>
                     </>
                 )}
@@ -169,11 +144,16 @@ export const TeamInvitePanel = ({
                         </Stack>
 
                         <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
-                            {publicTrajectoriesFooterActions.map((action, index) => (
-                                <Button key={index} variant='ghost' intent='neutral' size='sm' leftIcon={action.icon} onClick={action.onClick} disabled={action.disabled}>
-                                    {action.label}
-                                </Button>
-                            ))}
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                leftIcon={<Copy size={16} />}
+                                onClick={handleCopyPublicTrajectoriesLink}
+                                disabled={!publicTrajectoriesLink}
+                            >
+                                Copy link
+                            </Button>
                         </Row>
                     </>
                 )}

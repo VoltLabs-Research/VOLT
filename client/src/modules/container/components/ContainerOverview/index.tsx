@@ -265,11 +265,11 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         showCard={false}
                         className='d-flex column'
                         renderItem={(item, i) => {
-                                const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
+                                const resolvedPublicPort = item.public !== undefined && item.public > 0
                                     ? item.public
                                     : null;
                                 const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
-                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available' && typeof accessiblePort.public === 'number';
+                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available' && accessiblePort.public !== undefined;
 
                                 const portLabel = (
                                     <Row gap='05'>

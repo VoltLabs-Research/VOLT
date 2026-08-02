@@ -73,13 +73,13 @@ export default class PluginArgumentDescriber{
         if (definition.default !== undefined) {
             described.default = definition.default;
         }
-        if (typeof definition.min === 'number') {
+        if (definition.min !== undefined) {
             described.min = definition.min;
         }
-        if (typeof definition.max === 'number') {
+        if (definition.max !== undefined) {
             described.max = definition.max;
         }
-        if (typeof definition.step === 'number') {
+        if (definition.step !== undefined) {
             described.step = definition.step;
         }
         if (definition.options?.length) {

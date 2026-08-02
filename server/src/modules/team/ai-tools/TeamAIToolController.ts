@@ -25,8 +25,8 @@ export default class TeamAIToolController extends AIToolController {
         const { models } = await this.#aiIntegrations.listModels(input.teamId);
 
         const onlineCount = members.filter((member) => {
-            const user = member.user;
-            return typeof user === 'object' && user !== null && (user as { isOnline?: boolean }).isOnline === true;
+            const user = member.user as { isOnline?: boolean } | undefined;
+            return user?.isOnline === true;
         }).length;
 
         const enabledIntegrations = integrations.filter((integration) => integration.isEnabled);

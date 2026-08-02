@@ -7,16 +7,15 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import { useEffect, useMemo } from 'react';
 
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
+import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
 interface UseSceneArtifactsOptions {
     trajectoryId?: string;
 }
 
-const isSceneArtifact = (item: unknown): item is SceneArtifact => {
-    if (!item || typeof item !== 'object') return false;
-    const candidate = item as Record<string, unknown>;
-    return typeof candidate._id === 'string' && typeof candidate.sourceType === 'string';
-};
+const isSceneArtifact = (
+    item: SceneArtifact | RenderableExposurePayload
+): item is SceneArtifact => 'sourceType' in item;
 
 const isSupportedParticleFilterArtifact = (artifact: SceneArtifact): boolean => {
     return toSceneObjectFromArtifact(artifact)?.source === 'particle-filter';

@@ -1,8 +1,7 @@
 import { useTeamPermissionsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { canAccessByPermissions, getScopedPermissions, isPermissionScopeReady } from '@/modules/team/utils/team/permission-evaluator';
+import { canAccessByPermissions } from '@/modules/team/utils/team/permission-evaluator';
 import type { PermissionMode } from '@/modules/team/utils/team/permission-evaluator';
-import { useMemo } from 'react';
 
 export default function useTeamPermissions() {
     const selectedTeamId = useSelectedTeamId();
@@ -13,12 +12,8 @@ export default function useTeamPermissions() {
 
     const permissions = permissionsQuery.data ?? [];
     const permissionsTeamId = permissionsQuery.data ? selectedTeamId : null;
-
-    const scopedPermissions = useMemo(() => getScopedPermissions({
-        selectedTeamId,
-        permissionsTeamId,
-        permissions
-    }), [selectedTeamId, permissionsTeamId, permissions]);
+    const isScopeReady = !!selectedTeamId && permissionsTeamId === selectedTeamId;
+    const scopedPermissions = isScopeReady ? permissions : [];
 
     const canAccess = (requiredPermissions: string[] = [], mode: PermissionMode = 'any'): boolean => {
         return canAccessByPermissions(scopedPermissions, requiredPermissions, mode);
@@ -30,10 +25,7 @@ export default function useTeamPermissions() {
         permissionsTeamId,
         scopedPermissions,
         isLoading: permissionsQuery.isLoading || permissionsQuery.isFetching,
-        isScopeReady: isPermissionScopeReady({
-            selectedTeamId,
-            permissionsTeamId
-        }),
+        isScopeReady,
         canAccess
     };
 }

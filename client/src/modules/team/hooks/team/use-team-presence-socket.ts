@@ -3,13 +3,9 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 
-interface TeamPresenceSnapshotUser {
-    _id: string;
-}
-
 interface TeamPresenceSnapshotEvent {
     teamId: string;
-    users: TeamPresenceSnapshotUser[];
+    users: { _id: string }[];
 }
 
 interface TeamPresenceUserEvent {
@@ -24,7 +20,7 @@ export default function useTeamPresenceSocket(): void {
     const removeOnlineUser = useTeamPresenceStore((s) => s.removeOnlineUser);
 
     useSocketEvent<TeamPresenceSnapshotEvent>(SOCKET_TEAM_EVENTS.PRESENCE_SNAPSHOT, (data) => {
-        if (!teamId || data.teamId !== teamId) {
+        if (data.teamId !== teamId) {
             return;
         }
 
@@ -32,7 +28,7 @@ export default function useTeamPresenceSocket(): void {
     });
 
     useSocketEvent<TeamPresenceUserEvent>(SOCKET_TEAM_EVENTS.USER_ONLINE, (data) => {
-        if (!teamId || data.teamId !== teamId) {
+        if (data.teamId !== teamId) {
             return;
         }
 
@@ -40,7 +36,7 @@ export default function useTeamPresenceSocket(): void {
     });
 
     useSocketEvent<TeamPresenceUserEvent>(SOCKET_TEAM_EVENTS.USER_OFFLINE, (data) => {
-        if (!teamId || data.teamId !== teamId) {
+        if (data.teamId !== teamId) {
             return;
         }
 

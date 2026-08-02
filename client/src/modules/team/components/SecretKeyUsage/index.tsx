@@ -1,83 +1,23 @@
-import { AsyncBoundary, Box, Button, Heading, Row, Skeleton, Stack, StatCard, Tag, Text } from '@voltstack/bravais';
-import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
+import { Box, Button, Heading, Row, Stack, StatCard, Text } from '@voltstack/bravais';
+import EndpointsBarChart from '@/modules/team/components/secret-key/shared/EndpointsBarChart';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
-import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
+import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
+import { SecretKeyAsyncState } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
+import RecentRequestsTable from './RecentRequestsTable';
+import StatusCodesPieChart from './StatusCodesPieChart';
+import UsageSkeleton from './UsageSkeleton';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
-import { SecretKeyEmptyView, SecretKeyRecoveryView } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    BarChart,
-    Bar,
-    PieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
-} from 'recharts';
-import type { Params } from 'react-router-dom';
 import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
-interface SecretKeyUsageRouteParams extends Params {
-    secretKeyId: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-    '2xx': 'var(--status-success)',
-    '3xx': 'var(--accent-blue)',
-    '4xx': 'var(--status-warning)',
-    '5xx': 'var(--status-error)'
-};
-
-const PIE_COLORS = [
-    'var(--status-success)',
-    'var(--accent-blue)',
-    'var(--status-warning)',
-    'var(--status-error)',
-    'var(--accent-purple)'
-];
-
-const METHOD_COLORS: Record<string, string> = {
-    GET: 'var(--status-success)',
-    POST: 'var(--accent-blue)',
-    PUT: 'var(--accent-orange)',
-    DELETE: 'var(--status-error)',
-    PATCH: 'var(--accent-purple)'
-};
-
-const backButton = (onClick: () => void) => (
-    <Button
-        variant='ghost'
-        intent='neutral'
-        size='sm'
-        className='secret-key-usage-back'
-        onClick={onClick}
-        leftIcon={<ArrowLeft size={18} />}
-    >
-        Back
-    </Button>
-);
-
-const getStatusColorGroup = (code: number): string => {
-    if (code >= 200 && code < 300) return '2xx';
-    if (code >= 300 && code < 400) return '3xx';
-    if (code >= 400 && code < 500) return '4xx';
-    return '5xx';
-};
-
-const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
-const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
-const renderPieTooltip = createTooltipRenderer((payload) => `Status ${payload.statusCode}`, 'Count');
 
 export default function SecretKeyUsage() {
-    const { secretKeyId } = useParams<SecretKeyUsageRouteParams>();
+    const { secretKeyId } = useParams<{ secretKeyId: string }>();
     const navigate = useNavigate();
     const { usage, isLoading, error, refetch } = useSecretKeyUsage(secretKeyId);
 
@@ -107,78 +47,36 @@ export default function SecretKeyUsage() {
         }));
     }, [usage?.statusDistribution]);
 
-    const maskedName = useMemo(() => {
-        if (!usage?.key) return '';
-        return `${usage.key.name} (${usage.key.keyPrefix}...)`;
-    }, [usage?.key]);
-
-    const handleBack = () => {
-        navigate(-1);
-    };
-    const usageTitle = (
-        <Row gap='1'>
-            {backButton(handleBack)}
-            <Heading level={3} size='2xl' weight='bold'>Key Usage</Heading>
-        </Row>
+    const backButton = (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
+            className='secret-key-usage-back'
+            onClick={() => navigate(-1)}
+            leftIcon={<ArrowLeft size={18} />}
+        >
+            Back
+        </Button>
     );
 
-    const loadingView = (
-        <Box height='vh-max' className='secret-key-page color-primary'>
-            <Stack gap='2' width='max' className='secret-key-page-main'>
-                <Row gap='1'>
-                    <Skeleton variant='circular' width={24} height={24} />
-                    <Skeleton variant='text' width={300} height={32} />
-                </Row>
-                <Box gap='1' className='secret-key-page-cards'>
-                    {[...Array(4)].map((_, i) => (
-                        <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
-                            <Skeleton variant='text' width={100} height={16} />
-                            <Skeleton variant='rectangular' width={80} height={40} style={{
-                                borderRadius: 4,
-                                marginTop: '0.5rem'
-                            }} />
-                        </Box>
-                    ))}
-                </Box>
-                <div className='secret-key-page-charts'>
-                    {[...Array(4)].map((_, i) => (
-                        <Skeleton key={i} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
-                    ))}
-                </div>
-            </Stack>
-        </Box>
-    );
-
-    const errorView = (err: unknown) => (
-        <SecretKeyRecoveryView
-            header={usageTitle}
-            title='Unable to load usage data'
-            description={err instanceof Error ? err.message : 'Something went wrong while loading usage data for this key.'}
-            onRetry={() => refetch()}
-        />
-    );
-
-    const emptyView = (
-        <SecretKeyEmptyView
-            header={usageTitle}
-            message='No usage data available for this key.'
-        />
-    );
-
-    if (isLoading || (error && !usage) || !usage) {
+    if (!usage) {
         return (
-            <AsyncBoundary
-                state={{
-                    loading: isLoading,
-                    error: error && !usage ? error : undefined,
-                    empty: !usage
-                }}
-                loading={loadingView}
-                error={errorView}
-                empty={emptyView}
-            >
-                {null}
-            </AsyncBoundary>
+            <SecretKeyAsyncState
+                header={(
+                    <Row gap='1'>
+                        {backButton}
+                        <Heading level={3} size='2xl' weight='bold'>Key Usage</Heading>
+                    </Row>
+                )}
+                isLoading={isLoading}
+                error={error}
+                loadingView={<UsageSkeleton />}
+                errorTitle='Unable to load usage data'
+                errorFallbackDescription='Something went wrong while loading usage data for this key.'
+                emptyMessage='No usage data available for this key.'
+                onRetry={() => refetch()}
+            />
         );
     }
 
@@ -213,8 +111,8 @@ export default function SecretKeyUsage() {
             <Stack gap='2' width='max' className='secret-key-page-main'>
                 <Stack gap='05'>
                     <Row gap='1'>
-                        {backButton(handleBack)}
-                        <Heading level={3} size='2xl' weight='bold'>{maskedName}</Heading>
+                        {backButton}
+                        <Heading level={3} size='2xl' weight='bold'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</Heading>
                     </Row>
                     <Text as='p' tone='muted' size='md' style={{ marginLeft: '2rem' }}>
                         {usage.stats.totalRequests.toLocaleString()} total requests
@@ -253,7 +151,7 @@ export default function SecretKeyUsage() {
                             data={hourlyData}
                             gradientId='colorHourlyReqs'
                             height={250}
-                            tooltipContent={renderAreaTooltip}
+                            tooltipContent={renderRequestsAreaTooltip}
                             xAxisTickLine={false}
                             yAxisAllowDecimals={false}
                         />
@@ -270,37 +168,12 @@ export default function SecretKeyUsage() {
                             }
                         ]}
                     >
-                        <ResponsiveContainer width='100%' height={250}>
-                            <BarChart data={endpointData} margin={{
-                                top: 10,
-                                right: 10,
-                                left: 0,
-                                bottom: 0
-                            }} layout='vertical'>
-                                <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
-                                <XAxis
-                                    type='number'
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '12px' }}
-                                    allowDecimals={false}
-                                />
-                                <YAxis
-                                    type='category'
-                                    dataKey='endpoint'
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '11px' }}
-                                    width={150}
-                                    tickLine={false}
-                                />
-                                <Tooltip content={renderBarTooltip} />
-                                <Bar
-                                    dataKey='count'
-                                    fill={CHART_COLORS.endpoints}
-                                    radius={[0, 4, 4, 0]}
-                                    isAnimationActive={false}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <EndpointsBarChart
+                            data={endpointData}
+                            height={250}
+                            xAxisAllowDecimals={false}
+                            yAxisTickLine={false}
+                        />
                     </ChartContainer>
 
                     <ChartContainer
@@ -314,29 +187,7 @@ export default function SecretKeyUsage() {
                             }
                         ]}
                     >
-                        <ResponsiveContainer width='100%' height={250}>
-                            <PieChart>
-                                <Pie
-                                    data={statusData}
-                                    dataKey='count'
-                                    nameKey='statusCode'
-                                    cx='50%'
-                                    cy='50%'
-                                    outerRadius={90}
-                                    innerRadius={50}
-                                    paddingAngle={2}
-                                    isAnimationActive={false}
-                                >
-                                    {statusData.map((entry, index) => (
-                                        <Cell
-                                            key={entry.statusCode}
-                                            fill={PIE_COLORS[index % PIE_COLORS.length]}
-                                        />
-                                    ))}
-                                </Pie>
-                                <Tooltip content={renderPieTooltip} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        <StatusCodesPieChart data={statusData} />
                     </ChartContainer>
 
                     <ChartContainer
@@ -350,52 +201,7 @@ export default function SecretKeyUsage() {
                             }
                         ]}
                     >
-                        <div className='x-auto' style={{ maxHeight: 250 }}>
-                            <table className='secret-key-page-table'>
-                                <thead>
-                                    <tr>
-                                        <th>Method</th>
-                                        <th>Path</th>
-                                        <th>Status</th>
-                                        <th>Time</th>
-                                        <th>When</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {usage.recentRequests.slice(0, 20).map((req, i) => (
-                                        <tr key={i}>
-                                            <td>
-                                                <Tag
-                                                    size='xs'
-                                                    shape='square'
-                                                    className='font-mono font-weight-7'
-                                                    style={{
-                                                        color: METHOD_COLORS[req.method] || 'var(--color-text-muted)',
-                                                        background: `color-mix(in srgb, ${METHOD_COLORS[req.method] || 'var(--color-text-muted)'} 12%, transparent)`
-                                                    }}
-                                                >
-                                                    {req.method}
-                                                </Tag>
-                                            </td>
-                                            <td className='font-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }} title={req.path}>
-                                                {req.path}
-                                            </td>
-                                            <td>
-                                                <span style={{ color: STATUS_COLORS[getStatusColorGroup(req.statusCode)] || 'var(--color-text-muted)' }}>
-                                                    {req.statusCode}
-                                                </span>
-                                            </td>
-                                            <td className='font-mono font-size-1 color-muted'>
-                                                {req.responseTime.toFixed(0)}ms
-                                            </td>
-                                            <td className='font-size-1 color-muted'>
-                                                {formatDistanceToNow(new Date(req.createdAt), { addSuffix: true })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <RecentRequestsTable requests={usage.recentRequests.slice(0, 20)} />
                     </ChartContainer>
                 </div>
             </Stack>

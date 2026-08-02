@@ -12,7 +12,7 @@ export interface VisualSettingsSlice {
 }
 
 const resolveFogConfigUpdate = (config: Partial<FogConfig>): Partial<FogConfig> => {
-    if (typeof config.fogColor === 'string') {
+    if (config.fogColor !== undefined) {
         return {
             ...config,
             fogColorFollowsTheme: false
@@ -50,11 +50,11 @@ const createGridSettings = (darkTheme = isDarkTheme()): CanvasGridSettingsState 
 const resolveGridConfigUpdate = (config: Partial<CanvasGridSettingsState>): Partial<CanvasGridSettingsState> => {
     const nextConfig = { ...config };
 
-    if (typeof config.sectionColor === 'string') {
+    if (config.sectionColor !== undefined) {
         nextConfig.sectionColorFollowsTheme = false;
     }
 
-    if (typeof config.cellColor === 'string') {
+    if (config.cellColor !== undefined) {
         nextConfig.cellColorFollowsTheme = false;
     }
 

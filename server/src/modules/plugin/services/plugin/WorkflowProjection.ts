@@ -69,7 +69,7 @@ export default class WorkflowProjectionService {
 
         const producesExposures = exposures
             .map((exposure) => exposure.id)
-            .filter((id): id is string => typeof id === 'string' && id.length >= 1);
+            .filter((id): id is string => id !== undefined && id.length >= 1);
         const requiresExposures = args
             .filter((argument) => argument.inferFromContext === true)
             .map((argument) => argument.argument);
@@ -106,13 +106,9 @@ const DEFAULT_PLUGIN_DISPLAY_NAME = '';
 export class PluginDisplayNameResolver {
     static resolve(workflow: Workflow, fallback: string = DEFAULT_PLUGIN_DISPLAY_NAME): string {
         const modifierNode = workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
-        const name = modifierNode?.data?.modifier?.name;
+        const name = modifierNode?.data?.modifier?.name?.trim();
 
-        if (typeof name === 'string' && name.trim().length > 0) {
-            return name.trim();
-        }
-
-        return fallback;
+        return name || fallback;
     }
 }
 

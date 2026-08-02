@@ -196,9 +196,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                 }
                 const runtimePlugin = createRuntimePlugin(plugin, workflow);
                 const runtimeArgumentsNode = runtimePlugin.props.workflow.props.nodes.find((node) => node.type === 'arguments');
-                const runtimeArguments = Array.isArray(runtimeArgumentsNode?.data.arguments?.arguments)
-                    ? runtimeArgumentsNode.data.arguments.arguments
-                    : [];
+                const runtimeArguments = runtimeArgumentsNode?.data.arguments?.arguments ?? [];
                 const sanitizedConfig = sanitizeVisibleArgumentConfig(runtimeArguments, payload.config ?? {});
 
                 const trajectory = await TrajectoryEntity.findOneBy({ id: payload.trajectoryId });

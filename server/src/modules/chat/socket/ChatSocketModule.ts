@@ -206,17 +206,11 @@ class ChatSocketModule extends BaseSocketModule {
     }
 
     private getCurrentChatId(connection: ISocketConnection): string | undefined {
-        const currentChatId = connection.data.currentChatId;
-        return typeof currentChatId === 'string' && currentChatId.length > 0
-            ? currentChatId
-            : undefined;
+        return connection.data.currentChatId || undefined;
     }
 
     private getCurrentChatTeamId(connection: ISocketConnection): string | undefined {
-        const currentChatTeamId = connection.data.currentChatTeamId;
-        return typeof currentChatTeamId === 'string' && currentChatTeamId.length > 0
-            ? currentChatTeamId
-            : undefined;
+        return connection.data.currentChatTeamId || undefined;
     }
 
     private setCurrentChatContext(connection: ISocketConnection, chatId: string, teamId: string): void {

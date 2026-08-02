@@ -111,6 +111,7 @@ export interface EntrypointNodeData {
     binaryObjectPath?: string;
     binaryFileName?: string;
     binaryHash?: string;
+    ownerClusterId?: string;
     type?: EntrypointNodeType;
     arguments: string;
     requirementsFile?: string;

@@ -71,9 +71,7 @@ const authenticateWithSecretKey = async (
     req.secretKeyId = secretKeyId;
     req.secretKeyTeamId = secretKey.team;
     req.secretKeyRoleId = role?.id || secretKey.role;
-    req.teamPermissions = Array.isArray(role?.permissions)
-        ? role.permissions
-        : [];
+    req.teamPermissions = role?.permissions ?? [];
     req.userId = createdById;
 
     await SecretKey.update({ id: secretKeyId }, { lastUsedAt: new Date() });

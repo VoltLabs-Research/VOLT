@@ -95,7 +95,7 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
             if (!socketService.isConnected()) return;
 
             const leavePayloadBuilder = buildLeavePayloadRef.current ?? buildJoinPayloadRef.current;
-            const leavePayload = leavePayloadBuilder() as TLeavePayload | TJoinPayload | null;
+            const leavePayload = leavePayloadBuilder();
             if (leavePayload === null || leavePayload === undefined) return;
 
             if (fireAndForget) {

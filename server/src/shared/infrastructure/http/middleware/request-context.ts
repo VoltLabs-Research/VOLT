@@ -14,11 +14,7 @@ const getTraceIdHeader = (request: AuthenticatedRequest): string | null => {
         return traceIdHeader[0]?.trim() || null;
     }
 
-    if (typeof traceIdHeader === 'string' && traceIdHeader.trim()) {
-        return traceIdHeader.trim();
-    }
-
-    return null;
+    return traceIdHeader?.trim() || null;
 };
 
 const getRequestPath = (request: AuthenticatedRequest): string => {

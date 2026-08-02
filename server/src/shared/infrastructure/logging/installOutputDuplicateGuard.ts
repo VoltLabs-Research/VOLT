@@ -39,15 +39,11 @@ const installGuardForStream = (
     const originalWrite = stream.write.bind(stream) as typeof stream.write;
 
     stream.write = ((chunk: Uint8Array | string, arg2?: BufferEncoding | WriteCallback, arg3?: WriteCallback) => {
-        const callback = typeof arg2 === 'function'
-            ? arg2
-            : typeof arg3 === 'function'
-                ? arg3
-                : undefined;
-
-        const encoding = typeof arg2 === 'string'
-            ? arg2
-            : undefined;
+        // `write` is overloaded as (chunk, cb) and (chunk, encoding, cb), so the
+        // second argument still has to be discriminated at runtime.
+        const callbackIsSecondArgument = typeof arg2 === 'function';
+        const callback = callbackIsSecondArgument ? arg2 : arg3;
+        const encoding = callbackIsSecondArgument ? undefined : arg2;
 
         const chunkText = toChunkString(chunk, encoding);
         const now = Date.now();
@@ -63,15 +59,9 @@ const installGuardForStream = (
         state.lastChunk = chunkText;
         state.lastAt = now;
 
-        if (typeof arg2 === 'function') {
-            return originalWrite(chunk, arg2);
-        }
-
-        if (typeof arg2 === 'string') {
-            return originalWrite(chunk, arg2, arg3);
-        }
-
-        return originalWrite(chunk, callback);
+        return encoding === undefined
+            ? originalWrite(chunk, callback)
+            : originalWrite(chunk, encoding, callback);
     }) as typeof stream.write;
 };
 

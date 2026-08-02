@@ -68,10 +68,6 @@ const EntrypointEditor = ({ node }: EditorProps) => {
         if (!form.getValues('type')) {
             form.setValue('type', EntrypointType.EXECUTABLE, { shouldDirty: false });
         }
-
-        if (typeof form.getValues('requirementsFile') !== 'string') {
-            form.setValue('requirementsFile', '', { shouldDirty: false });
-        }
     }, [form]);
 
     useEffect(() => {

@@ -1,4 +1,5 @@
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
+import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
 import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { TooltipContentProps } from 'recharts';
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
@@ -43,3 +44,7 @@ export const createTooltipRenderer = (
         );
     };
 };
+
+export const renderRequestsAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
+
+export const renderEndpointsBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);

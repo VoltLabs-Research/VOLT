@@ -85,52 +85,35 @@ const normalizeStringList = (value: string[] | undefined): string[] => {
 const normalizePluginReferenceMappings = (
     mappings: PluginReferenceArgumentMapping[] | undefined
 ): PluginReferenceArgumentMapping[] => {
-    if (!Array.isArray(mappings)) {
-        return [];
-    }
-
-    return mappings.flatMap((mapping) => {
-        if (!mapping || typeof mapping !== 'object') {
-            return [];
-        }
-
-        const sourceArgument = typeof mapping.sourceArgument === 'string'
-            ? mapping.sourceArgument.trim()
-            : '';
-        const targetArgument = typeof mapping.targetArgument === 'string'
-            ? mapping.targetArgument.trim()
-            : '';
+    return (mappings ?? []).flatMap((mapping) => {
+        const sourceArgument = mapping.sourceArgument.trim();
+        const targetArgument = mapping.targetArgument.trim();
 
         if (!sourceArgument || !targetArgument) {
             return [];
         }
 
-        const targetPluginId = typeof mapping.targetPluginId === 'string'
-            ? mapping.targetPluginId.trim()
-            : '';
-        const targetPluginKey = typeof mapping.targetPluginKey === 'string'
-            ? mapping.targetPluginKey.trim()
-            : '';
+        const targetPluginId = mapping.targetPluginId?.trim() ?? '';
+        const targetPluginKey = mapping.targetPluginKey?.trim() ?? '';
 
         return [{
             sourceArgument,
             targetArgument,
             ...(targetPluginId ? { targetPluginId } : {}),
             ...(targetPluginKey ? { targetPluginKey } : {}),
-            ...(isRecord(mapping.valueMap) ? { valueMap: mapping.valueMap } : {})
+            ...(mapping.valueMap ? { valueMap: mapping.valueMap } : {})
         }];
     });
 };
 
 const getPluginModifierKey = (plugin: Plugin): string => {
     const modifierKey = plugin.props.modifier?.key;
-    if (typeof modifierKey === 'string') {
+    if (modifierKey !== undefined) {
         return modifierKey.trim();
     }
 
     const modifierNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
-    const workflowModifierKey = modifierNode?.data.modifier?.key;
-    return typeof workflowModifierKey === 'string' ? workflowModifierKey.trim() : '';
+    return modifierNode?.data.modifier?.key?.trim() ?? '';
 };
 
 const resolveMappingSourceValue = (
@@ -143,7 +126,7 @@ const resolveMappingSourceValue = (
         ? resolveArgumentExecutionValue(sourceDefinition, scopeValues[mapping.sourceArgument])
         : scopeValues[mapping.sourceArgument];
 
-    if (!isRecord(mapping.valueMap)) {
+    if (!mapping.valueMap) {
         return value;
     }
 
@@ -363,9 +346,7 @@ export class PluginDependencyResolverService {
         config: Record<string, unknown>
     ): Promise<PluginReferenceValidationResult> {
         const argumentsNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-        const definitions = Array.isArray(argumentsNode?.data.arguments?.arguments)
-            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
-            : [];
+        const definitions = argumentsNode?.data.arguments?.arguments ?? [];
         const targets: PluginReferenceValidationTarget[] = [];
         const errors: string[] = [];
 

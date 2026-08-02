@@ -108,8 +108,8 @@ const PluginConfigField = ({
         });
     }, [argument.argument, onChange]);
 
-    const handleSinglePluginChange = useCallback((_: string, nextValue: string | number | boolean) => {
-        const nextPluginId = typeof nextValue === 'string' ? nextValue.trim() : String(nextValue).trim();
+    const handleSinglePluginChange = useCallback((nextValue: string) => {
+        const nextPluginId = nextValue.trim();
         updateSelections(nextPluginId ? [{
             pluginId: nextPluginId,
             config: {}
@@ -175,7 +175,7 @@ const PluginConfigField = ({
                             id={`${fieldKey}-plugin-select`}
                             options={pluginOptions}
                             value={selectedPluginIds[0] ?? ''}
-                            onChange={(nextPluginId) => handleSinglePluginChange(argument.argument, nextPluginId)}
+                            onChange={handleSinglePluginChange}
                             placeholder='Select…'
                             className='form-field-canvas-select labeled-input'
                             aria-label={argument.label || argument.argument}

@@ -88,8 +88,7 @@ export const toUint8Array = (value: unknown): Uint8Array => {
     }
 
     if (ArrayBuffer.isView(value)) {
-        const view = value as ArrayBufferView;
-        return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+        return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     }
 
     if (Array.isArray(value)) {

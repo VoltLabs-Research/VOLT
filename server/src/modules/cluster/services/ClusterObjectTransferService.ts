@@ -55,7 +55,7 @@ export default class ClusterObjectTransferService {
         const claims = this.#resolveClaims(teamId, token, 'write');
         const contentLength = this.#requireContentLength(input.contentLength);
 
-        if (typeof claims.contentLength === 'number' && claims.contentLength !== contentLength) {
+        if (claims.contentLength !== undefined && claims.contentLength !== contentLength) {
             throw ApplicationError.badRequest(
                 'ClusterObject::ContentLengthMismatch',
                 'Uploaded object size does not match the signed URL'

@@ -74,14 +74,21 @@ type ObjectGatewayOperationName =
     | 'delete'
     | 'delete-prefix';
 
+interface ObjectGatewayJsonListEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: string;
+}
+
 interface ObjectGatewayJsonListResponse {
-    keys?: unknown;
-    objects?: unknown;
-    nextCursor?: unknown;
+    keys?: string[];
+    objects?: ObjectGatewayJsonListEntry[];
+    nextCursor?: string;
 }
 
 interface ObjectGatewayDeleteResponse {
-    deletedCount?: unknown;
+    deletedCount?: number;
 }
 
 interface ObjectGatewayRequestOptions {
@@ -92,8 +99,8 @@ interface ObjectGatewayRequestOptions {
 }
 
 interface ObjectGatewayJsonError {
-    code?: unknown;
-    message?: unknown;
+    code?: string;
+    message?: string;
 }
 
 interface RawHttpResponse {
@@ -136,12 +143,8 @@ const HTTP_PROXY_FAST_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv(
 );
 
 const readHeaderValue = (value: string | null): string | undefined => {
-    return value && value.length > 0
-        ? value
-        : undefined;
+    return value || undefined;
 };
-
-
 
 const headersFromIncoming = (headers: http.IncomingHttpHeaders): Headers => {
     const normalized = new Headers();
@@ -194,45 +197,31 @@ const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
 
 const parseHeadResponse = (headers: Headers): TeamClusterObjectGatewayHeadResponse => {
     const contentLength = readHeaderValue(headers.get('content-length'));
+    const lastModified = readHeaderValue(headers.get('last-modified'));
 
     return {
-        contentLength: typeof contentLength === 'string' && contentLength.length > 0
+        contentLength: contentLength !== undefined
             ? Number(contentLength)
             : undefined,
         contentType: readHeaderValue(headers.get('content-type')),
         contentEncoding: readHeaderValue(headers.get('content-encoding')),
         etag: readHeaderValue(headers.get('etag')),
-        lastModified: readHeaderValue(headers.get('last-modified'))
-            ? new Date(headers.get('last-modified')!)
+        lastModified: lastModified !== undefined
+            ? new Date(lastModified)
             : undefined,
         metadata: normalizeMetadataHeaders(headers)
     };
 };
 
-const parseListEntry = (value: unknown): TeamClusterObjectGatewayListEntry | null => {
-    if (typeof value !== 'object' || value === null) {
-        return null;
-    }
-
-    const entry = value as Record<string, unknown>;
-    if (typeof entry.key !== 'string' || entry.key.length === 0) {
-        return null;
-    }
-
-    const lastModified = entry.lastModified instanceof Date
-        ? entry.lastModified
-        : typeof entry.lastModified === 'string' && entry.lastModified.length > 0
-            ? new Date(entry.lastModified)
-            : undefined;
+const parseListEntry = (entry: ObjectGatewayJsonListEntry): TeamClusterObjectGatewayListEntry => {
+    const lastModified = entry.lastModified !== undefined
+        ? new Date(entry.lastModified)
+        : undefined;
 
     return {
         key: entry.key,
-        contentLength: typeof entry.contentLength === 'number'
-            ? entry.contentLength
-            : undefined,
-        etag: typeof entry.etag === 'string' && entry.etag.length > 0
-            ? entry.etag
-            : undefined,
+        contentLength: entry.contentLength,
+        etag: entry.etag,
         lastModified: lastModified && !Number.isNaN(lastModified.getTime())
             ? lastModified
             : undefined
@@ -305,21 +294,15 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
             method: 'GET',
             path: `${buildCollectionPath(request.bucket)}?${query.toString()}`
         }, 'list');
-        const objects = Array.isArray(response.objects)
-            ? response.objects.map(parseListEntry).filter((entry): entry is TeamClusterObjectGatewayListEntry => entry !== null)
-            : [];
-        const keys = Array.isArray(response.keys)
-            ? response.keys.filter((value): value is string => typeof value === 'string')
-            : objects.map((object) => object.key);
+        const objects = (response.objects ?? []).map(parseListEntry);
+        const keys = response.keys ?? objects.map((object) => object.key);
 
         return {
             keys,
             objects: objects.length > 0
                 ? objects
                 : keys.map((key) => ({ key })),
-            nextCursor: typeof response.nextCursor === 'string'
-                ? response.nextCursor
-                : undefined
+            nextCursor: response.nextCursor
         };
     }
 
@@ -455,9 +438,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
             path: `${buildCollectionPath(bucket)}?${query.toString()}`
         }, 'delete-prefix');
 
-        return typeof response.deletedCount === 'number'
-            ? response.deletedCount
-            : undefined;
+        return response.deletedCount;
     }
 
     private async fetchJson<T>(
@@ -505,12 +486,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
 
             throw mapStatusToApplicationError(
                 response.statusCode,
-                typeof payload?.code === 'string'
-                    ? payload.code
-                    : `TeamCluster::ObjectGateway${operation}`,
-                typeof payload?.message === 'string'
-                    ? payload.message
-                    : `Object gateway request failed with status ${response.statusCode}`
+                payload?.code ?? `TeamCluster::ObjectGateway${operation}`,
+                payload?.message ?? `Object gateway request failed with status ${response.statusCode}`
             );
         } catch (error) {
             this.releaseHttpSession(session, true);
@@ -521,11 +498,8 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     private async resolveAccessToken(teamClusterId: string): Promise<CachedAccessToken> {
         const cacheKey = `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_ID}:${TeamClusterServiceExposureAccessMode.Http}`;
         const cachedToken = this.cachedTokens.get(cacheKey);
-        const expiresAtMs = cachedToken
-            ? Date.parse(cachedToken.expiresAt)
-            : Number.NaN;
 
-        if (cachedToken && Number.isFinite(expiresAtMs) && expiresAtMs - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS) {
+        if (cachedToken && Date.parse(cachedToken.expiresAt) - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS) {
             return cachedToken;
         }
 

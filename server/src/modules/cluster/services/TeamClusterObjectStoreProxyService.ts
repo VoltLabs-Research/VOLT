@@ -233,7 +233,7 @@ export default class TeamClusterObjectStoreProxyService {
     }
 
     #requireContentLength(contentLength: number | undefined): number {
-        if (typeof contentLength === 'undefined') {
+        if (contentLength === undefined) {
             throw ApplicationError.badRequest(
                 'TeamCluster::ObjectStoreProxyContentLengthRequired',
                 'content-length header is required for uploads'

@@ -15,7 +15,7 @@ export class ContainerPortRelayLifecycleService{
             }
 
             return container.ports
-                .filter((port) => typeof port.public === 'number' && port.public > 0)
+                .filter((port) => (port.public ?? 0) > 0)
                 .map((port) => ({
                     teamId: container.team as string,
                     containerId: container.id,

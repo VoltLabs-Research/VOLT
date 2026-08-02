@@ -26,10 +26,6 @@ export const normalizeWebSocketCloseCode = (code?: number): number | undefined =
 };
 
 export const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
-    if (typeof data === 'string') {
-        return data;
-    }
-
     if (Buffer.isBuffer(data)) {
         return data;
     }

@@ -27,7 +27,7 @@ interface DayElementProps {
 };
 
 const isActivityHeatmapChartDataItem = (value: HeatmapValue | null): value is ActivityHeatmapChartDataItem => {
-    return value !== null && typeof value.date === 'string' && typeof value.level === 'number' && typeof value.count === 'number';
+    return value !== null;
 };
 
 const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {

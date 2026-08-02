@@ -25,17 +25,7 @@ const getTeamInviteLink = (inviteCode: string): string => {
     return new URL(invitePath, window.location.origin).toString();
 };
 
-interface UseInviteCodeReturn {
-    inviteCode: string | null;
-    canManageCode: boolean;
-    isGenerating: boolean;
-    isDeleting: boolean;
-    handleGenerate: () => Promise<void>;
-    handleDelete: () => Promise<void>;
-    handleCopy: () => Promise<void>;
-}
-
-export default function useInviteCode(): UseInviteCodeReturn {
+export default function useInviteCode() {
     const teamId = useSelectedTeamId();
     const { canAccess } = useTeamPermissions();
 

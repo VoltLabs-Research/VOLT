@@ -41,9 +41,9 @@ const toActivityUser = (user: User | null | undefined): DailyActivityRecordView[
 
     return {
         _id: user.id,
-        firstName: typeof user.firstName === 'string' ? user.firstName : '',
-        lastName: typeof user.lastName === 'string' ? user.lastName : '',
-        avatar: typeof user.avatar === 'string' ? user.avatar : undefined
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar ?? undefined
     };
 };
 

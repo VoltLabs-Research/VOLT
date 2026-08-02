@@ -14,11 +14,7 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import type { Params } from 'react-router-dom';
 import './TeamInvitation.css';
-interface TeamInvitationRouteParams extends Params {
-    invitationId: string;
-}
 
 const ACCEPT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Accepting invitation...',
@@ -33,7 +29,7 @@ const REJECT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 export default function TeamInvitationTemplate() {
-    const { invitationId } = useParams<TeamInvitationRouteParams>();
+    const { invitationId } = useParams<{ invitationId: string }>();
     const location = useLocation();
     const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
@@ -41,10 +37,6 @@ export default function TeamInvitationTemplate() {
     const nextDestination = resolvePostAuthDestination({
         queryNext: new URLSearchParams(location.search).get('next')
     });
-
-    const handleBackToDashboard = () => {
-        navigate(getPostAuthRedirectPath(nextDestination));
-    };
 
     const acceptMutation = useAcceptInvitationMutation();
     const rejectMutation = useRejectInvitationMutation();
@@ -55,35 +47,39 @@ export default function TeamInvitationTemplate() {
         retry: false
     });
 
-    const loading = invitationQuery.isLoading;
     const invitation = invitationQuery.data ?? null;
     const queryError = invitationQuery.error;
 
-    const displayError = error ?? (queryError
-        ? (isAccessDeniedError(queryError)
+    const displayError = error
+        ?? (queryError
             ? reportError(queryError, {
                 surface: ErrorSurface.Silent,
-                fallbackTitle: 'You do not have permission to perform this action.'
+                fallbackTitle: isAccessDeniedError(queryError)
+                    ? 'You do not have permission to perform this action.'
+                    : 'An error occurred'
             }).title
-            : reportError(queryError, {
-                surface: ErrorSurface.Silent,
-                fallbackTitle: 'An error occurred'
-            }).title)
-        : (!invitationId ? 'Invalid invitation link' : null));
+            : (!invitationId ? 'Invalid invitation link' : null));
 
-    const handleAccept = async () => {
+    const respondToInvitation = async (
+        action: 'accept' | 'reject'
+    ) => {
         if(!invitationId || !invitation) return;
+
+        const isAccept = action === 'accept';
+        const mutation = isAccept ? acceptMutation : rejectMutation;
 
         try {
             await runAction({
-                action: () => acceptMutation.mutateAsync({
+                action: () => mutation.mutateAsync({
                     invitationId,
                     teamId: invitation.team._id
                 }),
-                toast: ACCEPT_INVITATION_TOAST_OPTIONS,
+                toast: isAccept ? ACCEPT_INVITATION_TOAST_OPTIONS : REJECT_INVITATION_TOAST_OPTIONS,
                 afterSuccess: async () => {
-                    setSelectedTeamId(invitation.team._id);
-                    await refreshSocketSession();
+                    if (isAccept) {
+                        setSelectedTeamId(invitation.team._id);
+                        await refreshSocketSession();
+                    }
                     setError(null);
                     navigate(getOnboardingRedirectPath(nextDestination));
                 }
@@ -91,35 +87,33 @@ export default function TeamInvitationTemplate() {
         } catch (actionError: unknown) {
             setError(reportError(actionError, {
                 surface: ErrorSurface.Silent,
-                fallbackTitle: 'Failed to accept invitation'
+                fallbackTitle: isAccept ? 'Failed to accept invitation' : 'Failed to reject invitation'
             }).title);
         }
     };
 
-    const handleReject = async () => {
-        if(!invitationId || !invitation) return;
+    const renderUnavailableCard = (icon: 'error' | 'warning', title: string, description: string) => (
+        <TeamInvitationStateCard
+            icon={(
+                <div className={icon === 'error' ? 'team-invitation-icon-error' : 'team-invitation-icon-warning'}>
+                    {icon === 'error' ? <XCircle size={48} /> : <Clock size={48} />}
+                </div>
+            )}
+            title={title}
+            description={description}
+            action={(
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    onClick={() => navigate(getPostAuthRedirectPath(nextDestination))}
+                >
+                    Back to Dashboard
+                </Button>
+            )}
+        />
+    );
 
-        try {
-            await runAction({
-                action: () => rejectMutation.mutateAsync({
-                    invitationId,
-                    teamId: invitation.team._id
-                }),
-                toast: REJECT_INVITATION_TOAST_OPTIONS,
-                afterSuccess: () => {
-                    setError(null);
-                    navigate(getOnboardingRedirectPath(nextDestination));
-                }
-            });
-        } catch (actionError: unknown) {
-            setError(reportError(actionError, {
-                surface: ErrorSurface.Silent,
-                fallbackTitle: 'Failed to reject invitation'
-            }).title);
-        }
-    };
-
-    if(loading){
+    if(invitationQuery.isLoading){
         return (
             <TeamInvitationCard>
                 <Text as='p' tone='secondary'>Loading invitation...</Text>
@@ -127,52 +121,21 @@ export default function TeamInvitationTemplate() {
         );
     }
 
-    if(displayError || !invitation || !invitation.team || !invitation.invitedBy){
-        return (
-            <TeamInvitationStateCard
-                icon={(
-                    <div className='team-invitation-icon-error'>
-                        <XCircle size={48} />
-                    </div>
-                )}
-                title='Invalid Invitation'
-                description={displayError || 'This invitation is not valid or has expired'}
-                action={(
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={handleBackToDashboard}
-                    >
-                        Back to Dashboard
-                    </Button>
-                )}
-            />
+    if(displayError || !invitation){
+        return renderUnavailableCard(
+            'error',
+            'Invalid Invitation',
+            displayError || 'This invitation is not valid or has expired'
         );
     }
 
     const expiresAt = new Date(invitation.expiresAt);
-    const isExpired = new Date() > expiresAt;
 
-    if(isExpired){
-        return (
-            <TeamInvitationStateCard
-                icon={(
-                    <div className='team-invitation-icon-warning'>
-                        <Clock size={48} />
-                    </div>
-                )}
-                title='Invitation Expired'
-                description={`This invitation expired on ${expiresAt.toLocaleString()}`}
-                action={(
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={handleBackToDashboard}
-                    >
-                        Back to Dashboard
-                    </Button>
-                )}
-            />
+    if(new Date() > expiresAt){
+        return renderUnavailableCard(
+            'warning',
+            'Invitation Expired',
+            `This invitation expired on ${expiresAt.toLocaleString()}`
         );
     }
 
@@ -225,7 +188,7 @@ export default function TeamInvitationTemplate() {
                     intent='brand'
                     block
                     leftIcon={<CheckCircle size={20} />}
-                    onClick={handleAccept}
+                    onClick={() => respondToInvitation('accept')}
                     disabled={actionLoading}
                     isLoading={actionLoading}
                 >
@@ -236,7 +199,7 @@ export default function TeamInvitationTemplate() {
                     intent='neutral'
                     block
                     leftIcon={<XCircle size={20} />}
-                    onClick={handleReject}
+                    onClick={() => respondToInvitation('reject')}
                     disabled={actionLoading}
                 >
                     Reject Invitation

@@ -191,11 +191,7 @@ export default class AnalysisResultSummarizer{
 
             accumulator.rowCount += 1;
 
-            const data = (row.row && typeof row.row === 'object' && !Array.isArray(row.row))
-                ? row.row
-                : {};
-
-            for (const [column, value] of Object.entries(data)) {
+            for (const [column, value] of Object.entries(row.row ?? {})) {
                 const values = accumulator.columnValues.get(column) ?? [];
                 values.push(value);
                 accumulator.columnValues.set(column, values);

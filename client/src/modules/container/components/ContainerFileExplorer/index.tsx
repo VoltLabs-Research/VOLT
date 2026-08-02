@@ -190,7 +190,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                         icon={renderFileIcon(file.isDirectory)}
                         name={file.name}
                         type={file.isDirectory ? 'Folder' : 'File'}
-                        size={file.size ? String(file.size) : undefined}
+                        size={file.size || undefined}
                         date={file.date}
                         isSelected={explorer.selectedPath === entryPath}
                         onClick={() => handleFileItemClick(file)}

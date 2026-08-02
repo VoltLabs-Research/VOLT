@@ -60,7 +60,7 @@ const formatTraceDuration = (durationMs: number): string => {
 };
 
 const resolveTraceNodeLabel = (node: DebugTraceNode): string => {
-    if (typeof node.label === 'string' && node.label.trim().length > 0) {
+    if (node.label?.trim()) {
         return node.label;
     }
 
@@ -93,7 +93,8 @@ const DebugExecutionTraceTree = ({
     return (
         <Box className={`workflow-node-trace-tree workflow-node-trace-tree--depth-${depth}`}>
             {nodes.map((node) => {
-                const hasDetails = Boolean(node.output || node.error || node.reason || (node.children?.length ?? 0) > 0);
+                const children = node.children ?? [];
+                const hasDetails = Boolean(node.output || node.error || node.reason || children.length > 0);
                 const isExpanded = expandedTraceIds.has(node.traceId);
 
                 return (
@@ -150,10 +151,10 @@ const DebugExecutionTraceTree = ({
                                     </Box>
                                 )}
 
-                                {Array.isArray(node.children) && node.children.length > 0 && (
+                                {children.length > 0 && (
                                     <Box className='workflow-node-trace-children'>
                                         <DebugExecutionTraceTree
-                                            nodes={node.children}
+                                            nodes={children}
                                             expandedTraceIds={expandedTraceIds}
                                             onToggleTraceNode={onToggleTraceNode}
                                             depth={depth + 1}
@@ -218,8 +219,8 @@ const BaseNode = ({
         (debugState.status === DebugNodeStatus.Completed
             || debugState.status === DebugNodeStatus.Failed
             || debugState.status === DebugNodeStatus.Skipped);
-    const nestedTrace = Array.isArray(debugState?.nestedTrace) ? debugState.nestedTrace : [];
-    const logSegments = Array.isArray(debugState?.logSegments) ? debugState.logSegments : [];
+    const nestedTrace = debugState?.nestedTrace ?? [];
+    const logSegments = debugState?.logSegments ?? [];
 
     const isEntrypoint = nodeType === NodeType.ENTRYPOINT;
     const supportsExecutionLog = nodeType === NodeType.ENTRYPOINT || nodeType === NodeType.PLUGIN;

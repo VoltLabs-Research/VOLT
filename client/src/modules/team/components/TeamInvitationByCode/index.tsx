@@ -19,29 +19,18 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { AlertCircle, CheckCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import type { Params } from 'react-router-dom';
-interface TeamInvitationByCodeRouteParams extends Params {
-    code: string;
-}
-
-enum TeamInvitationByCodeStatus {
-    Ready = 'ready',
-    Joining = 'joining',
-    AlreadyMember = 'already-member',
-    Error = 'error'
-}
 
 const isAlreadyMemberError = (message: string): boolean => {
     return message.toLowerCase().includes('already a member');
 };
 
 const TeamInvitationByCodeTemplate = () => {
-    const { code } = useParams<TeamInvitationByCodeRouteParams>();
+    const { code } = useParams<{ code: string }>();
     const navigate = useNavigate();
     const location = useLocation();
     const joinByCodeMutation = useJoinByCodeMutation();
     const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null);
-    const normalizedCode = useMemo(() => code?.trim().toUpperCase() ?? '', [code]);
+    const normalizedCode = code?.trim().toUpperCase() ?? '';
     const nextDestination = resolvePostAuthDestination({
         queryNext: new URLSearchParams(location.search).get('next')
     });
@@ -104,16 +93,13 @@ const TeamInvitationByCodeTemplate = () => {
         }).title;
     }, [normalizedCode, previewQuery.error]);
 
-    let status = TeamInvitationByCodeStatus.Ready;
-    if (preview?.isAlreadyMember || isAlreadyMemberError(joinErrorMessage ?? '')) {
-        status = TeamInvitationByCodeStatus.AlreadyMember;
-    } else if (!normalizedCode || previewErrorMessage || joinErrorMessage) {
-        status = TeamInvitationByCodeStatus.Error;
-    } else if (joinByCodeMutation.isPending) {
-        status = TeamInvitationByCodeStatus.Joining;
-    }
+    const isAlreadyMember = Boolean(preview?.isAlreadyMember) || isAlreadyMemberError(joinErrorMessage ?? '');
+    const hasError = !isAlreadyMember && Boolean(!normalizedCode || previewErrorMessage || joinErrorMessage);
+    const isPreparing = previewQuery.isLoading || (!isAlreadyMember && !hasError && joinByCodeMutation.isPending);
 
-    if (previewQuery.isLoading) {
+    if (isPreparing) {
+        const isJoining = joinByCodeMutation.isPending;
+
         return (
             <TeamInvitationStateCard
                 icon={(
@@ -121,27 +107,15 @@ const TeamInvitationByCodeTemplate = () => {
                         <Loader scale={1} isFixed={false} />
                     </div>
                 )}
-                title='Reviewing invite...'
-                description='We are checking the invite details before you join the team.'
+                title={isJoining ? 'Joining team...' : 'Reviewing invite...'}
+                description={isJoining
+                    ? 'We are confirming your membership and preparing your workspace.'
+                    : 'We are checking the invite details before you join the team.'}
             />
         );
     }
 
-    if (status === TeamInvitationByCodeStatus.Joining) {
-        return (
-            <TeamInvitationStateCard
-                icon={(
-                    <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
-                        <Loader scale={1} isFixed={false} />
-                    </div>
-                )}
-                title='Joining team...'
-                description='We are confirming your membership and preparing your workspace.'
-            />
-        );
-    }
-
-    if (status === TeamInvitationByCodeStatus.AlreadyMember) {
+    if (isAlreadyMember) {
         return (
             <TeamInvitationCard>
                 <Tag tone='success' variant='soft' size='md' leftIcon={<Users size={20} />}>
@@ -169,7 +143,7 @@ const TeamInvitationByCodeTemplate = () => {
         );
     }
 
-    if (status === TeamInvitationByCodeStatus.Error) {
+    if (hasError) {
         return (
             <TeamInvitationStateCard
                 icon={(

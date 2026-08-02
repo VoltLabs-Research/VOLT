@@ -1,7 +1,6 @@
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import type { ChatRecord } from '@shared/contracts/ports';
-import type { ChatParticipant } from '@shared/contracts/types';
 import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
 import type {
     GetAnalysesByTeamIdItemView,
@@ -48,9 +47,19 @@ interface ContainerSearchView{
     updatedAt?: Date;
 }
 
+interface ChatSearchParticipant{
+    firstName: string;
+    lastName: string;
+    email: string;
+}
+
+interface ChatSearchLastMessage{
+    content: string;
+}
+
 interface ChatSearchView{
-    participants: ChatParticipant[];
-    lastMessage: string;
+    participants: ChatSearchParticipant[];
+    lastMessage: ChatSearchLastMessage | null;
     isGroup: boolean;
     groupName: string;
 }
@@ -102,14 +111,13 @@ const MAX_LIMIT = 10;
 const MIN_SEARCH_QUERY_LENGTH = 2;
 const LIKE_ESCAPE_CHARACTER = '\\';
 
-const normalizeQuery = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+const normalizeQuery = (value: string | undefined): string => value?.trim() ?? '';
 
-const normalizeLimit = (value: unknown): number => {
-    const parsedLimit = Number(value);
-    if(!Number.isFinite(parsedLimit)){
+const normalizeLimit = (value: number | undefined): number => {
+    if(value === undefined || !Number.isFinite(value)){
         return DEFAULT_LIMIT;
     }
-    return Math.min(MAX_LIMIT, Math.max(1, Math.trunc(parsedLimit)));
+    return Math.min(MAX_LIMIT, Math.max(1, Math.trunc(value)));
 };
 
 const escapeLikePattern = (value: string): string =>
@@ -122,35 +130,8 @@ const memberToken = (userId: string): string => `%,${escapeLikePattern(userId)},
 const participantCondition = (parameter: string): string =>
     `',' || COALESCE(chat.participants, '') || ',' LIKE :${parameter} ESCAPE '${LIKE_ESCAPE_CHARACTER}'`;
 
-const matchesNormalizedQuery = (normalizedQuery: string, ...values: unknown[]): boolean =>
-    values.some((value) => typeof value === 'string' && value.toLowerCase().includes(normalizedQuery));
-
-const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
-    if(typeof participant === 'string'){
-        return [participant];
-    }
-
-    const searchTokens: string[] = [];
-    const candidateRecord = participant as Record<string, unknown>;
-
-    for(const key of ['firstName', 'lastName', 'email']){
-        const value = candidateRecord[key];
-        if(typeof value === 'string' && value.length > 0){
-            searchTokens.push(value);
-        }
-    }
-
-    return searchTokens;
-};
-
-const getLastMessageContent = (chat: ChatRecord<ChatSearchView>): string | undefined => {
-    const lastMessage = chat.lastMessage;
-    if(typeof lastMessage !== 'object' || lastMessage === null){
-        return undefined;
-    }
-    const content = (lastMessage as Record<string, unknown>).content;
-    return typeof content === 'string' ? content : undefined;
-};
+const matchesNormalizedQuery = (normalizedQuery: string, ...values: Array<string | null | undefined>): boolean =>
+    values.some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false);
 
 const toAnalysisView = (analysis: Analysis): GetAnalysesByTeamIdItemView => ({
     ...analysis.toJSON(),
@@ -283,8 +264,12 @@ export default class DashboardService{
             chats: (chats as unknown as ChatRecord<ChatSearchView>[])
                 .filter((chat) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
-                    getLastMessageContent(chat),
-                    ...chat.participants.flatMap((participant) => getParticipantSearchTokens(participant))
+                    chat.lastMessage?.content,
+                    ...chat.participants.flatMap((participant) => [
+                        participant.firstName,
+                        participant.lastName,
+                        participant.email
+                    ])
                 ))
                 .slice(0, limit)
         };

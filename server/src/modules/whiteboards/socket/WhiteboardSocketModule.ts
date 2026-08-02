@@ -122,11 +122,7 @@ class WhiteboardSocketModule extends BaseSocketModule {
 
     private registerPatch(connection: ISocketConnection): void {
         this.on<WhiteboardPatchPayload, SocketAck<WhiteboardPatchAck>>(connection.id, 'whiteboard_patch', async (conn, payload) => {
-            if (
-                !conn.user
-                || payload.whiteboardId.length === 0
-                || !Number.isFinite(payload.baseRevision)
-            ) {
+            if (!conn.user || payload.whiteboardId.length === 0) {
                 return ackError('Invalid whiteboard patch payload');
             }
 
@@ -152,12 +148,10 @@ class WhiteboardSocketModule extends BaseSocketModule {
 
             const mergeResult = await realtimeStateService.mergeScene(
                 payload.whiteboardId,
-                Array.isArray(payload.elements) ? payload.elements : [],
+                payload.elements,
                 payload.appState,
                 conn.user._id,
-                Array.isArray(payload.elementOrder)
-                    ? payload.elementOrder.filter((id) => id.length > 0)
-                    : undefined
+                payload.elementOrder?.filter((id) => id.length > 0)
             );
 
             if (!mergeResult) {

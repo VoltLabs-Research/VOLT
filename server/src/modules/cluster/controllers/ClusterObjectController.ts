@@ -42,7 +42,7 @@ const applyReadHeaders = (
     response: Response,
     streamResponse: ClusterObjectTransferReadResponse
 ): void => {
-    if (typeof streamResponse.contentLength === 'number') {
+    if (streamResponse.contentLength !== undefined) {
         response.setHeader('content-length', String(streamResponse.contentLength));
     }
 
@@ -118,7 +118,7 @@ export default class ClusterObjectController extends Controller {
                 readRouteParam(request, 'token')
             );
 
-            if (typeof head.contentLength === 'number') {
+            if (head.contentLength !== undefined) {
                 response.setHeader('content-length', String(head.contentLength));
             }
             if (head.contentType) response.setHeader('content-type', head.contentType);

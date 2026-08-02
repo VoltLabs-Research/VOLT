@@ -158,8 +158,9 @@ export default class AnalysisAIToolController extends AIToolController {
         const totalFrames = analysis.totalFrames ?? 0;
 
         const failedStageFrames = (analysis.stages ?? [])
-            .filter((stage) => stage.status === 'failed' && typeof stage.timestep === 'number')
-            .map((stage) => stage.timestep as number);
+            .flatMap((stage) => stage.status === 'failed' && stage.timestep !== undefined
+                ? [stage.timestep]
+                : []);
         const failedFrames = Array.from(new Set(failedStageFrames)).sort((first, second) => first - second);
 
         const artifacts = analysis.expectedArtifacts ?? [];

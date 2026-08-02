@@ -111,21 +111,8 @@ export const switchSelectedTeam = (teamId: string | null): void => {
     teamState.setSelectedTeamId(teamId);
 };
 
-const getCurrentPathname = (): string => {
-    return window.location.pathname;
-};
-
 export const resetTeamSessionState = (): void => {
-    const currentPathname = getCurrentPathname();
-    runManualAppCleanup(currentPathname, null);
-    const cachedTeams = queryClient.getQueryData<{ _id: string }[]>(TEAM_QUERY_KEYS.teams()) ?? [];
-    const teamState = useTeamStore.getState();
-    const teamIds = new Set(cachedTeams.map((team) => team._id));
-
-    if (teamState.selectedTeamId) {
-        teamIds.add(teamState.selectedTeamId);
-    }
-
+    runManualAppCleanup(window.location.pathname, null);
     teamStorage.clearSelectedTeamId();
     useTeamStore.getState().reset();
     resetTeamDependentStores();

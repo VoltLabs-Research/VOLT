@@ -189,7 +189,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             if (draft.selectedTemplate !== undefined) {
                 setSelectedTemplate(draft.selectedTemplate ?? null);
             }
-            if (typeof draft.customImage === 'string') {
+            if (draft.customImage !== undefined) {
                 setCustomImageState(draft.customImage);
             }
             if (draft.selectedTeamId !== undefined) {
@@ -204,7 +204,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                     ...draft.config
                 }));
             }
-            if (typeof draft.savedAt === 'number') {
+            if (draft.savedAt !== undefined) {
                 setDraftLastSavedAt(draft.savedAt);
             }
         } catch {

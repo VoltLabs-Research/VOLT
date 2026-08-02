@@ -8,7 +8,7 @@ interface TeamScopedPaginatedParams {
     limit: number;
 }
 
-interface TeamScopedAggregateParams {
+export interface TeamScopedAggregateParams {
     teamId: string;
     limit: number;
 }
@@ -35,12 +35,12 @@ export const createTeamScopedPaginatedResource = <
 >(config: TeamScopedPaginatedResourceConfig<TKeyName, TEntity>) => {
     const queryKeys = buildKeys<{ [K in TKeyName]: void }>(config.baseKey);
 
-    const getListingQueryKey = ({ teamId }: { teamId: string }): QueryKey => {
+    const getListingQueryKey = (teamId: string): QueryKey => {
         return [...queryKeys[config.listKeyName](), teamId];
     };
 
     const getAggregateQueryKey = ({ teamId, limit }: TeamScopedAggregateParams): QueryKey => {
-        return [...getListingQueryKey({ teamId }), {
+        return [...getListingQueryKey(teamId), {
             aggregate: true,
             limit
         }];
@@ -70,7 +70,7 @@ export const createTeamScopedPaginatedResource = <
         teamId?: string | null
     ): TeamScopedListingAccessors<TEntity, TListParams> => {
         return {
-            queryKey: teamId ? getListingQueryKey({ teamId }) : queryKeys[config.listKeyName](),
+            queryKey: teamId ? getListingQueryKey(teamId) : queryKeys[config.listKeyName](),
             fetchData: async (params: TListParams): Promise<PaginatedResponse<TEntity>> => {
                 if (!teamId) {
                     throw new Error('No team selected');

@@ -123,6 +123,24 @@ interface DaemonSceneArtifactUpsertBatchStreamPayload {
     items: DaemonSceneArtifactUpsertItem[];
 }
 
+interface DaemonAnalysisProvenanceEventPayload {
+    pluginName: string;
+    pluginVersion: string;
+    parameters: Record<string, unknown>;
+    inputFrameContentHash: string;
+    atomCount: number;
+    frameIndex: number;
+    trajectoryId: string;
+    analysisId: string;
+    teamId: string;
+    coreToolkitVersion: string;
+    rngSeed?: number;
+    executedAt: string;
+    executedBy: string;
+    executionTimeMs: number;
+    outputArtifactIds: string[];
+}
+
 class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
@@ -166,9 +184,7 @@ class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_SUBSCRIPTION_EVENT,
             async (conn, payload) => {
-                const previousTeamClusterIds = Array.isArray(conn.data.teamClusterIds)
-                    ? conn.data.teamClusterIds.filter((value): value is string => typeof value === 'string')
-                    : [];
+                const previousTeamClusterIds = (conn.data.teamClusterIds as string[] | undefined) ?? [];
                 const requestedIds = Array.from(new Set(payload.teamClusterIds));
                 const authorizedTeamIds = new Set(conn.user?.teams ?? []);
                 const nextSubscribedIds: string[] = [];
@@ -551,16 +567,10 @@ class TeamClusterSocketModule extends BaseSocketModule {
         }
 
         if ((payload as { type: string }).type === 'analysis-provenance') {
-            const prov = payload as unknown as {
-                pluginName: string; pluginVersion: string; parameters: Record<string, unknown>;
-                inputFrameContentHash: string; atomCount: number; frameIndex: number;
-                trajectoryId: string; analysisId: string; teamId: string;
-                coreToolkitVersion: string; rngSeed?: number; executedAt: string;
-                executedBy: string; executionTimeMs: number; outputArtifactIds: string[];
-            };
+            const provenanceEvent = payload as unknown as DaemonAnalysisProvenanceEventPayload;
             this.provenanceService.recordAnalysisExecution({
-                ...prov,
-                executedAt: new Date(prov.executedAt)
+                ...provenanceEvent,
+                executedAt: new Date(provenanceEvent.executedAt)
             }).catch((err: unknown) => {
                 logger.warn({ err }, 'Failed to record analysis provenance from daemon event');
             });

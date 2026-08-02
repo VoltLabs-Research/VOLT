@@ -15,7 +15,6 @@ import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { useCallback } from 'react';
-import { sileo } from 'sileo';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
@@ -34,20 +33,6 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     }
 ];
 
-type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;
-
-const NAME_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
-    variant: 'text',
-    width: 120
-};
-const PREFIX_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
-    variant: 'text',
-    width: 80
-};
-const ROLE_COLUMN_SKELETON: SecretKeyColumnSkeleton = {
-    variant: 'text',
-    width: 100
-};
 const getDeleteSecretKeyToastOptions = (key: SecretKey) => createPromiseToastOptions({
     loading: `Deleting "${key.name}"...`,
     success: `Secret key "${key.name}" deleted`,
@@ -58,20 +43,29 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'name',
         title: 'Name',
-        render: (_value, key) => String(key.name),
-        skeleton: NAME_COLUMN_SKELETON
+        render: (_value, key) => key.name,
+        skeleton: {
+            variant: 'text',
+            width: 120
+        }
     },
     {
         key: 'keyPrefix',
         title: 'Prefix',
         render: (_value, key) => <Tag tone='neutral' variant='soft' size='xs' shape='square' className='font-mono'>{key.keyPrefix}...</Tag>,
-        skeleton: PREFIX_COLUMN_SKELETON
+        skeleton: {
+            variant: 'text',
+            width: 80
+        }
     },
     {
         key: 'roleName',
         title: 'Role',
-        render: (_value, key) => String(key.roleName || 'Unknown Role'),
-        skeleton: ROLE_COLUMN_SKELETON
+        render: (_value, key) => key.roleName || 'Unknown Role',
+        skeleton: {
+            variant: 'text',
+            width: 100
+        }
     },
     statusColumn<SecretKey>('isActive', 'Status', {
         width: 70,
@@ -98,13 +92,7 @@ export default function SecretKeysListing() {
     const deleteSecretKeyMutation = useDeleteSecretKeyMutation();
 
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
-        const keyPrefix = String(key.keyPrefix || '').trim();
-        if (!keyPrefix) {
-            sileo.error({ title: 'No key prefix available to copy' });
-            return;
-        }
-
-        await copyTextToClipboard(keyPrefix, {
+        await copyTextToClipboard(key.keyPrefix.trim(), {
             successMessage: 'Key prefix copied to clipboard',
             errorMessage: 'Failed to copy key prefix'
         });

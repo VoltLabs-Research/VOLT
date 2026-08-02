@@ -108,11 +108,9 @@ const hasEquivalentElementPayload = (
     const resolvedCurrentSignature = currentSignature ?? getElementSignature(current);
     const resolvedIncomingSignature = incomingSignature ?? getElementSignature(incoming);
 
-    if (typeof resolvedCurrentSignature === 'string' && typeof resolvedIncomingSignature === 'string') {
-        return resolvedCurrentSignature === resolvedIncomingSignature;
-    }
-
-    return false;
+    return resolvedCurrentSignature !== null
+        && resolvedIncomingSignature !== null
+        && resolvedCurrentSignature === resolvedIncomingSignature;
 };
 
 const shouldReplaceElement = (
@@ -242,7 +240,7 @@ class WhiteboardRealtimeStateService {
             }
         }
 
-        if (Array.isArray(elementOrder) && elementOrder.length > 0) {
+        if (elementOrder?.length) {
             const nextOrder = this.buildOrderedIds(elementOrder, room.elementOrder, room.elements);
             if (!areStringArraysEqual(room.elementOrder, nextOrder)) {
                 room.elementOrder = nextOrder;
@@ -381,11 +379,7 @@ class WhiteboardRealtimeStateService {
         if (await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
             try {
                 const buffer = await this.objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
-                const parsed: unknown = JSON.parse(buffer.toString('utf8'));
-
-                if (typeof parsed === 'object' && parsed !== null) {
-                    storedScene = parsed as StoredWhiteboardScene;
-                }
+                storedScene = JSON.parse(buffer.toString('utf8')) as StoredWhiteboardScene;
             } catch {
                 storedScene = EMPTY_SCENE();
             }
@@ -397,7 +391,7 @@ class WhiteboardRealtimeStateService {
             teamId: whiteboard.team,
             storageClusterId,
             payloadKey,
-            revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
+            revision: storedScene.revision ?? 0,
             elements: new Map(elements.map((element) => [element.id as string, element])),
             elementSignatures: new Map<string, string>(),
             elementOrder: elements.map((element) => element.id as string),
@@ -405,7 +399,7 @@ class WhiteboardRealtimeStateService {
             snapshotCache: null,
             persistTimer: null,
             lastEditedBy: whiteboard.lastEditedBy ?? null,
-            lastPersistedRevision: typeof storedScene.revision === 'number' ? storedScene.revision : 0
+            lastPersistedRevision: storedScene.revision ?? 0
         };
 
         this.rooms.set(whiteboardId, room);

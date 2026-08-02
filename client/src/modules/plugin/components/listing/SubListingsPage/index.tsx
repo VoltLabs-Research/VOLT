@@ -46,14 +46,6 @@ const buildTabs = (names: string[]): DocumentListingTab[] => {
     }));
 };
 
-const resolveRowIdentifier = (row: SubListingRow, index: number): string => {
-    const candidate = row._id ?? row.id;
-    if(typeof candidate === 'string' || typeof candidate === 'number'){
-        return String(candidate);
-    }
-    return String(index);
-};
-
 const SubListingsPage = () => {
     const params = useParams();
     const [searchParams] = useSearchParams();
@@ -163,9 +155,7 @@ const SubListingsPage = () => {
     const handleItemClick = useCallback((item: SubListingRow) => {
         setSelectedRow((current) => {
             if(!current) return item;
-            const currentId = resolveRowIdentifier(current, -1);
-            const nextId = resolveRowIdentifier(item, -2);
-            return currentId === nextId ? null : item;
+            return current._id === item._id ? null : item;
         });
         return true;
     }, []);
@@ -198,9 +188,7 @@ const SubListingsPage = () => {
     }
 
     const title = activeTab ? formatSnakeCaseToTitle(activeTab) : 'Sub-Listings';
-    const description = Number.isFinite(timestep)
-        ? `Timestep ${timestep}`
-        : undefined;
+    const description = `Timestep ${timestep}`;
 
     return (
         <div className='plugin-sub-listings-page'>

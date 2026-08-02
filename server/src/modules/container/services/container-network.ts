@@ -32,11 +32,10 @@ export const resolveAccessiblePorts = (ports: ContainerPortMapping[], containerS
 };
 
 const isBrowserAccessible = (port: ContainerPortMapping): boolean => {
-    if(BROWSER_ACCESSIBLE_PORTS.has(port.private) || (typeof port.public === 'number' && BROWSER_ACCESSIBLE_PORTS.has(port.public))){
+    if(BROWSER_ACCESSIBLE_PORTS.has(port.private) || BROWSER_ACCESSIBLE_PORTS.has(port.public ?? 0)){
         return true;
     }
-    const rawLabel = (port as ContainerPortMapping & { label?: unknown }).label;
-    const label = typeof rawLabel === 'string' && rawLabel.trim().length > 0 ? rawLabel.trim().toLowerCase() : null;
+    const label = (port as ContainerPortMapping & { label?: string }).label?.trim().toLowerCase();
     if(!label){
         return false;
     }
@@ -73,7 +72,7 @@ export const toRuntimePorts = (ports: ContainerPortMapping[]): ContainerPortMapp
 
 export const resolveInternalIp = (runtimeContainer: RuntimeContainerInfo): string | undefined => {
     const primaryIp = runtimeContainer.NetworkSettings?.IPAddress;
-    if(typeof primaryIp === 'string' && primaryIp.length > 0){
+    if(primaryIp){
         return primaryIp;
     }
     const networks = runtimeContainer.NetworkSettings?.Networks;
@@ -82,7 +81,7 @@ export const resolveInternalIp = (runtimeContainer: RuntimeContainerInfo): strin
     }
     for(const endpoint of Object.values(networks)){
         const address = endpoint?.IPAddress;
-        if(typeof address === 'string' && address.length > 0){
+        if(address){
             return address;
         }
     }
@@ -113,7 +112,7 @@ export const requireTeamClusterId = (teamClusterId?: string): string => {
 
 export const resolveNonPlaceholderInternalIp = (runtimeContainer: RuntimeContainerInfo): string | undefined => {
     const primaryIp = runtimeContainer.NetworkSettings?.IPAddress;
-    if(typeof primaryIp === 'string' && primaryIp.length > 0 && primaryIp !== PLACEHOLDER_INTERNAL_IP){
+    if(primaryIp && primaryIp !== PLACEHOLDER_INTERNAL_IP){
         return primaryIp;
     }
     const networks = runtimeContainer.NetworkSettings?.Networks;
@@ -122,7 +121,7 @@ export const resolveNonPlaceholderInternalIp = (runtimeContainer: RuntimeContain
     }
     for(const endpoint of Object.values(networks)){
         const internalIp = endpoint?.IPAddress;
-        if(typeof internalIp === 'string' && internalIp.length > 0 && internalIp !== PLACEHOLDER_INTERNAL_IP){
+        if(internalIp && internalIp !== PLACEHOLDER_INTERNAL_IP){
             return internalIp;
         }
     }

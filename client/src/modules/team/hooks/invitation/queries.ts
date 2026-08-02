@@ -1,7 +1,7 @@
 import invitationService from '../../api/services/invitation-service';
 import { invalidateTeamsQuery } from '../team/queries';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
-import type { AcceptInvitationInput, CancelInvitationInput, RejectInvitationInput, SendInvitationInput } from '../../api/services/invitation-service';
+import type { CancelInvitationInput, InvitationStatusInput, SendInvitationInput } from '../../api/services/invitation-service';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 
 interface TeamInvitationQueryKeyMap {
@@ -70,7 +70,7 @@ export const useCancelInvitationMutation = createMutation<void, CancelInvitation
     }
 );
 
-export const useAcceptInvitationMutation = createMutation<void, AcceptInvitationInput>(
+export const useAcceptInvitationMutation = createMutation<void, InvitationStatusInput>(
     invitationService.accept,
     async (_data, variables) => {
         await invalidateTeamsQuery();
@@ -79,7 +79,7 @@ export const useAcceptInvitationMutation = createMutation<void, AcceptInvitation
     }
 );
 
-export const useRejectInvitationMutation = createMutation<void, RejectInvitationInput>(
+export const useRejectInvitationMutation = createMutation<void, InvitationStatusInput>(
     invitationService.reject,
     async (_data, variables) => {
         await invalidateInvitationCollectionQuery(variables.teamId);

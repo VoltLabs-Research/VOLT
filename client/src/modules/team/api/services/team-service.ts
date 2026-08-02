@@ -6,30 +6,9 @@ import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput, JoinTeamByCodeInput, UpdateTeamInput } from '@volt/contracts/modules/team/http';
 import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
 
+export type JoinByInviteCodeInput = JoinTeamByCodeInput;
 
-export interface DeleteInviteCodeInput {
-    teamId: string;
-}
-
-interface DeleteTeamInput {
-    teamId: string;
-}
-
-export interface GenerateInviteCodeInput {
-    teamId: string;
-}
-
-interface GetTeamPermissionsInput {
-    teamId: string;
-}
-
-type GetTeamPermissionsResponse = string[];export type JoinByInviteCodeResponse = JoinTeamResponse;
-
-export interface LeaveTeamInput {
-    teamId: string;
-}
-
-export type PreviewJoinByInviteCodeInput = JoinTeamByCodeInput;
+export type JoinByInviteCodeResponse = JoinTeamResponse;
 
 export type PreviewJoinByInviteCodeResponse = PreviewJoinTeamResponse;
 
@@ -41,13 +20,13 @@ const endpoints = {
     getAll: get<EmptyParams, Team[]>('/'),
     create: post<CreateTeamInput, Team>('/'),
     update: patch<UpdateTeamParams, Team>('/:teamId'),
-    delete: del<DeleteTeamInput>('/:teamId'),
-    generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-codes'),
-    deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-codes'),
-    previewJoinByCode: get<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/invite-codes/:code'),
-    joinByCode: post<JoinTeamByCodeInput, JoinByInviteCodeResponse>('/invite-codes/:code/memberships'),
-    leave: del<LeaveTeamInput>('/:teamId/self/membership', { unwrap: 'void' }),
-    getMyPermissions: get<GetTeamPermissionsInput, GetTeamPermissionsResponse>(
+    delete: del<TeamScopedParams>('/:teamId'),
+    generateInviteCode: post<TeamScopedParams, Team>('/:teamId/invite-codes'),
+    deleteInviteCode: del<TeamScopedParams>('/:teamId/invite-codes'),
+    previewJoinByCode: get<JoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/invite-codes/:code'),
+    joinByCode: post<JoinByInviteCodeInput, JoinByInviteCodeResponse>('/invite-codes/:code/memberships'),
+    leave: del<TeamScopedParams>('/:teamId/self/membership', { unwrap: 'void' }),
+    getMyPermissions: get<TeamScopedParams, string[]>(
         '/:teamId/self/permissions', {
             unwrap: TEAM_PERMISSIONS_UNWRAP
         }
@@ -61,5 +40,3 @@ export default createService({
         }
     }
 }, endpoints);
-
-export type JoinByInviteCodeInput = JoinTeamByCodeInput;

@@ -1,8 +1,4 @@
 export const formatValueForPath = (value: number): string => {
-    if (!Number.isFinite(value)) {
-        return String(value);
-    }
-
     if (Object.is(value, -0) || value === 0) {
         return '0';
     }

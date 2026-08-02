@@ -82,10 +82,10 @@ const presentLastEditedBy = (whiteboard: Whiteboard): WhiteboardLastEditedBy => 
     if(user){
         return {
             _id: user.id,
-            firstName: typeof user.firstName === 'string' ? user.firstName : undefined,
-            lastName: typeof user.lastName === 'string' ? user.lastName : undefined,
-            email: typeof user.email === 'string' ? user.email : undefined,
-            avatar: typeof user.avatar === 'string' ? user.avatar : undefined
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            avatar: user.avatar ?? undefined
         };
     }
 

@@ -8,6 +8,7 @@ import {
     PluginNodeExecutionMode,
     WorkflowNodeType,
     type ArgumentDefinition,
+    type EntrypointNodeData,
     type WorkflowEdge,
     type WorkflowNode
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
@@ -96,9 +97,9 @@ const isAllowedSwitchHandle = (handle: string | undefined): boolean => {
 
 const resolvePluginNodeExecutionMode = (
     pluginNodeData: {
-        executionMode?: unknown;
-        pluginId?: unknown;
-        argumentReference?: unknown;
+        executionMode?: PluginNodeExecutionMode;
+        pluginId?: string;
+        argumentReference?: string;
     }
 ): PluginNodeExecutionMode => {
     if (pluginNodeData.executionMode === PluginNodeExecutionMode.ArgumentReference) {
@@ -109,12 +110,8 @@ const resolvePluginNodeExecutionMode = (
         return PluginNodeExecutionMode.Manual;
     }
 
-    const pluginId = typeof pluginNodeData.pluginId === 'string'
-        ? pluginNodeData.pluginId.trim()
-        : '';
-    const argumentReference = typeof pluginNodeData.argumentReference === 'string'
-        ? pluginNodeData.argumentReference.trim()
-        : '';
+    const pluginId = pluginNodeData.pluginId?.trim() ?? '';
+    const argumentReference = pluginNodeData.argumentReference?.trim() ?? '';
 
     if (!pluginId && argumentReference) {
         return PluginNodeExecutionMode.ArgumentReference;
@@ -243,18 +240,14 @@ export class WorkflowValidatorService {
             return;
         }
 
-        const entrypointData = entrypointNode.data?.entrypoint as Record<string, unknown> | undefined;
+        const entrypointData = entrypointNode.data?.entrypoint as Partial<EntrypointNodeData> | undefined;
         if (!entrypointData) {
             errors.push(`Top-level entrypoint ${entrypointNode.id} is missing runtime configuration`);
             return;
         }
 
-        const binaryObjectPath = typeof entrypointData.binaryObjectPath === 'string'
-            ? entrypointData.binaryObjectPath.trim()
-            : '';
-        const argumentsTemplate = typeof entrypointData.arguments === 'string'
-            ? entrypointData.arguments.trim()
-            : '';
+        const binaryObjectPath = entrypointData.binaryObjectPath?.trim() ?? '';
+        const argumentsTemplate = entrypointData.arguments?.trim() ?? '';
         const entrypointType = entrypointData.type === EntrypointNodeType.PythonScript
             ? EntrypointNodeType.PythonScript
             : entrypointData.type === EntrypointNodeType.PackagedExecutable
@@ -273,9 +266,7 @@ export class WorkflowValidatorService {
             entrypointType === EntrypointNodeType.PythonScript
             || entrypointType === EntrypointNodeType.PackagedExecutable
         ) {
-            const entrypointScript = typeof entrypointData.entrypointScript === 'string'
-                ? entrypointData.entrypointScript.trim()
-                : '';
+            const entrypointScript = entrypointData.entrypointScript?.trim() ?? '';
 
             if (!entrypointScript) {
                 errors.push(`Top-level entrypoint ${entrypointNode.id} must define an entrypoint script`);
@@ -394,7 +385,7 @@ export class WorkflowValidatorService {
 
             const outgoingEdges = topology.childrenBySource.get(node.id) ?? [];
             const invalidEdges = outgoingEdges.filter((edge) => {
-                return typeof edge.sourceHandle !== 'undefined'
+                return edge.sourceHandle !== undefined
                     && edge.sourceHandle !== 'output-true'
                     && edge.sourceHandle !== 'output-false';
             });
@@ -467,18 +458,14 @@ export class WorkflowValidatorService {
             const executionMode = resolvePluginNodeExecutionMode(pluginNodeData);
 
             if (executionMode === PluginNodeExecutionMode.Manual) {
-                const pluginId = typeof pluginNodeData.pluginId === 'string'
-                    ? pluginNodeData.pluginId.trim()
-                    : '';
+                const pluginId = pluginNodeData.pluginId?.trim() ?? '';
                 if (!pluginId) {
                     errors.push(`Plugin node ${node.id} must reference a published plugin`);
                 }
             }
 
             if (executionMode === PluginNodeExecutionMode.ArgumentReference) {
-                const argumentReference = typeof pluginNodeData.argumentReference === 'string'
-                    ? pluginNodeData.argumentReference.trim()
-                    : '';
+                const argumentReference = pluginNodeData.argumentReference?.trim() ?? '';
                 if (!argumentReference) {
                     errors.push(`Plugin node ${node.id} must define an arguments reference`);
                 } else {
@@ -521,7 +508,7 @@ export class WorkflowValidatorService {
     private getArgumentsDefinitions(workflow: WorkflowProps): ArgumentDefinition[] {
         const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
         return Array.isArray(argumentsNode?.data.arguments?.arguments)
-            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
+            ? argumentsNode.data.arguments.arguments
             : [];
     }
 
@@ -552,7 +539,7 @@ export class WorkflowValidatorService {
 
                 if (
                     (visibleWhen.operator === 'equals' || visibleWhen.operator === 'notEquals')
-                    && typeof visibleWhen.value === 'undefined'
+                    && visibleWhen.value === undefined
                 ) {
                     errors.push(`${argumentScope} requires visibleWhen.value for operator "${visibleWhen.operator}"`);
                 }
@@ -603,9 +590,7 @@ export class WorkflowValidatorService {
                 } else {
                     definition.optionsFromArguments.forEach((source, sourceIndex) => {
                         const sourceScope = `${argumentScope}.optionsFromArguments[${sourceIndex}]`;
-                        const sourceArgument = typeof source?.argument === 'string'
-                            ? source.argument.trim()
-                            : '';
+                        const sourceArgument = source?.argument?.trim() ?? '';
 
                         if (!sourceArgument) {
                             errors.push(`${sourceScope} argument is required`);
@@ -622,9 +607,7 @@ export class WorkflowValidatorService {
             }
 
             if (definition.optionsFromPluginReference !== undefined) {
-                const referenceArgument = typeof definition.optionsFromPluginReference === 'string'
-                    ? definition.optionsFromPluginReference.trim()
-                    : '';
+                const referenceArgument = definition.optionsFromPluginReference.trim();
                 if (definition.type !== ArgumentType.Select) {
                     errors.push(`${argumentScope} optionsFromPluginReference can only be used with select arguments`);
                 } else if (!referenceArgument) {

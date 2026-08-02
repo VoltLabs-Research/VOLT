@@ -48,16 +48,12 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         setErrors({});
     };
 
-    const closeSecretKeyCreationModal = () => {
-        resetModal(SECRET_KEY_CREATION_MODAL_ID, resetState);
-    };
-
     const handleClose = () => {
         if (generatedKey && !hasConfirmedCopy) {
             return;
         }
 
-        closeSecretKeyCreationModal();
+        resetModal(SECRET_KEY_CREATION_MODAL_ID, resetState);
     };
 
     const handleSubmit = async () => {
@@ -83,10 +79,8 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             }),
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
-                if (result.secretKey) {
-                    setGeneratedKey(result.secretKey);
-                    onCreated?.(result.secretKey);
-                }
+                setGeneratedKey(result.secretKey);
+                onCreated?.(result.secretKey);
             }
         });
     };
@@ -96,12 +90,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         await handleSubmit();
     };
 
-    const roleOptions = roles
-        .filter((role) => selectedTeam?._id && String(role.team) === String(selectedTeam._id))
-        .map((role) => ({
-            title: role.name,
-            value: role._id
-        }));
+    const roleOptions = roles.map((role) => ({
+        title: role.name,
+        value: role._id
+    }));
 
     return (
         <Modal

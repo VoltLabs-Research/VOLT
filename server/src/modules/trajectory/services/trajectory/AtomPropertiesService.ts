@@ -231,26 +231,21 @@ class AtomPropertiesService {
     }
 
     private isSharedOnlyExposureNode(node: WorkflowNodeLike): boolean {
-        const results = node?.data?.exposure?.results;
-        return typeof results === 'string' && results.endsWith('neighbor_lattice.parquet');
+        return node.data?.exposure?.results?.endsWith('neighbor_lattice.parquet') ?? false;
     }
 
     private getLineExposureIds(plugin: PluginLike): Set<string> {
-        const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
         const ids = new Set<string>();
-        for (const exposure of exposures) {
-            const candidate = exposure as { _id?: unknown; export?: { exporter?: string } | null };
-            if (candidate?.export?.exporter === 'LineExporter' && candidate._id !== undefined) {
-                ids.add(String(candidate._id));
+        for (const exposure of plugin.props.exposures ?? []) {
+            if (exposure.export?.exporter === 'LineExporter' && exposure._id !== undefined) {
+                ids.add(exposure._id);
             }
         }
         return ids;
     }
 
     private getExposureName(exposureNode: WorkflowNodeLike): string {
-        return typeof exposureNode?.data?.exposure?.name === 'string'
-            ? exposureNode.data.exposure.name.trim()
-            : '';
+        return exposureNode.data?.exposure?.name?.trim() ?? '';
     }
 
     private requireAnalysisStorageClusterId(analysis: Analysis): string {

@@ -4,6 +4,8 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
+import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
+import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
@@ -60,7 +62,6 @@ import type {
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
@@ -90,22 +91,6 @@ interface DaemonAnalysisJob {
     trajectoryId: string;
     analysisId: string;
     queueType: string;
-}
-
-interface WorkflowSerializable {
-    nodes: Array<{
-        id: string;
-        type: string;
-        position: { x: number; y: number; };
-        data: Record<string, unknown>;
-    }>;
-    edges: Array<{
-        id?: string;
-        source: string;
-        target: string;
-        sourceHandle?: string;
-        targetHandle?: string;
-    }>;
 }
 
 interface DaemonAnalysisPayload {
@@ -148,7 +133,7 @@ const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
 
 interface NestedPluginDefinition {
     pluginId: string;
-    workflow: WorkflowSerializable;
+    workflow: WorkflowProps;
 }
 
 interface PluginDispatchPayload extends Record<string, unknown> {
@@ -195,9 +180,9 @@ interface EncodedDispatchSection {
 }
 
 const injectOwnerClusterIdIntoWorkflow = (
-    workflow: WorkflowSerializable,
+    workflow: WorkflowProps,
     ownerClusterId: string
-): WorkflowSerializable => {
+): WorkflowProps => {
     if (!ownerClusterId) {
         return workflow;
     }
@@ -205,7 +190,7 @@ const injectOwnerClusterIdIntoWorkflow = (
     return {
         ...workflow,
         nodes: workflow.nodes.map((node) => {
-            if (node.type !== 'entrypoint' || !isRecord(node.data.entrypoint)) {
+            if (node.type !== WorkflowNodeType.Entrypoint || !node.data.entrypoint) {
                 return node;
             }
 
@@ -230,7 +215,7 @@ const buildNestedPluginDefinitionWithOwner = (
     return {
         pluginId: plugin.id,
         workflow: injectOwnerClusterIdIntoWorkflow(
-            plugin.props.workflow.props as unknown as WorkflowSerializable,
+            plugin.props.workflow.props,
             ownerClusterId
         )
     };
@@ -349,7 +334,7 @@ class PluginExecutionRouter {
         return this.cachedEncode(
             cacheKey,
             injectOwnerClusterIdIntoWorkflow(
-                plugin.props.workflow.props as unknown as WorkflowSerializable,
+                plugin.props.workflow.props,
                 ownerClusterId
             )
         );
@@ -690,10 +675,7 @@ class PluginExecutionRouter {
             );
         }
 
-        const directHash = objectHead.metadata.sha256;
-        return typeof directHash === 'string' && directHash.length > 0
-            ? directHash
-            : undefined;
+        return objectHead.metadata.sha256 || undefined;
     }
 }
 

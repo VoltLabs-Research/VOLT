@@ -15,7 +15,7 @@ interface SocketErrorEnvelope {
     details?: string;
 }
 
-const resolveSocketErrorCode = (value: unknown): ErrorCode => {
+const resolveSocketErrorCode = (value: ErrorCode | string): ErrorCode => {
     if (isErrorCode(value)) {
         return value;
     }
@@ -24,7 +24,7 @@ const resolveSocketErrorCode = (value: unknown): ErrorCode => {
 };
 
 const createSocketErrorEnvelope = (
-    code: unknown,
+    code: ErrorCode | string,
     details?: string
 ): SocketErrorEnvelope => {
     const resolvedCode = resolveSocketErrorCode(code);

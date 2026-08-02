@@ -339,7 +339,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
             if (
                 job.queueType !== 'trajectory_glb_conversion'
                 || !job.trajectoryId
-                || typeof job.timestep !== 'number'
+                || job.timestep === undefined
             ) {
                 continue;
             }
@@ -356,7 +356,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
                 ...new Set(
                     trajectoryJobs
                         .map((job) => job.timestep)
-                        .filter((value): value is number => typeof value === 'number')
+                        .filter((value): value is number => value !== undefined)
                 )
             ];
 

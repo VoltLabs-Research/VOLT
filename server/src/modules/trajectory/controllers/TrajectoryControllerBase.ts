@@ -100,8 +100,8 @@ const encodeAtomsBinary = (result: GetAtomsColumnarOutput): Buffer => {
     return Buffer.concat(parts, envelopeSize + dataSize);
 };
 
-const getParamValue = (value: string | string[] | undefined): string => (
-    (Array.isArray(value) ? value[0] : value) as string
+const getParamValue = (value: string | string[]): string => (
+    Array.isArray(value) ? value[0] : value
 );
 
 const getOptionalNumber = (value: unknown): number | undefined => (
@@ -178,7 +178,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
             headers['X-Volt-Resource-Encoding'] = value.contentEncoding;
         }
 
-        if (typeof value.contentLength === 'number' && value.contentLength > 0) {
+        if ((value.contentLength ?? 0) > 0) {
             headers['Content-Length'] = String(value.contentLength);
         }
 

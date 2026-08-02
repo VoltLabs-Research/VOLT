@@ -799,12 +799,12 @@ export class FractalEngine {
         this.lastBaseLineWidth = baseLineWidth;
         this.lastLineWidth = lineWidth;
 
-        const hasValidSettings = Number.isFinite(baseLineWidth)
-            && Number.isFinite(lineWidth)
-            && Number(baseLineWidth) > 0
-            && Number(lineWidth) > 0;
+        const hasValidSettings = baseLineWidth !== undefined
+            && lineWidth !== undefined
+            && baseLineWidth > 0
+            && lineWidth > 0;
         const lineWidthOffset = hasValidSettings
-            ? (Number(lineWidth) - Number(baseLineWidth)) * 0.5
+            ? (lineWidth - baseLineWidth) * 0.5
             : 0;
 
         const processedGeometries = new Set<THREE.BufferGeometry>();
@@ -954,7 +954,7 @@ export class FractalEngine {
         const positions = positionAttribute.array as Float32Array;
         const normals = normalAttribute.array as ArrayLike<number>;
         for (let index = 0; index < positions.length; index += 1) {
-            positions[index] = basePositions[index] + (Number(normals[index]) * lineWidthOffset);
+            positions[index] = basePositions[index] + (normals[index] * lineWidthOffset);
         }
         positionAttribute.needsUpdate = true;
         geometry.computeBoundingBox();

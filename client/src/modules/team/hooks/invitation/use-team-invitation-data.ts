@@ -9,17 +9,11 @@ export default function useTeamInvitationData() {
         enabled: !!teamId
     });
 
-    const { data, isLoading, error, accessDenied, accessDeniedMessage } = useQueryState(
-        pendingQuery,
-        'Failed to load team invitations'
-    );
+    const { data, isLoading } = useQueryState(pendingQuery, 'Failed to load team invitations');
 
     return {
         invitations: data ?? [],
         isLoading,
-        teamId,
-        error,
-        accessDenied,
-        accessDeniedMessage
+        teamId
     };
 }

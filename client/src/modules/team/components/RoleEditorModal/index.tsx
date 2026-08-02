@@ -5,7 +5,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import type { TeamRole } from '@volt/contracts/modules/team/domain';
 import type { RbacEntry } from '@volt/contracts/modules/system/domain';
 import { IoWarningOutline } from 'react-icons/io5';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
 
 export interface RoleEditorPayload {
@@ -49,12 +49,12 @@ export const RoleEditorModal = ({
 
     const getPermission = (resource: string, action: string) => `${resource}:${action}`;
 
-    const isPermissionChecked = useCallback((resourceKey: string, actionKey: string): boolean => {
+    const isPermissionChecked = (resourceKey: string, actionKey: string): boolean => {
         if (hasWildcard) return true;
         return permissions.has(getPermission(resourceKey, actionKey));
-    }, [permissions, hasWildcard]);
+    };
 
-    const handleTogglePermission = useCallback((resourceKey: string, actionKey: string) => {
+    const handleTogglePermission = (resourceKey: string, actionKey: string) => {
         if (isSystemRole) return;
 
         const permission = getPermission(resourceKey, actionKey);
@@ -67,9 +67,9 @@ export const RoleEditorModal = ({
             }
             return next;
         });
-    }, [isSystemRole]);
+    };
 
-    const handleToggleResourceAll = useCallback((resourceKey: string) => {
+    const handleToggleResourceAll = (resourceKey: string) => {
         if (isSystemRole) return;
 
         const resourcePermissions = actions.map((action) => getPermission(resourceKey, action.key));
@@ -84,7 +84,7 @@ export const RoleEditorModal = ({
             }
             return next;
         });
-    }, [isSystemRole, permissions, actions]);
+    };
 
     const handleSubmit = async () => {
         if (!name.trim()) return;

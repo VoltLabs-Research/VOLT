@@ -71,12 +71,8 @@ const buildCapabilityMismatchError = (
     );
 };
 
-const normalizePercent = (value: unknown): number => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return 50;
-    }
-
-    return Math.min(100, Math.max(0, value));
+const normalizePercent = (value: number | undefined): number => {
+    return Math.min(100, Math.max(0, value ?? 50));
 };
 
 const normalizeNetworkUsage = (metrics: SystemMetrics | null): number => {
@@ -84,11 +80,7 @@ const normalizeNetworkUsage = (metrics: SystemMetrics | null): number => {
         return 50;
     }
 
-    const totalKb = typeof metrics.network.total === 'number' && Number.isFinite(metrics.network.total)
-        ? metrics.network.total
-        : 0;
-
-    return Math.min(100, Math.max(0, (totalKb / NETWORK_USAGE_SATURATION_KBPS) * 100));
+    return Math.min(100, Math.max(0, (metrics.network.total / NETWORK_USAGE_SATURATION_KBPS) * 100));
 };
 
 const supportsCapability = (

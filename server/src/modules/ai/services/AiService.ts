@@ -395,8 +395,8 @@ export default class AiService{
         }
 
         const updateData: Partial<Pick<AIConversation, 'title' | 'isArchived'>> = {};
-        if(typeof input.title !== 'undefined') updateData.title = input.title.trim();
-        if(typeof input.isArchived !== 'undefined') updateData.isArchived = input.isArchived;
+        if(input.title !== undefined) updateData.title = input.title.trim();
+        if(input.isArchived !== undefined) updateData.isArchived = input.isArchived;
 
         const updatedConversation = await AIConversation.findOneBy({ id: conversation.id });
 

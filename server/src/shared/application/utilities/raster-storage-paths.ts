@@ -36,8 +36,7 @@ export const parseRasterTimestep = (fileKey: string): number | null => {
         return null;
     }
 
-    const timestep = Number.parseInt(match[1], 10);
-    return Number.isInteger(timestep) ? timestep : null;
+    return Number.parseInt(match[1], 10);
 };
 
 interface ParsedAnalysisRasterFrameKey {
@@ -56,13 +55,8 @@ export const parseAnalysisRasterFrameKey = (fileKey: string): ParsedAnalysisRast
         return null;
     }
 
-    const timestep = Number.parseInt(match[1], 10);
-    if (!Number.isInteger(timestep)) {
-        return null;
-    }
-
     return {
-        timestep,
+        timestep: Number.parseInt(match[1], 10),
         model: match[2]
     };
 };

@@ -259,7 +259,7 @@ export default class ScriptingService{
             const patch: UpdateNotebookPatch = {};
             let resetRuntime = false;
 
-            if(typeof input.title === 'string'){
+            if(input.title !== undefined){
                 const title = input.title.trim();
                 if(!title){
                     throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Notebook title is required');

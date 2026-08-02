@@ -4,7 +4,6 @@ import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
-import type { Duplex } from 'node:stream';
 import { loadAllModules } from './core/bootstrap/load-modules';
 import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
 import { isModuleEnabled } from './core/bootstrap/module-state';
@@ -161,13 +160,13 @@ const startServer = async () => {
         }
 
         if (!scriptingJupyterProxyService.isJupyterUpgradeRequest(request)) {
-            (socket as Duplex).destroy();
+            socket.destroy();
             return;
         }
 
-        scriptingJupyterProxyService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
+        scriptingJupyterProxyService.handleUpgrade(request, socket, head).catch((error: unknown) => {
             logger.error(`@server: jupyter upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
-            writeUpgradeError(socket as Duplex, 500, 'WebSocket upgrade failed');
+            writeUpgradeError(socket, 500, 'WebSocket upgrade failed');
         });
     });
 

@@ -3,6 +3,7 @@ import logger from '@shared/infrastructure/logger';
 import tempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { Stats } from 'node:fs';
 
 interface TempStoragePolicyMatcher {
     value: string;
@@ -26,12 +27,6 @@ const PLUGIN_BINARY_CACHE_MAX_AGE_MS = 7 * 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_MAX_AGE_MS = 2 * HOUR_IN_MS;
 const LATEX_WORKDIR_MAX_AGE_MS = 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_SEGMENT = '.tmp.';
-
-const toMilliseconds = (value: number | bigint): number => {
-    return typeof value === 'bigint'
-        ? Number(value)
-        : value;
-};
 
 class TempStorageLifecycleService implements ITempStorageLifecycleService {
     private readonly tempFileService = tempFileService;
@@ -139,7 +134,7 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
                 maxAgeMs = PLUGIN_BINARY_TEMP_MAX_AGE_MS;
             }
 
-            if (!this.isExpired(toMilliseconds(stats.mtimeMs), maxAgeMs)) {
+            if (!this.isExpired(stats.mtimeMs, maxAgeMs)) {
                 continue;
             }
 
@@ -166,7 +161,7 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
             return null;
         }
 
-        let newestMtimeMs = toMilliseconds(stats.mtimeMs);
+        let newestMtimeMs = stats.mtimeMs;
         if (!stats.isDirectory()) {
             return newestMtimeMs;
         }
@@ -183,7 +178,7 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
         return newestMtimeMs;
     }
 
-    private async safeLstat(targetPath: string): Promise<Awaited<ReturnType<typeof fs.lstat>> | null> {
+    private async safeLstat(targetPath: string): Promise<Stats | null> {
         try {
             if (!this.isWithinTempRoot(targetPath)) {
                 logger.warn(`@temp-storage-lifecycle-service: refusing to inspect path outside temp root targetPath=${targetPath}`);

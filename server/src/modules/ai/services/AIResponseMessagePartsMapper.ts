@@ -1,5 +1,5 @@
-import type { AIMessageParts } from '@modules/ai/contracts/ai-message';
-import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
+import type { AIMessagePart, AIMessageParts } from '@modules/ai/contracts/ai-message';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface AIResponseMessagePartsMappingResult {
     parts: AIMessageParts;
@@ -8,25 +8,14 @@ interface AIResponseMessagePartsMappingResult {
 
 const findToolPart = (
     parts: AIMessageParts,
-    type: unknown,
-    toolCallId: unknown
-): Record<string, unknown> | undefined => {
-    for (const candidate of parts) {
-        const candidateRecord = asRecord(candidate);
-        if (
-            candidateRecord
-            && candidateRecord.type === type
-            && candidateRecord.toolCallId === toolCallId
-        ) {
-            return candidateRecord;
-        }
-    }
-
-    return undefined;
-};
+    type: string,
+    toolCallId: string
+): AIMessagePart | undefined => parts.find((candidate) => (
+    candidate.type === type && candidate.toolCallId === toolCallId
+));
 
 const applyToolResult = (
-    target: Record<string, unknown>,
+    target: AIMessagePart,
     output: unknown,
     preserveDenial: boolean
 ): void => {
@@ -51,33 +40,21 @@ export const mergeAssistantParts = (
     const merged: AIMessageParts = existingParts.map((part) => ({ ...part }));
 
     for (const newPart of newParts) {
-        const newRecord = asRecord(newPart);
-
         if (
-            newRecord
-            && typeof newRecord.toolCallId === 'string'
-            && newRecord.state === 'output-available'
+            typeof newPart.toolCallId === 'string'
+            && newPart.state === 'output-available'
         ) {
-            const target = findToolPart(merged, newRecord.type, newRecord.toolCallId);
+            const target = findToolPart(merged, newPart.type, newPart.toolCallId);
             if (target) {
-                applyToolResult(target, newRecord.output, false);
+                applyToolResult(target, newPart.output, false);
                 continue;
             }
         }
 
-        if (
-            newRecord
-            && newRecord.type === 'text'
-            && typeof newRecord.text === 'string'
-        ) {
-            const isDuplicateText = merged.some((existing) => {
-                const existingRecord = asRecord(existing);
-                return (
-                    existingRecord
-                    && existingRecord.type === 'text'
-                    && existingRecord.text === newRecord.text
-                );
-            });
+        if (newPart.type === 'text') {
+            const isDuplicateText = merged.some((existing) => (
+                existing.type === 'text' && existing.text === newPart.text
+            ));
             if (isDuplicateText) continue;
         }
 
@@ -120,29 +97,25 @@ export const mapAssistantResponseParts = (responseMessages: unknown[]): AIRespon
                     }
                     break;
 
-                case 'tool-call':
+                case 'tool-call': {
                     if (typeof part.toolName !== 'string' || typeof part.toolCallId !== 'string') {
                         break;
                     }
-                    {
-                        let approvalId = part.toolCallId;
-                        if (typeof part.approvalId === 'string') {
-                            approvalId = part.approvalId;
+                    const approvalId = typeof part.approvalId === 'string' ? part.approvalId : part.toolCallId;
+                    const toolCallPart = {
+                        type: `tool-${part.toolName}`,
+                        toolName: part.toolName,
+                        toolCallId: part.toolCallId,
+                        approvalId,
+                        input: part.input ?? {},
+                        state: 'approval-requested',
+                        approval: {
+                            id: approvalId
                         }
-                        const toolCallPart = {
-                            type: `tool-${part.toolName}`,
-                            toolName: part.toolName,
-                            toolCallId: part.toolCallId,
-                            approvalId,
-                            input: part.input ?? {},
-                            state: 'approval-requested',
-                            approval: {
-                                id: approvalId
-                            }
-                        };
-                        parts.push(toolCallPart);
-                    }
+                    };
+                    parts.push(toolCallPart);
                     break;
+                }
 
                 case 'tool-result': {
                     if (typeof part.toolName !== 'string' || typeof part.toolCallId !== 'string') {

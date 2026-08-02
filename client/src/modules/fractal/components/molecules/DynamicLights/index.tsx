@@ -107,7 +107,7 @@ const getDefectPresetColors = (darkTheme: boolean): Omit<PresetLightColors, 'hem
 const applyPresetShadow = (light: DirectionalLight, shadow: PresetShadowConfig): void => {
     light.shadow.mapSize.set(shadow.mapSize[0], shadow.mapSize[1]);
 
-    if (typeof shadow.bias === 'number') {
+    if (shadow.bias !== undefined) {
         light.shadow.bias = shadow.bias;
     }
 

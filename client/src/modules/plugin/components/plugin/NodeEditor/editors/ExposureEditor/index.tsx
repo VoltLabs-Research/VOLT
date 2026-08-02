@@ -34,7 +34,7 @@ const ExposureEditor = ({ node }: EditorProps) => {
                             control={form.control}
                             render={({ field }) => (
                                 <IconPicker
-                                    value={typeof field.value === 'string' ? field.value : ''}
+                                    value={field.value ?? ''}
                                     onChange={field.onChange}
                                 />
                             )}

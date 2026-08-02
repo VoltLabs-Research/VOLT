@@ -11,7 +11,7 @@ export default abstract class ClusterControllerBase extends Controller {
     protected readonly service = new ClusterService();
 
     protected params<T>(req: AuthenticatedRequest): T {
-        return buildControllerParams(req) as unknown as T;
+        return buildControllerParams(req) as T;
     }
 
     protected sendPaginated<T>(res: Response, value: PaginatedResult<T>): void {

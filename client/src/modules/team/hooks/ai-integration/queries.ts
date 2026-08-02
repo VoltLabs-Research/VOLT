@@ -1,28 +1,24 @@
 import aiIntegrationService from '../../api/services/ai-integration-service';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
 import type {
-    CreateTeamAIIntegrationInput,
-    CreateTeamAIIntegrationResponse,
     DeleteTeamAIIntegrationInput,
-    ListTeamAIIntegrationModelsResponse,
-    ListTeamAIIntegrationsResponse,
-    UpdateTeamAIIntegrationInput,
-    UpdateTeamAIIntegrationResponse
+    TeamAIIntegrationProviderInput
 } from '../../api/services/ai-integration-service';
+import type {
+    GetTeamAIIntegrationModelsResponse,
+    GetTeamAIIntegrationsResponse,
+    TeamAIIntegrationMutationResponse
+} from '@volt/contracts/modules/team/domain';
 
-interface AIIntegrationQueryKeyMap {
+const aiIntegrationKeys = buildKeys<{
     aiIntegrations: void;
     teamAIIntegrations: string;
-}
+}>('team-ai-integrations');
 
-interface AIIntegrationModelsQueryKeyMap {
+const aiIntegrationModelKeys = buildKeys<{
     aiIntegrationModels: void;
     teamAIIntegrationModels: string;
-}
-
-const aiIntegrationKeys = buildKeys<AIIntegrationQueryKeyMap>('team-ai-integrations');
-
-const aiIntegrationModelKeys = buildKeys<AIIntegrationModelsQueryKeyMap>('team-ai-integration-models');
+}>('team-ai-integration-models');
 
 export const AI_INTEGRATION_QUERY_KEYS = {
     aiIntegrations: aiIntegrationKeys.aiIntegrations,
@@ -38,14 +34,14 @@ export const invalidateTeamAIIntegrationsQuery = (teamId: string) => {
     ]);
 };
 
-export const useTeamAIIntegrationsQuery = createQuery<string, ListTeamAIIntegrationsResponse>(
+export const useTeamAIIntegrationsQuery = createQuery<string, GetTeamAIIntegrationsResponse>(
     AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations,
     (teamId: string) => {
         return aiIntegrationService.listByTeamId({ teamId });
     }
 );
 
-export const useTeamAIIntegrationModelsQuery = createQuery<string, ListTeamAIIntegrationModelsResponse>(
+export const useTeamAIIntegrationModelsQuery = createQuery<string, GetTeamAIIntegrationModelsResponse>(
     AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels,
     (teamId: string) => {
         return aiIntegrationService.listModels({ teamId });
@@ -53,8 +49,8 @@ export const useTeamAIIntegrationModelsQuery = createQuery<string, ListTeamAIInt
 );
 
 export const useCreateTeamAIIntegrationMutation = createMutation<
-    CreateTeamAIIntegrationResponse,
-    CreateTeamAIIntegrationInput
+    TeamAIIntegrationMutationResponse,
+    TeamAIIntegrationProviderInput
 >(
     aiIntegrationService.createByProvider,
     async (_data, variables) => {
@@ -63,8 +59,8 @@ export const useCreateTeamAIIntegrationMutation = createMutation<
 );
 
 export const useUpdateTeamAIIntegrationMutation = createMutation<
-    UpdateTeamAIIntegrationResponse,
-    UpdateTeamAIIntegrationInput
+    TeamAIIntegrationMutationResponse,
+    TeamAIIntegrationProviderInput
 >(
     aiIntegrationService.updateByProvider,
     async (_data, variables) => {

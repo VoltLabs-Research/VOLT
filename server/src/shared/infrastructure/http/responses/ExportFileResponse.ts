@@ -4,14 +4,7 @@ const EXCEL_CSV_PREFIX = '\uFEFFsep=,';
 const escapeCsv = (value: unknown): string => {
     if (value === null || value === undefined) return '';
 
-    let text: string;
-    if (typeof value === 'string') {
-        text = value;
-    } else if (typeof value === 'number' || typeof value === 'boolean') {
-        text = String(value);
-    } else {
-        text = JSON.stringify(value);
-    }
+    const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
 
     if (/[",\r\n\t]/.test(text)) {
         return `"${text.replace(/"/g, '""')}"`;

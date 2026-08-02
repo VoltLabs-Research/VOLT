@@ -137,7 +137,7 @@ export default class LatexAssetService{
                     url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.storageKey),
                     mimetype: asset.mimetype,
                     size: asset.size,
-                    createdAt: asset.createdAt as unknown as string,
+                    createdAt: asset.createdAt.toISOString(),
                     uploadUrl: signed.url,
                     expiresAt: signed.expiresAt
                 });
@@ -203,7 +203,7 @@ export default class LatexAssetService{
             url: buildLatexAssetContentUrl(teamId, documentId, asset.storageKey),
             mimetype: asset.mimetype,
             size: asset.size,
-            createdAt: asset.createdAt as unknown as string
+            createdAt: asset.createdAt.toISOString()
         };
     }
 }

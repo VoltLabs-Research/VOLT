@@ -6,7 +6,7 @@ import {
     mapPluginToRecord,
     toPluginLike
 } from '@modules/plugin/services/plugin/PluginQueries';
-import type { PluginRecord } from '@modules/plugin/contracts/plugin';
+import type { Plugin, PluginRecord } from '@modules/plugin/contracts/plugin';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
@@ -74,6 +74,7 @@ import storagePlacementService from '@modules/cluster/services/StoragePlacementS
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
+import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/scene-artifact';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
@@ -262,31 +263,19 @@ const EXPECTED_ARTIFACT_EXPORTERS = new Set([
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-const collectSharedExposureIds = (plugin: { props: { exposures?: unknown } }): string[] => {
-    const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
+const collectSharedExposureIds = (plugin: Plugin): string[] => {
     const ids: string[] = [];
-    for (const exposure of exposures) {
-        const id = (exposure as { id?: unknown }).id;
-        if (typeof id === 'string' && id.length >= 1) {
-            ids.push(id);
+    for (const exposure of plugin.props.exposures ?? []) {
+        if (exposure.id) {
+            ids.push(exposure.id);
         }
     }
     return ids;
 };
 
-const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures?: unknown } }): AnalysisExpectedArtifact[] => {
-    const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
-
-    const artifacts = exposures
-        .filter((exposure): exposure is { _id: string; name?: string; export?: { exporter?: string; type?: string } | null } => {
-            return typeof exposure === 'object'
-                && exposure !== null
-                && typeof (exposure as { _id?: unknown })._id === 'string';
-        })
-        .filter((exposure) => {
-            const exporter = exposure.export?.exporter;
-            return typeof exporter === 'string' && EXPECTED_ARTIFACT_EXPORTERS.has(exporter);
-        })
+const resolveExpectedArtifacts = (pluginId: string, plugin: Plugin): AnalysisExpectedArtifact[] => {
+    const artifacts = (plugin.props.exposures ?? [])
+        .filter((exposure) => EXPECTED_ARTIFACT_EXPORTERS.has(exposure.export?.exporter ?? ''))
         .map((exposure): AnalysisExpectedArtifact => ({
             exposureId: exposure._id,
             name: exposure.name || exposure._id,
@@ -305,11 +294,11 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
     }));
 };
 
-const isChartArtifact = (metadata: Record<string, unknown> | undefined, objectName: string): boolean => {
+const isChartArtifact = (metadata: SceneArtifactMetadata, objectName: string): boolean => {
     return objectName.endsWith('.png')
         && (
-            metadata?.exporter === 'ChartExporter'
-            || metadata?.exportType === 'chart-png'
+            metadata.exporter === 'ChartExporter'
+            || metadata.exportType === 'chart-png'
         );
 };
 
@@ -324,13 +313,13 @@ const matchesExposureParams = (params: SceneArtifactParams | null | undefined, e
 const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData => {
     return {
         _id: toListingRowId(row._id),
-        plugin: String(row.plugin || ''),
+        plugin: row.plugin || '',
         exposureId: row.exposureId || '',
         exposureName: row.exposureName || '',
-        trajectory: String(row.trajectory || ''),
+        trajectory: row.trajectory || '',
         trajectoryName: row.trajectoryName as string,
         timestep: row.timestep ?? 0,
-        row: (row.row && typeof row.row === 'object') ? row.row : {}
+        row: row.row ?? {}
     };
 };
 
@@ -1330,8 +1319,7 @@ export default class PluginService {
             );
         }
 
-        const metadata = artifact.metadata as Record<string, unknown> | undefined;
-        if (!isChartArtifact(metadata, artifact.objectName)) {
+        if (!isChartArtifact(artifact.metadata, artifact.objectName)) {
             throw ApplicationError.badRequest(
                 'PluginExposureChart::UnsupportedArtifact',
                 'Scene artifact is not a plugin chart'
@@ -1484,13 +1472,13 @@ export default class PluginService {
 
         const rows = daemonRows.map((doc) => ({
             _id: toListingRowId(doc._id),
-            ...((doc.row && typeof doc.row === 'object') ? doc.row : {})
+            ...(doc.row ?? {})
         }));
 
         let columns: SubListingColumn[] = [];
         if (daemonRows.length > 0) {
             const firstRow = daemonRows[0].row;
-            if (firstRow && typeof firstRow === 'object') {
+            if (firstRow) {
                 columns = Object.keys(firstRow).map((key) => ({
                     label: key,
                     sortable: true

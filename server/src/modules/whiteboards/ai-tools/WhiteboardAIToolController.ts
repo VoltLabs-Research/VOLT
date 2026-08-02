@@ -89,8 +89,8 @@ export default class WhiteboardAIToolController extends AIToolController {
             };
         }
 
-        const elements = Array.isArray(scene.elements) ? scene.elements : [];
-        const revision = typeof scene.revision === 'number' ? scene.revision : 0;
+        const elements = scene.elements ?? [];
+        const revision = scene.revision ?? 0;
 
         return {
             summary: `Whiteboard scene has ${elements.length} element(s) at revision ${revision}.`,

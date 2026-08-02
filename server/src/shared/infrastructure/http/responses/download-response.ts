@@ -56,7 +56,7 @@ export const createDownloadStreamResponse = ({
         headers['Content-Disposition'] = `${disposition}; filename="${safeFilename}"`;
     }
 
-    if (typeof contentLength === 'number' && Number.isFinite(contentLength)) {
+    if (contentLength !== undefined) {
         headers['Content-Length'] = String(contentLength);
     }
 

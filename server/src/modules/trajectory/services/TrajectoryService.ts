@@ -634,7 +634,7 @@ export default class TrajectoryService {
                 ...new Set(
                     analysisRuntimeTargets
                         .map((target) => target.computeClusterId)
-                        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+                        .filter((value): value is string => Boolean(value))
                 )
             ]
         });
@@ -692,7 +692,7 @@ export default class TrajectoryService {
         }
 
         const view = this.#toTrajectoryOutput(trajectory) as unknown as GetTrajectoryByIdOutput;
-        (view as unknown as { frames: TrajectoryFrame[] }).frames = await getTrajectoryFrames(trajectory.id);
+        view.frames = await getTrajectoryFrames(trajectory.id);
         return view;
     }
 
@@ -1701,51 +1701,45 @@ export default class TrajectoryService {
         const byExposureId = new Map<string, SceneArtifact>();
 
         for (const artifact of artifacts) {
-            const exposureId = (artifact.params as { exposureId?: unknown } | undefined)?.exposureId;
+            const exposureId = artifact.params.exposureId;
             if (!exposureId) continue;
-            const metadata = artifact.metadata as Record<string, unknown> | undefined;
-            if (typeof metadata?.exporter !== 'string' || !RENDERABLE_SCENE_EXPORTERS.has(metadata.exporter)) {
+            if (!artifact.metadata.exporter || !RENDERABLE_SCENE_EXPORTERS.has(artifact.metadata.exporter)) {
                 continue;
             }
 
-            const current = byExposureId.get(String(exposureId));
+            const current = byExposureId.get(exposureId);
             if (!current) {
-                byExposureId.set(String(exposureId), artifact);
+                byExposureId.set(exposureId, artifact);
                 continue;
             }
 
             if (new Date(artifact.updatedAt).getTime() > new Date(current.updatedAt).getTime()) {
-                byExposureId.set(String(exposureId), artifact);
+                byExposureId.set(exposureId, artifact);
             }
         }
 
-        return Array.from(byExposureId.values())
-            .filter((artifact) => {
-                const metadata = artifact.metadata as Record<string, unknown> | undefined;
-                return Boolean(artifact.plugin)
-                    && typeof metadata?.pluginId === 'string'
-                    && metadata.pluginId.length > 0;
-            })
-            .map((artifact) => {
-                const metadata = artifact.metadata as Record<string, unknown> | undefined;
-                const exposureName = typeof metadata?.exposureName === 'string' ? metadata.exposureName.trim() : '';
+        return Array.from(byExposureId.entries())
+            .filter(([, artifact]) => Boolean(artifact.plugin) && Boolean(artifact.metadata.pluginId))
+            .map(([exposureId, artifact]) => {
+                const metadata = artifact.metadata;
+                const exposureName = metadata.exposureName?.trim();
                 if (!exposureName) return null;
 
-                const pluginId = typeof metadata?.pluginId === 'string' ? metadata.pluginId : '';
+                const pluginId = metadata.pluginId;
                 if (!pluginId) return null;
 
                 return {
                     pluginId,
                     analysisId: artifact.analysis ? String(artifact.analysis) : undefined,
-                    exposureId: String((artifact.params as { exposureId?: unknown }).exposureId),
+                    exposureId,
                     name: exposureName,
                     icon: undefined,
                     results: 'glb',
                     canvas: true,
                     raster: false,
                     export: {
-                        exporter: typeof metadata?.exporter === 'string' ? metadata.exporter : undefined,
-                        type: typeof metadata?.exportType === 'string' ? metadata.exportType : undefined,
+                        exporter: metadata.exporter,
+                        type: metadata.exportType,
                         options: {}
                     }
                 };

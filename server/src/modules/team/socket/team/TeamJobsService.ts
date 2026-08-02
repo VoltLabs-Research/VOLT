@@ -234,11 +234,11 @@ export default class TeamJobsService {
         const candidates = [job.timestamp, job.updatedAt, job.createdAt];
 
         for (const candidate of candidates) {
-            if (typeof candidate !== 'string' || candidate.trim().length === 0) {
+            if (!candidate || candidate.trim().length === 0) {
                 continue;
             }
 
-            if (typeof this.parseTimestamp(candidate) === 'number') {
+            if (this.parseTimestamp(candidate) !== undefined) {
                 return candidate;
             }
         }
@@ -253,7 +253,7 @@ export default class TeamJobsService {
     }
 
     private parseTimestamp(timestamp?: string): number | undefined {
-        if (typeof timestamp !== 'string' || timestamp.trim().length === 0) {
+        if (!timestamp || timestamp.trim().length === 0) {
             return undefined;
         }
 
@@ -263,15 +263,15 @@ export default class TeamJobsService {
     }
 
     private compareTimestampValues(left?: number, right?: number): number {
-        if (typeof left === 'number' && typeof right === 'number') {
+        if (left !== undefined && right !== undefined) {
             return left - right;
         }
 
-        if (typeof left === 'number') {
+        if (left !== undefined) {
             return 1;
         }
 
-        if (typeof right === 'number') {
+        if (right !== undefined) {
             return -1;
         }
 

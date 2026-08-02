@@ -80,8 +80,8 @@ const compareObjectListingEntries = (
     destinationEntry: ObjectListEntry
 ): 'match' | 'mismatch' | 'inconclusive' => {
     if (
-        typeof sourceEntry.contentLength === 'number'
-        && typeof destinationEntry.contentLength === 'number'
+        sourceEntry.contentLength !== undefined
+        && destinationEntry.contentLength !== undefined
         && sourceEntry.contentLength !== destinationEntry.contentLength
     ) {
         return 'mismatch';

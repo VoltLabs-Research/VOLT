@@ -182,7 +182,7 @@ export default class AnalysisService{
         return {
             ...results,
             data: mappedData
-        } as unknown as PaginatedResult<GetAnalysesByTeamIdItemView>;
+        } as PaginatedResult<GetAnalysesByTeamIdItemView>;
     }
 
     async getAnalysesByTrajectoryId(input: GetAnalysesByTrajectoryIdInput): Promise<GetAnalysesByTrajectoryIdOutput>{
@@ -212,7 +212,7 @@ export default class AnalysisService{
         return {
             ...analyses,
             data
-        } as unknown as GetAnalysesByTrajectoryIdOutput;
+        } as GetAnalysesByTrajectoryIdOutput;
     }
 
     async getAnalysisFrameLog(input: GetAnalysisFrameLogInput): Promise<GetAnalysisFrameLogOutput>{
@@ -257,7 +257,7 @@ export default class AnalysisService{
             failedFrames += 1;
             failedJobIds.push(job.jobId);
             const timestep = job.timestep;
-            if(typeof timestep === 'number'){
+            if(timestep !== undefined){
                 failedTimesteps.push(timestep);
             }
         }

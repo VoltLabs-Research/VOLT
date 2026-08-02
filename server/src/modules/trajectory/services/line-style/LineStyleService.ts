@@ -209,14 +209,10 @@ class LineStyleService {
 
         const pluginEntity = await PluginEntity.findOneBy({ id: analysis.plugin });
         const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
-        const exposures = Array.isArray(plugin?.props.exposures) ? plugin.props.exposures : [];
-        const exposure = exposures.find((candidate: { _id?: unknown }) => (
-            typeof candidate === 'object'
-            && candidate !== null
-            && String(candidate._id) === String(exposureId)
-        )) as { export?: { options?: LineExportBaseOptions } | null } | undefined;
+        const exposures = plugin?.props.exposures ?? [];
+        const exposure = exposures.find((candidate) => candidate._id === exposureId);
 
-        return exposure?.export?.options ?? undefined;
+        return exposure?.export?.options as LineExportBaseOptions | undefined;
     }
 
     private async resolveExposureGlbObjectName(

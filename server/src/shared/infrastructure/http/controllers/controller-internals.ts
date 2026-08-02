@@ -44,9 +44,12 @@ export const buildControllerParams = (
         params: Record<string, unknown>
     ) => Record<string, unknown>
 ): Record<string, unknown> => {
+    // `req.body` is `any` and genuinely arbitrary (a JSON array/scalar body is
+    // legal), so it stays behind the record guard. `params` and `query` are
+    // always objects per Express' own types.
     const bodyPayload = asRecord(req.body) ?? {};
-    const paramsPayload = coerceNumericKeys(asRecord(req.params) ?? {});
-    const queryPayload = coerceNumericKeys(asRecord(req.query) ?? {});
+    const paramsPayload = coerceNumericKeys(req.params);
+    const queryPayload = coerceNumericKeys(req.query);
     const baseParams: Record<string, unknown> = {
         ...paramsPayload,
         ...queryPayload,

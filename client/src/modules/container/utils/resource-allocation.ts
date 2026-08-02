@@ -6,7 +6,7 @@ export const clampClusterResourceValue = (
     min: number,
     max: number | null | undefined
 ) => {
-    if (typeof max !== 'number' || !Number.isFinite(max)) {
+    if (max == null) {
         return Math.max(value, min);
     }
 

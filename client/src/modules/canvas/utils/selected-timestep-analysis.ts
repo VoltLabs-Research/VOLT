@@ -11,19 +11,13 @@ type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
     [ANALYSIS_EXECUTION_METADATA_KEY]?: AnalysisExecutionMetadata;
 };
 
-const isFiniteNumber = (value: unknown): value is number => {
-    return typeof value === 'number' && Number.isFinite(value);
-};
-
 export const extractTrajectoryTimesteps = (trajectory?: Trajectory | null): number[] => {
     if (!trajectory?.frames?.length) {
         return [];
     }
 
     return Array.from(new Set(
-        trajectory.frames
-            .map((frame) => frame.timestep)
-            .filter(isFiniteNumber)
+        trajectory.frames.map((frame) => frame.timestep)
     )).sort((left, right) => left - right);
 };
 

@@ -4,7 +4,7 @@ import { AnalysisStatus } from './analysis-status';
 import type { Job } from '@volt/contracts/modules/jobs/domain';
 
 export const resolveJobAnalysisId = (job: Job): string | undefined => {
-    if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
+    if (job.analysisId?.trim()) {
         return job.analysisId;
     }
 

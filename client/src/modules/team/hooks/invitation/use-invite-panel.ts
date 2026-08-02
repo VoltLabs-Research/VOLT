@@ -1,8 +1,7 @@
 import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invitation-data';
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
-import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 import type { InviteButtonState } from '../../components/InviteButton';
-import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError, resolveErrorTitle } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import type { ChangeEvent } from 'react';
@@ -12,22 +11,10 @@ import { sileo } from 'sileo';
 import type { TeamInviteForm } from './invite-panel-schema';
 
 interface EmailFieldBind {
-    name: 'email';
     value: string;
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     onBlur: () => void;
     error?: string;
-}
-
-interface UseInvitePanelReturn {
-    emailField: EmailFieldBind;
-    handleSubmit: () => Promise<void>;
-    isSubmitting: boolean;
-    buttonState: InviteButtonState;
-    pendingInvitations: TeamInvitation[];
-    loadingInvitations: boolean;
-    cancelingId: string | null;
-    handleCancelInvitation: (id: string) => Promise<void>;
 }
 
 const CANCEL_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
@@ -36,7 +23,7 @@ const CANCEL_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to cancel invitation'
 });
 
-export default function useInvitePanel(): UseInvitePanelReturn {
+export default function useInvitePanel() {
     const [buttonState, setButtonState] = useState<InviteButtonState>('idle');
     const [cancelingId, setCancelingId] = useState<string | null>(null);
     const buttonResetTimeoutReference = useRef<number | null>(null);
@@ -79,20 +66,20 @@ export default function useInvitePanel(): UseInvitePanelReturn {
         const isValid = await form.trigger();
         if (!isValid) return;
 
-        const data = form.getValues();
-        const email = data.email.trim().toLowerCase();
-        const existingInvitation = invitations.find((invitation) => invitation.email.toLowerCase() === email);
-        if (existingInvitation) {
-            form.setError('email', { message: 'Invitation already exists' });
+        const failWith = (message: string) => {
+            form.setError('email', { message });
             setButtonState('error');
             scheduleButtonReset(2000);
+        };
+
+        const email = form.getValues().email.trim().toLowerCase();
+        if (invitations.some((invitation) => invitation.email.toLowerCase() === email)) {
+            failWith('Invitation already exists');
             return;
         }
 
         if (!teamId) {
-            form.setError('email', { message: 'No team selected' });
-            setButtonState('error');
-            scheduleButtonReset(2000);
+            failWith('No team selected');
             return;
         }
 
@@ -121,15 +108,7 @@ export default function useInvitePanel(): UseInvitePanelReturn {
                 });
             }
 
-            form.setError('email', {
-                message: isApiError(error)
-                    ? getErrorMessage(error.code, 'Failed to send invitation')
-                    : error instanceof Error && error.message.trim().length > 0
-                        ? error.message
-                        : 'Failed to send invitation'
-            });
-            setButtonState('error');
-            scheduleButtonReset(2000);
+            failWith(resolveErrorTitle(error, 'Failed to send invitation'));
         }
     }, [form, invitations, sendInvitation, scheduleButtonReset, teamId]);
 
@@ -152,19 +131,15 @@ export default function useInvitePanel(): UseInvitePanelReturn {
         }
     }, [cancelInvitation, teamId]);
 
-    const emailValue = form.watch('email');
-    const emailError = form.formState.errors.email?.message;
-
     const emailField: EmailFieldBind = {
-        name: 'email',
-        value: emailValue,
+        value: form.watch('email'),
         onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
             form.setValue('email', event.target.value, { shouldValidate: true });
         },
         onBlur: () => {
             form.trigger('email');
         },
-        error: emailError
+        error: form.formState.errors.email?.message
     };
 
     return {

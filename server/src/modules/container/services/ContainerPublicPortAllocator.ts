@@ -102,7 +102,7 @@ export class ContainerPublicPortAllocator{
         requestedPublicPort: number | undefined,
         options: ReservePortMappingsOptions
     ): Promise<number>{
-        if(typeof requestedPublicPort === 'number'){
+        if(requestedPublicPort !== undefined){
             await this.assertPublicPortAvailable(requestedPublicPort, options);
             this.reservedPorts.add(requestedPublicPort);
             return requestedPublicPort;

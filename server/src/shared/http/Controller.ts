@@ -24,10 +24,11 @@ export const Middleware = (...middleware: RequestHandler[]): ClassDecorator & Me
         handlerMiddleware.set(ctor, map);
     }) as ClassDecorator & MethodDecorator;
 
-const isPaginated = (value: unknown): value is PaginatedResult<unknown> =>
-    typeof value === 'object' && value !== null
-        && Array.isArray((value as PaginatedResult<unknown>).data)
-        && typeof (value as PaginatedResult<unknown>).totalPages === 'number';
+const isPaginated = (value: unknown): value is PaginatedResult<unknown> => {
+    const candidate = value as PaginatedResult<unknown> | null | undefined;
+
+    return Array.isArray(candidate?.data) && typeof candidate?.totalPages === 'number';
+};
 
 export default abstract class Controller {
     buildRouter(): Router {

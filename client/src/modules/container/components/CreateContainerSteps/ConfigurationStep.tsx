@@ -20,7 +20,7 @@ import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-st
 type PortMappingSourceItem = ContainerConfig['ports'][number] | PortMappingFormItem;
 
 const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormItem => {
-    if (typeof item.public === 'number' && item.public > 0) {
+    if (item.public !== undefined && item.public > 0) {
         return {
             private: item.private,
             public: item.public
@@ -31,10 +31,6 @@ const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormIte
         private: item.private
     };
 };
-
-interface ValueChangeTarget {
-    value: string | boolean;
-}
 
 interface ConfigurationStepProps {
     config: ContainerConfig;
@@ -92,10 +88,6 @@ const getTeamFieldError = (selectedTeamId: string | null, teams: Team[]) => {
     }
 
     return 'Select a team to continue.';
-};
-
-const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
-    return typeof value === 'object' && value !== null && 'value' in value;
 };
 
 const getCustomFieldValidationErrorCount = (
@@ -239,14 +231,14 @@ const ConfigurationStep = ({
         value: team._id,
         title: team.name
     }));
+    const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
     const requiredRemainingCount = [
         !config.name.trim(),
         Boolean(teamFieldError),
         !selectedTeamId || !selectedTeamClusterId,
         Boolean(selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB))
-    ].filter(Boolean).length + getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
+    ].filter(Boolean).length + customFieldErrorCount;
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
-    const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
     const hasCustomFields = config.customFields.length > 0;
     const templateSettingsDefaultExpanded = hasRequiredCustomField(config.customFields);
 
@@ -363,16 +355,7 @@ const ConfigurationStep = ({
                         disabled={isDemoCluster}
                         onChange={(event) => {
                             if (isDemoCluster) return;
-                            if (!hasValueChangeTarget(event.target)) {
-                                return;
-                            }
-
-                            const inputValue = event.target.value;
-                            if (typeof inputValue === 'boolean') {
-                                onConfigChange('mountDockerSocket', inputValue);
-                                return;
-                            }
-                            onConfigChange('mountDockerSocket', inputValue === 'true');
+                            onConfigChange('mountDockerSocket', event.target.value === 'true');
                         }}
                     />
                     <Text as='p' size='md' tone='muted'>

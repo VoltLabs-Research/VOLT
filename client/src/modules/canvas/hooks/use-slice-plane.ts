@@ -4,15 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SlicePlaneNormalAxis } from '@/modules/fractal/contracts/scene';
 import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
-const NON_COMMITTABLE_NUMERIC_INPUTS = new Set(['', '-', '+', '.', '-.', '+.']);
-
-const isFiniteNumericInput = (value: string): value is string => {
-    if (NON_COMMITTABLE_NUMERIC_INPUTS.has(value.trim())) {
+const isFiniteNumericInput = (value: string): boolean => {
+    if (value.trim() === '') {
         return false;
     }
 
-    const parsed = Number(value);
-    return Number.isFinite(parsed);
+    return Number.isFinite(Number(value));
 };
 
 interface UseSlicePlaneReturn {
@@ -65,7 +62,7 @@ const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneRet
     }, [normal.x, normal.y, normal.z]);
 
     const patch = useCallback((next: Partial<SlicePlaneStageConfig>) => {
-        updateStageConfig(stageId, next as Partial<SlicePlaneStageConfig>, trajectoryId);
+        updateStageConfig(stageId, next, trajectoryId);
     }, [stageId, trajectoryId, updateStageConfig]);
 
     const handleDistanceChange = useCallback((_fieldKey: string, value: string | number | boolean) => {

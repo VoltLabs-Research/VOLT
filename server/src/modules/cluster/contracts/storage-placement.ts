@@ -69,7 +69,7 @@ export const createStoragePlacementProps = (
         buckets: normalizeStoragePlacementBuckets(input.buckets),
         state: input.state ?? DEFAULT_STORAGE_PLACEMENT_STATE,
         lastVerifiedAt: input.lastVerifiedAt ?? null,
-        bytesUsed: typeof input.bytesUsed === 'number' ? input.bytesUsed : null,
+        bytesUsed: input.bytesUsed ?? null,
         lastAccessedAt: input.lastAccessedAt ?? null,
         createdAt: input.createdAt ?? now,
         updatedAt: input.updatedAt ?? now

@@ -80,36 +80,6 @@ const MAX_LOG_BYTES = 16 * 1024 * 1024;
 
 const PERSIST_DEBOUNCE_MS = 500;
 
-const isAnalysisFrameLogStatus = (value: string | undefined): value is AnalysisFrameLogStatus => {
-    return value === 'pending' || value === 'running' || value === 'completed' || value === 'failed';
-};
-
-const normalizeSegmentText = (value: unknown): string => {
-    return typeof value === 'string' ? value : '';
-};
-
-const normalizeSegment = (segment: AnalysisExecutionLogSegment): AnalysisExecutionLogSegment | null => {
-    const text = normalizeSegmentText(segment.text);
-    if (text.length === 0) {
-        return null;
-    }
-
-    return {
-        stream: segment.stream,
-        text,
-        occurredAt: typeof segment.occurredAt === 'string' && segment.occurredAt.length > 0
-            ? segment.occurredAt
-            : new Date().toISOString(),
-        nodeId: typeof segment.nodeId === 'string' ? segment.nodeId : undefined,
-        nodeType: typeof segment.nodeType === 'string' ? segment.nodeType : undefined,
-        nodeLabel: typeof segment.nodeLabel === 'string' ? segment.nodeLabel : undefined,
-        pluginId: typeof segment.pluginId === 'string' ? segment.pluginId : undefined,
-        executionPath: Array.isArray(segment.executionPath)
-            ? segment.executionPath.filter((value): value is string => typeof value === 'string' && value.length > 0)
-            : undefined
-    };
-};
-
 const createTruncatedSegment = (): AnalysisExecutionLogSegment => ({
     stream: 'system',
     text: '[Volt] Execution log truncated after reaching the frame log size limit.\n',
@@ -177,9 +147,7 @@ class AnalysisExecutionLogService {
     }
 
     async appendFrameSegments(input: AppendFrameSegmentsInput): Promise<void> {
-        const normalizedSegments = input.segments
-            .map(normalizeSegment)
-            .filter((segment): segment is AnalysisExecutionLogSegment => segment !== null);
+        const normalizedSegments = input.segments.filter((segment) => segment.text.length > 0);
 
         if (normalizedSegments.length === 0) {
             return;
@@ -483,7 +451,7 @@ class AnalysisExecutionLogService {
                 TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
                 this.storageObjectKey(identity.trajectoryId, identity.analysisId, identity.timestep)
             );
-            return this.normalizeStoredRecord(JSON.parse(buffer.toString('utf8')) as unknown, identity);
+            return JSON.parse(buffer.toString('utf8')) as StoredAnalysisFrameLogRecord;
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 return null;
@@ -505,53 +473,6 @@ class AnalysisExecutionLogService {
             contentLength: snapshotBuffer.length,
             contentType: 'application/json'
         });
-    }
-
-    private normalizeStoredRecord(
-        value: unknown,
-        identity: Pick<MarkFrameRunningInput, 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'>
-    ): StoredAnalysisFrameLogRecord {
-        if (typeof value !== 'object' || value === null) {
-            return this.createEmptyStoredRecord({
-                ...identity,
-                jobId: ''
-            }, 'pending');
-        }
-
-        const record = value as Partial<StoredAnalysisFrameLogRecord>;
-        const segments = Array.isArray(record.segments)
-            ? record.segments
-                .map((segment) => normalizeSegment(segment as AnalysisExecutionLogSegment))
-                .filter((segment): segment is AnalysisExecutionLogSegment => segment !== null)
-            : [];
-
-        const normalized: StoredAnalysisFrameLogRecord = {
-            analysisId: typeof record.analysisId === 'string' && record.analysisId.length > 0
-                ? record.analysisId
-                : identity.analysisId,
-            teamId: typeof record.teamId === 'string' && record.teamId.length > 0
-                ? record.teamId
-                : identity.teamId,
-            trajectoryId: typeof record.trajectoryId === 'string' && record.trajectoryId.length > 0
-                ? record.trajectoryId
-                : identity.trajectoryId,
-            timestep: typeof record.timestep === 'number' && Number.isFinite(record.timestep)
-                ? record.timestep
-                : identity.timestep,
-            jobId: typeof record.jobId === 'string' && record.jobId.length > 0
-                ? record.jobId
-                : undefined,
-            status: this.resolveStatus(record.status),
-            sealed: record.sealed === true,
-            truncated: record.truncated === true,
-            nextCursor: this.resolveCursor(this.normalizeCursor(record.nextCursor), segments.length),
-            bytes: typeof record.bytes === 'number' && Number.isFinite(record.bytes)
-                ? record.bytes
-                : undefined,
-            segments
-        };
-
-        return normalized;
     }
 
     private buildSnapshot(
@@ -602,23 +523,12 @@ class AnalysisExecutionLogService {
     }
 
     private resolveRecordBytes(record: StoredAnalysisFrameLogRecord): number {
-        if (typeof record.bytes === 'number' && Number.isFinite(record.bytes)) {
-            return record.bytes;
-        }
-
-        return record.segments.reduce((total, segment) => total + Buffer.byteLength(segment.text, 'utf8'), 0);
-    }
-
-    private resolveStatus(status: string | undefined): AnalysisFrameLogStatus {
-        if (isAnalysisFrameLogStatus(status)) {
-            return status;
-        }
-
-        return 'running';
+        return record.bytes
+            ?? record.segments.reduce((total, segment) => total + Buffer.byteLength(segment.text, 'utf8'), 0);
     }
 
     private normalizeCursor(value: string | null | undefined): string | null {
-        if (typeof value !== 'string' || value.trim().length === 0) {
+        if (!value || value.trim().length === 0) {
             return null;
         }
 

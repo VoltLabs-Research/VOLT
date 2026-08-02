@@ -71,12 +71,10 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
     const chartArtifacts = useMemo(() => {
         return (chartArtifactsQuery.data?.data ?? [])
             .filter((artifact): artifact is SceneArtifact => {
-                const candidate = artifact as SceneArtifact;
-                const metadata = candidate.metadata ?? {};
-                return candidate.sourceType === 'plugin-exposure'
-                    && typeof candidate._id === 'string'
-                    && typeof candidate.objectName === 'string'
-                    && candidate.objectName.endsWith('.png')
+                if (!('sourceType' in artifact)) return false;
+                const metadata = artifact.metadata ?? {};
+                return artifact.sourceType === 'plugin-exposure'
+                    && artifact.objectName.endsWith('.png')
                     && (
                         metadata.exporter === 'ChartExporter'
                         || metadata.exportType === 'chart-png'

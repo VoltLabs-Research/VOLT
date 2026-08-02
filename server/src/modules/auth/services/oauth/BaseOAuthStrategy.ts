@@ -58,7 +58,7 @@ const getCanonicalErrorCode = (value: unknown): string => {
 const toOAuthFailure = (code?: unknown, statusCode?: number): OAuthStrategyFailure => {
     const normalizedCode = getCanonicalErrorCode(code);
     let status: OAuthFailureStatus | undefined;
-    if (typeof statusCode === 'number') {
+    if (statusCode !== undefined) {
         status = { statusCode };
     }
 

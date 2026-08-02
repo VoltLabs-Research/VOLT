@@ -58,8 +58,7 @@ export const describeBinaryCarrier = (value: unknown): string => {
     if (value instanceof Uint8Array) return `${value.constructor.name}(byteLength=${value.byteLength})`;
     if (value instanceof ArrayBuffer) return `ArrayBuffer(byteLength=${value.byteLength})`;
     if (ArrayBuffer.isView(value)) {
-        const view = value as ArrayBufferView;
-        return `${value.constructor.name}(byteLength=${view.byteLength})`;
+        return `${value.constructor.name}(byteLength=${value.byteLength})`;
     }
     if (Array.isArray(value)) return `Array(length=${value.length})`;
     if (typeof value === 'object') {

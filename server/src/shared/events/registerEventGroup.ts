@@ -27,7 +27,7 @@ export const registerEventGroup = (GroupClass: new () => object): void => {
     for (const { event, handlerName } of bindings) {
         const handler = instance[handlerName];
 
-        if (typeof handler !== 'function') {
+        if (!handler) {
             throw new Error(`Event group ${GroupClass.name} has no handler method for "${event}".`);
         }
 

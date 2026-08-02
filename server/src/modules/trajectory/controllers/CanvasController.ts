@@ -92,7 +92,7 @@ export default class CanvasController extends TrajectoryControllerBase {
             headers['X-Volt-Resource-Encoding'] = output.contentEncoding;
         }
 
-        if (typeof output.size === 'number' && output.size > 0) {
+        if ((output.size ?? 0) > 0) {
             headers['Content-Length'] = String(output.size);
         }
 

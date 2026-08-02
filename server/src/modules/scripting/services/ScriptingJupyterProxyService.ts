@@ -733,7 +733,7 @@ class ScriptingJupyterProxyService {
     }
 
     private normalizeSetCookieHeader(value: number | string | string[] | undefined): string[] {
-        if (typeof value === 'undefined' || typeof value === 'number') {
+        if (value === undefined || typeof value === 'number') {
             return [];
         }
 

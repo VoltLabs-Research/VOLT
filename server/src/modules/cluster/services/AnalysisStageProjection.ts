@@ -75,18 +75,7 @@ export default class AnalysisStageProjection{
 
     isSameStageIdentity(left: AnalysisStage, right: AnalysisStage): boolean {
         return left.stageKey === right.stageKey
-            && this.#hasSameTimestepIdentity(left.timestep, right.timestep);
-    }
-
-    #hasSameTimestepIdentity(left?: number, right?: number): boolean {
-        const hasLeftTimestep = typeof left === 'number';
-        const hasRightTimestep = typeof right === 'number';
-
-        if (hasLeftTimestep || hasRightTimestep) {
-            return left === right;
-        }
-
-        return true;
+            && left.timestep === right.timestep;
     }
 
     shouldIgnoreStageUpdate(previous: AnalysisStage, next: AnalysisStage): boolean {
@@ -96,8 +85,8 @@ export default class AnalysisStageProjection{
 
         const previousFinishedAt = toEpochMs(previous.finishedAt);
         const nextStartedAt = toEpochMs(next.startedAt);
-        return typeof previousFinishedAt === 'number'
-            && typeof nextStartedAt === 'number'
+        return previousFinishedAt !== undefined
+            && nextStartedAt !== undefined
             && nextStartedAt <= previousFinishedAt;
     }
 
@@ -181,7 +170,7 @@ export default class AnalysisStageProjection{
 
     #isSameChildAnalysisIdentity(left: AnalysisChildAnalysis, right: AnalysisChildAnalysis): boolean {
         return left.id === right.id
-            && this.#hasSameTimestepIdentity(left.timestep, right.timestep);
+            && left.timestep === right.timestep;
     }
 
     #shouldIgnoreChildAnalysisUpdate(previous: AnalysisChildAnalysis, next: AnalysisChildAnalysis): boolean {
@@ -191,8 +180,8 @@ export default class AnalysisStageProjection{
 
         const previousFinishedAt = toEpochMs(previous.finishedAt);
         const nextStartedAt = toEpochMs(next.startedAt);
-        return typeof previousFinishedAt === 'number'
-            && typeof nextStartedAt === 'number'
+        return previousFinishedAt !== undefined
+            && nextStartedAt !== undefined
             && nextStartedAt <= previousFinishedAt;
     }
 

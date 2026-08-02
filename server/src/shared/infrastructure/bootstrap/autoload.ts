@@ -31,12 +31,7 @@ const collectFiles = (rootAbsolute: string): string[] => {
     const entries = readdirSync(rootAbsolute, {
         withFileTypes: true,
         recursive: true
-    }) as unknown as Array<{
-        name: string;
-        parentPath?: string;
-        path?: string;
-        isFile(): boolean;
-    }>;
+    });
 
     const files: string[] = [];
 
@@ -61,8 +56,7 @@ const collectFiles = (rootAbsolute: string): string[] => {
             continue;
         }
 
-        const parent = (entry.parentPath ?? entry.path ?? rootAbsolute);
-        const fullPath = join(parent, entry.name);
+        const fullPath = join(entry.parentPath, entry.name);
 
         const segments = fullPath.slice(rootAbsolute.length).split(/[\\/]/);
         if (segments.some((segment) => EXCLUDED_SEGMENTS.has(segment))) {

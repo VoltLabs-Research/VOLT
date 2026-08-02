@@ -23,8 +23,8 @@ const FULL_WIDTH_KINDS: ReadonlySet<InferredCellKind> = new Set<InferredCellKind
     'vector', 'numberArray', 'points', 'matrix', 'object', 'mixed'
 ]);
 
-const getColumnKey = (col: SubListingDetailColumn): string => String(col.key ?? col.path ?? '');
-const getColumnTitle = (col: SubListingDetailColumn): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+const getColumnKey = (col: SubListingDetailColumn): string => col.key ?? col.path ?? '';
+const getColumnTitle = (col: SubListingDetailColumn): string => col.title ?? col.label ?? col.key ?? col.path ?? '';
 
 const resolveRowIdentifier = (row: Record<string, unknown>): string | null => {
     const candidate = row._id ?? row.id;
@@ -53,7 +53,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
 
     const handleCopyRecord = useCallback(async () => {
         if(!row) return;
-        const ok = await copyTextToClipboard(JSON.stringify(row) ?? '');
+        const ok = await copyTextToClipboard(JSON.stringify(row));
         if(ok){
             setCopied(true);
             setTimeout(() => setCopied(false), 1400);

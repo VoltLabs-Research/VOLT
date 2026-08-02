@@ -5,8 +5,6 @@ import { SECRET_KEY_METRICS_POLL_INTERVAL } from '@/modules/team/hooks/secret-ke
 export default function useSecretKeyUsage(secretKeyId: string | undefined, days: number = 30) {
     const selectedTeamId = useSelectedTeamId();
 
-    const isEnabled = !!selectedTeamId && !!secretKeyId;
-
     const query = useSecretKeyUsageQuery(
         {
             teamId: selectedTeamId ?? '',
@@ -14,7 +12,7 @@ export default function useSecretKeyUsage(secretKeyId: string | undefined, days:
             days
         },
         {
-            enabled: isEnabled,
+            enabled: !!selectedTeamId && !!secretKeyId,
             refetchInterval: SECRET_KEY_METRICS_POLL_INTERVAL
         }
     );

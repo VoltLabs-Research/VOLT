@@ -84,7 +84,7 @@ const resolveCookieMaxAgeMs = (expiresIn: SignOptions['expiresIn']): number => {
     }
 
     const parsedDuration = ms(expiresIn);
-    return typeof parsedDuration === 'number' && Number.isFinite(parsedDuration)
+    return Number.isFinite(parsedDuration)
         ? parsedDuration
         : DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS;
 };

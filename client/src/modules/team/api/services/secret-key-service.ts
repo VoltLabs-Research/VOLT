@@ -4,33 +4,28 @@ import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
 import type { TeamUsageMetrics, KeyUsageMetrics } from '@volt/contracts/modules/team/domain';
 import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
-import type { TeamScopedParams } from '@/shared/api/request-params';
+import type { PageParams, TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
 export type CreateSecretKeyParams = TeamScopedParams & CreateSecretKeyInput;
 
-export interface DeleteSecretKeyInput {
-    teamId: string;
+export interface DeleteSecretKeyInput extends TeamScopedParams {
     secretKeyId: string;
 }
 
-interface GetSecretKeyTeamMetricsInput {
-    teamId: string;
+export interface GetSecretKeyTeamMetricsInput extends TeamScopedParams {
     days?: number;
 }
 
-interface GetSecretKeyUsageInput {
-    teamId: string;
-    secretKeyId: string;
+export interface GetSecretKeyUsageInput extends DeleteSecretKeyInput {
     days?: number;
 }
 
-interface GetSecretKeysInput {
-    teamId: string;
-    page?: number;
-    limit?: number;
+interface GetSecretKeysInput extends TeamScopedParams, PageParams {
     sort?: string;
-}const endpoints = {
+}
+
+const endpoints = {
     listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
     create: post<CreateSecretKeyParams, CreateSecretKeyResponse>('/:teamId/secret-keys'),
     revokeById: post<DeleteSecretKeyInput, void>(

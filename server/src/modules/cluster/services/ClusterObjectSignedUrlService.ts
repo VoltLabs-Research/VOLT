@@ -19,25 +19,6 @@ const getSecret = (): Secret => {
     return secret;
 };
 
-const isClaims = (value: unknown): value is ClusterObjectAccessClaims => {
-    if (!value || typeof value !== 'object') {
-        return false;
-    }
-
-    const candidate = value as Partial<ClusterObjectAccessClaims>;
-    return candidate.kind === 'cluster-object'
-        && (candidate.operation === 'read' || candidate.operation === 'write')
-        && typeof candidate.teamId === 'string'
-        && typeof candidate.userId === 'string'
-        && typeof candidate.ownerClusterId === 'string'
-        && typeof candidate.bucket === 'string'
-        && typeof candidate.objectKey === 'string'
-        && typeof candidate.resourceKind === 'string'
-        && typeof candidate.resourceId === 'string'
-        && typeof candidate.iat === 'number'
-        && typeof candidate.exp === 'number';
-};
-
 export default class ClusterObjectSignedUrlService implements IClusterObjectSignedUrlService {
     private readonly secret = getSecret();
 
@@ -57,8 +38,10 @@ export default class ClusterObjectSignedUrlService implements IClusterObjectSign
 
     verify(token: string): ClusterObjectAccessClaims | null {
         try {
-            const decoded = jwt.verify(token, this.secret);
-            return isClaims(decoded) ? decoded : null;
+            const claims = jwt.verify(token, this.secret) as ClusterObjectAccessClaims;
+            return claims.kind === 'cluster-object'
+                ? claims
+                : null;
         } catch {
             return null;
         }

@@ -7,5 +7,5 @@ export const getPrimaryAccessiblePort = (
         return null;
     }
 
-    return accessiblePorts.find((port) => port.browserAccessible && port.status === 'available' && typeof port.public === 'number') || null;
+    return accessiblePorts.find((port) => port.browserAccessible && port.status === 'available' && port.public !== undefined) || null;
 };

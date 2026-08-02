@@ -21,7 +21,7 @@ const TYPE_PALETTE = [
 ];
 
 const getTypeColor = (t?: number): string => {
-    if (t === undefined || t === null) return '#888888';
+    if (t === undefined) return '#888888';
     const type = Math.max(1, Math.floor(t));
     if (type <= TYPE_PALETTE.length) return TYPE_PALETTE[type - 1];
     const hue = ((type - 1) * 47) % 360;
@@ -148,7 +148,7 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         <PluginCompactTable
             columns={columns}
             data={rows}
-            hasMore={hasNextPage ?? false}
+            hasMore={hasNextPage}
             isLoading={isLoading}
             isFetchingMore={isFetchingNextPage}
             onLoadMore={handleLoadMore}

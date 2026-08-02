@@ -83,7 +83,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         enabled: Boolean(selectedTeamId)
     });
 
-    const pluginNodeData = (node.data.pluginNode ?? {}) as IPluginNodeData;
+    const pluginNodeData: IPluginNodeData = node.data.pluginNode ?? {};
     const executionMode = pluginNodeData.executionMode ?? PluginNodeExecutionMode.MANUAL;
     const outputPathMode = pluginNodeData.outputPathMode ?? PluginNodeOutputPathMode.ISOLATED;
     const availableTimesteps = useMemo(() => {
@@ -161,7 +161,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }
 
         const referencedPluginIds = new Set<string>();
-        for (const pluginReferenceDefinition of selectedArgumentCandidate.pluginReferenceDefinitions ?? []) {
+        for (const pluginReferenceDefinition of selectedArgumentCandidate.pluginReferenceDefinitions) {
             for (const pluginId of pluginReferenceDefinition.pluginReferenceFilter ?? []) {
                 referencedPluginIds.add(pluginId);
             }
@@ -263,17 +263,15 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     }, [buildPluginNodeData, updatePluginNodeData]);
 
     const handlePluginChange = useCallback((_: string, value: string | number | boolean) => {
-        const nextPluginId = typeof value === 'string' ? value : String(value);
         updatePluginNodeData(buildPluginNodeData({
-            pluginId: nextPluginId,
+            pluginId: String(value),
             config: {}
         }));
     }, [buildPluginNodeData, updatePluginNodeData]);
 
     const handleArgumentReferenceChange = useCallback((_: string, value: string | number | boolean) => {
-        const nextArgumentReference = typeof value === 'string' ? value : String(value);
         updatePluginNodeData(buildPluginNodeData({
-            argumentReference: nextArgumentReference
+            argumentReference: String(value)
         }));
     }, [buildPluginNodeData, updatePluginNodeData]);
 
@@ -308,7 +306,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
     const handleSelectedClusterIdChange = useCallback((value: string | number | boolean) => {
         updatePluginNodeData(buildPluginNodeData({
-            selectedTeamClusterId: typeof value === 'string' ? value : String(value)
+            selectedTeamClusterId: String(value)
         }));
     }, [buildPluginNodeData, updatePluginNodeData]);
 
@@ -340,7 +338,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }
 
         const usesSelectionConfig = selectedArgumentCandidate.pluginReferenceDefinitions.some((definition) => {
-            return definition.showPluginConfiguration === true;
+            return definition.showPluginConfiguration;
         });
 
         if (usesSelectionConfig) {

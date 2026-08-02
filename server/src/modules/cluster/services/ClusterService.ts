@@ -957,8 +957,8 @@ export default class ClusterService {
             });
 
             const contentType = response.headers['content-type'] || 'application/octet-stream';
-            const contentLengthHeader = response.headers['content-length'];
-            const contentLength = typeof contentLengthHeader === 'string' ? Number(contentLengthHeader) : undefined;
+            const parsedContentLength = Number(response.headers['content-length']);
+            const contentLength = Number.isFinite(parsedContentLength) ? parsedContentLength : undefined;
 
             const filename = readFilenameFromContentDisposition(response.headers['content-disposition'])
                 || this.#deriveRemoteExplorerFallbackFilename(preflight.target, input.path);
@@ -967,7 +967,7 @@ export default class ClusterService {
                 stream: response.stream,
                 contentType,
                 filename,
-                contentLength: typeof contentLength === 'number' && Number.isFinite(contentLength) ? contentLength : undefined,
+                contentLength,
                 disposition: 'attachment'
             });
         } catch (error: unknown) {
@@ -1363,8 +1363,7 @@ export default class ClusterService {
             return false;
         }
 
-        const driverError = error.driverError as { code?: string | number } | undefined;
-        const code = driverError?.code ?? (error as unknown as { code?: string | number }).code;
+        const code = (error.driverError as { code?: string | number } | undefined)?.code;
 
         return String(code) === POSTGRES_UNIQUE_VIOLATION
             || String(code).startsWith(SQLITE_UNIQUE_VIOLATION);
@@ -1552,7 +1551,7 @@ export default class ClusterService {
         const byExposureId = new Map<string, PreparedSceneArtifactUpsertEntry>();
         for (const entry of entries) {
             const exposureId = entry.data.params.exposureId;
-            if (typeof exposureId === 'string' && exposureId.length > 0) {
+            if (exposureId) {
                 byExposureId.set(exposureId, entry);
             }
         }
@@ -1603,7 +1602,7 @@ export default class ClusterService {
             new Set(
                 inputs
                     .map((input) => input.analysis)
-                    .filter((analysisId): analysisId is string => typeof analysisId === 'string' && analysisId.length > 0)
+                    .filter((analysisId): analysisId is string => Boolean(analysisId))
             )
         );
         const analyses = await Promise.all(
@@ -1660,7 +1659,7 @@ export default class ClusterService {
                 if (input.sourceType === 'plugin-exposure') {
                     const analysisComputeClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId ?? undefined });
                     isReporterAuthorized = input.teamClusterId === analysisStorageClusterId
-                        || (typeof analysisComputeClusterId === 'string' && analysisComputeClusterId === input.teamClusterId);
+                        || analysisComputeClusterId === input.teamClusterId;
                 } else {
                     isReporterAuthorized = input.teamClusterId === analysisStorageClusterId;
                 }

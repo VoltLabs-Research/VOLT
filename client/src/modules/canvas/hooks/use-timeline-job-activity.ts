@@ -99,7 +99,7 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
         }
 
         const timestep = resolveTimestep(job);
-        if (typeof timestep !== 'number') {
+        if (timestep === undefined) {
             return;
         }
 

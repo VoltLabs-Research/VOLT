@@ -1,7 +1,20 @@
 import { Button } from '@voltstack/bravais';
 import { Check, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export type InviteButtonState = 'idle' | 'success' | 'error';
+
+const BUTTON_CONTENT: Record<InviteButtonState, { text: string; icon?: ReactNode }> = {
+    idle: { text: 'Invite' },
+    success: {
+        text: 'Sent!',
+        icon: <Check size={18} />
+    },
+    error: {
+        text: 'Error',
+        icon: <X size={18} />
+    }
+};
 
 interface InviteButtonProps {
     state: InviteButtonState;
@@ -18,27 +31,7 @@ export const InviteButton = ({
     disabled = false,
     type = 'button'
 }: InviteButtonProps) => {
-    const getButtonContent = () => {
-        switch (state) {
-            case 'success':
-                return {
-                    text: 'Sent!',
-                    icon: <Check size={18} />
-                };
-            case 'error':
-                return {
-                    text: 'Error',
-                    icon: <X size={18} />
-                };
-            default:
-                return {
-                    text: 'Invite',
-                    icon: undefined
-                };
-        }
-    };
-
-    const { text, icon } = getButtonContent();
+    const { text, icon } = BUTTON_CONTENT[state];
 
     return (
         <Button

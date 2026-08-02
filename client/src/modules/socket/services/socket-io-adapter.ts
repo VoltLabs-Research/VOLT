@@ -83,8 +83,8 @@ class SocketIOAdapter implements ISocketService {
 
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
     on(event: string, callback: (...args: unknown[]) => void): () => void {
-        if (!event || typeof callback !== 'function') {
-            throw new Error('Event name and callback function are required');
+        if (!event) {
+            throw new Error('Event name is required');
         }
 
         const existingSubscription = this.subscriptions.find(
@@ -181,7 +181,7 @@ class SocketIOAdapter implements ISocketService {
 
     updateAuth(auth: Record<string, unknown>): void {
         const next = { ...auth };
-        const previous = (this.options.auth ?? {}) as Record<string, unknown>;
+        const previous = this.options.auth ?? {};
         const unchanged = this.authEquals(previous, next);
 
         this.options.auth = next;

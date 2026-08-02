@@ -5,8 +5,7 @@ import type {
     PluginScene,
     ColorCodingScene,
     LineStyleScene,
-    ParticleFilterScene,
-    ParticleFilterSceneCondition
+    ParticleFilterScene
 } from '@/modules/fractal/contracts/scene';
 
 export interface ComputeGlbUrlParams {
@@ -22,12 +21,6 @@ interface ResolvedGlbResource {
     url: string | null;
     resourceKey: string | null;
 }
-
-const isPropertyCondition = (condition: ParticleFilterSceneCondition) => {
-    return typeof condition?.property === 'string'
-        && typeof condition?.operator === 'string'
-        && condition?.value !== undefined;
-};
 
 const buildPluginUrl = (
     mode: CanvasAccessMode,
@@ -95,9 +88,7 @@ const buildParticleFilterUrl = (
         action
     });
 
-    const validConditions = Array.isArray(conditions)
-        ? conditions.filter(isPropertyCondition)
-        : [];
+    const validConditions = conditions ?? [];
 
     if (validConditions.length > 0) {
         params.set('combinator', combinator || 'AND');

@@ -184,7 +184,7 @@ class TrajectoryNativeDaemonService {
         );
 
         return {
-            mask: toUint8Array(response.mask as unknown as Uint8Array | ArrayBuffer | Buffer),
+            mask: toUint8Array(response.mask),
             matchCount: response.matchCount,
             totalAtoms: response.totalAtoms
         };

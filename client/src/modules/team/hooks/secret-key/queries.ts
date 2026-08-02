@@ -2,50 +2,24 @@ import secretKeyService from '../../api/services/secret-key-service';
 import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/query';
 import type {
     CreateSecretKeyParams,
-    DeleteSecretKeyInput
+    DeleteSecretKeyInput,
+    GetSecretKeyTeamMetricsInput,
+    GetSecretKeyUsageInput
 } from '../../api/services/secret-key-service';
 import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '@volt/contracts/modules/team/domain';
 
-interface SecretKeyUsageQueryParams {
-    teamId: string;
-    secretKeyId: string;
-    days?: number;
-}
-
-interface SecretKeyTeamMetricsQueryParams {
-    teamId: string;
-    days?: number;
-}
-
-interface SecretKeyUsageKeyParams {
-    teamId: string;
-    secretKeyId: string;
-    days?: number;
-}
-
-interface SecretKeyTeamMetricsKeyParams {
-    teamId: string;
-    days?: number;
-}
-
-interface SecretKeyQueryKeyMap {
+const secretKeyKeys = buildKeys<{
     secretKeysListing: string;
-}
+}>('secret-keys');
 
-interface SecretKeyUsageQueryKeyMap {
-    secretKeyUsageByParams: SecretKeyUsageKeyParams;
-}
+const secretKeyUsageKeys = buildKeys<{
+    secretKeyUsageByParams: GetSecretKeyUsageInput;
+}>('secret-key-usage');
 
-interface SecretKeyTeamMetricsQueryKeyMap {
-    secretKeyTeamMetricsByParams: SecretKeyTeamMetricsKeyParams;
-}
-
-const secretKeyKeys = buildKeys<SecretKeyQueryKeyMap>('secret-keys');
-
-const secretKeyUsageKeys = buildKeys<SecretKeyUsageQueryKeyMap>('secret-key-usage');
-
-const secretKeyTeamMetricsKeys = buildKeys<SecretKeyTeamMetricsQueryKeyMap>('secret-key-team-metrics');
+const secretKeyTeamMetricsKeys = buildKeys<{
+    secretKeyTeamMetricsByParams: GetSecretKeyTeamMetricsInput;
+}>('secret-key-team-metrics');
 
 export const SECRET_KEY_QUERY_KEYS = {
     secretKeysListing: secretKeyKeys.secretKeysListing,
@@ -53,28 +27,13 @@ export const SECRET_KEY_QUERY_KEYS = {
     secretKeyTeamMetricsByParams: secretKeyTeamMetricsKeys.secretKeyTeamMetricsByParams
 };
 
-const getSecretKeyUsageQueryKey = (params: SecretKeyUsageQueryParams) => {
-    return SECRET_KEY_QUERY_KEYS.secretKeyUsageByParams({
-        teamId: params.teamId,
-        secretKeyId: params.secretKeyId,
-        days: params.days
-    });
-};
-
-const getSecretKeyTeamMetricsQueryKey = (params: SecretKeyTeamMetricsQueryParams) => {
-    return SECRET_KEY_QUERY_KEYS.secretKeyTeamMetricsByParams({
-        teamId: params.teamId,
-        days: params.days
-    });
-};
-
-export const useSecretKeyUsageQuery = createQuery<SecretKeyUsageQueryParams, KeyUsageMetrics>(
-    getSecretKeyUsageQueryKey,
+export const useSecretKeyUsageQuery = createQuery<GetSecretKeyUsageInput, KeyUsageMetrics>(
+    SECRET_KEY_QUERY_KEYS.secretKeyUsageByParams,
     secretKeyService.getKeyUsage
 );
 
-export const useSecretKeyTeamMetricsQuery = createQuery<SecretKeyTeamMetricsQueryParams, TeamUsageMetrics>(
-    getSecretKeyTeamMetricsQueryKey,
+export const useSecretKeyTeamMetricsQuery = createQuery<GetSecretKeyTeamMetricsInput, TeamUsageMetrics>(
+    SECRET_KEY_QUERY_KEYS.secretKeyTeamMetricsByParams,
     secretKeyService.getTeamMetrics
 );
 

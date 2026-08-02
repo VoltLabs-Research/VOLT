@@ -391,7 +391,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
             error
         });
 
-        if (typeof trajectoryContext.timestep === 'number' && trajectoryContext.trajectoryId) {
+        if (trajectoryContext.timestep !== undefined && trajectoryContext.trajectoryId) {
             await this.analysisExecutionLogService.sealFrameLog({
                 analysisId,
                 teamId,
@@ -428,7 +428,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
             return;
         }
 
-        if (status === JobStatus.Running && typeof trajectoryContext.timestep === 'number' && trajectoryContext.trajectoryId) {
+        if (status === JobStatus.Running && trajectoryContext.timestep !== undefined && trajectoryContext.trajectoryId) {
             await this.analysisExecutionLogService.markFrameRunning({
                 analysisId,
                 teamId,
@@ -827,24 +827,17 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     private async decrementAndCheckDrain(remainingKey: string, failedKey: string): Promise<{ drained: boolean; failedJobs: number }> {
-        const result = await this.redis.eval(
+        const [drained, failedJobs] = await this.redis.eval(
             DECREMENT_DRAIN_SCRIPT,
             2,
             remainingKey,
             failedKey,
             SESSION_TTL_SECONDS
-        );
-
-        if (!Array.isArray(result) || result.length !== 2) {
-            return {
-                drained: false,
-                failedJobs: 0
-            };
-        }
+        ) as [number, number];
 
         return {
-            drained: result[0] === 1,
-            failedJobs: typeof result[1] === 'number' ? result[1] : 0
+            drained: drained === 1,
+            failedJobs
         };
     }
 

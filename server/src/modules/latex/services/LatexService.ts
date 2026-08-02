@@ -94,9 +94,9 @@ const toFileView = (file: LatexFileEntity): LatexFile => ({
     path: file.path,
     content: file.content,
     isEntrypoint: file.isEntrypoint,
-    createdAt: file.createdAt,
-    updatedAt: file.updatedAt
-}) as unknown as LatexFile;
+    createdAt: file.createdAt.toISOString(),
+    updatedAt: file.updatedAt.toISOString()
+});
 
 export default class LatexService{
     #archiveService = new ClusterObjectArchiveService();

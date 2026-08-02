@@ -149,7 +149,7 @@ export default class ContainerService{
 
         const teamClusterId = await this.#clusterSelection.resolveConnectedClusterId(teamId, input.teamClusterId);
 
-        let containerCmd = cmd && Array.isArray(cmd) && cmd.length > 0 ? cmd : undefined;
+        let containerCmd = cmd?.length ? cmd : undefined;
         if(!containerCmd && !useImageCmd){
             containerCmd = ['tail', '-f', '/dev/null'];
         }
@@ -326,7 +326,7 @@ export default class ContainerService{
 
             if(internalIp && (action === 'start' || action === 'restart')){
                 await this.#relay.ensureContainerRelays(container.ports
-                    .filter((port) => typeof port.public === 'number' && port.public > 0)
+                    .filter((port) => (port.public ?? 0) > 0)
                     .map((port) => ({
                         teamId,
                         containerId: container.id,
@@ -357,7 +357,7 @@ export default class ContainerService{
             reservedPublicPorts = resolvedPorts.reservedPublicPorts;
             const existingPublicPorts = new Set(container.ports
                 .map((port) => port.public)
-                .filter((port): port is number => typeof port === 'number' && port > 0));
+                .filter((port): port is number => (port ?? 0) > 0));
             const internalIp = requireRelayInternalIp(container.internalIp);
 
             nextRelays = nextPorts.map((port) => ({

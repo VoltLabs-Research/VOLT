@@ -55,7 +55,7 @@ export const collectCleanupClusterIds = (
         primaryClusterId,
         ...additionalClusterIds,
         ...daemonClusterIds
-    ].filter((clusterId): clusterId is string => typeof clusterId === 'string' && clusterId.length > 0)
+    ].filter((clusterId): clusterId is string => Boolean(clusterId))
         .filter((clusterId, index, values) => values.indexOf(clusterId) === index);
 };
 
@@ -64,9 +64,7 @@ export const distinctJobIds = (jobs: TeamJobSummary[]): string[] => {
 };
 
 const isDaemonJob = (job: TeamJobSummary): boolean => {
-    return typeof job.teamClusterId === 'string'
-        && job.teamClusterId.length > 0
-        && job.backingSource === 'daemon';
+    return Boolean(job.teamClusterId) && job.backingSource === 'daemon';
 };
 
 export const getErrorMessage = (error: unknown): string | undefined => {

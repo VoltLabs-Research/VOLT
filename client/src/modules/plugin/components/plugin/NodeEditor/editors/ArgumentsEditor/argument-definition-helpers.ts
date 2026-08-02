@@ -2,13 +2,13 @@ import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums
 import type { IArgumentDefinition, IArgumentVisibilityCondition } from '@volt/contracts/modules/plugin/workflow';
 
 export const isMultiValueVisibilityOperator = (
-    operator?: ArgumentVisibilityOperator
+    operator: ArgumentVisibilityOperator
 ): boolean => {
     return operator === ArgumentVisibilityOperator.IN || operator === ArgumentVisibilityOperator.NOT_IN;
 };
 
 export const getArgumentLabel = (argument: IArgumentDefinition): string => {
-    return argument.label?.trim() || argument.argument?.trim() || '';
+    return argument.label.trim() || argument.argument.trim();
 };
 
 export const getArgumentFieldInputValue = (
@@ -35,11 +35,7 @@ export const getArgumentFieldInputValue = (
     }
 };
 
-export const getVisibilityValueInput = (condition?: IArgumentVisibilityCondition): string => {
-    if (!condition) {
-        return '';
-    }
-
+export const getVisibilityValueInput = (condition: IArgumentVisibilityCondition): string => {
     if (isMultiValueVisibilityOperator(condition.operator)) {
         return (condition.values ?? []).map(String).join(', ');
     }

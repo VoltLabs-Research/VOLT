@@ -74,7 +74,7 @@ export const buildSceneRenderMetadata = (
 };
 
 export const isRenderableSceneExporter = (exporter: string | null | undefined): boolean => {
-    return typeof exporter === 'string' && RENDERABLE_SCENE_EXPORTERS.has(exporter);
+    return !!exporter && RENDERABLE_SCENE_EXPORTERS.has(exporter);
 };
 
 export const isRenderableSceneExport = (

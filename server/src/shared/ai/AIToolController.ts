@@ -76,7 +76,7 @@ export default abstract class AIToolController {
     #bindHandler(definition: AIToolDefinition, scope: AIToolScope): (params: unknown) => Promise<unknown> {
         const handler = (this as unknown as Record<string | symbol, ToolHandler | undefined>)[definition.handlerName];
 
-        if (typeof handler !== 'function') {
+        if (!handler) {
             throw new Error(`AI tool "${definition.name}" has no handler method on ${this.constructor.name}.`);
         }
 

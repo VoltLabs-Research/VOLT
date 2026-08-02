@@ -5,15 +5,13 @@ import { SECRET_KEY_METRICS_POLL_INTERVAL } from '@/modules/team/hooks/secret-ke
 export default function useSecretKeyTeamMetrics(days: number = 30) {
     const selectedTeamId = useSelectedTeamId();
 
-    const isEnabled = !!selectedTeamId;
-
     const query = useSecretKeyTeamMetricsQuery(
         {
             teamId: selectedTeamId ?? '',
             days
         },
         {
-            enabled: isEnabled,
+            enabled: !!selectedTeamId,
             refetchInterval: SECRET_KEY_METRICS_POLL_INTERVAL
         }
     );

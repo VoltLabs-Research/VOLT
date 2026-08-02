@@ -143,21 +143,8 @@ const pathExistsAsFile = async (targetPath: string): Promise<boolean> => {
 const readWorkDirManifest = async (workDir: string): Promise<WorkDirManifest> => {
     try {
         const rawManifest = await fs.readFile(getWorkDirManifestPath(workDir), 'utf-8');
-        const parsedManifest = JSON.parse(rawManifest) as Partial<WorkDirManifest>;
-        if (!parsedManifest || typeof parsedManifest !== 'object') {
-            return { inputs: {} };
-        }
-
-        const inputEntries = parsedManifest.inputs;
-        if (!inputEntries || typeof inputEntries !== 'object' || Array.isArray(inputEntries)) {
-            return { inputs: {} };
-        }
-
-        return {
-            inputs: Object.fromEntries(
-                Object.entries(inputEntries).filter(([, version]) => typeof version === 'string')
-            )
-        };
+        const parsedManifest = JSON.parse(rawManifest) as WorkDirManifest;
+        return { inputs: parsedManifest.inputs ?? {} };
     } catch {
         return { inputs: {} };
     }

@@ -206,11 +206,11 @@ export class AnalysisListingExportCatalogService {
         row: Pick<DaemonListingRow, 'exposureId' | 'exposureName'>,
         excludedExposures: ExcludedExposureSet
     ): boolean {
-        if (row.exposureId && excludedExposures.ids.has(String(row.exposureId))) {
+        if (row.exposureId && excludedExposures.ids.has(row.exposureId)) {
             return true;
         }
 
-        if (row.exposureName && excludedExposures.names.has(String(row.exposureName))) {
+        if (row.exposureName && excludedExposures.names.has(row.exposureName)) {
             return true;
         }
 
@@ -224,20 +224,21 @@ export class AnalysisListingExportCatalogService {
 
         const pluginEntity = await PluginEntity.findOneBy({ id: pluginId });
         const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
-        if (!plugin || !Array.isArray(plugin.props.exposures)) {
+        const exposures = plugin?.props.exposures;
+        if (!exposures) {
             return this.emptyExcludedExposureSet();
         }
 
-        return plugin.props.exposures.reduce<ExcludedExposureSet>((accumulator, exposure) => {
-            if (exposure?.export?.exporter !== Exporter.Mesh) {
+        return exposures.reduce<ExcludedExposureSet>((accumulator, exposure) => {
+            if (exposure.export?.exporter !== Exporter.Mesh) {
                 return accumulator;
             }
 
-            if (typeof exposure._id === 'string' && exposure._id) {
+            if (exposure._id) {
                 accumulator.ids.add(exposure._id);
             }
 
-            if (typeof exposure.name === 'string' && exposure.name) {
+            if (exposure.name) {
                 accumulator.names.add(exposure.name);
             }
 
@@ -339,11 +340,7 @@ export class AnalysisListingExportCatalogService {
             timestep: listingRow.timestep
         };
 
-        const dynamicRow = listingRow.row && typeof listingRow.row === 'object'
-            ? listingRow.row
-            : {};
-
-        for (const [key, value] of Object.entries(dynamicRow)) {
+        for (const [key, value] of Object.entries(listingRow.row)) {
             if (!(key in baseRow)) {
                 baseRow[key] = value;
             }
@@ -379,11 +376,7 @@ export class AnalysisListingExportCatalogService {
             subListingName: row.subListingName
         };
 
-        const dynamicRow = row.row && typeof row.row === 'object'
-            ? row.row
-            : {};
-
-        for (const [key, value] of Object.entries(dynamicRow)) {
+        for (const [key, value] of Object.entries(row.row)) {
             if (!(key in baseRow)) {
                 baseRow[key] = value;
             }
@@ -416,13 +409,13 @@ export class AnalysisListingExportCatalogService {
         for (const doc of rows) {
             const mapped: ListingRowByAnalysisData = {
                 _id: toListingRowId(doc._id),
-                plugin: String(doc.plugin || ''),
+                plugin: doc.plugin || '',
                 exposureId: doc.exposureId || '',
                 exposureName: doc.exposureName || '',
-                trajectory: String(doc.trajectory || ''),
+                trajectory: doc.trajectory || '',
                 trajectoryName: doc.trajectoryName as string,
                 timestep: doc.timestep ?? 0,
-                row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
+                row: doc.row ?? {}
             };
 
             const listingId = mapped.exposureId || 'listing';
@@ -468,17 +461,17 @@ export class AnalysisListingExportCatalogService {
         const references = new Map<string, DiscoveredSubListingReference>();
 
         for (const row of rows) {
-            if (!Array.isArray(row.subListingNames) || row.subListingNames.length === 0) {
+            if (!row.subListingNames?.length) {
                 continue;
             }
 
             const exposureId = row.exposureId || '';
             const exposureName = row.exposureName || exposureId;
-            const plugin = String(row.plugin || '');
-            const trajectory = String(row.trajectory || '');
+            const plugin = row.plugin || '';
+            const trajectory = row.trajectory || '';
             const timestep = row.timestep ?? 0;
 
-            for (const subListingName of row.subListingNames.map(String).filter(Boolean)) {
+            for (const subListingName of row.subListingNames.filter(Boolean)) {
                 const id = buildAnalysisSubListingSelectionId(exposureId, timestep, subListingName);
 
                 if (selectedSubListingIds && !selectedSubListingIds.has(id)) {
@@ -553,7 +546,7 @@ export class AnalysisListingExportCatalogService {
                     exposureName: reference.exposureName,
                     timestep: reference.timestep,
                     subListingName: reference.subListingName,
-                    row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
+                    row: doc.row ?? {}
                 });
             }
 

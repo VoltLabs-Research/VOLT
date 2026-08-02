@@ -30,9 +30,6 @@ export default function useTeamRoleData({ teamId, limit = 100 }: UseTeamRoleData
 
     return {
         roles: queryState.data ?? [],
-        isLoading: queryState.isLoading,
-        error: queryState.error,
-        accessDenied: queryState.accessDenied,
-        accessDeniedMessage: queryState.accessDeniedMessage
+        isLoading: queryState.isLoading
     };
 }

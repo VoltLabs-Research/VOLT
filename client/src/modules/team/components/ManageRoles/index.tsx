@@ -1,25 +1,19 @@
 import { Box, StatusBadge, Text } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
+import useTeamRoleListingActions from '@/modules/team/hooks/role/use-team-role-listing-actions';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../RoleEditorModal';
-import { runAction } from '@/shared/ui/actions/run-action';
-import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { dateColumn } from '@/shared/ui/utils/column-presets';
-import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import { teamRolesResource } from '@/modules/team/hooks/role/queries';
 import type { GetTeamRolesParams } from '@/modules/team/api/services/role-service';
-import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useCallback, useMemo, useState } from 'react';
 import type { TeamRole } from '@volt/contracts/modules/team/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { SOCKET_TEAM_ROLE_EVENTS } from '@/modules/socket/events/team';
-import type { RoleEditorPayload } from '../RoleEditorModal';
 
 const TEAM_ROLES_QUERY_KEY = ['team-roles'] as const;
 
@@ -37,24 +31,6 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
         queryKeys: [TEAM_ROLES_QUERY_KEY]
     }
 ];
-
-const createRoleToastOptions = createPromiseToastOptions({
-    loading: 'Creating role...',
-    success: 'Role created successfully',
-    error: 'Failed to create role'
-});
-
-const updateRoleToastOptions = createPromiseToastOptions({
-    loading: 'Updating role...',
-    success: 'Role updated successfully',
-    error: 'Failed to update role'
-});
-
-const getDeleteRoleToastOptions = (roleName: string) => createPromiseToastOptions({
-    loading: `Deleting "${roleName}"...`,
-    success: `Role "${roleName}" deleted`,
-    error: `Failed to delete "${roleName}"`
-});
 
 const COLUMNS: ColumnConfig<TeamRole>[] = [
     {
@@ -103,18 +79,12 @@ export default function ManageRolesTemplate() {
     const canDelete = canAccess(['team-role:delete']);
     const canRead = canAccess(['team-role:read']);
 
-    const createRoleMutation = useCreateTeamRoleMutation();
-    const updateRoleMutation = useUpdateTeamRoleMutation();
-    const deleteRoleMutation = useDeleteTeamRoleMutation();
     const { queryKey, fetchData } = useMemo(
         () => teamRolesResource.createListingAccessors<GetTeamRolesParams>(selectedTeam._id),
         [selectedTeam._id]
     );
-    const isSaving = createRoleMutation.isPending || updateRoleMutation.isPending;
 
     const rbacConfigResult = rbacConfigQuery(undefined);
-    const resources = rbacConfigResult.data?.resources ?? [];
-    const actions = rbacConfigResult.data?.actions ?? [];
 
     const handleOpenCreate = useCallback(() => {
         setEditingRole(null);
@@ -126,85 +96,16 @@ export default function ManageRolesTemplate() {
         setTimeout(openRoleEditorModal, 0);
     }, []);
 
-    const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
-        try {
-            await runAction({
-                action: () => editingRole
-                    ? updateRoleMutation.mutateAsync({
-                        teamId: selectedTeam._id,
-                        roleId: editingRole._id,
-                        ...data
-                    })
-                    : createRoleMutation.mutateAsync({
-                        teamId: selectedTeam._id,
-                        ...data
-                    }),
-                toast: editingRole ? updateRoleToastOptions : createRoleToastOptions,
-                afterSuccess: () => {
-                    setEditingRole(null);
-                }
-            });
-        } catch {
-        }
-    }, [selectedTeam._id, editingRole, createRoleMutation, updateRoleMutation]);
-
-    const handleDeleteRoles = useCallback(async (rolesToDelete: TeamRole[]) => {
-        const eligibleRoles = rolesToDelete.filter((role) => !role.isSystem);
-        if (!eligibleRoles.length) return;
-
-        let confirmationTitle = `Delete ${eligibleRoles.length} roles?`;
-        if (eligibleRoles.length === 1) {
-            confirmationTitle = `Delete "${eligibleRoles[0].name}"?`;
-        }
-
-        const isConfirmed = await confirm({
-            title: confirmationTitle,
-            description: 'Deleting a role permanently removes its configuration and cannot be undone.',
-            confirmText: 'Delete role',
-            cancelText: 'Cancel',
-            tone: ConfirmActionTone.Danger
-        });
-        if (!isConfirmed) return;
-
-        for (const role of eligibleRoles) {
-            try {
-                await runAction({
-                    action: () => deleteRoleMutation.mutateAsync({
-                        teamId: selectedTeam._id,
-                        roleId: role._id
-                    }),
-                    toast: getDeleteRoleToastOptions(role.name)
-                });
-            } catch {
-            }
-        }
-    }, [selectedTeam._id, deleteRoleMutation]);
-
-    const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamRole>({
-        actions: {
-            view: {
-                label: 'View',
-                icon: RiEyeLine,
-                handler: ({ item: role }) => handleOpenEdit(role),
-                requiredPermission: 'team-role:read'
-            },
-            edit: {
-                label: 'Edit',
-                icon: RiEditLine,
-                handler: ({ item: role }) => handleOpenEdit(role),
-                requiredPermission: 'team-role:update'
-            },
-            delete: {
-                label: 'Delete',
-                icon: RiDeleteBin6Line,
-                variant: 'danger',
-                handler: ({ item, selectedItems }) => {
-                    const targets = selectedItems.length > 1 ? selectedItems : [item];
-                    return handleDeleteRoles(targets);
-                },
-                requiredPermission: 'team-role:delete'
-            }
-        }
+    const {
+        handleSaveRole,
+        isSaving,
+        getMenuOptions,
+        getSelectionActionOptions
+    } = useTeamRoleListingActions({
+        teamId: selectedTeam._id,
+        editingRole,
+        onEditRole: handleOpenEdit,
+        onSaved: () => setEditingRole(null)
     });
 
     const getRoleMenuOptions = useCallback((role: TeamRole, selectedRoles: TeamRole[]) => {
@@ -250,8 +151,8 @@ export default function ManageRolesTemplate() {
 
             <RoleEditorModal
                 role={editingRole}
-                resources={resources}
-                actions={actions}
+                resources={rbacConfigResult.data?.resources ?? []}
+                actions={rbacConfigResult.data?.actions ?? []}
                 onSave={handleSaveRole}
                 isSaving={isSaving}
             />

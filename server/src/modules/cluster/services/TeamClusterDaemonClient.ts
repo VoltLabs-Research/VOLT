@@ -16,12 +16,6 @@ import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { Readable } from 'node:stream';
 
-interface TeamClusterDaemonResponseEnvelope<T> {
-    status: 'success';
-    data: T;
-    message?: string;
-}
-
 interface TeamClusterDaemonSemanticPayload {
     accepted?: boolean;
     reason?: string;
@@ -72,7 +66,7 @@ const unwrapResponseEnvelopeData = (value: unknown): unknown => {
         return value;
     }
 
-    return (value as unknown as TeamClusterDaemonResponseEnvelope<unknown>).data;
+    return value.data;
 };
 
 const isDaemonErrorPayload = (value: unknown): value is DaemonErrorPayload => {
@@ -264,11 +258,7 @@ class TeamClusterDaemonClient {
         return {
             accepted,
             data,
-            reason: typeof semanticPayload?.reason === 'string'
-                ? semanticPayload.reason
-                : typeof semanticPayload?.message === 'string'
-                    ? semanticPayload.message
-                    : undefined,
+            reason: semanticPayload?.reason ?? semanticPayload?.message,
             retryClass: resolvedOptions.retryClass,
             timeoutClass: resolvedOptions.timeoutClass
         };

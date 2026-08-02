@@ -10,7 +10,8 @@ import type { QueryOptions } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
 import type { Team } from '@volt/contracts/modules/team/domain';
-import type { DeleteInviteCodeInput, GenerateInviteCodeInput, JoinByInviteCodeInput, JoinByInviteCodeResponse, LeaveTeamInput, PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse, UpdateTeamParams } from '../../api/services/team-service';
+import type { JoinByInviteCodeInput, JoinByInviteCodeResponse, PreviewJoinByInviteCodeResponse, UpdateTeamParams } from '../../api/services/team-service';
+import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput } from '@volt/contracts/modules/team/http';
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
@@ -49,17 +50,11 @@ interface TeamScopedValue {
     teamId?: unknown;
 }
 
-const hasTeamScopedValue = (value: unknown): value is TeamScopedValue => {
-    return typeof value === 'object' && value !== null && 'teamId' in value;
-};
-
 const extractTeamId = (value: unknown): string | null => {
     if (typeof value === 'string') return value;
-    if (hasTeamScopedValue(value)) {
-        const teamId = value.teamId;
-        return typeof teamId === 'string' ? teamId : null;
-    }
-    return null;
+    if (typeof value !== 'object' || value === null || !('teamId' in value)) return null;
+    const { teamId } = value as TeamScopedValue;
+    return typeof teamId === 'string' ? teamId : null;
 };
 
 const getQueryTeamId = (queryKey: readonly unknown[]): string | null => {
@@ -112,17 +107,10 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     });
 };
 
-const usePreviewJoinByCodeQueryBase = createQuery<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>(
+export const usePreviewJoinByCodeQuery = createQuery<JoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>(
     (params) => TEAM_QUERY_KEYS.joinByCodePreview(params.code),
     (params) => teamService.previewJoinByCode(params)
 );
-
-export const usePreviewJoinByCodeQuery = (
-    params: PreviewJoinByInviteCodeInput,
-    options?: QueryOptions<PreviewJoinByInviteCodeResponse>
-) => {
-    return usePreviewJoinByCodeQueryBase(params, options);
-};
 
 export const useCreateTeamMutation = createMutation<Team, CreateTeamInput>(
     teamService.create,
@@ -145,7 +133,7 @@ export const useUpdateTeamMutation = createMutation<Team, UpdateTeamParams>(
 );
 
 export const useLeaveTeamMutation = () => {
-    return useMutation<void, Error, LeaveTeamInput, { previousTeams?: Team[] }>({
+    return useMutation<void, Error, TeamScopedParams, { previousTeams?: Team[] }>({
         mutationFn: teamService.leave,
         onMutate: async (variables) => {
             await queryClient.cancelQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
@@ -174,7 +162,7 @@ export const useLeaveTeamMutation = () => {
     });
 };
 
-export const useGenerateInviteCodeMutation = createMutation<Team, GenerateInviteCodeInput>(
+export const useGenerateInviteCodeMutation = createMutation<Team, TeamScopedParams>(
     teamService.generateInviteCode,
     (updatedTeam) => {
         setTeamsQueryData((previous) => {
@@ -184,7 +172,7 @@ export const useGenerateInviteCodeMutation = createMutation<Team, GenerateInvite
     }
 );
 
-export const useDeleteInviteCodeMutation = createMutation<void, DeleteInviteCodeInput>(
+export const useDeleteInviteCodeMutation = createMutation<void, TeamScopedParams>(
     teamService.deleteInviteCode,
     (_data, variables) => {
         setTeamsQueryData((previous) => {

@@ -43,8 +43,8 @@ const normalizeJobTimestep = (job: Job, timestep: number): Job => {
     };
 };
 
-const parseTimestamp = (timestamp?: string): number => {
-    if (typeof timestamp !== 'string' || timestamp.trim().length === 0) {
+const parseTimestamp = (timestamp: string): number => {
+    if (timestamp.trim().length === 0) {
         return 0;
     }
 
@@ -105,8 +105,8 @@ export const applyJobUpdate = (
             })
             .filter((frame) => frame.jobs.length > 0);
         const nextJobSource = existingJob
-            && typeof existingJob.revision === 'number'
-            && typeof normalizedJob.revision === 'number'
+            && existingJob.revision !== undefined
+            && normalizedJob.revision !== undefined
             && normalizedJob.revision < existingJob.revision
             ? existingJob
             : existingJob

@@ -2,7 +2,7 @@ import { createService, get, post, patch, del } from '@/app/core/http/utils/crea
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 
-export interface AcceptInvitationInput {
+export interface InvitationStatusInput {
     invitationId: string;
     teamId?: string;
 }
@@ -20,43 +20,20 @@ interface GetPendingInvitationsInput {
     teamId: string;
 }
 
-export interface RejectInvitationInput {
-    invitationId: string;
-    teamId?: string;
-}
-
 export interface SendInvitationInput {
     teamId: string;
     email: string;
     roleId?: string;
 }
 
-interface PendingInvitationsPage extends PaginatedResponse<TeamInvitation> {
-    data: TeamInvitation[];
-}
-
-const isPendingInvitationsPage = (value: unknown): value is PendingInvitationsPage => {
-    if (typeof value !== 'object' || value === null || !('data' in value)) {
-        return false;
-    }
-
-    return Array.isArray(value.data);
-};
-
 const endpoints = {
     getDetails: get<GetInvitationDetailsInput, TeamInvitation>(
         '/:invitationId', { client: 'invitations' }
     ),
-    getPending: get<GetPendingInvitationsInput, TeamInvitation[]>(
+    getPending: get<GetPendingInvitationsInput, TeamInvitation[], PaginatedResponse<TeamInvitation>>(
         '/:teamId/invitations?status=pending', {
             client: 'team',
-            map: (result) => {
-                if (!isPendingInvitationsPage(result)) {
-                    throw new Error('Invalid pending invitations response');
-                }
-
-                return result.data;
-            }
+            map: (result) => result.data
         }
     ),
     send: post<SendInvitationInput, void>(
@@ -68,13 +45,13 @@ const endpoints = {
     cancel: del<CancelInvitationInput>(
         '/:teamId/invitations/:invitationId', { client: 'team' }
     ),
-    accept: patch<AcceptInvitationInput, void>(
+    accept: patch<InvitationStatusInput, void>(
         '/:invitationId/status', {
             client: 'invitations',
             unwrap: 'void'
         }
     ),
-    reject: patch<RejectInvitationInput, void>(
+    reject: patch<InvitationStatusInput, void>(
         '/:invitationId/status', {
             client: 'invitations',
             unwrap: 'void'

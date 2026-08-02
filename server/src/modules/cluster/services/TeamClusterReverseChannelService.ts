@@ -130,6 +130,14 @@ interface PendingTunnelWriteAck {
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
 
+type DaemonContainerCreateProgressPayload = {
+    operationId?: string;
+    step?: string;
+    image?: string;
+    containerName?: string;
+    containerId?: string;
+};
+
 const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => {
     if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
         return undefined;
@@ -600,9 +608,6 @@ class TeamClusterReverseChannelService {
         socketId: string,
         payload: TeamClusterDaemonRuntimeProgressPayload
     ): Promise<void> {
-        const readPayloadString = (value: unknown): string | undefined => {
-            return typeof value === 'string' ? value : undefined;
-        };
         const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
         if (!teamClusterId) {
             return;
@@ -612,20 +617,20 @@ class TeamClusterReverseChannelService {
             return;
         }
 
-        const operationId = readPayloadString(payload.payload?.operationId);
+        const progress = payload.payload as DaemonContainerCreateProgressPayload | undefined;
 
-        if (!operationId) {
+        if (!progress?.operationId) {
             return;
         }
 
         await this.containerDeploymentProgressService.emitToTeam({
-            operationId,
+            operationId: progress.operationId,
             teamClusterId,
             stage: payload.stage,
-            step: readPayloadString(payload.payload?.step),
-            image: readPayloadString(payload.payload?.image),
-            containerName: readPayloadString(payload.payload?.containerName),
-            containerId: readPayloadString(payload.payload?.containerId),
+            step: progress.step,
+            image: progress.image,
+            containerName: progress.containerName,
+            containerId: progress.containerId,
             timestamp: payload.timestamp
         });
     }
@@ -1020,9 +1025,10 @@ class TeamClusterReverseChannelService {
             this.untouchSession(payload.sessionId);
             return;
         }
-        if (payload.requiresAck && typeof payload.sequence === 'number') {
+        const sequence = payload.sequence;
+        if (payload.requiresAck && sequence !== undefined) {
             entry.stream.pushChunk(chunk, () => {
-                this.emitTunnelDrain(entry.socketId, payload.sessionId, payload.sequence!);
+                this.emitTunnelDrain(entry.socketId, payload.sessionId, sequence);
             });
             return;
         }
@@ -1093,7 +1099,7 @@ class TeamClusterReverseChannelService {
         timeoutMs: number,
         timeoutMessage: string
     ): NodeJS.Timeout | null {
-        if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+        if (timeoutMs <= 0) {
             return null;
         }
 

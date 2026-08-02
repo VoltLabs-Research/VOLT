@@ -1,12 +1,9 @@
 import { IconButton, Select } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
+import useLeaveTeam from '@/modules/team/hooks/team/use-leave-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import { resetTeamScopedApplicationState, switchSelectedTeam, useTeamStore } from '@/modules/team/store/team/use-team-store';
-import { runAction } from '@/shared/ui/actions/run-action';
-import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
+import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import useTip from '@/shared/tips/use-tip';
 import { IoExitOutline } from 'react-icons/io5';
 import { useCallback, useMemo, useState } from 'react';
@@ -17,25 +14,10 @@ interface TeamSelectorProps {
     className?: string;
 }
 
-const toOptionalDescription = (value: string | null | undefined): string | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const normalizedValue = value.trim();
-    return normalizedValue.length > 0 ? normalizedValue : undefined;
-};
-
-const LEAVE_TEAM_TOAST_OPTIONS = createPromiseToastOptions({
-    loading: 'Leaving team...',
-    success: 'Left team successfully',
-    error: 'Failed to leave team'
-});
-
 export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
-    const leaveTeamMutation = useLeaveTeamMutation();
+    const leaveTeam = useLeaveTeam();
     const [tipTrigger, setTipTrigger] = useState(0);
 
     useTip('team-selector-context', {
@@ -53,42 +35,14 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         event.preventDefault();
         event.stopPropagation();
 
-        const team = teams.find((entry) => entry._id === teamId);
-        const isConfirmed = await confirm({
-            title: `Leave ${team?.name ?? 'this team'}?`,
-            description: 'You will lose access to this team until someone invites you again.',
-            confirmText: 'Leave team',
-            cancelText: 'Stay',
-            tone: ConfirmActionTone.Danger
-        });
-
-        if (!isConfirmed) {
-            return;
-        }
-
-        await runAction({
-            action: () => leaveTeamMutation.mutateAsync({ teamId }),
-            toast: LEAVE_TEAM_TOAST_OPTIONS,
-            afterSuccess: () => {
-                const state = useTeamStore.getState();
-                const currentSelectedTeamId = state.selectedTeamId;
-
-                if (currentSelectedTeamId === teamId) {
-                    const remainingTeams = teams.filter((team) => team._id !== teamId);
-                    const nextTeam = remainingTeams[0] ?? null;
-
-                    resetTeamScopedApplicationState();
-                    state.setSelectedTeamId(nextTeam?._id ?? null);
-                }
-            }
-        });
-    }, [leaveTeamMutation, teams]);
+        await leaveTeam(teamId, teams.find((entry) => entry._id === teamId)?.name);
+    }, [leaveTeam, teams]);
 
     const teamOptions = useMemo(() =>
         teams.map((team) => ({
             value: team._id,
             title: team.name,
-            description: toOptionalDescription(team.description)
+            description: team.description?.trim() || undefined
         })), [teams]
     );
 

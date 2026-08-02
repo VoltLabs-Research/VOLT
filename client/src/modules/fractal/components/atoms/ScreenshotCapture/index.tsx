@@ -251,7 +251,7 @@ const ScreenshotCapture = ({
         if ('zoom' in camera && typeof camera.zoom === 'number') {
             camera.zoom = snapshot.zoom;
         }
-        if (camera instanceof PerspectiveCamera && typeof snapshot.aspect === 'number') {
+        if (camera instanceof PerspectiveCamera && snapshot.aspect !== undefined) {
             camera.aspect = snapshot.aspect;
         }
 

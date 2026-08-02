@@ -16,8 +16,6 @@ export const InvitationsList = ({
     cancelingId,
     onCancelInvitation
 }: InvitationsListProps) => {
-    const safeInvitations = Array.isArray(invitations) ? invitations : [];
-
     if(isLoading) {
         return (
             <Box display='flex' align='center' justify='center' className='invitations-list-loading'>
@@ -28,7 +26,7 @@ export const InvitationsList = ({
         );
     }
 
-    if(safeInvitations.length === 0) {
+    if(invitations.length === 0) {
         return (
             <EmptyState
                 title='No Invitations'
@@ -41,7 +39,7 @@ export const InvitationsList = ({
     return (
         <Box overflow='y-auto' shrink='0' className='invitations-list'>
             <Stack gap='05'>
-                {safeInvitations.map((invitation) => (
+                {invitations.map((invitation) => (
                     <InvitationRow
                         key={invitation._id}
                         email={invitation.email}

@@ -119,7 +119,7 @@ const ReviewStep = ({
             <ProcessingLoader
                 isVisible={isLoading && !!deployProgressMessage}
                 message={deployProgressMessage || 'Deploying container...'}
-                showProgress={typeof deployProgressRate === 'number' && deployProgressRate > 0}
+                showProgress={(deployProgressRate ?? 0) > 0}
                 completionRate={deployProgressRate ?? 0}
                 className='mt-1'
             />
