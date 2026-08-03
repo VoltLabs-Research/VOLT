@@ -187,6 +187,10 @@ export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,
     ownerClusterId: string
 ): ScopedClusterObjectStore => ({
-    putObject: (input) => objectStore.putObject({ ...input, ownerClusterId }),
-    putObjectStream: (input) => objectStore.putObjectStream({ ...input, ownerClusterId })
+    putObject: (input) => objectStore.putObject({
+ ...input, ownerClusterId 
+}),
+    putObjectStream: (input) => objectStore.putObjectStream({
+ ...input, ownerClusterId 
+})
 });

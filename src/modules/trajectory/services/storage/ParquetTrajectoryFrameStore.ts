@@ -369,7 +369,9 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         for (const property of Object.values(frame.properties)) {
             bytes += property.values.byteLength;
         }
-        this.frameCache.set(key, { frame, bytes });
+        this.frameCache.set(key, {
+ frame, bytes 
+});
         this.frameCacheBytes += bytes;
 
         while (this.frameCacheBytes > PARQUET_FRAME_CACHE_BYTES && this.frameCache.size > 1) {

@@ -232,7 +232,9 @@ export class NestedPluginWorkflowRunner {
             trajectoryId: input.trajectoryId,
             trajectoryFrames: input.trajectoryFrames?.length
                 ? input.trajectoryFrames
-                : [{ timestep, natoms, simulationCell }],
+                : [{
+ timestep, natoms, simulationCell 
+}],
             trajectoryDumpOverrides: [toInlineDumpDescriptor(input.dumpTarget)],
             analysis: input.analysis,
             analysisId: input.analysisId,

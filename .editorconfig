@@ -1,0 +1,35 @@
+# Editor defaults for ClusterDaemon. Kept in sync with VOLT/.editorconfig, since
+# the daemon shares the same conventions as the server it talks to.
+#
+# Deliberately NOT Prettier: the convention is `if(cond){` with no space before the
+# brace, which Prettier cannot express and would rewrite. Style beyond indentation
+# is enforced by @stylistic rules in eslint.config.mjs.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 4
+quote_type = single
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{json,jsonc}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.py]
+indent_size = 4
+
+[Dockerfile*]
+indent_size = 4

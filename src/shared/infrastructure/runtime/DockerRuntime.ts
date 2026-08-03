@@ -101,7 +101,9 @@ export class DockerRuntime {
             }
         }
 
-        return { exposedPorts, portBindings };
+        return {
+ exposedPorts, portBindings 
+};
     }
 
     async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {

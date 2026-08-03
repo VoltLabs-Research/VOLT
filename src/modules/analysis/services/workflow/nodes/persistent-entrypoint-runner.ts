@@ -43,10 +43,16 @@ const buildPluginConfig = (
     try {
         const parsed = JSON.parse(trimmed) as unknown;
         return isRecord(parsed)
-            ? { ...base, ...parsed }
-            : { ...base, config: parsed };
+            ? {
+ ...base, ...parsed 
+}
+            : {
+ ...base, config: parsed 
+};
     } catch {
-        return { ...base, raw: trimmed };
+        return {
+ ...base, raw: trimmed 
+};
     }
 };
 

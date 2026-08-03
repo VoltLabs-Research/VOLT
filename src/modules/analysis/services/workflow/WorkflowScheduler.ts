@@ -39,7 +39,9 @@ const readMatchedCaseId = (output: WorkflowNodeOutput): string | null =>
     typeof output.matchedCaseId === 'string' ? output.matchedCaseId : null;
 
 const activeUnless = (isActive: boolean, reason: string): WorkflowEdgeResolution =>
-    isActive ? { state: 'active' } : { state: 'inactive', reason };
+    isActive ? { state: 'active' } : {
+ state: 'inactive', reason 
+};
 
 export class WorkflowScheduler {
     static forVisitedNodes(

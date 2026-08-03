@@ -96,7 +96,9 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             && !definitionTreeHasArgument(definitions, SELECTED_TIMESTEPS_ARGUMENT);
 
         return needsReservedTimesteps
-            ? [...definitions, { argument: SELECTED_TIMESTEPS_ARGUMENT, type: 'list' }]
+            ? [...definitions, {
+ argument: SELECTED_TIMESTEPS_ARGUMENT, type: 'list' 
+}]
             : definitions;
     }
 
