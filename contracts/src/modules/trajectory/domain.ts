@@ -23,10 +23,8 @@ export interface TimestepInfo{
 }
 
 export interface TrajectoryStats{
-    totalAtoms: number;
-    totalFrames: number;
+    totalFiles: number;
     totalSize: number;
-    atomTypes: string[];
 }
 
 export type TrajectoryStatus =
@@ -68,7 +66,9 @@ export interface SceneArtifactParticleFilterPropertyCondition{
     operator: string;
     value: number | string;
     exposureId?: string;
-}export interface SceneArtifactParams{
+}
+
+export interface SceneArtifactParams{
     property?: string;
     startValue?: number;
     endValue?: number;

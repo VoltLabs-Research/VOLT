@@ -127,7 +127,9 @@ export interface GetContainerResponse{
 export interface UpdateContainerResponse{
     container: Container | null;
     status?: string;
-}export interface GetContainerFilesResponse{
+}
+
+export interface GetContainerFilesResponse{
     files: ContainerFile[];
 }
 
@@ -135,7 +137,9 @@ export type ContainerProcessInfo = Record<string, unknown>;
 
 export interface GetContainerProcessesResponse{
     processes: ContainerProcessInfo[];
-}export interface ReadContainerFileResponse{
+}
+
+export interface ReadContainerFileResponse{
     content: string;
 }
 

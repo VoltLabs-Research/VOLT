@@ -1,15 +1,24 @@
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
-import { composeDown, composeUp, type ComposeOptions } from '@/services/Stack';
+import { composeDown, composePull, composeUp, type ComposeOptions } from '@/services/Stack';
 import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
 import { run } from '@/services/ProcessRunner';
-import { dockerPreflight, PreflightError } from '@/services/DockerPreflight';
+import { ensureDockerReady, PreflightError } from '@/services/DockerPreflight';
 import { augmentedPath, dockerPath } from '@/services/DockerBinary';
 import { assertDevPaths } from '@/services/devPaths';
 import bus from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp, PROBE_PATH, webProbeUrl } from '@/shared/health';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import pWaitFor from 'p-wait-for';
+
+/** The prebuilt-image overlay ships next to the compose file it overlays. */
+const imagesOverlayFile = (composeFile: string): string =>
+    join(dirname(composeFile), 'compose.images.yml');
+
+/** The services `compose.images.yml` replaces with a published image. */
+const PREBUILT_SERVICES = ['volt-server', 'volt-client', 'cluster-daemon'];
 
 export interface DeployProps{
     composeFile: string;
@@ -79,7 +88,13 @@ export default class Deploy{
     }
 
     async #startCore(){
-        const status = await dockerPreflight();
+        /*
+         * Provisioning replaces the old "show a download link and give up": the
+         * runtime is started, or installed, without leaving the app. Only a state
+         * that genuinely needs the user (a reboot, a re-login, a failed install)
+         * reaches `PreflightError`.
+         */
+        const status = await ensureDockerReady((progress) => bus.emit('deploy:preflight', progress));
         bus.emit('deploy:preflight', status);
         if(!status.ok) throw new PreflightError(status);
 
@@ -89,7 +104,17 @@ export default class Deploy{
 
         bus.emit('deploy:phases', { phases: START_PHASES });
 
-        if(await isUp(webProbe)){
+        /*
+         * Fast path for an already-running stack — but only when the workspace was
+         * actually provisioned. A web app that answers while `bootstrap` is missing
+         * is a half-finished deploy: the shell would have no auth token, so it would
+         * open the client unauthenticated and the user would land on a login or
+         * "connect to a server" screen. Treating that as "done" is what made a failed
+         * bootstrap look like a successful launch, so the stack is allowed to skip
+         * ahead only if both halves are in place.
+         */
+        const provisioned = Boolean((await this.props.appConfig.getBootstrap())?.authToken);
+        if(provisioned && await isUp(webProbe)){
             for(const phase of START_PHASES) bus.emit('deploy:phase', {
                 id: phase.id,
                 status: 'done'
@@ -99,9 +124,11 @@ export default class Deploy{
 
         const { env: sources, changed, commit } = await this.#phase('sources', () => this.props.sources.resolve());
         const baseEnv = await this.#composeEnv(sources);
+        const overlay = await this.#resolveImageOverlay(baseEnv);
+        const mustBuild = overlay.length === 0 && changed;
 
         await this.#phase('build', async () =>
-            composeUp(await this.#compose(baseEnv), [], changed));
+            composeUp(await this.#compose(baseEnv, overlay), [], mustBuild));
 
         await this.#phase('server', () =>
             waitForUrl(`${serverOrigin}${PROBE_PATH}`));
@@ -116,7 +143,7 @@ export default class Deploy{
         if(this.props.withCluster !== false){
             const daemonEnv = this.#withDaemonEnv(baseEnv, state);
             await this.#phase('daemon', async () =>
-                composeUp(await this.#compose(daemonEnv), ['enrolled'], changed));
+                composeUp(await this.#compose(daemonEnv, overlay), ['enrolled'], mustBuild));
         }
 
         await this.#phase('web', () => waitForUrl(webProbe));
@@ -175,13 +202,53 @@ export default class Deploy{
         ], { env: { PATH: augmentedPath() } }).catch(() => {});
     }
 
-    async #compose(env: Record<string, string>): Promise<ComposeOptions>{
+    async #compose(env: Record<string, string>, overlayFiles: string[] = []): Promise<ComposeOptions>{
         return {
             composeFile: this.props.composeFile,
+            overlayFiles,
             env,
             dockerPath: await dockerPath() ?? undefined,
             augmentedPath: augmentedPath()
         };
+    }
+
+    /**
+     * Decides whether this launch runs from prebuilt images or compiles locally.
+     *
+     * Dev mode always builds: its whole purpose is to run the developer's working
+     * tree. Otherwise the published images are pulled first, and only if that
+     * succeeds is the overlay used — a tag that does not exist, or an offline
+     * machine, silently falls back to building from source.
+     */
+    async #resolveImageOverlay(env: Record<string, string>): Promise<string[]>{
+        if(await this.props.appConfig.getActiveDevMode()){
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: '[stack] dev mode: building from your working tree'
+            });
+            return [];
+        }
+
+        const overlay = [imagesOverlayFile(this.props.composeFile)];
+        if(!existsSync(overlay[0])) return [];
+
+        bus.emit('deploy:log', {
+            stream: 'stdout',
+            line: '[stack] pulling prebuilt images'
+        });
+
+        const pulled = await composePull(
+            await this.#compose(env, overlay),
+            PREBUILT_SERVICES,
+            ['enrolled']
+        );
+        if(pulled) return overlay;
+
+        bus.emit('deploy:log', {
+            stream: 'stderr',
+            line: '[stack] prebuilt images unavailable; building from source instead'
+        });
+        return [];
     }
 
     async applyDevMode(payload: DevModeState){

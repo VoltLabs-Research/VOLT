@@ -37,6 +37,17 @@ export const augmentedPath = (): string => {
 
 let resolved: string | null | undefined;
 
+/**
+ * Clears the memoized lookup.
+ *
+ * The path is cached because resolving it spawns a subprocess, but after the app
+ * installs the runtime itself the cached `null` would outlive the thing it
+ * describes, so provisioning must invalidate it.
+ */
+export const resetDockerPath = (): void => {
+    resolved = undefined;
+};
+
 export const dockerPath = async (): Promise<string | null> => {
     if(resolved !== undefined) return resolved;
 
@@ -45,7 +56,9 @@ export const dockerPath = async (): Promise<string | null> => {
             await access(candidate, constants.X_OK);
             resolved = candidate;
             return candidate;
-        }catch{}
+        }catch{
+            // Candidate paths are guesses; a miss is the normal case.
+        }
     }
 
     const [bin, name] = process.platform === 'win32' ? ['where.exe', 'docker.exe'] : ['which', 'docker'];

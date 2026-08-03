@@ -44,6 +44,12 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_LIFECYCLE_STATUS_INVALID: 'TeamCluster::LifecycleStatusInvalid',
     TEAM_CLUSTER_MISSING: 'TeamCluster::Missing',
     TEAM_CLUSTER_NAME_REQUIRED: 'TeamCluster::NameRequired',
+    /*
+     * The stored service credentials cannot be decrypted with the encryption key
+     * this process has. Recoverable state, not a server defect: the cluster row
+     * outlived the key it was encrypted with.
+     */
+    TEAM_CLUSTER_CREDENTIALS_UNREADABLE: 'TeamCluster::CredentialsUnreadable',
     TEAM_CLUSTER_REMOTE_UNINSTALL_REJECTED: 'TeamCluster::RemoteUninstallRejected',
     TEAM_CLUSTER_REMOTE_UNINSTALL_REQUEST_FAILED: 'TeamCluster::RemoteUninstallRequestFailed',
     TEAM_CLUSTER_SOCKET_LIFECYCLE_ONLY: 'TeamCluster::SocketLifecycleOnly',

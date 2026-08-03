@@ -80,7 +80,9 @@ export interface TeamClusterEffectiveCapabilities{
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
-}export type ClusterTransferJobState =
+}
+
+export type ClusterTransferJobState =
     | 'queued'
     | 'freezing'
     | 'copying'

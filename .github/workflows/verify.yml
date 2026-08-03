@@ -1,0 +1,200 @@
+name: Verify
+
+# The checks that stand in for a test suite.
+#
+# `.agents/testing.md` states this repo deliberately has no tests, and names
+# typecheck + smoke:modules + depcruise + lint + the client build as the substitute.
+# Until now none of them ran in CI: the other workflows only built and published,
+# so a broken typecheck or a new layering violation reached an image unchallenged.
+#
+# `@volt/contracts` has no toolchain of its own by design; it is compiled from
+# source by both consumers, so the server typecheck and the client build are what
+# verify it.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# A newer push supersedes an in-flight run on the same ref.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      # `postinstall` runs `ts-patch install`, which typia's transform needs.
+      - name: Install dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: server
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: server
+        run: npm run lint
+
+      # Proves the VOLT_MODULES toggle and the requires-closure still resolve.
+      - name: Module boot smoke
+        working-directory: server
+        run: npm run smoke:modules
+
+      # `no-cross-module-imports` and `no-circular` are `warn` with known debt, so
+      # this fails only on an `error`-severity rule. The debt ratchet below is what
+      # keeps the warnings from growing.
+      - name: Layering rules
+        working-directory: server
+        run: npm run depcruise
+
+      - name: Layering debt ratchet
+        working-directory: server
+        env:
+          # Baseline measured on the commit that introduced this workflow. Lower it
+          # when you remove violations; raising it needs a reason in the PR.
+          MAX_VIOLATIONS: 226
+        run: |
+          set -uo pipefail
+          output="$(npm run --silent depcruise 2>&1 || true)"
+          count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
+            | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
+
+          if [ -z "$count" ]; then
+            echo "Could not read the violation count from depcruise output:"
+            printf '%s\n' "$output" | tail -20
+            exit 1
+          fi
+
+          echo "dependency violations: $count (max $MAX_VIOLATIONS)"
+          if [ "$count" -gt "$MAX_VIOLATIONS" ]; then
+            echo "::error::Layering debt grew from $MAX_VIOLATIONS to $count. Route the new edge through @shared/contracts instead of adding to the debt."
+            exit 1
+          fi
+
+  client:
+    name: Client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Lint
+        working-directory: client
+        run: npm run lint
+
+      # `tsc -b` then `vite build`: the only check that catches a bundler-level
+      # break, and it typechecks `../contracts/src` through the paths map.
+      - name: Build
+        working-directory: client
+        run: npm run build
+
+  desktop:
+    name: Desktop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: desktop
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: desktop
+        run: npm run lint
+
+      # Catches a break in the main/preload/renderer bundles without packaging
+      # installers, which the release workflow already does per OS.
+      - name: Build
+        working-directory: desktop
+        run: npm run build
+
+      # The CLI is shipped as a release asset, so its bundle has to keep resolving
+      # the `@volt/contracts` alias.
+      - name: Build CLI bundle
+        working-directory: desktop
+        run: npm run cli:build
+
+  stack:
+    name: Stack compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Both shapes have to stay valid: the base file builds from source, and the
+      # overlay swaps in the published images. A typo in either only shows up on a
+      # user's first launch otherwise.
+      - name: Validate compose (build from source)
+        working-directory: desktop/stack
+        env:
+          VOLT_SOURCE_DIR: /tmp/volt-source
+          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
+          TEAM_CLUSTER_ID: validation
+        run: |
+          mkdir -p "$VOLT_SOURCE_DIR" "$CLUSTER_DAEMON_SOURCE_DIR"
+          docker compose -f compose.yml --profile enrolled config > /dev/null
+
+      - name: Validate compose (prebuilt images)
+        working-directory: desktop/stack
+        env:
+          VOLT_SOURCE_DIR: /tmp/volt-source
+          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
+          TEAM_CLUSTER_ID: validation
+        run: |
+          docker compose -f compose.yml -f compose.images.yml --profile enrolled config > /dev/null
+
+      # The overlay is only useful if it actually replaces every build.
+      - name: Assert the overlay leaves no build step
+        working-directory: desktop/stack
+        env:
+          VOLT_SOURCE_DIR: /tmp/volt-source
+          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
+          TEAM_CLUSTER_ID: validation
+        run: |
+          set -uo pipefail
+          builds="$(docker compose -f compose.yml -f compose.images.yml --profile enrolled config \
+            | grep -cE '^[[:space:]]+build:' || true)"
+          echo "build blocks with the overlay applied: $builds"
+          if [ "$builds" -ne 0 ]; then
+            echo "::error::compose.images.yml left $builds build block(s); every prebuilt service must set build to null."
+            exit 1
+          fi

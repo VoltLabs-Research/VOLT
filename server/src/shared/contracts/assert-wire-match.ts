@@ -19,4 +19,22 @@ export const assertWireMatch = <_TMatches extends true>(): void => {
     // A type-level assertion only; there is nothing to do at runtime.
 };
 
+/**
+ * Compile-time proof that a server-side type declares the same *field names* as
+ * the wire type it mirrors, without requiring the field types to match.
+ *
+ * Some entities legitimately differ only in serialization — `createdAt` is a `Date`
+ * in the server and a `string` on the wire — so they cannot simply be re-exported.
+ * What must not happen is a field being added on one side only, which this catches:
+ *
+ * ```ts
+ * assertSameFields<RasterMetadata, WireRasterMetadata>();
+ * ```
+ */
+export const assertSameFields = <TLocal, TWire>(
+    ..._proof: Equal<keyof TLocal, keyof TWire> extends true ? [] : [never]
+): void => {
+    // A type-level assertion only.
+};
+
 export type { Equal };

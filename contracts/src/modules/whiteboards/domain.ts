@@ -27,7 +27,9 @@ export interface CreateWhiteboardResponse{
     payloadKey: string;
     createdAt: string;
     updatedAt: string;
-}export interface UpdateWhiteboardResponse{
+}
+
+export interface UpdateWhiteboardResponse{
     _id: string;
     title: string;
     updatedAt: string;

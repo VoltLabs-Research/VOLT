@@ -1,6 +1,7 @@
 import Docker from 'dockerode';
-import { augmentedPath, dockerPath } from '@/services/DockerBinary';
+import { augmentedPath, dockerPath, resetDockerPath } from '@/services/DockerBinary';
 import { probe } from '@/services/ProbeRunner';
+import { installRuntime, startRuntime } from '@/services/RuntimeInstaller';
 import type { AppEvents, PreflightReason } from '@/types/events';
 
 export type PreflightResult = AppEvents['deploy:preflight'];
@@ -93,6 +94,36 @@ const COPY: Record<PreflightReason, (platform: NodeJS.Platform) => Copy> = {
     'unknown': () => ({
         message: 'Couldn\'t verify Docker',
         remediation: 'Volt couldn\'t determine Docker\'s status. Make sure Docker is running, then re-check.',
+        cta: 'Re-check'
+    }),
+    'auto-starting': () => ({
+        message: 'Starting Docker',
+        remediation: 'Volt is starting Docker for you. This can take a minute on first launch.',
+        cta: ''
+    }),
+    'auto-installing': () => ({
+        message: 'Installing Docker',
+        remediation: 'Volt is installing Docker for you. Your system may ask for permission, and the download can take several minutes.',
+        cta: ''
+    }),
+    'install-failed': (platform) => ({
+        message: 'Couldn\'t install Docker automatically',
+        remediation: isLinux(platform)
+            ? 'Volt tried to install Docker with your package manager and it did not complete. Install Docker Engine and the Compose v2 plugin manually, then re-check.'
+            : platform === 'win32'
+                ? 'Volt tried to install Docker Desktop with winget and it did not complete. Install it manually, then re-check.'
+                : 'Volt tried to install Docker Desktop with Homebrew and it did not complete. Install it manually, then re-check.',
+        cta: 'Install Docker',
+        docsUrl: isLinux(platform) ? ENGINE_URL : DESKTOP_URL
+    }),
+    'reboot-required': () => ({
+        message: 'Restart to finish installing Docker',
+        remediation: 'Docker Desktop is installed but Windows needs a restart to finish enabling WSL2. Restart, then reopen Volt.',
+        cta: 'Re-check'
+    }),
+    'relogin-required': () => ({
+        message: 'Sign out to finish setting up Docker',
+        remediation: 'Docker is installed and running, and your user was added to the docker group. Group membership only applies to a new session, so sign out and back in, then reopen Volt.',
         cta: 'Re-check'
     })
 };
@@ -198,4 +229,94 @@ export const dockerPreflight = async (): Promise<PreflightResult> => {
         serverVersion,
         composeVersion: compose.stdout.trim()
     });
+};
+
+/** How long to keep polling after a start or install before giving up. */
+const READY_TIMEOUT_MS = 180_000;
+const READY_POLL_MS = 2_000;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
+    setTimeout(resolve, ms).unref();
+});
+
+/**
+ * Polls until the runtime reports ready, or the budget runs out.
+ *
+ * A freshly started Docker Desktop reports `daemon-down` before it reports
+ * `daemon-starting`, so anything that is not a terminal answer keeps polling.
+ */
+const waitUntilReady = async (
+    onProgress: (status: PreflightResult) => void,
+    timeoutMs = READY_TIMEOUT_MS
+): Promise<PreflightResult> => {
+    const deadline = Date.now() + timeoutMs;
+    let last = await dockerPreflight();
+
+    while(!last.ok && Date.now() < deadline){
+        if(last.reason === 'permission-denied' || last.reason === 'compose-missing') return last;
+
+        onProgress(last);
+        await sleep(READY_POLL_MS);
+        resetDockerPath();
+        last = await dockerPreflight();
+    }
+
+    return last;
+};
+
+/**
+ * Brings the container runtime up, doing the work the user would otherwise be
+ * sent away to do: start it when it is installed but stopped, install it when it
+ * is missing, and wait for it to become usable.
+ *
+ * Emits `deploy:preflight` at every transition so the UI can show progress rather
+ * than a dead end with a link to a download page.
+ */
+export const ensureDockerReady = async (
+    onProgress: (status: PreflightResult) => void
+): Promise<PreflightResult> => {
+    const platform = process.platform;
+
+    let status = await dockerPreflight();
+    if(status.ok) return status;
+
+    onProgress(status);
+
+    if(status.reason === 'daemon-down' || status.reason === 'daemon-starting'){
+        onProgress(result('auto-starting', { platform }));
+        await startRuntime();
+
+        status = await waitUntilReady(onProgress);
+        if(status.ok) return status;
+    }
+
+    if(status.reason === 'cli-missing'){
+        onProgress(result('auto-installing', { platform }));
+        const install = await installRuntime();
+        resetDockerPath();
+
+        if(!install.ok){
+            return result('install-failed', {
+                platform,
+                detail: install.detail
+            });
+        }
+
+        // A fresh install is not running yet on any platform.
+        onProgress(result('auto-starting', { platform }));
+        await startRuntime();
+
+        status = await waitUntilReady(onProgress);
+        if(status.ok) return status;
+
+        if(status.reason === 'cli-missing' && platform === 'win32'){
+            return result('reboot-required', { platform });
+        }
+
+        if(status.reason === 'permission-denied' && platform === 'linux'){
+            return result('relogin-required', { platform });
+        }
+    }
+
+    return status;
 };

@@ -64,7 +64,9 @@ export interface GetLatexDocumentParams {
 export interface ImportLatexDocumentParams {
     file: File;
     folderId?: string | null;
-}export interface ListLatexAssetsParams {
+}
+
+export interface ListLatexAssetsParams {
     documentId: string;
 }
 

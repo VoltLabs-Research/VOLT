@@ -4,6 +4,7 @@ import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts
 import { hashEnrollmentToken, secureCompare } from '@modules/cluster/services/TeamClusterCredentialService';
 import { decrypt } from '@shared/infrastructure/utilities/crypto';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import logger from '@shared/infrastructure/logger';
 
 export interface DecryptedTeamClusterServiceCredentials {
     minioUsername: string;
@@ -49,7 +50,7 @@ export default class DaemonCredentialGuard {
     }
 
     async getDecryptedDaemonPassword(teamCluster: TeamCluster): Promise<string> {
-        return decrypt(this.requireEncryptedDaemonPassword(teamCluster));
+        return this.#decryptOrFail(this.requireEncryptedDaemonPassword(teamCluster), teamCluster.id);
     }
 
     async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
@@ -65,15 +66,62 @@ export default class DaemonCredentialGuard {
             throw ApplicationError.internalServerError(`Missing service credentials for team cluster ${teamCluster.id}`);
         }
 
+        const [
+            decryptedMinioUsername,
+            decryptedMinioPassword,
+            decryptedRedisUsername,
+            decryptedRedisPassword,
+            decryptedMongodbUsername,
+            decryptedMongodbPassword,
+            decryptedDaemonPassword
+        ] = await Promise.all([
+            this.#decryptOrFail(minioUsername, teamCluster.id),
+            this.#decryptOrFail(minioPassword, teamCluster.id),
+            this.#decryptOrFail(redisUsername, teamCluster.id),
+            this.#decryptOrFail(redisPassword, teamCluster.id),
+            this.#decryptOrFail(mongodbUsername, teamCluster.id),
+            this.#decryptOrFail(mongodbPassword, teamCluster.id),
+            this.#decryptOrFail(daemonPassword, teamCluster.id)
+        ]);
+
         return {
-            minioUsername: await decrypt(minioUsername),
-            minioPassword: await decrypt(minioPassword),
-            redisUsername: await decrypt(redisUsername),
-            redisPassword: await decrypt(redisPassword),
-            mongodbUsername: await decrypt(mongodbUsername),
-            mongodbPassword: await decrypt(mongodbPassword),
-            daemonPassword: await decrypt(daemonPassword)
+            minioUsername: decryptedMinioUsername,
+            minioPassword: decryptedMinioPassword,
+            redisUsername: decryptedRedisUsername,
+            redisPassword: decryptedRedisPassword,
+            mongodbUsername: decryptedMongodbUsername,
+            mongodbPassword: decryptedMongodbPassword,
+            daemonPassword: decryptedDaemonPassword
         };
+    }
+
+    /**
+     * Decrypts a stored credential, reporting a key mismatch as a recoverable
+     * conflict rather than letting it surface as a 500.
+     *
+     * A cluster row can outlive the encryption key it was written with — the
+     * database volume survives while `VOLT_SECRET_ENCRYPTION_KEY` is regenerated —
+     * and AES-GCM then fails authentication. That is a state the caller can act on
+     * (provision a fresh cluster), so it gets its own code instead of being
+     * indistinguishable from a server defect.
+     */
+    async #decryptOrFail(value: string, teamClusterId: string): Promise<string> {
+        try {
+            return await decrypt(value);
+        } catch (error: unknown) {
+            logger.warn(
+                {
+                    err: error,
+                    teamClusterId
+                },
+                'Stored team cluster credentials could not be decrypted with the current encryption key'
+            );
+
+            throw ApplicationError.conflict(
+                ErrorCodes.TEAM_CLUSTER_CREDENTIALS_UNREADABLE,
+                'This cluster\'s stored credentials cannot be read with the current encryption key. Provision a new cluster.'
+            );
+        }
     }
 
     private async requireSensitiveCluster(teamClusterId: string): Promise<TeamCluster> {

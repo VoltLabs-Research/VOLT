@@ -1,0 +1,154 @@
+name: Publish Stack Images
+
+# Prebuilds the images the desktop app runs, so a user's first launch is a pull
+# instead of apt-get + `npm ci` inside three local image builds.
+#
+# Built per architecture on native runners and then joined into one manifest:
+# the server image installs texlive and compiles native modules, which under QEMU
+# emulation takes hours. arm64 is not optional — it is what Apple Silicon pulls.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-stack-images.yml'
+      - 'server/Dockerfile.dev'
+      - 'server/package.json'
+      - 'server/package-lock.json'
+      - 'client/Dockerfile.stack'
+      - 'client/package.json'
+      - 'client/package-lock.json'
+      - 'client/src/**'
+      - 'contracts/src/**'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: Build ${{ matrix.component }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [server, client]
+        arch: [amd64, arm64]
+        # Keys that match an existing combination augment it rather than adding a
+        # job, so this only attaches the right runner to each arch.
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Resolve build inputs
+        id: inputs
+        run: |
+          if [ "${{ matrix.component }}" = "server" ]; then
+            echo "image=${{ env.REGISTRY }}/${{ github.repository_owner }}/volt-server-stack" >> "$GITHUB_OUTPUT"
+            echo "context=server" >> "$GITHUB_OUTPUT"
+            echo "dockerfile=server/Dockerfile.dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "image=${{ env.REGISTRY }}/${{ github.repository_owner }}/volt-client-stack" >> "$GITHUB_OUTPUT"
+            echo "context=." >> "$GITHUB_OUTPUT"
+            echo "dockerfile=client/Dockerfile.stack" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.inputs.outputs.context }}
+          file: ${{ steps.inputs.outputs.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          provenance: false
+          outputs: type=image,name=${{ steps.inputs.outputs.image }},push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=${{ matrix.component }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}-${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.build.outputs.digest }}" > "/tmp/digests/${{ matrix.component }}-${{ matrix.arch }}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.component }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  manifest:
+    name: Publish ${{ matrix.component }} manifest
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [server, client]
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: digest-${{ matrix.component }}-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/volt-${{ matrix.component }}-stack"
+          REFS=""
+          for file in /tmp/digests/*; do
+            REFS="$REFS ${IMAGE}@$(cat "$file")"
+          done
+
+          # `main` is what the desktop app pulls by default; the sha tag is what a
+          # released installer can pin to.
+          docker buildx imagetools create \
+            --tag "${IMAGE}:main" \
+            --tag "${IMAGE}:sha-${{ github.sha }}" \
+            $REFS
+
+          docker buildx imagetools inspect "${IMAGE}:main"
+
+      - name: Publish summary
+        run: |
+          {
+            echo "## volt-${{ matrix.component }}-stack published"
+            echo ''
+            echo "- Image: \`${{ env.REGISTRY }}/${{ github.repository_owner }}/volt-${{ matrix.component }}-stack\`"
+            echo '- Tags: `main`, `sha-${{ github.sha }}`'
+            echo '- Platforms: `linux/amd64`, `linux/arm64`'
+          } >> "$GITHUB_STEP_SUMMARY"

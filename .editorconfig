@@ -1,0 +1,36 @@
+# Editor defaults for every VOLT package (server, client, desktop, contracts).
+#
+# Deliberately NOT Prettier: conventions.md mandates `if(cond){` and
+# `export interface Team{` with no space before the brace in server/contracts code,
+# which Prettier cannot express and would rewrite. Style beyond indentation is
+# enforced by @stylistic rules in each package's eslint config.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 4
+quote_type = single
+
+# Ecosystem conventions for these formats, not the 4-space TypeScript rule.
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{json,jsonc}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[Dockerfile*]
+indent_size = 4
+
+[Makefile]
+indent_style = tab

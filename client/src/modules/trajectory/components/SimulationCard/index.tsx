@@ -4,7 +4,6 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
-import SimulationCardUsers from '../SimulationCardUsers';
 import { Row } from '@voltstack/bravais';
 import { PiAtomThin } from 'react-icons/pi';
 import { useMemo } from 'react';
@@ -157,8 +156,6 @@ export default function SimulationCard({
                 onDelete={onDelete}
                 readOnly={readOnly}
             />
-
-            {!readOnly && <SimulationCardUsers trajectoryId={trajectory._id} />}
         </article>
     );
 }

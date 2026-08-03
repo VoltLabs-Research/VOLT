@@ -2,18 +2,19 @@
   "name": "volt-desktop",
   "version": "0.1.0",
   "productName": "Volt",
-  "description": "Volt desktop — runs the local Volt stack via Docker Compose",
+  "description": "Volt desktop \u2014 runs the local Volt stack via Docker Compose",
   "author": "Volt Labs",
   "homepage": "https://github.com/voltlabs-research/volt",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {
-    "dev": "electron-vite dev -- --no-sandbox",
     "build": "electron-vite build",
-    "typecheck": "tsc --noEmit",
-    "deploy": "tsx src/cli.ts",
     "cli:build": "npx --yes esbuild src/cli.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/cli.cjs --alias:@volt/contracts=../contracts/src --alias:ssh2=./scripts/native-stub.cjs --alias:cpu-features=./scripts/native-stub.cjs",
-    "package": "electron-vite build && electron-builder"
+    "deploy": "tsx src/cli.ts",
+    "dev": "electron-vite dev -- --no-sandbox",
+    "lint": "eslint .",
+    "package": "electron-vite build && electron-builder",
+    "typecheck": "tsc --noEmit"
   },
   "build": {
     "appId": "com.voltlabs.volt",
@@ -65,6 +66,7 @@
     "sileo": "^0.1.5"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/dockerode": "^4.0.1",
     "@types/node": "^22.10.1",
     "@types/react": "^19.2.17",
@@ -73,10 +75,13 @@
     "electron": "^33.2.0",
     "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.22.4",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.65.0",
     "vite": "^5.4.11"
   }
 }

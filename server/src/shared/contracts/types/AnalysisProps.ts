@@ -1,5 +1,9 @@
+import { assertSameFields } from '@shared/contracts/assert-wire-match';
 import type {
     AnalysisArtifactStatus,
+    AnalysisChildAnalysis as WireAnalysisChildAnalysis,
+    AnalysisExpectedArtifact as WireAnalysisExpectedArtifact,
+    AnalysisStage as WireAnalysisStage,
     AnalysisStageKind,
     AnalysisStageStatus
 } from '@volt/contracts/modules/analysis/domain';
@@ -86,3 +90,13 @@ export interface Analysis {
     readonly _id: string;
     props: AnalysisProps;
 }
+
+/*
+ * These three differ from their wire counterparts only in that the timestamps are
+ * `Date` here and `string` after JSON serialization, so they are declared rather
+ * than re-exported. The assertions tie the field lists together: adding a field to
+ * the wire contract without adding it here fails the build.
+ */
+assertSameFields<AnalysisExpectedArtifact, WireAnalysisExpectedArtifact>();
+assertSameFields<AnalysisStage, WireAnalysisStage>();
+assertSameFields<AnalysisChildAnalysis, WireAnalysisChildAnalysis>();

@@ -13,7 +13,13 @@ export interface PhaseProgress{
 
 const POLL_INTERVAL = 2_000;
 
-const SELF_HEALING_REASONS = new Set(['daemon-starting', 'daemon-down']);
+/*
+ * The main process now owns provisioning: `deploy.start()` starts or installs the
+ * runtime itself and reports progress through `deploy:preflight`. These are the
+ * states it is actively working on, so the gate shows them as progress and the
+ * renderer must not kick off a competing attempt.
+ */
+const AUTOMATIC_REASONS = new Set(['daemon-starting', 'daemon-down', 'auto-starting', 'auto-installing']);
 
 interface LogLine{
     stream: 'stdout' | 'stderr';
@@ -53,12 +59,14 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         });
     };
 
+    /**
+     * Starts the deploy without pre-gating on Docker.
+     *
+     * This used to probe Docker first and stop at the gate when it was missing,
+     * which meant the automatic provisioning inside `deploy.start()` was never
+     * reached. The gate is now driven purely by `deploy:preflight` events.
+     */
     const boot = async (): Promise<void> => {
-        const status = await window.volt.docker.preflight();
-        if(!status.ok){
-            setPreflight(status);
-            return;
-        }
         setPreflight(null);
         run(() => window.volt.deploy.start());
     };
@@ -141,8 +149,14 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); unsubPreflight(); };
     }, []);
 
+    /*
+     * A terminal preflight state ends the deploy, so nothing is polling any more.
+     * `daemon-starting` and `daemon-down` can still be reached without a deploy in
+     * flight (Docker quit while the app was open), and there retrying is correct.
+     */
     useEffect(() => {
-        if(!preflight || !SELF_HEALING_REASONS.has(preflight.reason)) return;
+        if(!preflight || !AUTOMATIC_REASONS.has(preflight.reason)) return;
+        if(busyRef.current) return;
         const id = setInterval(() => { void boot(); }, POLL_INTERVAL);
         return () => clearInterval(id);
     }, [preflight?.reason]);

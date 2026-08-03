@@ -21,6 +21,13 @@ export default tseslint.config(
     // Object-literal shape (.agents/conventions.md → Formatting): an object literal
     // with two or more properties is written one property per line, braces on their
     // own lines. Single-property literals may stay inline.
+    //
+    // `@volt/contracts` is deliberately not linted: ESLint 9 will not lint files
+    // outside its config's base path, and the package is 552 type declarations
+    // against 29 object literals, so a rule about literal shape would buy almost
+    // nothing there. It is typechecked through both consumers, and `.editorconfig`
+    // covers the indentation and line endings that actually drift in a
+    // declarations-only file.
     {
         files: [
             'src/**/*.ts',

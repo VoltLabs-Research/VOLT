@@ -1,16 +1,15 @@
-
-export interface GetSubListingInput {
-    analysisId: string;
-    exposureId: string;
-    timestep: number;
-    subListingName: string;
-    teamId: string;
-    page?: number;
-    limit?: number;
-}
-
-export type { SubListingColumn, SubListingRowData } from '@volt/contracts/modules/plugin/listing';
+import type { GetSubListingInput as WireGetSubListingInput } from '@volt/contracts/modules/plugin/ai-tools';
 import type { SubListingColumn, SubListingRowData } from '@volt/contracts/modules/plugin/listing';
+
+export type { SubListingColumn, SubListingRowData };
+
+/**
+ * The wire input plus the team scope the server resolves from the request.
+ *
+ * An intersection rather than a second field list: restating the fields is how the
+ * two definitions drift.
+ */
+export type GetSubListingInput = WireGetSubListingInput & { teamId: string };
 
 export interface GetSubListingOutput {
     subListingName: string;

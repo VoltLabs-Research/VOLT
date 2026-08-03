@@ -22,7 +22,14 @@ export type PreflightReason =
     | 'daemon-down'
     | 'daemon-starting'
     | 'permission-denied'
-    | 'unknown';
+    | 'unknown'
+    /* Reported while the app provisions the runtime itself; no user action. */
+    | 'auto-starting'
+    | 'auto-installing'
+    /* Automatic provisioning ran and could not finish on its own. */
+    | 'install-failed'
+    | 'reboot-required'
+    | 'relogin-required';
 
 export interface AppEvents{
     'deploy:log': {

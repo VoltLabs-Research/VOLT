@@ -1,5 +1,17 @@
 
 
+import { assertWireMatch } from '@shared/contracts/assert-wire-match';
+import type { Equal } from '@shared/contracts/assert-wire-match';
+import type {
+    TrajectoryStats,
+    TrajectoryStatus as WireTrajectoryStatus
+} from '@volt/contracts/modules/trajectory/domain';
+
+/*
+ * A runtime enum because the persistence layer needs the values (see the `enum:`
+ * column in `modules/trajectory/models/Trajectory.ts`), while `@volt/contracts`
+ * declares the same set as a union. The assertion fails the build if they diverge.
+ */
 export enum TrajectoryStatus {
     Queued = 'queued',
     WaitingForProcess = 'waiting-for-process',
@@ -7,6 +19,8 @@ export enum TrajectoryStatus {
     Completed = 'completed',
     Failed = 'failed'
 }
+
+assertWireMatch<Equal<`${TrajectoryStatus}`, WireTrajectoryStatus>>();
 
 export interface TrajectoryFrameSimulationCellEmbed {
     _id: string;
@@ -29,10 +43,12 @@ export interface TrajectoryFrame {
     simulationCell?: string | TrajectoryFrameSimulationCellEmbed;
 }
 
-export interface TrajectoryStats {
-    totalFiles: number;
-    totalSize: number;
-}
+/*
+ * Re-exported, not redeclared: this used to be a second `TrajectoryStats` whose
+ * shape had drifted from the wire contract, so the client was promised
+ * `totalAtoms`, `totalFrames` and `atomTypes` that the server never writes.
+ */
+export type { TrajectoryStats };
 
 export interface TrajectoryProps {
     name: string;

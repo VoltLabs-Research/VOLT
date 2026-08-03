@@ -16,10 +16,16 @@ const CrossGlyph = () => (
     </svg>
 );
 
+/*
+ * States the app is resolving by itself. They are progress, not failures: no
+ * actions are offered because there is nothing for the user to do.
+ */
+const WORKING_REASONS = new Set(['daemon-starting', 'daemon-down', 'auto-starting', 'auto-installing']);
+
 const DockerGate = ({ result, onRecheck, onOpenUrl }: DockerGateProps) => {
     const [copied, setCopied] = useState(false);
     const [checking, setChecking] = useState(false);
-    const starting = result.reason === 'daemon-starting';
+    const working = WORKING_REASONS.has(result.reason);
 
     const copy = () => {
         if(!result.command) return;
@@ -28,7 +34,9 @@ const DockerGate = ({ result, onRecheck, onOpenUrl }: DockerGateProps) => {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
             })
-            .catch(() => {});
+            .catch(() => {
+                // Clipboard access can be denied; the command is on screen anyway.
+            });
     };
 
     const recheck = () => {
@@ -37,32 +45,34 @@ const DockerGate = ({ result, onRecheck, onOpenUrl }: DockerGateProps) => {
     };
 
     return (
-        <main className='dock-gate' role='alert'>
+        <main className='dock-gate' role={working ? 'status' : 'alert'} aria-live='polite'>
             <div className='dg-card'>
-                <span className={`dg-glyph ${starting ? 'is-starting' : 'is-error'}`} aria-hidden='true'>
-                    {starting ? <span className='dg-spinner' /> : <CrossGlyph />}
+                <span className={`dg-glyph ${working ? 'is-starting' : 'is-error'}`} aria-hidden='true'>
+                    {working ? <span className='dg-spinner' /> : <CrossGlyph />}
                 </span>
 
                 <Heading level={1} size='xl' weight='semibold'>{result.message}</Heading>
                 <Text as='p' size='sm' tone='secondary'>{result.remediation}</Text>
 
-                {result.command && (
+                {result.command && !working && (
                     <button type='button' className='dg-command' onClick={copy}>
                         <code>{result.command}</code>
                         <span className='dg-command-hint'>{copied ? 'Copied' : 'Copy'}</span>
                     </button>
                 )}
 
-                <div className='dg-actions'>
-                    {result.docsUrl ? (
-                        <>
-                            <Button intent='brand' size='sm' onClick={() => result.docsUrl && onOpenUrl(result.docsUrl)}>{result.cta}</Button>
-                            <Button variant='outline' size='sm' isLoading={checking} onClick={recheck}>Re-check</Button>
-                        </>
-                    ) : (
-                        <Button intent='brand' size='sm' isLoading={checking} onClick={recheck}>{result.cta}</Button>
-                    )}
-                </div>
+                {!working && (
+                    <div className='dg-actions'>
+                        {result.docsUrl ? (
+                            <>
+                                <Button intent='brand' size='sm' onClick={() => result.docsUrl && onOpenUrl(result.docsUrl)}>{result.cta}</Button>
+                                <Button variant='outline' size='sm' isLoading={checking} onClick={recheck}>Re-check</Button>
+                            </>
+                        ) : (
+                            <Button intent='brand' size='sm' isLoading={checking} onClick={recheck}>{result.cta}</Button>
+                        )}
+                    </div>
+                )}
 
                 {result.detail && <p className='dg-detail'>{result.detail}</p>}
             </div>

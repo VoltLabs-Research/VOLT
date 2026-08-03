@@ -1,5 +1,16 @@
 
 
+import { assertWireMatch } from '@shared/contracts/assert-wire-match';
+import type { Equal } from '@shared/contracts/assert-wire-match';
+import type {
+    SceneArtifactParams,
+    SceneArtifactSourceType as WireSceneArtifactSourceType
+} from '@volt/contracts/modules/trajectory/domain';
+
+/*
+ * A runtime enum because the server uses the values, while `@volt/contracts`
+ * declares the same set as a union. The assertion fails the build on divergence.
+ */
 export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',
@@ -7,22 +18,19 @@ export enum SceneArtifactSourceType {
     LineStyle = 'line-style'
 }
 
+assertWireMatch<Equal<`${SceneArtifactSourceType}`, WireSceneArtifactSourceType>>();
+
 export enum SceneArtifactStatus {
     Ready = 'ready',
     Failed = 'failed'
 }
 
-export interface SceneArtifactParams {
-    property?: string;
-    startValue?: number;
-    endValue?: number;
-    gradient?: string;
-    operator?: string;
-    value?: number | string;
-    action?: 'delete' | 'highlight';
-    exposureId?: string;
-    style?: Record<string, unknown>;
-}
+/*
+ * Re-exported, not redeclared: the local copy had drifted and was missing the
+ * `combinator` and `conditions` fields the client sends for multi-condition
+ * particle filters, so the persisted JSON column carried data the type denied.
+ */
+export type { SceneArtifactParams };
 
 export interface SceneArtifactProps {
     trajectory: string;
