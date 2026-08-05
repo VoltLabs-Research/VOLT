@@ -1,23 +1,29 @@
 import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
 import { DuckDBConnection } from '@duckdb/node-api';
-import type { PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
+import type { PerAtomParquetSource, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
+import path from 'node:path';
+import { quoteIdentifier } from '@modules/plugin/services/properties/duckdb-sql-escaping';
+import {
+    isPayloadTooLargeForJs,
+    measurePayloadBytes,
+    readLargePayloadDocument
+} from '@modules/analysis/services/workflow/payload-document-reader';
+import { ATOMISTIC_PARQUET_SOURCE_KEY } from '@modules/plugin/services/exports/export-node-processor-types';
 
 export interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
     subListingNames: string[];
     subListings: Record<string, JsonObject[]>;
     perAtomProperties: PerAtomProperties | null;
+    /** Set instead of `perAtomProperties` when the atoms stay in the plugin's parquet. */
+    perAtomSource: PerAtomParquetSource | null;
     entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
 
 const PER_ATOM_KEY = 'per-atom-properties';
-const FIXED_ATOM_COLUMNS = new Set(['atom_index', 'id', 'x', 'y', 'z', 'bucket', 'structure_id', 'structure_name']);
-const NON_PROPERTY_COLUMNS = new Set(['atom_index', 'x', 'y', 'z', 'bucket']);
-
-const isCosmeticColorColumn = (key: string): boolean =>
-    key === 'color' || key.endsWith('_color');
+const DEFAULT_BUCKET_NAME = 'All';
 
 export const createWorkflowExposureOutputFilePath = (
     outputDir: string,
@@ -50,6 +56,7 @@ const emptyResult = (): WorkflowExposurePayloadReadResult => ({
     subListingNames: [],
     subListings: {},
     perAtomProperties: null,
+    perAtomSource: null,
     entityKind: 'atoms',
     exportData: null
 });
@@ -86,6 +93,7 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
         subListingNames: Array.from(subListingNames),
         subListings: Object.fromEntries(subListingRows),
         perAtomProperties: (document[PER_ATOM_KEY] as PerAtomProperties | null | undefined) ?? null,
+        perAtomSource: null,
         entityKind: 'atoms',
         exportData: Object.keys(exportData).length > 0 ? exportData : null
     };
@@ -126,66 +134,77 @@ const reconstructFromPointsTable = (
         subListingNames: propertyRows.length > 0 ? [kind] : [],
         subListings: propertyRows.length > 0 ? { [kind]: propertyRows } : {},
         perAtomProperties: propertyRows as PerAtomProperties,
+        perAtomSource: null,
         entityKind: 'lines',
         exportData: { export: { [exporter]: { [kind]: entities } } }
     };
 };
 
-const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
-    const buckets = new Map<string, { structureId: number; atoms: JsonObject[] }>();
-    const propertyRows: JsonObject[] = [];
+/**
+ * Summarises a plain atom table without materialising a single row.
+ *
+ * This replaced a loop over every atom that built five JS objects per atom — a row
+ * copy, an atom, a position array, a property row and a cached flattened row — only
+ * for both consumers to immediately reduce them back to columns. On a 4.45M-atom
+ * frame that cost ~22 GB of heap and killed the daemon mid-analysis. The listing
+ * counters are aggregates, the structure sub-listing is one row per bucket, and the
+ * per-atom payload is handed on as a reference to the parquet the plugin wrote.
+ *
+ * Buckets keep the order in which they first appear by `atom_index`, because the
+ * exporter derives a bucket's fallback colour from that position.
+ */
+const summarizeAtomTable = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    columnNames: string[]
+): Promise<WorkflowExposurePayloadReadResult> => {
+    const hasBucket = columnNames.includes('bucket');
+    const hasStructureId = columnNames.includes('structure_id');
+    const hasStructureName = columnNames.includes('structure_name');
+    const bucketExpression = hasBucket ? quoteIdentifier('bucket') : sqlString(DEFAULT_BUCKET_NAME);
+    const orderExpression = columnNames.includes('atom_index') ? quoteIdentifier('atom_index') : 'NULL';
 
-    for (const rawRow of rows) {
-        const row = normalizeParquetRow(rawRow);
-        const bucket = (row.bucket as string | undefined) ?? 'All';
-        const structureId = (row.structure_id as number | undefined) ?? 0;
-        const atom: JsonObject = {
-            id: row.id,
-            pos: [row.x ?? 0, row.y ?? 0, row.z ?? 0],
-            structure_id: structureId,
-            structure_name: (row.structure_name as string | undefined) ?? bucket
-        };
-        const propertyRow: JsonObject = {};
-        for (const [key, value] of Object.entries(row)) {
-            if (!FIXED_ATOM_COLUMNS.has(key)) {
-                atom[key] = value;
-            }
-            if (!NON_PROPERTY_COLUMNS.has(key) && !isCosmeticColorColumn(key)) {
-                propertyRow[key] = value;
-            }
-        }
-        const entry = buckets.get(bucket) ?? {
-            structureId,
-            atoms: []
-        };
-        entry.atoms.push(atom);
-        buckets.set(bucket, entry);
-        propertyRows.push(propertyRow);
-    }
+    const totalsReader = await connection.runAndReadAll(
+        `SELECT COUNT(*) AS total_atoms FROM read_parquet(${sqlString(filePath)})`
+    );
+    const totalAtoms = Number(totalsReader.getRowObjectsJS()[0]?.total_atoms ?? 0);
 
-    const atomisticExporter: JsonObject = {};
-    const structures: JsonObject[] = [];
-    for (const [name, { structureId, atoms }] of buckets.entries()) {
-        atomisticExporter[name] = atoms;
-        structures.push({
-            structure_id: structureId,
-            structure_name: name,
-            atom_count: atoms.length
-        });
-    }
+    const bucketsReader = await connection.runAndReadAll(
+        'SELECT '
+        + `${bucketExpression} AS bucket, `
+        + `${hasStructureId ? `ANY_VALUE(${quoteIdentifier('structure_id')})` : '0'} AS structure_id, `
+        + `${hasStructureName ? `ANY_VALUE(${quoteIdentifier('structure_name')})` : bucketExpression} AS structure_name, `
+        + 'COUNT(*) AS atom_count, '
+        + `MIN(${orderExpression}) AS first_index `
+        + `FROM read_parquet(${sqlString(filePath)}) `
+        + `GROUP BY ${bucketExpression} `
+        + 'ORDER BY first_index NULLS LAST, bucket'
+    );
+
+    const structures: JsonObject[] = bucketsReader.getRowObjectsJS().map((row) => ({
+        structure_id: Number(row.structure_id ?? 0),
+        structure_name: String(row.structure_name ?? row.bucket ?? DEFAULT_BUCKET_NAME),
+        atom_count: Number(row.atom_count ?? 0)
+    }));
 
     return {
         listing: {
             main_listing: {
-                total_atoms: rows.length,
-                structure_count: buckets.size
+                total_atoms: totalAtoms,
+                structure_count: structures.length
             }
         },
         subListingNames: structures.length > 0 ? ['structures'] : [],
         subListings: structures.length > 0 ? { structures } : {},
-        perAtomProperties: propertyRows as PerAtomProperties,
+        perAtomProperties: null,
+        perAtomSource: {
+            filePath,
+            rowCount: totalAtoms
+        },
         entityKind: 'atoms',
-        exportData: { export: { AtomisticExporter: atomisticExporter } }
+        exportData: totalAtoms > 0
+            ? { export: { AtomisticExporter: { [ATOMISTIC_PARQUET_SOURCE_KEY]: filePath } } }
+            : null
     };
 };
 
@@ -200,6 +219,29 @@ export const readWorkflowExposurePayload = async (
         const columnNames = schemaReader.getRows().map((row) => String(row[0]));
 
         if (columnNames.length === 1 && columnNames[0] === 'payload') {
+            const payloadBytes = await measurePayloadBytes(connection, filePath);
+            /*
+             * A document past V8's string ceiling cannot be read at all, so it is taken
+             * apart inside DuckDB instead. Smaller ones keep the direct parse, which is
+             * cheaper than a dozen extraction statements.
+             */
+            if (isPayloadTooLargeForJs(payloadBytes)) {
+                const document = await readLargePayloadDocument(
+                    connection,
+                    filePath,
+                    path.dirname(filePath)
+                );
+                return {
+                    listing: document.listing,
+                    subListingNames: document.subListingNames,
+                    subListings: document.subListings,
+                    perAtomProperties: null,
+                    perAtomSource: document.perAtomSource,
+                    entityKind: 'atoms',
+                    exportData: document.exportData
+                };
+            }
+
             const reader = await connection.runAndReadAll(
                 `SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1`
             );
@@ -232,11 +274,7 @@ export const readWorkflowExposurePayload = async (
             return reconstructFromPointsTable(rows, 'lines', 'LineExporter');
         }
 
-        const reader = await connection.runAndReadAll(
-            `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY atom_index`
-        );
-        const rows = reader.getRowObjects() as JsonObject[];
-        return reconstructFromColumnarAtoms(rows);
+        return await summarizeAtomTable(connection, filePath, columnNames);
     } finally {
         connection.closeSync();
     }

@@ -8,7 +8,7 @@ import { DuckDBConnection } from '@duckdb/node-api';
 
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import type { FlatAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
+import type { FlatAtomProperties, PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type {
     ModifierScalarValues,
     ModifierStats,
@@ -43,6 +43,7 @@ import {
     appendProperties,
     createPropertiesTable
 } from '@modules/plugin/services/properties/parquet-property-appender';
+import { buildPropertyProjection } from '@modules/plugin/services/properties/parquet-property-projection';
 import {
     rowsToAtomProperties,
     rowsToFloat32ByAtomId,
@@ -68,6 +69,55 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     public async writeExposureProperties(
         input: PluginPropertyStoreWriteInput
     ): Promise<PluginPropertyStoreWriteResult | null> {
+        return input.source
+            ? this.writeFromParquetSource(input, input.source)
+            : this.writeFromRows(input);
+    }
+
+    /**
+     * Columnar path: one DuckDB projection from the plugin's own parquet.
+     *
+     * Cost is independent of the atom count because no row ever reaches JS. The
+     * row-based path below needs ~5 KB of heap per atom, which is what made
+     * multi-million-atom frames impossible.
+     */
+    private async writeFromParquetSource(
+        input: PluginPropertyStoreWriteInput,
+        source: PerAtomParquetSource
+    ): Promise<PluginPropertyStoreWriteResult | null> {
+        if (source.rowCount === 0) {
+            return null;
+        }
+
+        return withNativeProcessingTempDir('plugin-properties-parquet', async (tempDirectory) => {
+            const objectKey = this.buildObjectKey(input);
+            const outputPath = this.buildOutputPath(tempDirectory, objectKey);
+            const connection = await DuckDBConnection.create();
+
+            let projection;
+            try {
+                projection = await buildPropertyProjection(connection, source.filePath, input.timestep);
+                if (!projection) {
+                    return null;
+                }
+                await projection.copyTo(outputPath);
+            } finally {
+                connection.closeSync();
+            }
+
+            await this.uploadExposureParquet(input, objectKey, outputPath, projection.rowCount);
+
+            return {
+                objectKey,
+                rowCount: projection.rowCount,
+                propertyNames: projection.columnNames
+            };
+        });
+    }
+
+    private async writeFromRows(
+        input: PluginPropertyStoreWriteInput
+    ): Promise<PluginPropertyStoreWriteResult | null> {
         const rows = input.rows;
         const rowCount = getRowCount(rows);
         if (!rows || rowCount === 0) {
@@ -80,14 +130,8 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
 
         return withNativeProcessingTempDir('plugin-properties-parquet', async (tempDirectory) => {
-            const objectKey = toPluginExposureParquetObjectKey(
-                input.trajectoryId,
-                input.analysisId,
-                input.exposureId,
-                input.timestep,
-                input.entityKind
-            );
-            const outputPath = path.join(tempDirectory, `${createHash('sha1').update(objectKey).digest('hex')}.parquet`);
+            const objectKey = this.buildObjectKey(input);
+            const outputPath = this.buildOutputPath(tempDirectory, objectKey);
             const connection = await DuckDBConnection.create();
 
             try {
@@ -107,22 +151,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 connection.closeSync();
             }
 
-            const stat = await fs.stat(outputPath);
-            await this.objectStore.putObjectStream({
-                ownerClusterId: input.ownerClusterId,
-                bucket: ObjectBucketName.Plugins,
-                objectKey,
-                stream: createReadStream(outputPath),
-                size: stat.size,
-                metadata: {
-                    'Content-Type': 'application/vnd.apache.parquet',
-                    'x-plugin-result-format': 'parquet',
-                    'x-plugin-result-schema-version': '1',
-                    'x-plugin-result-row-count': String(rowCount)
-                }
-            });
-
-            this.parquetCache.invalidate(input.ownerClusterId, objectKey);
+            await this.uploadExposureParquet(input, objectKey, outputPath, rowCount);
 
             return {
                 objectKey,
@@ -130,6 +159,44 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 propertyNames: columns.map((column) => column.name)
             };
         });
+    }
+
+    private buildObjectKey(input: PluginPropertyStoreWriteInput): string {
+        return toPluginExposureParquetObjectKey(
+            input.trajectoryId,
+            input.analysisId,
+            input.exposureId,
+            input.timestep,
+            input.entityKind
+        );
+    }
+
+    private buildOutputPath(tempDirectory: string, objectKey: string): string {
+        return path.join(tempDirectory, `${createHash('sha1').update(objectKey).digest('hex')}.parquet`);
+    }
+
+    private async uploadExposureParquet(
+        input: PluginPropertyStoreWriteInput,
+        objectKey: string,
+        outputPath: string,
+        rowCount: number
+    ): Promise<void> {
+        const stat = await fs.stat(outputPath);
+        await this.objectStore.putObjectStream({
+            ownerClusterId: input.ownerClusterId,
+            bucket: ObjectBucketName.Plugins,
+            objectKey,
+            stream: createReadStream(outputPath),
+            size: stat.size,
+            metadata: {
+                'Content-Type': 'application/vnd.apache.parquet',
+                'x-plugin-result-format': 'parquet',
+                'x-plugin-result-schema-version': '1',
+                'x-plugin-result-row-count': String(rowCount)
+            }
+        });
+
+        this.parquetCache.invalidate(input.ownerClusterId, objectKey);
     }
 
     public async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {

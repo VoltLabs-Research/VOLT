@@ -55,7 +55,23 @@ export interface AtomisticAtom {
     base_color?: [number, number, number] | [number, number, number, number];
 }
 
-export type AtomisticExportData = Record<string, AtomisticAtom[]>;
+/**
+ * Key under which an atomistic payload carries the parquet it was derived from,
+ * instead of an inline atom list. Lets the exporter stream positions columnar for
+ * frames whose atom count makes a JS array untenable.
+ */
+export const ATOMISTIC_PARQUET_SOURCE_KEY = '__parquet_source__';
+
+export interface AtomisticParquetSourcePayload {
+    [ATOMISTIC_PARQUET_SOURCE_KEY]: string;
+}
+
+export type AtomisticExportData = Record<string, AtomisticAtom[]> | AtomisticParquetSourcePayload;
+
+export const readAtomisticParquetSource = (exportData: AtomisticExportData): string | null => {
+    const candidate = (exportData as AtomisticParquetSourcePayload)[ATOMISTIC_PARQUET_SOURCE_KEY];
+    return typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
+};
 
 export interface ExportMaterial {
     baseColor: [number, number, number, number];

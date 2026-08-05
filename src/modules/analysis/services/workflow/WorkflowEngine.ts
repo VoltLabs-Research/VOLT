@@ -6,6 +6,7 @@ import { WorkflowNodeRegistry, getWorkflowNodeRegistry, isPlanningNodeType } fro
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { WorkflowTrajectoryWindowHandler } from '@modules/analysis/services/workflow/nodes/TrajectoryWindowHandler';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { resolvePluginNativeThreadBudget } from '@shared/domain/utilities/runtime-capacity';
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition, WorkflowTrajectoryWindowData } from '@shared/contracts';
 import type { PlannedExecutionItem, WorkflowWindowMode } from '@shared/contracts/types/http-analysis';
 import type { WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
@@ -41,11 +42,26 @@ interface WorkflowPlanResult {
 };
 
 const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
+    /*
+     * `threads` is offered to every workflow but only reaches the binary when the
+     * plugin declares the argument, because `WorkflowArgumentsHandler` builds the
+     * command line from declared definitions alone. That keeps plugins with no
+     * such flag untouched while giving the ones that do a budget sized for the
+     * host, instead of the topology-wide arena they would pick on their own.
+     *
+     * It sits in `runtimeArguments` rather than being forced, so an explicit value
+     * in the user's stage config still wins.
+     */
+    const runtimeArguments: WorkflowNodeOutput = {
+        threads: resolvePluginNativeThreadBudget()
+    };
+
     if (!request.selectedTimesteps?.length) {
-        return {};
+        return runtimeArguments;
     }
 
     return {
+        ...runtimeArguments,
         selectedTimesteps: request.selectedTimesteps.map(
             (timestep): WorkflowRuntimeArgumentSelection => ({ value: timestep })
         )

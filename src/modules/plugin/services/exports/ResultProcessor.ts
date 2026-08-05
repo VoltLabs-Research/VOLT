@@ -91,6 +91,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                 subListingNames,
                 subListings,
                 perAtomProperties,
+                perAtomSource,
                 entityKind,
                 exportData: exportPayload
             } = await readWorkflowExposurePayload(outputFilePath);
@@ -104,6 +105,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                     timestep,
                     ownerClusterId: storageOwnerClusterId,
                     rows: perAtomProperties,
+                    source: perAtomSource,
                     entityKind
                 });
                 const propertyObjectKey = propertyStorage?.objectKey;
@@ -136,6 +138,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
             subListingNames = [];
             subListings = {};
             perAtomProperties = null;
+            perAtomSource = null;
 
             if (exposure.export && exportPayload) {
                 await processExportNode({

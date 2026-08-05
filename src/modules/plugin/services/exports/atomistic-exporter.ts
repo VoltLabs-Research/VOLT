@@ -1,8 +1,16 @@
+import { DuckDBConnection } from '@duckdb/node-api';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { exportOctreeMetadata } from '@modules/plugin/services/exports/octree-exporter';
 import { hueToRgb } from '@modules/plugin/services/exports/category-colors';
-import type { AtomisticAtom, AtomisticExportData, ExportExecutionInput, OctreeExportOptions } from '@modules/plugin/services/exports/export-node-processor-types';
+import {
+    type AtomisticAtom,
+    type AtomisticExportData,
+    type ExportExecutionInput,
+    type OctreeExportOptions,
+    readAtomisticParquetSource
+} from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
@@ -116,12 +124,16 @@ const colorForAtom = (
         ?? fallback;
 };
 
-const buildPointCloudDataDirect = async (exportData: AtomisticExportData): Promise<{
+interface PointCloudData {
     positions: Float32Array;
     colors: Float32Array;
     min: [number, number, number];
     max: [number, number, number];
-} | null> => {
+}
+
+const buildPointCloudDataDirect = async (
+    exportData: Record<string, AtomisticAtom[]>
+): Promise<PointCloudData | null> => {
     const entries = Object.entries(exportData);
     const totalAtoms = entries.reduce((sum, [, atoms]) => sum + atoms.length, 0);
     if (totalAtoms === 0) {
@@ -172,6 +184,176 @@ const buildPointCloudDataDirect = async (exportData: AtomisticExportData): Promi
     };
 };
 
+/** Colour columns an atom may carry, in the precedence `colorForAtom` applies. */
+const COLOR_COLUMN_PRECEDENCE = ['color', 'structure_color', 'rgb', 'base_color'] as const;
+
+interface ColorColumnSource {
+    componentExpressions: [string, string, string];
+}
+
+const resolveColorColumnSources = (
+    columnTypes: Map<string, string>
+): ColorColumnSource[] => {
+    const sources: ColorColumnSource[] = [];
+
+    for (const name of COLOR_COLUMN_PRECEDENCE) {
+        const type = columnTypes.get(name);
+        if (!type) {
+            continue;
+        }
+
+        const quoted = quoteIdentifier(name);
+        // Lists hold the components; DuckDB indexes them from 1.
+        sources.push({
+            componentExpressions: type.endsWith('[]') || type.startsWith('LIST')
+                ? [`${quoted}[1]`, `${quoted}[2]`, `${quoted}[3]`]
+                : [`${quoted}_r`, `${quoted}_g`, `${quoted}_b`]
+        });
+    }
+
+    return sources;
+};
+
+const normalizeColorComponents = (
+    r: number | null,
+    g: number | null,
+    b: number | null
+): [number, number, number] | null => {
+    if (r === null || g === null || b === null) {
+        return null;
+    }
+
+    const scale = r > 1 || g > 1 || b > 1 ? 255 : 1;
+    return [
+        Math.min(1, Math.max(0, r / scale)),
+        Math.min(1, Math.max(0, g / scale)),
+        Math.min(1, Math.max(0, b / scale))
+    ];
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+};
+
+/**
+ * Builds the point cloud straight from the exposure parquet.
+ *
+ * Reads one bucket at a time as columns, so peak memory is three position arrays
+ * rather than an object per atom. Bucket order and the per-atom colour precedence
+ * match the row-based path, keeping the generated GLB and octree identical.
+ */
+const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudData | null> => {
+    const connection = await DuckDBConnection.create();
+
+    try {
+        const schemaReader = await connection.runAndReadAll(
+            `DESCRIBE SELECT * FROM read_parquet(${sqlString(filePath)})`
+        );
+        const columnTypes = new Map<string, string>(
+            schemaReader.getRowObjectsJS().map((row) => [
+                String(row.column_name ?? ''),
+                String(row.column_type ?? '').toUpperCase()
+            ])
+        );
+
+        const hasBucket = columnTypes.has('bucket');
+        const bucketExpression = hasBucket ? quoteIdentifier('bucket') : sqlString('All');
+        const orderExpression = columnTypes.has('atom_index') ? quoteIdentifier('atom_index') : 'NULL';
+
+        const bucketsReader = await connection.runAndReadAll(
+            `SELECT ${bucketExpression} AS bucket, COUNT(*) AS atom_count, MIN(${orderExpression}) AS first_index `
+            + `FROM read_parquet(${sqlString(filePath)}) `
+            + `GROUP BY ${bucketExpression} ORDER BY first_index NULLS LAST, bucket`
+        );
+        const buckets = bucketsReader.getRowObjectsJS().map((row) => ({
+            name: String(row.bucket ?? 'All'),
+            atomCount: Number(row.atom_count ?? 0)
+        }));
+
+        const totalAtoms = buckets.reduce((sum, bucket) => sum + bucket.atomCount, 0);
+        if (totalAtoms === 0) {
+            return null;
+        }
+
+        const colorSources = resolveColorColumnSources(columnTypes);
+        const colorProjection = colorSources
+            .flatMap(({ componentExpressions }, sourceIndex) => componentExpressions
+                .map((expression, component) =>
+                    `TRY_CAST(${expression} AS DOUBLE) AS c${sourceIndex}_${component}`))
+            .join(', ');
+
+        const positions = new Float32Array(totalAtoms * 3);
+        const colors = new Float32Array(totalAtoms * 3);
+        const min: [number, number, number] = [Infinity, Infinity, Infinity];
+        const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+        let offset = 0;
+
+        for (let bucketIndex = 0; bucketIndex < buckets.length; bucketIndex += 1) {
+            const bucket = buckets[bucketIndex];
+            const fallbackColor = colorForType(bucket.name, bucketIndex);
+            const reader = await connection.runAndReadAll(
+                'SELECT '
+                + `TRY_CAST(${quoteIdentifier('x')} AS DOUBLE) AS x, `
+                + `TRY_CAST(${quoteIdentifier('y')} AS DOUBLE) AS y, `
+                + `TRY_CAST(${quoteIdentifier('z')} AS DOUBLE) AS z`
+                + (colorProjection ? `, ${colorProjection}` : '')
+                + ` FROM read_parquet(${sqlString(filePath)}) `
+                + (hasBucket ? `WHERE ${bucketExpression} = ${sqlString(bucket.name)} ` : '')
+                + `ORDER BY ${orderExpression}`
+            );
+
+            const columns = reader.getColumnsObjectJS();
+            const xs = columns.x ?? [];
+            const ys = columns.y ?? [];
+            const zs = columns.z ?? [];
+
+            for (let row = 0; row < xs.length; row += 1) {
+                const x = toNullableNumber(xs[row]) ?? 0;
+                const y = toNullableNumber(ys[row]) ?? 0;
+                const z = toNullableNumber(zs[row]) ?? 0;
+
+                let color: [number, number, number] | null = null;
+                for (let sourceIndex = 0; sourceIndex < colorSources.length && !color; sourceIndex += 1) {
+                    color = normalizeColorComponents(
+                        toNullableNumber(columns[`c${sourceIndex}_0`]?.[row]),
+                        toNullableNumber(columns[`c${sourceIndex}_1`]?.[row]),
+                        toNullableNumber(columns[`c${sourceIndex}_2`]?.[row])
+                    );
+                }
+                const resolved = color ?? fallbackColor;
+
+                const base = offset * 3;
+                positions[base] = x;
+                positions[base + 1] = y;
+                positions[base + 2] = z;
+                colors[base] = resolved[0];
+                colors[base + 1] = resolved[1];
+                colors[base + 2] = resolved[2];
+                min[0] = Math.min(min[0], x);
+                min[1] = Math.min(min[1], y);
+                min[2] = Math.min(min[2], z);
+                max[0] = Math.max(max[0], x);
+                max[1] = Math.max(max[1], y);
+                max[2] = Math.max(max[2], z);
+                offset += 1;
+            }
+
+            await yieldToEventLoop();
+        }
+
+        return {
+            positions,
+            colors,
+            min,
+            max
+        };
+    } finally {
+        connection.closeSync();
+    }
+};
+
 export const exportAtomisticArtifact = async (
     input: ExportExecutionInput,
     exportData: AtomisticExportData,
@@ -179,7 +361,10 @@ export const exportAtomisticArtifact = async (
     ownerClusterId: string,
     octreeOptions?: OctreeExportOptions
 ): Promise<boolean> => {
-    const pointCloud = await buildPointCloudDataDirect(exportData);
+    const parquetSource = readAtomisticParquetSource(exportData);
+    const pointCloud = parquetSource
+        ? await buildPointCloudFromParquet(parquetSource)
+        : await buildPointCloudDataDirect(exportData as Record<string, AtomisticAtom[]>);
     if (!pointCloud) {
         return false;
     }

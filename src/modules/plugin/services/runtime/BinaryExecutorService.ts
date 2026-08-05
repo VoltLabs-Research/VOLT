@@ -11,6 +11,7 @@ import {
     forwardLogChunk
 } from '@modules/plugin/services/runtime/process-log-sink';
 import { registerProcess, unregisterProcess } from '@shared/infrastructure/runtime/process-tracker';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { PluginProcessPool, getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
 import type { PooledProcessSpawnInput } from '@modules/plugin/services/runtime/PluginProcessChannel';
 import { buildPluginProcessEnv } from '@modules/plugin/services/runtime/plugin-process-env';
@@ -24,8 +25,49 @@ import type {
 import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
-const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
+/**
+ * Absolute ceiling on one attempt. A backstop only: it has to clear the slowest
+ * legitimate frame, so progress is judged by `STALL_TIMEOUT_MS` instead.
+ */
+const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_EXECUTION_TIMEOUT_MS')
+    ?? 60 * 60 * 1000;
+/**
+ * How long a plugin may stay completely silent before it counts as wedged.
+ *
+ * A wall-clock cap cannot tell a slow frame from a hung one, so it has to be set
+ * high and every hang then costs the full window — a livelocked frame burnt 15
+ * minutes before anything noticed. Plugins narrate their phases on stdout, so
+ * silence is the usable progress signal: the timer is rearmed on every chunk, which
+ * lets a genuinely long computation run as long as it keeps reporting while a
+ * spinning one is caught in minutes.
+ */
+const DEFAULT_PROCESS_STALL_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_STALL_TIMEOUT_MS')
+    ?? 8 * 60 * 1000;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
+/** After SIGKILL, how long to wait for stdio to drain before giving up on the child. */
+const PROCESS_ABANDON_GRACE_PERIOD_MS = 5_000;
+
+/**
+ * How many times a binary may be respawned when it never finished on its own.
+ *
+ * A plugin that hits its execution timeout is not a deterministic failure: the
+ * process is wedged, not wrong. At least one shipped plugin
+ * (polyhedral-template-matching 2.0.2) livelocks on a race inside its OneTBB
+ * arena, spinning at full CPU without ever producing output, and a fresh process
+ * on the same input completes in seconds. Retrying is safe because a plugin
+ * invocation is idempotent: it reads the staged dump and rewrites its output base.
+ *
+ * Without this, one wedged frame failed its whole analysis and discarded every
+ * sibling frame that had already succeeded.
+ */
+const DEFAULT_MAX_PROCESS_ATTEMPTS = readPositiveIntegerEnv('PLUGIN_PROCESS_MAX_ATTEMPTS') ?? 3;
+
+interface SingleRunOutcome extends ProcessExecutionResult {
+    /** The process was killed by the watchdog rather than exiting on its own. */
+    timedOut: boolean;
+    /** Why the watchdog fired, for the retry log. */
+    wedgeReason: 'stalled' | 'absolute-timeout' | null;
+}
 
 export class BinaryExecutorService {
     constructor(
@@ -33,21 +75,84 @@ export class BinaryExecutorService {
         private readonly sharedMemoryBridge: SharedMemoryBridge
     ) {}
 
-    async executeProcess({
-        jobId,
-        commandPath,
-        args,
-        cwd,
-        env,
-        timeoutMs = DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS,
-        logSink
-    }: ProcessExecutionInput): Promise<ProcessExecutionResult> {
+    async executeProcess(input: ProcessExecutionInput): Promise<ProcessExecutionResult> {
+        const timeoutMs = input.timeoutMs ?? DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS;
+        const stallTimeoutMs = DEFAULT_PROCESS_STALL_TIMEOUT_MS;
+        const maxAttempts = Math.max(1, DEFAULT_MAX_PROCESS_ATTEMPTS);
+        let outcome: SingleRunOutcome | undefined;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            outcome = await this.runProcessOnce(input, timeoutMs, stallTimeoutMs);
+            if (!outcome.timedOut) {
+                return {
+                    code: outcome.code,
+                    stdout: outcome.stdout,
+                    stderr: outcome.stderr
+                };
+            }
+
+            if (attempt < maxAttempts) {
+                logger.warn(
+                    {
+                        jobId: input.jobId,
+                        attempt,
+                        maxAttempts,
+                        reason: outcome.wedgeReason
+                    },
+                    'Plugin process wedged; respawning for another attempt'
+                );
+                forwardLogChunk(
+                    input.logSink,
+                    'system',
+                    `[Volt] Plugin ${outcome.wedgeReason === 'stalled'
+                        ? `produced no output for ${stallTimeoutMs}ms`
+                        : `exceeded ${timeoutMs}ms`}; retrying (attempt ${attempt + 1}/${maxAttempts})\n`
+                );
+            }
+        }
+
+        logger.error(
+            {
+                jobId: input.jobId,
+                maxAttempts,
+                timeoutMs
+            },
+            'Plugin process exhausted every attempt without finishing'
+        );
+
+        return {
+            code: outcome?.code ?? 1,
+            stdout: outcome?.stdout ?? '',
+            stderr: `${outcome?.stderr ?? ''}\nGave up after ${maxAttempts} attempt(s) of ${timeoutMs}ms each`
+        };
+    }
+
+    private async runProcessOnce(
+        {
+            jobId,
+            commandPath,
+            args,
+            cwd,
+            env,
+            logSink
+        }: ProcessExecutionInput,
+        timeoutMs: number,
+        stallTimeoutMs: number
+    ): Promise<SingleRunOutcome> {
         return new Promise((resolve, reject) => {
             const startedAt = Date.now();
             const child = spawn(commandPath, args, {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
-                env: buildPluginProcessEnv(env)
+                env: buildPluginProcessEnv(env),
+                /*
+                 * Own process group, so the watchdog can signal the whole tree. A
+                 * plugin that shells out leaves the grandchild holding the stdio
+                 * pipes open, and `close` only fires once every writer is gone: a
+                 * plain `child.kill()` then left this promise pending forever, which
+                 * is the one outcome the caller cannot recover from.
+                 */
+                detached: true
             });
             registerProcess(jobId, child);
 
@@ -55,43 +160,131 @@ export class BinaryExecutorService {
             const stderrChunks: Buffer[] = [];
             let stdoutBytes = 0;
             let stderrBytes = 0;
-            let timedOut = false;
+            let wedgeReason: SingleRunOutcome['wedgeReason'] = null;
+            let settled = false;
+            let stallTimeout: NodeJS.Timeout | undefined;
             let forceKillTimeout: NodeJS.Timeout | undefined;
+            let abandonTimeout: NodeJS.Timeout | undefined;
 
-            const executionTimeout = timeoutMs > 0
-                ? setTimeout(() => {
-                    timedOut = true;
-                    logger.warn('Plugin process exceeded execution timeout');
-                    child.kill('SIGTERM');
-
-                    forceKillTimeout = setTimeout(() => {
-                        child.kill('SIGKILL');
-                    }, PROCESS_KILL_GRACE_PERIOD_MS);
-                    forceKillTimeout.unref();
-                    forwardLogChunk(logSink, 'system', `Process timed out after ${timeoutMs}ms\n`);
-                }, timeoutMs)
-                : undefined;
-            executionTimeout?.unref();
+            const signalTree = (signal: NodeJS.Signals): void => {
+                try {
+                    if (child.pid !== undefined) {
+                        process.kill(-child.pid, signal);
+                        return;
+                    }
+                } catch {
+                    // The group is already gone, or was never created; fall through.
+                }
+                try {
+                    child.kill(signal);
+                } catch { }
+            };
 
             const cleanupProcess = (): void => {
-                clearTimeout(executionTimeout);
+                clearTimeout(absoluteTimeout);
+                if (stallTimeout) {
+                    clearTimeout(stallTimeout);
+                }
                 if (forceKillTimeout) {
                     clearTimeout(forceKillTimeout);
+                }
+                if (abandonTimeout) {
+                    clearTimeout(abandonTimeout);
                 }
                 unregisterProcess(jobId, child);
             };
 
+            const settle = async (code: number | null): Promise<void> => {
+                if (settled) return;
+                settled = true;
+                cleanupProcess();
+                await flushLogSink(logSink);
+                resolve({
+                    code: code ?? 1,
+                    stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
+                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${wedgeReason
+                        ? `\nProcess ${wedgeReason === 'stalled'
+                            ? `stalled: no output for ${stallTimeoutMs}ms`
+                            : `timed out after ${timeoutMs}ms`}`
+                        : ''}`,
+                    timedOut: wedgeReason !== null,
+                    wedgeReason
+                });
+            };
+
+            const declareWedged = (reason: NonNullable<SingleRunOutcome['wedgeReason']>): void => {
+                if (settled || wedgeReason) return;
+                wedgeReason = reason;
+                logger.warn(
+                    {
+                        jobId,
+                        pid: child.pid,
+                        reason,
+                        elapsedMs: Date.now() - startedAt
+                    },
+                    'Plugin process made no progress; terminating it'
+                );
+                forwardLogChunk(
+                    logSink,
+                    'system',
+                    reason === 'stalled'
+                        ? `Process stalled: no output for ${stallTimeoutMs}ms\n`
+                        : `Process timed out after ${timeoutMs}ms\n`
+                );
+                signalTree('SIGTERM');
+
+                forceKillTimeout = setTimeout(() => {
+                    signalTree('SIGKILL');
+                    /*
+                     * Last resort: report the wedge even if something still holds
+                     * the pipes open, so the retry above always gets its turn.
+                     */
+                    abandonTimeout = setTimeout(() => {
+                        logger.error(
+                            {
+                                jobId,
+                                pid: child.pid
+                            },
+                            'Plugin process survived SIGKILL or leaked its stdio; abandoning it'
+                        );
+                        void settle(null);
+                    }, PROCESS_ABANDON_GRACE_PERIOD_MS);
+                    abandonTimeout.unref();
+                }, PROCESS_KILL_GRACE_PERIOD_MS);
+                forceKillTimeout.unref();
+            };
+
+            /** Rearmed by every chunk the plugin writes, so output counts as progress. */
+            const armStallTimer = (): void => {
+                if (stallTimeoutMs <= 0 || settled || wedgeReason) return;
+                if (stallTimeout) {
+                    clearTimeout(stallTimeout);
+                }
+                stallTimeout = setTimeout(() => declareWedged('stalled'), stallTimeoutMs);
+                stallTimeout.unref();
+            };
+
+            const absoluteTimeout = timeoutMs > 0
+                ? setTimeout(() => declareWedged('absolute-timeout'), timeoutMs)
+                : undefined;
+            absoluteTimeout?.unref();
+            armStallTimer();
+
             child.stdout.on('data', (chunk: Buffer) => {
+                armStallTimer();
                 stdoutBytes = this.appendOutputChunk(stdoutChunks, stdoutBytes, chunk);
                 forwardLogChunk(logSink, 'stdout', chunk.toString('utf-8'));
             });
 
             child.stderr.on('data', (chunk: Buffer) => {
+                armStallTimer();
                 stderrBytes = this.appendOutputChunk(stderrChunks, stderrBytes, chunk);
                 forwardLogChunk(logSink, 'stderr', chunk.toString('utf-8'));
             });
 
             child.on('error', async (error) => {
+                if (settled) return;
+                settled = true;
                 cleanupProcess();
                 logger.error(
                     {
@@ -106,14 +299,8 @@ export class BinaryExecutorService {
                 reject(new Error(`Failed to spawn process: ${error.message}`));
             });
 
-            child.on('close', async (code) => {
-                cleanupProcess();
-                await flushLogSink(logSink);
-                resolve({
-                    code: code ?? 1,
-                    stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
-                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${timeoutMs}ms` : ''}`
-                });
+            child.on('close', (code) => {
+                void settle(code);
             });
         });
     }

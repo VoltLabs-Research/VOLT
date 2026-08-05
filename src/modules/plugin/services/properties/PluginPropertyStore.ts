@@ -1,4 +1,4 @@
-import type { FlatAtomProperties, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
+import type { FlatAtomProperties, PerAtomParquetSource, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { PluginExposureEntityKind } from '@shared/infrastructure/storage/storage-codec';
 
 export interface PluginExposureRequestBase {
@@ -31,6 +31,11 @@ export interface PluginAnalysisAllAtomsResponse {
 
 export interface PluginPropertyStoreWriteInput extends PluginModifierAnalysisRequest {
     rows: PerAtomProperties | null | undefined;
+    /**
+     * Columnar fast path. When present the exposure parquet is projected from this
+     * file and `rows` is ignored, which is what keeps large frames off the JS heap.
+     */
+    source?: PerAtomParquetSource | null;
     entityKind?: PluginExposureEntityKind;
 }
 

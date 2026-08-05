@@ -3,6 +3,7 @@ import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PIPELINE_QUEUE_NAME, P
 import { RedisConnection, getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
 import { TTLCache } from '@isaacs/ttlcache';
 import { Queue, Worker, type Job, type JobState } from 'bullmq';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 export interface QueuePayload {
     jobId?: string;
@@ -37,6 +38,21 @@ const PRESERVED_JOB_STATES = new Set<JobState | 'unknown'>([
     'waiting',
     'delayed'
 ]);
+
+/**
+ * How long a worker may hold a job before BullMQ assumes it died.
+ *
+ * Compute jobs here drive native binaries that run for minutes on large frames. The
+ * lock is renewed on a timer, so a busy event loop can miss a renewal and let the
+ * lock lapse — BullMQ then re-delivers the job to another worker and the same frame
+ * is analysed twice in parallel. That was observed on a 4.45M-atom frame: two
+ * OpenDXA processes on the identical timestep, each holding several GB.
+ *
+ * The window is therefore set well beyond any realistic job, and `maxStalledCount`
+ * stays at BullMQ's default of one so a genuinely dead worker is still recovered.
+ */
+const WORKER_LOCK_DURATION_MS = readPositiveIntegerEnv('QUEUE_WORKER_LOCK_DURATION_MS') ?? 3_600_000;
+const WORKER_STALLED_INTERVAL_MS = readPositiveIntegerEnv('QUEUE_WORKER_STALLED_INTERVAL_MS') ?? 300_000;
 
 const assertKnownQueue = (queueName: string): void => {
     if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
@@ -146,8 +162,8 @@ export class QueueService {
             {
                 connection: this.redisConnection.getConnectionOptions(),
                 concurrency: options.concurrency,
-                lockDuration: 300_000,
-                stalledInterval: 300_000
+                lockDuration: WORKER_LOCK_DURATION_MS,
+                stalledInterval: WORKER_STALLED_INTERVAL_MS
             }
         );
     };
