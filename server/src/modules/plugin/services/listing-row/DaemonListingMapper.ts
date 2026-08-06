@@ -48,23 +48,11 @@ const SYSTEM_KEYS = new Set([
 ]);
 
 /**
- * Daemon rows come from Mongo, so `_id` arrives as an ObjectId that the reverse
- * channel has already turned into `{ buffer: { data: [...] } }`. The wire
- * contract declares a hex string, so the bytes are rebuilt here instead of
- * leaking a raw buffer to clients.
+ * Daemon rows carry a string `_id` built from their natural key. Anything else means
+ * a row arrived without one, which the wire contract has no way to express, so it
+ * degrades to empty rather than putting a non-string where a string is declared.
  */
-export const toListingRowId = (value: unknown): string => {
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    const bytes = (value as { buffer?: { data?: unknown } })?.buffer?.data;
-    if (Array.isArray(bytes)) {
-        return Buffer.from(bytes as number[]).toString('hex');
-    }
-
-    return '';
-};
+export const toListingRowId = (value: unknown): string => (typeof value === 'string' ? value : '');
 
 /**
  * A daemon row either nests its payload under `row` or spreads it next to the

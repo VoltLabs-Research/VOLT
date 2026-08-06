@@ -7,9 +7,9 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 
-const SYNC_CACHE_TTL_SECONDS = 600;
+const SYNC_CACHE_TTL_MS = 600_000;
 const SYNC_CACHE_PREFIX = 'plugin-sync:';
 
 interface DaemonPluginSyncResponse {
@@ -19,15 +19,13 @@ interface DaemonPluginSyncResponse {
 /**
  * Makes a plugin binary reachable from the compute cluster that is about to run
  * it, by asking that cluster's daemon to pull the object from its owner cluster.
- * Successful syncs are remembered in redis and concurrent requests for the same
+ * Successful syncs are remembered and concurrent requests for the same
  * binary share a single daemon round trip.
  */
 class PluginBinarySyncService {
     private readonly objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
 
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
-    private readonly redis = redisClient;
 
     private readonly inflightSyncs = new Map<string, Promise<void>>();
 
@@ -43,10 +41,10 @@ class PluginBinarySyncService {
 
         const expectedHash = entrypoint.binaryHash ?? await this.readObjectSha256(ownerClusterId, objectKey);
         const syncKey = `${teamClusterId}:${ownerClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
-        const redisKey = `${SYNC_CACHE_PREFIX}${syncKey}`;
+        const cacheKey = `${SYNC_CACHE_PREFIX}${syncKey}`;
 
         try {
-            const cached = await this.redis.get(redisKey);
+            const cached = await getKeyValueStore().get(cacheKey);
             if (cached === '1') {
                 return;
             }
@@ -83,7 +81,7 @@ class PluginBinarySyncService {
             }
 
             try {
-                await this.redis.setex(redisKey, SYNC_CACHE_TTL_SECONDS, '1');
+                await getKeyValueStore().set(cacheKey, '1', { ttlMs: SYNC_CACHE_TTL_MS });
             } catch (error: unknown) {
                 logger.warn({
                     err: error,

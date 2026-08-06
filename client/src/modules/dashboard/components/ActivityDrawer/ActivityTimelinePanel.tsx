@@ -23,7 +23,7 @@ const TIMELINE_STYLE = {
     overflowY: 'auto'
 } as const;
 
-// `DailyActivity.user` is `Ref<DailyActivityUserSummary>`: a string id when Mongo did not
+// `DailyActivity.user` is `Ref<DailyActivityUserSummary>`: a string id when the query did not
 // populate it, so the union has to be narrowed before reading the name fields.
 const getUserName = (user: string | DailyActivityUserSummary): string => {
     if (typeof user === 'string') {

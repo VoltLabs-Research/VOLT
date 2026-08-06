@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import Container from '@modules/container/models/Container';
 import daemonContainerRuntimeService from '@modules/container/services/DaemonContainerRuntimeService';
 import containerPublicPortAllocator from '@modules/container/services/ContainerPublicPortAllocator';

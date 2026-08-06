@@ -1,12 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 
-import MongoListingReplicator from '@modules/cluster/services/MongoListingReplicator';
+import DaemonListingReplicator from '@modules/cluster/services/DaemonListingReplicator';
 import ClusterRebalancePlanner from '@modules/cluster/services/ClusterRebalancePlanner';
 import ClusterTransferJobStore from '@modules/cluster/services/ClusterTransferJobStore';
 import publishTransferJobProjection from '@modules/cluster/services/ClusterTransferJobProjector';
 import ClusterTransferObjectCopier from '@modules/cluster/services/ClusterTransferObjectCopier';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import {
     describeClusterTransferJob,
     type ClusterTransferJob
@@ -47,7 +47,7 @@ interface TransferRequestInput {
 class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
     private readonly systemMetricsRepository = systemMetricsRepository;
-    private readonly mongoListings = new MongoListingReplicator();
+    private readonly daemonListings = new DaemonListingReplicator();
     private readonly jobStore = new ClusterTransferJobStore();
     private readonly objectCopier = new ClusterTransferObjectCopier();
     private readonly rebalancePlanner = new ClusterRebalancePlanner();
@@ -185,7 +185,7 @@ class ClusterTransferCoordinator {
             await this.storagePlacementService.setPlacementState(scopeType, scopeId, 'read-only');
             const copiedJob = await this.objectCopier.copyPlacement(startedJob, placement);
             const verifiedBytes = await this.objectCopier.verifyPlacement(copiedJob, placement);
-            await this.mongoListings.replicateMongoListings(copiedJob);
+            await this.daemonListings.replicateDaemonListings(copiedJob);
             const switchingJob = await this.jobStore.setJobState(copiedJob.id, 'switching', {}, {
                 publishUpdate: true
             });
@@ -212,7 +212,7 @@ class ClusterTransferCoordinator {
                 publishUpdate: true
             });
             const deletedObjects = await this.objectCopier.cleanupSourceCopy(sourceClusterId, placement.props.buckets);
-            await this.mongoListings.purgeMongoListings(sourceClusterId, scopeType, scopeId);
+            await this.daemonListings.purgeDaemonListings(sourceClusterId, scopeType, scopeId);
             const cleanedJob = await this.jobStore.setJobState(cleaningJob.id, 'cleaning', {
                 stats: {
                     ...cleaningJob.props.stats,

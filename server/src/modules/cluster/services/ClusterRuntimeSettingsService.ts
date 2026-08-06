@@ -7,7 +7,7 @@ import {
     toTeamClusterViewFromEntity,
     type TeamClusterView
 } from '@modules/cluster/services/TeamClusterView';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import type { SystemStatus } from '@modules/system/services/SystemMetrics';
 import {
     ChannelCommands,

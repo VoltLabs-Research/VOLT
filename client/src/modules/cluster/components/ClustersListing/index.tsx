@@ -234,7 +234,7 @@ const ClustersListing = () => {
             onClick: () => handleRoleChange(row.teamCluster)
         },
         {
-            label: 'Transfer storage + Mongo state',
+            label: 'Transfer storage + listing state',
             icon: ArrowRightLeft,
             disabled: row.teamCluster.status !== TeamClusterStatus.Connected || !row.teamCluster.effectiveCapabilities.servesStorageReads,
             onClick: () => handleTransferData(row.teamCluster)

@@ -19,7 +19,7 @@ import {
     WorkflowValidatorService
 } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import type { PaginatedResult } from '@shared/domain/port/persistence';

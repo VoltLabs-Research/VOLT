@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';

@@ -46,7 +46,7 @@ import type {
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import type { PaginatedResult } from '@shared/domain/port/persistence';

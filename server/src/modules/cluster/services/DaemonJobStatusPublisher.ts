@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import type { AnalysisStatusChangedEventPayload } from '@shared/contracts/events';
 import type { Analysis, JobStatus } from '@shared/contracts/types';
 import logger from '@shared/infrastructure/logger';

@@ -63,8 +63,7 @@ interface GeneratedServiceCredentials {
 
 interface PlaintextTeamClusterServices {
     minio: GeneratedServiceCredentials;
-    redis: GeneratedServiceCredentials;
-    mongodb: GeneratedServiceCredentials;
+    postgres: GeneratedServiceCredentials;
     daemon: {
         password: string;
     };
@@ -89,18 +88,14 @@ export const encryptTeamClusterServices = async (
     const [
         encryptedMinioUsername,
         encryptedMinioPassword,
-        encryptedRedisUsername,
-        encryptedRedisPassword,
-        encryptedMongodbUsername,
-        encryptedMongodbPassword,
+        encryptedPostgresUsername,
+        encryptedPostgresPassword,
         encryptedDaemonPassword
     ] = await Promise.all([
         encrypt(services.minio.username),
         encrypt(services.minio.password),
-        encrypt(services.redis.username),
-        encrypt(services.redis.password),
-        encrypt(services.mongodb.username),
-        encrypt(services.mongodb.password),
+        encrypt(services.postgres.username),
+        encrypt(services.postgres.password),
         encrypt(services.daemon.password)
     ]);
 
@@ -110,15 +105,10 @@ export const encryptTeamClusterServices = async (
             username: encryptedMinioUsername,
             password: encryptedMinioPassword
         },
-        redis: {
+        postgres: {
             port: null,
-            username: encryptedRedisUsername,
-            password: encryptedRedisPassword
-        },
-        mongodb: {
-            port: null,
-            username: encryptedMongodbUsername,
-            password: encryptedMongodbPassword
+            username: encryptedPostgresUsername,
+            password: encryptedPostgresPassword
         },
         daemon: {
             port: null,

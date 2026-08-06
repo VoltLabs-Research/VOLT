@@ -7,7 +7,7 @@ import {
     requireWhiteboardStorageClusterId
 } from '@modules/whiteboards/contracts/whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';

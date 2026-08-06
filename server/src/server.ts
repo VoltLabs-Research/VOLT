@@ -6,12 +6,12 @@ import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import { loadAllModules } from './core/bootstrap/load-modules';
 import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
+import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@shared/infrastructure/persistence/runtime-state-maintenance';
 import { isModuleEnabled } from './core/bootstrap/module-state';
 import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
 import { initializeMinio } from './core/config/minio';
-import { initializeRedis } from './core/config/redis';
 import scriptingJupyterProxyService from './modules/scripting/services/ScriptingJupyterProxyService';
 import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
 import { socketModules } from './modules/socket/socket/socket-modules';
@@ -96,6 +96,7 @@ const shutdown = async () => {
             activeContainerPortRelayLifecycle = null;
         }
 
+        stopRuntimeStateMaintenance();
         shutdownTasks.push(disconnectDatabase());
 
         const shutdownResults = await Promise.allSettled(shutdownTasks);
@@ -171,18 +172,12 @@ const startServer = async () => {
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
         try {
-            const [redisResult, postgresResult, minioResult] = await Promise.allSettled([
-                initializeRedis(),
+            const [postgresResult, minioResult] = await Promise.allSettled([
                 connectDatabase(),
                 initializeMinio()
             ]);
 
             const failures: string[] = [];
-
-            if (redisResult.status === 'rejected') {
-                logger.error(`@server: Redis init failed: ${redisResult.reason}`);
-                failures.push('Redis');
-            }
 
             if (postgresResult.status === 'rejected') {
                 logger.error(`@server: Postgres init failed: ${postgresResult.reason}`);
@@ -201,6 +196,8 @@ const startServer = async () => {
 
             mountEventGroups();
             await flushPendingSubscriptions();
+
+            startRuntimeStateMaintenance();
 
             activeSocketGateway = socketGateway;
 

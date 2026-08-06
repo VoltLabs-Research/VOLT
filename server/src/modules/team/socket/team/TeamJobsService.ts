@@ -1,10 +1,10 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import {
     JOB_STATUS_KEY_PREFIX,
     projectedTeamJobsKey,
     projectedTeamJobsRevisionKey
-} from '@modules/jobs/services/JobRedisKeys';
+} from '@modules/jobs/services/JobRuntimeKeys';
 import type { TeamJobSnapshot, TeamJobStatus } from '@shared/contracts/types/TeamJobSnapshot';
 import logger from '@shared/infrastructure/logger';
 
@@ -91,12 +91,13 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const jobIds = await redisClient.smembers(projectedTeamJobsKey(teamId));
+        const store = getKeyValueStore();
+        const jobIds = await store.setMembers(projectedTeamJobsKey(teamId));
         if (jobIds.length === 0) {
             return [];
         }
 
-        const records = await redisClient.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
+        const records = await store.getMany(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
         const jobs: TeamJobSummary[] = [];
         const staleJobIds: string[] = [];
 
@@ -115,7 +116,9 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            redisClient.srem(projectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
+            /* Pruning is opportunistic: the caller's jobs are already assembled, so a
+               failed cleanup costs a repeated miss rather than a wrong answer. */
+            store.setRemove(projectedTeamJobsKey(teamId), staleJobIds).catch(() => {
                 logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
         }
@@ -257,7 +260,7 @@ export default class TeamJobsService {
     }
 
     private async getProjectedTeamJobsRevision(teamId: string): Promise<number> {
-        const revision = Number(await redisClient.get(projectedTeamJobsRevisionKey(teamId)));
+        const revision = Number(await getKeyValueStore().get(projectedTeamJobsRevisionKey(teamId)));
 
         return Number.isFinite(revision) && revision >= 0 ? revision : 0;
     }

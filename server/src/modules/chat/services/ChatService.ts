@@ -1,6 +1,6 @@
 import { In } from 'typeorm';
 import type { DeepPartial } from 'typeorm';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Chat from '@modules/chat/models/Chat';
 import ChatMessage from '@modules/chat/models/ChatMessage';

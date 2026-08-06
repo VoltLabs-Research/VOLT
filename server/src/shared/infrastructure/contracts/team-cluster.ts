@@ -48,9 +48,9 @@ export const ChannelCommands = Object.freeze({
     PluginRegistryInstall: 'plugin.registry.install',
     PluginListingsList: 'plugin.listings.list',
     PluginSubListingsList: 'plugin.sub-listings.list',
-    PluginTransferMongoExport: 'plugin.transfer.mongo.export',
-    PluginTransferMongoImport: 'plugin.transfer.mongo.import',
-    PluginTransferMongoPurge: 'plugin.transfer.mongo.purge',
+    PluginTransferListingsExport: 'plugin.transfer.listings.export',
+    PluginTransferListingsImport: 'plugin.transfer.listings.import',
+    PluginTransferListingsPurge: 'plugin.transfer.listings.purge',
 
     DebugStart: 'debug.start',
     DebugStep: 'debug.step',
@@ -114,20 +114,20 @@ export interface TeamClusterDaemonRoleApplyResult {
     effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
 }
 
-export type TeamClusterDaemonPluginMongoDocumentType = 'listing' | 'sub-listing';
+export type PluginListingTransferKind = 'listing' | 'sub-listing';
 
-export interface TeamClusterDaemonPluginMongoExportResult {
+export interface PluginListingTransferExportResult {
     rows: Record<string, unknown>[];
     total: number;
     hasMore: boolean;
     nextSkip: number;
 }
 
-export interface TeamClusterDaemonPluginMongoImportResult {
+export interface PluginListingTransferImportResult {
     importedRows: number;
 }
 
-export interface TeamClusterDaemonPluginMongoPurgeResult {
+export interface PluginListingTransferPurgeResult {
     deletedRows: number;
 }
 

@@ -51,8 +51,7 @@ export const toSystemMetricsFromHeartbeat = (
     },
     responseTime: metrics.cloudLatencyMs ?? 0,
     responseTimes: {
-        mongodb: 0,
-        redis: 0,
+        postgres: 0,
         minio: 0,
         self: metrics.cloudLatencyMs ?? 0,
         average: metrics.cloudLatencyMs ?? 0
@@ -66,7 +65,7 @@ export const toSystemMetricsFromHeartbeat = (
     },
     status: resolveSystemStatus(metrics),
     uptime: metrics.uptimeSeconds,
-    mongodb: {
+    postgres: {
         connections: 0,
         queries: 0,
         latency: 0

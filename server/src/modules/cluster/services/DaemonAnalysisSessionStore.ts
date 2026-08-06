@@ -1,52 +1,7 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import type { JobStatus } from '@shared/contracts/types';
 
-const SESSION_TTL_SECONDS = 86400;
-
-const DECREMENT_DRAIN_SCRIPT = `
-local ttl = tonumber(ARGV[1])
-if redis.call('EXISTS', KEYS[1]) == 0 then
-    return {0, 0}
-end
-redis.call('EXPIRE', KEYS[1], ttl)
-
-local remaining = redis.call('DECR', KEYS[1])
-if remaining <= 0 then
-    local failedJobs = tonumber(redis.call('GET', KEYS[2]) or '0')
-    redis.call('DEL', KEYS[1])
-    redis.call('DEL', KEYS[2])
-    return {1, failedJobs}
-end
-return {0, 0}
-`;
-
-const INITIALIZE_SESSION_SCRIPT = `
-local remainingKey = KEYS[1]
-local failedKey = KEYS[2]
-local terminalReceiptSetKey = KEYS[3]
-local totalJobs = tonumber(ARGV[1])
-local ttlSeconds = tonumber(ARGV[2])
-
-local terminalCount = redis.call('SCARD', terminalReceiptSetKey)
-local failedCount = tonumber(redis.call('GET', failedKey) or '0')
-local remaining = totalJobs - terminalCount
-if remaining < 0 then remaining = 0 end
-
-if remaining > 0 then
-    redis.call('SET', remainingKey, tostring(remaining), 'EX', ttlSeconds)
-else
-    redis.call('DEL', remainingKey)
-end
-
-if redis.call('EXISTS', failedKey) == 1 then
-    redis.call('EXPIRE', failedKey, ttlSeconds)
-end
-if redis.call('EXISTS', terminalReceiptSetKey) == 1 then
-    redis.call('EXPIRE', terminalReceiptSetKey, ttlSeconds)
-end
-
-return { remaining, failedCount }
-`;
+const SESSION_TTL_MS = 86_400_000;
 
 export interface DaemonSessionKeys {
     remaining: string;
@@ -76,13 +31,16 @@ const sessionKeys = (namespace: string, id: string): DaemonSessionKeys => {
 };
 
 /**
- * Redis bookkeeping for a daemon job session: how many jobs are still
- * outstanding, how many of them failed, and which job receipts already reached
- * a terminal state so that duplicate daemon reports stay idempotent.
+ * Bookkeeping for a daemon job session: how many jobs are still outstanding, how
+ * many of them failed, and which job receipts already reached a terminal state so
+ * that duplicate daemon reports stay idempotent.
+ *
+ * `initialize` and `decrementAndCheckDrain` each decide something from a value
+ * they then overwrite, so both run under a lock named for the session. Without it
+ * two daemons reporting the last two jobs of an analysis at the same moment can
+ * both observe the counter reach zero and both announce the analysis complete.
  */
 class DaemonAnalysisSessionStore {
-    private readonly redis = redisClient;
-
     analysisKeys(analysisId: string): DaemonSessionKeys {
         return sessionKeys('daemon-analysis', analysisId);
     }
@@ -91,60 +49,97 @@ class DaemonAnalysisSessionStore {
         return sessionKeys('daemon-glb', trajectoryId);
     }
 
+    /**
+     * Sets the outstanding count to the jobs that have not already reported.
+     *
+     * Receipts are counted rather than the caller's total being trusted, so a
+     * session that is re-initialised after a restart does not wait again on jobs
+     * that finished before it.
+     */
     async initialize(keys: DaemonSessionKeys, totalJobs: number): Promise<DaemonSessionInitialization> {
-        const [remainingJobs, failedJobs] = await this.redis.eval(
-            INITIALIZE_SESSION_SCRIPT,
-            3,
-            keys.remaining,
-            keys.failed,
-            keys.terminalSet,
-            totalJobs.toString(),
-            SESSION_TTL_SECONDS.toString()
-        ) as [number, number];
+        return getKeyValueStore().withLock(keys.remaining, async (store) => {
+            const terminalCount = await store.setCount(keys.terminalSet);
+            const failedJobs = Number(await store.get(keys.failed) ?? 0);
+            const remainingJobs = Math.max(0, totalJobs - terminalCount);
 
-        return {
-            remainingJobs,
-            failedJobs
-        };
+            if (remainingJobs > 0) {
+                await store.set(keys.remaining, String(remainingJobs), { ttlMs: SESSION_TTL_MS });
+            } else {
+                await store.delete([keys.remaining]);
+            }
+
+            /*
+             * Deadlines are refreshed but never created here: writing them would
+             * resurrect a session whose receipts have already aged out.
+             */
+            await store.expire(keys.failed, SESSION_TTL_MS);
+            await store.setExpire(keys.terminalSet, SESSION_TTL_MS);
+
+            return {
+                remainingJobs,
+                failedJobs
+            };
+        });
     }
 
+    /** False when this job already reported, which is what keeps reports idempotent. */
     async tryMarkTerminalReceipt(keys: DaemonSessionKeys, jobId: string, status: JobStatus): Promise<boolean> {
         const receiptKey = keys.terminal(jobId);
-        const result = await this.redis.set(receiptKey, status, 'EX', SESSION_TTL_SECONDS, 'NX');
-        if (result !== 'OK') {
+        const store = getKeyValueStore();
+
+        const claimed = await store.set(receiptKey, status, {
+            ttlMs: SESSION_TTL_MS,
+            ifNotExists: true
+        });
+
+        if (!claimed) {
             return false;
         }
 
-        const pipeline = this.redis.pipeline();
-        pipeline.sadd(keys.terminalSet, receiptKey);
-        pipeline.expire(keys.terminalSet, SESSION_TTL_SECONDS);
-        await pipeline.exec();
-
+        await store.setAdd(keys.terminalSet, [receiptKey], { ttlMs: SESSION_TTL_MS });
         return true;
     }
 
-    async hasTerminalReceipt(keys: DaemonSessionKeys, jobId: string): Promise<boolean> {
-        return (await this.redis.exists(keys.terminal(jobId))) === 1;
+    hasTerminalReceipt(keys: DaemonSessionKeys, jobId: string): Promise<boolean> {
+        return getKeyValueStore().exists(keys.terminal(jobId));
     }
 
     async recordFailure(keys: DaemonSessionKeys): Promise<void> {
-        await this.redis.incr(keys.failed);
-        await this.redis.expire(keys.failed, SESSION_TTL_SECONDS);
+        await getKeyValueStore().adjust(keys.failed, 1, { ttlMs: SESSION_TTL_MS });
     }
 
+    /**
+     * Counts one job off the session and reports whether that was the last one.
+     *
+     * A missing counter means the session already drained, so a late or duplicate
+     * report is absorbed instead of driving the count negative and announcing a
+     * second completion.
+     */
     async decrementAndCheckDrain(keys: DaemonSessionKeys): Promise<DaemonSessionDrainResult> {
-        const [drained, failedJobs] = await this.redis.eval(
-            DECREMENT_DRAIN_SCRIPT,
-            2,
-            keys.remaining,
-            keys.failed,
-            SESSION_TTL_SECONDS
-        ) as [number, number];
+        return getKeyValueStore().withLock(keys.remaining, async (store) => {
+            if (!await store.exists(keys.remaining)) {
+                return {
+                    drained: false,
+                    failedJobs: 0
+                };
+            }
 
-        return {
-            drained: drained === 1,
-            failedJobs
-        };
+            const remaining = await store.adjust(keys.remaining, -1, { ttlMs: SESSION_TTL_MS });
+            if (remaining > 0) {
+                return {
+                    drained: false,
+                    failedJobs: 0
+                };
+            }
+
+            const failedJobs = Number(await store.get(keys.failed) ?? 0);
+            await store.delete([keys.remaining, keys.failed]);
+
+            return {
+                drained: true,
+                failedJobs
+            };
+        });
     }
 }
 

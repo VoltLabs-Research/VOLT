@@ -29,7 +29,7 @@ import {
 } from '@modules/trajectory/services/trajectory/trajectory-upload-plan';
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 

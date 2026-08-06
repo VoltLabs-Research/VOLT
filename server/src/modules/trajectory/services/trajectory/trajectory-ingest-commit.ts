@@ -6,7 +6,7 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAna
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { insertSimulationCells } from '@modules/simulation-cell/services/SimulationCellService';
 
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 

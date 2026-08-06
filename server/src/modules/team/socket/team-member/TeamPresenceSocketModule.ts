@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import User from '@modules/auth/models/User';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';

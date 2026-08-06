@@ -73,16 +73,10 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                 password: credentials.minio.password
             },
             {
-                label: 'Redis',
-                port: credentials.redis.port,
-                username: credentials.redis.username,
-                password: credentials.redis.password
-            },
-            {
-                label: 'MongoDB',
-                port: credentials.mongodb.port,
-                username: credentials.mongodb.username,
-                password: credentials.mongodb.password
+                label: 'PostgreSQL',
+                port: credentials.postgres.port,
+                username: credentials.postgres.username,
+                password: credentials.postgres.password
             },
             {
                 label: 'Daemon',

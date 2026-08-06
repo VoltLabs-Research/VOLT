@@ -1,4 +1,4 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
@@ -8,49 +8,9 @@ import {
     projectedTeamJobsKey,
     projectedTeamJobsRevisionKey,
     projectedAnalysisJobsKey
-} from '@modules/jobs/services/JobRedisKeys';
+} from '@modules/jobs/services/JobRuntimeKeys';
 
-const STATUS_TTL_SECONDS = 86400;
-const MISSING_SNAPSHOT_SENTINEL = '__missing__';
-const TOMBSTONED_SENTINEL = '__tombstoned__';
-const MAX_UPSERT_RETRIES = 8;
-
-const UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT = `
-local expected = ARGV[1]
-local nextSnapshotRaw = ARGV[2]
-local ttl = tonumber(ARGV[3])
-local linkAnalysis = ARGV[4] == '1'
-
-if redis.call('EXISTS', KEYS[5]) == 1 then
-    return {-1, '${TOMBSTONED_SENTINEL}'}
-end
-
-local current = redis.call('GET', KEYS[1])
-
-if expected == '${MISSING_SNAPSHOT_SENTINEL}' then
-    if current then
-        return {0, current}
-    end
-elseif current ~= expected then
-    return {0, current or ''}
-end
-
-local revision = redis.call('INCR', KEYS[4])
-local snapshot = cjson.decode(nextSnapshotRaw)
-snapshot.revision = revision
-local snapshotJson = cjson.encode(snapshot)
-
-redis.call('SET', KEYS[1], snapshotJson, 'EX', ttl)
-redis.call('SADD', KEYS[2], snapshot.jobId)
-redis.call('EXPIRE', KEYS[2], ttl)
-
-if linkAnalysis then
-    redis.call('SADD', KEYS[3], snapshot.jobId)
-    redis.call('EXPIRE', KEYS[3], ttl)
-end
-
-return {1, snapshotJson}
-`;
+const STATUS_TTL_MS = 86_400_000;
 
 const isTerminalStatus = (status: TeamJobSnapshot['status']): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
@@ -95,6 +55,15 @@ const resolveProjectedStatus = (
     };
 };
 
+/**
+ * Maintains the projected view of a team's jobs that the UI reads.
+ *
+ * Merging a status change is read-decide-write, and the decision depends on the
+ * value being written over, so the whole sequence is held under a lock named for
+ * the job. The previous implementation could not lock and so compared-and-swapped
+ * in a retry loop instead; holding the lock removes both the loop and the
+ * possibility of exhausting it under contention.
+ */
 class TeamJobProjectionService {
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
@@ -116,14 +85,21 @@ class TeamJobProjectionService {
             ...extra
         } = payload;
         const jobStatusKey = buildJobStatusKey(jobId);
-        let previousRawSnapshot = await redisClient.get(jobStatusKey);
-        let previousSnapshot = this.parseSnapshot(previousRawSnapshot);
 
-        for (let attempt = 0; attempt < MAX_UPSERT_RETRIES; attempt += 1) {
+        return getKeyValueStore().withLock(jobStatusKey, async (store) => {
+            /* A tombstoned job was deleted deliberately, so a late report must not
+               resurrect it into the projection. */
+            if (await store.exists(jobTombstoneKey(jobId))) {
+                return null;
+            }
+
+            const previousSnapshot = this.parseSnapshot(await store.get(jobStatusKey));
             const resolvedStatus = resolveProjectedStatus(previousSnapshot?.status, status);
             const timestamp = resolvedStatus.shouldAdvanceTimestamps
                 ? new Date().toISOString()
                 : (previousSnapshot?.timestamp ?? previousSnapshot?.updatedAt ?? previousSnapshot?.createdAt ?? new Date().toISOString());
+
+            const revision = await store.adjust(projectedTeamJobsRevisionKey(teamId), 1);
 
             const nextSnapshot: TeamJobSnapshot = {
                 ...previousSnapshot,
@@ -133,6 +109,7 @@ class TeamJobProjectionService {
                 queueType,
                 status: resolvedStatus.status,
                 timestamp,
+                revision,
                 updatedAt: resolvedStatus.shouldAdvanceTimestamps
                     ? timestamp
                     : (previousSnapshot?.updatedAt ?? timestamp),
@@ -149,40 +126,16 @@ class TeamJobProjectionService {
                 backingSource: backingSource ?? previousSnapshot?.backingSource ?? 'local',
                 cleanupScope: cleanupScope ?? previousSnapshot?.cleanupScope
             };
-            const nextSnapshotRaw = JSON.stringify(nextSnapshot);
 
-            const result = await redisClient.eval(
-                UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT,
-                5,
-                jobStatusKey,
-                projectedTeamJobsKey(teamId),
-                projectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
-                projectedTeamJobsRevisionKey(teamId),
-                jobTombstoneKey(jobId),
-                previousRawSnapshot ?? MISSING_SNAPSHOT_SENTINEL,
-                nextSnapshotRaw,
-                STATUS_TTL_SECONDS,
-                nextSnapshot.analysisId ? '1' : '0'
-            ) as [number, string] | null;
+            await store.set(jobStatusKey, JSON.stringify(nextSnapshot), { ttlMs: STATUS_TTL_MS });
+            await store.setAdd(projectedTeamJobsKey(teamId), [jobId], { ttlMs: STATUS_TTL_MS });
 
-            if (result?.[0] === -1) {
-                return null;
+            if (nextSnapshot.analysisId) {
+                await store.setAdd(projectedAnalysisJobsKey(nextSnapshot.analysisId), [jobId], { ttlMs: STATUS_TTL_MS });
             }
 
-            if (result?.[0] === 1) {
-                const persistedSnapshot = this.parseSnapshot(result[1]);
-                if (!persistedSnapshot) {
-                    throw new Error(`Failed to parse persisted projected job snapshot ${jobId}`);
-                }
-
-                return persistedSnapshot;
-            }
-
-            previousRawSnapshot = result?.[1] || null;
-            previousSnapshot = this.parseSnapshot(previousRawSnapshot);
-        }
-
-        throw new Error(`Failed to atomically upsert projected team job snapshot ${jobId}`);
+            return nextSnapshot;
+        });
     }
 
     private parseSnapshot(record: string | null): TeamJobSnapshot | null {

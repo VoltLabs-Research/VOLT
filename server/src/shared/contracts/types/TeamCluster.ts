@@ -18,8 +18,7 @@ export interface TeamClusterDaemonServiceProps {
 
 export interface TeamClusterServicesProps {
     minio: TeamClusterServiceProps;
-    redis: TeamClusterServiceProps;
-    mongodb: TeamClusterServiceProps;
+    postgres: TeamClusterServiceProps;
     daemon: TeamClusterDaemonServiceProps;
 }
 

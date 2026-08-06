@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';

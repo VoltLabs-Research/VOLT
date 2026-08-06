@@ -63,13 +63,9 @@ class ClusterDemoService {
                     username: credentials.minioUsername,
                     password: credentials.minioPassword
                 },
-                redis: {
-                    username: credentials.redisUsername,
-                    password: credentials.redisPassword
-                },
-                mongodb: {
-                    username: credentials.mongodbUsername,
-                    password: credentials.mongodbPassword
+                postgres: {
+                    username: credentials.postgresUsername,
+                    password: credentials.postgresPassword
                 },
                 daemon: { password: credentials.daemonPassword }
             }),
@@ -193,17 +189,14 @@ class ClusterDemoService {
 
     #buildPlaintextCredentials(): DemoClusterPlaintextCredentials {
         const minio = createServiceCredentials('minio');
-        const redis = createServiceCredentials('redis');
-        const mongodb = createServiceCredentials('mongodb');
+        const postgres = createServiceCredentials('postgres');
 
         return {
             enrollmentToken: createEnrollmentToken(),
             minioUsername: minio.username,
             minioPassword: minio.password,
-            redisUsername: redis.username,
-            redisPassword: redis.password,
-            mongodbUsername: mongodb.username,
-            mongodbPassword: mongodb.password,
+            postgresUsername: postgres.username,
+            postgresPassword: postgres.password,
             daemonPassword: createDaemonPassword()
         };
     }

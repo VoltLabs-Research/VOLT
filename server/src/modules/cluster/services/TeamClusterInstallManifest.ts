@@ -1,7 +1,6 @@
 export interface TeamClusterInstallManifestPortsView {
     minio: number;
-    redis: number;
-    mongodb: number;
+    postgres: number;
     daemon: number;
 }
 
@@ -13,8 +12,7 @@ export interface TeamClusterInstallManifestFileView {
 
 export interface TeamClusterInstallManifestImagesView {
     minio: string;
-    redis: string;
-    mongodb: string;
+    postgres: string;
     daemon: string;
 }
 

@@ -1,5 +1,8 @@
 import type { DatabaseEntities } from '@core/config/database';
 import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
+import DomainEventSpoolEntry from '@shared/infrastructure/persistence/models/DomainEventSpoolEntry';
+import KeyValueEntry from '@shared/infrastructure/persistence/models/KeyValueEntry';
+import KeyValueSetMember from '@shared/infrastructure/persistence/models/KeyValueSetMember';
 import AIConversation from '@modules/ai/models/AIConversation';
 import AIMessage from '@modules/ai/models/AIMessage';
 import Analysis from '@modules/analysis/models/Analysis';
@@ -17,6 +20,7 @@ import Plugin from '@modules/plugin/models/Plugin';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import Session from '@modules/session/models/Session';
 import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
+import ClusterMetricSample from '@modules/system/models/ClusterMetricSample';
 import DeploymentSettings from '@modules/system/models/DeploymentSettings';
 import SecretKey from '@modules/team/models/SecretKey';
 import SecretKeyUsageLog from '@modules/team/models/SecretKeyUsageLog';
@@ -64,7 +68,11 @@ const ENTITIES: readonly Function[] = [
     AnalysisProvenance,
     Container,
     Whiteboard,
-    ScriptingNotebook
+    ScriptingNotebook,
+    KeyValueEntry,
+    KeyValueSetMember,
+    DomainEventSpoolEntry,
+    ClusterMetricSample
 ];
 
 export const getEntities = (): DatabaseEntities => [...ENTITIES];

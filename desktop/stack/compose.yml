@@ -1,16 +1,5 @@
 name: volt
 services:
-  volt-mongodb:
-    image: mongo:7.0
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-volt}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-volt}
-    healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin | grep 1"]
-      interval: 10s
-      retries: 20
-    volumes: [volt-mongodb-data:/data/db]
 
   volt-postgres:
     image: postgres:17-alpine
@@ -24,16 +13,6 @@ services:
       interval: 10s
       retries: 20
     volumes: [volt-postgres-data:/var/lib/postgresql/data]
-
-  volt-redis:
-    image: redis:7.4.2-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASS:-voltredis}"]
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASS:-voltredis} ping | grep PONG"]
-      interval: 10s
-      retries: 20
-    volumes: [volt-redis-data:/data]
 
   volt-minio:
     image: minio/minio:RELEASE.2025-02-28T09-55-16Z
@@ -62,8 +41,6 @@ services:
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
       CLIENT_HOST: ${CLIENT_HOST:-http://localhost:5273}
       SERVER_ENDPOINT: ${SERVER_ENDPOINT:-http://localhost:8100}
-      REDIS_HOST: volt-redis
-      REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
       MINIO_ENDPOINT: volt-minio
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9100}
       MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
@@ -75,7 +52,6 @@ services:
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
     depends_on:
       volt-postgres: { condition: service_healthy }
-      volt-redis:    { condition: service_healthy }
       volt-minio:    { condition: service_started }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -112,11 +88,7 @@ services:
       TEAM_CLUSTER_HEALTHCHECK_PATH: /api/team-clusters/${TEAM_CLUSTER_ID}/healthcheck
       TEAM_CLUSTER_DAEMON_PASSWORD: ${DAEMON_PASS:-daemon-local-pass}
       VOLT_CLOUD_URL: http://volt-server:8000
-      MONGODB_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017/volt-cluster?authSource=admin
-      REDIS_HOST: volt-redis
-      REDIS_PORT: 6379
-      REDIS_DB: 1
-      REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
+      DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/volt-cluster
       MINIO_ENDPOINT: http://volt-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
       MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
@@ -126,10 +98,9 @@ services:
       # reframed onto the daemon's socket.io control connection to reach the server.
       OBJECT_GATEWAY_PUBLIC_BASE_URL: http://cluster-daemon:${DAEMON_PORT:-18080}
     depends_on:
-      volt-mongodb: { condition: service_healthy }
-      volt-redis:   { condition: service_healthy }
-      volt-minio:   { condition: service_started }
-      volt-server:  { condition: service_healthy }
+      volt-postgres: { condition: service_healthy }
+      volt-minio:    { condition: service_started }
+      volt-server:   { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CLUSTER_DAEMON_SOURCE_DIR}:/app
@@ -137,12 +108,8 @@ services:
     ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]
 
 volumes:
-  volt-mongodb-data:
   volt-postgres-data:
-  volt-redis-data:
   volt-minio-data:
-  cluster-mongodb-data:
-  cluster-redis-data:
   cluster-minio-data:
   volt-server-node-modules:
   cluster-daemon-node-modules:

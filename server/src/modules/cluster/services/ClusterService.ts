@@ -94,8 +94,7 @@ export default class ClusterService {
             enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
             services: await encryptTeamClusterServices({
                 minio: createServiceCredentials('minio'),
-                redis: createServiceCredentials('redis'),
-                mongodb: createServiceCredentials('mongodb'),
+                postgres: createServiceCredentials('postgres'),
                 daemon: { password: createDaemonPassword() }
             }),
             isDemo: false,
@@ -285,15 +284,10 @@ export default class ClusterService {
                     username: decrypted.minioUsername,
                     password: decrypted.minioPassword
                 },
-                redis: {
-                    port: services.redis.port,
-                    username: decrypted.redisUsername,
-                    password: decrypted.redisPassword
-                },
-                mongodb: {
-                    port: services.mongodb.port,
-                    username: decrypted.mongodbUsername,
-                    password: decrypted.mongodbPassword
+                postgres: {
+                    port: services.postgres.port,
+                    username: decrypted.postgresUsername,
+                    password: decrypted.postgresPassword
                 },
                 daemon: {
                     port: services.daemon.port,

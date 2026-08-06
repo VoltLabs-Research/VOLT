@@ -29,8 +29,7 @@ export interface SystemMetrics {
     };
     responseTime: number;
     responseTimes: {
-        mongodb: number;
-        redis: number;
+        postgres: number;
         minio: number;
         self: number;
         average: number;
@@ -44,7 +43,7 @@ export interface SystemMetrics {
     };
     status: SystemStatus;
     uptime: number;
-    mongodb: {
+    postgres: {
         connections: number;
         queries: number;
         latency: number;

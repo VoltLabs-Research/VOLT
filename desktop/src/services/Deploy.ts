@@ -1,6 +1,6 @@
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
-import { composeDown, composePull, composeUp, type ComposeOptions } from '@/services/Stack';
+import { composeDown, composePull, composeUp, containerEnvValue, runningServiceId, type ComposeOptions } from '@/services/Stack';
 import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
 import { run } from '@/services/ProcessRunner';
 import { ensureDockerReady, PreflightError } from '@/services/DockerPreflight';
@@ -100,27 +100,12 @@ export default class Deploy{
 
         const env = await this.props.appConfig.getStackEnv();
         const serverOrigin = `http://localhost:${env.SERVER_PORT ?? '8100'}`;
+        const apiProbe = `${serverOrigin}${PROBE_PATH}`;
         const webProbe = webProbeUrl(env);
 
         bus.emit('deploy:phases', { phases: START_PHASES });
 
-        /*
-         * Fast path for an already-running stack — but only when the workspace was
-         * actually provisioned. A web app that answers while `bootstrap` is missing
-         * is a half-finished deploy: the shell would have no auth token, so it would
-         * open the client unauthenticated and the user would land on a login or
-         * "connect to a server" screen. Treating that as "done" is what made a failed
-         * bootstrap look like a successful launch, so the stack is allowed to skip
-         * ahead only if both halves are in place.
-         */
-        const provisioned = Boolean((await this.props.appConfig.getBootstrap())?.authToken);
-        if(provisioned && await isUp(webProbe)){
-            for(const phase of START_PHASES) bus.emit('deploy:phase', {
-                id: phase.id,
-                status: 'done'
-            });
-            return;
-        }
+        if(await this.#reuseRunningStack(apiProbe, webProbe, serverOrigin)) return;
 
         const { env: sources, changed, commit } = await this.#phase('sources', () => this.props.sources.resolve());
         const baseEnv = await this.#composeEnv(sources);
@@ -152,6 +137,83 @@ export default class Deploy{
         
         
         await commit();
+    }
+
+    /**
+     * Finishes the launch against a stack that is already serving, or declines.
+     *
+     * The gate used to be the recorded auth token, which conflated two questions:
+     * whether the stack is running, and whether this shell holds credentials for
+     * it. A config with no token then forced a full six-phase deploy over a stack
+     * that was already healthy — resolving sources over the network and waiting on
+     * services that had answered before the wait began. What the user sees is
+     * "Deploying VOLT" every launch of a machine that is ready.
+     *
+     * So the gate is now what can be observed. Provisioning is what mints the
+     * token, and against a running server it is cheap and idempotent — it signs in,
+     * reusing the existing user, team and cluster — so it always runs. Only the
+     * expensive phases are skipped.
+     *
+     * Declining is deliberately conservative: anything unaccounted for resolves to
+     * `false` and the caller deploys normally, so a partly-running stack is
+     * reconciled rather than declared ready.
+     */
+    async #reuseRunningStack(apiProbe: string, webProbe: string, serverOrigin: string): Promise<boolean>{
+        if(!await isUp(apiProbe)) return false;
+        if(!await isUp(webProbe)) return false;
+
+        /* `resolveExisting` reads what is already on disk; `resolve` would reach for
+           the network, which is one of the costs this path exists to avoid. */
+        let running: ComposeOptions;
+        try{
+            running = await this.#compose(await this.#composeEnv(await this.props.sources.resolveExisting()));
+        }catch{
+            return false;
+        }
+
+        const wantsCluster = this.props.withCluster !== false;
+        const daemonId = wantsCluster
+            ? await runningServiceId(running, 'cluster-daemon', ['enrolled'])
+            : null;
+        if(wantsCluster && !daemonId) return false;
+
+        for(const id of ['sources', 'build', 'server']) bus.emit('deploy:phase', {
+            id,
+            status: 'done'
+        });
+
+        const state = await this.#phase('bootstrap', () =>
+            new Bootstrap({
+                appConfig: this.props.appConfig,
+                serverOrigin,
+                account: this.props.account
+            }).ensure());
+
+        /*
+         * The running daemon is left alone only if it is attached to the cluster
+         * provisioning settled on. A mismatch means it holds stale credentials,
+         * which no amount of the stack being "up" makes acceptable.
+         *
+         * Declining here re-runs provisioning on the full path. That is a second
+         * sign-in against a server already answering, and it buys the full path's
+         * image-overlay resolution — which is what decides whether the daemon is
+         * recreated from a published image or built, and is not worth duplicating
+         * for a case this rare.
+         */
+        if(wantsCluster && await containerEnvValue(running, daemonId!, 'TEAM_CLUSTER_ID') !== state.teamClusterId){
+            bus.emit('deploy:log', {
+                stream: 'stdout',
+                line: '[stack] running daemon is attached to another cluster; reconciling'
+            });
+            return false;
+        }
+
+        for(const id of ['daemon', 'web']) bus.emit('deploy:phase', {
+            id,
+            status: 'done'
+        });
+
+        return true;
     }
 
     stop(){

@@ -1,4 +1,4 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import {
     analysisFailedKey,
@@ -15,26 +15,26 @@ import {
     projectedAnalysisJobsKey,
     projectedTeamJobsKey,
     projectedTeamJobsRevisionKey
-} from '@modules/jobs/services/JobRedisKeys';
+} from '@modules/jobs/services/JobRuntimeKeys';
 
-/* Redis-side mutations that drop projected job snapshots and purge the runtime
-   state left behind by deleted trajectories and analyses. */
+/* Drops projected job snapshots and purges the runtime state left behind by
+   deleted trajectories and analyses. */
 
-const TOMBSTONE_TTL_SECONDS = 600;
+const TOMBSTONE_TTL_MS = 600_000;
 
 export interface DroppedProjectedJobs {
     deletedJobs: number;
     deletedAnalyses: number;
 }
 
-const wasKeyDeleted = (result: [Error | null, unknown] | undefined): boolean => {
-    if (!result || result[0]) {
-        return false;
-    }
-
-    return typeof result[1] === 'number' && result[1] > 0;
-};
-
+/**
+ * Forgets the given jobs' projected state.
+ *
+ * The count reflects the jobs this call actually removed, not the jobs it was
+ * asked about: a concurrent drop of the same team must not have its work counted
+ * twice. That is read straight from which status keys the delete claimed, which
+ * is why they are removed in one statement rather than one per job.
+ */
 export const dropProjectedJobs = async (
     teamId: string,
     jobs: TeamJobSummary[],
@@ -47,94 +47,77 @@ export const dropProjectedJobs = async (
         };
     }
 
-    const pipeline = redisClient.pipeline();
-    const statusDeletionIndexes: number[] = [];
-    let queued = 0;
+    return getKeyValueStore().transaction(async (store) => {
+        const claimed = new Set(await store.deleteReturningPresent(jobs.map((job) => jobStatusKey(job.jobId))));
 
-    for (const job of jobs) {
-        statusDeletionIndexes.push(queued);
-        pipeline.del(jobStatusKey(job.jobId));
-        pipeline.srem(projectedTeamJobsKey(teamId), job.jobId);
-        queued += 2;
+        await store.setRemove(projectedTeamJobsKey(teamId), jobs.map((job) => job.jobId));
 
+        const tombstoneKeys = jobs.map((job) => jobTombstoneKey(job.jobId));
         if (preserveJobTombstones) {
-            pipeline.set(jobTombstoneKey(job.jobId), '1', 'EX', TOMBSTONE_TTL_SECONDS);
+            /*
+             * A tombstone tells a late daemon report that this job was removed on
+             * purpose, so it is not re-projected. It outlives the drop by design.
+             */
+            for (const tombstoneKey of tombstoneKeys) {
+                await store.set(tombstoneKey, '1', { ttlMs: TOMBSTONE_TTL_MS });
+            }
         } else {
-            pipeline.del(jobTombstoneKey(job.jobId));
+            await store.delete(tombstoneKeys);
         }
-        queued += 1;
 
-        if (job.analysisId) {
-            pipeline.srem(projectedAnalysisJobsKey(job.analysisId), job.jobId);
-            queued += 1;
+        const deletedAnalyses = new Set<string>();
+        for (const job of jobs) {
+            if (!job.analysisId) continue;
+
+            await store.setRemove(projectedAnalysisJobsKey(job.analysisId), [job.jobId]);
+            if (claimed.has(jobStatusKey(job.jobId))) {
+                deletedAnalyses.add(job.analysisId);
+            }
         }
-    }
 
-    pipeline.incr(projectedTeamJobsRevisionKey(teamId));
+        /* Bumped so readers holding a stale projection know to refetch. */
+        await store.adjust(projectedTeamJobsRevisionKey(teamId), 1);
 
-    const results = await pipeline.exec();
-    if (!results) {
         return {
-            deletedJobs: 0,
-            deletedAnalyses: 0
+            deletedJobs: claimed.size,
+            deletedAnalyses: deletedAnalyses.size
         };
-    }
-
-    let deletedJobs = 0;
-    const deletedAnalyses = new Set<string>();
-
-    jobs.forEach((job, position) => {
-        if (!wasKeyDeleted(results[statusDeletionIndexes[position]])) {
-            return;
-        }
-
-        deletedJobs += 1;
-        if (job.analysisId) {
-            deletedAnalyses.add(job.analysisId);
-        }
     });
-
-    return {
-        deletedJobs,
-        deletedAnalyses: deletedAnalyses.size
-    };
 };
 
 export const purgeTrajectoryRuntimeState = async (teamId: string, trajectoryId: string): Promise<void> => {
-    const [glbTerminalKeys, canvasOwnerIds] = await Promise.all([
-        redisClient.smembers(glbTerminalReceiptSetKey(trajectoryId)),
-        redisClient.smembers(canvasWorkspaceIndexKey(trajectoryId))
-    ]);
-    const pipeline = redisClient.pipeline();
+    await getKeyValueStore().transaction(async (store) => {
+        /* The indexes name the per-item keys, so they are read before being dropped. */
+        const [terminalKeys, canvasOwnerIds] = await Promise.all([
+            store.setMembers(glbTerminalReceiptSetKey(trajectoryId)),
+            store.setMembers(canvasWorkspaceIndexKey(trajectoryId))
+        ]);
 
-    pipeline.del(glbRemainingKey(trajectoryId));
-    pipeline.del(glbFailedKey(trajectoryId));
-    pipeline.del(glbTerminalReceiptSetKey(trajectoryId));
-    pipeline.del(jupyterTrajectoryLockKey(teamId, trajectoryId));
-    pipeline.del(canvasWorkspaceIndexKey(trajectoryId));
+        await store.delete([
+            glbRemainingKey(trajectoryId),
+            glbFailedKey(trajectoryId),
+            jupyterTrajectoryLockKey(teamId, trajectoryId),
+            ...terminalKeys,
+            ...canvasOwnerIds.map((ownerId) => canvasWorkspaceKey(trajectoryId, ownerId))
+        ]);
 
-    for (const terminalKey of glbTerminalKeys) {
-        pipeline.del(terminalKey);
-    }
-
-    for (const ownerId of canvasOwnerIds) {
-        pipeline.del(canvasWorkspaceKey(trajectoryId, ownerId));
-    }
-
-    await pipeline.exec();
+        await store.deleteSets([
+            glbTerminalReceiptSetKey(trajectoryId),
+            canvasWorkspaceIndexKey(trajectoryId)
+        ]);
+    });
 };
 
 export const purgeAnalysisRuntimeState = async (analysisId: string): Promise<void> => {
-    const terminalKeys = await redisClient.smembers(analysisTerminalReceiptSetKey(analysisId));
-    const pipeline = redisClient.pipeline();
+    await getKeyValueStore().transaction(async (store) => {
+        const terminalKeys = await store.setMembers(analysisTerminalReceiptSetKey(analysisId));
 
-    pipeline.del(analysisRemainingKey(analysisId));
-    pipeline.del(analysisFailedKey(analysisId));
-    pipeline.del(analysisTerminalReceiptSetKey(analysisId));
+        await store.delete([
+            analysisRemainingKey(analysisId),
+            analysisFailedKey(analysisId),
+            ...terminalKeys
+        ]);
 
-    for (const terminalKey of terminalKeys) {
-        pipeline.del(terminalKey);
-    }
-
-    await pipeline.exec();
+        await store.deleteSets([analysisTerminalReceiptSetKey(analysisId)]);
+    });
 };

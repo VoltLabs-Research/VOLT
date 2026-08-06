@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Container from '@modules/container/models/Container';
 import daemonContainerRuntimeService from '@modules/container/services/DaemonContainerRuntimeService';
@@ -8,7 +8,7 @@ import { requireContainerRuntimeTarget } from '@modules/container/services/conta
 import { resolveInternalIp, toRelayTargets } from '@modules/container/services/container-network';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
 import type { CreateContainerInput } from '@volt/contracts/modules/container/http';

@@ -4,22 +4,19 @@ export { TeamClusterRemoteAccessTarget };
 export enum TeamClusterRemoteExplorerEntryType {
     Directory = 'directory',
     Collection = 'collection',
-    RedisDatabase = 'redis-database',
-    RedisKey = 'redis-key',
     Bucket = 'bucket',
     Object = 'object'
 }
 
 export enum TeamClusterRemoteExplorerNodeType {
     Collection = 'collection',
-    RedisValue = 'redis-value',
     Object = 'object'
 }
 
 export enum TeamClusterRemoteExplorerContentType {
     Empty = 'empty',
     Text = 'text',
-    MongoDocuments = 'mongo-documents'
+    DaemonTables = 'daemon-tables'
 }
 
 export interface TeamClusterRemoteExplorerEntryView {
@@ -32,7 +29,7 @@ export interface TeamClusterRemoteExplorerEntryView {
     description: string | null;
 }
 
-export interface TeamClusterMongoDocumentView {
+export interface TeamClusterDocumentView {
     id: string;
     value: Record<string, unknown>;
 }
@@ -43,7 +40,7 @@ export interface TeamClusterRemoteExplorerNodeView {
     type: TeamClusterRemoteExplorerNodeType;
     contentType: TeamClusterRemoteExplorerContentType;
     textContent: string | null;
-    mongoDocuments: TeamClusterMongoDocumentView[];
+    documents: TeamClusterDocumentView[];
 }
 
 export interface TeamClusterRemoteAccessSessionView {

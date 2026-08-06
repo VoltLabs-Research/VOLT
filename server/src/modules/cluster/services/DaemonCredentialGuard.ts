@@ -9,10 +9,8 @@ import logger from '@shared/infrastructure/logger';
 export interface DecryptedTeamClusterServiceCredentials {
     minioUsername: string;
     minioPassword: string;
-    redisUsername: string;
-    redisPassword: string;
-    mongodbUsername: string;
-    mongodbPassword: string;
+    postgresUsername: string;
+    postgresPassword: string;
     daemonPassword: string;
 }
 
@@ -56,41 +54,33 @@ export default class DaemonCredentialGuard {
     async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
         const minioUsername = teamCluster.props.services.minio.username;
         const minioPassword = teamCluster.props.services.minio.password;
-        const redisUsername = teamCluster.props.services.redis.username;
-        const redisPassword = teamCluster.props.services.redis.password;
-        const mongodbUsername = teamCluster.props.services.mongodb.username;
-        const mongodbPassword = teamCluster.props.services.mongodb.password;
+        const postgresUsername = teamCluster.props.services.postgres.username;
+        const postgresPassword = teamCluster.props.services.postgres.password;
         const daemonPassword = teamCluster.props.services.daemon.password;
 
-        if (!minioUsername || !minioPassword || !redisUsername || !redisPassword || !mongodbUsername || !mongodbPassword || !daemonPassword) {
+        if (!minioUsername || !minioPassword || !postgresUsername || !postgresPassword || !daemonPassword) {
             throw ApplicationError.internalServerError(`Missing service credentials for team cluster ${teamCluster.id}`);
         }
 
         const [
             decryptedMinioUsername,
             decryptedMinioPassword,
-            decryptedRedisUsername,
-            decryptedRedisPassword,
-            decryptedMongodbUsername,
-            decryptedMongodbPassword,
+            decryptedPostgresUsername,
+            decryptedPostgresPassword,
             decryptedDaemonPassword
         ] = await Promise.all([
             this.#decryptOrFail(minioUsername, teamCluster.id),
             this.#decryptOrFail(minioPassword, teamCluster.id),
-            this.#decryptOrFail(redisUsername, teamCluster.id),
-            this.#decryptOrFail(redisPassword, teamCluster.id),
-            this.#decryptOrFail(mongodbUsername, teamCluster.id),
-            this.#decryptOrFail(mongodbPassword, teamCluster.id),
+            this.#decryptOrFail(postgresUsername, teamCluster.id),
+            this.#decryptOrFail(postgresPassword, teamCluster.id),
             this.#decryptOrFail(daemonPassword, teamCluster.id)
         ]);
 
         return {
             minioUsername: decryptedMinioUsername,
             minioPassword: decryptedMinioPassword,
-            redisUsername: decryptedRedisUsername,
-            redisPassword: decryptedRedisPassword,
-            mongodbUsername: decryptedMongodbUsername,
-            mongodbPassword: decryptedMongodbPassword,
+            postgresUsername: decryptedPostgresUsername,
+            postgresPassword: decryptedPostgresPassword,
             daemonPassword: decryptedDaemonPassword
         };
     }

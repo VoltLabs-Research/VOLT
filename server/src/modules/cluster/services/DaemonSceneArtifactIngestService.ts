@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import Analysis from '@modules/analysis/models/Analysis';
 import { AnalysisArtifactStatus } from '@modules/analysis/contracts/analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';

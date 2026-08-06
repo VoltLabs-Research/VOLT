@@ -116,7 +116,7 @@ const ClusterTransferModal = ({
     );
 
     return (
-        <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative MinIO data and purges the source daemon Mongo cache after verify and switch complete.' footer={footer} onClose={handleClose}>
+        <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative MinIO data and purges the source daemon listing tables after verify and switch complete.' footer={footer} onClose={handleClose}>
             <Stack gap='1' p='1-5'>
                 <Stack gap='05'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Destination cluster</Heading>
@@ -144,7 +144,7 @@ const ClusterTransferModal = ({
                 )}
                 <Stack gap='05' p='1' radius='md' className='bg-page'>
                     <Text as='p' size='sm' tone='muted'>
-                        Source cluster must stay connected during copy and verify. After the destination becomes authoritative, Volt removes the source MinIO objects and purges the related daemon Mongo cache automatically.
+                        Source cluster must stay connected during copy and verify. After the destination becomes authoritative, Volt removes the source MinIO objects and purges the related daemon listing tables automatically.
                     </Text>
                 </Stack>
                 {queuedMessage && (

@@ -6,16 +6,19 @@
     "MINIO_PORT": "9100",
     "MINIO_CONSOLE": "9101",
     "DAEMON_PORT": "18020",
-    "MONGO_USER": "volt",
-    "MONGO_PASS": "<generated-at-bootstrap>",
-    "REDIS_PASS": "<generated-at-bootstrap>",
     "MINIO_USER": "voltminio",
     "MINIO_PASS": "<generated-at-bootstrap>",
     "DAEMON_PASS": "<generated-at-bootstrap>",
     "SECRET_KEY": "<generated-at-bootstrap>",
     "SSH_KEY": "<generated-at-bootstrap>"
   },
-  "voltlabs-research/volt": { "tag": "1.0.0" },
-  "voltlabs-research/clusterdaemon": { "tag": "1.0.0" },
-  "deployment": { "mode": "local" }
+  "voltlabs-research/volt": {
+    "tag": "1.0.0"
+  },
+  "voltlabs-research/clusterdaemon": {
+    "tag": "1.0.0"
+  },
+  "deployment": {
+    "mode": "local"
+  }
 }

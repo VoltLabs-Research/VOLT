@@ -19,7 +19,7 @@ import {
 } from '@modules/trajectory/services/trajectory/trajectory-record';
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 
 import { ILike, IsNull } from 'typeorm';

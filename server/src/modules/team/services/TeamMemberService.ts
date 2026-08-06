@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { isModuleEnabled } from '@core/bootstrap/module-state';
 import TeamMember from '@modules/team/models/TeamMember';

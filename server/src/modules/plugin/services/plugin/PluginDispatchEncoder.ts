@@ -1,4 +1,4 @@
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
@@ -8,7 +8,7 @@ import zlib from 'node:zlib';
 
 const gzipAsync = promisify(zlib.gzip);
 
-const CACHE_TTL_SECONDS = 600;
+const CACHE_TTL_MS = 600_000;
 // The version segment is part of the stored value format, not just the key: bump
 // it whenever the encoded payload shape changes so a rolling deploy can never
 // read a value written in the previous format.
@@ -51,12 +51,10 @@ const injectOwnerClusterIdIntoWorkflow = (
 /**
  * Compresses the oversized sections of a plugin dispatch payload (trajectory
  * frames, workflows, nested plugin definitions) into gzipped base64, caching the
- * revision-addressable ones in redis and collapsing concurrent encodes of the
+ * revision-addressable ones and collapsing concurrent encodes of the
  * same key into a single compression pass.
  */
 class PluginDispatchEncoder {
-    private readonly redis = redisClient;
-
     private readonly inflightEncodes = new Map<string, Promise<string>>();
 
     async encode(value: unknown): Promise<string> {
@@ -96,7 +94,7 @@ class PluginDispatchEncoder {
 
     private async cachedEncode(cacheKey: string, value: unknown): Promise<string> {
         try {
-            const cached = await this.redis.get(cacheKey);
+            const cached = await getKeyValueStore().get(cacheKey);
             if (cached) {
                 return cached;
             }
@@ -113,7 +111,7 @@ class PluginDispatchEncoder {
         const pending = (async () => {
             const encoded = await this.encode(value);
             try {
-                await this.redis.setex(cacheKey, CACHE_TTL_SECONDS, encoded);
+                await getKeyValueStore().set(cacheKey, encoded, { ttlMs: CACHE_TTL_MS });
             } catch (error: unknown) {
                 logger.warn({
                     err: error,

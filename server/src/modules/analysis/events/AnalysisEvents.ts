@@ -12,7 +12,7 @@ import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenance
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import logger from '@shared/infrastructure/logger';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -81,7 +81,7 @@ export default class AnalysisEvents{
 
         for(const documentType of DAEMON_LISTING_DOCUMENT_TYPES){
             try{
-                await teamClusterDaemonClient.command(teamClusterId, ChannelCommands.PluginTransferMongoPurge, {
+                await teamClusterDaemonClient.command(teamClusterId, ChannelCommands.PluginTransferListingsPurge, {
                     analysisIds: [analysisId],
                     documentType
                 });
@@ -147,35 +147,29 @@ export default class AnalysisEvents{
         const projectedAnalysisJobsKey = `analysis:${analysisId}:projected-jobs`;
         const terminalReceiptSetKey = `daemon-analysis:${analysisId}:terminal-keys`;
 
-        const [jobIds, terminalKeys] = await Promise.all([
-            redisClient.smembers(projectedAnalysisJobsKey),
-            redisClient.smembers(terminalReceiptSetKey)
-        ]);
+        await getKeyValueStore().transaction(async (store) => {
+            /* The indexes name the per-job keys, so they are read before being dropped. */
+            const [jobIds, terminalKeys] = await Promise.all([
+                store.setMembers(projectedAnalysisJobsKey),
+                store.setMembers(terminalReceiptSetKey)
+            ]);
 
-        const pipeline = redisClient.pipeline();
+            await store.delete([
+                `daemon-analysis:${analysisId}:remaining`,
+                `daemon-analysis:${analysisId}:failed`,
+                ...jobIds.flatMap((jobId) => [
+                    `${JOB_STATUS_KEY_PREFIX}${jobId}`,
+                    `${JOB_TOMBSTONE_KEY_PREFIX}${jobId}`
+                ]),
+                ...terminalKeys
+            ]);
 
-        pipeline.del(projectedAnalysisJobsKey);
-        pipeline.del(`daemon-analysis:${analysisId}:remaining`);
-        pipeline.del(`daemon-analysis:${analysisId}:failed`);
-        pipeline.del(terminalReceiptSetKey);
-
-        for(const jobId of jobIds){
-            pipeline.del(`${JOB_STATUS_KEY_PREFIX}${jobId}`);
-            pipeline.del(`${JOB_TOMBSTONE_KEY_PREFIX}${jobId}`);
+            await store.deleteSets([projectedAnalysisJobsKey, terminalReceiptSetKey]);
 
             if(teamId){
-                pipeline.srem(`team:${teamId}:projected-jobs`, jobId);
+                await store.setRemove(`team:${teamId}:projected-jobs`, jobIds);
+                await store.adjust(`team:${teamId}:projected-jobs:revision`, 1);
             }
-        }
-
-        if(teamId){
-            pipeline.incr(`team:${teamId}:projected-jobs:revision`);
-        }
-
-        for(const terminalKey of terminalKeys){
-            pipeline.del(terminalKey);
-        }
-
-        await pipeline.exec();
+        });
     }
 }

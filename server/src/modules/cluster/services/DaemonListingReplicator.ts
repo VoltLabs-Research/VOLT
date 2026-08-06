@@ -10,25 +10,25 @@ import type {
 } from '@shared/domain/contracts/team-cluster';
 import {
     ChannelCommands,
-    type TeamClusterDaemonPluginMongoDocumentType,
-    type TeamClusterDaemonPluginMongoExportResult,
-    type TeamClusterDaemonPluginMongoImportResult,
-    type TeamClusterDaemonPluginMongoPurgeResult
+    type PluginListingTransferKind,
+    type PluginListingTransferExportResult,
+    type PluginListingTransferImportResult,
+    type PluginListingTransferPurgeResult
 } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 
-const MONGO_TRANSFER_BATCH_SIZE = 200;
-const MONGO_DOCUMENT_TYPES: TeamClusterDaemonPluginMongoDocumentType[] = ['listing', 'sub-listing'];
+const LISTING_TRANSFER_BATCH_SIZE = 200;
+const LISTING_TRANSFER_KINDS: PluginListingTransferKind[] = ['listing', 'sub-listing'];
 
 /**
- * Moves plugin listing documents between cluster Mongo instances during a
+ * Moves plugin listing rows between cluster databases during a
  * storage transfer, and purges them from the source once the copy is verified.
  */
-export default class MongoListingReplicator{
+export default class DaemonListingReplicator{
     #daemonClient = teamClusterDaemonClient;
 
-    async replicateMongoListings(job: ClusterTransferJob): Promise<void> {
-        const analysisIds = await this.#resolveMongoReplicationAnalysisIds(
+    async replicateDaemonListings(job: ClusterTransferJob): Promise<void> {
+        const analysisIds = await this.#resolveReplicationAnalysisIds(
             job.props.scopeType,
             job.props.scopeId,
             job.props.sourceClusterId
@@ -37,20 +37,20 @@ export default class MongoListingReplicator{
             return;
         }
 
-        logger.info(`Replicating daemon Mongo listing state for cluster transfer ${describeClusterTransferJob(job)}`);
+        logger.info(`Replicating daemon listing state for cluster transfer ${describeClusterTransferJob(job)}`);
 
-        for (const documentType of MONGO_DOCUMENT_TYPES) {
+        for (const documentType of LISTING_TRANSFER_KINDS) {
             let skip = 0;
 
             while (true) {
-                const batch = await this.#daemonClient.command<TeamClusterDaemonPluginMongoExportResult>(
+                const batch = await this.#daemonClient.command<PluginListingTransferExportResult>(
                     job.props.sourceClusterId,
-                    ChannelCommands.PluginTransferMongoExport,
+                    ChannelCommands.PluginTransferListingsExport,
                     {
                         analysisIds,
                         documentType,
                         skip,
-                        limit: MONGO_TRANSFER_BATCH_SIZE
+                        limit: LISTING_TRANSFER_BATCH_SIZE
                     },
                     {
                         timeoutClass: 'long-running-control-plane',
@@ -59,9 +59,9 @@ export default class MongoListingReplicator{
                 );
 
                 if (batch.rows.length > 0) {
-                    await this.#daemonClient.command<TeamClusterDaemonPluginMongoImportResult>(
+                    await this.#daemonClient.command<PluginListingTransferImportResult>(
                         job.props.destinationClusterId,
-                        ChannelCommands.PluginTransferMongoImport,
+                        ChannelCommands.PluginTransferListingsImport,
                         {
                             analysisIds,
                             documentType,
@@ -82,25 +82,25 @@ export default class MongoListingReplicator{
             }
         }
 
-        logger.info(`Replicated daemon Mongo listing state for cluster transfer ${describeClusterTransferJob(job)}`);
+        logger.info(`Replicated daemon listing state for cluster transfer ${describeClusterTransferJob(job)}`);
     }
 
-    async purgeMongoListings(
+    async purgeDaemonListings(
         sourceClusterId: string,
         scopeType: StoragePlacementScopeType,
         scopeId: string
     ): Promise<number> {
-        const analysisIds = await this.#resolveMongoReplicationAnalysisIds(scopeType, scopeId, sourceClusterId);
+        const analysisIds = await this.#resolveReplicationAnalysisIds(scopeType, scopeId, sourceClusterId);
         if (!analysisIds.length) {
             return 0;
         }
 
         let deletedRows = 0;
 
-        for (const documentType of MONGO_DOCUMENT_TYPES) {
-            const result = await this.#daemonClient.command<TeamClusterDaemonPluginMongoPurgeResult>(
+        for (const documentType of LISTING_TRANSFER_KINDS) {
+            const result = await this.#daemonClient.command<PluginListingTransferPurgeResult>(
                 sourceClusterId,
-                ChannelCommands.PluginTransferMongoPurge,
+                ChannelCommands.PluginTransferListingsPurge,
                 {
                     analysisIds,
                     documentType
@@ -113,12 +113,12 @@ export default class MongoListingReplicator{
             deletedRows += result.deletedRows;
         }
 
-        logger.info(`Purged source daemon Mongo listing state for cluster transfer sourceClusterId=${sourceClusterId} scopeType=${scopeType} scopeId=${scopeId} analysisCount=${analysisIds.length}`);
+        logger.info(`Purged source daemon listing state for cluster transfer sourceClusterId=${sourceClusterId} scopeType=${scopeType} scopeId=${scopeId} analysisCount=${analysisIds.length}`);
 
         return deletedRows;
     }
 
-    async #resolveMongoReplicationAnalysisIds(
+    async #resolveReplicationAnalysisIds(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
         sourceClusterId: string

@@ -3,8 +3,7 @@ import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import Docker from 'dockerode';
 
-const DEMO_IMAGE_MONGODB = process.env.DEMO_CLUSTER_MONGODB_IMAGE || 'mongo:8.0.5';
-const DEMO_IMAGE_REDIS = process.env.DEMO_CLUSTER_REDIS_IMAGE || 'redis:7.4.2-alpine';
+const DEMO_IMAGE_POSTGRES = process.env.DEMO_CLUSTER_POSTGRES_IMAGE || 'postgres:17-alpine';
 const DEMO_IMAGE_MINIO = process.env.DEMO_CLUSTER_MINIO_IMAGE || 'minio/minio:RELEASE.2025-02-28T09-55-16Z';
 const DEMO_IMAGE_DAEMON = process.env.DEMO_CLUSTER_DAEMON_IMAGE || 'voltcloud/cluster-daemon:latest';
 const DEMO_NETWORK_PREFIX = process.env.DEMO_CLUSTER_NETWORK_PREFIX || 'volt-demo';
@@ -21,31 +20,27 @@ const MEGABYTE = 1024 * 1024;
 export interface DemoClusterPlaintextCredentials {
     minioUsername: string;
     minioPassword: string;
-    redisUsername: string;
-    redisPassword: string;
-    mongodbUsername: string;
-    mongodbPassword: string;
+    postgresUsername: string;
+    postgresPassword: string;
     daemonPassword: string;
     enrollmentToken: string;
 }
 
 interface DemoStackResourceNames {
     network: string;
-    volumes: { mongodb: string; redis: string; minio: string; };
-    containers: { mongodb: string; redis: string; minio: string; daemon: string; };
+    volumes: { postgres: string; minio: string; };
+    containers: { postgres: string; minio: string; daemon: string; };
 }
 
 const buildResourceNames = (teamClusterId: string): DemoStackResourceNames => {
     return {
         network: `${DEMO_NETWORK_PREFIX}-${teamClusterId}`,
         volumes: {
-            mongodb: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-mongodb`,
-            redis: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-redis`,
+            postgres: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-postgres`,
             minio: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-minio`
         },
         containers: {
-            mongodb: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-mongodb`,
-            redis: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-redis`,
+            postgres: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-postgres`,
             minio: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-minio`,
             daemon: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-daemon`
         }
@@ -75,8 +70,7 @@ class DemoClusterDeploymentService {
 
         if (DEMO_PULL_IMAGES) {
             await Promise.all([
-                this.ensureImage(DEMO_IMAGE_MONGODB),
-                this.ensureImage(DEMO_IMAGE_REDIS),
+                this.ensureImage(DEMO_IMAGE_POSTGRES),
                 this.ensureImage(DEMO_IMAGE_MINIO),
                 this.ensureImage(DEMO_IMAGE_DAEMON)
             ]);
@@ -84,13 +78,11 @@ class DemoClusterDeploymentService {
 
         await this.ensureNetwork(names.network, labels);
         await Promise.all([
-            this.ensureVolume(names.volumes.mongodb, labels),
-            this.ensureVolume(names.volumes.redis, labels),
+            this.ensureVolume(names.volumes.postgres, labels),
             this.ensureVolume(names.volumes.minio, labels)
         ]);
 
-        await this.ensureMongoContainer(names, labels, credentials);
-        await this.ensureRedisContainer(names, labels, credentials);
+        await this.ensurePostgresContainer(names, labels, credentials);
         await this.ensureMinioContainer(names, labels, credentials);
         await this.ensureDaemonContainer(teamCluster, names, labels, credentials);
 
@@ -103,14 +95,12 @@ class DemoClusterDeploymentService {
 
         await Promise.all([
             this.removeContainer(names.containers.daemon),
-            this.removeContainer(names.containers.mongodb),
-            this.removeContainer(names.containers.redis),
+            this.removeContainer(names.containers.postgres),
             this.removeContainer(names.containers.minio)
         ]);
 
         await Promise.all([
-            this.removeVolume(names.volumes.mongodb),
-            this.removeVolume(names.volumes.redis),
+            this.removeVolume(names.volumes.postgres),
             this.removeVolume(names.volumes.minio)
         ]);
 
@@ -171,55 +161,27 @@ class DemoClusterDeploymentService {
         });
     }
 
-    private async ensureMongoContainer(
+    private async ensurePostgresContainer(
         names: DemoStackResourceNames,
         labels: Record<string, string>,
         credentials: DemoClusterPlaintextCredentials
     ): Promise<void> {
-        await this.removeContainer(names.containers.mongodb);
+        await this.removeContainer(names.containers.postgres);
 
         const container = await this.docker.createContainer({
-            name: names.containers.mongodb,
-            Image: DEMO_IMAGE_MONGODB,
+            name: names.containers.postgres,
+            Image: DEMO_IMAGE_POSTGRES,
             Labels: labels,
             Env: [
-                `MONGO_INITDB_ROOT_USERNAME=${credentials.mongodbUsername}`,
-                `MONGO_INITDB_ROOT_PASSWORD=${credentials.mongodbPassword}`
+                `POSTGRES_USER=${credentials.postgresUsername}`,
+                `POSTGRES_PASSWORD=${credentials.postgresPassword}`,
+                'POSTGRES_DB=volt-cluster'
             ],
             HostConfig: {
                 NetworkMode: names.network,
                 RestartPolicy: { Name: 'unless-stopped' },
                 Memory: DEMO_SERVICE_MEMORY_LIMIT_MB * MEGABYTE,
-                Binds: [`${names.volumes.mongodb}:/data/db`]
-            }
-        });
-        await container.start();
-    }
-
-    private async ensureRedisContainer(
-        names: DemoStackResourceNames,
-        labels: Record<string, string>,
-        credentials: DemoClusterPlaintextCredentials
-    ): Promise<void> {
-        await this.removeContainer(names.containers.redis);
-
-        const aclLine = `printf 'user default off\\nuser %s on >%s ~* &* +@all\\n' "$REDIS_USERNAME" "$REDIS_PASSWORD" > /tmp/users.acl && exec redis-server --appendonly yes --aclfile /tmp/users.acl`;
-
-        const container = await this.docker.createContainer({
-            name: names.containers.redis,
-            Image: DEMO_IMAGE_REDIS,
-            Labels: labels,
-            Env: [
-                `REDIS_USERNAME=${credentials.redisUsername}`,
-                `REDIS_PASSWORD=${credentials.redisPassword}`
-            ],
-            Entrypoint: ['sh', '-c'],
-            Cmd: [aclLine],
-            HostConfig: {
-                NetworkMode: names.network,
-                RestartPolicy: { Name: 'unless-stopped' },
-                Memory: DEMO_SERVICE_MEMORY_LIMIT_MB * MEGABYTE,
-                Binds: [`${names.volumes.redis}:/data`]
+                Binds: [`${names.volumes.postgres}:/var/lib/postgresql/data`]
             }
         });
         await container.start();
@@ -259,7 +221,7 @@ class DemoClusterDeploymentService {
     ): Promise<void> {
         await this.removeContainer(names.containers.daemon);
 
-        const mongodbUri = `mongodb://${encodeURIComponent(credentials.mongodbUsername)}:${encodeURIComponent(credentials.mongodbPassword)}@${names.containers.mongodb}:27017/volt?authSource=admin`;
+        const postgresUri = `postgres://${encodeURIComponent(credentials.postgresUsername)}:${encodeURIComponent(credentials.postgresPassword)}@${names.containers.postgres}:5432/volt-cluster`;
 
         const env = [
             `TEAM_ID=${teamCluster.props.team}`,
@@ -269,11 +231,7 @@ class DemoClusterDeploymentService {
             `ENROLLMENT_TOKEN=${credentials.enrollmentToken}`,
             `VOLT_CLOUD_URL=${DEMO_VOLT_CLOUD_URL}`,
             `VOLT_CLOUD_DAEMON_SOCKET_URL=${DEMO_VOLT_CLOUD_URL}`,
-            `MONGODB_URI=${mongodbUri}`,
-            `REDIS_HOST=${names.containers.redis}`,
-            `REDIS_PORT=6379`,
-            `REDIS_USERNAME=${credentials.redisUsername}`,
-            `REDIS_PASSWORD=${credentials.redisPassword}`,
+            `DATABASE_URL=${postgresUri}`,
             `MINIO_ENDPOINT=http://${names.containers.minio}:9000`,
             `MINIO_ACCESS_KEY=${credentials.minioUsername}`,
             `MINIO_SECRET_KEY=${credentials.minioPassword}`,

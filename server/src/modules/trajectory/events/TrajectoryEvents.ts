@@ -13,7 +13,7 @@ import {
 } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
 
 const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([

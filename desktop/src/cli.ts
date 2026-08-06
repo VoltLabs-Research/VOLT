@@ -30,7 +30,7 @@ Update options:
   -h, --help                      Show this help
 
 Notes:
-  --update keeps your data (mongo/redis/minio); it rebuilds and reinstalls deps.
+  --update keeps your data (postgres/minio); it rebuilds and reinstalls deps.
   In dev mode (configured app-config.json), --update rebuilds from local checkouts
   and does not pull from GitHub releases.
   Set GITHUB_TOKEN to raise the GitHub API rate limit for --update/--check.

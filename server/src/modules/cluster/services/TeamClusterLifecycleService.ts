@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import { toTeamClusterView, type TeamClusterView } from '@modules/cluster/services/TeamClusterView';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';

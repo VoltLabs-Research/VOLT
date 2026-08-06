@@ -22,8 +22,7 @@ export interface TeamClusterService{
 
 export interface TeamClusterServices{
     minio: TeamClusterService;
-    redis: TeamClusterService;
-    mongodb: TeamClusterService;
+    postgres: TeamClusterService;
     daemon: TeamClusterService;
 }
 
@@ -38,8 +37,7 @@ export interface TeamClusterDaemonCredentialService extends TeamClusterService{
 
 export interface TeamClusterCredentialServices{
     minio: TeamClusterCredentialService;
-    redis: TeamClusterCredentialService;
-    mongodb: TeamClusterCredentialService;
+    postgres: TeamClusterCredentialService;
     daemon: TeamClusterDaemonCredentialService;
 }
 
@@ -198,8 +196,7 @@ export interface ClusterNetworkMetrics{
 }
 
 export interface ClusterResponseTimes{
-    mongodb: number;
-    redis: number;
+    postgres: number;
     minio: number;
     self: number;
 }
@@ -229,7 +226,7 @@ export interface ClusterMetrics{
     disk: ClusterDiskMetrics;
     network: ClusterNetworkMetrics;
     responseTimes: ClusterResponseTimes;
-    mongodb?: ClusterDatabaseMetrics;
+    postgres?: ClusterDatabaseMetrics;
     diskOperations?: ClusterDiskOperationsMetrics;
     uptime: number;
     analysisCount?: number;
@@ -333,8 +330,7 @@ export interface CreateTeamClusterTransferRequestResponse{
 }
 
 export enum TeamClusterRemoteAccessTarget{
-    MongoDocuments = 'mongo-documents',
-    RedisData = 'redis-data',
+    DaemonTables = 'daemon-tables',
     Minio = 'minio'
 }
 
@@ -367,7 +363,7 @@ export interface ListTeamClusterRemoteExplorerEntriesResponse{
     entries: TeamClusterRemoteExplorerEntry[];
 }
 
-export interface TeamClusterRemoteExplorerMongoDocument{
+export interface TeamClusterRemoteExplorerDocument{
     id: string;
     value: Record<string, unknown>;
 }
@@ -378,7 +374,7 @@ export interface TeamClusterRemoteExplorerNode{
     type: string;
     contentType: string;
     textContent: string | null;
-    mongoDocuments: TeamClusterRemoteExplorerMongoDocument[];
+    documents: TeamClusterRemoteExplorerDocument[];
 }
 
 export interface GetTeamClusterRemoteExplorerNodeResponse{
@@ -389,8 +385,7 @@ export interface GetTeamClusterRemoteExplorerNodeResponse{
 
 export interface TeamClusterInstallManifestPorts{
     minio: number;
-    redis: number;
-    mongodb: number;
+    postgres: number;
     daemon: number;
 }
 
@@ -402,8 +397,7 @@ export interface TeamClusterInstallManifestFile{
 
 export interface TeamClusterInstallManifestImages{
     minio: string;
-    redis: string;
-    mongodb: string;
+    postgres: string;
     daemon: string;
 }
 

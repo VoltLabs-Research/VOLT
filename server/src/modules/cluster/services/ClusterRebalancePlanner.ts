@@ -1,7 +1,7 @@
 
 import ClusterTransferJobStore from '@modules/cluster/services/ClusterTransferJobStore';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';

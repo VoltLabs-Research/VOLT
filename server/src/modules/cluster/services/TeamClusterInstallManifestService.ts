@@ -137,13 +137,9 @@ class TeamClusterInstallManifestService {
                     ...teamCluster.props.services.minio,
                     port: ports.minio
                 },
-                redis: {
-                    ...teamCluster.props.services.redis,
-                    port: ports.redis
-                },
-                mongodb: {
-                    ...teamCluster.props.services.mongodb,
-                    port: ports.mongodb
+                postgres: {
+                    ...teamCluster.props.services.postgres,
+                    port: ports.postgres
                 },
                 daemon: {
                     ...teamCluster.props.services.daemon,

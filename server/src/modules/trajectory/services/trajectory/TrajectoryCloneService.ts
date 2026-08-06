@@ -13,7 +13,7 @@ import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/Tra
 import { replaceTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryFrameStore';
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';

@@ -9,7 +9,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
-import systemMetricsRepository from '@modules/system/services/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import { findTeamClusterByIdWithSensitiveData, toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';

@@ -9,8 +9,7 @@ export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 
 export const TEAM_CLUSTER_IMAGES = {
     minio: 'minio/minio:RELEASE.2025-02-28T09-55-16Z',
-    redis: 'redis:7.4.2-alpine',
-    mongodb: 'mongo:8.0.5',
+    postgres: 'postgres:17-alpine',
     daemon: 'ghcr.io/voltlabs-research/volt-cluster-daemon:main'
 };
 
@@ -53,27 +52,19 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '      - "${MINIO_PORT}:9000"',
         '    volumes:',
         '      - minio-data:/data',
-        '  mongodb:',
-        '    image: ${MONGODB_IMAGE}',
+        '  postgres:',
+        '    image: ${POSTGRES_IMAGE}',
         '    restart: unless-stopped',
         '    env_file:',
-        '      - ./mongodb.env',
+        '      - ./postgres.env',
+        '    healthcheck:',
+        '      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]',
+        '      interval: 10s',
+        '      retries: 20',
         '    ports:',
-        '      - "${MONGODB_PORT}:27017"',
+        '      - "${POSTGRES_PORT}:5432"',
         '    volumes:',
-        '      - mongodb-data:/data/db',
-        '  redis:',
-        '    image: ${REDIS_IMAGE}',
-        '    restart: unless-stopped',
-        '    command:',
-        '      - redis-server',
-        '      - --aclfile',
-        '      - /usr/local/etc/redis/users.acl',
-        '    ports:',
-        '      - "${REDIS_PORT}:6379"',
-        '    volumes:',
-        '      - redis-data:/data',
-        '      - ./redis.acl:/usr/local/etc/redis/users.acl:ro',
+        '      - postgres-data:/var/lib/postgresql/data',
         '  daemon:',
         '    image: ${VOLT_CLUSTER_DAEMON_IMAGE}',
         ...daemonBuildConfiguration,
@@ -83,14 +74,12 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '      - ./daemon.env',
         '    depends_on:',
         '      - minio',
-        '      - mongodb',
-        '      - redis',
+        '      - postgres',
         '    volumes:',
         '      - /var/run/docker.sock:/var/run/docker.sock',
         'volumes:',
         '  minio-data:',
-        '  mongodb-data:',
-        '  redis-data:'
+        '  postgres-data:'
     ].join('\n');
 };
 
@@ -107,12 +96,10 @@ const buildRootEnvFile = (
         `VOLT_CLOUD_URL=${cloudUrl}`,
         `VOLT_CLUSTER_INSTALL_MANIFEST_VERSION=${TEAM_CLUSTER_INSTALL_MANIFEST_VERSION}`,
         `MINIO_IMAGE=${TEAM_CLUSTER_IMAGES.minio}`,
-        `REDIS_IMAGE=${TEAM_CLUSTER_IMAGES.redis}`,
-        `MONGODB_IMAGE=${TEAM_CLUSTER_IMAGES.mongodb}`,
+        `POSTGRES_IMAGE=${TEAM_CLUSTER_IMAGES.postgres}`,
         `VOLT_CLUSTER_DAEMON_IMAGE=${TEAM_CLUSTER_IMAGES.daemon}`,
         `MINIO_PORT=${ports.minio}`,
-        `REDIS_PORT=${ports.redis}`,
-        `MONGODB_PORT=${ports.mongodb}`
+        `POSTGRES_PORT=${ports.postgres}`
     ].join('\n');
 };
 
@@ -123,25 +110,12 @@ const buildMinioEnvFile = (credentials: DecryptedTeamClusterServiceCredentials):
     ].join('\n');
 };
 
-const buildMongoEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
+const buildPostgresEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
     return [
-        `MONGO_INITDB_ROOT_USERNAME=${credentials.mongodbUsername}`,
-        `MONGO_INITDB_ROOT_PASSWORD=${credentials.mongodbPassword}`,
-        'MONGO_INITDB_DATABASE=volt'
-    ].join('\n');
-};
-
-const buildRedisEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
-    return [
-        `REDIS_USERNAME=${credentials.redisUsername}`,
-        `REDIS_PASSWORD=${credentials.redisPassword}`
-    ].join('\n');
-};
-
-const buildRedisAclFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
-    return [
-        'user default off',
-        `user ${credentials.redisUsername} on >${credentials.redisPassword} ~* &* +@all`
+        `POSTGRES_USER=${credentials.postgresUsername}`,
+        `POSTGRES_PASSWORD=${credentials.postgresPassword}`,
+        /* The daemon creates its own database if absent, but naming it here saves a round trip. */
+        'POSTGRES_DB=volt-cluster'
     ].join('\n');
 };
 
@@ -163,11 +137,7 @@ const buildDaemonEnvFile = (
         'MINIO_ENDPOINT=http://minio:9000',
         `MINIO_ACCESS_KEY=${credentials.minioUsername}`,
         `MINIO_SECRET_KEY=${credentials.minioPassword}`,
-        `MONGODB_URI=mongodb://${credentials.mongodbUsername}:${credentials.mongodbPassword}@mongodb:27017/volt?authSource=admin`,
-        'REDIS_HOST=redis',
-        'REDIS_PORT=6379',
-        `REDIS_USERNAME=${credentials.redisUsername}`,
-        `REDIS_PASSWORD=${credentials.redisPassword}`,
+        `DATABASE_URL=postgres://${credentials.postgresUsername}:${credentials.postgresPassword}@postgres:5432/volt-cluster`,
         'PORT=8080',
         `VOLT_CLOUD_DAEMON_SOCKET_URL=${cloudUrl}`
     ].join('\n');
@@ -200,19 +170,9 @@ export const buildTeamClusterInstallManifestFiles = ({
             mode: '0600'
         },
         {
-            path: 'mongodb.env',
-            contents: buildMongoEnvFile(credentials),
+            path: 'postgres.env',
+            contents: buildPostgresEnvFile(credentials),
             mode: '0600'
-        },
-        {
-            path: 'redis.env',
-            contents: buildRedisEnvFile(credentials),
-            mode: '0600'
-        },
-        {
-            path: 'redis.acl',
-            contents: buildRedisAclFile(credentials),
-            mode: '0644'
         },
         {
             path: 'daemon.env',

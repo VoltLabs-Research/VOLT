@@ -1,4 +1,3 @@
-import { createRedisClient } from '@core/config/redis';
 import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
 import JwtTokenService from '@modules/auth/services/JwtTokenService';
@@ -15,9 +14,7 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import logger from '@shared/infrastructure/logger';
-import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
-import Redis from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { Server, Socket } from 'socket.io';
 
@@ -65,8 +62,6 @@ const createSocketAuthenticationError = (auth: ISocketAuthenticationResult): Err
 
 export class SocketGateway{
     private io?: Server;
-    private adapterPub?: Redis;
-    private adapterSub?: Redis;
     private initialized = false;
     private modules: ISocketModule[] = [];
 
@@ -100,13 +95,15 @@ export class SocketGateway{
             maxHttpBufferSize: 512 * 1024 * 1024
         });
 
-        this.adapterPub = createRedisClient();
-        this.adapterSub = createRedisClient();
-
-        this.io.adapter(createAdapter(this.adapterPub, this.adapterSub, {
-            requestsTimeout: 10000
-        }));
-
+        /*
+         * No cross-process adapter: rooms live in this process's memory.
+         *
+         * The adapter existed so a room emit on one replica reached sockets held
+         * by another. Domain events do not depend on it — they travel over the
+         * event bus, and every replica emits the ones it handles to its own
+         * sockets. A direct room emit, however, now stays local, so running more
+         * than one replica needs an adapter putting back.
+         */
         socketIOEmitter.setServer(this.io);
         socketIORoomManager.setServer(this.io);
 
@@ -177,17 +174,7 @@ export class SocketGateway{
         }catch{
         }
 
-        await Promise.all([this.adapterPub, this.adapterSub].map(async (client) => {
-            try{
-                await client?.quit();
-            }catch(error){
-                logger.warn(error, '@socket-gateway - failed to quit Redis client');
-            }
-        }));
-
         this.io = undefined;
-        this.adapterPub = undefined;
-        this.adapterSub = undefined;
         this.initialized = false;
     }
 

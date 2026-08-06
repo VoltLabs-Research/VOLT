@@ -2,8 +2,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import daemonScriptingSessionOrchestrator from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
 import type { ScriptingSessionStartInput } from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
-import redisScriptingSessionLock from '@modules/scripting/services/RedisScriptingSessionLock';
-import type { ScriptingSessionLockLease } from '@modules/scripting/services/RedisScriptingSessionLock';
+import scriptingSessionLock from '@modules/scripting/services/ScriptingSessionLock';
+import type { ScriptingSessionLockLease } from '@modules/scripting/services/ScriptingSessionLock';
 import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import scriptingSessionNotebookResolver from '@modules/scripting/services/ScriptingSessionNotebookResolver';
@@ -81,7 +81,7 @@ const mapSessionError = (error: unknown): ApplicationError => {
 
 export default class ScriptingSessionService{
     #orchestrator = daemonScriptingSessionOrchestrator;
-    #lock = redisScriptingSessionLock;
+    #lock = scriptingSessionLock;
     #credential = notebookCredentialService;
     #terminator = notebookRuntimeTerminator;
     #notebookResolver = scriptingSessionNotebookResolver;

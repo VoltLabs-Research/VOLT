@@ -25,7 +25,7 @@ export interface ListRemoteClusterFilesInput{
      */
     sessionId: string;
     /**
-     * The remote storage target to browse: minio, mongo-documents, or redis-data.
+     * The remote storage target to browse: minio or daemon-tables.
      */
     target: TeamClusterRemoteAccessTarget;
     /**

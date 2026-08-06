@@ -26,8 +26,7 @@ interface TeamClusterServiceView {
 
 export interface TeamClusterServicesView {
     minio: TeamClusterServiceView;
-    redis: TeamClusterServiceView;
-    mongodb: TeamClusterServiceView;
+    postgres: TeamClusterServiceView;
     daemon: TeamClusterServiceView;
 }
 
@@ -42,8 +41,7 @@ export interface TeamClusterDaemonCredentialServiceView extends TeamClusterServi
 
 export interface TeamClusterCredentialServicesView {
     minio: TeamClusterCredentialServiceView;
-    redis: TeamClusterCredentialServiceView;
-    mongodb: TeamClusterCredentialServiceView;
+    postgres: TeamClusterCredentialServiceView;
     daemon: TeamClusterDaemonCredentialServiceView;
 }
 
@@ -92,8 +90,7 @@ export const toTeamClusterView = (
         lastDisconnectAt: teamCluster.props.lastDisconnectAt,
         services: {
             minio: toServiceView(services.minio),
-            redis: toServiceView(services.redis),
-            mongodb: toServiceView(services.mongodb),
+            postgres: toServiceView(services.postgres),
             daemon: toServiceView(services.daemon)
         },
         queueConcurrency: teamCluster.props.queueConcurrency,

@@ -1,5 +1,5 @@
-import eventBus from '@shared/infrastructure/events/RedisEventBus';
-import redisClient from '@shared/infrastructure/redis/redisClient';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import type {
@@ -22,29 +22,34 @@ import {
     analysisTerminalReceiptSetKey,
     glbTerminalReceiptKey,
     glbTerminalReceiptSetKey
-} from '@modules/jobs/services/JobRedisKeys';
+} from '@modules/jobs/services/JobRuntimeKeys';
 
 /* Retries daemon-backed team jobs, recovering GLB conversion jobs the daemon no
    longer tracks by re-enqueuing them from their persisted frames. */
 
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 
+/**
+ * Forgets that this job ever reported a terminal status.
+ *
+ * A retry has to clear the receipt as well as the status: the receipt is what
+ * makes daemon reports idempotent, so leaving it behind would make the retried
+ * run's own completion look like a duplicate and get dropped.
+ */
 const clearRetryReceipts = async (job: TeamJobSummary): Promise<void> => {
-    const pipeline = redisClient.pipeline();
+    await getKeyValueStore().transaction(async (store) => {
+        if (job.queueType === 'analysis_processing' && job.analysisId) {
+            const receiptKey = analysisTerminalReceiptKey(job.analysisId, job.jobId);
+            await store.delete([receiptKey]);
+            await store.setRemove(analysisTerminalReceiptSetKey(job.analysisId), [receiptKey]);
+        }
 
-    if (job.queueType === 'analysis_processing' && job.analysisId) {
-        const receiptKey = analysisTerminalReceiptKey(job.analysisId, job.jobId);
-        pipeline.del(receiptKey);
-        pipeline.srem(analysisTerminalReceiptSetKey(job.analysisId), receiptKey);
-    }
-
-    if (job.queueType === GLB_QUEUE_TYPE && job.trajectoryId) {
-        const receiptKey = glbTerminalReceiptKey(job.trajectoryId, job.jobId);
-        pipeline.del(receiptKey);
-        pipeline.srem(glbTerminalReceiptSetKey(job.trajectoryId), receiptKey);
-    }
-
-    await pipeline.exec();
+        if (job.queueType === GLB_QUEUE_TYPE && job.trajectoryId) {
+            const receiptKey = glbTerminalReceiptKey(job.trajectoryId, job.jobId);
+            await store.delete([receiptKey]);
+            await store.setRemove(glbTerminalReceiptSetKey(job.trajectoryId), [receiptKey]);
+        }
+    });
 };
 
 const markJobsRetrying = async (jobs: TeamJobSummary[]): Promise<void> => {
