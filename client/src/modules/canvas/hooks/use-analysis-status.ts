@@ -19,6 +19,40 @@ const isTerminalAnalysisStatus = (status?: string): boolean => {
     return status === AnalysisStatus.Completed || status === AnalysisStatus.Failed;
 };
 
+/*
+ * An analysis only ever moves forward, so a status is comparable by how far along it
+ * is. Ranking them lets the two sources be merged without either one dragging the
+ * other backwards.
+ */
+const STATUS_RANK: Record<string, number> = {
+    [AnalysisStatus.Pending]: 0,
+    [AnalysisStatus.Running]: 1,
+    [AnalysisStatus.Failed]: 2,
+    [AnalysisStatus.Completed]: 2
+};
+
+/**
+ * Merges the analysis row's status with the one implied by its jobs.
+ *
+ * The row is what the server computed from the whole job session, and the jobs are a
+ * live but partial view: `deriveAnalysisStatusFromJobs` reports `Pending` as soon as
+ * *any* job is queued, which for a multi-frame run is true for almost the entire run.
+ * Letting that win is what showed a running analysis as queued while its artifacts
+ * were visibly uploading. The job view is still worth having — it promotes an
+ * analysis whose row has not caught up yet — so it may only move the status forward.
+ */
+const mergeAnalysisStatus = (
+    persisted: AnalysisStatus,
+    derived?: AnalysisStatus
+): AnalysisStatus => {
+    if (isTerminalAnalysisStatus(persisted)) return persisted;
+    if (!derived) return persisted;
+
+    const persistedRank = STATUS_RANK[persisted] ?? 0;
+    const derivedRank = STATUS_RANK[derived] ?? 0;
+    return derivedRank > persistedRank ? derived : persisted;
+};
+
 const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusProps) => {
     const analysesQuery = useAnalysesByTrajectoryQuery(
         {
@@ -64,7 +98,7 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
             const derived = deriveAnalysisStatusFromJobs(jobs);
 
             next.set(analysis._id, {
-                status: isTerminalAnalysisStatus(persistedStatus) ? persistedStatus : (derived ?? persistedStatus),
+                status: mergeAnalysisStatus(persistedStatus, derived),
                 trajectoryId: analysis.trajectory?._id ?? trajectoryId
             });
         }

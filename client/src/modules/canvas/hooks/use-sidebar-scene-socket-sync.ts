@@ -6,8 +6,8 @@ import {
     upsertAnalysisFromSocketPayload
 } from '@/modules/analysis/services/cache';
 import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
-import { normalizeCanvasAnalysisStatus } from '../utils/analysis-status';
-import { resolveJobAnalysisId } from '../utils/analysis-job-status';
+import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utils/analysis-status';
+import { isRunningJobStatus, resolveJobAnalysisId } from '../utils/analysis-job-status';
 import queryClient from '@/shared/query/query-client';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/events/trajectory';
@@ -139,10 +139,23 @@ const useSidebarSceneSocketSync = ({
         const analysisId = resolveJobAnalysisId(job);
         if (!analysisId) return;
 
+        /*
+         * One job's status is not the analysis's status. A queued job says nothing
+         * about the analysis as a whole — its siblings may already be running — so
+         * forwarding it verbatim demoted a running analysis back to pending. With a
+         * multi-frame run there is always another queued job arriving, which is what
+         * pinned the badge to "queued" while the artifacts visibly progressed.
+         *
+         * A running job is the one unambiguous signal: whatever owns it is running.
+         * Completion and failure stay with `analysis.status.changed`, which the server
+         * derives from the whole job session rather than from a single job.
+         */
+        if (!isRunningJobStatus(job.status)) return;
+
         patchAnalysisStatus({
             analysisId,
             trajectoryId: job.trajectoryId,
-            status: job.status
+            status: AnalysisStatus.Running
         });
     }, [patchAnalysisStatus]);
 

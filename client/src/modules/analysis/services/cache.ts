@@ -200,12 +200,39 @@ const patchAnalysisCaches = (
     patchAnalysisByTrajectoryQueries(patchPage);
 };
 
+/*
+ * Artifact generation only moves forward, and two independent event streams write it
+ * (`analysis.status.changed` carries a snapshot of it, `analysis.stage.changed` is
+ * dedicated to it). They interleave, so a snapshot taken while artifacts were still
+ * uploading can land after the event that already reported them ready and drag the
+ * value backwards — which left the status bar reading "Uploading artifacts" for a run
+ * that had finished. Ranking the states makes the merge order-insensitive.
+ */
+const ARTIFACT_STATUS_RANK: Record<string, number> = {
+    pending: 0,
+    generating: 1,
+    uploading: 2,
+    ready: 3,
+    failed: 3
+};
+
+type ArtifactStatus = Analysis['artifactStatus'];
+
+const mergeArtifactStatus = (current: ArtifactStatus, incoming: ArtifactStatus): ArtifactStatus => {
+    if (incoming === undefined) return current;
+    if (current === undefined) return incoming;
+
+    const currentRank = ARTIFACT_STATUS_RANK[current as string] ?? 0;
+    const incomingRank = ARTIFACT_STATUS_RANK[incoming as string] ?? 0;
+    return incomingRank >= currentRank ? incoming : current;
+};
+
 export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): void => {
     patchAnalysisCaches(patch.analysisId, (analysis) => ({
         ...analysis,
         status: patch.status,
         totalFrames: patch.totalFrames ?? analysis.totalFrames,
-        artifactStatus: patch.artifactStatus ?? analysis.artifactStatus,
+        artifactStatus: mergeArtifactStatus(analysis.artifactStatus, patch.artifactStatus),
         expectedArtifacts: patch.expectedArtifacts ?? analysis.expectedArtifacts,
         stages: patch.stages ?? analysis.stages,
         childAnalyses: patch.childAnalyses ?? analysis.childAnalyses
@@ -215,7 +242,7 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
 export const updateAnalysisExecutionCaches = (patch: PatchAnalysisExecutionInput): void => {
     patchAnalysisCaches(patch.analysisId, (analysis) => ({
         ...analysis,
-        artifactStatus: patch.artifactStatus ?? analysis.artifactStatus,
+        artifactStatus: mergeArtifactStatus(analysis.artifactStatus, patch.artifactStatus),
         expectedArtifacts: patch.expectedArtifacts ?? analysis.expectedArtifacts,
         stages: patch.stages ?? analysis.stages,
         childAnalyses: patch.childAnalyses ?? analysis.childAnalyses
