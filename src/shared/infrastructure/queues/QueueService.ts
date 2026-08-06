@@ -1,9 +1,23 @@
+import { randomUUID } from 'node:crypto';
 import { singleton } from '@shared/application/utilities/singleton';
 import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PIPELINE_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
-import { RedisConnection, getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
-import { TTLCache } from '@isaacs/ttlcache';
-import { Queue, Worker, type Job, type JobState } from 'bullmq';
+import { QueueWorker } from '@shared/infrastructure/queues/QueueWorker';
+import { getQueueNotifier } from '@shared/infrastructure/queues/QueueNotifier';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import {
+    countJobsByState,
+    deleteTerminalJob,
+    findJobByKey,
+    insertJob,
+    insertJobs,
+    isJobLive,
+    notifyQueue,
+    removeJobByKey,
+    retryFailedJobByKey
+} from '@shared/infrastructure/queues/queue-job-store';
+import type { EnqueueRequest, QueueJobCounts } from '@shared/infrastructure/queues/queue-job-store';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import type { JsonObject } from '@shared/contracts/types/json';
 
 export interface QueuePayload {
     jobId?: string;
@@ -11,8 +25,6 @@ export interface QueuePayload {
 
 type EnqueueOptions = {
     preserveExistingJob?: boolean;
-    removeOnComplete?: number | boolean;
-    removeOnFail?: number | boolean;
     attempts?: number;
     backoff?: {
         type: string;
@@ -32,27 +44,27 @@ const KNOWN_QUEUE_NAMES = [
 
 const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
-/** A job in one of these states is still owned by the queue, so re-enqueueing must not disturb it. */
-const PRESERVED_JOB_STATES = new Set<JobState | 'unknown'>([
-    'active',
-    'waiting',
-    'delayed'
-]);
+/**
+ * How long a worker may hold a job before the queue assumes it died.
+ *
+ * Compute jobs here drive native binaries that run for minutes on large frames.
+ * The lease is renewed on a timer while a job runs, so a busy event loop can miss
+ * a renewal and let the lease lapse — the job is then handed to another slot and
+ * the same frame is analysed twice in parallel. That was observed on a 4.45M-atom
+ * frame: two OpenDXA processes on the identical timestep, each holding several GB.
+ *
+ * The window is therefore set well beyond any realistic job, and a job is failed
+ * rather than redelivered after a second stall so a job that kills its worker
+ * cannot loop.
+ */
+const WORKER_LEASE_DURATION_MS = readPositiveIntegerEnv('QUEUE_WORKER_LOCK_DURATION_MS') ?? 3_600_000;
 
 /**
- * How long a worker may hold a job before BullMQ assumes it died.
- *
- * Compute jobs here drive native binaries that run for minutes on large frames. The
- * lock is renewed on a timer, so a busy event loop can miss a renewal and let the
- * lock lapse — BullMQ then re-delivers the job to another worker and the same frame
- * is analysed twice in parallel. That was observed on a 4.45M-atom frame: two
- * OpenDXA processes on the identical timestep, each holding several GB.
- *
- * The window is therefore set well beyond any realistic job, and `maxStalledCount`
- * stays at BullMQ's default of one so a genuinely dead worker is still recovered.
+ * Fallback poll interval. Enqueues notify idle workers, so this only bounds how
+ * late a delayed job's own deadline can be noticed, and how long a queue stays
+ * quiet if the notification listener is down.
  */
-const WORKER_LOCK_DURATION_MS = readPositiveIntegerEnv('QUEUE_WORKER_LOCK_DURATION_MS') ?? 3_600_000;
-const WORKER_STALLED_INTERVAL_MS = readPositiveIntegerEnv('QUEUE_WORKER_STALLED_INTERVAL_MS') ?? 300_000;
+const WORKER_POLL_INTERVAL_MS = readPositiveIntegerEnv('QUEUE_WORKER_POLL_INTERVAL_MS') ?? 2_000;
 
 const assertKnownQueue = (queueName: string): void => {
     if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
@@ -60,173 +72,130 @@ const assertKnownQueue = (queueName: string): void => {
     }
 };
 
-const toJobOptions = (jobId: string | undefined, options: EnqueueOptions) => ({
-    jobId,
-    attempts: options.attempts,
-    backoff: options.backoff,
-    removeOnComplete: options.removeOnComplete ?? 1000,
-    removeOnFail: options.removeOnFail ?? 1000
+const toEnqueueRequest = (
+    queueName: string,
+    payload: QueuePayload,
+    options: EnqueueOptions
+): EnqueueRequest => ({
+    queue: queueName,
+    /*
+     * A job without a caller-supplied id gets a generated one so every row has a
+     * key. Only supplied ids are addressable afterwards, which is the same
+     * property the previous queue had.
+     */
+    jobKey: payload.jobId ?? randomUUID(),
+    payload: payload as unknown as JsonObject,
+    maxAttempts: Math.max(1, options.attempts ?? 1),
+    backoffType: options.backoff?.type ?? null,
+    backoffDelayMs: options.backoff?.delay ?? null
 });
 
+/**
+ * The daemon's job queues, on Postgres.
+ *
+ * Jobs are claimed with `FOR UPDATE SKIP LOCKED`, which is what lets several
+ * workers draw from one queue without coordinating, and idle workers are woken by
+ * `NOTIFY` rather than only polling. Duplicate suppression is a partial unique
+ * index over the non-terminal states, so "is this already queued?" and the insert
+ * are a single statement instead of a check followed by a write.
+ */
 export class QueueService {
-    private readonly queues = new Map<string, Queue<QueuePayload>>();
-    private readonly enqueueLocks = new Map<string, Promise<unknown>>();
-    /** Remembers which queue a job id landed in for a day, so lookups skip the fan-out scan. */
-    private readonly jobQueueAffinity = new TTLCache<string, string>({
-        max: 50_000,
-        ttl: 86_400_000
-    });
-
-    constructor(private readonly redisConnection: RedisConnection) {}
+    private readonly workers = new Set<QueueWorker<never>>();
 
     async close(): Promise<void> {
-        await Promise.all([...this.queues.values()].map((queue) => queue.close()));
-        this.queues.clear();
+        await Promise.all([...this.workers].map((worker) => worker.close()));
+        this.workers.clear();
+        await getQueueNotifier().close();
     }
 
-    async enqueue<T extends QueuePayload>(queueName: string, payload: T, options: EnqueueOptions = {}): Promise<boolean> {
-        const jobId = payload.jobId;
-        if (!jobId || !options.preserveExistingJob) {
-            return this.doEnqueue(queueName, payload, options);
+    /**
+     * Resolves false when the job was not added because an equivalent one is still
+     * live in that queue. Callers that pass `preserveExistingJob` read this; the
+     * rest enqueue and ignore it.
+     */
+    async enqueue<T extends QueuePayload>(
+        queueName: string,
+        payload: T,
+        options: EnqueueOptions = {}
+    ): Promise<boolean> {
+        assertKnownQueue(queueName);
+
+        const request = toEnqueueRequest(queueName, payload, options);
+
+        if (options.preserveExistingJob && await isJobLive(queueName, request.jobKey)) {
+            return false;
         }
 
-        // Serialised per job id only, so unrelated jobs still admit in parallel.
-        return this.runExclusive(`${queueName}:${jobId}`, () => this.doEnqueue(queueName, payload, options));
+        /*
+         * A settled row still holds the key, and the unique index deliberately
+         * does not cover terminal states, so the old row is cleared to let the key
+         * be re-enqueued rather than accumulating a row per run.
+         */
+        await deleteTerminalJob(queueName, request.jobKey);
+
+        const inserted = await insertJob(request);
+        if (inserted) {
+            await notifyQueue(queueName);
+        }
+
+        return inserted;
     }
 
-    private async doEnqueue<T extends QueuePayload>(queueName: string, payload: T, options: EnqueueOptions): Promise<boolean> {
-        const queue = this.getQueue(queueName);
-        const jobId = payload.jobId;
-
-        if (jobId && options.preserveExistingJob) {
-            const existingJob = await queue.getJob(jobId);
-            if (existingJob) {
-                if (PRESERVED_JOB_STATES.has(await existingJob.getState())) {
-                    return false;
-                }
-
-                await existingJob.remove().catch(() => undefined);
-            }
-        }
-
-        await queue.add(queueName, payload, toJobOptions(jobId, options));
-
-        if (jobId) {
-            this.jobQueueAffinity.set(jobId, queueName);
-        }
-
-        return true;
-    }
-
-    private async runExclusive<R>(key: string, task: () => Promise<R>): Promise<R> {
-        const previous = this.enqueueLocks.get(key) ?? Promise.resolve();
-        const next = previous.then(task, task);
-        this.enqueueLocks.set(key, next);
-
-        try {
-            return await next;
-        } finally {
-            if (this.enqueueLocks.get(key) === next) {
-                this.enqueueLocks.delete(key);
-            }
-        }
-    }
-
-    async enqueueBulk<T extends QueuePayload>(queueName: string, payloads: T[], options: EnqueueOptions = {}): Promise<void> {
+    async enqueueBulk<T extends QueuePayload>(
+        queueName: string,
+        payloads: T[],
+        options: EnqueueOptions = {}
+    ): Promise<void> {
         if (payloads.length === 0) return;
 
-        const queue = this.getQueue(queueName);
+        assertKnownQueue(queueName);
 
-        await queue.addBulk(payloads.map((payload) => ({
-            name: queueName,
-            data: payload,
-            opts: toJobOptions(payload.jobId, options)
-        })));
+        const requests = payloads.map((payload) => toEnqueueRequest(queueName, payload, options));
+        const inserted = await insertJobs(queueName, requests);
 
-        for (const payload of payloads) {
-            if (payload.jobId) {
-                this.jobQueueAffinity.set(payload.jobId, queueName);
-            }
+        if (inserted > 0) {
+            await notifyQueue(queueName);
         }
     }
 
     createWorker = <T extends QueuePayload>(
         queueName: string,
-        processor: (payload: T, job: Job<T>) => Promise<void>,
+        processor: (payload: T, job: QueueJobHandle<T>) => Promise<void>,
         options: { concurrency?: number } = {}
-    ): Worker<T> => {
+    ): QueueWorker<T> => {
         assertKnownQueue(queueName);
-        return new Worker<T>(
-            queueName,
-            (job) => processor(job.data, job),
-            {
-                connection: this.redisConnection.getConnectionOptions(),
-                concurrency: options.concurrency,
-                lockDuration: WORKER_LOCK_DURATION_MS,
-                stalledInterval: WORKER_STALLED_INTERVAL_MS
-            }
-        );
+
+        const worker = new QueueWorker<T>(queueName, processor, {
+            concurrency: options.concurrency ?? 1,
+            leaseDurationMs: WORKER_LEASE_DURATION_MS,
+            pollIntervalMs: WORKER_POLL_INTERVAL_MS
+        });
+
+        this.workers.add(worker as unknown as QueueWorker<never>);
+        return worker;
     };
 
-    async retryJobById(jobId: string): Promise<boolean> {
-        const job = await this.findJob(jobId);
-        if (!job || (await job.getState()) !== 'failed') {
-            return false;
-        }
-
-        await job.retry();
-        return true;
+    /** Only a failed job is retryable, so a running or queued one is left alone. */
+    retryJobById(jobId: string): Promise<boolean> {
+        return retryFailedJobByKey(jobId);
     }
 
-    async removeJobById(jobId: string): Promise<boolean> {
-        const job = await this.findJob(jobId);
-        if (!job) return false;
-
-        await job.remove();
-        return true;
+    removeJobById(jobId: string): Promise<boolean> {
+        return removeJobByKey(jobId);
     }
 
-    private async findJob(jobId: string): Promise<Job<QueuePayload> | null> {
-        const affineQueueName = this.jobQueueAffinity.get(jobId);
-        if (affineQueueName) {
-            const job = await this.getQueue(affineQueueName).getJob(jobId);
-            if (job) return job;
-        }
-
-        const lookups = await Promise.all(
-            KNOWN_QUEUE_NAMES.map((queueName) => this.getQueue(queueName).getJob(jobId))
-        );
-
-        return lookups.find((job): job is Job<QueuePayload> => Boolean(job)) ?? null;
+    async hasJob(jobId: string): Promise<boolean> {
+        return (await findJobByKey(jobId)) !== null;
     }
 
-    async getJobCounts(queueName: string): Promise<{ waiting: number; active: number; delayed: number; completed: number; failed: number; }> {
-        const counts = await this.getQueue(queueName).getJobCounts('waiting', 'active', 'delayed', 'completed', 'failed');
-        return {
-            waiting: counts.waiting ?? 0,
-            active: counts.active ?? 0,
-            delayed: counts.delayed ?? 0,
-            completed: counts.completed ?? 0,
-            failed: counts.failed ?? 0
-        };
+    getJobCounts(queueName: string): Promise<QueueJobCounts> {
+        assertKnownQueue(queueName);
+        return countJobsByState(queueName);
     }
 
     listKnownQueueNames(): readonly string[] {
         return KNOWN_QUEUE_NAMES;
     }
-
-    private getQueue(queueName: string): Queue<QueuePayload> {
-        assertKnownQueue(queueName);
-        const existingQueue = this.queues.get(queueName);
-        if (existingQueue) return existingQueue;
-
-        const queue = new Queue<QueuePayload>(queueName, {
-            connection: this.redisConnection.getConnectionOptions()
-        });
-
-        this.queues.set(queueName, queue);
-        return queue;
-    }
 }
 
-export const getQueueService = singleton((): QueueService => new QueueService(getRedisConnection()));
+export const getQueueService = singleton((): QueueService => new QueueService());

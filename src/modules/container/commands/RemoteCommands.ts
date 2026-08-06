@@ -1,25 +1,18 @@
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
-import { getRedisExplorer } from '@modules/container/services/remote-access/RedisExplorer';
 import { RemoteExplorerTarget, type RemoteExplorerRequest } from '@shared/contracts';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { MinioService } from '@shared/infrastructure/storage/MinioService';
-import type { RedisExplorer } from '@modules/container/services/remote-access/RedisExplorer';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';
 import MinioRemoteAccess from '@modules/container/services/remote-access/MinIORemoteAccess';
-import MongoRemoteAccess from '@modules/container/services/remote-access/MongoRemoteAccess';
-import RedisRemoteAccess from '@modules/container/services/remote-access/RedisRemoteAccess';
+import DaemonTableRemoteAccess from '@modules/container/services/remote-access/DaemonTableRemoteAccess';
 
 @CommandGroup('remote')
 export class RemoteCommands {
     private readonly remoteAccessByTarget: Map<RemoteExplorerTarget, BaseRemoteAccess>;
 
-    constructor(
-        private readonly minioService: MinioService,
-        private readonly redisExplorer: RedisExplorer
-    ) {
+    constructor(private readonly minioService: MinioService) {
         const remoteAccesses = [
-            new MongoRemoteAccess(),
-            new RedisRemoteAccess(this.redisExplorer),
+            new DaemonTableRemoteAccess(),
             new MinioRemoteAccess(this.minioService)
         ];
 
@@ -51,4 +44,4 @@ export class RemoteCommands {
     }
 }
 
-export const getRemoteCommands = commandGroupFactory(RemoteCommands, () => new RemoteCommands(getMinioService(), getRedisExplorer()));
+export const getRemoteCommands = commandGroupFactory(RemoteCommands, () => new RemoteCommands(getMinioService()));

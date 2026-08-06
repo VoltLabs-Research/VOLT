@@ -2,7 +2,7 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
-import { RedisConnection, getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { DaemonStateStore, getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type { AnalysisQueueJobPayload } from '@shared/contracts/types/http-analysis';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
@@ -20,7 +20,7 @@ export class AnalysisQueueAdmissionController {
 
     constructor(
         private readonly queueService: QueueService,
-        private readonly redisConnection: RedisConnection
+        private readonly stateStore: DaemonStateStore
     ) {}
 
     async enqueueInitialJobs(jobs: AnalysisQueueJobPayload[]): Promise<QueueAdmissionResult> {
@@ -39,7 +39,7 @@ export class AnalysisQueueAdmissionController {
         const queuedJobs = jobs.slice(0, this.admissionWindow);
         const deferredJobs = jobs.slice(this.admissionWindow);
 
-        await this.redisConnection.appendListWithTtl(
+        await this.stateStore.appendListWithTtl(
             this.pendingJobsKey(analysisId),
             deferredJobs.map((job) => JSON.stringify(job)),
             ANALYSIS_QUEUE_ADMISSION_TTL_SECONDS
@@ -54,7 +54,7 @@ export class AnalysisQueueAdmissionController {
 
     async enqueueNextDeferredJob(analysisId: string): Promise<AnalysisQueueJobPayload | null> {
         while (true) {
-            const deferredPayload = await this.redisConnection.popListHead(this.pendingJobsKey(analysisId));
+            const deferredPayload = await this.stateStore.popListHead(this.pendingJobsKey(analysisId));
             if (!deferredPayload) {
                 return null;
             }
@@ -87,8 +87,8 @@ export class AnalysisQueueAdmissionController {
     }
 
     private async isRemovedJob(jobId: string): Promise<boolean> {
-        return (await this.redisConnection.getValue(`${REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX}${jobId}`)) === '1';
+        return (await this.stateStore.getValue(`${REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX}${jobId}`)) === '1';
     }
 }
 
-export const getAnalysisQueueAdmissionController = singleton((): AnalysisQueueAdmissionController => new AnalysisQueueAdmissionController(getQueueService(), getRedisConnection()));
+export const getAnalysisQueueAdmissionController = singleton((): AnalysisQueueAdmissionController => new AnalysisQueueAdmissionController(getQueueService(), getDaemonStateStore()));

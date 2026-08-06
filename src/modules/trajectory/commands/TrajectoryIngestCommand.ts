@@ -4,7 +4,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { getConfig } from '@core/config/daemon';
 import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -17,7 +17,7 @@ import type { DaemonConfig } from '@core/config/daemon';
 import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
 import { parseTrajectoryMetadata, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
@@ -79,7 +79,7 @@ export class TrajectoryIngestCommand {
         private readonly config: DaemonConfig,
         private readonly minioService: LocalClusterObjectStoreGateway,
         private readonly queueService: QueueService,
-        private readonly redisConnection: RedisConnection
+        private readonly stateStore: DaemonStateStore
     ) {}
 
     @Command('ingest')
@@ -126,8 +126,8 @@ export class TrajectoryIngestCommand {
             objectKey: toTrajectoryFrameDumpObjectKey(trajectoryId, f.timestep)
         }));
 
-        await this.redisConnection.setValueWithTtl(`${sessionPrefix}:remaining`, frames.length.toString(), SESSION_TTL_SECONDS);
-        await this.redisConnection.setValueWithTtl(`${sessionPrefix}:frames`, JSON.stringify(framesForParquet), SESSION_TTL_SECONDS);
+        await this.stateStore.setValueWithTtl(`${sessionPrefix}:remaining`, frames.length.toString(), SESSION_TTL_SECONDS);
+        await this.stateStore.setValueWithTtl(`${sessionPrefix}:frames`, JSON.stringify(framesForParquet), SESSION_TTL_SECONDS);
 
         await this.enqueueFrameProcessingJobs(trajectoryId, teamId, this.config.teamClusterId, frames);
 
@@ -410,4 +410,4 @@ export class TrajectoryIngestCommand {
     }
 }
 
-export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getMinioService(), getQueueService(), getRedisConnection()));
+export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getMinioService(), getQueueService(), getDaemonStateStore()));

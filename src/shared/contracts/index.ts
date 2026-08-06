@@ -27,7 +27,7 @@ export * from '@shared/contracts/types/http-notebook';
 
 export * from '@shared/contracts/types/artifact-upload';
 export * from '@shared/contracts/channel/reverse-channel-plugin';
-export * from '@shared/contracts/types/mongo-payloads';
+export * from '@shared/contracts/types/listing-transfer-payloads';
 export * from '@shared/contracts/types/registry-install';
 
 export * from '@shared/contracts/types/queue-trajectory';

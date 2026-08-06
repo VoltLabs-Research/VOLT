@@ -1,52 +1,73 @@
-import mongoose, { Schema } from 'mongoose';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import type { JsonObject } from '@shared/contracts/types/json';
 
-export interface PluginListingRowDocument {
-    _id: string;
-    plugin?: string;
-    team?: string;
-    trajectory?: string;
-    analysis?: string;
-    exposureId?: string;
-    exposureName?: string;
-    timestep?: number;
-    propertyObjectKey?: string;
-    [key: string]: unknown;
-};
+/**
+ * One summary row per (analysis, exposure, timestep).
+ *
+ * `row` stays an open object because its keys are the plugin's own output columns:
+ * every plugin reports a different set and the listing UI derives its columns from
+ * whatever is present. That is the one part of the shape that must not be pinned
+ * down, so it lives in `jsonb` while the identifying fields stay typed.
+ */
+@Entity('plugin_listing_rows')
+@Index(['analysis', 'exposureId', 'timestep'])
+@Index(['analysis', 'timestep'])
+@Index(['plugin', 'trajectory', 'timestep'])
+@Index(['trajectory'])
+export class PluginListingRow {
+    /*
+     * Derived from the natural key rather than generated, so re-importing a row into
+     * another cluster during a storage transfer is idempotent. A random id would
+     * duplicate the row on every retry.
+     */
+    @PrimaryColumn('varchar')
+    _id!: string;
 
-const pluginListingRowSchema = new Schema({
-    _id: {
-        type: String,
-        required: true
-    }
-}, {
-    collection: 'pluginlistingrows',
-    id: false,
-    strict: false
-});
+    @Column('varchar')
+    plugin!: string;
 
-pluginListingRowSchema.index(
-    {
-        analysis: 1,
-        exposureId: 1,
-        timestep: 1
-    },
-    { name: 'plugin_listing_analysis_exposure_timestep_idx' }
-);
-pluginListingRowSchema.index(
-    {
-        analysis: 1,
-        timestep: -1
-    },
-    { name: 'plugin_listing_analysis_timestep_idx' }
-);
-pluginListingRowSchema.index(
-    {
-        plugin: 1,
-        trajectory: 1,
-        timestep: -1
-    },
-    { name: 'plugin_listing_plugin_trajectory_timestep_idx' }
-);
+    @Column('varchar')
+    team!: string;
 
-export const PluginListingRowModel: mongoose.Model<PluginListingRowDocument> = mongoose.models.DaemonPluginListingRow
-    || mongoose.model('DaemonPluginListingRow', pluginListingRowSchema);
+    @Column('varchar')
+    trajectory!: string;
+
+    @Column('varchar')
+    analysis!: string;
+
+    @Column('varchar')
+    exposureId!: string;
+
+    @Column('varchar')
+    exposureName!: string;
+
+    /* Timesteps are simulation step counts and routinely exceed 2^31. */
+    @Column('bigint', {
+        transformer: {
+            to: (value: number): number => value,
+            from: (value: string | number): number => Number(value)
+        }
+    })
+    timestep!: number;
+
+    @Column('jsonb', { default: () => '\'{}\'::jsonb' })
+    row!: JsonObject;
+
+    @Column('varchar', { nullable: true })
+    propertyObjectKey?: string | null;
+
+    @Column('varchar', { nullable: true })
+    propertyOwnerClusterId?: string | null;
+
+    @Column('jsonb', { default: () => '\'[]\'::jsonb' })
+    subListingNames!: string[];
+}
+
+/** The identity a listing row is addressed by wherever it crosses a boundary. */
+export const buildPluginListingRowId = (
+    analysis: string,
+    exposureId: string,
+    timestep: number
+): string => `${analysis}:${exposureId}:${timestep}`;
+
+export type PluginListingRowDocument = PluginListingRow;

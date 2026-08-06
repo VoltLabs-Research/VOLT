@@ -3,7 +3,7 @@ import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import { type Job } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
@@ -40,7 +40,7 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
         );
     }
 
-    protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {
+    protected async process(payload: GlbConversionQueueJobPayload, bullJob: QueueJobHandle<GlbConversionQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),

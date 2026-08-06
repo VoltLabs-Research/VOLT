@@ -1,6 +1,6 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
-import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 
 const AUTO_PREVIEW_CLAIM_TTL_SECONDS = 30 * 60;
 
@@ -10,12 +10,12 @@ const buildAutoPreviewRasterKey = (trajectoryId: string): string => {
 
 export class TrajectoryAutoPreviewClaimStore {
     constructor(
-        private readonly redisConnection: RedisConnection
+        private readonly stateStore: DaemonStateStore
     ) {
     }
 
     claimRasterization(trajectoryId: string): Promise<boolean> {
-        return this.redisConnection.setKeyIfAbsent(
+        return this.stateStore.setKeyIfAbsent(
             buildAutoPreviewRasterKey(trajectoryId),
             new Date().toISOString(),
             AUTO_PREVIEW_CLAIM_TTL_SECONDS
@@ -23,8 +23,8 @@ export class TrajectoryAutoPreviewClaimStore {
     }
 
     async releaseRasterization(trajectoryId: string): Promise<void> {
-        await this.redisConnection.deleteKey(buildAutoPreviewRasterKey(trajectoryId));
+        await this.stateStore.deleteKey(buildAutoPreviewRasterKey(trajectoryId));
     }
 };
 
-export const getTrajectoryAutoPreviewClaimStore = singleton((): TrajectoryAutoPreviewClaimStore => new TrajectoryAutoPreviewClaimStore(getRedisConnection()));
+export const getTrajectoryAutoPreviewClaimStore = singleton((): TrajectoryAutoPreviewClaimStore => new TrajectoryAutoPreviewClaimStore(getDaemonStateStore()));

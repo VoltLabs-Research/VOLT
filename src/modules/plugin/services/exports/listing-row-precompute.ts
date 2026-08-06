@@ -2,13 +2,13 @@ import { logger } from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/domain/utilities/is-record';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { JsonObject } from '@shared/contracts/types/json';
-import type { MongoPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
-import type { PluginMongoRow } from '@modules/plugin/models/plugin-listing-repository-contract';
+import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
+import type { PluginListingTransferRow } from '@modules/plugin  /models/plugin-listing-repository-contract';
 
 /** Flattens an exposure payload into the precomputed listing rows the UI reads. */
 
 export const precomputeListingRows = async (
-    pluginListingRepository: MongoPluginListingRepository,
+    pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
     decoded: JsonObject | null,
@@ -29,7 +29,7 @@ export const precomputeListingRows = async (
         return;
     }
 
-    const cleanedMainListing: PluginMongoRow = {};
+    const cleanedMainListing: PluginListingTransferRow = {};
     for (const [key, entryValue] of Object.entries(mainListing)) {
         if (typeof entryValue === 'object' && entryValue !== null) {
             continue;
@@ -68,7 +68,7 @@ export const precomputeListingRows = async (
 };
 
 export const precomputeSubListingRows = async (
-    pluginListingRepository: MongoPluginListingRepository,
+    pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
     subListings: Record<string, JsonObject[]>,
@@ -82,7 +82,7 @@ export const precomputeSubListingRows = async (
             exposureId: exposure.nodeId,
             timestep,
             subListingName,
-            rows: rows as PluginMongoRow[]
+            rows: rows as PluginListingTransferRow[]
         }));
 
     await pluginListingRepository.replaceSubListingRows(inputs);

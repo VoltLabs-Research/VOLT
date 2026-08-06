@@ -5,7 +5,8 @@ import { getDaemonArtifactReporter } from '@modules/analysis/services/DaemonArti
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import { DelayedError, type Job } from 'bullmq';
+import { DeferJobError } from '@shared/infrastructure/queues/queue-job-handle';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
@@ -64,7 +65,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         super.start(concurrency);
     }
 
-    protected async process(payload: ArtifactUploadBatchJobPayload, bullJob: Job<ArtifactUploadBatchJobPayload>): Promise<void> {
+    protected async process(payload: ArtifactUploadBatchJobPayload, bullJob: QueueJobHandle<ArtifactUploadBatchJobPayload>): Promise<void> {
         const statusPayload: BaseArtifactUploadEventData = {
             jobId: payload.jobId,
             analysisId: payload.analysisId,
@@ -100,9 +101,9 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                         detail: error
                     });
                 },
-                shouldReportTerminal: (err) => !(err instanceof DelayedError) && isFinalAttempt(),
+                shouldReportTerminal: (err) => !(err instanceof DeferJobError) && isFinalAttempt(),
                 cleanup: async ({ error }) => {
-                    if (error instanceof DelayedError) {
+                    if (error instanceof DeferJobError) {
                         return;
                     }
                     if (error === null || isFinalAttempt()) {

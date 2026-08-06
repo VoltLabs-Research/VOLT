@@ -1,21 +1,21 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type {
     AnalysisRuntimeCleanupRequest,
     RuntimeStateCleanupResponse,
     TrajectoryRuntimeCleanupRequest
 } from '@shared/contracts';
-import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 
 export class RuntimeStateCleanupControl {
     constructor(
-        private readonly redisConnection: RedisConnection
+        private readonly stateStore: DaemonStateStore
     ) {}
 
     async cleanupAnalysisRuntimeState(
         input: AnalysisRuntimeCleanupRequest
     ): Promise<RuntimeStateCleanupResponse> {
-        const deletedKeys = await this.redisConnection.deleteKeys(this.distinctKeys([
+        const deletedKeys = await this.stateStore.deleteKeys(this.distinctKeys([
             this.analysisPendingJobsKey(input.analysisId),
             ...this.removedAnalysisJobKeys(input.jobIds)
         ]));
@@ -26,7 +26,7 @@ export class RuntimeStateCleanupControl {
     async cleanupTrajectoryRuntimeState(
         input: TrajectoryRuntimeCleanupRequest
     ): Promise<RuntimeStateCleanupResponse> {
-        const deletedKeys = await this.redisConnection.deleteKeys(this.distinctKeys([
+        const deletedKeys = await this.stateStore.deleteKeys(this.distinctKeys([
             this.trajectoryFrameRemainingKey(input.trajectoryId),
             this.trajectoryFrameSessionFramesKey(input.trajectoryId),
             this.trajectoryAutoPreviewKey(input.trajectoryId),
@@ -62,4 +62,4 @@ export class RuntimeStateCleanupControl {
     }
 }
 
-export const getRuntimeStateCleanupControl = singleton((): RuntimeStateCleanupControl => new RuntimeStateCleanupControl(getRedisConnection()));
+export const getRuntimeStateCleanupControl = singleton((): RuntimeStateCleanupControl => new RuntimeStateCleanupControl(getDaemonStateStore()));

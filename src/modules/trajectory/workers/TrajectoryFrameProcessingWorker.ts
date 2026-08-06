@@ -5,13 +5,13 @@ import { getMinioService } from '@shared/infrastructure/storage/MinioService';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
-import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { type Job } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 import { logger } from '@shared/infrastructure/logger';
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
@@ -25,7 +25,7 @@ import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import {
     downloadTrajectoryDumps,
     type TrajectoryDumpReference
@@ -50,7 +50,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         private readonly objectStore: ClusterObjectStore,
         private readonly trajectoryRasterQueue: TrajectoryRasterQueue,
         private readonly trajectoryFrameStore: TrajectoryFrameStore,
-        private readonly redisConnection: RedisConnection,
+        private readonly stateStore: DaemonStateStore,
         daemonJobReporter: DaemonJobReporter
     ) {
         super({
@@ -67,7 +67,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         );
     }
 
-    protected async process(payload: FrameProcessingQueueJobPayload, bullJob: Job<FrameProcessingQueueJobPayload>): Promise<void> {
+    protected async process(payload: FrameProcessingQueueJobPayload, bullJob: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
@@ -78,7 +78,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         );
     }
 
-    private async processFrame(payload: FrameProcessingQueueJobPayload, bullJob: Job<FrameProcessingQueueJobPayload>): Promise<void> {
+    private async processFrame(payload: FrameProcessingQueueJobPayload, bullJob: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
         const { trajectoryId, timestep, stagingObjectKey, ownerClusterId } = payload;
         const bucket = ObjectBucketName.Dumps;
 
@@ -137,15 +137,15 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         const { trajectoryId, ownerClusterId } = payload;
         const sessionKey = `${SESSION_KEY_PREFIX}:${trajectoryId}:remaining`;
 
-        const remaining = await this.redisConnection.decrementKey(sessionKey);
+        const remaining = await this.stateStore.decrementKey(sessionKey);
         if (remaining > 0) return;
 
-        await this.redisConnection.deleteKey(sessionKey);
+        await this.stateStore.deleteKey(sessionKey);
         logger.info(`@trajectory-frame-processing: all frames done, starting parquet ingest trajectoryId=${trajectoryId}`);
 
         try {
-            const framesDataRaw = await this.redisConnection.getValue(`${SESSION_KEY_PREFIX}:${trajectoryId}:frames`);
-            await this.redisConnection.deleteKey(`${SESSION_KEY_PREFIX}:${trajectoryId}:frames`);
+            const framesDataRaw = await this.stateStore.getValue(`${SESSION_KEY_PREFIX}:${trajectoryId}:frames`);
+            await this.stateStore.deleteKey(`${SESSION_KEY_PREFIX}:${trajectoryId}:frames`);
 
             if (!framesDataRaw) {
                 logger.warn(`@trajectory-frame-processing: no frame data found for parquet ingest trajectoryId=${trajectoryId}`);
@@ -215,4 +215,4 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 }
 
-export const getTrajectoryFrameProcessingWorker = singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getMinioService(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getRedisConnection(), getDaemonJobReporter()));
+export const getTrajectoryFrameProcessingWorker = singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getMinioService(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getDaemonStateStore(), getDaemonJobReporter()));

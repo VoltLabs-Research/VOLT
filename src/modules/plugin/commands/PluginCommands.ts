@@ -11,13 +11,13 @@ import {
     type PluginSyncRequest,
     type PluginWarmupRequest,
     type PluginWarmupResponse,
-    type TeamClusterDaemonPluginMongoExportPayload,
-    type TeamClusterDaemonPluginMongoImportPayload,
-    type TeamClusterDaemonPluginMongoPurgePayload,
+    type PluginListingTransferExportPayload,
+    type PluginListingTransferImportPayload,
+    type PluginListingTransferPurgePayload,
     type TeamClusterDaemonRegistryInstallPayload,
     type TeamClusterDaemonRegistryInstallResult
 } from '@shared/contracts';
-import type { MongoPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
+import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type {
     PluginListingFilter,
     PluginSubListingFilter
@@ -48,7 +48,7 @@ import * as tar from 'tar';
 export class PluginCommands {
     constructor(
         private readonly objectStore: ClusterObjectStore,
-        private readonly pluginListingRepository: MongoPluginListingRepository,
+        private readonly pluginListingRepository: PluginListingRepository,
         private readonly queueService: QueueService,
         private readonly config: DaemonConfig
     ) {}
@@ -170,22 +170,22 @@ export class PluginCommands {
         return this.pluginListingRepository.listPluginSubListings(payload);
     }
 
-    @Command('transfer.mongo.export')
-    exportMongo(payload: TeamClusterDaemonPluginMongoExportPayload) {
-        return this.pluginListingRepository.exportMongoRows(payload);
+    @Command('transfer.listings.export')
+    exportListings(payload: PluginListingTransferExportPayload) {
+        return this.pluginListingRepository.exportListingRows(payload);
     }
 
-    @Command('transfer.mongo.import')
-    async importMongo(payload: TeamClusterDaemonPluginMongoImportPayload) {
+    @Command('transfer.listings.import')
+    async importListings(payload: PluginListingTransferImportPayload) {
         return {
-            importedRows: await this.pluginListingRepository.importMongoRows(payload)
+            importedRows: await this.pluginListingRepository.importListingRows(payload)
         };
     }
 
-    @Command('transfer.mongo.purge')
-    async purgeMongo(payload: TeamClusterDaemonPluginMongoPurgePayload) {
+    @Command('transfer.listings.purge')
+    async purgeListings(payload: PluginListingTransferPurgePayload) {
         return {
-            deletedRows: await this.pluginListingRepository.purgeMongoRows(payload)
+            deletedRows: await this.pluginListingRepository.purgeListingRows(payload)
         };
     }
 }

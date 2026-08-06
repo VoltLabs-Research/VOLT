@@ -1,9 +1,9 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getRedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { stopProcess } from '@shared/infrastructure/runtime/process-tracker';
-import type { RedisConnection } from '@shared/infrastructure/redis/RedisConnection';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type {
     JobsActionResponse,
     RemoveRunningJobsRequest,
@@ -16,7 +16,7 @@ const REMOVED_ANALYSIS_JOB_TOMBSTONE_TTL_SECONDS = 86_400;
 export class JobControl {
     constructor(
         private readonly queueService: QueueService,
-        private readonly redisConnection: RedisConnection
+        private readonly stateStore: DaemonStateStore
     ) {}
 
     retryJobs = async (input: RetryJobsRequest): Promise<JobsActionResponse> => {
@@ -40,7 +40,7 @@ export class JobControl {
         const affectedJobIds: string[] = [];
 
         for (const jobId of input.jobIds) {
-            await this.redisConnection.setValueWithTtl(
+            await this.stateStore.setValueWithTtl(
                 `${REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX}${jobId}`,
                 '1',
                 REMOVED_ANALYSIS_JOB_TOMBSTONE_TTL_SECONDS
@@ -57,4 +57,4 @@ export class JobControl {
     };
 }
 
-export const getJobControl = singleton((): JobControl => new JobControl(getQueueService(), getRedisConnection()));
+export const getJobControl = singleton((): JobControl => new JobControl(getQueueService(), getDaemonStateStore()));

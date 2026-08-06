@@ -4,7 +4,7 @@ import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/Queue
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import { getRasterizer } from '@modules/trajectory/services/raster/Rasterizer';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import { type Job } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
@@ -44,7 +44,7 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
         );
     }
 
-    protected async process(payload: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
+    protected async process(payload: RasterQueueJobPayload, bullJob: QueueJobHandle<RasterQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),

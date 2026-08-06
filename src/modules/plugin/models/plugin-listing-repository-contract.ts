@@ -2,7 +2,7 @@ import type { PaginatedResult } from '@shared/contracts/types/pagination';
 import type { PluginListingRowDocument } from '@modules/plugin/models/plugin-listing-row-model';
 import type { JsonObject } from '@shared/contracts/types/json';
 
-export type PluginMongoRow = JsonObject;
+export type PluginListingTransferRow = JsonObject;
 
 export interface PluginListingFilter {
     pluginId?: string;
@@ -37,7 +37,7 @@ export interface BulkUpsertOperation {
         exposureName: string;
         exposureId: string;
         timestep: number;
-        row: PluginMongoRow;
+        row: PluginListingTransferRow;
         propertyObjectKey?: string;
         propertyOwnerClusterId?: string;
         subListingNames: string[];
@@ -49,7 +49,7 @@ export interface ReplaceSubListingRowsInput {
     exposureId: string;
     timestep: number;
     subListingName: string;
-    rows: PluginMongoRow[];
+    rows: PluginListingTransferRow[];
 }
 
 export interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
@@ -57,8 +57,8 @@ export interface ListingPaginatedResult extends PaginatedResult<PluginListingRow
     subListingNames: string[];
 }
 
-export interface PluginMongoRowsExportResult {
-    rows: PluginMongoRow[];
+export interface PluginListingTransferExportResult {
+    rows: PluginListingTransferRow[];
     total: number;
     hasMore: boolean;
     nextSkip: number;

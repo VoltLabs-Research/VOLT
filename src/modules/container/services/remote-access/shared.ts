@@ -1,4 +1,4 @@
-import type { RemoteExplorerMongoDocument } from '@shared/contracts';
+import type { RemoteExplorerDocument } from '@shared/contracts';
 import { Readable } from 'node:stream';
 
 interface ParsedMinioPath {
@@ -6,12 +6,7 @@ interface ParsedMinioPath {
     objectKey: string;
 }
 
-interface ParsedRedisKeyPath {
-    databaseId: number;
-    key: string;
-}
-
-export const MAX_MONGO_DOCUMENTS = 100;
+export const MAX_EXPLORER_DOCUMENTS = 100;
 export const MAX_OBJECT_PREVIEW_BYTES = 65_536;
 
 export const toWebReadableStream = (stream: Readable): ReadableStream => {
@@ -52,24 +47,7 @@ export const parseMinioPath = (path: string): ParsedMinioPath | null => {
     };
 };
 
-export const parseRedisDatabasePath = (path: string): number | null => {
-    const match = normalizeExplorerPath(path).match(/^db\/(\d+)$/);
-    return match ? Number(match[1]) : null;
-};
-
-export const parseRedisKeyPath = (path: string): ParsedRedisKeyPath | null => {
-    const match = normalizeExplorerPath(path).match(/^db\/(\d+)\/key\/(.+)$/);
-    if (!match) {
-        return null;
-    }
-
-    return {
-        databaseId: Number(match[1]),
-        key: decodeURIComponent(match[2])
-    };
-};
-
-export const toMongoDocument = (value: RemoteExplorerMongoDocument['value']): RemoteExplorerMongoDocument => {
+export const toExplorerDocument = (value: RemoteExplorerDocument['value']): RemoteExplorerDocument => {
     const recordValue = structuredClone(value);
     const idValue = recordValue._id;
     const id = typeof idValue === 'string' ? idValue : JSON.stringify(idValue);

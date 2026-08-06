@@ -6,7 +6,7 @@ import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { getWorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { getAnalysisQueueAdmissionController } from '@modules/analysis/services/AnalysisQueueAdmissionController';
 import { getAnalysisProvenanceCollector } from '@modules/analysis/services/AnalysisProvenanceCollector';
-import { type Job as BullMQJob } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
@@ -43,7 +43,7 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         });
     }
 
-    protected async process(payload: AnalysisQueueJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {
+    protected async process(payload: AnalysisQueueJobPayload, bullJob: QueueJobHandle<AnalysisQueueJobPayload>): Promise<void> {
         await processAnalysisJob(payload, {
             analysisDataStore: this.analysisDataStore,
             analysisEnvironment: this.analysisEnvironment,

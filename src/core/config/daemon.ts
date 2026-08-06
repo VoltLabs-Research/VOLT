@@ -1,5 +1,4 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import type { RedisConnectionOptions } from '@shared/contracts/types/redis-connection';
 
 interface MinioConfig {
     endpoint: string;
@@ -32,8 +31,12 @@ export interface DaemonConfig {
     composeProjectName?: string;
     installRoot?: string;
     minio: MinioConfig;
-    mongodbUri: string;
-    redis: RedisConnectionOptions;
+    /*
+     * The daemon's own relational store. Separate from the control plane's database
+     * even when a single-node deployment points both at the same server: a remote
+     * cluster has no route to the control plane's Postgres.
+     */
+    databaseUrl: string;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
     bucketPrefix: string;
@@ -102,14 +105,6 @@ export const loadConfig = (): DaemonConfig => {
         secretKey: readRequiredString('MINIO_SECRET_KEY'),
         useSSL: readBooleanWithDefault('MINIO_USE_SSL', false)
     };
-    const redisKeyPrefix = readStringWithDefault('REDIS_KEY_PREFIX', '');
-    const redis: RedisConnectionOptions = {
-        host: readRequiredString('REDIS_HOST'),
-        port: readNumberWithDefault('REDIS_PORT', 6379),
-        username: readOptionalString('REDIS_USERNAME'),
-        password: readOptionalString('REDIS_PASSWORD'),
-        keyPrefix: redisKeyPrefix || undefined
-    };
     const jupyter: JupyterConfig = {
         image: readStringWithDefault('JUPYTER_IMAGE', DEFAULT_JUPYTER_IMAGE),
         memoryInMegabytes: readNumberWithDefault('JUPYTER_CONTAINER_MEMORY_MB', 2048),
@@ -143,8 +138,7 @@ export const loadConfig = (): DaemonConfig => {
         composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
         installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
         minio,
-        mongodbUri: readRequiredString('MONGODB_URI'),
-        redis,
+        databaseUrl: readRequiredString('DATABASE_URL'),
         jupyter,
         allowedBuckets,
         bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),

@@ -1,6 +1,5 @@
 export const RemoteExplorerTarget = Object.freeze({
-    MongoDocuments: 'mongo-documents',
-    RedisData: 'redis-data',
+    DaemonTables: 'daemon-tables',
     Minio: 'minio'
 } as const);
 export type RemoteExplorerTarget = typeof RemoteExplorerTarget[keyof typeof RemoteExplorerTarget];
@@ -8,8 +7,6 @@ export type RemoteExplorerTarget = typeof RemoteExplorerTarget[keyof typeof Remo
 export const RemoteExplorerEntryType = Object.freeze({
     Directory: 'directory',
     Collection: 'collection',
-    RedisDatabase: 'redis-database',
-    RedisKey: 'redis-key',
     Bucket: 'bucket',
     Object: 'object'
 } as const);
@@ -17,7 +14,6 @@ export type RemoteExplorerEntryType = typeof RemoteExplorerEntryType[keyof typeo
 
 export const RemoteExplorerNodeType = Object.freeze({
     Collection: 'collection',
-    RedisValue: 'redis-value',
     Object: 'object'
 } as const);
 export type RemoteExplorerNodeType = typeof RemoteExplorerNodeType[keyof typeof RemoteExplorerNodeType];
@@ -25,7 +21,7 @@ export type RemoteExplorerNodeType = typeof RemoteExplorerNodeType[keyof typeof 
 export const RemoteExplorerContentType = Object.freeze({
     Empty: 'empty',
     Text: 'text',
-    MongoDocuments: 'mongo-documents'
+    DaemonRows: 'daemon-rows'
 } as const);
 export type RemoteExplorerContentType = typeof RemoteExplorerContentType[keyof typeof RemoteExplorerContentType];
 
@@ -44,7 +40,7 @@ export interface RemoteExplorerEntry {
     description: string;
 }
 
-export interface RemoteExplorerMongoDocument {
+export interface RemoteExplorerDocument {
     id: string;
     value: Record<string, unknown>;
 }
@@ -55,5 +51,5 @@ export interface RemoteExplorerNode {
     type: RemoteExplorerNodeType;
     contentType: RemoteExplorerContentType;
     textContent: string | null;
-    mongoDocuments: RemoteExplorerMongoDocument[];
+    documents: RemoteExplorerDocument[];
 }

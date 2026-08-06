@@ -1,48 +1,22 @@
-import { createRedisClient } from '@shared/infrastructure/redis/create-redis-client';
 import { singleton } from '@shared/application/utilities/singleton';
-import { getConfig } from '@core/config/daemon';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { logger } from '@shared/infrastructure/logger';
 import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/domain/utilities/analysis-execution-data';
-import type Redis from 'ioredis';
-import type { DaemonConfig } from '@core/config/daemon';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts';
-import type { RedisConnectionOptions } from '@shared/contracts/types/redis-connection';
 
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
+/**
+ * Holds the compressed execution payload that every job of an analysis reads.
+ *
+ * It is stored once under a reference rather than copied into each job's payload:
+ * a pipeline can fan out to thousands of jobs over the same configuration, and the
+ * payload is far larger than the reference to it.
+ */
 export class AnalysisDataStore {
-    private readonly client: Redis;
-
-    constructor(
-        config: DaemonConfig
-    ) {
-        const connectionOptions: RedisConnectionOptions = {
-            host: config.redis.host,
-            port: config.redis.port,
-            username: config.redis.username,
-            password: config.redis.password,
-            keyPrefix: config.redis.keyPrefix
-        };
-
-        this.client = createRedisClient(connectionOptions);
-    }
-
-    async connect(): Promise<void> {
-        if (this.client.status === 'ready') {
-            return;
-        }
-
-        await this.client.connect();
-    }
-
-    async disconnect(): Promise<void> {
-        if (this.client.status === 'end') {
-            return;
-        }
-
-        await this.client.quit();
-    }
+    constructor(private readonly stateStore: DaemonStateStore) {}
 
     async store(
         executionData: AnalysisJobExecutionData,
@@ -51,14 +25,12 @@ export class AnalysisDataStore {
             compressedPayload?: string;
         }
     ): Promise<AnalysisExecutionDataReference> {
-        await this.connect();
-
         const storedAt = new Date().toISOString();
         const key = this.createAnalysisExecutionDataKey(executionData.identity.analysisId);
         const serializedPayload = payload?.serializedPayload ?? serializeAnalysisExecutionData(executionData);
         const compressedPayload = payload?.compressedPayload ?? (await compressSerializedAnalysisExecutionData(serializedPayload));
 
-        await this.client.set(key, compressedPayload, 'EX', ANALYSIS_EXECUTION_DATA_TTL_SECONDS);
+        await this.stateStore.setValueWithTtl(key, compressedPayload, ANALYSIS_EXECUTION_DATA_TTL_SECONDS);
 
         return {
             key,
@@ -68,16 +40,22 @@ export class AnalysisDataStore {
     }
 
     async get(reference: AnalysisExecutionDataReference, jobId?: string): Promise<AnalysisJobExecutionData> {
-        await this.connect();
-
-        const payload = await this.client.get(reference.key);
+        const payload = await this.stateStore.getValue(reference.key);
         if (!payload) {
             throw new Error(
                 `Shared analysis execution data reference was not found for job ${jobId ?? 'unknown'}`
             );
         }
 
-        this.client.expire(reference.key, ANALYSIS_EXECUTION_DATA_TTL_SECONDS).catch(() => {});
+        /*
+         * Reading extends the deadline so a long-running analysis cannot have its
+         * own configuration expire underneath its last jobs. Deliberately not
+         * awaited: the payload is already in hand and a failed refresh must not
+         * fail the read.
+         */
+        this.stateStore
+            .setValueWithTtl(reference.key, payload, ANALYSIS_EXECUTION_DATA_TTL_SECONDS)
+            .catch(() => {});
 
         try {
             return await parseStoredAnalysisExecutionData(payload);
@@ -102,4 +80,4 @@ export class AnalysisDataStore {
     }
 };
 
-export const getAnalysisDataStore = singleton((): AnalysisDataStore => new AnalysisDataStore(getConfig()));
+export const getAnalysisDataStore = singleton((): AnalysisDataStore => new AnalysisDataStore(getDaemonStateStore()));

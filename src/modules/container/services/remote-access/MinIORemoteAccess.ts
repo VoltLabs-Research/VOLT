@@ -94,7 +94,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
                 type: RemoteExplorerNodeType.Object,
                 contentType: RemoteExplorerContentType.Empty,
                 textContent: null,
-                mongoDocuments: []
+                documents: []
             };
         }
 
@@ -128,7 +128,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
             type: RemoteExplorerNodeType.Object,
             contentType: RemoteExplorerContentType.Text,
             textContent: Buffer.concat(chunks).toString('utf-8'),
-            mongoDocuments: []
+            documents: []
         };
     }
 

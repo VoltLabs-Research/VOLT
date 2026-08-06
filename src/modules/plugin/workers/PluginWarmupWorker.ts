@@ -6,7 +6,7 @@ import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { QueueService, type QueuePayload, getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { PLUGIN_WARMUP_QUEUE_NAME } from '@core/constants/queue-names';
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
-import type { Job } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 export interface PluginWarmupJobPayload extends QueuePayload {
     pluginId: string;
@@ -32,7 +32,7 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
         super.start(concurrency);
     }
 
-    protected async process(payload: PluginWarmupJobPayload, bullJob: Job<PluginWarmupJobPayload>): Promise<void> {
+    protected async process(payload: PluginWarmupJobPayload, bullJob: QueueJobHandle<PluginWarmupJobPayload>): Promise<void> {
         logger.info(
             {
                 pluginId: payload.pluginId,

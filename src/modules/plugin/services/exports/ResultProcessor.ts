@@ -15,7 +15,7 @@ import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-uploa
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
-import type { MongoPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
+import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
 
@@ -24,7 +24,7 @@ const isParquetExposure = (resultsFileName: string): boolean =>
 
 export class DefaultResultProcessor implements ResultProcessorService {
     constructor(
-        private readonly pluginListingRepository: MongoPluginListingRepository,
+        private readonly pluginListingRepository: PluginListingRepository,
         private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 

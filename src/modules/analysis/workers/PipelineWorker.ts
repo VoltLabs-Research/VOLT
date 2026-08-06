@@ -7,7 +7,7 @@ import { getWorkflowRuntime } from '@modules/analysis/services/workflow/Workflow
 import { getDumpTransformService } from '@modules/analysis/services/dump-transform';
 import { getPipelineSharedExposureStore } from '@modules/analysis/services/PipelineSharedExposureStore';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { type Job as BullMQJob } from 'bullmq';
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
@@ -46,7 +46,7 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
         });
     }
 
-    protected async process(payload: PipelineQueueJobPayload, bullJob: BullMQJob<PipelineQueueJobPayload>): Promise<void> {
+    protected async process(payload: PipelineQueueJobPayload, bullJob: QueueJobHandle<PipelineQueueJobPayload>): Promise<void> {
         await processPipelineJob(payload, {
             analysisDataStore: this.analysisDataStore,
             analysisEnvironment: this.analysisEnvironment,

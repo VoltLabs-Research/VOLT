@@ -1,21 +1,21 @@
 import type { JsonObject } from '@shared/contracts/types/json';
 
-export type TeamClusterDaemonPluginMongoDocumentType = 'listing' | 'sub-listing';
+export type PluginListingTransferKind = 'listing' | 'sub-listing';
 
-export interface TeamClusterDaemonPluginMongoExportPayload {
+export interface PluginListingTransferExportPayload {
     analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    documentType: PluginListingTransferKind;
     skip?: number;
     limit?: number;
 }
 
-export interface TeamClusterDaemonPluginMongoImportPayload {
+export interface PluginListingTransferImportPayload {
     analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    documentType: PluginListingTransferKind;
     rows: JsonObject[];
 }
 
-export interface TeamClusterDaemonPluginMongoPurgePayload {
+export interface PluginListingTransferPurgePayload {
     analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    documentType: PluginListingTransferKind;
 }
