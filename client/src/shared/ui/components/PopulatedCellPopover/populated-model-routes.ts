@@ -7,7 +7,6 @@ const populatedModelRoutes: Record<string, string> = {
     Plugin: '/dashboard/plugins/list',
     Container: '/dashboard/containers',
     ScriptingNotebook: '/dashboard/notebooks',
-    LatexDocument: '/dashboard/latex',
     Whiteboard: '/dashboard/whiteboards',
     SecretKey: '/dashboard/secret-keys'
 };

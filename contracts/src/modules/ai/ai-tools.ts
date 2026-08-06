@@ -20,7 +20,7 @@ export interface DeleteConversationInput{
 
 export interface NavigateToInput{
     /**
-     * Logical destination key. One of: dashboard_home, trajectories_list, trajectory_artifacts, trajectory_atoms, simulation_cells, analysis_configs, analysis_sub_listings, plugins_list, plugin_builder, plugin_exposure_listing, trajectory_plugin_exposure_listing, clusters_list, cluster_monitoring, containers_list, container_create, container_details, messages, ai_conversation, latex_list, latex_workspace, notebooks, whiteboards, whiteboard_editor, my_team, manage_roles, secret_keys, secret_key_metrics, settings_general, settings_authentication, settings_theme, settings_integrations, settings_sessions.
+     * Logical destination key. One of: dashboard_home, trajectories_list, trajectory_artifacts, trajectory_atoms, simulation_cells, analysis_configs, analysis_sub_listings, plugins_list, plugin_builder, plugin_exposure_listing, trajectory_plugin_exposure_listing, clusters_list, cluster_monitoring, containers_list, container_create, container_details, messages, ai_conversation, notebooks, whiteboards, whiteboard_editor, my_team, manage_roles, secret_keys, secret_key_metrics, settings_general, settings_authentication, settings_theme, settings_integrations, settings_sessions.
      */
     destination: string;
     /**

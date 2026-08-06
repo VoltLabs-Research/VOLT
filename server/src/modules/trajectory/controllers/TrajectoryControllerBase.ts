@@ -1,6 +1,6 @@
 import Controller from '@shared/http/Controller';
 import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
+import { buildControllerParams, readAcceptEncoding } from '@shared/infrastructure/http/controllers/controller-internals';
 import { encodeAtomsBinary } from '@modules/trajectory/controllers/atoms-binary-format';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
@@ -13,12 +13,6 @@ import type {
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
-
-/** `accept-encoding` is declared as a possibly repeated header. */
-const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
-    const header = req.headers['accept-encoding'];
-    return Array.isArray(header) ? header.join(',') : header;
-};
 
 /** Express 5 types every route param as `string | string[]`, because a segment can repeat. */
 const readRouteParam = (value: string | string[]): string => (
@@ -73,8 +67,11 @@ export default abstract class TrajectoryControllerBase extends Controller {
     /** Single source of truth for the GLB response headers of every canvas model route. */
     protected passthroughModelHeaders(value: {
         contentEncoding?: string;
+        negotiatedContentEncoding?: string | null;
         contentLength?: number;
         objectName?: string;
+        etag?: string;
+        lastModified?: Date;
     } = {}): Record<string, string> {
         const headers: Record<string, string> = {
             'Content-Type': 'model/gltf-binary',
@@ -89,8 +86,33 @@ export default abstract class TrajectoryControllerBase extends Controller {
             headers['X-Volt-Resource-Encoding'] = value.contentEncoding;
         }
 
+        /*
+         * Standard `Content-Encoding` is only safe once the client advertised the
+         * codec, so callers negotiate it and pass the result rather than deriving
+         * it from the stored object. `Vary` matters more than usual here: the
+         * response is `immutable`, so a shared cache that ignored it could hand an
+         * encoded body to a client that never asked for one.
+         */
+        if (value.negotiatedContentEncoding) {
+            headers['Content-Encoding'] = value.negotiatedContentEncoding;
+            headers['Vary'] = 'Accept-Encoding';
+        }
+
         if ((value.contentLength ?? 0) > 0) {
             headers['Content-Length'] = String(value.contentLength);
+        }
+
+        /*
+         * Validators are forwarded, but no conditional handling is implemented here:
+         * these responses are `immutable`, so browsers do not revalidate anyway, and
+         * the value is in giving shared caches something to key on.
+         */
+        if (value.etag) {
+            headers['ETag'] = value.etag;
+        }
+
+        if (value.lastModified) {
+            headers['Last-Modified'] = value.lastModified.toUTCString();
         }
 
         return headers;

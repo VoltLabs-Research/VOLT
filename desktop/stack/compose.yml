@@ -122,6 +122,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
       BUCKET_PREFIX: cluster-
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
+      # Both services share this network, so object bytes have no reason to be
+      # reframed onto the daemon's socket.io control connection to reach the server.
+      OBJECT_GATEWAY_PUBLIC_BASE_URL: http://cluster-daemon:${DAEMON_PORT:-18080}
     depends_on:
       volt-mongodb: { condition: service_healthy }
       volt-redis:   { condition: service_healthy }

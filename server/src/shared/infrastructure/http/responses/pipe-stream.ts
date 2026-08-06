@@ -18,6 +18,16 @@ export const pipeStreamToResponse = (
 ): Promise<void> => {
     return new Promise<void>((resolve) => {
         for(const [name, value] of Object.entries(headers)){
+            /*
+             * `Vary` accumulates: CORS has already declared `Origin` by this point,
+             * and setting the header outright would drop it and break cache keying
+             * on a response the caller also marks immutable.
+             */
+            if(name.toLowerCase() === 'vary'){
+                res.vary(value);
+                continue;
+            }
+
             res.setHeader(name, value);
         }
 

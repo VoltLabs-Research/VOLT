@@ -1,6 +1,10 @@
 import { ErrorCodes, toErrorCode } from '@core/constants/error-codes';
 
+import bytePlaneResolver from '@modules/cluster/services/BytePlaneResolver';
 import ObjectGatewayAccessTokenProvider from '@modules/cluster/services/object-gateway-access-token';
+import objectGatewayDirectTransport, {
+    ObjectGatewayDialError
+} from '@modules/cluster/services/object-gateway-direct-transport';
 import ObjectGatewayHttpSessionPool from '@modules/cluster/services/object-gateway-http-session-pool';
 import {
     buildCollectionPath,
@@ -261,6 +265,59 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         const accessToken = await this.accessTokenProvider.resolve(teamClusterId);
         const headers = new Headers(options.headers);
         headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, accessToken.token);
+
+        const baseUrl = bytePlaneResolver.resolveBaseUrl(teamClusterId);
+        if (baseUrl) {
+            try {
+                return await this.attemptDirect(baseUrl, options, headers, operation);
+            } catch (error) {
+                if (!(error instanceof ObjectGatewayDialError)) {
+                    throw error;
+                }
+
+                /*
+                 * A pooled keep-alive socket can be handed out just after the gateway
+                 * closed it. That says nothing about reachability, so it is rethrown
+                 * for the caller's replay rather than demoting the whole cluster.
+                 */
+                if (isStaleSessionError(error.cause)) {
+                    throw error.cause;
+                }
+
+                /* A stream body is already partly consumed, so there is nothing to replay onto the tunnel. */
+                if (!isReplayableBody(options.body)) {
+                    throw error;
+                }
+
+                bytePlaneResolver.markUnreachable(teamClusterId, error.cause.message);
+            }
+        }
+
+        return this.attemptOverTunnel(teamClusterId, options, headers, operation);
+    }
+
+    /* Straight to the daemon: no session to lease, so nothing to release. */
+    private async attemptDirect(
+        baseUrl: string,
+        options: ObjectGatewayRequestOptions,
+        headers: Headers,
+        operation: ObjectGatewayOperationName
+    ): Promise<RawHttpResponse> {
+        const response = await objectGatewayDirectTransport.request(baseUrl, options, headers, operation);
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return response;
+        }
+
+        throw await this.toGatewayError(response, operation);
+    }
+
+    private async attemptOverTunnel(
+        teamClusterId: string,
+        options: ObjectGatewayRequestOptions,
+        headers: Headers,
+        operation: ObjectGatewayOperationName
+    ): Promise<RawHttpResponse> {
         const session = await this.httpSessionPool.acquire(teamClusterId, operation);
 
         try {
@@ -271,30 +328,38 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
                 return response;
             }
 
-            const payloadBuffer = await buffer(response.stream);
+            const gatewayError = await this.toGatewayError(response, operation);
             this.httpSessionPool.release(session);
-
-            /* The error body is an untyped wire payload: a failing gateway may not answer JSON at all. */
-            let payload: ObjectGatewayJsonError | undefined;
-            try {
-                payload = JSON.parse(payloadBuffer.toString('utf8')) as ObjectGatewayJsonError;
-            } catch {
-                payload = undefined;
-            }
-
-            throw new ApplicationError(
-                // The code may come from a remote gateway, so it is narrowed to a
-                // registered one; `operation` belongs in the message, not in a
-                // template-built code that no error table could ever list.
-                toErrorCode(payload?.code, ErrorCodes.CLUSTER_OBJECT_GATEWAY_FAILED),
-                payload?.message
-                    ?? `Object gateway ${operation} failed with status ${response.statusCode}`,
-                response.statusCode >= 400 ? response.statusCode : 500
-            );
+            throw gatewayError;
         } catch (error) {
             this.httpSessionPool.release(session, true);
             throw error;
         }
+    }
+
+    private async toGatewayError(
+        response: RawHttpResponse,
+        operation: ObjectGatewayOperationName
+    ): Promise<ApplicationError> {
+        const payloadBuffer = await buffer(response.stream);
+
+        /* The error body is an untyped wire payload: a failing gateway may not answer JSON at all. */
+        let payload: ObjectGatewayJsonError | undefined;
+        try {
+            payload = JSON.parse(payloadBuffer.toString('utf8')) as ObjectGatewayJsonError;
+        } catch {
+            payload = undefined;
+        }
+
+        return new ApplicationError(
+            // The code may come from a remote gateway, so it is narrowed to a
+            // registered one; `operation` belongs in the message, not in a
+            // template-built code that no error table could ever list.
+            toErrorCode(payload?.code, ErrorCodes.CLUSTER_OBJECT_GATEWAY_FAILED),
+            payload?.message
+                ?? `Object gateway ${operation} failed with status ${response.statusCode}`,
+            response.statusCode >= 400 ? response.statusCode : 500
+        );
     }
 }
 

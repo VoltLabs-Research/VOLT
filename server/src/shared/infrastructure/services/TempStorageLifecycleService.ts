@@ -25,7 +25,6 @@ const HOUR_IN_MS = 60 * 60 * 1000;
 const TEMP_STORAGE_CLEANUP_INTERVAL_MS = HOUR_IN_MS;
 const PLUGIN_BINARY_CACHE_MAX_AGE_MS = 7 * 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_MAX_AGE_MS = 2 * HOUR_IN_MS;
-const LATEX_WORKDIR_MAX_AGE_MS = 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_SEGMENT = '.tmp.';
 
 class TempStorageLifecycleService implements ITempStorageLifecycleService {
@@ -44,22 +43,6 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
                     mode: TempStoragePolicyMatchMode.Exact
                 },
                 execute: this.cleanupPluginBinaryCache.bind(this)
-            },
-            {
-                name: 'latex-compile',
-                matcher: {
-                    value: 'latex-compile-',
-                    mode: TempStoragePolicyMatchMode.Prefix
-                },
-                execute: this.cleanupLatexWorkdir.bind(this)
-            },
-            {
-                name: 'latex-fix',
-                matcher: {
-                    value: 'latex-fix-',
-                    mode: TempStoragePolicyMatchMode.Prefix
-                },
-                execute: this.cleanupLatexWorkdir.bind(this)
             }
         ];
     }
@@ -140,10 +123,6 @@ class TempStorageLifecycleService implements ITempStorageLifecycleService {
 
             await this.deleteManagedPath(entryPath, false);
         }
-    }
-
-    private async cleanupLatexWorkdir(workdirPath: string): Promise<void> {
-        await this.cleanupStaleTree(workdirPath, LATEX_WORKDIR_MAX_AGE_MS);
     }
 
     private async cleanupStaleTree(targetPath: string, maxAgeMs: number): Promise<void> {

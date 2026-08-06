@@ -27,7 +27,6 @@ import JobsController from '@modules/jobs/controllers/JobsController';
 import RasterController from '@modules/raster/controllers/RasterController';
 import SimulationCellController from '@modules/simulation-cell/controllers/SimulationCellController';
 import ChatController from '@modules/chat/controllers/ChatController';
-import LatexController from '@modules/latex/controllers/LatexController';
 import WhiteboardController from '@modules/whiteboards/controllers/WhiteboardController';
 import AiController from '@modules/ai/controllers/AiController';
 import AnalysisController from '@modules/analysis/controllers/AnalysisController';
@@ -61,7 +60,6 @@ const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
     raster: [RasterController],
     'simulation-cell': [SimulationCellController],
     chat: [ChatController],
-    latex: [LatexController],
     whiteboards: [WhiteboardController],
     ai: [AiController],
     analysis: [AnalysisController, ProvenanceController],

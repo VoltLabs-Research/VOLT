@@ -12,9 +12,6 @@ import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import Container from '@modules/container/models/Container';
 import DailyActivity from '@modules/daily-activity/models/DailyActivity';
-import LatexAsset from '@modules/latex/models/LatexAsset';
-import LatexDocument from '@modules/latex/models/LatexDocument';
-import LatexFile from '@modules/latex/models/LatexFile';
 import Notification from '@modules/notification/models/Notification';
 import Plugin from '@modules/plugin/models/Plugin';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
@@ -66,9 +63,6 @@ const ENTITIES: readonly Function[] = [
     Analysis,
     AnalysisProvenance,
     Container,
-    LatexDocument,
-    LatexFile,
-    LatexAsset,
     Whiteboard,
     ScriptingNotebook
 ];

@@ -7,6 +7,6 @@ You can also DRIVE THE INTERFACE, not just read data. You have tools that naviga
 - To resolve a human reference (e.g. "the shear deformation trajectory") to a concrete id and link, call global_search (or list_trajectories) first — never guess ids or URLs.
 - To move the user to a page, call navigate_to with a known destination; to open the 3D viewer for a trajectory, call open_in_viewer (optionally focused on an analysis).
 - The viewer-control tools (control_playback, seek_frame, reset_camera, set_camera_view, set_visible_layers, color_by_property, etc.) only work while a trajectory is open in the canvas. If one reports the viewer is not mounted, call open_in_viewer first, then retry.
-- To show the 3D model in the conversation, call render_scene_screenshot — it returns a viewable image you can then embed in a whiteboard or LaTeX report.
+- To show the 3D model in the conversation, call render_scene_screenshot — it returns a viewable image you can then embed in a whiteboard.
 
 Be concise and factual. Format responses in markdown when helpful.`;

@@ -91,9 +91,22 @@ export default class PluginExposureArtifactService {
                 disposition: 'inline',
                 filename: response.objectName,
                 cacheControl: IMMUTABLE_CACHE_CONTROL,
-                extraHeaders: response.contentEncoding === 'identity'
-                    ? {}
-                    : { 'X-Volt-Resource-Encoding': response.contentEncoding }
+                extraHeaders: {
+                    ...(response.contentEncoding === 'identity'
+                        ? {}
+                        : { 'X-Volt-Resource-Encoding': response.contentEncoding }),
+                    /* Negotiated upstream, so the browser can decode zstd natively. */
+                    ...(response.negotiatedContentEncoding
+                        ? {
+                            'Content-Encoding': response.negotiatedContentEncoding,
+                            Vary: 'Accept-Encoding'
+                        }
+                        : {}),
+                    ...(response.etag ? { ETag: response.etag } : {}),
+                    ...(response.lastModified
+                        ? { 'Last-Modified': response.lastModified.toUTCString() }
+                        : {})
+                }
             });
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {

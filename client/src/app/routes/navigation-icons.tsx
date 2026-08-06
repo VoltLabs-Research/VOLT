@@ -3,7 +3,6 @@ import {
     BookOpen,
     Box as CubeIcon,
     Boxes,
-    FileText,
     KeyRound,
     LayoutGrid,
     Lock,
@@ -32,10 +31,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.Dashboard]: {
         inactive: LayoutGrid,
         active: LayoutGrid
-    },
-    [DashboardNavigationIconKey.Latex]: {
-        inactive: FileText,
-        active: FileText
     },
     [DashboardNavigationIconKey.ManageRoles]: {
         inactive: KeyRound,

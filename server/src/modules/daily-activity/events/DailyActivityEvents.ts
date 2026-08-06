@@ -23,16 +23,6 @@ export default class DailyActivityEvents {
         await this.#service.recordActivity(teamId, userId, ActivityType.ContainerDeletion, `Deleted Docker container "${containerName}"`);
     }
 
-    @Event('latex-document.created')
-    async latexDocumentCreated({ teamId, userId, documentTitle }: EventMap['latex-document.created']) {
-        await this.#service.recordActivity(teamId, userId, ActivityType.LatexDocumentCreation, `Created LaTeX document "${documentTitle}"`);
-    }
-
-    @Event('latex-document.deleted')
-    async latexDocumentDeleted({ teamId, userId, documentTitle }: EventMap['latex-document.deleted']) {
-        await this.#service.recordActivity(teamId, userId, ActivityType.LatexDocumentDeletion, `Deleted LaTeX document "${documentTitle}"`);
-    }
-
     @Event('PluginExecutionRequest')
     async pluginExecutionRequested({ teamId, userId, pluginName, trajectoryName }: EventMap['PluginExecutionRequest']) {
         await this.#service.recordActivity(teamId, userId, ActivityType.AnalysisPerformed, `started analysis on ${pluginName} for trajectory ${trajectoryName}`);

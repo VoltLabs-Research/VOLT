@@ -8,7 +8,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
-import latexMemberContentCounter from '@modules/latex/services/LatexMemberContentCounter';
 import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';
 import whiteboardMemberContentCounter from '@modules/whiteboards/services/WhiteboardMemberContentCounter';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
@@ -19,7 +18,6 @@ const buildContentCounters = (): IMemberContentCounter[] => {
     const counters: IMemberContentCounter[] = [];
     if(isModuleEnabled('trajectory')) counters.push(trajectoryMemberContentCounter);
     if(isModuleEnabled('analysis')) counters.push(analysisMemberContentCounter);
-    if(isModuleEnabled('latex')) counters.push(latexMemberContentCounter);
     if(isModuleEnabled('whiteboards')) counters.push(whiteboardMemberContentCounter);
     return counters;
 };
@@ -83,7 +81,6 @@ export default class TeamMemberService{
                 updatedAt: member.updatedAt,
                 trajectoriesCount: countsByMetric.get('trajectoriesCount')?.get(member.user) || 0,
                 analysesCount: countsByMetric.get('analysesCount')?.get(member.user) || 0,
-                latexCount: countsByMetric.get('latexCount')?.get(member.user) || 0,
                 whiteboardsCount: countsByMetric.get('whiteboardsCount')?.get(member.user) || 0
             };
         });

@@ -302,6 +302,10 @@ export interface GetPublicCanvasGLBOutput {
     size?: number;
     objectName: string;
     contentEncoding: GlbContentEncoding;
+    /* Set only when the request advertised the codec; see `getClusterGlbStream`. */
+    negotiatedContentEncoding: 'zstd' | null;
+    etag?: string;
+    lastModified?: Date;
 }
 
 export interface GetPublicCanvasRasterFrameInput {

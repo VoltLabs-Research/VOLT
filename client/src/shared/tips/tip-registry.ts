@@ -33,15 +33,6 @@ export const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
-    'latex-workspace-layout': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Resize workspace panels',
-        description: 'Drag the panel dividers to reshape the LaTeX workspace, or double-click the document title to rename it in place.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
     'dashboard-global-search': {
         surface: 'feature',
         dismissMode: 'auto',
@@ -99,15 +90,6 @@ export const CONTEXTUAL_TIPS = {
         dismissMode: 'manual',
         title: 'Organize trajectories with folders',
         description: 'Create folders, move trajectories, and keep large trajectory lists easier to navigate over time.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
-    'latex-documents-organization': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Organize documents with folders',
-        description: 'Create folders, move documents, and keep large document collections easier to navigate over time.',
         buttonLabel: 'Got it',
         delay: 1600,
         position: 'top-center'

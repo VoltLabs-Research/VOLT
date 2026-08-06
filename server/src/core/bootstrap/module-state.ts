@@ -99,13 +99,6 @@ const MODULE_MANIFESTS = [
     }),
 
     defineModule({
-        key: 'latex',
-        tier: 'leaf',
-        requires: ['team'],
-        optional: ['ai', 'cluster', 'container'],
-        description: 'LaTeX documents + compilation'
-    }),
-    defineModule({
         key: 'whiteboards',
         tier: 'leaf',
         requires: ['team'],

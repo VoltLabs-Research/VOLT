@@ -8,7 +8,7 @@ import PluginService from '@modules/plugin/services/PluginService';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
+import { buildControllerParams, readAcceptEncoding } from '@shared/infrastructure/http/controllers/controller-internals';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import multer from 'multer';
@@ -150,7 +150,11 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInput;
+        const input = {
+            ...buildControllerParams(req) as unknown as GetPluginExposureGLBInput,
+            /* Route params carry no headers, and the contract's field stayed unfilled. */
+            acceptEncoding: readAcceptEncoding(req)
+        };
         const output = await this.#service.getPluginExposureGLB(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);

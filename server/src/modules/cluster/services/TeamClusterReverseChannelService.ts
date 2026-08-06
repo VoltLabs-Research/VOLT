@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import bytePlaneResolver from '@modules/cluster/services/BytePlaneResolver';
 import type { ContainerTerminalAttachment } from '@shared/contracts/ports';
 import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
@@ -211,6 +212,8 @@ class TeamClusterReverseChannelService {
         switch (payload.type) {
             case 'exposure-snapshot':
                 teamClusterExposureRegistryService.replaceTeamClusterExposures(teamClusterId, payload.exposures);
+                /* A daemon that just republished is worth dialling directly again. */
+                bytePlaneResolver.clearTeamCluster(teamClusterId);
                 return;
 
             case 'response':

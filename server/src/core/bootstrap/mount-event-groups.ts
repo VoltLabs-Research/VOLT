@@ -10,7 +10,6 @@ import ClusterEvents from '@modules/cluster/events/ClusterEvents';
 import ContainerEvents from '@modules/container/events/ContainerEvents';
 import DailyActivityEvents from '@modules/daily-activity/events/DailyActivityEvents';
 import JobsEvents from '@modules/jobs/events/JobsEvents';
-import LatexEvents from '@modules/latex/events/LatexEvents';
 import NotificationEvents from '@modules/notification/events/NotificationEvents';
 import PluginEvents from '@modules/plugin/events/PluginEvents';
 import ScriptingEvents from '@modules/scripting/events/ScriptingEvents';
@@ -36,7 +35,6 @@ const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
     container: [ContainerEvents],
     'daily-activity': [DailyActivityEvents],
     jobs: [JobsEvents],
-    latex: [LatexEvents],
     notification: [NotificationEvents],
     plugin: [PluginEvents],
     scripting: [ScriptingEvents],

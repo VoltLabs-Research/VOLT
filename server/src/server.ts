@@ -19,7 +19,6 @@ import { ClusterTransferRunner } from './modules/cluster/services/ClusterTransfe
 import containerPortRelayLifecycleService, { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
 import containerTerminalSocketModule from './modules/container/socket/ContainerTerminalSocketModule';
 import chatSocketModule from './modules/chat/socket/ChatSocketModule';
-import latexSocketModule from './modules/latex/socket/LatexSocketModule';
 import trajectoryCloneRunner, { TrajectoryCloneRunner } from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
 import canvasWorkspaceSocketModule from './modules/trajectory/socket/CanvasWorkspaceSocketModule';
 import trajectoryPresenceSocketModule from './modules/trajectory/socket/TrajectoryPresenceSocketModule';
@@ -220,9 +219,6 @@ const startServer = async () => {
             }
             if (isModuleEnabled('chat')) {
                 activeSocketGateway.register(chatSocketModule);
-            }
-            if (isModuleEnabled('latex')) {
-                activeSocketGateway.register(latexSocketModule);
             }
             if (isModuleEnabled('team')) {
                 activeSocketGateway.register(teamJobsSocketModule);

@@ -106,16 +106,6 @@ const NAVIGATION_DESTINATIONS = {
         optionalParams: ['conversationId'],
         description: 'AI assistant page'
     },
-    latex_list: {
-        pathTemplate: '/dashboard/latex',
-        requiredParams: [],
-        description: 'LaTeX documents'
-    },
-    latex_workspace: {
-        pathTemplate: '/dashboard/latex/:documentId',
-        requiredParams: ['documentId'],
-        description: 'LaTeX workspace'
-    },
     notebooks: {
         pathTemplate: '/dashboard/notebooks',
         requiredParams: [],

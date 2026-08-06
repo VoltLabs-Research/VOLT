@@ -34,7 +34,7 @@ const toCatalogFolderView = (folder: CatalogFolder): CatalogFolderView => ({
 /**
  * Catalog folder CRUD for one folder kind.
  *
- * Trajectories, containers, LaTeX documents and whiteboards all organise
+ * Trajectories, containers and whiteboards all organise
  * themselves with the same folder tree; only the kind discriminator differs.
  * Cascade deletion stays with the caller, since only it knows how to remove
  * the items a folder holds.

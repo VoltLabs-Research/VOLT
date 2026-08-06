@@ -19,8 +19,19 @@ export class TeamClusterReverseTunnelStream extends Duplex {
     private remoteClosed = false;
     private remoteCloseDestroyTimer: NodeJS.Timeout | null = null;
 
+    /*
+     * A default 16 KiB watermark is the wrong size for a tunnel: the daemon reads
+     * from its socket in chunks up to 64 KiB, so `push` reports "full" on the first
+     * one and the reader parks the drain callback until `_read` runs. That collapses
+     * the in-flight window to roughly a single chunk and turns a bulk transfer into
+     * one round trip per chunk. The daemon still bounds memory on its side by
+     * pausing the source above its own 8 MiB window.
+     */
     constructor(private readonly options: TeamClusterReverseTunnelStreamOptions) {
-        super();
+        super({
+            readableHighWaterMark: 1024 * 1024,
+            writableHighWaterMark: 1024 * 1024
+        });
     }
 
     pushChunk(chunk: Buffer, onReadyForMore?: () => void): void {

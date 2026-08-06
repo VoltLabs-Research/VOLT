@@ -74,8 +74,11 @@ export default class CanvasController extends TrajectoryControllerBase {
 
         await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders({
             contentEncoding: output.contentEncoding,
+            negotiatedContentEncoding: output.negotiatedContentEncoding,
             contentLength: output.size,
-            objectName: output.objectName
+            objectName: output.objectName,
+            etag: output.etag,
+            lastModified: output.lastModified
         }));
     }
 

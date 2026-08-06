@@ -19,7 +19,7 @@ interface ConversationPanelViewOptions {
 
 /**
  * Shared wiring for every embedded assistant panel: it turns a chat page state into the select
- * options, navigation callbacks and rendered panel that the floating and LaTeX panels both mount.
+ * options, navigation callbacks and rendered panel that every embedded panel mounts.
  */
 const useConversationPanelView = ({
     pageState,

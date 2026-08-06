@@ -331,26 +331,6 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
-        path: '/dashboard/latex',
-        title: 'LaTeX Documents',
-        loader: () => import('@/modules/latex/components/LatexDocumentsListing'),
-        requiredPermissions: ['latex:read'],
-        moduleKey: 'latex',
-        navigation: {
-            section: DashboardNavigationSection.Main,
-            label: 'LaTeX',
-            icon: DashboardNavigationIconKey.Latex,
-            disabledReason: 'You do not have permission to view LaTeX documents.'
-        }
-    },
-    {
-        path: '/dashboard/latex/:documentId',
-        title: 'LaTeX Workspace',
-        loader: () => import('@/modules/latex/components/LatexDocumentWorkspace'),
-        requiredPermissions: ['latex:read'],
-        moduleKey: 'latex'
-    },
-    {
         path: '/dashboard/notebooks',
         title: 'Notebooks',
         loader: () => import('@/modules/scripting/components/NotebooksListing'),

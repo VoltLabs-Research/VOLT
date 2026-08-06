@@ -7,6 +7,17 @@ const readUserAgent = (req: AuthenticatedRequest): string => {
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
 };
 
+/**
+ * `accept-encoding` is declared as a possibly repeated header, and route params
+ * carry no headers, so any handler that negotiates a content encoding has to read
+ * it explicitly. Shared because every such handler must agree on the parse.
+ */
+export const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
+    const header = req.headers['accept-encoding'];
+
+    return Array.isArray(header) ? header.join(',') : header;
+};
+
 const NUMERIC_REQUEST_KEYS = [
     'page',
     'limit',
