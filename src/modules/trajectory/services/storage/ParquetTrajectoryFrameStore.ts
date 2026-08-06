@@ -18,6 +18,9 @@ import {
     type TrajectoryElementMetadata,
     type TrajectoryFrameData,
     type TrajectoryFrameLookupInput,
+    type TrajectoryFramePage,
+    type TrajectoryPropertyStats,
+    type TrajectoryFrameRange,
     type TrajectoryFrameSource,
     type TrajectoryFrameStore,
     type TrajectoryFrameStoreIngestInput,
@@ -179,7 +182,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 
     public async readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData> {
-        const cacheKey = `${input.ownerClusterId}::${input.trajectoryId}::${input.timestep}`;
+        const cacheKey = this.frameCacheKey(input);
         const cached = this.frameCache.get(cacheKey);
         if (cached) {
             this.frameCache.delete(cacheKey);
@@ -210,6 +213,130 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         }
     }
 
+    /** Cache-only lookup: lets a caller prefer a resident frame over any read. */
+    public peekFrame(input: TrajectoryFrameLookupInput): TrajectoryFrameData | null {
+        const cached = this.frameCache.get(this.frameCacheKey(input));
+        return cached ? cached.frame : null;
+    }
+
+    /**
+     * Reads one contiguous run of atoms instead of the whole frame.
+     *
+     * `atom_index` is dense and zero-based within a timestep, so a range predicate is
+     * exactly the slice the caller wants — and unlike `LIMIT/OFFSET` it needs no sort
+     * of the frame and lets DuckDB skip row groups outside the range. The result is
+     * deliberately not cached: it is a fragment, and storing it under the frame key
+     * would make later full-frame reads return a truncated frame.
+     */
+    public async readFrameRange(
+        input: TrajectoryFrameLookupInput,
+        range: TrajectoryFrameRange
+    ): Promise<TrajectoryFramePage> {
+        let connection: DuckDBConnection | null = null;
+        try {
+            const parquetPath = await this.resolveLocalParquet(input.ownerClusterId, input.trajectoryId);
+            connection = await DuckDBConnection.create();
+
+            const countReader = await connection.runAndReadAll(
+                `SELECT count(*) AS total FROM read_parquet(${sqlString(parquetPath)}) WHERE timestep = $timestep`,
+                { timestep: BigInt(input.timestep) }
+            );
+            const totalAtoms = Number((countReader.getRowObjectsJS()[0] as { total: number | bigint }).total);
+            if (totalAtoms === 0) {
+                throw new Error(`parquet timestep not present: ${input.timestep}`);
+            }
+
+            const reader = await connection.runAndReadAll(
+                `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ` +
+                'WHERE timestep = $timestep AND atom_index >= $startIndex AND atom_index < $endIndex ' +
+                'ORDER BY atom_index',
+                {
+                    timestep: BigInt(input.timestep),
+                    startIndex: BigInt(range.startIndex),
+                    endIndex: BigInt(range.endIndexExclusive)
+                }
+            );
+            const rows = reader.getRowObjectsJS() as ParquetFrameRow[];
+
+            return {
+                frame: this.rowsToFrame(input.timestep, rows, reader),
+                totalAtoms
+            };
+        } catch (error) {
+            throw toTrajectoryFrameError(error, input);
+        } finally {
+            connection?.closeSync();
+        }
+    }
+
+    /**
+     * min/max without materialising the frame. DuckDB answers this from column
+     * statistics or a single scan, where the JS path had to build 10M objects first.
+     * Unknown columns come back as null rather than throwing: the caller has a
+     * correct, slower path and this is only an optimisation.
+     */
+    public async readPropertyStats(
+        input: TrajectoryFrameLookupInput,
+        property: string
+    ): Promise<TrajectoryPropertyStats | null> {
+        let connection: DuckDBConnection | null = null;
+        try {
+            const parquetPath = await this.resolveLocalParquet(input.ownerClusterId, input.trajectoryId);
+            connection = await DuckDBConnection.create();
+
+            const columnName = await this.resolveColumnName(connection, parquetPath, property);
+            if (!columnName) {
+                return null;
+            }
+
+            const quoted = `"${columnName.replace(/"/g, '""')}"`;
+            const reader = await connection.runAndReadAll(
+                `SELECT min(${quoted}) AS lo, max(${quoted}) AS hi ` +
+                `FROM read_parquet(${sqlString(parquetPath)}) WHERE timestep = $timestep`,
+                { timestep: BigInt(input.timestep) }
+            );
+            const row = reader.getRowObjectsJS()[0] as { lo: number | bigint | null; hi: number | bigint | null };
+            if (row.lo === null || row.hi === null) {
+                return {
+                    min: 0,
+                    max: 0,
+                    dtype: INTEGER_TYPE_IDS.has(reader.columnTypeId(0)) ? 'i32' : 'f32'
+                };
+            }
+
+            return {
+                min: Number(row.lo),
+                max: Number(row.hi),
+                dtype: INTEGER_TYPE_IDS.has(reader.columnTypeId(0)) ? 'i32' : 'f32'
+            };
+        } catch {
+            /* Any failure here just means the frame path answers instead. */
+            return null;
+        } finally {
+            connection?.closeSync();
+        }
+    }
+
+    /** Parquet columns are matched case-insensitively, the way callers name properties. */
+    private async resolveColumnName(
+        connection: DuckDBConnection,
+        parquetPath: string,
+        property: string
+    ): Promise<string | null> {
+        const reader = await connection.runAndReadAll(
+            `SELECT * FROM read_parquet(${sqlString(parquetPath)}) LIMIT 0`
+        );
+        const wanted = property.toLowerCase();
+        for (let index = 0; index < reader.columnCount; index++) {
+            const name = reader.columnName(index);
+            if (name.toLowerCase() === wanted) {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
     public async readElementMetadata(input: { trajectoryId: string; ownerClusterId: string }): Promise<TrajectoryElementMetadata> {
         const cacheKey = `${input.ownerClusterId}::${input.trajectoryId}`;
         const cached = this.elementMetadataCache.get(cacheKey);
@@ -232,6 +359,10 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         };
         this.elementMetadataCache.set(cacheKey, metadata);
         return metadata;
+    }
+
+    private frameCacheKey(input: TrajectoryFrameLookupInput): string {
+        return `${input.ownerClusterId}::${input.trajectoryId}::${input.timestep}`;
     }
 
     private rowsToFrame(

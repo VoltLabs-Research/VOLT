@@ -65,6 +65,22 @@ interface ArchiverModule {
     ZipArchive: new (options?: archiver.ArchiverOptions) => archiver.Archiver;
 }
 
+/*
+ * Extensions whose bytes are already compressed. Deflating them again is close to
+ * pure CPU: the archive barely shrinks, and on an export whose bulk is zstd GLBs it
+ * is what puts seconds between the request and the first byte. Stored entries are
+ * ordinary zip entries, so readers are unaffected.
+ */
+const PRECOMPRESSED_EXTENSIONS = new Set([
+    '.zst', '.zip', '.gz', '.tgz', '.bz2', '.xz', '.br', '.7z',
+    '.png', '.jpg', '.jpeg', '.webp', '.avif', '.parquet'
+]);
+
+const isPrecompressedEntryName = (name: string): boolean => {
+    const dot = name.lastIndexOf('.');
+    return dot !== -1 && PRECOMPRESSED_EXTENSIONS.has(name.slice(dot).toLowerCase());
+};
+
 const createZipArchive = (options: archiver.ArchiverOptions): archiver.Archiver => {
     // archiver@8 dropped the callable `archiver(format, options)` factory for named archive
     // classes, but @types/archiver@7 still declares the v7 shape, so the module has to be re-typed.
@@ -133,10 +149,13 @@ export class ObjectStoreArchiveCommands {
     private async appendEntry(archive: archiver.Archiver, entry: ArchiveEntryPayload): Promise<void> {
         const name = normalizeZipEntryName(entry.name);
 
+        /* Inline entries are JSON/CSV text, which is exactly what deflate is for. */
         if (entry.type === 'inline') {
             archive.append(Buffer.from(entry.content, entry.encoding || 'utf8'), { name });
             return;
         }
+
+        const store = isPrecompressedEntryName(name);
 
         try {
             const response = await this.objectStore.getStream(
@@ -145,7 +164,10 @@ export class ObjectStoreArchiveCommands {
                 entry.objectKey,
                 { skipMetadata: true }
             );
-            archive.append(response.stream, { name });
+            archive.append(response.stream, {
+                name,
+                store
+            });
         } catch (error) {
             if (entry.optional && isObjectNotFoundError(error)) {
                 logger.debug(`@object-store-archive: skipped missing optional object ${entry.bucket}/${entry.objectKey}`);

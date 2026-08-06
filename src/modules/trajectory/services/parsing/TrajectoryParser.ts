@@ -157,7 +157,21 @@ export class TrajectoryParser {
     }
 
     public async getPropertyStats(input: PropertyStatsInput): Promise<PropertyStatsResult> {
-        const column = this.getPropertyColumn(await this.readFrame(input), input.property);
+        /* A resident frame is already cheaper to scan than a fresh query. */
+        const resident = this.trajectoryFrameStore.peekFrame?.(input) ?? null;
+        if (!resident && this.trajectoryFrameStore.readPropertyStats) {
+            const pushedDown = await this.trajectoryFrameStore.readPropertyStats(input, input.property);
+            if (pushedDown) {
+                return pushedDown;
+            }
+        }
+
+        const column = this.getPropertyColumn(
+            resident
+                ? frameToParsedTrajectory(resident, await this.trajectoryFrameStore.readElementMetadata(input))
+                : await this.readFrame(input),
+            input.property
+        );
         return {
             ...computeStats(column.values),
             dtype: column.dtype
@@ -172,12 +186,50 @@ export class TrajectoryParser {
         };
     }
 
+    /**
+     * A page is a few thousand atoms, so decoding a whole frame to slice it is the
+     * wrong shape once frames get large: at 10M atoms it costs seconds for a 20 KB
+     * answer. A resident frame is still preferred — slicing it is free — but a cold
+     * read asks the store for just the range, which it can satisfy without
+     * materialising the rest. `pageOffset` tracks where the returned buffer starts,
+     * since a range read is indexed from zero while a sliced frame is not.
+     */
     public async getAtomsPage(input: AtomsPageInput): Promise<AtomsPageResult> {
-        const parsed = await this.readFrame(input);
-        const totalAtoms = parsed.ids ? parsed.ids.length : parsed.positions.length / 3;
         const pagination = normalizePagination(input.page, input.limit);
-        const startIndex = calculatePaginationOffset(pagination.page, pagination.limit);
-        const endIndex = Math.min(totalAtoms, startIndex + pagination.limit);
+        const requestedStart = calculatePaginationOffset(pagination.page, pagination.limit);
+
+        const resident = this.trajectoryFrameStore.peekFrame?.(input) ?? null;
+        let parsed: ParsedTrajectory;
+        let totalAtoms: number;
+        let pageOffset: number;
+
+        if (!resident && this.trajectoryFrameStore.readFrameRange) {
+            const elementMetadata = await this.trajectoryFrameStore.readElementMetadata(input);
+            let page;
+            try {
+                page = await this.trajectoryFrameStore.readFrameRange(input, {
+                    startIndex: requestedStart,
+                    endIndexExclusive: requestedStart + pagination.limit
+                });
+            } catch (error) {
+                throw toTrajectoryFrameError(error, input);
+            }
+            parsed = frameToParsedTrajectory(page.frame, elementMetadata);
+            totalAtoms = page.totalAtoms;
+            pageOffset = requestedStart;
+        } else {
+            parsed = resident
+                ? frameToParsedTrajectory(resident, await this.trajectoryFrameStore.readElementMetadata(input))
+                : await this.readFrame(input);
+            totalAtoms = parsed.ids ? parsed.ids.length : parsed.positions.length / 3;
+            pageOffset = 0;
+        }
+
+        const startIndex = requestedStart - pageOffset;
+        const endIndex = Math.min(
+            parsed.ids ? parsed.ids.length : parsed.positions.length / 3,
+            startIndex + pagination.limit
+        );
         const properties = parsed.properties;
         const nativeProperties = Object.keys(properties);
         const propertyDtypes: Record<string, ColumnDType> = {};
@@ -188,7 +240,7 @@ export class TrajectoryParser {
 
         for (let index = startIndex; index < endIndex; index++) {
             const atom: AtomsPageRow = {
-                id: parsed.ids ? parsed.ids[index] : index + 1,
+                id: parsed.ids ? parsed.ids[index] : pageOffset + index + 1,
                 type: parsed.types[index],
                 x: parsed.positions[index * 3],
                 y: parsed.positions[index * 3 + 1],

@@ -38,6 +38,13 @@ export interface DaemonConfig {
     allowedBuckets: ObjectBucketName[];
     bucketPrefix: string;
     isDemoMode: boolean;
+    /*
+     * Where the control plane can reach this daemon's object gateway without going
+     * through the reverse channel. Only set where the daemon is actually routable
+     * from the server (compose network, LAN, published ingress); left undefined the
+     * server keeps tunnelling, which always works and is only slow.
+     */
+    objectGatewayPublicBaseUrl?: string;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -121,7 +128,6 @@ export const loadConfig = (): DaemonConfig => {
         ObjectBucketName.Rasterizer,
         ObjectBucketName.AnalysisLogs,
         ObjectBucketName.Whiteboards,
-        ObjectBucketName.LatexAssets,
         ObjectBucketName.Trajectories
     ];
 
@@ -142,7 +148,8 @@ export const loadConfig = (): DaemonConfig => {
         jupyter,
         allowedBuckets,
         bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
-        isDemoMode: readBooleanWithDefault('DEMO_MODE', false)
+        isDemoMode: readBooleanWithDefault('DEMO_MODE', false),
+        objectGatewayPublicBaseUrl: readOptionalString('OBJECT_GATEWAY_PUBLIC_BASE_URL')?.replace(/\/+$/g, '')
     };
 
     return config;

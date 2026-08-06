@@ -106,7 +106,16 @@ export class ObjectGatewayServer {
             labels: {
                 'volt.exposure.api-version': 'v1',
                 'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
-                'volt.exposure.source-kind': TeamClusterServiceExposureSourceKind.Daemon
+                'volt.exposure.source-kind': TeamClusterServiceExposureSourceKind.Daemon,
+                /*
+                 * `targetHost` is rewritten to loopback above when we bind a wildcard,
+                 * which is meaningless to the server. This advertises an address the
+                 * server can actually dial so it can skip the reverse channel for bulk
+                 * reads; absent, the server tunnels exactly as before.
+                 */
+                ...(this.config.objectGatewayPublicBaseUrl
+                    ? { 'volt.exposure.base-url': this.config.objectGatewayPublicBaseUrl }
+                    : {})
             }
         };
 

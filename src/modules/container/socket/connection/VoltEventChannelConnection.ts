@@ -40,6 +40,7 @@ const STREAM_TRANSPORTED_SERVER_EVENT_TYPE_SET = new Set<string>(STREAM_TRANSPOR
 export class VoltEventChannelConnection {
     private channelClient: SocketChannelProcessClient | null = null;
     private registered = false;
+    private readonly readyListeners = new Set<() => void>();
     private readonly bufferedEvents = new BufferedDedupeQueue<TeamClusterDaemonServerEventMessage>(8192);
 
     constructor(
@@ -65,6 +66,14 @@ export class VoltEventChannelConnection {
             this.registered = true;
             logger.info('Connected daemon event channel to VoltCloud');
             this.drainBufferedEvents();
+
+            for (const listener of this.readyListeners) {
+                try {
+                    listener();
+                } catch (error) {
+                    logger.warn(`Daemon event channel ready listener failed: ${(error as Error).message}`);
+                }
+            }
         });
         channelClient.onDisconnected(() => {
             this.registered = false;
@@ -82,6 +91,22 @@ export class VoltEventChannelConnection {
         this.channelClient?.stop();
         this.channelClient = null;
         this.bufferedEvents.clear();
+    }
+
+    /** Whether a non-buffered event emitted right now would actually reach the server. */
+    isReady(): boolean {
+        return Boolean(this.channelClient) && this.registered;
+    }
+
+    /**
+     * Fires once this channel can carry events. Publishers whose payload is a full
+     * snapshot rather than an increment need this: the control plane connects first,
+     * so anything they emit on *its* connect is dropped here before the transport for
+     * it exists.
+     */
+    onReady(listener: () => void): () => void {
+        this.readyListeners.add(listener);
+        return () => this.readyListeners.delete(listener);
     }
 
     emitMessage(message: EventTransportMessage): void {

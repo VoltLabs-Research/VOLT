@@ -3,6 +3,7 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
+import { getVoltEventChannelConnection } from '@modules/container/socket/connection/VoltEventChannelConnection';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts';
 import type { TeamClusterServiceExposure } from '@shared/contracts';
@@ -31,6 +32,12 @@ import type { VoltCloudConnection } from '@modules/container/socket/connection/V
 
 type ContainerInfo = Dockerode.ContainerInfo;
 
+/** Just the readiness surface of the event channel, so this stays unit-testable. */
+interface DaemonEventTransport {
+    isReady(): boolean;
+    onReady(listener: () => void): () => void;
+}
+
 interface ContainerExposureContext {
     container: ContainerInfo;
     containerName: string;
@@ -56,6 +63,7 @@ export class DaemonExposureRegistry {
     private lastPublishedGeneration = 0;
     private inFlightSync: Promise<void> | null = null;
     private inFlightSyncStartedAt: number | null = null;
+    private stopListeningForReconnect: (() => void) | null = null;
 
     private readonly readyContainerIds = new Set<string>();
 
@@ -63,7 +71,8 @@ export class DaemonExposureRegistry {
         private readonly config: DaemonConfig,
         private readonly dockerRuntime: DockerRuntime,
         private readonly voltCloudConnection: VoltCloudConnection,
-        private readonly eventDispatcher: EventDispatcher
+        private readonly eventDispatcher: EventDispatcher,
+        private readonly eventTransport: DaemonEventTransport
     ) {}
 
     start(): void {
@@ -72,6 +81,18 @@ export class DaemonExposureRegistry {
         }
 
         this.sync().catch(() => {});
+
+        /*
+         * Without this the server spends up to one sync interval after its own restart
+         * with an empty exposure registry, which silently costs every object read the
+         * fast path it would otherwise have taken. It has to hang off the event channel
+         * rather than the control plane: the control plane connects first, so a snapshot
+         * emitted on its connect is dropped for want of a transport.
+         */
+        this.stopListeningForReconnect = this.eventTransport.onReady(() => {
+            this.sync().catch(() => {});
+        });
+
         this.syncTimer = setInterval(() => {
             this.sync().catch(() => {});
         }, EXPOSURE_SYNC_INTERVAL_MS);
@@ -80,6 +101,9 @@ export class DaemonExposureRegistry {
     }
 
     stop(): void {
+        this.stopListeningForReconnect?.();
+        this.stopListeningForReconnect = null;
+
         if (!this.syncTimer) {
             return;
         }
@@ -288,6 +312,16 @@ export class DaemonExposureRegistry {
         }
 
         /*
+         * Bail before recording anything. The event channel drops what it cannot send,
+         * so marking this generation as published while the transport is down would
+         * make the checks below suppress every later retry and leave the server's
+         * registry empty until the exposure set happens to change.
+         */
+        if (!this.eventTransport.isReady()) {
+            return;
+        }
+
+        /*
          * The server keeps the exposure registry in memory, so it loses everything when
          * it restarts. Re-sending has to be keyed on the connection generation: a
          * restart can complete between two syncs, and then no poll ever observes the
@@ -308,4 +342,4 @@ export class DaemonExposureRegistry {
     }
 };
 
-export const getDaemonExposureRegistry = singleton((): DaemonExposureRegistry => new DaemonExposureRegistry(getConfig(), getDockerRuntime(), getVoltCloudConnection(), getEventDispatcher()));
+export const getDaemonExposureRegistry = singleton((): DaemonExposureRegistry => new DaemonExposureRegistry(getConfig(), getDockerRuntime(), getVoltCloudConnection(), getEventDispatcher(), getVoltEventChannelConnection()));

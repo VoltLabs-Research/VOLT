@@ -50,8 +50,39 @@ export interface TrajectoryFrameLookupInput {
     timestep: number;
 }
 
+export interface TrajectoryPropertyStats {
+    min: number;
+    max: number;
+    dtype: ColumnDType;
+}
+
+/** A contiguous slice of a frame plus the frame's real atom count. */
+export interface TrajectoryFramePage {
+    frame: TrajectoryFrameData;
+    totalAtoms: number;
+}
+
+export interface TrajectoryFrameRange {
+    startIndex: number;
+    endIndexExclusive: number;
+}
+
 export interface TrajectoryFrameStore {
     ingest(input: TrajectoryFrameStoreIngestInput): Promise<TrajectoryFrameStoreIngestResult>;
     readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData>;
     readElementMetadata(input: { trajectoryId: string; ownerClusterId: string }): Promise<TrajectoryElementMetadata>;
+    /**
+     * Reads only the atoms in `range`. Optional because it is an optimisation: a
+     * caller that cannot use it decodes the whole frame, which is correct but costs
+     * O(atoms) for a request that returns a page.
+     */
+    readFrameRange?(input: TrajectoryFrameLookupInput, range: TrajectoryFrameRange): Promise<TrajectoryFramePage>;
+    /** The frame if it is already resident, without reading anything. */
+    peekFrame?(input: TrajectoryFrameLookupInput): TrajectoryFrameData | null;
+    /**
+     * min/max for one column, computed by the store. Returns null when the column is
+     * not a stored one, so the caller falls back to reading the frame. Optional for
+     * the same reason as `readFrameRange`.
+     */
+    readPropertyStats?(input: TrajectoryFrameLookupInput, property: string): Promise<TrajectoryPropertyStats | null>;
 }

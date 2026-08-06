@@ -2,11 +2,17 @@
 dev-tools/
 server/storage/
 storage/
-# `storage/` above targets runtime data dirs, but it also matched the source module
-# src/.../infrastructure/storage/, silently dropping element-table.cjs from releases
-# (the parquet-ingest worker requires it as a sibling). Keep that source dir tracked.
-!src/modules/trajectory/infrastructure/storage/
-!src/modules/trajectory/infrastructure/storage/**
+# `storage/` above targets runtime data dirs, but a bare directory pattern matches
+# any directory of that name at any depth — including source. It has already cost us
+# twice: element-table.cjs silently missing from releases (the parquet-ingest worker
+# requires it as a sibling), and then download-trajectory-dumps.ts plus
+# trajectory-not-found-error.ts never being committed at all, which left the branch
+# unable to boot from a clean clone while their tracked siblings in the same folder
+# hid the problem. Nothing under src/ is runtime data, so re-include all of it — the
+# directory has to be re-included before its contents, since git will not descend
+# into an excluded directory.
+!src/**/storage/
+!src/**/storage/**
 
 .ai-workflow/
 CLAUDE.md

@@ -5,7 +5,6 @@ export enum ObjectBucketName {
     Rasterizer = 'volt-rasterizer',
     AnalysisLogs = 'volt-analysis-logs',
     Whiteboards = 'volt-whiteboards',
-    LatexAssets = 'volt-latex-assets',
     Trajectories = 'volt-trajectories'
 }
 
