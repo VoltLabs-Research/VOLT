@@ -3,10 +3,8 @@ import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import OptionalConfigSection from './OptionalConfigSection';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import TemplateCustomFieldsSection from './TemplateCustomFieldsSection';
 import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { getCustomFieldValidationErrorCount } from '../../utils/container-form';
 import { normalizePortMapping } from '../../utils/port-mapping';
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
 import type { ContainerConfig, EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
@@ -99,13 +97,12 @@ const ConfigurationStep = ({
         value: team._id,
         title: team.name
     }));
-    const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
     const requiredRemainingCount = [
         !config.name.trim(),
         Boolean(teamFieldError),
         !selectedTeamId || !selectedTeamClusterId,
         Boolean(selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB))
-    ].filter(Boolean).length + customFieldErrorCount;
+    ].filter(Boolean).length;
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
 
     return (
@@ -163,15 +160,6 @@ const ConfigurationStep = ({
                     clusterTitle='Deployment cluster'
                     clusterDescription='Choose where this container will be deployed.'
                 />
-
-                {config.customFields.length > 0 && (
-                    <TemplateCustomFieldsSection
-                        customFields={config.customFields}
-                        customFieldValues={config.customFieldValues}
-                        errorCount={customFieldErrorCount}
-                        onChange={(customFieldValues) => onConfigChange('customFieldValues', customFieldValues)}
-                    />
-                )}
 
                 <OptionalConfigSection
                     title='Network'

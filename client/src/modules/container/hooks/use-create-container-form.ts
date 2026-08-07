@@ -16,7 +16,6 @@ import {
     getTemplateConfiguration,
     getCreatePorts,
     mergeContainerEnvVariables,
-    getCustomFieldValidationErrorCount,
     getCustomImageValidationError
 } from '../utils/container-form';
 
@@ -42,8 +41,6 @@ const useCreateContainerForm = () => {
         cpus: DEFAULT_CPU,
         ports: [],
         env: [],
-        customFields: [],
-        customFieldValues: {},
         mountDockerSocket: false
     });
 
@@ -137,16 +134,12 @@ const useCreateContainerForm = () => {
         setConfig((previousConfig) => ({
             ...previousConfig,
             name: `custom-${Math.floor(Math.random() * 1000)}`,
-            customFields: [],
-            customFieldValues: {},
             mountDockerSocket: false
         }));
     }, []);
 
     const selectedTemplateEntity = selectedTemplate ? getContainerTemplateById(selectedTemplate) : undefined;
     const image = selectedTemplateEntity?.image ?? (customImage || undefined);
-    const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
-
     const handleCreate = async () => {
         if (!image) {
             sileo.error({ title: 'Please select a template or specify an image' });
@@ -168,11 +161,6 @@ const useCreateContainerForm = () => {
             return;
         }
 
-        if (customFieldErrorCount > 0) {
-            sileo.error({ title: 'Please correct the template settings before creating the container' });
-            return;
-        }
-
         const operationId = deployProgress.startTracking();
 
         await showPromise(
@@ -186,7 +174,7 @@ const useCreateContainerForm = () => {
                 memory: config.memory,
                 cpus: config.cpus,
                 ports: getCreatePorts(config.ports),
-                env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
+                env: mergeContainerEnvVariables(config.env),
                 mountDockerSocket: config.mountDockerSocket,
                 useImageCmd: selectedTemplateEntity?.useImageCmd,
                 cmd: selectedTemplateEntity?.defaultCmd
@@ -239,7 +227,6 @@ const useCreateContainerForm = () => {
             && !isLoadingResourceLimits
             && hasResolvedResourceLimits
             && (selectedTemplate || customImage)
-            && customFieldErrorCount === 0
         )
     };
 };

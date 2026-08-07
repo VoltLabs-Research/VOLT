@@ -58,10 +58,4 @@ export default class TrajectoryUploadSession extends BaseModel{
 
     @Column({ type: Date })
     expiresAt!: Date;
-
-    @Column({
-        type: Date,
-        nullable: true
-    })
-    committedAt!: Date | null;
 }

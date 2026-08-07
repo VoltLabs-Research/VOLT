@@ -24,7 +24,6 @@ export interface LoginActivityEntry extends BaseEntity{
     ip: string;
     action: SessionActivityType;
     success: boolean;
-    failureReason?: string;
 }
 
 export interface GetLoginActivityResponse{

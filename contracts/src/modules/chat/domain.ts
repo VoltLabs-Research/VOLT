@@ -56,7 +56,6 @@ export interface ChatMessage extends BaseEntity{
     sender: User;
     content: string;
     messageType: ChatMessageType;
-    readBy: User[];
     metadata?: ChatMessageMetadata;
     deleted: boolean;
     reactions?: ChatReaction[];

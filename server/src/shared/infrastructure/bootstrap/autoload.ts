@@ -1,7 +1,6 @@
 import { readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import logger from '@shared/infrastructure/logger';
-import { getEnabledModules } from '@core/bootstrap/module-state';
 
 const SCAN_ROOTS: readonly string[] = [
     'shared',
@@ -82,9 +81,6 @@ export const autoloadModules = async (): Promise<void> => {
     const started = Date.now();
     let imported = 0;
 
-    const enabled = getEnabledModules();
-    let skippedModules = 0;
-
     for (const root of SCAN_ROOTS) {
         const absoluteRoot = join(srcDir, root);
         if (!isDirectory(absoluteRoot)) {
@@ -92,19 +88,10 @@ export const autoloadModules = async (): Promise<void> => {
         }
 
         for (const file of collectFiles(absoluteRoot)) {
-            if (root === 'modules') {
-                const relative = file.slice(absoluteRoot.length).replace(/^[\\/]+/, '');
-                const moduleKey = relative.split(/[\\/]/)[0];
-                if (moduleKey && !enabled.has(moduleKey)) {
-                    skippedModules += 1;
-                    continue;
-                }
-            }
-
             await import(file);
             imported += 1;
         }
     }
 
-    logger.info(`@autoload: imported ${imported} module files (skipped ${skippedModules} from disabled modules) in ${Date.now() - started}ms`);
+    logger.info(`@autoload: imported ${imported} module files in ${Date.now() - started}ms`);
 };

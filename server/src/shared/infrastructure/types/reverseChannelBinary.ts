@@ -3,11 +3,7 @@
 const BINARY_ENVELOPE_HEADER_BYTES = 10;
 
 export enum EnvelopeKind {
-    CommandJson = 1,
-    CommandBinary = 2,
-    StreamChunk = 3,
-    Ack = 4,
-    Error = 5
+    StreamChunk = 3
 }
 
 interface DecodedEnvelope {

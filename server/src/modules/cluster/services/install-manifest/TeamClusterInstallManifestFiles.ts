@@ -8,7 +8,6 @@ import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/se
 export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 
 export const TEAM_CLUSTER_IMAGES = {
-    minio: 'minio/minio:RELEASE.2025-02-28T09-55-16Z',
     postgres: 'postgres:17-alpine',
     daemon: 'ghcr.io/voltlabs-research/volt-cluster-daemon:main'
 };
@@ -42,16 +41,6 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
 
     return [
         'services:',
-        '  minio:',
-        '    image: ${MINIO_IMAGE}',
-        '    restart: unless-stopped',
-        '    env_file:',
-        '      - ./minio.env',
-        '    command: server /data --address ":9000"',
-        '    ports:',
-        '      - "${MINIO_PORT}:9000"',
-        '    volumes:',
-        '      - minio-data:/data',
         '  postgres:',
         '    image: ${POSTGRES_IMAGE}',
         '    restart: unless-stopped',
@@ -73,13 +62,15 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '      - ./.env',
         '      - ./daemon.env',
         '    depends_on:',
-        '      - minio',
         '      - postgres',
         '    volumes:',
         '      - /var/run/docker.sock:/var/run/docker.sock',
+        // The object store lives on the daemon's own disk now, so this holds the
+        // cluster's data rather than a cache and must outlive the container.
+        '      - daemon-data:/var/lib/volt-daemon',
         'volumes:',
-        '  minio-data:',
-        '  postgres-data:'
+        '  postgres-data:',
+        '  daemon-data:'
     ].join('\n');
 };
 
@@ -94,19 +85,9 @@ const buildRootEnvFile = (
         `COMPOSE_PROJECT_NAME=${sanitizeComposeProjectName(teamClusterId)}`,
         `TEAM_CLUSTER_INSTALL_ROOT=${installRoot}`,
         `VOLT_CLOUD_URL=${cloudUrl}`,
-        `VOLT_CLUSTER_INSTALL_MANIFEST_VERSION=${TEAM_CLUSTER_INSTALL_MANIFEST_VERSION}`,
-        `MINIO_IMAGE=${TEAM_CLUSTER_IMAGES.minio}`,
         `POSTGRES_IMAGE=${TEAM_CLUSTER_IMAGES.postgres}`,
         `VOLT_CLUSTER_DAEMON_IMAGE=${TEAM_CLUSTER_IMAGES.daemon}`,
-        `MINIO_PORT=${ports.minio}`,
         `POSTGRES_PORT=${ports.postgres}`
-    ].join('\n');
-};
-
-const buildMinioEnvFile = (credentials: DecryptedTeamClusterServiceCredentials): string => {
-    return [
-        `MINIO_ROOT_USER=${credentials.minioUsername}`,
-        `MINIO_ROOT_PASSWORD=${credentials.minioPassword}`
     ].join('\n');
 };
 
@@ -133,13 +114,9 @@ const buildDaemonEnvFile = (
         `TEAM_CLUSTER_INSTALL_ROOT=${installRoot}`,
         `VOLT_CLOUD_URL=${cloudUrl}`,
         `TEAM_CLUSTER_DAEMON_PASSWORD=${credentials.daemonPassword}`,
-        `TEAM_CLUSTER_HEALTHCHECK_PATH=/api/team-clusters/${teamClusterId}/healthcheck`,
-        'MINIO_ENDPOINT=http://minio:9000',
-        `MINIO_ACCESS_KEY=${credentials.minioUsername}`,
-        `MINIO_SECRET_KEY=${credentials.minioPassword}`,
+        'DAEMON_DATA_DIR=/var/lib/volt-daemon',
         `DATABASE_URL=postgres://${credentials.postgresUsername}:${credentials.postgresPassword}@postgres:5432/volt-cluster`,
-        'PORT=8080',
-        `VOLT_CLOUD_DAEMON_SOCKET_URL=${cloudUrl}`
+        'PORT=8080'
     ].join('\n');
 };
 
@@ -162,11 +139,6 @@ export const buildTeamClusterInstallManifestFiles = ({
         {
             path: '.env',
             contents: buildRootEnvFile(teamClusterId, installRoot, ports, cloudUrl),
-            mode: '0600'
-        },
-        {
-            path: 'minio.env',
-            contents: buildMinioEnvFile(credentials),
             mode: '0600'
         },
         {

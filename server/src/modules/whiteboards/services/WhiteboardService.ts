@@ -31,7 +31,6 @@ const presentWhiteboard = (whiteboard: Whiteboard) => {
         title: whiteboard.title,
         folder: whiteboard.folder,
         payloadKey: whiteboard.payloadKey,
-        thumbnailKey: whiteboard.thumbnailKey ?? undefined,
         lastEditedBy: editor
             ? {
                 _id: editor.id,

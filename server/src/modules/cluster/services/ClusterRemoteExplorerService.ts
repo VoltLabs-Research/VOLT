@@ -38,7 +38,7 @@ const deriveFallbackFilename = (target: TeamClusterRemoteAccessTarget, path: str
 };
 
 /**
- * Password-confirmed read-only browsing of a cluster's own storage (minio buckets,
+ * Password-confirmed read-only browsing of a cluster's own storage (the object store,
  * daemon tables) through the daemon. Every call re-validates the
  * short-lived remote-access session that the password confirmation issued.
  */
@@ -79,7 +79,7 @@ class ClusterRemoteExplorerService {
             path: input.path,
             entries: await this.#viaDaemon(
                 () => remoteExplorerDaemonGateway.listEntries(input),
-                'TeamCluster::RemoteExplorerListFailed',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_EXPLORER_LIST_FAILED,
                 'Failed to load remote explorer entries'
             )
         };
@@ -97,7 +97,7 @@ class ClusterRemoteExplorerService {
             target: input.target,
             node: await this.#viaDaemon(
                 () => remoteExplorerDaemonGateway.getNode(input),
-                'TeamCluster::RemoteExplorerNodeFailed',
+                ErrorCodes.TEAM_CLUSTER_REMOTE_EXPLORER_NODE_FAILED,
                 'Failed to load remote explorer node'
             )
         };
@@ -112,7 +112,7 @@ class ClusterRemoteExplorerService {
 
         const response = await this.#viaDaemon(
             () => remoteExplorerDaemonGateway.downloadObject(input),
-            'TeamCluster::RemoteExplorerDownloadFailed',
+            ErrorCodes.TEAM_CLUSTER_REMOTE_EXPLORER_DOWNLOAD_FAILED,
             'Failed to download remote explorer object',
             (error) => {
                 if (error.code === ErrorCodes.TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED && error.statusCode === 404) {

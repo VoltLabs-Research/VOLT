@@ -7,8 +7,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 
 export interface DecryptedTeamClusterServiceCredentials {
-    minioUsername: string;
-    minioPassword: string;
     postgresUsername: string;
     postgresPassword: string;
     daemonPassword: string;
@@ -52,33 +50,25 @@ export default class DaemonCredentialGuard {
     }
 
     async getDecryptedServiceCredentials(teamCluster: TeamCluster): Promise<DecryptedTeamClusterServiceCredentials> {
-        const minioUsername = teamCluster.props.services.minio.username;
-        const minioPassword = teamCluster.props.services.minio.password;
         const postgresUsername = teamCluster.props.services.postgres.username;
         const postgresPassword = teamCluster.props.services.postgres.password;
         const daemonPassword = teamCluster.props.services.daemon.password;
 
-        if (!minioUsername || !minioPassword || !postgresUsername || !postgresPassword || !daemonPassword) {
+        if (!postgresUsername || !postgresPassword || !daemonPassword) {
             throw ApplicationError.internalServerError(`Missing service credentials for team cluster ${teamCluster.id}`);
         }
 
         const [
-            decryptedMinioUsername,
-            decryptedMinioPassword,
             decryptedPostgresUsername,
             decryptedPostgresPassword,
             decryptedDaemonPassword
         ] = await Promise.all([
-            this.#decryptOrFail(minioUsername, teamCluster.id),
-            this.#decryptOrFail(minioPassword, teamCluster.id),
             this.#decryptOrFail(postgresUsername, teamCluster.id),
             this.#decryptOrFail(postgresPassword, teamCluster.id),
             this.#decryptOrFail(daemonPassword, teamCluster.id)
         ]);
 
         return {
-            minioUsername: decryptedMinioUsername,
-            minioPassword: decryptedMinioPassword,
             postgresUsername: decryptedPostgresUsername,
             postgresPassword: decryptedPostgresPassword,
             daemonPassword: decryptedDaemonPassword

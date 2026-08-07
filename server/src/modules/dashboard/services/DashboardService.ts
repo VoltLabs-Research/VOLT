@@ -121,7 +121,6 @@ const toTrajectoryRecord = (trajectory: Trajectory): TrajectoryRecord => ({
     createdBy: trajectory.createdBy,
     status: trajectory.status,
     isPublic: trajectory.isPublic,
-    rasterSceneViews: trajectory.rasterSceneViews,
     hasPreview: trajectory.hasPreview,
     stats: trajectory.stats,
     updatedAt: trajectory.updatedAt,

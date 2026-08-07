@@ -85,32 +85,11 @@
     transform-origin: right top;
 }
 
-/* Popover mode only: cap the height so long argument lists scroll instead of
-   pushing the execute button (footer) out of view. The panel/mobile mode
-   (.canvas-plugin-panel-config) already scrolls via .canvas-plugin-config-view__body. */
-.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) {
+/* Caps the height so long argument lists scroll instead of pushing the execute
+   button out of view. */
+.canvas-plugin-popover-content {
     max-height: min(70vh, 32rem);
     overflow: hidden;
-}
-
-.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) .canvas-modifier-config-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) .canvas-plugin-popover-footer {
-    flex-shrink: 0;
-}
-
-.canvas-plugin-popover-content--closing {
-    animation: canvas-plugin-config-content-close 160ms ease-in forwards;
-}
-
-.canvas-plugin-popover-footer {
-    padding-top: 0.25rem;
-    border-top: 1px solid var(--color-border-soft);
 }
 
 @media (max-width: 768px) {
@@ -173,15 +152,7 @@
         overscroll-behavior: contain;
     }
 
-    .canvas-plugin-panel-config.canvas-plugin-popover-content {
-        min-width: 0;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .canvas-plugin-config-view *,
-    .canvas-plugin-panel-config > *,
-    .canvas-plugin-panel-config .d-flex {
+    .canvas-plugin-config-view * {
         min-width: 0;
     }
 
@@ -212,19 +183,3 @@
     }
 }
 
-@keyframes canvas-plugin-config-content-close {
-    from {
-        transform: translateX(0) scale(1);
-    }
-
-    to {
-        transform: translateX(6px) scale(0.97);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .canvas-plugin-popover-content--closing {
-        animation-duration: 1ms;
-        filter: none;
-    }
-}

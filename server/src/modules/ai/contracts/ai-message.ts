@@ -1,7 +1,6 @@
 export enum AIConversationMessageRole {
     User = 'user',
-    Assistant = 'assistant',
-    System = 'system'
+    Assistant = 'assistant'
 }
 
 export type AIMessagePart = {

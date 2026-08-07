@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getEnabledModules } from '@core/bootstrap/module-state';
 import Controller from '@shared/http/Controller';
+import { createUserFilesRouter } from '@shared/infrastructure/http/user-files-router';
 import logger from '@shared/infrastructure/logger';
 
 import AuthController from '@modules/auth/controllers/AuthController';
@@ -71,27 +71,25 @@ const LEGACY_ROUTER_PROVIDERS: Readonly<Record<string, readonly RouterProviderCl
     cluster: [ClusterObjectStoreProxyController]
 };
 
-const collectMountable = (enabled: Set<string>): RouterProviderClass[] => [
-    ...Object.entries(CONTROLLERS),
-    ...Object.entries(LEGACY_ROUTER_PROVIDERS)
-]
-    .filter(([moduleKey]) => enabled.has(moduleKey))
-    .flatMap(([, classes]) => classes as readonly RouterProviderClass[]);
-
-const countAll = (): number =>
-    [...Object.values(CONTROLLERS), ...Object.values(LEGACY_ROUTER_PROVIDERS)]
-        .reduce((count, classes) => count + classes.length, 0);
+const collectMountable = (): RouterProviderClass[] => [
+    ...Object.values(CONTROLLERS),
+    ...Object.values(LEGACY_ROUTER_PROVIDERS)
+].flatMap((classes) => classes as readonly RouterProviderClass[]);
 
 const mountHttpRoutes = (): Router => {
     const startedAt = Date.now();
     const router = Router();
-    const mountable = collectMountable(getEnabledModules());
+
+    /* Avatars and chat attachments, which the browser fetches by plain URL. */
+    router.use(createUserFilesRouter());
+
+    const mountable = collectMountable();
 
     for (const Provider of mountable) {
         router.use(new Provider().buildRouter());
     }
 
-    logger.info(`@http-bootstrap: mounted ${mountable.length}/${countAll()} controllers durationMs=${Date.now() - startedAt}`);
+    logger.info(`@http-bootstrap: mounted ${mountable.length} controllers durationMs=${Date.now() - startedAt}`);
 
     return router;
 };

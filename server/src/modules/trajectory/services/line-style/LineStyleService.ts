@@ -48,7 +48,7 @@ const buildLineStyleObjectName = (
 /**
  * Deliberately NOT shared with the same-looking `stableStringify` in
  * `WorkflowProjection`. This one feeds `hashLineStyle`, and that digest is
- * embedded in the MinIO object name of every styled GLB, so it is a storage
+ * embedded in the object name of every styled GLB, so it is a storage
  * key. The two copies already disagree: this one sorts keys with `localeCompare`
  * and drops `undefined` entries, the other uses the default `.sort()` and
  * serializes them as `null`. Merging them rewrites one hash family and orphans

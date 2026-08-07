@@ -6,7 +6,6 @@ export interface DprSettings {
     min: number;
     max: number;
     pixelated: boolean;
-    snap: boolean;
     interactionMin: number;
 };
 
@@ -122,7 +121,6 @@ const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDe
                 min: 1.5,
                 max: 2,
                 pixelated: false,
-                snap: true,
                 interactionMin: 1.25
             },
             performance: {
@@ -151,7 +149,6 @@ const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDe
                 min: 1.25,
                 max: 1.75,
                 pixelated: false,
-                snap: true,
                 interactionMin: 1
             },
             performance: {
@@ -180,7 +177,6 @@ const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDe
                 min: 1,
                 max: 1.5,
                 pixelated: true,
-                snap: true,
                 interactionMin: 0.9
             },
             performance: {
@@ -209,7 +205,6 @@ const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDe
                 min: 0.75,
                 max: 1.25,
                 pixelated: true,
-                snap: true,
                 interactionMin: 0.75
             },
             performance: {
@@ -238,7 +233,6 @@ const PERFORMANCE_PRESET_REGISTRY: Record<PerformancePreset, PerformancePresetDe
                 min: 0.75,
                 max: 1,
                 pixelated: true,
-                snap: true,
                 interactionMin: 0.75
             },
             performance: {

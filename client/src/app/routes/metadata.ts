@@ -18,7 +18,6 @@ export interface DashboardNavigationItem {
     permissionMode?: RouteConfig['permissionMode'];
     disabledReason?: string;
     multiTenantOnly?: boolean;
-    moduleKey?: string;
 };
 
 const joinRoutePaths = (parentPath: string, childPath: string): string => {
@@ -103,8 +102,7 @@ routeManifestEntries.forEach((entry) => {
         requiredPermissions: entry.route.requiredPermissions,
         permissionMode: entry.route.permissionMode,
         disabledReason: entry.route.navigation.disabledReason,
-        multiTenantOnly: entry.route.navigation.multiTenantOnly,
-        moduleKey: entry.route.moduleKey
+        multiTenantOnly: entry.route.navigation.multiTenantOnly
     });
 });
 

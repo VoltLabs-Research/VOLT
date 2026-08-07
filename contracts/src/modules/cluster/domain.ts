@@ -21,7 +21,6 @@ export interface TeamClusterService{
 }
 
 export interface TeamClusterServices{
-    minio: TeamClusterService;
     postgres: TeamClusterService;
     daemon: TeamClusterService;
 }
@@ -36,7 +35,6 @@ export interface TeamClusterDaemonCredentialService extends TeamClusterService{
 }
 
 export interface TeamClusterCredentialServices{
-    minio: TeamClusterCredentialService;
     postgres: TeamClusterCredentialService;
     daemon: TeamClusterDaemonCredentialService;
 }
@@ -80,6 +78,25 @@ export interface TeamClusterEffectiveCapabilities{
     servesArtifactDownloads: boolean;
 }
 
+/**
+ * What the cluster's machine can do, observed by its daemon.
+ *
+ * Distinct from `TeamClusterEffectiveCapabilities`, which the control plane
+ * derives from the role the user configured. These are facts about the host that
+ * only the daemon can see, so they arrive on the heartbeat and change when the
+ * machine changes.
+ */
+export interface TeamClusterHostCapabilities{
+    /**
+     * Whether the daemon can reach a container runtime.
+     *
+     * False disables the features that create containers — the container explorer
+     * and notebook sessions — while everything else keeps working, so a machine
+     * without Docker runs the product rather than refusing to start.
+     */
+    containerRuntime: boolean;
+}
+
 export type ClusterTransferJobState =
     | 'queued'
     | 'freezing'
@@ -92,11 +109,6 @@ export type ClusterTransferJobState =
     | 'cancelled';
 
 export type ClusterTransferJobReason = 'manual' | 'soft-limit' | 'hard-limit';
-
-export interface ClusterTransferJobBucketRef{
-    bucket: string;
-    prefix: string;
-}
 
 export interface ClusterTransferJobCursor{
     bucketIndex: number;
@@ -118,7 +130,6 @@ export interface ClusterTransferJob{
     scopeId: string;
     sourceClusterId: string;
     destinationClusterId: string;
-    buckets: ClusterTransferJobBucketRef[];
     state: ClusterTransferJobState;
     reason: ClusterTransferJobReason;
     cleanupSource: boolean;
@@ -147,6 +158,8 @@ export interface TeamCluster{
     queueScopeLimits: TeamClusterQueueScopeLimits;
     roleConfig: TeamClusterRuntimeRoleConfig;
     effectiveCapabilities: TeamClusterEffectiveCapabilities;
+    /** Null until the daemon's first heartbeat, which is not the same as "no runtime". */
+    hostCapabilities: TeamClusterHostCapabilities | null;
     activeTransfers?: ClusterTransferJob[];
     isDemo: boolean;
     demoExpiresAt: string | null;
@@ -197,7 +210,6 @@ export interface ClusterNetworkMetrics{
 
 export interface ClusterResponseTimes{
     postgres: number;
-    minio: number;
     self: number;
 }
 
@@ -217,8 +229,6 @@ export interface ClusterMetrics{
     timestamp?: string;
     clusterId: string;
     teamClusterId?: string;
-    teamClusterName?: string;
-    teamClusterStatus?: TeamClusterStatus;
     serverId?: string;
     status: ClusterStatus;
     cpu: ClusterCpuMetrics;
@@ -289,7 +299,6 @@ export interface ClusterResourceLimits{
     maxCpus: number | null;
     maxMemoryMB: number | null;
     status: ClusterResourceStatus | null;
-    lastUpdatedAt: string | null;
 }
 
 export interface ClusterResourceLimitsResponse{
@@ -309,17 +318,10 @@ export interface DaemonQueueSnapshot{
     counts: QueueCountsSnapshot;
 }
 
-export interface ServerQueueSnapshot{
-    name: string;
-    location: 'server';
-    concurrency: number;
-}
-
 export interface GetTeamClusterRuntimeSnapshotResponse{
     capturedAt: string;
     queueConcurrency: TeamClusterQueueConcurrency;
     daemonQueues: DaemonQueueSnapshot[];
-    serverQueues: ServerQueueSnapshot[];
 }
 
 export interface CreateTeamClusterTransferRequestResponse{
@@ -331,7 +333,7 @@ export interface CreateTeamClusterTransferRequestResponse{
 
 export enum TeamClusterRemoteAccessTarget{
     DaemonTables = 'daemon-tables',
-    Minio = 'minio'
+    ObjectStore = 'object-store'
 }
 
 export interface TeamClusterRemoteAccessSession{
@@ -384,7 +386,6 @@ export interface GetTeamClusterRemoteExplorerNodeResponse{
 }
 
 export interface TeamClusterInstallManifestPorts{
-    minio: number;
     postgres: number;
     daemon: number;
 }
@@ -396,7 +397,6 @@ export interface TeamClusterInstallManifestFile{
 }
 
 export interface TeamClusterInstallManifestImages{
-    minio: string;
     postgres: string;
     daemon: string;
 }

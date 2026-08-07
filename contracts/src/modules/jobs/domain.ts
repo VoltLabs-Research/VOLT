@@ -33,7 +33,6 @@ export interface Job{
     sessionId?: string;
     status: JobStatus;
     timestamp: string;
-    progress?: number;
     queueType?: string;
     name?: string;
     message?: string;

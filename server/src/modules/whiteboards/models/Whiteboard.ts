@@ -42,12 +42,6 @@ export default class Whiteboard extends BaseModel{
     })
     payloadKey!: string;
 
-    @Column({
-        type: 'varchar',
-        nullable: true
-    })
-    thumbnailKey!: string | null;
-
     @ManyToOne(() => CatalogFolder, { onDelete: 'SET NULL' })
     @JoinColumn({ name: 'folder' })
     folderRef?: CatalogFolder;

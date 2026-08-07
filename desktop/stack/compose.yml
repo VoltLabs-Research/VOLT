@@ -14,15 +14,6 @@ services:
       retries: 20
     volumes: [volt-postgres-data:/var/lib/postgresql/data]
 
-  volt-minio:
-    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
-    restart: unless-stopped
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER:-voltminio}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASS:-voltminiosecret}
-    command: server /data --console-address ":9001"
-    ports: ["${MINIO_PORT:-9100}:9000", "${MINIO_CONSOLE:-9101}:9001"]
-    volumes: [volt-minio-data:/data]
 
   volt-server:
     build:
@@ -41,20 +32,18 @@ services:
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
       CLIENT_HOST: ${CLIENT_HOST:-http://localhost:5273}
       SERVER_ENDPOINT: ${SERVER_ENDPOINT:-http://localhost:8100}
-      MINIO_ENDPOINT: volt-minio
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9100}
-      MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
-      MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
       DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/${POSTGRES_DB:-volt}
+      SERVER_DATA_DIR: /var/lib/volt-server
       SERVER_PORT: 8000
       SERVER_HOST: 0.0.0.0
       SECRET_KEY: ${SECRET_KEY:-volt-local-secret}
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
     depends_on:
       volt-postgres: { condition: service_healthy }
-      volt-minio:    { condition: service_started }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Avatars and chat attachments live here now, so this is data, not a cache.
+      - volt-server-data:/var/lib/volt-server
       - ${VOLT_SOURCE_DIR}/server:/app
       - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro
       - ${CLUSTER_DAEMON_SOURCE_DIR}:/ClusterDaemon:ro
@@ -85,31 +74,28 @@ services:
       HOST: 0.0.0.0
       PORT: ${DAEMON_PORT:-18080}
       TEAM_CLUSTER_ID: ${TEAM_CLUSTER_ID}
-      TEAM_CLUSTER_HEALTHCHECK_PATH: /api/team-clusters/${TEAM_CLUSTER_ID}/healthcheck
       TEAM_CLUSTER_DAEMON_PASSWORD: ${DAEMON_PASS:-daemon-local-pass}
       VOLT_CLOUD_URL: http://volt-server:8000
       DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/volt-cluster
-      MINIO_ENDPOINT: http://volt-minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
-      MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
+      DAEMON_DATA_DIR: /var/lib/volt-daemon
       BUCKET_PREFIX: cluster-
-      SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
       # Both services share this network, so object bytes have no reason to be
       # reframed onto the daemon's socket.io control connection to reach the server.
       OBJECT_GATEWAY_PUBLIC_BASE_URL: http://cluster-daemon:${DAEMON_PORT:-18080}
     depends_on:
       volt-postgres: { condition: service_healthy }
-      volt-minio:    { condition: service_started }
       volt-server:   { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CLUSTER_DAEMON_SOURCE_DIR}:/app
       - cluster-daemon-node-modules:/app/node_modules
+      # The object store lives here now, so this holds the cluster's data — not a cache.
+      - cluster-daemon-data:/var/lib/volt-daemon
     ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]
 
 volumes:
   volt-postgres-data:
-  volt-minio-data:
-  cluster-minio-data:
+  volt-server-data:
+  cluster-daemon-data:
   volt-server-node-modules:
   cluster-daemon-node-modules:

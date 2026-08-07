@@ -35,7 +35,6 @@ const useCanvasAccessPublication = ({
             trajectoryId,
             canMutate,
             canCollaborate: canMutate,
-            isGuest: !canMutate,
             hasTeamMembership: canMutate
         });
     }, [access, trajectoryId, setAccess]);

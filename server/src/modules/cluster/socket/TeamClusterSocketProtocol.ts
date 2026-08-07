@@ -15,6 +15,7 @@ import type {
 } from '@shared/contracts/types';
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import type {
+    TeamClusterHostCapabilitiesProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@shared/contracts/types/TeamCluster';
@@ -59,18 +60,14 @@ export interface TeamClusterHeartbeatMetricsInput {
         incomingKilobytesPerSecond: number;
         outgoingKilobytesPerSecond: number;
         totalKilobytesPerSecond: number;
-        receivedBytes: number;
-        sentBytes: number;
     };
     cloudLatencyMs: number | null;
-    connectedToCloud: boolean;
 }
 
 export { TeamClusterDaemonResponseType };
 
 export enum TeamClusterDaemonSessionKind {
     Terminal = 'terminal',
-    Tunnel = 'tunnel',
     WebSocket = 'websocket'
 }
 
@@ -285,8 +282,14 @@ export interface ClusterRuntimeHeartbeatCommand {
     teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
-    runtime?: { roleConfig: TeamClusterRuntimeRoleConfigProps };
+    runtime?: ClusterRuntimeHeartbeatRoleConfig;
     metrics?: TeamClusterHeartbeatMetricsInput;
+    /** Absent from daemons older than the capability probe; that is not "no runtime". */
+    hostCapabilities?: TeamClusterHostCapabilitiesProps;
+}
+
+export interface ClusterRuntimeHeartbeatRoleConfig {
+    roleConfig: TeamClusterRuntimeRoleConfigProps;
 }
 
 export interface ClusterRuntimeLifecycleCommand {
@@ -399,15 +402,6 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelClosePayload
     | TeamClusterDaemonRuntimeProgressPayload
     | TeamClusterDaemonServerEventMessage;
-
-export {
-    TeamClusterServiceExposureAccessMode
-};
-
-export type {
-    TeamClusterServiceExposure,
-    TeamClusterDaemonExecutionLogSegment
-};
 
 export {
     ChannelCommands

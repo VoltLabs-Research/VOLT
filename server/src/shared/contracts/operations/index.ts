@@ -1,6 +1,5 @@
 
 export type { PluginRecord } from './PluginRecord';
-export type { ListContainersOutput } from './ListContainers';
 export type {
     GetAnalysesByTeamIdItemView
 } from './GetAnalysesByTeamId';

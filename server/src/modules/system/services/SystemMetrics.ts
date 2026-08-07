@@ -30,7 +30,6 @@ export interface SystemMetrics {
     responseTime: number;
     responseTimes: {
         postgres: number;
-        minio: number;
         self: number;
         average: number;
     };

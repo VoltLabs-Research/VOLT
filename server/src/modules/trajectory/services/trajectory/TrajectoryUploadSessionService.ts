@@ -95,7 +95,6 @@ class TrajectoryUploadSessionService {
                 totalFiles: 0,
                 totalSize: 0
             },
-            rasterSceneViews: 0,
             hasPreview: false,
             isPublic: true,
             updatedAt: now,
@@ -180,8 +179,7 @@ class TrajectoryUploadSessionService {
             );
 
             await Object.assign(session, {
-                status: TrajectoryUploadSessionStatus.Committed,
-                committedAt: new Date()
+                status: TrajectoryUploadSessionStatus.Committed
             }).save();
 
             await eventBus.emit('trajectory.updated', {

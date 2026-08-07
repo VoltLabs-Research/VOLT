@@ -3,7 +3,15 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'
 export interface Endpoint<Input = never, Output = void>{
     readonly method: HttpMethod;
     readonly path: string;
-    
+    /**
+     * Never assigned. It exists so `Input` and `Output` reach the structural type.
+     *
+     * Without it TypeScript ignores both parameters and every `Endpoint<A, B>`
+     * becomes assignable to every `Endpoint<C, D>` — measured: passing an
+     * `Endpoint<A, string>` where an `Endpoint<B, number>` is expected compiles
+     * clean without this line and fails with TS2345 with it. Deleting it would turn
+     * the type arguments on every route declaration into decoration.
+     */
     readonly __io?: (input: Input) => Output;
 }
 

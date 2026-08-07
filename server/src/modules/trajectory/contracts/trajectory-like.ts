@@ -12,7 +12,6 @@ export const toTrajectoryLike = (trajectory: Trajectory): TrajectoryLike => ({
         createdBy: trajectory.createdBy,
         status: trajectory.status,
         isPublic: trajectory.isPublic,
-        rasterSceneViews: trajectory.rasterSceneViews,
         hasPreview: trajectory.hasPreview,
         stats: trajectory.stats,
         updatedAt: trajectory.updatedAt,

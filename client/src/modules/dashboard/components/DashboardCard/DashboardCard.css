@@ -3,9 +3,6 @@
     border-radius: var(--radius-xl);
 }
 
-.dashboard-card--clickable {
-    cursor: pointer;
-}
 
 .dashboard-card--relative {
     position: relative;

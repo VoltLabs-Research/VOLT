@@ -3,7 +3,7 @@ import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } fro
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utils/container-form';
+import { mergeContainerEnvVariables } from '../../utils/container-form';
 import type { ContainerConfig } from '@/modules/container/contracts/forms';
 import type { Team } from '@volt/contracts/modules/team/domain';
 import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
@@ -72,19 +72,11 @@ const ReviewStep = ({
     const selectedClusterName = teamClusters.find((teamCluster) => teamCluster._id === selectedTeamClusterId)?.name || 'Not selected';
     const selectedImage = image || 'Not selected';
     const imageSource = selectedTemplateName ? `Template: ${selectedTemplateName}` : (image ? 'Custom image' : 'No image selected');
-    const mergedEnvironmentVariables = mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues);
+    const mergedEnvironmentVariables = mergeContainerEnvVariables(config.env);
     const environmentDisplay = mergedEnvironmentVariables.length > 0
         ? `${mergedEnvironmentVariables.length} variable${mergedEnvironmentVariables.length === 1 ? '' : 's'}`
         : 'None';
     const dockerAccessLabel = config.mountDockerSocket ? 'Enabled' : 'Disabled';
-    const customFieldsDisplay = config.customFields.length > 0
-        ? config.customFields.map((customField) => {
-            const rawValue = config.customFieldValues[customField.id] ?? '';
-            const value = getMaskedCustomFieldValue(customField, rawValue) || 'Not set';
-
-            return `${customField.label}: ${value}`;
-        }).join(', ')
-        : null;
     let portsDisplay = 'None';
     if (config.ports.length > 0) {
         portsDisplay = config.ports.map((p) => `${p.private}:${p.public === undefined ? 'Auto' : p.public}`).join(', ');
@@ -110,7 +102,6 @@ const ReviewStep = ({
                     <KeyValueRow label='Memory' value={`${config.memory} MB`} />
                     <KeyValueRow label='Ports' value={portsDisplay} />
                     <KeyValueRow label='Environment' value={environmentDisplay} />
-                    {customFieldsDisplay && <KeyValueRow label='Template settings' value={customFieldsDisplay} />}
                     <KeyValueRow label='Docker access' value={dockerAccessLabel} />
                     {draftLastSavedAt ? <KeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
                 </KeyValueList>

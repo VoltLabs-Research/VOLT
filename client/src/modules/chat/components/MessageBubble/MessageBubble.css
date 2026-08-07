@@ -50,7 +50,6 @@
 }
 
 .message-bubble.deleted .message-bubble-time,
-.message-bubble.deleted .message-bubble-edited,
 .message-bubble.deleted .message-bubble-file {
     color: var(--color-text-muted);
 }
@@ -72,10 +71,6 @@
 
 .message-bubble.sent .message-bubble-time {
     color: color-mix(in srgb, var(--color-contrast-high) 70%, transparent);
-}
-
-.message-bubble-edited {
-    font-style: italic;
 }
 
 :root[data-theme='light'] .message-bubble-content {

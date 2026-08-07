@@ -11,8 +11,12 @@ import type { EntityManager } from 'typeorm';
  * return the one shape.
  */
 
-export interface KeyValueWriteOptions {
+/** A deadline on its own, for the writes that cannot also be conditional. */
+export interface KeyValueTtlOptions {
     ttlMs?: number;
+}
+
+export interface KeyValueWriteOptions extends KeyValueTtlOptions {
     /** Mirrors Redis `SET … NX`: the write lands only when no live entry holds the key. */
     ifNotExists?: boolean;
 }
@@ -23,7 +27,7 @@ export interface KeyValueWriteOptions {
  */
 const LIVE = '("expiresAt" IS NULL OR "expiresAt" > now())';
 
-const toDeadline = (ttlMs: number | undefined): Date | null =>
+const deadlineFromMs = (ttlMs: number | undefined): Date | null =>
     ttlMs === undefined ? null : new Date(Date.now() + ttlMs);
 
 /**
@@ -81,15 +85,15 @@ export class KeyValueStore {
                  SET value = excluded.value, "expiresAt" = excluded."expiresAt"
                  ${guard}
              RETURNING target.key`,
-            [key, value, toDeadline(options.ttlMs)]
+            [key, value, deadlineFromMs(options.ttlMs)]
         );
 
         return rows.length > 0;
     }
 
     /** Adds `delta` to a counter, treating a missing or lapsed entry as zero. */
-    async adjust(key: string, delta: number, options: { ttlMs?: number } = {}): Promise<number> {
-        const deadline = toDeadline(options.ttlMs);
+    async adjust(key: string, delta: number, options: KeyValueTtlOptions = {}): Promise<number> {
+        const deadline = deadlineFromMs(options.ttlMs);
         const rows = await this.manager.query<{ value: string }[]>(
             `INSERT INTO key_value_entries AS target (key, value, "expiresAt")
              VALUES ($1, $2::text, $3)
@@ -127,7 +131,7 @@ export class KeyValueStore {
                  WHERE key = $1 AND ${LIVE}
                  RETURNING key
              ) SELECT key FROM refreshed`,
-            [key, toDeadline(ttlMs)]
+            [key, deadlineFromMs(ttlMs)]
         );
 
         return rows.length > 0;
@@ -167,7 +171,7 @@ export class KeyValueStore {
         return rows.length > 0;
     }
 
-    async setAdd(key: string, members: string[], options: { ttlMs?: number } = {}): Promise<void> {
+    async setAdd(key: string, members: string[], options: KeyValueTtlOptions = {}): Promise<void> {
         if (members.length === 0) {
             return;
         }
@@ -176,7 +180,7 @@ export class KeyValueStore {
             `INSERT INTO key_value_set_members (key, member, "expiresAt")
              SELECT $1, source.member, $3 FROM unnest($2::text[]) AS source(member)
              ON CONFLICT (key, member) DO UPDATE SET "expiresAt" = excluded."expiresAt"`,
-            [key, members, toDeadline(options.ttlMs)]
+            [key, members, deadlineFromMs(options.ttlMs)]
         );
     }
 
@@ -213,7 +217,7 @@ export class KeyValueStore {
     async setExpire(key: string, ttlMs: number): Promise<void> {
         await this.manager.query(
             `UPDATE key_value_set_members SET "expiresAt" = $2 WHERE key = $1 AND ${LIVE}`,
-            [key, toDeadline(ttlMs)]
+            [key, deadlineFromMs(ttlMs)]
         );
     }
 
@@ -257,6 +261,15 @@ export class KeyValueStore {
     }
 }
 
+/**
+ * The store bound to the pooled connection.
+ *
+ * Deliberately **not** memoised, unlike the singletons around it. The store's only
+ * state is the manager it wraps, so caching the instance would also cache that
+ * manager — and a data source that is destroyed and rebuilt would leave every
+ * caller holding a dead one. Reading it per call is a map lookup and one small
+ * object, which is not worth trading for that failure mode.
+ */
 export const getKeyValueStore = (): KeyValueStore =>
     new KeyValueStore(KeyValueEntry.getRepository().manager);
 

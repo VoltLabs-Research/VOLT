@@ -59,10 +59,6 @@ class ClusterDemoService {
             createdBy: input.userId,
             enrollmentTokenHash: hashEnrollmentToken(credentials.enrollmentToken),
             services: await encryptTeamClusterServices({
-                minio: {
-                    username: credentials.minioUsername,
-                    password: credentials.minioPassword
-                },
                 postgres: {
                     username: credentials.postgresUsername,
                     password: credentials.postgresPassword
@@ -188,13 +184,10 @@ class ClusterDemoService {
     }
 
     #buildPlaintextCredentials(): DemoClusterPlaintextCredentials {
-        const minio = createServiceCredentials('minio');
         const postgres = createServiceCredentials('postgres');
 
         return {
             enrollmentToken: createEnrollmentToken(),
-            minioUsername: minio.username,
-            minioPassword: minio.password,
             postgresUsername: postgres.username,
             postgresPassword: postgres.password,
             daemonPassword: createDaemonPassword()

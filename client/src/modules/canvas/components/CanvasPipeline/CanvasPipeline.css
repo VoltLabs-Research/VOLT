@@ -17,9 +17,6 @@
     overflow: hidden;
 }
 
-.canvas-pipeline-stage--selected {
-    border-color: var(--accent-blue);
-}
 
 .canvas-pipeline-stage--dragging {
     opacity: 0.5;
@@ -113,12 +110,6 @@
     color: var(--status-error);
 }
 
-.canvas-pipeline__editor {
-    padding: 8px 6px;
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-2);
-}
 
 /* Expression-select editor body (moved from the former InstantModifierStack). */
 .expression-select-chip {

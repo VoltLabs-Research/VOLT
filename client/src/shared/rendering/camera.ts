@@ -12,10 +12,6 @@ export interface PerspectiveCameraSettings {
     filmGauge: number;
     filmOffset: number;
     aspect: number;
-    enableAutoFocus: boolean;
-    autoFocusSpeed: number;
-    bokehScale: number;
-    maxBlur: number;
 };
 
 export interface OrthographicCameraSettings {
@@ -87,10 +83,6 @@ const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
     filmOffset: 0,
     focus: 5,
     aspect: 1,
-    enableAutoFocus: false,
-    autoFocusSpeed: 0.1,
-    bokehScale: 1,
-    maxBlur: 0.01
 };
 
 const ORTHOGRAPHIC_DEFAULTS: OrthographicCameraSettings = {

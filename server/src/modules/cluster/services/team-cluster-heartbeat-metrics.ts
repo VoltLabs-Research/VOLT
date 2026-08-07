@@ -52,7 +52,6 @@ export const toSystemMetricsFromHeartbeat = (
     responseTime: metrics.cloudLatencyMs ?? 0,
     responseTimes: {
         postgres: 0,
-        minio: 0,
         self: metrics.cloudLatencyMs ?? 0,
         average: metrics.cloudLatencyMs ?? 0
     },

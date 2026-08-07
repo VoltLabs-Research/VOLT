@@ -1,5 +1,4 @@
 import { registerEventGroup } from '@shared/events/registerEventGroup';
-import { getEnabledModules } from '@core/bootstrap/module-state';
 import logger from '@shared/infrastructure/logger';
 
 import AiEvents from '@modules/ai/events/AiEvents';
@@ -22,9 +21,8 @@ import WhiteboardEvents from '@modules/whiteboards/events/WhiteboardEvents';
 type EventGroupClass = new () => object;
 
 /**
- * Every module's event surface, registered explicitly. Subscriptions are no
- * longer a side effect of importing a handler file, so the wiring is greppable
- * here — and a module the `VOLT_MODULES` allow-list excludes never subscribes.
+ * Every module's event surface, registered explicitly. Subscriptions are not a
+ * side effect of importing a handler file, so the wiring is greppable here.
  */
 const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
     ai: [AiEvents],
@@ -46,18 +44,13 @@ const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
 };
 
 const mountEventGroups = (): void => {
-    const enabled = getEnabledModules();
+    const groups = Object.values(EVENT_GROUPS).flat();
 
-    const mountable = Object.entries(EVENT_GROUPS)
-        .filter(([moduleKey]) => enabled.has(moduleKey))
-        .flatMap(([, groups]) => groups);
-
-    for (const group of mountable) {
+    for (const group of groups) {
         registerEventGroup(group);
     }
 
-    const total = Object.values(EVENT_GROUPS).reduce((count, groups) => count + groups.length, 0);
-    logger.info(`@event-groups: registered ${mountable.length}/${total} groups`);
+    logger.info(`@event-groups: registered ${groups.length} groups`);
 };
 
 export default mountEventGroups;

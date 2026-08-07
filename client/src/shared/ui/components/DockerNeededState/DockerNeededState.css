@@ -1,0 +1,25 @@
+.docker-needed-container{
+    min-height: auto;
+}
+
+.docker-needed-content{
+    max-width: 420px;
+}
+
+.docker-needed-icon{
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px){
+    .docker-needed-container{
+        min-height: 300px;
+    }
+
+    .docker-needed-content{
+        max-width: 90%;
+    }
+}

@@ -71,17 +71,7 @@ export default class AuthService{
 
         await this.#updateLastLogin(user.id);
 
-        const token = await this.#authSessionService.createSessionWithToken({
-            userId: user.id,
-            ip: context.ip,
-            userAgent: context.userAgent,
-            activityType: SessionActivityType.Login
-        });
-
-        return {
-            token,
-            user: this.#presentUser(user)
-        };
+        return this.#issueLoginSession(user, context);
     }
 
     async localSignIn(context: RequestContext): Promise<AuthSessionResult>{
@@ -94,17 +84,7 @@ export default class AuthService{
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Local user is not provisioned yet');
         }
 
-        const token = await this.#authSessionService.createSessionWithToken({
-            userId: user.id,
-            ip: context.ip,
-            userAgent: context.userAgent,
-            activityType: SessionActivityType.Login
-        });
-
-        return {
-            token,
-            user: this.#presentUser(user)
-        };
+        return this.#issueLoginSession(user, context);
     }
 
     async signUp(input: SignUpInput, context: RequestContext): Promise<AuthSessionResult>{
@@ -387,6 +367,20 @@ export default class AuthService{
             action: SessionActivityType.FailedLogin,
             success: false
         }).save();
+    }
+
+    async #issueLoginSession(user: User, context: RequestContext): Promise<AuthSessionResult>{
+        const token = await this.#authSessionService.createSessionWithToken({
+            userId: user.id,
+            ip: context.ip,
+            userAgent: context.userAgent,
+            activityType: SessionActivityType.Login
+        });
+
+        return {
+            token,
+            user: this.#presentUser(user)
+        };
     }
 
     #presentUser(user: User): WireUser{

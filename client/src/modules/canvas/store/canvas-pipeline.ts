@@ -25,8 +25,6 @@ export interface ColorCodingStageConfig {
     exposureId?: string;
     gradient: string;
     manualRange?: { min: number; max: number };
-    lastBakedKey?: string;
-    runStatus?: AnalysisPluginRunStatus;
 }
 
 export type ExpressionSelectAction = 'color' | 'delete';
@@ -43,18 +41,17 @@ export interface ExpressionSelectStageConfig {
 }
 
 export interface LineStyleStageConfig {
+    /* Sin lectores hoy, pero es el unico campo que le da forma a este miembro de la
+       union: sin el, StageConfig deja de rechazar el parcial de otro stage al mezclar
+       un patch. */
     lastBakedKey?: string;
 }
-
-export type AnalysisPluginRunStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface AnalysisPluginStageConfig {
     pluginId: string;
     argValues: Record<string, unknown>;
     selectedTeamClusterId?: string;
     selectedTimesteps?: number[];
-    lastAnalysisId?: string;
-    runStatus?: AnalysisPluginRunStatus;
 }
 
 export type StageConfig =

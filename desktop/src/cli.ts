@@ -30,7 +30,7 @@ Update options:
   -h, --help                      Show this help
 
 Notes:
-  --update keeps your data (postgres/minio); it rebuilds and reinstalls deps.
+  --update keeps your data (postgres and the object store); it rebuilds and reinstalls deps.
   In dev mode (configured app-config.json), --update rebuilds from local checkouts
   and does not pull from GitHub releases.
   Set GITHUB_TOKEN to raise the GitHub API rate limit for --update/--check.
@@ -308,11 +308,9 @@ const main = async () => {
     env.SSH_KEY ||= crypto.randomBytes(32).toString('hex');
     env.WEB_PORT ||= '5273';
     env.SERVER_PORT ||= '8100';
-    env.MINIO_PORT ||= '9100';
     env.DEPLOYMENT_MODE = 'cloud';
     env.CLIENT_HOST = `http://${answers.host}:${env.WEB_PORT}`;
     env.SERVER_ENDPOINT = `http://${answers.host}:${env.SERVER_PORT}`;
-    env.MINIO_PUBLIC_URL = `http://${answers.host}:${env.MINIO_PORT}`;
     await appConfig.setStackEnv(env);
 
     const deploy = new Deploy({

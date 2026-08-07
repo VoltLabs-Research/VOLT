@@ -93,7 +93,6 @@ export default class ClusterService {
             createdBy: input.userId,
             enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
             services: await encryptTeamClusterServices({
-                minio: createServiceCredentials('minio'),
                 postgres: createServiceCredentials('postgres'),
                 daemon: { password: createDaemonPassword() }
             }),
@@ -279,11 +278,6 @@ export default class ClusterService {
         return {
             teamClusterId: input.teamClusterId,
             services: {
-                minio: {
-                    port: services.minio.port,
-                    username: decrypted.minioUsername,
-                    password: decrypted.minioPassword
-                },
                 postgres: {
                     port: services.postgres.port,
                     username: decrypted.postgresUsername,

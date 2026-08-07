@@ -1,5 +1,4 @@
 export interface TeamClusterInstallManifestPortsView {
-    minio: number;
     postgres: number;
     daemon: number;
 }
@@ -11,7 +10,6 @@ export interface TeamClusterInstallManifestFileView {
 }
 
 export interface TeamClusterInstallManifestImagesView {
-    minio: string;
     postgres: string;
     daemon: string;
 }

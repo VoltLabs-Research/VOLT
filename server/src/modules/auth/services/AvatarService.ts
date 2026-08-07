@@ -1,5 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
-import storageService from '@shared/infrastructure/services/MinioStorageService';
+import storageService, { SYS_BUCKETS } from '@shared/infrastructure/services/FilesystemStorageService';
 import logger from '@shared/infrastructure/logger';
 import type { IdenticonOptions } from 'identicon.js';
 import Identicon from 'identicon.js';

@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamAIIntegrationEntity from '@modules/team/models/TeamAIIntegration';
-import { dedupeEnabledModels } from '@modules/team/contracts/team-ai-integration';
+import { dedupeEnabledModels, type TeamAIProvider } from '@modules/team/contracts/team-ai-integration';
 import {
     getAllProviderMetadata,
     getProviderMetadata,
@@ -17,6 +17,11 @@ import type {
     TeamAIProviderModels,
     TeamAIModelListItem
 } from '@volt/contracts/modules/team/domain';
+
+interface TeamAIIntegrationLookup{
+    provider: TeamAIProvider;
+    existing: TeamAIIntegrationEntity | null;
+}
 
 export default class TeamAIIntegrationService{
     async listByTeamId(teamId: string): Promise<GetTeamAIIntegrationsResponse>{
@@ -78,15 +83,7 @@ export default class TeamAIIntegrationService{
     }
 
     async createByProvider(teamId: string, userId: string, providerRaw: string, input: TeamAIIntegrationMutationInput): Promise<TeamAIIntegrationMutationResponse>{
-        const provider = normalizeProvider(providerRaw);
-        if(!provider){
-            throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
-        }
-
-        const existing = await TeamAIIntegrationEntity.findOneBy({
-            team: teamId,
-            provider
-        });
+        const { provider, existing } = await this.#findByProvider(teamId, providerRaw);
         if(existing){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_ALREADY_EXISTS, 'An integration for this provider already exists in this team');
         }
@@ -117,15 +114,7 @@ export default class TeamAIIntegrationService{
     }
 
     async updateByProvider(teamId: string, providerRaw: string, input: TeamAIIntegrationMutationInput): Promise<TeamAIIntegrationMutationResponse>{
-        const provider = normalizeProvider(providerRaw);
-        if(!provider){
-            throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
-        }
-
-        const existing = await TeamAIIntegrationEntity.findOneBy({
-            team: teamId,
-            provider
-        });
+        const { existing } = await this.#findByProvider(teamId, providerRaw);
         if(!existing){
             throw ApplicationError.notFound(ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND, 'AI integration not found for this provider');
         }
@@ -154,16 +143,8 @@ export default class TeamAIIntegrationService{
     }
 
     async deleteByProvider(teamId: string, providerRaw: string): Promise<void>{
-        const provider = normalizeProvider(providerRaw);
-        if(!provider){
-            throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
-        }
-
-        const integration = await TeamAIIntegrationEntity.findOneBy({
-            team: teamId,
-            provider
-        });
-        if(!integration){
+        const { provider, existing } = await this.#findByProvider(teamId, providerRaw);
+        if(!existing){
             throw ApplicationError.notFound(ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND, 'Team AI integration not found');
         }
 
@@ -171,6 +152,23 @@ export default class TeamAIIntegrationService{
             team: teamId,
             provider
         });
+    }
+
+    async #findByProvider(teamId: string, providerRaw: string): Promise<TeamAIIntegrationLookup>{
+        const provider = normalizeProvider(providerRaw);
+        if(!provider){
+            throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
+        }
+
+        const existing = await TeamAIIntegrationEntity.findOneBy({
+            team: teamId,
+            provider
+        });
+
+        return {
+            provider,
+            existing
+        };
     }
 
     #toItem(integration: TeamAIIntegrationEntity): TeamAIIntegration{

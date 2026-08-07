@@ -63,7 +63,6 @@ export const ChannelCommands = Object.freeze({
     RuntimeQueuesSnapshot: 'runtime.queues.snapshot',
     RuntimeUninstall: 'runtime.uninstall',
 
-    QueueDispatch: 'queue.dispatch',
 
     RemoteExplorerList: 'remote.explorer.list',
     RemoteExplorerNode: 'remote.explorer.node',
@@ -76,12 +75,9 @@ export const ChannelCommands = Object.freeze({
     TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
     TrajectoryCleanupRuntimeState: 'trajectory.cleanup-runtime-state',
-    TrajectoryParquetIngest: 'trajectory.parquet.ingest',
-    TrajectoryNativePreprocess: 'trajectory.native.preprocess',
     TrajectoryNativeMetadata: 'trajectory.native.metadata',
     TrajectoryNativePropertyStats: 'trajectory.native.property-stats',
     TrajectoryNativeUniqueValues: 'trajectory.native.unique-values',
-    TrajectoryNativeAtomIds: 'trajectory.native.atom-ids',
     TrajectoryNativeAtoms: 'trajectory.native.atoms',
     TrajectoryNativeFilterPreview: 'trajectory.native.filter-preview',
     TrajectoryNativeColorModel: 'trajectory.native.color-model',
@@ -91,10 +87,8 @@ export const ChannelCommands = Object.freeze({
     TrajectoryPluginPropertyNames: 'trajectory.plugin.property-names',
     TrajectoryPluginPropertySchema: 'trajectory.plugin.property-schema',
     TrajectoryPluginAtomIndex: 'trajectory.plugin.atom-index',
-    TrajectoryPluginModifierValues: 'trajectory.plugin.modifier-values',
     TrajectoryPluginModifierStats: 'trajectory.plugin.modifier-stats',
-    TrajectoryPluginModifierUniqueValues: 'trajectory.plugin.modifier-unique-values',
-    TrajectoryPluginAnalysisAllAtoms: 'trajectory.plugin.analysis-all-atoms'
+    TrajectoryPluginModifierUniqueValues: 'trajectory.plugin.modifier-unique-values'
 });
 
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {

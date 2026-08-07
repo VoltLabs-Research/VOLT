@@ -52,16 +52,6 @@ export interface CreateTeamClusterRemoteAccessSessionInput extends PasswordConfi
     target: TeamClusterRemoteAccessTarget;
 }
 
-export interface TeamClusterRemoteExplorerRequestInput{
-    sessionId: string;
-    target: TeamClusterRemoteAccessTarget;
-    path: string;
-}
-
-export type ListTeamClusterRemoteExplorerEntriesInput = TeamClusterRemoteExplorerRequestInput;
-export type GetTeamClusterRemoteExplorerNodeInput = TeamClusterRemoteExplorerRequestInput;
-export type DownloadTeamClusterRemoteExplorerObjectInput = TeamClusterRemoteExplorerRequestInput;
-
 export interface ProcessTeamClusterHealthcheckInput{
     enrollmentToken: string;
     installedVersion?: string;

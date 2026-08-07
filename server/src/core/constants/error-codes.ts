@@ -9,15 +9,10 @@ const createErrorCodes = <const T extends Record<string, string>>(errorCodes: T)
 
 export const ErrorCodes = createErrorCodes({
     INTERNAL_SERVER_ERROR: 'Internal::Server::Error',
-    WORKER_FAILURE: 'Worker::Failure',
-    WORKER_TIMEOUT: 'Worker::Timeout',
-    WORKER_EXIT_ERROR: 'Worker::ExitError',
-    JOB_CANCELLED: 'Job::Cancelled',
 
     AUTH_UNAUTHORIZED: 'Auth::Unauthorized',
     AUTH_CREDENTIALS_INVALID: 'Auth::Credentials::Invalid',
     AUTH_EMAIL_REQUIRED: 'Auth::Email::Required',
-    AUTH_EMAIL_INVALID: 'Auth::Email::Invalid',
     AUTH_NAME_REQUIRED: 'Auth::Name::Required',
     AUTH_PASSWORD_TOO_SHORT: 'Auth::Password::TooShort',
     AUTH_PASSWORD_REQUIRED: 'Auth::Password::Required',
@@ -29,12 +24,15 @@ export const ErrorCodes = createErrorCodes({
 
     USER_NOT_FOUND: 'User::NotFound',
 
-    VALIDATION_ID_REQUIRED: 'Validation::IdRequired',
     VALIDATION_INVALID_INPUT: 'Validation::InvalidInput',
 
     TEAM_NOT_FOUND: 'Team::NotFound',
     TEAM_ID_REQUIRED: 'Team::IdRequired',
     TEAM_ACCESS_DENIED: 'Team::AccessDenied',
+    TEAM_CLUSTER_ALREADY_EXISTS: 'TeamCluster::AlreadyExists',
+    TEAM_CLUSTER_REMOTE_EXPLORER_LIST_FAILED: 'TeamCluster::RemoteExplorerListFailed',
+    TEAM_CLUSTER_REMOTE_EXPLORER_NODE_FAILED: 'TeamCluster::RemoteExplorerNodeFailed',
+    TEAM_CLUSTER_REMOTE_EXPLORER_DOWNLOAD_FAILED: 'TeamCluster::RemoteExplorerDownloadFailed',
     TEAM_CLUSTER_NOT_FOUND: 'TeamCluster::NotFound',
     TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED: 'TeamCluster::DaemonStreamRequestFailed',
     TEAM_CLUSTER_DAEMON_UNAUTHORIZED: 'TeamCluster::DaemonUnauthorized',
@@ -67,15 +65,7 @@ export const ErrorCodes = createErrorCodes({
 
     CONTAINER_NOT_FOUND: 'Container::NotFound',
     CONTAINER_NOT_RUNNING: 'Container::NotRunning',
-    CONTAINER_CREATION_FAILED: 'Container::Creation::Failed',
-    CONTAINER_START_FAILED: 'Container::Start::Failed',
-    CONTAINER_STOP_FAILED: 'Container::Stop::Failed',
-    CONTAINER_DELETION_FAILED: 'Container::Deletion::Failed',
-    CONTAINER_STATS_FAILED: 'Container::Stats::Failed',
-    CONTAINER_FILE_READ_FAILED: 'Container::File::ReadFailed',
     CONTAINER_FILE_IS_DIRECTORY: 'Container::File::IsDirectory',
-    CONTAINER_FILE_BINARY_UNSUPPORTED: 'Container::File::BinaryUnsupported',
-    CONTAINER_EXEC_FAILED: 'Container::Exec::Failed',
     CONTAINER_NETWORKING_UNAVAILABLE: 'Container::NetworkingUnavailable',
     CONTAINER_PORT_UNAVAILABLE: 'Container::PortUnavailable',
     CONTAINER_PUBLIC_PORT_UNAVAILABLE: 'Container::PublicPortUnavailable',
@@ -86,27 +76,12 @@ export const ErrorCodes = createErrorCodes({
     SIMULATION_CELL_NOT_FOUND: 'SimulationCell::NotFound',
 
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
-    TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED: 'Trajectory::Upload::FileLimitExceeded',
-    TRAJECTORY_DAEMON_TRANSPORT_FAILED: 'Trajectory::Daemon::TransportFailed',
 
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
 
     PLUGIN_NOT_FOUND: 'Plugin::NotFound',
     PLUGIN_NODE_NOT_FOUND: 'Plugin::Node::NotFound',
     PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE: 'Plugin::Executor::Binary::NotAccessible',
-    PLUGIN_EXECUTOR_START_FAILED: 'Plugin::Executor::Start::Failed',
-    PLUGIN_EXECUTOR_EXIT_FAILED: 'Plugin::Executor::Exit::Failed',
-    PLUGIN_CONTEXT_SOURCE_UNSUPPORTED: 'Plugin::Context::Source::Unsupported',
-    PLUGIN_FOREACH_SOURCE_REQUIRED: 'Plugin::ForEach::Source::Required',
-    PLUGIN_FOREACH_SOURCE_INVALID: 'Plugin::ForEach::Source::Invalid',
-    PLUGIN_ENTRYPOINT_BINARY_REQUIRED: 'Plugin::Entrypoint::Binary::Required',
-    PLUGIN_ENTRYPOINT_FOREACH_REQUIRED: 'Plugin::Entrypoint::ForEach::Required',
-    PLUGIN_ENTRYPOINT_ITERATION_MISSING: 'Plugin::Entrypoint::Iteration::Missing',
-    PLUGIN_EXPOSURE_INPUT_REQUIRED: 'Plugin::Exposure::Input::Required',
-    PLUGIN_EXPORT_EXPOSURE_REQUIRED: 'Plugin::Export::Exposure::Required',
-    PLUGIN_EXPORT_EXPOSURE_NAME_REQUIRED: 'Plugin::Export::ExposureName::Required',
-    PLUGIN_EXPORT_DATA_REQUIRED: 'Plugin::Export::Data::Required',
-    PLUGIN_EXPORT_TYPE_UNSUPPORTED: 'Plugin::Export::Type::Unsupported',
 
     CHAT_NOT_FOUND: 'Chat::NotFound',
     CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
@@ -127,13 +102,8 @@ export const ErrorCodes = createErrorCodes({
     COLOR_CODING_MISSING_PARAMS: 'ColorCoding::MissingParams',
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
 
-    PARTICLE_FILTER_INVALID_ACTION: 'ParticleFilter::InvalidAction',
     PARTICLE_FILTER_PLUGIN_PROPERTY_UNAVAILABLE: 'ParticleFilter::PluginPropertyUnavailable',
-    PARTICLE_FILTER_PLUGIN_PROPERTY_UNMAPPABLE: 'ParticleFilter::PluginPropertyUnmappable',
 
-    DOCKER_CREATE_ERROR: 'Docker::Create::Error',
-    DOCKER_EXEC_ERROR: 'Docker::Exec::Error',
-    DOCKER_CONNECT_ERROR: 'Docker::Connect::Error',
 
     RESOURCE_NOT_FOUND: 'Resource::NotFound',
     RESOURCE_LOAD_ERROR: 'Resource::LoadError',
@@ -152,15 +122,8 @@ export const ErrorCodes = createErrorCodes({
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_ANALYSIS_MISMATCH: 'Trajectory::Analysis::Mismatch',
-    TRAJECTORY_TEAM_CLUSTER_REQUIRED: 'Trajectory::TeamCluster::Required',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
-    TRAJECTORY_FORMAT_UNSUPPORTED: 'Trajectory::Format::Unsupported',
     TRAJECTORY_DATA_PARSE_FAILED: 'Trajectory::Data::ParseFailed',
-    TRAJECTORY_DUMP_PARSE_FAILED: 'Trajectory::Dump::ParseFailed',
-    TRAJECTORY_STATS_PARSE_FAILED: 'Trajectory::Stats::ParseFailed',
-    TRAJECTORY_GLB_GENERATION_FAILED: 'Trajectory::GLB::GenerationFailed',
-    TRAJECTORY_ATOMS_EXPOSURE_ID_REQUIRED: 'Trajectory::Atoms::ExposureIdRequired',
-    TRAJECTORY_ATOMS_PLUGIN_FETCH_FAILED: 'Trajectory::Atoms::PluginFetchFailed',
     TRAJECTORY_CLONE_JOB_NOT_FOUND: 'TrajectoryCloneJob::NotFound',
     TRAJECTORY_UPLOAD_SESSION_EXPIRED: 'TrajectoryUploadSession::Expired',
     TRAJECTORY_UPLOAD_SESSION_NOT_FOUND: 'TrajectoryUploadSession::NotFound',
@@ -172,10 +135,8 @@ export const ErrorCodes = createErrorCodes({
 
     TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
     TEAM_ROLE_IS_SYSTEM: 'TeamRole::IsSystem',
-    TEAM_ROLE_NAME_REQUIRED: 'TeamRole::NameRequired',
 
     TEAM_MEMBER_NOT_FOUND: 'TeamMember::NotFound',
-    TEAM_MEMBER_ALREADY_EXISTS: 'TeamMember::AlreadyExists',
 
     TEAM_AI_INTEGRATION_NOT_FOUND: 'TeamAIIntegration::NotFound',
     TEAM_AI_INTEGRATION_ALREADY_EXISTS: 'TeamAIIntegration::AlreadyExists',
@@ -185,9 +146,6 @@ export const ErrorCodes = createErrorCodes({
 
     SECRET_KEY_INVALID: 'SecretKey::Invalid',
     SECRET_KEY_NOT_FOUND: 'SecretKey::NotFound',
-    SECRET_KEY_NAME_REQUIRED: 'SecretKey::NameRequired',
-    SECRET_KEY_ROLE_REQUIRED: 'SecretKey::RoleRequired',
-    SECRET_KEY_PARAMS_REQUIRED: 'SecretKey::ParamsRequired',
 
     AI_CONVERSATION_NOT_FOUND: 'AI::Conversation::NotFound',
     AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
@@ -198,16 +156,13 @@ export const ErrorCodes = createErrorCodes({
     SCRIPTING_DAEMON_UNAVAILABLE: 'Scripting::Daemon::Unavailable',
     SCRIPTING_NOTEBOOK_NOT_FOUND: 'Scripting::Notebook::NotFound',
     SCRIPTING_PENDING_NOTEBOOK_NOT_FOUND: 'Scripting::PendingNotebookNotFound',
-    SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed',
 
     TEAM_INVITE_CODE_NOT_FOUND: 'TeamInviteCode::NotFound',
     TEAM_INVITE_CODE_ALREADY_MEMBER: 'TeamInviteCode::AlreadyMember',
 
     CLUSTER_OBJECT_GATEWAY_FAILED: 'ClusterObject::GatewayFailed',
-    CLUSTER_TRANSFER_FAILED: 'ClusterTransfer::Failed',
     REGISTRY_UNAVAILABLE: 'Registry::Unavailable',
     SCRIPTING_JUPYTER_UNAVAILABLE: 'Scripting::JupyterUnavailable',
-    TEAM_CLUSTER_ALREADY_EXISTS: 'TeamCluster::AlreadyExists',
     TEAM_CLUSTER_COMPUTE_CAPABILITY_REQUIRED: 'TeamCluster::ComputeCapabilityRequired',
     TEAM_CLUSTER_COMPUTE_CLUSTER_REQUIRED: 'TeamCluster::ComputeClusterRequired',
     TEAM_CLUSTER_CONNECTED_CLUSTER_REQUIRED: 'TeamCluster::ConnectedClusterRequired',
@@ -224,15 +179,10 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_DAEMON_TRAJECTORY_STORAGE_CLUSTER_REQUIRED: 'TeamCluster::Daemon::Trajectory::StorageClusterRequired',
     TEAM_CLUSTER_DAEMON_TRAJECTORY_TEAM_MISMATCH: 'TeamCluster::Daemon::Trajectory::TeamMismatch',
     TEAM_CLUSTER_DAEMON_REQUEST_FAILED: 'TeamCluster::DaemonRequestFailed',
-    TEAM_CLUSTER_OBJECT_STORE_PROXY_FAILED: 'TeamCluster::ObjectStoreProxyFailed',
     TEAM_CLUSTER_OBJECT_STORE_PROXY_METHOD_NOT_ALLOWED: 'TeamCluster::ObjectStoreProxyMethodNotAllowed',
-    TEAM_CLUSTER_REMOTE_EXPLORER_DOWNLOAD_FAILED: 'TeamCluster::RemoteExplorerDownloadFailed',
-    TEAM_CLUSTER_REMOTE_EXPLORER_LIST_FAILED: 'TeamCluster::RemoteExplorerListFailed',
-    TEAM_CLUSTER_REMOTE_EXPLORER_NODE_FAILED: 'TeamCluster::RemoteExplorerNodeFailed',
     TEAM_CLUSTER_STORAGE_CAPABILITY_REQUIRED: 'TeamCluster::StorageCapabilityRequired',
     LINE_ENTITY_ID_INVALID: 'Trajectory::LineEntity::IdInvalid',
     LINE_ENTITY_NOT_FOUND: 'Trajectory::LineEntity::NotFound',
-    TRAJECTORY_CLONE_FAILED: 'TrajectoryClone::Failed',
 
     // Codes that used to be written as bare string literals at the throw site.
     // Registering them here is what lets ApplicationError require an ErrorCode.

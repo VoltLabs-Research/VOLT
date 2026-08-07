@@ -26,7 +26,6 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'Dashboard',
         loader: () => import('@/modules/dashboard/components/Dashboard'),
         index: true,
-        moduleKey: 'dashboard',
         navigation: {
             section: DashboardNavigationSection.Main,
             label: 'Dashboard',
@@ -58,15 +57,6 @@ export const protectedRoutes: RouteConfig[] = [
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Theme'
-        }
-    },
-    {
-        path: '/dashboard/settings/modules',
-        title: 'Modules',
-        loader: () => import('@/modules/system/components/ModulesSettings'),
-        navigation: {
-            section: DashboardNavigationSection.Settings,
-            label: 'Modules'
         }
     },
     {
@@ -141,50 +131,43 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/trajectories/list',
         title: 'Trajectories',
         loader: () => import('@/modules/trajectory/components/TrajectoriesListing'),
-        requiredPermissions: ['trajectory:read'],
-        moduleKey: 'trajectory'
+        requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/trajectories/artifacts',
         title: 'Trajectory Artifacts',
         loader: () => import('@/modules/trajectory/components/TrajectoryArtifactsListing'),
-        requiredPermissions: ['trajectory:read'],
-        moduleKey: 'trajectory'
+        requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/whiteboard/:whiteboardId',
         title: 'Whiteboard',
         loader: () => import('@/modules/whiteboards/components/WhiteboardEditorPage'),
-        requiredPermissions: ['whiteboard:read'],
-        moduleKey: 'whiteboards'
+        requiredPermissions: ['whiteboard:read']
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/atoms',
         title: 'Trajectory Atoms',
         loader: () => import('@/modules/trajectory/components/PerAtomViewer'),
-        requiredPermissions: ['trajectory:read'],
-        moduleKey: 'trajectory'
+        requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/analysis-configs/list',
         title: 'Analysis Configurations',
         loader: () => import('@/modules/analysis/components/AnalysesListing'),
-        requiredPermissions: ['analysis:read'],
-        moduleKey: 'analysis'
+        requiredPermissions: ['analysis:read']
     },
     {
         path: '/dashboard/simulation-cells/list',
         title: 'Simulation Cells',
         loader: () => import('@/modules/simulation-cell/components/SimulationCellsListing'),
-        requiredPermissions: ['simulation-cell:read'],
-        moduleKey: 'simulation-cell'
+        requiredPermissions: ['simulation-cell:read']
     },
     {
         path: '/dashboard/plugins/list',
         title: 'Plugins',
         loader: () => import('@/modules/plugin/components/listing/PluginsListing'),
         requiredPermissions: ['plugin:read'],
-        moduleKey: 'plugin',
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Plugins',
@@ -196,31 +179,27 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/plugins/builder',
         title: 'Plugin Builder',
         loader: () => import('@/modules/plugin/components/plugin/PluginBuilderPage'),
-        requiredPermissions: ['plugin:create'],
-        moduleKey: 'plugin'
+        requiredPermissions: ['plugin:create']
     },
     {
         path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
         loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
-        requiredPermissions: ['plugin:read'],
-        moduleKey: 'plugin'
+        requiredPermissions: ['plugin:read']
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
         loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
         requiredPermissions: ['plugin:read', 'trajectory:read'],
-        permissionMode: RoutePermissionMode.All,
-        moduleKey: 'plugin'
+        permissionMode: RoutePermissionMode.All
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/sub-listings',
         title: 'Sub-Listings',
         loader: () => import('@/modules/plugin/components/listing/SubListingsPage'),
         requiredPermissions: ['plugin:read', 'trajectory:read'],
-        permissionMode: RoutePermissionMode.All,
-        moduleKey: 'plugin'
+        permissionMode: RoutePermissionMode.All
     },
     {
         path: '/onboarding',
@@ -235,8 +214,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/onboarding/cluster/setup',
         title: 'Cluster Setup',
-        loader: () => import('@/modules/cluster/components/ClusterOnboardingPage'),
-        moduleKey: 'cluster'
+        loader: () => import('@/modules/cluster/components/ClusterOnboardingPage')
     },
     {
         path: '/onboarding/cluster/provisioning',
@@ -246,21 +224,18 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/clusters',
         title: 'Clusters',
-        loader: () => import('@/modules/cluster/components/ClustersListing'),
-        moduleKey: 'cluster'
+        loader: () => import('@/modules/cluster/components/ClustersListing')
     },
     {
         path: '/dashboard/clusters/:clusterId',
         title: 'Cluster Monitoring',
-        loader: () => import('@/modules/cluster/components/ClusterMonitoringPage'),
-        moduleKey: 'cluster'
+        loader: () => import('@/modules/cluster/components/ClusterMonitoringPage')
     },
     {
         path: '/dashboard/containers',
         title: 'Containers',
         loader: () => import('@/modules/container/components/ContainersListing'),
         requiredPermissions: ['container:read'],
-        moduleKey: 'container',
         navigation: {
             section: DashboardNavigationSection.Main,
             label: 'Containers',
@@ -272,15 +247,13 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/containers/new',
         title: 'Create Container',
         loader: () => import('@/modules/container/components/CreateContainer'),
-        requiredPermissions: ['container:create'],
-        moduleKey: 'container'
+        requiredPermissions: ['container:create']
     },
     {
         path: '/dashboard/containers/:id',
         title: 'Container Details',
         loader: () => import('@/modules/container/components/ContainerDetailsLayout'),
         requiredPermissions: ['container:read'],
-        moduleKey: 'container',
         children: [
             {
                 path: '',
@@ -309,7 +282,6 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/messages/:chatId?',
         title: 'Messages',
         loader: () => import('@/modules/chat/components/MessagesPage'),
-        moduleKey: 'chat',
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Messages',
@@ -322,7 +294,6 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'AI',
         loader: () => import('@/modules/ai/components/AIPage'),
         requiredPermissions: ['ai-conversation:read'],
-        moduleKey: 'ai',
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Volt AI',
@@ -335,7 +306,6 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'Notebooks',
         loader: () => import('@/modules/scripting/components/NotebooksListing'),
         requiredPermissions: ['plugin:read'],
-        moduleKey: 'scripting',
         navigation: {
             section: DashboardNavigationSection.Main,
             label: 'Notebooks',
@@ -348,7 +318,6 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'Whiteboards',
         loader: () => import('@/modules/whiteboards/components/WhiteboardsListing'),
         requiredPermissions: ['whiteboard:read'],
-        moduleKey: 'whiteboards',
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Whiteboards',
@@ -385,8 +354,7 @@ export const optionalAuthRoutes: RouteConfig[] = [
     {
         path: '/discover/teams/:teamId',
         title: 'Public Trajectories',
-        loader: () => import('@/modules/trajectory/components/DiscoverTeamTrajectoriesPage'),
-        moduleKey: 'trajectory'
+        loader: () => import('@/modules/trajectory/components/DiscoverTeamTrajectoriesPage')
     },
     {
         path: '/canvas/glb',

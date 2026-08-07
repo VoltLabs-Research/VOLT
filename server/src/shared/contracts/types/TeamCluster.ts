@@ -17,7 +17,6 @@ export interface TeamClusterDaemonServiceProps {
 }
 
 export interface TeamClusterServicesProps {
-    minio: TeamClusterServiceProps;
     postgres: TeamClusterServiceProps;
     daemon: TeamClusterDaemonServiceProps;
 }
@@ -67,6 +66,10 @@ export interface TeamClusterEffectiveCapabilitiesProps {
     servesArtifactDownloads: boolean;
 }
 
+export interface TeamClusterHostCapabilitiesProps {
+    containerRuntime: boolean;
+}
+
 export interface TeamClusterProps {
     name: string;
     team: string;
@@ -82,13 +85,10 @@ export interface TeamClusterProps {
     queueScopeLimits: TeamClusterQueueScopeLimitsProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
+    hostCapabilities: TeamClusterHostCapabilitiesProps | null;
     isDemo: boolean;
     demoExpiresAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
 
-export interface TeamClusterLike {
-    _id: string;
-    props: TeamClusterProps;
-}

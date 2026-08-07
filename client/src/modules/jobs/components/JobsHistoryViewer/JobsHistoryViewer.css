@@ -1,12 +1,3 @@
-body.jobs-history-expanded {
-    overflow: hidden;
-}
-
-.jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
-    opacity: 1;
-    pointer-events: auto;
-}
-
 .jobs-history-viewer-embedded {
     width: 100%;
     height: 100%;

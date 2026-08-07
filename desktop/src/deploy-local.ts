@@ -53,7 +53,6 @@ const main = async () => {
         'DEPLOY OK',
         `  client       ${env.CLIENT_HOST}`,
         `  server       ${env.SERVER_ENDPOINT}`,
-        `  minio        ${env.MINIO_PUBLIC_URL}`,
         `  cluster      ${withCluster ? 'daemon running' : 'server only'}`,
         `  teamId       ${bootstrap?.teamId ?? '-'}`,
         `  clusterId    ${bootstrap?.teamClusterId ?? '-'}`,

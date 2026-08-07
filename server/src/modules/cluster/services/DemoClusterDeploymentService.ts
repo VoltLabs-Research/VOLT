@@ -4,7 +4,6 @@ import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import Docker from 'dockerode';
 
 const DEMO_IMAGE_POSTGRES = process.env.DEMO_CLUSTER_POSTGRES_IMAGE || 'postgres:17-alpine';
-const DEMO_IMAGE_MINIO = process.env.DEMO_CLUSTER_MINIO_IMAGE || 'minio/minio:RELEASE.2025-02-28T09-55-16Z';
 const DEMO_IMAGE_DAEMON = process.env.DEMO_CLUSTER_DAEMON_IMAGE || 'voltcloud/cluster-daemon:latest';
 const DEMO_NETWORK_PREFIX = process.env.DEMO_CLUSTER_NETWORK_PREFIX || 'volt-demo';
 const DEMO_VOLUME_PREFIX = process.env.DEMO_CLUSTER_VOLUME_PREFIX || 'volt-demo';
@@ -18,8 +17,6 @@ const DEMO_SERVICE_MEMORY_LIMIT_MB = readNumberEnv('DEMO_CLUSTER_SERVICE_MEMORY_
 const MEGABYTE = 1024 * 1024;
 
 export interface DemoClusterPlaintextCredentials {
-    minioUsername: string;
-    minioPassword: string;
     postgresUsername: string;
     postgresPassword: string;
     daemonPassword: string;
@@ -28,8 +25,8 @@ export interface DemoClusterPlaintextCredentials {
 
 interface DemoStackResourceNames {
     network: string;
-    volumes: { postgres: string; minio: string; };
-    containers: { postgres: string; minio: string; daemon: string; };
+    volumes: { postgres: string; daemon: string; };
+    containers: { postgres: string; daemon: string; };
 }
 
 const buildResourceNames = (teamClusterId: string): DemoStackResourceNames => {
@@ -37,11 +34,10 @@ const buildResourceNames = (teamClusterId: string): DemoStackResourceNames => {
         network: `${DEMO_NETWORK_PREFIX}-${teamClusterId}`,
         volumes: {
             postgres: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-postgres`,
-            minio: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-minio`
+            daemon: `${DEMO_VOLUME_PREFIX}-${teamClusterId}-daemon`
         },
         containers: {
             postgres: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-postgres`,
-            minio: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-minio`,
             daemon: `${DEMO_CONTAINER_PREFIX}-${teamClusterId}-daemon`
         }
     };
@@ -71,7 +67,6 @@ class DemoClusterDeploymentService {
         if (DEMO_PULL_IMAGES) {
             await Promise.all([
                 this.ensureImage(DEMO_IMAGE_POSTGRES),
-                this.ensureImage(DEMO_IMAGE_MINIO),
                 this.ensureImage(DEMO_IMAGE_DAEMON)
             ]);
         }
@@ -79,11 +74,10 @@ class DemoClusterDeploymentService {
         await this.ensureNetwork(names.network, labels);
         await Promise.all([
             this.ensureVolume(names.volumes.postgres, labels),
-            this.ensureVolume(names.volumes.minio, labels)
+            this.ensureVolume(names.volumes.daemon, labels)
         ]);
 
         await this.ensurePostgresContainer(names, labels, credentials);
-        await this.ensureMinioContainer(names, labels, credentials);
         await this.ensureDaemonContainer(teamCluster, names, labels, credentials);
 
         logger.info(`[DemoClusterDeploymentService] Demo stack deployed teamClusterId=${teamCluster.id}`);
@@ -96,12 +90,11 @@ class DemoClusterDeploymentService {
         await Promise.all([
             this.removeContainer(names.containers.daemon),
             this.removeContainer(names.containers.postgres),
-            this.removeContainer(names.containers.minio)
         ]);
 
         await Promise.all([
             this.removeVolume(names.volumes.postgres),
-            this.removeVolume(names.volumes.minio)
+            this.removeVolume(names.volumes.daemon)
         ]);
 
         await this.removeNetwork(names.network);
@@ -187,32 +180,6 @@ class DemoClusterDeploymentService {
         await container.start();
     }
 
-    private async ensureMinioContainer(
-        names: DemoStackResourceNames,
-        labels: Record<string, string>,
-        credentials: DemoClusterPlaintextCredentials
-    ): Promise<void> {
-        await this.removeContainer(names.containers.minio);
-
-        const container = await this.docker.createContainer({
-            name: names.containers.minio,
-            Image: DEMO_IMAGE_MINIO,
-            Labels: labels,
-            Env: [
-                `MINIO_ROOT_USER=${credentials.minioUsername}`,
-                `MINIO_ROOT_PASSWORD=${credentials.minioPassword}`
-            ],
-            Cmd: ['server', '/data', '--console-address', ':9001'],
-            HostConfig: {
-                NetworkMode: names.network,
-                RestartPolicy: { Name: 'unless-stopped' },
-                Memory: DEMO_SERVICE_MEMORY_LIMIT_MB * MEGABYTE,
-                Binds: [`${names.volumes.minio}:/data`]
-            }
-        });
-        await container.start();
-    }
-
     private async ensureDaemonContainer(
         teamCluster: TeamCluster,
         names: DemoStackResourceNames,
@@ -228,14 +195,9 @@ class DemoClusterDeploymentService {
             `VOLT_TEAM_ID=${teamCluster.props.team}`,
             `TEAM_CLUSTER_ID=${teamCluster.id}`,
             `TEAM_CLUSTER_DAEMON_PASSWORD=${credentials.daemonPassword}`,
-            `ENROLLMENT_TOKEN=${credentials.enrollmentToken}`,
             `VOLT_CLOUD_URL=${DEMO_VOLT_CLOUD_URL}`,
-            `VOLT_CLOUD_DAEMON_SOCKET_URL=${DEMO_VOLT_CLOUD_URL}`,
             `DATABASE_URL=${postgresUri}`,
-            `MINIO_ENDPOINT=http://${names.containers.minio}:9000`,
-            `MINIO_ACCESS_KEY=${credentials.minioUsername}`,
-            `MINIO_SECRET_KEY=${credentials.minioPassword}`,
-            `MINIO_USE_SSL=false`,
+            'DAEMON_DATA_DIR=/var/lib/volt-daemon',
             `DEMO_MODE=true`
         ];
 

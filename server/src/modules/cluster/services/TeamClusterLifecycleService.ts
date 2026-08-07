@@ -6,6 +6,7 @@ import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     TeamClusterStatus,
+    type TeamClusterHostCapabilitiesProps,
     type TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import {
@@ -36,6 +37,23 @@ interface TeamClusterLifecycleUpdate {
     lastDisconnectAt?: Date | null;
     clearEnrollmentToken?: boolean;
     roleConfig?: TeamClusterRuntimeRoleConfigProps;
+    hostCapabilities?: TeamClusterHostCapabilitiesProps;
+}
+
+/**
+ * One heartbeat, as the control plane receives it.
+ *
+ * A record rather than a positional list because every field after the identity
+ * pair is optional and independent, and the daemon that sends them may be older
+ * than the control plane that reads them.
+ */
+export interface RecordHeartbeatInput {
+    teamClusterId: string;
+    daemonPassword: string;
+    installedVersion?: string;
+    roleConfig?: TeamClusterRuntimeRoleConfigProps;
+    metrics?: TeamClusterHeartbeatMetricsInput;
+    hostCapabilities?: TeamClusterHostCapabilitiesProps;
 }
 
 interface PersistLifecycleUpdateOutcome {
@@ -93,27 +111,20 @@ class TeamClusterLifecycleService {
         return toTeamClusterView(updatedTeamCluster);
     }
 
-    async recordHeartbeat(
-        teamClusterId: string,
-        daemonPassword: string,
-        installedVersion?: string,
-        runtime?: {
-            roleConfig: TeamClusterRuntimeRoleConfigProps;
-        },
-        metrics?: TeamClusterHeartbeatMetricsInput
-    ): Promise<TeamClusterView> {
-        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
+    async recordHeartbeat(input: RecordHeartbeatInput): Promise<TeamClusterView> {
+        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(input.teamClusterId, input.daemonPassword);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: teamCluster.props.status,
-            installedVersion,
+            installedVersion: input.installedVersion,
             lastHeartbeatAt: new Date(),
-            roleConfig: runtime?.roleConfig
+            roleConfig: input.roleConfig,
+            hostCapabilities: input.hostCapabilities
         }, {
             allowedCurrentStatuses: [teamCluster.props.status]
         });
 
-        if (metrics) {
-            const systemMetrics = toSystemMetricsFromHeartbeat(updatedTeamCluster.id, metrics);
+        if (input.metrics) {
+            const systemMetrics = toSystemMetricsFromHeartbeat(updatedTeamCluster.id, input.metrics);
 
             void systemMetricsRepository.save(systemMetrics).catch(() => {
                 logger.warn(`Failed to persist system metrics snapshot after heartbeat acknowledgement teamClusterId=${updatedTeamCluster.id}`);
@@ -281,7 +292,8 @@ class TeamClusterLifecycleService {
             lastDisconnectAt: update.lastDisconnectAt === undefined
                 ? teamCluster.props.lastDisconnectAt
                 : update.lastDisconnectAt,
-            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
+            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig,
+            hostCapabilities: update.hostCapabilities ?? teamCluster.props.hostCapabilities
         });
 
         if (!updateResult.affected) {

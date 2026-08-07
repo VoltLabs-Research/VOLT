@@ -133,10 +133,6 @@ class TeamClusterInstallManifestService {
         const updateResult = await TeamClusterEntity.update({ id: teamCluster.id }, {
             installRoot,
             services: {
-                minio: {
-                    ...teamCluster.props.services.minio,
-                    port: ports.minio
-                },
                 postgres: {
                     ...teamCluster.props.services.postgres,
                     port: ports.postgres

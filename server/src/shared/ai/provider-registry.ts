@@ -14,7 +14,7 @@ let instances: AIToolController[] | null = null;
  * exposed. This replaces a central list that had to name all 19 controllers:
  * that list made `ai` import from 16 other modules, closed an import cycle back
  * through `AiService`, and — because it imported controllers unconditionally —
- * kept exposing the tools of modules that `VOLT_MODULES` had disabled.
+ * kept exposing the tools of modules that were not loaded.
  */
 export const AIToolProvider = (): ClassDecorator =>
     ((target: AIToolControllerConstructor): void => {

@@ -27,16 +27,6 @@ import type {
     AnalysisFrameLogStatus
 } from '@shared/contracts/types/AnalysisFrameLog';
 
-export {
-    ANALYSIS_LOG_SOCKET_EVENTS,
-    getAnalysisLogRoom
-} from '@modules/analysis/socket/AnalysisLogSocketProtocol';
-export type { AnalysisLogChunkEventPayload } from '@modules/analysis/socket/AnalysisLogSocketProtocol';
-export type {
-    AnalysisExecutionLogSegment,
-    AnalysisFrameLogStatus
-} from '@shared/contracts/types/AnalysisFrameLog';
-
 /**
  * Command surface of the per-frame execution log: it decides what the next stored record looks
  * like and broadcasts the resulting chunk. Concurrency, caching and persistence live in

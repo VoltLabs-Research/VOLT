@@ -1,7 +1,7 @@
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { JOB_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import { Box, Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
@@ -102,12 +102,6 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                 )}
             </Stack>
             <Row gap='075'>
-                {(job.progress !== undefined && job.progress > 0 && job.status === JobStatus.Running) && (
-                    <Box position='relative' overflow='hidden' radius='xs' className='job-progress-bar' aria-label={`Progress ${Math.round(job.progress)} percent`}>
-                        <Box position='absolute' height='max' top='0' left='0' className='job-progress-fill' style={{ width: `${Math.min(100, job.progress)}%` }} />
-                        <Text size='sm' weight='bold' tone='primary' className='job-progress-text p-absolute'>{Math.round(job.progress)}%</Text>
-                    </Box>
-                )}
                 {showRetryAction && (
                     <Button
                         variant='outline'

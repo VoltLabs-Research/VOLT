@@ -2,8 +2,6 @@ import './CanvasPipeline.css';
 import { useCanvasPipelineStore, useStages } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useCloneIntentRunner from '../../hooks/use-clone-intent-runner';
 import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
@@ -68,17 +66,6 @@ const CanvasPipeline = ({
 }: CanvasPipelineProps) => {
     useEnsurePluginCatalogLoaded();
     const { modifiers } = usePluginSelectors();
-    const selectedTeamId = useSelectedTeamId();
-
-    const team = trajectory?.team;
-    const trajectoryTeamId = typeof team === 'string' ? team : team?._id;
-    const isForeignTrajectory = Boolean(selectedTeamId && trajectoryTeamId && trajectoryTeamId !== selectedTeamId);
-
-    useCloneIntentRunner({
-        trajectoryId,
-        isForeignTrajectory
-    });
-
     const stages = useStages(trajectoryId);
     const removeStage = useCanvasPipelineStore((s) => s.removeStage);
     const reorderStage = useCanvasPipelineStore((s) => s.reorderStage);

@@ -1,6 +1,5 @@
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import { getEnabledModules } from '@core/bootstrap/module-state';
 import type { RbacConfig, SystemConfig } from '@volt/contracts/modules/system/domain';
 
 const DEPLOYMENT_MODE: 'local' | 'cloud' = process.env.DEPLOYMENT_MODE === 'local' ? 'local' : 'cloud';
@@ -23,10 +22,6 @@ export default class SystemService{
     }
 
     getConfig(): SystemConfig{
-        const enabledModules = [...getEnabledModules()].sort();
-        return {
-            mode: DEPLOYMENT_MODE,
-            enabledModules
-        };
+        return { mode: DEPLOYMENT_MODE };
     }
 }

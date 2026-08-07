@@ -30,7 +30,6 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       VITE_SERVER_ENDPOINT: https://example.invalid
-      VITE_ENV: production
 
     steps:
       - name: Check out repository

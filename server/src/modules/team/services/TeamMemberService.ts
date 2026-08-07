@@ -1,6 +1,5 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { isModuleEnabled } from '@core/bootstrap/module-state';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
@@ -14,13 +13,11 @@ import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
 
 const DEFAULT_MEMBER_LIMIT = 100;
 
-const buildContentCounters = (): IMemberContentCounter[] => {
-    const counters: IMemberContentCounter[] = [];
-    if(isModuleEnabled('trajectory')) counters.push(trajectoryMemberContentCounter);
-    if(isModuleEnabled('analysis')) counters.push(analysisMemberContentCounter);
-    if(isModuleEnabled('whiteboards')) counters.push(whiteboardMemberContentCounter);
-    return counters;
-};
+const buildContentCounters = (): IMemberContentCounter[] => [
+    trajectoryMemberContentCounter,
+    analysisMemberContentCounter,
+    whiteboardMemberContentCounter
+];
 
 export default class TeamMemberService{
     #presence = new TeamRoomPresenceService();

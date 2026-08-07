@@ -12,5 +12,4 @@ export interface RbacConfig{
 
 export interface SystemConfig{
     mode: 'local' | 'cloud';
-    enabledModules: string[];
 }

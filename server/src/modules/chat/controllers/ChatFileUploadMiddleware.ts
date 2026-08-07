@@ -1,6 +1,6 @@
-import storageService from '@shared/infrastructure/services/MinioStorageService';
+
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SYS_BUCKETS } from '@core/config/minio';
+import storageService, { SYS_BUCKETS } from '@shared/infrastructure/services/FilesystemStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Request, Response, NextFunction } from 'express';
 import { v4 } from 'uuid';

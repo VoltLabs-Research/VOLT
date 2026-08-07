@@ -76,7 +76,6 @@ const ColorCodingStageEditor = ({
         if (!trajectoryId || currentTimestep === undefined || !property) return;
 
         setIsApplying(true);
-        patch({ runStatus: 'loading' });
         try {
             let startValue: number;
             let endValue: number;
@@ -142,11 +141,9 @@ const ColorCodingStageEditor = ({
                     min: startValue,
                     max: endValue
                 },
-                lastBakedKey: `${property}:${startValue}-${endValue}:${gradient}`,
-                runStatus: 'success'
             });
         } catch {
-            patch({ runStatus: 'error' });
+            /* el toast de showPromise ya informa del fallo */
         } finally {
             setIsApplying(false);
         }

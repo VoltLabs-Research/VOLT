@@ -1,8 +1,6 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes, renderOptionalAuthRoutes } from './routes/RouteRenderer';
 import { resolveConfiguredRouteTitle } from './routes/metadata';
 import { reportHotspotDuration } from './core/http/utils/client-instrumentation';
-import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
-import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
 import { useFallbackPageTitle } from '@/shared/ui/hooks/use-page-title';
 import { useRouteCleanup } from '@/shared/ui/hooks/use-route-cleanup';
 import { ErrorSurface, getErrorMessage, isApiError, reportError } from '@/shared/errors/core';
@@ -97,8 +95,6 @@ const AppChrome = () => {
 const AppRoutes = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const enabledModules = useEnabledModules();
-    const { hidden: hiddenModules } = useHiddenModules();
     const routeTitle = resolveConfiguredRouteTitle(location.pathname) ?? '';
 
     useFallbackPageTitle(routeTitle);
@@ -126,10 +122,10 @@ const AppRoutes = () => {
             <ErrorBoundary onError={handleRenderError}>
                 <EndpointGuard>
                     <Routes>
-                        {renderPublicRoutes(enabledModules, hiddenModules)}
-                        {renderOptionalAuthRoutes(enabledModules, hiddenModules)}
-                        {renderGuestRoutes(enabledModules, hiddenModules)}
-                        {renderProtectedRoutes(enabledModules, hiddenModules)}
+                        {renderPublicRoutes()}
+                        {renderOptionalAuthRoutes()}
+                        {renderGuestRoutes()}
+                        {renderProtectedRoutes()}
                         <Route path='*' element={<NotFoundState />} />
                     </Routes>
                 </EndpointGuard>

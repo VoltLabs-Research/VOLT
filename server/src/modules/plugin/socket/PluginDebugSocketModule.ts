@@ -300,18 +300,14 @@ class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugStep(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:step', async (conn, payload) => {
-            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
-            if (!entry || entry.socketId !== conn.id) {
-                this.emitToSocket(conn.id, 'debug:session:error', {
-                    sessionId: payload.sessionId,
-                    error: 'Debug session not found'
-                });
+            const teamClusterId = this.resolveOwnedSessionTeamClusterId(conn.id, payload.sessionId);
+            if (teamClusterId === null) {
                 return;
             }
 
             try {
                 const response = await this.daemonClient.command<DaemonDebugStepResponse>(
-                    entry.teamClusterId,
+                    teamClusterId,
                     ChannelCommands.DebugStep,
                     { sessionId: payload.sessionId }
                 );
@@ -345,18 +341,14 @@ class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugContinue(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:continue', async (conn, payload) => {
-            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
-            if (!entry || entry.socketId !== conn.id) {
-                this.emitToSocket(conn.id, 'debug:session:error', {
-                    sessionId: payload.sessionId,
-                    error: 'Debug session not found'
-                });
+            const teamClusterId = this.resolveOwnedSessionTeamClusterId(conn.id, payload.sessionId);
+            if (teamClusterId === null) {
                 return;
             }
 
             try {
                 const response = await this.daemonClient.command<DaemonDebugContinueResponse>(
-                    entry.teamClusterId,
+                    teamClusterId,
                     ChannelCommands.DebugContinue,
                     { sessionId: payload.sessionId }
                 );
@@ -400,6 +392,20 @@ class PluginDebugSocketModule extends BaseSocketModule {
             this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
             logger.info(`@plugin-debug-socket: session ${payload.sessionId} stopped by user`);
         });
+    }
+
+    // Emits the rejection itself so callers only have to bail out on null.
+    private resolveOwnedSessionTeamClusterId(socketId: string, sessionId: string): string | null {
+        const entry = this.pluginDebugSessionRegistry.getSession(sessionId);
+        if (!entry || entry.socketId !== socketId) {
+            this.emitToSocket(socketId, 'debug:session:error', {
+                sessionId,
+                error: 'Debug session not found'
+            });
+            return null;
+        }
+
+        return entry.teamClusterId;
     }
 
     private emitNodeResult(

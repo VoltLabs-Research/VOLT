@@ -1,5 +1,6 @@
 import type {
     TeamClusterEffectiveCapabilitiesProps,
+    TeamClusterHostCapabilitiesProps,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps,
@@ -25,7 +26,6 @@ interface TeamClusterServiceView {
 }
 
 export interface TeamClusterServicesView {
-    minio: TeamClusterServiceView;
     postgres: TeamClusterServiceView;
     daemon: TeamClusterServiceView;
 }
@@ -40,7 +40,6 @@ export interface TeamClusterDaemonCredentialServiceView extends TeamClusterServi
 }
 
 export interface TeamClusterCredentialServicesView {
-    minio: TeamClusterCredentialServiceView;
     postgres: TeamClusterCredentialServiceView;
     daemon: TeamClusterDaemonCredentialServiceView;
 }
@@ -59,6 +58,7 @@ export interface TeamClusterView {
     queueScopeLimits: TeamClusterQueueScopeLimitsProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+    hostCapabilities: TeamClusterHostCapabilitiesProps | null;
     activeTransfers?: ClusterTransferJobView[];
     isDemo: boolean;
     demoExpiresAt: Date | null;
@@ -89,7 +89,6 @@ export const toTeamClusterView = (
         lastHeartbeatAt: teamCluster.props.lastHeartbeatAt,
         lastDisconnectAt: teamCluster.props.lastDisconnectAt,
         services: {
-            minio: toServiceView(services.minio),
             postgres: toServiceView(services.postgres),
             daemon: toServiceView(services.daemon)
         },
@@ -100,6 +99,7 @@ export const toTeamClusterView = (
             lastAppliedAt: roleConfig.lastAppliedAt ?? null
         },
         effectiveCapabilities: teamCluster.effectiveCapabilities,
+        hostCapabilities: teamCluster.props.hostCapabilities,
         ...(options.activeTransfers ? { activeTransfers: options.activeTransfers } : {}),
         isDemo: teamCluster.props.isDemo,
         demoExpiresAt: teamCluster.props.demoExpiresAt,

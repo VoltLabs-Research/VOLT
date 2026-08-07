@@ -67,12 +67,6 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
     const services: ClusterCredentialCard[] = credentials
         ? [
             {
-                label: 'MinIO',
-                port: credentials.minio.port,
-                username: credentials.minio.username,
-                password: credentials.minio.password
-            },
-            {
                 label: 'PostgreSQL',
                 port: credentials.postgres.port,
                 username: credentials.postgres.username,

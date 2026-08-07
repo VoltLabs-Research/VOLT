@@ -41,22 +41,6 @@
     min-width: 5rem;
 }
 
-.job-progress-bar {
-    width: 72px;
-    height: 20px;
-}
-
-.job-progress-fill {
-    transition: width 0.3s ease;
-}
-
-.job-progress-text {
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-}
-
 .job-container.completed path {
     stroke: var(--status-success);
 }
@@ -113,8 +97,3 @@
     color: var(--color-text-secondary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .job-progress-fill {
-        transition: none;
-    }
-}

@@ -1,31 +1,5 @@
 import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 
-export interface ContainerTemplateCustomFieldValues {
-    [fieldId: string]: string;
-}
-
-export enum ContainerTemplateCustomFieldType {
-    Text = 'text',
-    Password = 'password'
-}
-
-export interface ContainerTemplateCustomFieldEnvMapping {
-    key: string;
-}
-
-export interface ContainerTemplateCustomField {
-    id: string;
-    label: string;
-    description?: string;
-    placeholder?: string;
-    defaultValue?: string;
-    required?: boolean;
-    pattern?: string;
-    patternError?: string;
-    type: ContainerTemplateCustomFieldType;
-    env?: ContainerTemplateCustomFieldEnvMapping;
-}
-
 export interface ContainerTemplate {
     id: string;
     name: string;
@@ -37,5 +11,4 @@ export interface ContainerTemplate {
     defaultEnv?: EnvVariable[];
     defaultCmd?: string[];
     useImageCmd?: boolean;
-    customFields?: ContainerTemplateCustomField[];
 }

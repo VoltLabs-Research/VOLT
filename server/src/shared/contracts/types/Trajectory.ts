@@ -63,7 +63,6 @@ export interface TrajectoryProps {
     atoms?: number;
     firstTimestep?: number;
     analysis?: string[];
-    rasterSceneViews: number;
     hasPreview?: boolean;
     stats: TrajectoryStats;
     updatedAt: Date;

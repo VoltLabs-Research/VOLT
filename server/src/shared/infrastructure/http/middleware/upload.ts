@@ -60,15 +60,6 @@ const createUploadErrorResponse = (response: Response, error: unknown): void => 
     );
 };
 
-export const upload = multer({
-    storage,
-    limits: {
-        fields: 50,
-        files: 20,
-        fieldSize: 1024 * 1024
-    }
-});
-
 const chatUpload = multer({
     storage,
     limits: {

@@ -57,10 +57,4 @@ export default class Session extends BaseModel{
         default: true
     })
     success!: boolean;
-
-    @Column({
-        type: 'varchar',
-        nullable: true
-    })
-    failureReason!: string | null;
 }

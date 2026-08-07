@@ -228,7 +228,6 @@
 @media (prefers-reduced-motion: reduce) {
     .form-field-container,
     .form-field-input,
-    .form-field-icon,
     .form-field-inline-input,
     .form-field-inline-select,
     .form-field-canvas-input,
@@ -245,11 +244,6 @@
 }
 
 
-.form-field-inline-checkbox {
-    width: 1.25rem;
-    height: 1.25rem;
-    cursor: pointer;
-}
 
 .form-field-inline-checkbox-container .form-field-inline-label {
     flex: 1;

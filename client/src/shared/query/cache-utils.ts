@@ -1,7 +1,7 @@
 import queryClient from './query-client';
 import type { PaginatedResponse, PaginationMeta } from '@/shared/pagination/PaginationResponse';
 import type { Identifiable } from '@/shared/contracts/entity';
-import type { InfiniteData, Query, QueryKey } from '@tanstack/react-query';
+import type { Query, QueryKey } from '@tanstack/react-query';
 
 export type QueryDataSnapshot = Array<[QueryKey, unknown]>;
 
@@ -53,23 +53,6 @@ export const patchPaginatedPage = <T extends Identifiable>(
         (current) => {
             if (!current || !Array.isArray(current.data)) return current;
             return updater(current);
-        }
-    );
-};
-
-export const patchInfinitePages = <T extends Identifiable>(
-    keyPrefix: QueryKey,
-    pageUpdater: (page: PaginatedResponse<T>) => PaginatedResponse<T>
-): void => {
-    queryClient.setQueriesData<InfiniteData<PaginatedResponse<T>>>(
-        { queryKey: keyPrefix },
-        (current) => {
-            if (!current) return current;
-            return {
-                ...current,
-                pages: current.pages.map(pageUpdater),
-                pageParams: current.pageParams
-            };
         }
     );
 };

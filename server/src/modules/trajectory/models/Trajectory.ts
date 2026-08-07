@@ -59,12 +59,6 @@ export default class Trajectory extends BaseModel{
     isPublic!: boolean;
 
     @Column({
-        type: 'integer',
-        default: 0
-    })
-    rasterSceneViews!: number;
-
-    @Column({
         type: 'boolean',
         default: false
     })

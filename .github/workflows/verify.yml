@@ -3,7 +3,7 @@ name: Verify
 # The checks that stand in for a test suite.
 #
 # `.agents/testing.md` states this repo deliberately has no tests, and names
-# typecheck + smoke:modules + depcruise + lint + the client build as the substitute.
+# typecheck + depcruise + lint + the client build as the substitute.
 # Until now none of them ran in CI: the other workflows only built and published,
 # so a broken typecheck or a new layering violation reached an image unchallenged.
 #
@@ -50,11 +50,6 @@ jobs:
       - name: Lint
         working-directory: server
         run: npm run lint
-
-      # Proves the VOLT_MODULES toggle and the requires-closure still resolve.
-      - name: Module boot smoke
-        working-directory: server
-        run: npm run smoke:modules
 
       # `no-cross-module-imports` and `no-circular` are `warn` with known debt, so
       # this fails only on an `error`-severity rule. The debt ratchet below is what

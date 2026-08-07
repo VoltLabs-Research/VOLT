@@ -135,7 +135,6 @@ export interface TrajectoryUploadSessionFile{
 
 export interface TrajectoryUploadSession{
     id: string;
-    chunkSize: number;
     expiresAt: string;
     files: TrajectoryUploadSessionFile[];
 }

@@ -1,4 +1,6 @@
 import ContainerTerminal from '../ContainerTerminal';
+import DockerNeededState from '@/shared/ui/components/DockerNeededState';
+import { useContainerRuntimeAvailability } from '@/modules/cluster/hooks/use-container-runtime-availability';
 import useContainersListing, { containersListingResource } from '@/modules/container/hooks/use-containers-listing';
 import type { ContainerListingRow } from '@/modules/container/contracts/listing';
 import { isContainerFolderRow } from '@/modules/container/utils/listing';
@@ -19,6 +21,8 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 const ContainersListing = () => {
     useTip('containers-organization');
+
+    const containerRuntime = useContainerRuntimeAvailability();
 
     const columns: ColumnConfig<ContainerListingRow>[] = [
         createFolderedTitleColumn<ContainerListingRow>({
@@ -91,6 +95,8 @@ const ContainersListing = () => {
         onDeleteCurrentFolder: handleDeleteCurrentFolder,
         newFolderModalId: containersListingResource.modalIds.newFolder
     }), [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
+
+    if(containerRuntime === 'unavailable') return <DockerNeededState feature='Containers' />;
 
     return (
         <>

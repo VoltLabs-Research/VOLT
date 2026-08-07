@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { encrypt } from '@shared/infrastructure/utilities/crypto';
@@ -62,7 +63,6 @@ interface GeneratedServiceCredentials {
 }
 
 interface PlaintextTeamClusterServices {
-    minio: GeneratedServiceCredentials;
     postgres: GeneratedServiceCredentials;
     daemon: {
         password: string;
@@ -86,25 +86,16 @@ export const encryptTeamClusterServices = async (
     services: PlaintextTeamClusterServices
 ): Promise<TeamClusterProps['services']> => {
     const [
-        encryptedMinioUsername,
-        encryptedMinioPassword,
         encryptedPostgresUsername,
         encryptedPostgresPassword,
         encryptedDaemonPassword
     ] = await Promise.all([
-        encrypt(services.minio.username),
-        encrypt(services.minio.password),
         encrypt(services.postgres.username),
         encrypt(services.postgres.password),
         encrypt(services.daemon.password)
     ]);
 
     return {
-        minio: {
-            port: null,
-            username: encryptedMinioUsername,
-            password: encryptedMinioPassword
-        },
         postgres: {
             port: null,
             username: encryptedPostgresUsername,
@@ -143,6 +134,8 @@ export const buildTeamClusterProps = (params: {
         queueConcurrency: createDefaultTeamClusterQueueConcurrency(),
         queueScopeLimits: createDefaultTeamClusterQueueScopeLimits(),
         roleConfig: createDefaultTeamClusterRoleConfig(),
+        /* Nothing is known about the host until its daemon connects and reports. */
+        hostCapabilities: null,
         isDemo: params.isDemo,
         demoExpiresAt: params.demoExpiresAt,
         createdAt: now,
@@ -151,7 +144,7 @@ export const buildTeamClusterProps = (params: {
 };
 
 
-export const TEAM_CLUSTER_NAME_CONFLICT_CODE = 'TeamCluster::AlreadyExists';
+export const TEAM_CLUSTER_NAME_CONFLICT_CODE = ErrorCodes.TEAM_CLUSTER_ALREADY_EXISTS;
 
 /**
  * Persists freshly built props, translating the (team, name) and one-demo-per-team

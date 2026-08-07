@@ -24,9 +24,6 @@ export interface TeamMember extends BaseEntity{
 }
 
 export interface TeamMemberStats extends TeamMember{
-    trajectoriesCount: number;
-    analysesCount: number;
-    whiteboardsCount: number;
 }
 
 export enum TeamInvitationStatus{
@@ -38,12 +35,10 @@ export enum TeamInvitationStatus{
 export interface TeamInvitation extends BaseEntity{
     team: Team;
     invitedBy: User;
-    invitedUser: User;
     email: string;
     token: string;
     role: string;
     expiresAt: string;
-    acceptedAt?: string;
     status: TeamInvitationStatus;
 }
 
@@ -66,11 +61,6 @@ export interface CheckInvitePermissionResponse{
 
 export interface GetMyTeamPermissionsResponse{
     permissions: string[];
-}
-
-export interface SetDefaultTeamResponse{
-    defaultTeam: string | null;
-    autoJoinNewMembers: boolean;
 }
 
 export interface DeleteInviteCodeResponse{
@@ -147,7 +137,6 @@ export interface SecretKeyPerKeyMetric{
     roleName: string;
     isActive: boolean;
     totalRequests: number;
-    successRequests: number;
     avgResponseTime: number;
     lastRequestAt: string | null;
 }
@@ -168,7 +157,6 @@ export interface TeamUsageMetrics{
     overview: SecretKeyTeamUsageOverview;
     totalKeys: number;
     activeKeys: number;
-    revokedKeys: number;
     perKey: SecretKeyPerKeyMetric[];
     daily: SecretKeyTeamDailySeries;
     topEndpoints: SecretKeyEndpointStat[];

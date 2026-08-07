@@ -5,7 +5,6 @@ export interface CanvasAccessState {
     trajectoryId: string | undefined;
     canMutate: boolean;
     canCollaborate: boolean;
-    isGuest: boolean;
     hasTeamMembership: boolean;
 }
 
@@ -14,6 +13,5 @@ export const DEFAULT_CANVAS_ACCESS_STATE: CanvasAccessState = {
     trajectoryId: undefined,
     canMutate: true,
     canCollaborate: true,
-    isGuest: false,
     hasTeamMembership: true
 };

@@ -2,7 +2,7 @@ import useAIPage from '@/modules/ai/hooks/use-ai-page';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-export const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
+const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
 
 type AIPageState = ReturnType<typeof useAIPage>;
 

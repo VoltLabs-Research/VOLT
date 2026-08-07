@@ -13,12 +13,9 @@ export interface User extends BaseEntity{
     role?: UserRoleId;
     teams?: string[];
     analyses?: string[];
-    lastLoginAt?: string;
     lastSeenAt?: string | null;
     isOnline?: boolean;
     passwordChangedAt?: string;
-    oauthProvider?: OAuthProviderId;
-    oauthId?: string;
 }
 
 export type Account = User & { fullName: string };

@@ -64,7 +64,6 @@ export interface ContainerPortAccessUrl{
 
 export interface ContainerCpuUsage{
     total_usage: number;
-    percpu_usage?: number[];
 }
 
 export interface ContainerCpuStats{
@@ -143,8 +142,6 @@ export interface ReadContainerFileResponse{
     content: string;
 }
 
-export type CreateContainerPortAccessUrlResponse = ContainerPortAccessUrl;
-export type GetContainerStatsResponse = ContainerStatsResponse;
 
 
 /**

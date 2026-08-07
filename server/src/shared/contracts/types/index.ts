@@ -14,13 +14,9 @@ export type {
 } from './TeamClusterObjectGateway';
 export type { DownloadStreamOutput } from './DownloadStream';
 export { JobStatus } from './JobStatus';
-export type { ChatParticipant } from './Chat';
 
 export {
     TeamClusterStatus
-} from './TeamCluster';
-export type {
-    TeamClusterLike
 } from './TeamCluster';
 export {
     TrajectoryStatus

@@ -73,7 +73,6 @@ export interface PublicCanvasTrajectory {
 
 export interface PublicCanvasAccess {
     mode: PublicCanvasAccessMode;
-    isGuest: boolean;
     isPublic: boolean;
     hasTeamMembership: boolean;
 }

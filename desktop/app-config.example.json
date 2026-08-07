@@ -3,11 +3,7 @@
   "env": {
     "SERVER_PORT": "8100",
     "WEB_PORT": "5273",
-    "MINIO_PORT": "9100",
-    "MINIO_CONSOLE": "9101",
     "DAEMON_PORT": "18020",
-    "MINIO_USER": "voltminio",
-    "MINIO_PASS": "<generated-at-bootstrap>",
     "DAEMON_PASS": "<generated-at-bootstrap>",
     "SECRET_KEY": "<generated-at-bootstrap>",
     "SSH_KEY": "<generated-at-bootstrap>"

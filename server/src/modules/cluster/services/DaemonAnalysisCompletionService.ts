@@ -23,6 +23,25 @@ import daemonJobStatusPublisher, {
 } from '@modules/cluster/services/DaemonJobStatusPublisher';
 import type { ProjectedJobStatusInput } from '@modules/cluster/services/DaemonJobStatusPublisher';
 
+type QueuedJobProjection = Omit<ProjectedJobStatusInput, 'teamId' | 'queueType' | 'cleanupScope'>;
+
+/**
+ * Both queued-batch entry points disagree on who owns the team and the queue
+ * kind, so those three fields stay at the call site rather than as parameters.
+ */
+const toQueuedJobProjection = (job: QueuedDaemonJobNotification, teamClusterId: string): QueuedJobProjection => ({
+    jobId: job.jobId,
+    teamClusterId,
+    status: JobStatus.Queued,
+    name: job.name,
+    analysisId: job.analysisId,
+    trajectoryContext: {
+        trajectoryId: job.trajectoryId,
+        trajectoryName: job.trajectoryName,
+        timestep: job.timestep
+    }
+});
+
 class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
     private readonly eventBus = eventBus;
     private readonly executionLog = analysisExecutionLogService;
@@ -66,18 +85,9 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
     async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string, teamClusterId: string): Promise<void> {
         const events = jobs.map((job): ProjectedJobStatusInput => ({
-            jobId: job.jobId,
+            ...toQueuedJobProjection(job, teamClusterId),
             teamId,
-            teamClusterId,
-            status: JobStatus.Queued,
-            ...PROJECTED_JOB_KINDS.analysis,
-            name: job.name,
-            analysisId: job.analysisId,
-            trajectoryContext: {
-                trajectoryId: job.trajectoryId,
-                trajectoryName: job.trajectoryName,
-                timestep: job.timestep
-            }
+            ...PROJECTED_JOB_KINDS.analysis
         }));
 
         await this.publisher.publishJobStatusChangedBatch(events);
@@ -89,19 +99,10 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         teamClusterId: string
     ): Promise<void> {
         const events = jobs.map((job): ProjectedJobStatusInput => ({
-            jobId: job.jobId,
+            ...toQueuedJobProjection(job, teamClusterId),
             teamId: job.teamId,
-            teamClusterId,
-            status: JobStatus.Queued,
             queueType: job.queueType,
-            cleanupScope,
-            name: job.name,
-            analysisId: job.analysisId,
-            trajectoryContext: {
-                trajectoryId: job.trajectoryId,
-                trajectoryName: job.trajectoryName,
-                timestep: job.timestep
-            }
+            cleanupScope
         }));
 
         await this.publisher.publishJobStatusChangedBatch(events);

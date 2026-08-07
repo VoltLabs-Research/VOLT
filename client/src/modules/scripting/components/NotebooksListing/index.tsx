@@ -2,6 +2,8 @@ import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/Scr
 import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
+import DockerNeededState from '@/shared/ui/components/DockerNeededState';
+import { useContainerRuntimeAvailability } from '@/modules/cluster/hooks/use-container-runtime-availability';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
@@ -114,6 +116,7 @@ const NOTEBOOK_RENAME_INPUT_PROPS: InputHTMLAttributes<HTMLInputElement> = {
 };
 
 const NotebooksListing = () => {
+    const containerRuntime = useContainerRuntimeAvailability();
     const [activeTab, setActiveTab] = useState<NotebooksListingTabId>(NotebooksListingTabId.List);
     const {
         fetchData,
@@ -145,6 +148,8 @@ const NotebooksListing = () => {
 
         handleCreate();
     }, [activeTab, handleCreate]);
+
+    if(containerRuntime === 'unavailable') return <DockerNeededState feature='Notebooks' />;
 
     return (
         <>

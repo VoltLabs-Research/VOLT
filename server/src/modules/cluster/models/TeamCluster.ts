@@ -8,6 +8,7 @@ import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import type {
     TeamClusterEffectiveCapabilitiesProps,
+    TeamClusterHostCapabilitiesProps,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps,
@@ -94,6 +95,14 @@ export default class TeamCluster extends BaseModel{
 
     @Column('simple-json')
     roleConfig!: TeamClusterRuntimeRoleConfigProps;
+
+    /* Null until the daemon's first heartbeat: an unenrolled cluster has not
+       reported what its host can do, which is not the same as reporting nothing. */
+    @Column({
+        type: 'simple-json',
+        nullable: true
+    })
+    hostCapabilities!: TeamClusterHostCapabilitiesProps | null;
 
     @Column({
         type: 'boolean',

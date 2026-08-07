@@ -43,11 +43,6 @@
     color: var(--color-text-primary);
 }
 
-.ai-message-bubble.is-tool {
-    border: 1px solid var(--status-info-border);
-    background: var(--status-info-bg);
-}
-
 .ai-message-bubble.is-user {
     background: var(--color-surface-1);
     color: var(--color-text-primary);
@@ -370,10 +365,4 @@
     color: var(--color-text-secondary);
 }
 
-.ai-thread-suggestions {
-    max-width: 36rem;
-}
 
-.ai-thread-suggestion {
-    border-radius: var(--radius-full, 999px);
-}

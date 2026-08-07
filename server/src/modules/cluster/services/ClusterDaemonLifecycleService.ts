@@ -64,13 +64,14 @@ class ClusterDaemonLifecycleService {
 
     async recordHeartbeat(input: ClusterRuntimeHeartbeatCommand): Promise<{ teamCluster: TeamClusterView }> {
         return {
-            teamCluster: await teamClusterLifecycleService.recordHeartbeat(
-                input.teamClusterId,
-                input.daemonPassword,
-                input.installedVersion,
-                input.runtime,
-                input.metrics
-            )
+            teamCluster: await teamClusterLifecycleService.recordHeartbeat({
+                teamClusterId: input.teamClusterId,
+                daemonPassword: input.daemonPassword,
+                installedVersion: input.installedVersion,
+                roleConfig: input.runtime?.roleConfig,
+                metrics: input.metrics,
+                hostCapabilities: input.hostCapabilities
+            })
         };
     }
 

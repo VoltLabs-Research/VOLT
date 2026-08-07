@@ -1,12 +1,5 @@
 import type { BaseEntity } from '../../shared/base';
 
-export interface ListingColumnDef{
-    key?: string;
-    label: string;
-    title?: string;
-    sortable: boolean;
-    width?: number;
-}
 
 export interface ListingRow extends BaseEntity{
     trajectoryId?: string;

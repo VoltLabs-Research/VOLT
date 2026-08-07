@@ -141,9 +141,6 @@
     white-space: nowrap;
 }
 
-.canvas-tree-item__text--muted {
-    color: var(--color-text-muted);
-}
 
 .canvas-tree-analysis-label-group {
     display: flex;

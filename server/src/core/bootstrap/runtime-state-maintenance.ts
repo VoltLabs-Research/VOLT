@@ -51,6 +51,11 @@ const runOnce = async (): Promise<void> => {
 /**
  * Reclaims space from the runtime state tables.
  *
+ * It lives in the composition root rather than `shared/` because it reaches
+ * across owners — the key space and the event spool are infrastructure, the
+ * metric samples belong to the `system` module — and only the bootstrap is
+ * allowed to know about concrete modules.
+ *
  * None of this is required for correctness — expired entries are already
  * invisible to readers, because every read filters on the deadline. It exists so
  * a long-lived deployment does not accumulate dead receipts, unread event bodies

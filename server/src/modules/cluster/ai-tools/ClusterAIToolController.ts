@@ -139,7 +139,7 @@ export default class ClusterAIToolController extends AIToolController {
 
     @AITool({
         name: 'list_remote_cluster_files',
-        description: 'List the entries at a path inside a cluster\'s remote storage target (minio buckets or daemon tables). Requires an active password-confirmed remote-access session id.',
+        description: 'List the entries at a path inside a cluster\'s remote storage target (the object store or daemon tables). Requires an active password-confirmed remote-access session id.',
         parameters: typia.llm.parameters<ListRemoteClusterFilesInput>(),
         validate: typia.createValidate<ListRemoteClusterFilesInput>()
     })
@@ -211,16 +211,11 @@ export default class ClusterAIToolController extends AIToolController {
         const { teamClusterId, services } = await this.#service.revealCredentials(input);
 
         return {
-            summary: 'Cluster credentials confirmed for minio, postgres, and daemon (values masked).',
+            summary: 'Cluster credentials confirmed for postgres and daemon (values masked).',
             data: {
                 teamClusterId,
-                credentialKeys: ['minio.username', 'minio.password', 'postgres.username', 'postgres.password', 'daemon.password'],
+                credentialKeys: ['postgres.username', 'postgres.password', 'daemon.password'],
                 services: {
-                    minio: {
-                        port: services.minio.port,
-                        username: MASKED,
-                        password: MASKED
-                    },
                     postgres: {
                         port: services.postgres.port,
                         username: MASKED,

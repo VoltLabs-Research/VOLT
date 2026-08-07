@@ -39,10 +39,6 @@ export interface ScriptingSessionJupyter{
     containerStage?: NotebookContainerStage;
 }
 
-export interface ScriptingSession{
-    notebookId?: string;
-    jupyter: ScriptingSessionJupyter;
-}
 
 export interface CreateScriptingJupyterSessionResponse{
     notebookId: string;

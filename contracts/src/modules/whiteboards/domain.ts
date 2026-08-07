@@ -6,7 +6,6 @@ export interface Whiteboard{
     title: string;
     folder: string | null;
     payloadKey: string;
-    thumbnailKey?: string;
     lastEditedBy?: Ref<User> | null;
     createdAt: string;
     updatedAt: string;
@@ -41,4 +40,3 @@ export interface UploadWhiteboardAssetResponse{
     expiresAt: string;
 }
 
-export type GetWhiteboardResponse = Whiteboard;

@@ -65,8 +65,6 @@ export interface AIConversation extends BaseEntity{
     teamId: string;
     title: string;
     lastMessageAt?: string | null;
-    lastProvider?: AIProvider | string | null;
-    lastModel?: string | null;
     isArchived: boolean;
 }
 
@@ -76,8 +74,6 @@ export interface AIMessage extends BaseEntity{
     parts: unknown[];
     content: string;
     artifacts?: AIConversationMessageArtifacts | null;
-    modelInfo?: Record<string, unknown> | null;
-    tokenUsage?: Record<string, unknown> | null;
 }
 
 export interface CreateAIConversationResponse{

@@ -168,24 +168,25 @@ const authenticateFromToken = async (
     return authenticateWithUserToken(req, res, token);
 };
 
+const setCachedRequestAuthContext = (req: AuthenticatedRequest): void => {
+    const isSecretKeyAuth = req.authType === AuthenticationType.SecretKey;
+    const authContext: HttpRequestAuthContext = {
+        authType: isSecretKeyAuth ? HttpRequestAuthType.SecretKey : HttpRequestAuthType.User,
+        subjectId: (isSecretKeyAuth ? req.secretKeyId : req.userId) || 'unknown',
+        durationMs: 0,
+        cached: true
+    };
+
+    setRequestAuthContext(req, authContext);
+};
+
 export const protect = async (
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     if (isAuthenticatedRequest(req)) {
-        const authContext: HttpRequestAuthContext = {
-            authType: req.authType === AuthenticationType.SecretKey
-                ? HttpRequestAuthType.SecretKey
-                : HttpRequestAuthType.User,
-            subjectId: req.authType === AuthenticationType.SecretKey
-                ? req.secretKeyId || 'unknown'
-                : req.userId || 'unknown',
-            durationMs: 0,
-            cached: true
-        };
-
-        setRequestAuthContext(req, authContext);
+        setCachedRequestAuthContext(req);
         logger.debug(`@authentication traceId=${req.requestContext?.traceId} authType=${req.authType} cached=${true}`);
         next();
         return;
@@ -215,18 +216,7 @@ export const authenticateOptional = async (
     next: NextFunction
 ): Promise<void> => {
     if (isAuthenticatedRequest(req)) {
-        const authContext: HttpRequestAuthContext = {
-            authType: req.authType === AuthenticationType.SecretKey
-                ? HttpRequestAuthType.SecretKey
-                : HttpRequestAuthType.User,
-            subjectId: req.authType === AuthenticationType.SecretKey
-                ? req.secretKeyId || 'unknown'
-                : req.userId || 'unknown',
-            durationMs: 0,
-            cached: true
-        };
-
-        setRequestAuthContext(req, authContext);
+        setCachedRequestAuthContext(req);
         next();
         return;
     }

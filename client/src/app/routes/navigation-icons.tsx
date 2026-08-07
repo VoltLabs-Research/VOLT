@@ -2,7 +2,6 @@ import { DashboardNavigationIconKey } from '@/app/routes/types';
 import {
     BookOpen,
     Box as CubeIcon,
-    Boxes,
     KeyRound,
     LayoutGrid,
     Lock,
@@ -60,10 +59,4 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
         inactive: Paintbrush,
         active: Paintbrush
     }
-};
-
-const FALLBACK_NAVIGATION_ICON: LucideIcon = Boxes;
-
-export const resolveNavigationIcon = (iconKey?: DashboardNavigationIconKey): LucideIcon => {
-    return iconKey ? DASHBOARD_NAVIGATION_ICONS[iconKey].inactive : FALLBACK_NAVIGATION_ICON;
 };

@@ -269,17 +269,22 @@ export default class AnalysisService{
         };
     }
 
-    async getAnalysisById(input: GetAnalysisByIdInput): Promise<GetAnalysisByIdResult>{
-        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
+    async #requireAnalysis(analysisId: string, teamId?: string): Promise<AnalysisEntity>{
+        const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
 
         if(!analysis){
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        if(input.teamId && analysis.team !== input.teamId){
+        if(teamId && analysis.team !== teamId){
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
         }
 
+        return analysis;
+    }
+
+    async getAnalysisById(input: GetAnalysisByIdInput): Promise<GetAnalysisByIdResult>{
+        const analysis = await this.#requireAnalysis(input.analysisId, input.teamId);
         const persisted = toAnalysisLike(analysis);
 
         return {
@@ -289,15 +294,7 @@ export default class AnalysisService{
     }
 
     async deleteAnalysisById(input: DeleteAnalysisByIdInput): Promise<{ success: boolean }>{
-        const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
-
-        if(!analysis){
-            throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
-        }
-
-        if(input.teamId && analysis.team !== input.teamId){
-            throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
-        }
+        const analysis = await this.#requireAnalysis(input.analysisId, input.teamId);
 
         const deleted = await AnalysisEntity.delete({ id: input.analysisId });
 

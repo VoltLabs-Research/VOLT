@@ -71,7 +71,6 @@ export const cloneTrajectory = async (input: CloneTrajectoryInput): Promise<Clon
         createdBy: input.userId,
         status: TrajectoryStatus.Processing,
         stats: { ...source.stats },
-        rasterSceneViews: 0,
         hasPreview: false,
         isPublic: true,
         updatedAt: now,

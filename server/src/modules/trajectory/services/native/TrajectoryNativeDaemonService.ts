@@ -26,6 +26,10 @@ interface TrajectoryNativeModifierSource {
     exposureId?: string;
 }
 
+interface TrajectoryNativeModifierBodySource extends TrajectoryNativeModifierSource {
+    externalValues?: Float32Array;
+}
+
 interface TrajectoryNativePropertyRequest extends TrajectoryNativeRequest {
     property: string;
 }
@@ -150,9 +154,7 @@ class TrajectoryNativeDaemonService {
                 property: input.property,
                 operator: input.operator,
                 value: input.value,
-                ...(input.analysisId ? { analysisId: input.analysisId } : {}),
-                ...(input.exposureId ? { exposureId: input.exposureId } : {}),
-                ...(input.externalValues ? { externalValues: this.floatArrayToBytes(input.externalValues) } : {})
+                ...this.toModifierBody(input)
             }
         );
 
@@ -171,9 +173,7 @@ class TrajectoryNativeDaemonService {
             startValue: input.startValue,
             endValue: input.endValue,
             gradient: input.gradient,
-            ...(input.analysisId ? { analysisId: input.analysisId } : {}),
-            ...(input.exposureId ? { exposureId: input.exposureId } : {}),
-            ...(input.externalValues ? { externalValues: this.floatArrayToBytes(input.externalValues) } : {})
+            ...this.toModifierBody(input)
         });
     }
 
@@ -199,6 +199,14 @@ class TrajectoryNativeDaemonService {
 
     private floatArrayToBytes(floats: Float32Array): Uint8Array {
         return new Uint8Array(floats.buffer, floats.byteOffset, floats.byteLength);
+    }
+
+    private toModifierBody(input: TrajectoryNativeModifierBodySource): Record<string, unknown> {
+        return {
+            ...(input.analysisId ? { analysisId: input.analysisId } : {}),
+            ...(input.exposureId ? { exposureId: input.exposureId } : {}),
+            ...(input.externalValues ? { externalValues: this.floatArrayToBytes(input.externalValues) } : {})
+        };
     }
 
     async getObjectStreamResponse(teamClusterId: string, bucket: string, objectKey: string): Promise<TrajectoryNativeObjectStreamResponse> {

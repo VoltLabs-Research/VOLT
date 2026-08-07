@@ -33,4 +33,3 @@ export interface SimulationCell extends BaseEntity{
 
 export type GetSimulationCellByTrajectoryResponse = SimulationCell | null;
 
-export type GetSimulationCellResponse = SimulationCell;

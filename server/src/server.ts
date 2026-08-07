@@ -6,12 +6,10 @@ import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import { loadAllModules } from './core/bootstrap/load-modules';
 import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
-import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@shared/infrastructure/persistence/runtime-state-maintenance';
-import { isModuleEnabled } from './core/bootstrap/module-state';
+import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@core/bootstrap/runtime-state-maintenance';
 import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
-import { initializeMinio } from './core/config/minio';
 import scriptingJupyterProxyService from './modules/scripting/services/ScriptingJupyterProxyService';
 import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
 import { socketModules } from './modules/socket/socket/socket-modules';
@@ -172,21 +170,13 @@ const startServer = async () => {
 
     server.listen(SERVER_PORT, SERVER_HOST, async () => {
         try {
-            const [postgresResult, minioResult] = await Promise.allSettled([
-                connectDatabase(),
-                initializeMinio()
-            ]);
+            const [postgresResult] = await Promise.allSettled([connectDatabase()]);
 
             const failures: string[] = [];
 
             if (postgresResult.status === 'rejected') {
                 logger.error(`@server: Postgres init failed: ${postgresResult.reason}`);
                 failures.push('Postgres');
-            }
-
-            if (minioResult.status === 'rejected') {
-                logger.error(`@server: MinIO init failed: ${minioResult.reason}`);
-                failures.push('MinIO');
             }
 
             if (failures.length > 0) {
@@ -201,34 +191,23 @@ const startServer = async () => {
 
             activeSocketGateway = socketGateway;
 
-            if (isModuleEnabled('cluster')) {
-                activeClusterTransferRunner = new ClusterTransferRunner();
-                activeSocketGateway.register(teamClusterSocketModule);
-            }
-            if (isModuleEnabled('trajectory')) {
-                activeTrajectoryCloneRunner = trajectoryCloneRunner;
-                activeSocketGateway.register(canvasWorkspaceSocketModule);
-                activeSocketGateway.register(trajectoryPresenceSocketModule);
-            }
-            if (isModuleEnabled('container')) {
-                activeContainerPortRelayLifecycle = containerPortRelayLifecycleService;
-                activeSocketGateway.register(containerTerminalSocketModule);
-            }
-            if (isModuleEnabled('chat')) {
-                activeSocketGateway.register(chatSocketModule);
-            }
-            if (isModuleEnabled('team')) {
-                activeSocketGateway.register(teamJobsSocketModule);
-                activeSocketGateway.register(teamPresenceSocketModule);
-            }
-            if (isModuleEnabled('whiteboards')) {
-                activeSocketGateway.register(whiteboardSocketModule);
-            }
-            if (isModuleEnabled('plugin')) {
-                activeSocketGateway.register(pluginDebugSocketModule);
-            }
-            if (isModuleEnabled('analysis')) {
-                activeSocketGateway.register(analysisLogSocketModule);
+            activeClusterTransferRunner = new ClusterTransferRunner();
+            activeTrajectoryCloneRunner = trajectoryCloneRunner;
+            activeContainerPortRelayLifecycle = containerPortRelayLifecycleService;
+
+            for (const module of [
+                teamClusterSocketModule,
+                canvasWorkspaceSocketModule,
+                trajectoryPresenceSocketModule,
+                containerTerminalSocketModule,
+                chatSocketModule,
+                teamJobsSocketModule,
+                teamPresenceSocketModule,
+                whiteboardSocketModule,
+                pluginDebugSocketModule,
+                analysisLogSocketModule
+            ]) {
+                activeSocketGateway.register(module);
             }
             for (const module of socketModules) {
                 activeSocketGateway.register(module);
