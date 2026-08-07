@@ -29,7 +29,7 @@ interface RecentRequestsTableProps {
 }
 
 const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
-    <div className='x-auto' style={{ maxHeight: 250 }}>
+    <div className='overflow-x-auto' style={{ maxHeight: 250 }}>
         <table className='secret-key-page-table'>
             <thead>
                 <tr>
@@ -59,7 +59,7 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                                     {request.method}
                                 </Tag>
                             </td>
-                            <td className='font-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }} title={request.path}>
+                            <td className='font-mono text-sm text-secondary truncate' style={{ maxWidth: 200 }} title={request.path}>
                                 {request.path}
                             </td>
                             <td>
@@ -67,10 +67,10 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                                     {request.statusCode}
                                 </span>
                             </td>
-                            <td className='font-mono font-size-1 color-muted'>
+                            <td className='font-mono text-sm text-muted'>
                                 {request.responseTime.toFixed(0)}ms
                             </td>
-                            <td className='font-size-1 color-muted'>
+                            <td className='text-sm text-muted'>
                                 {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                             </td>
                         </tr>

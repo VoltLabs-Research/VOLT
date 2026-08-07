@@ -31,7 +31,7 @@ interface SecretKeyAsyncStateProps {
 }
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
-    <Box height='vh-max' className='secret-key-page color-primary'>
+    <Box height='vh-max' className='secret-key-page text-primary'>
         <Stack gap='2' width='max' className='secret-key-page-main'>
             {header}
             {children}
@@ -58,7 +58,7 @@ export const SecretKeyRecoveryView = ({
 
 export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps) => (
     <SecretKeyPageShell header={header}>
-        <Box display='flex' p='3' className='flex-center'>
+        <Box display='flex' p='3' className='items-center justify-center'>
             <Text as='p' size='lg' tone='muted'>{message}</Text>
         </Box>
     </SecretKeyPageShell>

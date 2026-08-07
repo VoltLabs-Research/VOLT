@@ -42,7 +42,7 @@ const DashboardHeader = ({
     return (
         <Row as='header' position='sticky' gap='1' top='0' className='dashboard-top-header'>
             <IconButton
-                className='mobile-sidebar-trigger radius-xs'
+                className='mobile-sidebar-trigger rounded-xs'
                 onClick={() => setSidebarOpen(true)}
             >
                 <IoMenuOutline size={20} />

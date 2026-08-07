@@ -161,7 +161,7 @@ const CreateContainer = () => {
                 <Button variant='ghost' intent='neutral' iconOnly aria-label='Back to containers' title='Back to containers' onClick={() => navigate('/dashboard/containers')}>
                     <ArrowLeft size={20} />
                 </Button>
-                <Stack className='gap-02'>
+                <Stack className='gap-[0.2rem]'>
                     <Heading level={3} size='xl' weight='bold'>Create New Container</Heading>
                 </Stack>
             </Row>

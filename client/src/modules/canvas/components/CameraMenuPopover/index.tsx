@@ -32,7 +32,7 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
         <ContextMenuPopover
             id="viewport-camera-menu"
             trigger={compact ? (
-                <span className='d-inline-flex flex-center'>
+                <span className='inline-flex items-center justify-center'>
                     <Tooltip content="Camera" placement="bottom">
                         <Button
                             variant="ghost"
@@ -53,7 +53,7 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
                     intent="canvas"
                     shape="rounded"
                     size="sm"
-                    className="font-size-05 canvas-btn-compact"
+                    className="text-xs canvas-btn-compact"
                     leftIcon={<Row as='span' justify='center' shrink='0'><Settings size={12} /></Row>}
                     aria-label="Camera settings"
                     title="Camera settings"

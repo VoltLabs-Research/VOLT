@@ -16,7 +16,7 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
 
     if (fileMessages.length === 0) {
         return (
-            <Box display='flex' p='2' textAlign='center' className='flex-center'>
+            <Box display='flex' p='2' textAlign='center' className='items-center justify-center'>
                 <Text as='p' size='md' tone='muted'>No shared files yet</Text>
             </Box>
         );

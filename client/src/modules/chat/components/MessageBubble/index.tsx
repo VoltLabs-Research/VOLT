@@ -63,12 +63,12 @@ const MessageBubble = ({
             showAvatar && 'with-avatar'
         )}>
             {showAvatar && (
-                <Avatar user={message.sender} size='xs' className='message-bubble-avatar radius-full' />
+                <Avatar user={message.sender} size='xs' className='message-bubble-avatar rounded-full' />
             )}
 
                 <Stack width='max'>
                     {showAvatar && (
-                    <Text as='p' size='md' weight='bold' tone='secondary' className='message-bubble-sender mb-025'>
+                    <Text as='p' size='md' weight='bold' tone='secondary' className='message-bubble-sender mb-1'>
                         {message.sender.firstName} {message.sender.lastName}
                     </Text>
                 )}
@@ -79,7 +79,7 @@ const MessageBubble = ({
                     {!isDeleted && children}
                 </Box>
 
-                <Row gap='05' className='message-bubble-time color-muted mt-05 font-size-2'>
+                <Row gap='05' className='message-bubble-time text-muted mt-2 text-md'>
                     <Text as='p'>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</Text>
                 </Row>
 

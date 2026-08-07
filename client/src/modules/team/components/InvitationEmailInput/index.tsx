@@ -31,7 +31,7 @@ export const InvitationEmailInput = ({
     };
 
     return (
-        <form className='invitation-email-input d-flex items-end gap-05' onSubmit={handleFormSubmit}>
+        <form className='invitation-email-input flex items-end gap-2' onSubmit={handleFormSubmit}>
             <FormFieldRHF
                 autoFocus
                 type='email'

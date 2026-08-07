@@ -15,7 +15,7 @@ const renderMenuItemIcon = (item: MenuItem) => {
         return undefined;
     }
 
-    return <Row as='span' justify='center' shrink='0' className="font-size-3">{item.icon}</Row>;
+    return <Row as='span' justify='center' shrink='0' className="text-lg">{item.icon}</Row>;
 };
 
 const renderMenuItemShortcut = (item: MenuItem) => {
@@ -47,7 +47,7 @@ const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: nu
             intent="canvas"
             shape="rounded"
             size="sm"
-            className="font-size-05"
+            className="text-xs"
             block
             align="start"
             leftIcon={renderMenuItemIcon(item)}
@@ -83,7 +83,7 @@ const MenuPopover = ({ menu, openMenu, onOpenChange, idPrefix = 'menu' }: MenuPo
                 intent="canvas"
                 shape="rounded"
                 size="sm"
-                className="font-size-05 canvas-btn-compact"
+                className="text-xs canvas-btn-compact"
             >
                 {menu.label}
             </Button>

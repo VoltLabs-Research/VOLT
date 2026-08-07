@@ -26,13 +26,13 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                 variant='ghost'
                 intent='neutral'
                 align='start'
-                className={`sidebar-sub-item sidebar-nested-header transition-fast ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                className={`sidebar-sub-item sidebar-nested-header transition-fast ${item.isSelected || childSelected ? 'is-selected' : ''} w-full text-secondary cursor-pointer`}
                 onClick={() => setExpanded((value) => !value)}
                 aria-expanded={expanded}
                 aria-controls={nestedId}
                 aria-current={item.isSelected ? 'page' : undefined}
             >
-                <span className='text-truncate'>{item.label}</span>
+                <span className='truncate'>{item.label}</span>
                 <ChevronDown
                     className={`sidebar-nested-chevron ${expanded ? 'is-expanded' : ''}`}
                     size={12}
@@ -48,11 +48,11 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                                 variant='ghost'
                                 intent='neutral'
                                 align='start'
-                                className={`sidebar-nested-item transition-fast ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                                className={`sidebar-nested-item transition-fast ${subItem.isSelected ? 'is-selected' : ''} w-full text-secondary cursor-pointer`}
                                 onClick={subItem.onClick}
                                 aria-current={subItem.isSelected ? 'page' : undefined}
                             >
-                                <span className='text-truncate'>{subItem.label}</span>
+                                <span className='truncate'>{subItem.label}</span>
                             </Button>
                         </li>
                     ))}

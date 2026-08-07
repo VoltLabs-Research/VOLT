@@ -7,7 +7,7 @@ interface PerKeyBreakdownTableProps {
 
 const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
     <Surface variant='glass' p='1-5' radius='lg'>
-        <Heading level={3} size='lg' weight='bold' tone='primary' className='mb-1-5'>Per-Key Breakdown</Heading>
+        <Heading level={3} size='lg' weight='bold' tone='primary' className='mb-6'>Per-Key Breakdown</Heading>
         <Box overflow='x-auto'>
             <table className='secret-key-page-table'>
                 <thead>
@@ -29,10 +29,10 @@ const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
                                     <Text size='sm' tone='muted' className='font-mono'>{key.keyPrefix}...</Text>
                                 </Stack>
                             </td>
-                            <td className='color-secondary'>{key.roleName}</td>
-                            <td className='font-mono color-primary'>{key.totalRequests.toLocaleString()}</td>
-                            <td className='font-mono color-secondary'>{Math.round(key.avgResponseTime)} ms</td>
-                            <td className='color-secondary'>
+                            <td className='text-secondary'>{key.roleName}</td>
+                            <td className='font-mono text-primary'>{key.totalRequests.toLocaleString()}</td>
+                            <td className='font-mono text-secondary'>{Math.round(key.avgResponseTime)} ms</td>
+                            <td className='text-secondary'>
                                 {key.lastRequestAt
                                     ? new Date(key.lastRequestAt).toLocaleDateString()
                                     : 'Never'}

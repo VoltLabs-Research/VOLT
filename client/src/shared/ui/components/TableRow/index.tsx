@@ -121,7 +121,7 @@ const TableRow = <T extends Identifiable>({
                 type='button'
                 ref={setActivatorNodeRef}
                 className='document-listing-row-drag-handle'
-                aria-label='Drag row'
+                aria-label='Drag flex-row'
                 data-row-click-ignore='true'
                 {...dragAttributes}
                 {...dragListeners}
@@ -179,10 +179,10 @@ const TableRow = <T extends Identifiable>({
                 const cellClassName = cn(
                     'document-listing-cell',
                     'overflow-hidden',
-                    'd-flex',
+                    'flex',
                     'items-center',
-                    'font-size-2',
-                    'color-secondary',
+                    'text-md',
+                    'text-secondary',
                     col.numeric ? 'is-numeric' : ''
                 );
                 return (

@@ -195,7 +195,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                 )}
 
                 {submitError && (
-                    <Text as='p' size='md' className='color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                    <Text as='p' size='md' className='text-danger' role='status' aria-live='polite' aria-atomic='true'>
                         {submitError}
                     </Text>
                 )}

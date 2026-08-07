@@ -97,9 +97,9 @@ const DebugToolbar = () => {
 
     return (
         <Stack align='center' position='absolute' zIndex='10' top='1' className='center-x debug-toolbar-wrapper'>
-            <Row gap='05' className='panel-floating radius-full debug-toolbar glass-bg'>
+            <Row gap='05' className='panel-floating rounded-full debug-toolbar glass-bg'>
                 <Row gap='05'>
-                    <Bug size={14} className='color-secondary' />
+                    <Bug size={14} className='text-secondary' />
                     <Text as='p' size='sm' tone='muted' weight='bold'>Debug</Text>
                 </Row>
 

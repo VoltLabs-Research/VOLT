@@ -70,7 +70,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
     if (!hasCoreData && !metrics) {
         return (
             <ChartContainer icon={Cpu} title='CPU Distribution' isLoading={!metrics}>
-                <Box display='flex' flex='1' className='flex-center font-size-2 color-muted'>
+                <Box display='flex' flex='1' className='items-center justify-center text-md text-muted'>
                     Waiting for data...
                 </Box>
             </ChartContainer>

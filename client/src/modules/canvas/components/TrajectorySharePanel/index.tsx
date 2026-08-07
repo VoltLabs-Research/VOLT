@@ -43,7 +43,7 @@ const TrajectorySharePanel = ({
                         <Text as='p' size='sm' weight='medium' tone='primary'>
                             {isPublic ? 'Public trajectory' : 'Private trajectory'}
                         </Text>
-                        <Text as='p' size='xs' className='color-tertiary'>
+                        <Text as='p' size='xs' className='text-tertiary'>
                             {isPublic
                                 ? 'Anyone with the link can view this trajectory.'
                                 : 'Only team members can view this trajectory.'}

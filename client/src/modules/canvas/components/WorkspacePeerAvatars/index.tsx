@@ -81,7 +81,7 @@ const WorkspacePeerAvatars = ({
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (
-                <Box display='flex' radius='full' className='workspace-peer-overflow avatar avatar-xs flex-center'>
+                <Box display='flex' radius='full' className='workspace-peer-overflow avatar avatar-xs items-center justify-center'>
                     <Text as='span' size='xs' weight='bold'>+{overflow}</Text>
                 </Box>
             )}

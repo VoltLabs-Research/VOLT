@@ -40,7 +40,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     alwaysEditing = false,
     showCard = true,
     addButtonPosition = 'bottom',
-    className = 'd-flex gap-075 column'
+    className = 'flex gap-3 flex-col'
 }: EditableKeyValueCardProps<T>) => {
     const [editing, setEditing] = useState(alwaysEditing);
     const [localItems, setLocalItems] = useState<T[]>(items);
@@ -121,7 +121,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                 {stateLabel}
             </span>
             {showHeader && (
-                <Row justify='between' className='mb-1'>
+                <Row justify='between' className='mb-4'>
                     {title && <Heading level={3} weight='bold' id={headingId} className={titleClassName}>{title}</Heading>}
                     <Box display='flex' gap='05'>
                         {alwaysEditing && addButtonPosition === 'top' && (
@@ -153,7 +153,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                 {fields.map((field) => (
                                     <div key={field.key} className='editable-kv-field'>
                                         {showLabels && field.label && (
-                                            <label className='font-size-1 color-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
+                                            <label className='text-sm text-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
                                         )}
                                         <input
                                             id={`editable-kv-${field.key}-${i}`}
@@ -161,7 +161,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                             placeholder={field.placeholder}
                                             aria-label={field.label ?? field.placeholder}
                                             value={String(item[field.key] ?? '')}
-                                            className='editable-kv-input font-size-2'
+                                            className='editable-kv-input text-md'
                                             onChange={(e) => handleChange(
                                                 i,
                                                 field.key,
@@ -176,7 +176,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                             </Row>
                         ))}
                         {localItems.length === 0 && (
-                            <Text as='p' tone='muted' size='md' align='center' className='p-1'>{emptyMessage}</Text>
+                            <Text as='p' tone='muted' size='md' align='center' className='p-4'>{emptyMessage}</Text>
                         )}
                         {addButtonPosition === 'bottom' && (
                             <Button
@@ -199,7 +199,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                 items.map((item, i) => (
                                     <Box key={i} display='flex' gap='1' className='editable-kv-display-row'>
                                         {fields.map((field) => (
-                                            <span key={field.key} className='color-secondary'>
+                                            <span key={field.key} className='text-secondary'>
                                                 {String(item[field.key] ?? '')}
                                             </span>
                                         ))}
@@ -220,7 +220,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     }
 
     return (
-        <div className={`editable-kv-card p-1-5 ${className}`} aria-labelledby={title ? headingId : undefined}>
+        <div className={`editable-kv-card p-6 ${className}`} aria-labelledby={title ? headingId : undefined}>
             {content}
         </div>
     );

@@ -88,7 +88,7 @@ const PresenceDrawer = () => {
     const emptyState = (
         <EmptyState
             className='dashboard-presence-empty flex-1'
-            icon={<Users size={20} strokeWidth={1.5} className='color-muted' />}
+            icon={<Users size={20} strokeWidth={1.5} className='text-muted' />}
             title='No members yet'
             description='Invite teammates to start seeing who is active and available across your workspace.'
         />
@@ -143,7 +143,7 @@ const PresenceDrawer = () => {
                                         showStatus
                                         isOnline={isOnline}
                                     />
-                                    <span className={`font-size-1 text-truncate dashboard-presence-name ${isOnline ? 'color-primary' : 'color-muted'}`}>
+                                    <span className={`text-sm truncate dashboard-presence-name ${isOnline ? 'text-primary' : 'text-muted'}`}>
                                         {displayName}
                                     </span>
                                 </Stack>

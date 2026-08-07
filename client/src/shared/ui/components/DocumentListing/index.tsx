@@ -252,7 +252,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
     };
 
     return (
-        <Stack height='max' gap='1' className='document-listing-container color-secondary'>
+        <Stack height='max' gap='1' className='document-listing-container text-secondary'>
             <VisuallyHidden aria-live='polite' aria-atomic='true'>
                 {describeSortState(columns, sortConfig)}
             </VisuallyHidden>

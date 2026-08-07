@@ -110,21 +110,21 @@ const FileExplorer = ({
     };
 
     return (
-        <div className='file-explorer d-flex column h-max overflow-hidden'>
+        <div className='file-explorer flex flex-col h-full overflow-hidden'>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {stateMessage}
             </span>
             {hasHeader && (
-                <div className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
-                    <div className='file-explorer-header-left d-flex items-center gap-05'>
+                <div className='file-explorer-header flex justify-between items-center gap-4 p-3'>
+                    <div className='file-explorer-header-left flex items-center gap-2'>
                         {headerLeft}
                     </div>
 
-                    <div className='file-explorer-breadcrumb d-flex items-center flex-1'>
+                    <div className='file-explorer-breadcrumb flex items-center flex-1'>
                         {breadcrumb}
                     </div>
 
-                    <div className='file-explorer-header-right d-flex items-center gap-05'>
+                    <div className='file-explorer-header-right flex items-center gap-2'>
                         {headerRight}
                     </div>
                 </div>
@@ -136,7 +136,7 @@ const FileExplorer = ({
                 </div>
             )}
 
-            <div className='file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
+            <div className='file-explorer-list flex-1 overflow-y-auto' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
             </div>
         </div>

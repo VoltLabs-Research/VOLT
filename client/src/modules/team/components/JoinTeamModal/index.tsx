@@ -85,7 +85,7 @@ export const JoinTeamModal = ({
             <form
                 id={JOIN_TEAM_FORM_ID}
                 onSubmit={form.handleSubmit(onSubmit)}
-                className='d-flex column gap-1-5 p-1-5'
+                className='flex flex-col gap-6 p-6'
             >
                 <FormFieldRHF
                     name='code'
@@ -97,7 +97,7 @@ export const JoinTeamModal = ({
                 />
 
                 {apiError && (
-                    <Text as='p' size='md' className='team-creator-error radius-sm'>
+                    <Text as='p' size='md' className='team-creator-error rounded-sm'>
                         {apiError}
                     </Text>
                 )}

@@ -29,23 +29,30 @@
     rx: 2px;
 }
 
+/*
+ * A sequential ramp, expressed only as four strengths of the accent so it stays
+ * monotonic whatever the accent is. The top step used to be the accent mixed
+ * towards black, which reads as "more" only while the accent is a mid-tone blue:
+ * against a light-on-dark accent that step is *darker* than the one below it and
+ * the ramp inverts.
+ */
 .react-calendar-heatmap .color-scale-1 {
-    fill: color-mix(in srgb, var(--accent-blue) 25%, transparent);
+    fill: color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-2 {
-    fill: color-mix(in srgb, var(--accent-blue) 50%, transparent);
+    fill: color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-3 {
-    fill: var(--accent-blue);
+    fill: color-mix(in srgb, var(--color-brand-primary) 70%, transparent);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-4 {
-    fill: color-mix(in srgb, var(--accent-blue) 85%, black);
+    fill: var(--color-brand-primary);
     rx: 2px;
 }
 
@@ -90,20 +97,21 @@
     background: var(--color-surface-2);
 }
 
+/* Same ramp as the cells above; the legend has to agree with what it labels. */
 .activity-heatmap-legend-swatch.color-scale-1 {
-    background: color-mix(in srgb, var(--accent-blue) 25%, transparent);
+    background: color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
 }
 
 .activity-heatmap-legend-swatch.color-scale-2 {
-    background: color-mix(in srgb, var(--accent-blue) 50%, transparent);
+    background: color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
 }
 
 .activity-heatmap-legend-swatch.color-scale-3 {
-    background: var(--accent-blue);
+    background: color-mix(in srgb, var(--color-brand-primary) 70%, transparent);
 }
 
 .activity-heatmap-legend-swatch.color-scale-4 {
-    background: color-mix(in srgb, var(--accent-blue) 85%, black);
+    background: var(--color-brand-primary);
 }
 
 .activity-heatmap-helper {

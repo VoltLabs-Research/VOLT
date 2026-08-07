@@ -158,7 +158,7 @@ const AutoScrollList = <T,>({
         }
     };
 
-    const listClassName = cn('auto-scroll-list d-flex column gap-05 flex-1 y-auto', className);
+    const listClassName = cn('auto-scroll-list flex flex-col gap-2 flex-1 overflow-y-auto', className);
 
     if (isLoading && items.length === 0) {
         return (
@@ -170,7 +170,7 @@ const AutoScrollList = <T,>({
 
     if (items.length === 0) {
         return (
-            <div className={cn('d-flex flex-center flex-1', className, emptyClassName)} role='status' aria-live='polite' aria-atomic='true'>
+            <div className={cn('flex items-center justify-center flex-1', className, emptyClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderEmpty}
             </div>
         );

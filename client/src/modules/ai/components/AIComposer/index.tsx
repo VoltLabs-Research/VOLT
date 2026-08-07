@@ -64,7 +64,7 @@ const AIComposer = ({
     return (
         <Stack gap='05' className='ai-composer'>
             {error && (
-                <Text as='p' size='sm' className='color-danger' role='alert' aria-live='assertive'>
+                <Text as='p' size='sm' className='text-danger' role='alert' aria-live='assertive'>
                     {error}
                 </Text>
             )}

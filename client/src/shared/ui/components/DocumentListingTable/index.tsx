@@ -119,9 +119,9 @@ interface SkeletonRowsProps<T> {
 const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap }: SkeletonRowsProps<T>) => (
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
-            <div key={`${keyPrefix}-${rowIndex}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
+            <div key={`${keyPrefix}-${rowIndex}`} className='document-listing-table-row-container skeleton-row flex shrink-0' role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
                 {columns.map((col, colIdx) => (
-                    <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
+                    <div className={`document-listing-cell overflow-hidden flex items-center text-md text-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
                         <span className='document-listing-cell-value'>
                             <Skeleton {...(col.skeleton ?? {
                                 variant: 'text',
@@ -258,9 +258,9 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <div className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className={`flex flex-col document-listing-table-container h-full ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <div className='document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{
+                <div className='document-listing-table-header-container sticky top-0 flex' role='row' style={{
                     minWidth: `${minContentWidth}px`,
                     gap: `${resolvedGap}px`
                 }}>
@@ -270,14 +270,14 @@ const DocumentListingTable = <T extends Identifiable>({
                             'document-listing-cell',
                             'header-cell',
                             'overflow-hidden',
-                            'd-flex',
+                            'flex',
                             'items-center',
-                            'color-secondary',
+                            'text-secondary',
                             getAriaSort(col) !== 'none' ? 'is-sorted' : '',
                             col.numeric ? 'is-numeric' : ''
                         );
                         const heading = (
-                            <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                            <h3 className={`text-[0.95rem] text-secondary ${col.headerTitleClassName ?? 'font-medium'}`}>
                                 {getCellTitle(col)}
                             </h3>
                         );
@@ -286,7 +286,7 @@ const DocumentListingTable = <T extends Identifiable>({
                                 {col.sortable ? (
                                     <button
                                         type='button'
-                                        className='document-listing-sort-button d-flex items-center color-secondary'
+                                        className='document-listing-sort-button flex items-center text-secondary'
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${columnTitle}`}
                                     >
@@ -299,7 +299,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div className='d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
+            <div className='flex flex-col relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
                         {rows}
@@ -348,8 +348,8 @@ const DocumentListingTable = <T extends Identifiable>({
                 )}
 
                 {isInitialLoading && (
-                    <div className='document-listing-overlay-blur p-absolute inset-0'>
-                        <div className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
+                    <div className='document-listing-overlay-blur absolute inset-0'>
+                        <div className='document-listing-infinite-skeleton-loader absolute inset-0 overflow-hidden flex flex-col'>
                             <SkeletonRows
                                 count={INITIAL_SKELETON_ROWS_COUNT}
                                 keyPrefix='loading-skeleton'

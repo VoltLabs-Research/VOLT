@@ -28,7 +28,7 @@ const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
         <ContextMenuPopover
             id="viewport-render-menu"
             trigger={compact ? (
-                <span className='d-inline-flex flex-center'>
+                <span className='inline-flex items-center justify-center'>
                     <Tooltip content="Render" placement="bottom">
                         <Button
                             variant="ghost"
@@ -49,7 +49,7 @@ const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
                     intent="canvas"
                     shape="rounded"
                     size="sm"
-                    className="font-size-05 canvas-btn-compact"
+                    className="text-xs canvas-btn-compact"
                     leftIcon={<Row as='span' justify='center' shrink='0'><Monitor size={12} /></Row>}
                     aria-label="Render settings"
                     title="Render settings"

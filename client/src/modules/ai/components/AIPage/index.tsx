@@ -197,7 +197,7 @@ const AIPage = () => {
 
     if (!selectedTeam?._id) {
         workspaceContent = (
-            <Box display='flex' flex='1' className='flex-center'>
+            <Box display='flex' flex='1' className='items-center justify-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to start an AI conversation.'
@@ -206,7 +206,7 @@ const AIPage = () => {
         );
     } else if (noProviderConfigured) {
         workspaceContent = (
-            <Box display='flex' flex='1' className='flex-center'>
+            <Box display='flex' flex='1' className='items-center justify-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations to start chatting.'

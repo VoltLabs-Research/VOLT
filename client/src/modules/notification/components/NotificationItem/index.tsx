@@ -24,7 +24,7 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                 variant='ghost'
                 block
                 align='start'
-                className={`notification-item list-item-hoverable p-075 radius-sm ${notification.read ? 'is-read' : 'is-unread'}`}
+                className={`notification-item list-item-hoverable p-3 rounded-sm ${notification.read ? 'is-read' : 'is-unread'}`}
                 onClick={handleClick}
             >
                 <Row as='span' justify='between' gap='05' className='notification-item-header'>
@@ -32,7 +32,7 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                         {notification.title}
                     </Text>
                 </Row>
-                <Text as='span' size='sm' tone='secondary' className='notification-item-content mt-025'>
+                <Text as='span' size='sm' tone='secondary' className='notification-item-content mt-1'>
                     {notification.content}
                 </Text>
             </Button>

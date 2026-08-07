@@ -65,10 +65,10 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
     const renderFilePreview = (item: typeof previews[number], index: number) => (
         <Row key={index} gap='075' className='chat-file-preview-item'>
             {item.preview ? (
-                <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail f-shrink-0' />
+                <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail shrink-0' />
             ) : (
-                <Box display='flex' shrink='0' className='flex-center chat-file-preview-icon'>
-                    <IoDocumentOutline size={20} className='color-muted' />
+                <Box display='flex' shrink='0' className='items-center justify-center chat-file-preview-icon'>
+                    <IoDocumentOutline size={20} className='text-muted' />
                 </Box>
             )}
             <Stack flex='1' overflow='hidden'>
@@ -108,7 +108,7 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
 
                 <textarea
                     id={textareaId}
-                    className='flex-1 chat-input-textarea font-size-2 color-primary'
+                    className='flex-1 chat-input-textarea text-md text-primary'
                     placeholder='Type a message...'
                     rows={1}
                     value={message}

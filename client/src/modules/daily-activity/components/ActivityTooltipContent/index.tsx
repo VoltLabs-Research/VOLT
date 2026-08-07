@@ -34,11 +34,11 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
                 </Text>
             </Stack>
             {activity.map((item, index) => (
-                <Box key={`${item.createdAt}-${index}`} className='activity-entry d-flex items-start gap-05'>
-                    <span className='activity-entry-dot d-flex flex-center radius-md f-shrink-0' style={{ color: ACTIVITY_ACCENT[item.type] }}>
+                <Box key={`${item.createdAt}-${index}`} className='activity-entry flex items-start gap-2'>
+                    <span className='activity-entry-dot flex items-center justify-center rounded-md shrink-0' style={{ color: ACTIVITY_ACCENT[item.type] }}>
                         {ACTIVITY_ICON[item.type]}
                     </span>
-                    <Box className='activity-entry-content d-flex column min-w-0'>
+                    <Box className='activity-entry-content flex flex-col min-w-0'>
                         <Text size='sm' tone='secondary'>
                             {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
                         </Text>

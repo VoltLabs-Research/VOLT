@@ -25,7 +25,7 @@ const createTypedArrayView = (
             return new Int32Array(buffer, byteOffset, byteLength / Int32Array.BYTES_PER_ELEMENT);
         default: {
             const exhaustive: never = dtype;
-            throw new Error(`Unsupported atom column dtype: ${exhaustive}`);
+            throw new Error(`Unsupported atom flex-col dtype: ${exhaustive}`);
         }
     }
 };
@@ -68,7 +68,7 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsResponse => {
 
         const dtype = DTYPE_BY_ID[dtypeId];
         if (!dtype) {
-            throw new Error(`Unknown atom column dtype id: ${dtypeId}`);
+            throw new Error(`Unknown atom flex-col dtype id: ${dtypeId}`);
         }
 
         headers[i] = {

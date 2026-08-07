@@ -39,7 +39,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         <Box className='frame-job-group'>
             <button
                 type='button'
-                className='frame-job-group-header frame-job-group-toggle u-select-none'
+                className='frame-job-group-header frame-job-group-toggle select-none'
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
                 aria-controls={contentId}
@@ -49,7 +49,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                     <Row gap='05'>
                         <StatusBadge status={frame.overallStatus} size='compact'>{statusLabel}</StatusBadge>
                         <motion.i
-                            className='chevron-icon font-size-1 color-secondary'
+                            className='chevron-icon text-sm text-secondary'
                             animate={{ rotate: isExpanded ? 90 : 0 }}
                             transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
                             aria-hidden='true'

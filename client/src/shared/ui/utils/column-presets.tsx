@@ -114,13 +114,13 @@ export function userColumn<TRow = unknown>(
         sortable: false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='font-size-2 color-muted'>-</span>;
+                return <span className='text-md text-muted'>-</span>;
             }
 
             const user = resolvePopulatedUser((row as Record<string, unknown>)[key]);
             return (
                 <PopulatedCellPopover document={user} modelName='User'>
-                    <span className='font-size-2 color-secondary'>{user?.email ?? '-'}</span>
+                    <span className='text-md text-secondary'>{user?.email ?? '-'}</span>
                 </PopulatedCellPopover>
             );
         },
@@ -166,7 +166,7 @@ export function clusterColumn<TRow = unknown>(
         sortable: false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='font-size-2 color-muted'>-</span>;
+                return <span className='text-md text-muted'>-</span>;
             }
 
             const rawValue = (row as Record<string, unknown>)[key];
@@ -174,8 +174,8 @@ export function clusterColumn<TRow = unknown>(
             const name = resolvePopulatedName(rawValue);
 
             const content = name
-                ? <span className='font-size-2 color-secondary'>{name}</span>
-                : <span className='font-size-2 color-muted'>-</span>;
+                ? <span className='text-md text-secondary'>{name}</span>
+                : <span className='text-md text-muted'>-</span>;
 
             return (
                 <PopulatedCellPopover document={cluster} modelName='TeamCluster'>
@@ -203,7 +203,7 @@ export function populatedNameColumn<TRow = unknown>(
         sortable: options?.sortable ?? false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='font-size-2 color-muted'>-</span>;
+                return <span className='text-md text-muted'>-</span>;
             }
 
             const rawValue = (row as Record<string, unknown>)[key];
@@ -211,8 +211,8 @@ export function populatedNameColumn<TRow = unknown>(
             const name = resolvePopulatedName(rawValue);
 
             const content = name
-                ? <span className='font-size-2 color-secondary'>{name}</span>
-                : <span className='font-size-2 color-muted'>-</span>;
+                ? <span className='text-md text-secondary'>{name}</span>
+                : <span className='text-md text-muted'>-</span>;
 
             return (
                 <PopulatedCellPopover document={populated} modelName={modelName}>

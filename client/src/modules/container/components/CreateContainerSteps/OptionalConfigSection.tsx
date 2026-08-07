@@ -35,7 +35,7 @@ const OptionalConfigSection = ({
                         </Tag>
                     )
                     : undefined}
-                bodyClassName='mt-075'
+                bodyClassName='mt-3'
             >
                 <Stack gap='1'>
                     <Text as='p' size='md' tone='muted'>{description}</Text>

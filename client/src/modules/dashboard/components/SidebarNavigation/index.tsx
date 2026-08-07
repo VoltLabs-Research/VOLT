@@ -183,7 +183,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const clustersActive = pathname.includes('/dashboard/clusters');
 
     return (
-        <nav className='sidebar-nav y-auto'>
+        <nav className='sidebar-nav overflow-y-auto'>
             {visibleNavigationItems(MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
             <Tooltip

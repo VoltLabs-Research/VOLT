@@ -28,7 +28,7 @@ const ChatDetailsPanel = ({
         return (
             <Stack height='max' className='chat-details'>
                 <PanelHeader title='Details' />
-                <Box display='flex' flex='1' className='flex-center'>
+                <Box display='flex' flex='1' className='items-center justify-center'>
                     <EmptyState
                         icon={<IoChatbubblesOutline size={32} />}
                         title='No chat selected'
@@ -75,7 +75,7 @@ const ChatDetailsPanel = ({
 
                 {chat.isGroup && (
                     <Box className='chat-details-section'>
-                        <SectionLabel className='chat-details-section-title d-block mb-075'>
+                        <SectionLabel className='chat-details-section-title block mb-3'>
                             Actions
                         </SectionLabel>
                         <Button
@@ -93,7 +93,7 @@ const ChatDetailsPanel = ({
                 )}
 
                 <Box className='chat-details-section'>
-                    <SectionLabel className='chat-details-section-title d-block mb-075'>
+                    <SectionLabel className='chat-details-section-title block mb-3'>
                         Shared Files
                     </SectionLabel>
                     <SharedFilesList messages={messages} />

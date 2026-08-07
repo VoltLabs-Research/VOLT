@@ -127,7 +127,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         Tag,
         {
             ref: combinedRef,
-            className: `editable-tag ${className || ''} ${isEditing ? 'is-editing radius-xs' : 'editable-tag--interactive radius-xs'}`.trim(),
+            className: `editable-tag ${className || ''} ${isEditing ? 'is-editing rounded-xs' : 'editable-tag--interactive rounded-xs'}`.trim(),
             contentEditable: isEditing,
             tabIndex: isEditing ? -1 : 0,
             onClick: handleClick,

@@ -54,7 +54,7 @@ const AccessDenied = ({
                 </Stack>
 
                 {(showBack || actions) && (
-                    <Row justify='center' gap='075' className='mt-05'>
+                    <Row justify='center' gap='075' className='mt-2'>
                         {showBack && (
                             <Button
                                 variant='solid'

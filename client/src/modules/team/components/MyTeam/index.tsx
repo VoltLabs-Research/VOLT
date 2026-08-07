@@ -113,13 +113,13 @@ export default function MyTeamTemplate() {
                         {canInvite ? (
                             <EditableTag
                                 as='h1'
-                                className='font-size-6 font-weight-5 sm:font-size-4 color-primary'
+                                className='text-3xl font-medium sm:font-size-4 text-primary'
                                 onSave={handleSaveTeamName}
                             >
                                 {selectedTeam.name}
                             </EditableTag>
                         ) : (
-                            <Heading level={1} className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{selectedTeam.name}</Heading>
+                            <Heading level={1} className='text-3xl font-medium sm:font-size-4 text-primary'>{selectedTeam.name}</Heading>
                         )}
                     </Row>
                 )}

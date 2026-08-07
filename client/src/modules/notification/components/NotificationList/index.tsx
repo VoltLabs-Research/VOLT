@@ -50,7 +50,7 @@ const NotificationList = ({
         return (
             <Stack gap='05' p='05'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Box key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-075 radius-sm'>
+                    <Box key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-3 rounded-sm'>
                         {skeletonLines}
                     </Box>
                 ))}
@@ -59,13 +59,13 @@ const NotificationList = ({
     }
 
     if (notifications.length === 0) {
-        return <EmptyState title='No notifications' description="You're all caught up!" className='p-1' />;
+        return <EmptyState title='No notifications' description="You're all caught up!" className='p-4' />;
     }
 
     return (
         <ul
             ref={containerRef}
-            className='notification-list-container d-flex column gap-05 p-05 y-auto'
+            className='notification-list-container flex flex-col gap-2 p-2 overflow-y-auto'
             aria-busy={isLoading}
         >
             {notifications.map((notification) => (
@@ -77,7 +77,7 @@ const NotificationList = ({
             ))}
             {isLoading && (
                 <li className='notification-row'>
-                    <Box className='notification-item list-item-hoverable p-075 radius-sm'>
+                    <Box className='notification-item list-item-hoverable p-3 rounded-sm'>
                         {skeletonLines}
                     </Box>
                 </li>

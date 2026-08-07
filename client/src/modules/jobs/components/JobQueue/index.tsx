@@ -79,7 +79,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
 
     return (
         <Row justify='between' gap='075' className={containerClass}>
-            <span className='job-status-icon font-size-3' aria-hidden='true'>{statusEntry.icon}</span>
+            <span className='job-status-icon text-lg' aria-hidden='true'>{statusEntry.icon}</span>
             <Stack gap='025' flex='1' minW='0'>
                 <Row justify='between' gap='05' wrap>
                     <Heading level={3} size='sm' weight='bold' className='job-name'>
@@ -88,7 +88,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                     <StatusBadge status={job.status} size='compact'>{statusLabel}</StatusBadge>
                 </Row>
                 <Row gap='05' wrap>
-                    <Text as='p' size='sm' tone='secondary' className='job-message d-flex items-center gap-05'>
+                    <Text as='p' size='sm' tone='secondary' className='job-message flex items-center gap-2'>
                         {hasFrameTimestep && <span>Frame {job.timestep}</span>}
                         {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
                         {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
@@ -98,7 +98,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                     )}
                 </Row>
                 {job.error && (
-                    <Text as='p' size='sm' className='job-error mt-025'>{job.error}</Text>
+                    <Text as='p' size='sm' className='job-error mt-1'>{job.error}</Text>
                 )}
             </Stack>
             <Row gap='075'>

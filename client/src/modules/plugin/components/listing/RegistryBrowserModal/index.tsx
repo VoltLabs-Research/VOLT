@@ -128,7 +128,7 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
             onClose={onClose}
             width='960px'
         >
-            <Stack gap='1' className='p-1-5'>
+            <Stack gap='1' className='p-6'>
                 <SearchInput
                     placeholder='Search plugins…'
                     value={search}

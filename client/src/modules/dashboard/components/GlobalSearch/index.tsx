@@ -106,7 +106,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                 items={items}
                 variant='pill'
                 ariaLabel='Context breadcrumbs'
-                className='global-search-breadcrumb font-size-2'
+                className='global-search-breadcrumb text-md'
             />
         );
     }, [contextBreadcrumb]);
@@ -119,9 +119,9 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
         return (
             <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}${isDisabled ? ' global-search-item--disabled' : ''}`}>
-                <Text as='p' size='md' weight='medium' truncate className='w-max' title={item.title}>{item.title}</Text>
+                <Text as='p' size='md' weight='medium' truncate className='w-full' title={item.title}>{item.title}</Text>
                 {item.subtitle ? (
-                    <Text as='p' size='sm' tone='muted' truncate className='w-max' title={item.subtitle}>{item.subtitle}</Text>
+                    <Text as='p' size='sm' tone='muted' truncate className='w-full' title={item.subtitle}>{item.subtitle}</Text>
                 ) : null}
             </Stack>
         );
@@ -137,7 +137,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
         return (
             <Box key={key} className='global-search-section' role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
-                <Row gap='05' p='075' id={`${resultsListId}-${key}-label`} className='global-search-section-header font-size-3 color-muted'>
+                <Row gap='05' p='075' id={`${resultsListId}-${key}-label`} className='global-search-section-header text-lg text-muted'>
                     <span aria-hidden='true'>{icon}</span>
                     <Text as='p' size='sm' weight='medium'>{title}</Text>
                 </Row>

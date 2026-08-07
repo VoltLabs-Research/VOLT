@@ -24,7 +24,7 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
             id="viewport-performance"
             noPadding
             trigger={compact ? (
-                <span className='d-inline-flex flex-center'>
+                <span className='inline-flex items-center justify-center'>
                     <Tooltip content={`Performance: ${presetLabel}`} placement="bottom">
                         <Button
                             variant="ghost"
@@ -45,7 +45,7 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
                     intent="canvas"
                     shape="rounded"
                     size="sm"
-                    className="font-size-05 canvas-btn-compact"
+                    className="text-xs canvas-btn-compact"
                     leftIcon={<Row as='span' justify='center' shrink='0'><Gauge size={12} /></Row>}
                 >
                     {presetLabel}
@@ -61,7 +61,7 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
                             intent="canvas"
                             shape="rounded"
                             size="sm"
-                            className="font-size-05"
+                            className="text-xs"
                             block
                             align="start"
                             onClick={() => {

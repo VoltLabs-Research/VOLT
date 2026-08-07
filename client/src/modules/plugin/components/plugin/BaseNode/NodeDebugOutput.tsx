@@ -158,7 +158,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
     return (
         <Box position='absolute' p='05' overflow='y-auto' className='center-x workflow-node-debug-output nowheel' onClick={(event) => event.stopPropagation()}>
             {debugState.status === DebugNodeStatus.Failed && (
-                <Stack p='05' radius='sm' gap='025' className='font-size-05 workflow-node-debug-error'>
+                <Stack p='05' radius='sm' gap='025' className='text-xs workflow-node-debug-error'>
                     <Row gap='025'>
                         <AlertCircle size={12} />
                         <Text as='p' size='sm' weight='bold'>Error</Text>
@@ -173,7 +173,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
             )}
 
             {debugState.status === DebugNodeStatus.Skipped && (
-                <Stack p='05' radius='sm' gap='035' className='font-size-05 workflow-node-debug-skipped'>
+                <Stack p='05' radius='sm' gap='035' className='text-xs workflow-node-debug-skipped'>
                     <Row gap='025'>
                         <SkipForward size={12} />
                         <Text as='p' size='sm'>{debugState.reason || 'Skipped'}</Text>
@@ -184,7 +184,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
             )}
 
             {debugState.status === DebugNodeStatus.Completed && (
-                <Stack gap='05' className='workflow-node-debug-tree font-size-05 line-height-5'>
+                <Stack gap='05' className='workflow-node-debug-tree text-xs leading-normal'>
                     {tracePanel}
 
                     {debugState.output && (

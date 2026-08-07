@@ -48,7 +48,7 @@ const useCameraGroup = (): RenderGroup => {
                         placeholder='Projection'
                         options={CAMERA_TYPE_OPTIONS}
                     />
-                    <Button variant='ghost' intent='canvas' shape='rounded' size='sm' className='font-size-05' onClick={reset} style={{ justifySelf: 'start' }}>
+                    <Button variant='ghost' intent='canvas' shape='rounded' size='sm' className='text-xs' onClick={reset} style={{ justifySelf: 'start' }}>
                         Reset Camera
                     </Button>
                 </Box>

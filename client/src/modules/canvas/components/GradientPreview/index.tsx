@@ -55,12 +55,12 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         <Box width='max' className="canvas-gradient-preview">
             <Box ref={barRef} radius='sm' position='relative' cursor='pointer' className="canvas-gradient-bar" style={{ background: gradientStyle }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
                 {tooltipValue !== null && (
-                    <Box position='absolute' radius='sm' className="canvas-gradient-tooltip font-size-05" style={{ left: tooltipX }}>
+                    <Box position='absolute' radius='sm' className="canvas-gradient-tooltip text-xs" style={{ left: tooltipX }}>
                         {tooltipValue}
                     </Box>
                 )}
             </Box>
-            <Row justify='between' className="canvas-gradient-labels font-size-05">
+            <Row justify='between' className="canvas-gradient-labels text-xs">
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
             </Row>

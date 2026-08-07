@@ -244,7 +244,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                     min={MIN_SCOPE_LIMIT}
                     step={1}
                     inputMode='numeric'
-                    className='form-field-input radius-sm'
+                    className='form-field-input rounded-sm'
                     style={{ width: '5rem' }}
                     value={scopeValues[row.key].maxRunningPerTrajectory}
                     onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
@@ -298,7 +298,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                     </Stack>
                 </CollapsibleSection>
                 {error && (
-                    <Text as='p' size='md' className='color-danger'>{error}</Text>
+                    <Text as='p' size='md' className='text-danger'>{error}</Text>
                 )}
             </Stack>
         </Modal>

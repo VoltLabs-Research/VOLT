@@ -104,7 +104,7 @@ export const TeamCreatorModal = ({
                 />
             )}
         >
-            <form id={TEAM_CREATOR_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='d-flex column gap-1-5 p-1-5'>
+            <form id={TEAM_CREATOR_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='flex flex-col gap-6 p-6'>
                 <FormFieldRHF
                     name='name'
                     control={form.control}
@@ -123,7 +123,7 @@ export const TeamCreatorModal = ({
                 />
 
                 {apiError && (
-                    <Text as='p' size='md' className='team-creator-error radius-sm'>
+                    <Text as='p' size='md' className='team-creator-error rounded-sm'>
                         {apiError}
                     </Text>
                 )}

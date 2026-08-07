@@ -10,7 +10,7 @@ const PluginBuilder = lazy(() => import('@/modules/plugin/components/plugin/Plug
 const ReactFlowProvider = lazy(() => import('@xyflow/react').then((module) => ({ default: module.ReactFlowProvider })));
 
 const BuilderSkeleton = () => (
-    <Box display='flex' align='center' className='justify-center wh-max vh-max'>
+    <Box display='flex' align='center' className='justify-center w-screen h-dvh'>
         <Loader scale={0.8} />
     </Box>
 );

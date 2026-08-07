@@ -96,7 +96,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                 />
             </Box>
 
-            <Divider className='mt-2 mb-2' />
+            <Divider className='mt-8 mb-8' />
 
             <Box className='container-overview-inspector'>
                 <ContainerInspectorList title='Information' rows={buildContainerInspectorRows(container)} />
@@ -123,7 +123,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                             value: ''
                         })}
                         showCard={false}
-                        className='d-flex column'
+                        className='flex flex-col'
                         renderItem={(item, i) => (
                             <KeyValueList key={i}>
                                 <KeyValueRow label={item.key} value={item.value} />

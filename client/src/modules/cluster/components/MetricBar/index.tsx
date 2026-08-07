@@ -1,5 +1,4 @@
 import { Box } from '@voltstack/bravais';
-import './MetricBar.css';
 interface MetricBarProps {
     value: number;
     maxValue?: number;
@@ -18,14 +17,22 @@ const MetricBar = ({
     const filledSegments = Math.floor((value / maxValue) * segments);
 
     return (
-        <Box display='flex' radius='full' overflow='hidden' className='gap-0125 metric-bar'>
+        <Box
+            display='flex'
+            gap='01'
+            radius='full'
+            overflow='hidden'
+            style={{
+                height: 6,
+                backgroundColor: 'var(--color-border-soft)'
+            }}
+        >
             {Array.from({ length: segments }).map((_, i) => (
                 <Box
                     key={i}
                     radius='full'
                     height='max'
                     flex='1'
-                    className='metric-bar-segment'
                     style={{
                         backgroundColor: i < filledSegments ? color : 'transparent',
                         boxShadow: i < filledSegments && i === filledSegments - 1 && glow ? glow : 'none',

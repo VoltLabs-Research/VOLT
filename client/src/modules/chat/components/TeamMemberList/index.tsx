@@ -19,8 +19,8 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
 
         const leading = (
             <Row gap='05'>
-                <Box display='flex' shrink='0' transition='normal' className='flex-center team-member-item-checkbox'>
-                    {isSelected && <IoCheckmark size={14} className='color-white' />}
+                <Box display='flex' shrink='0' transition='normal' className='items-center justify-center team-member-item-checkbox'>
+                    {isSelected && <IoCheckmark size={14} style={{ color: 'var(--color-on-accent)' }} />}
                 </Box>
                 <Avatar user={member} size='sm' />
             </Row>
@@ -43,7 +43,7 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
 
     if (filteredMembers.length === 0) {
         return (
-            <Box display='flex' p='2' textAlign='center' className='flex-center'>
+            <Box display='flex' p='2' textAlign='center' className='items-center justify-center'>
                 <Text as='p' size='md' tone='muted'>No team members available</Text>
             </Box>
         );

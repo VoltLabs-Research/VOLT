@@ -127,23 +127,23 @@ const DefaultFieldRenderer = ({
     };
 
     return (
-        <div className='form-field-container d-flex column gap-05 w-max'>
+        <div className='form-field-container flex flex-col gap-2 w-full'>
             {label && (
                 <label
                     id={labelId}
                     htmlFor={labelTargetId}
-                    className='font-size-2 font-weight-5 color-secondary'
+                    className='text-md font-medium text-secondary'
                 >
                     {label}
                 </label>
             )}
 
-            <div className='p-relative'>
+            <div className='relative'>
                 {renderField()}
             </div>
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
+                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='flex items-center gap-1 form-field-error text-sm'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

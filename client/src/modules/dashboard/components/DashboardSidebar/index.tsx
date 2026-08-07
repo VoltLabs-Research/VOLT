@@ -26,7 +26,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
     return (
         <Box as='aside' position='fixed' height='vh-max' className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`}>
             <IconButton
-                className='sidebar-close-btn p-absolute'
+                className='sidebar-close-btn absolute'
                 onClick={() => setSidebarOpen(false)}
                 title='Close sidebar'
                 aria-label='Close sidebar'

@@ -39,7 +39,7 @@ const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionBut
         size='sm'
         shape='pill'
         leftIcon={icon}
-        className={`b-soft workflow-node-data-btn ${isActive ? 'workflow-node-data-btn--active' : ''}`}
+        className={`border border-soft workflow-node-data-btn ${isActive ? 'workflow-node-data-btn--active' : ''}`}
         onClick={(event) => {
             event.stopPropagation();
             onClick();
@@ -90,7 +90,7 @@ const BaseNode = ({
                 <Tag
                     size='xs'
                     tone={overheadBadge.tone}
-                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge'
+                    className='absolute top-0 center-x font-semibold workflow-node-overhead-badge'
                 >
                     {overheadBadge.label}
                 </Tag>
@@ -113,7 +113,7 @@ const BaseNode = ({
                 })}
 
                 <Row gap='1'>
-                    <span className='d-flex items-center content-center workflow-node-icon'>
+                    <span className='flex items-center justify-center workflow-node-icon'>
                         <DynamicIcon iconName={config.icon} />
                     </span>
                     <Stack gap='02' className='f-1'>

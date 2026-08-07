@@ -48,10 +48,10 @@ export const CanvasTreeRow = ({
             tabIndex={disabled ? -1 : 0}
             onClick={disabled ? undefined : onClick}
             data-tour-id={tourTargetId}
-            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none ${INDENT_CLASSES[indent]} ${isActive ? 'selected' : ''} ${cursor} ${className}`}
+            className={`canvas-tree-item text-sm flex items-center gap-2 text-secondary select-none ${INDENT_CLASSES[indent]} ${isActive ? 'selected' : ''} ${cursor} ${className}`}
         >
             {icon ?? <span className="canvas-tree-spacer" />}
-            <span className={isActive ? 'color-primary' : 'color-secondary'}>{label}</span>
+            <span className={isActive ? 'text-primary' : 'text-secondary'}>{label}</span>
             {trailing !== undefined && <Box as='span' flex='1' />}
             {trailing}
         </button>
@@ -81,7 +81,7 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
     return (
         <>
             {Array.from({ length: count }).map((_, i) => (
-                <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+                <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
                     <span className="canvas-tree-spacer" />
                     <Skeleton variant='text' width={compact ? 80 : 120} height={10} />
                 </div>
@@ -96,7 +96,7 @@ interface CanvasTreeEmptyRowProps {
 }
 
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
-    <div className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+    <div className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
         <Text size='sm' tone='muted'>{label}</Text>
     </div>
 );
@@ -107,7 +107,7 @@ interface AnalysisTreeRetryRowProps {
 }
 
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
-    <div className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+    <div className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
         <Text size='sm' tone='muted'>Failed to load models</Text>
         <Box as='span' flex='1' />
         <Button variant='ghost' intent='neutral' size='sm' onClick={onRetry} aria-label='Retry loading models'>

@@ -1,7 +1,7 @@
 import './ThemeCard.css';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import type { VisualTheme } from '@/shared/ui/hooks/use-theme';
-import themeTokensStylesheet from '@/shared/ui/assets/stylesheets/theme.css?raw';
+import themeTokensStylesheet from '@voltstack/bravais/styles.css?raw';
 import { Row, SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
@@ -9,8 +9,14 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 
 type PreviewStyles = CSSProperties & Record<`--${string}`, string>;
 
+/*
+ * A preview shows both themes at once, so the values cannot be read off the
+ * document: only the active theme is computed. They are parsed out of the token
+ * sheet instead. bravais's published sheet normalises the attribute selector's
+ * quotes away, so the pattern accepts the token block either way.
+ */
 const extractThemeTokens = (theme: VisualTheme): Record<string, string> => {
-    const blockPattern = new RegExp(`:root\\[data-theme='${theme}'\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');
+    const blockPattern = new RegExp(`:root\\[data-theme=['"]?${theme}['"]?\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');
     const blockMatch = themeTokensStylesheet.match(blockPattern);
 
     if (!blockMatch) {

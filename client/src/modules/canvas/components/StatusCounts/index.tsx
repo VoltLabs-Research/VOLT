@@ -55,7 +55,7 @@ const StatusCounts = ({ hideZero = false, ...counts }: StatusCountsProps) => (
             }
 
             return (
-                <StatusBadge key={key} variant={variant} size="compact" className="d-flex items-center">
+                <StatusBadge key={key} variant={variant} size="compact" className="flex items-center">
                     <Icon style={ICON_STYLE} />
                     <span>{count}</span>
                 </StatusBadge>

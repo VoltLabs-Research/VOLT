@@ -219,7 +219,7 @@ const AnalysisListingDownloadModal = ({
                 )}
 
                 {hasError && (
-                    <Text as='p' size='sm' className='color-danger'>
+                    <Text as='p' size='sm' className='text-danger'>
                         Failed to load export options for this analysis.
                     </Text>
                 )}

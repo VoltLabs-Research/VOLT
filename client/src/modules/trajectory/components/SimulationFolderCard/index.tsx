@@ -78,7 +78,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
 
     return (
         <article
-            className='simulation-folder-card radius-md b-soft p-relative cursor-pointer'
+            className='simulation-folder-card rounded-md border border-soft relative cursor-pointer'
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -128,7 +128,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                 </div>
             ) : null}
             <Stack gap='1-5' height='max' className='simulation-folder-card__content'>
-                <Row className='simulation-folder-card__icon flex-center'>
+                <Row className='simulation-folder-card__icon items-center justify-center'>
                     <Folder size={30} strokeWidth={1.75} />
                 </Row>
 
@@ -138,7 +138,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                     </Heading>
                 </Stack>
 
-                <Row gap='05' className='simulation-folder-card__footer color-secondary font-size-2'>
+                <Row gap='05' className='simulation-folder-card__footer text-secondary text-md'>
                     <span>Open folder</span>
                     <ChevronRight size={14} strokeWidth={2} />
                 </Row>

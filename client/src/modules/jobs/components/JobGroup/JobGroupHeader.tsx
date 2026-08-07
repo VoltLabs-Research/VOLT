@@ -93,7 +93,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         <button
             ref={ref}
             type='button'
-            className={`job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''} job-group-toggle u-select-none`}
+            className={`job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''} job-group-toggle select-none`}
             onClick={onToggle}
             aria-expanded={isExpanded}
             aria-controls={contentId}
@@ -116,7 +116,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
                         </StatusBadge>
                     )}
                     <motion.i
-                        className='chevron-icon font-size-1 color-secondary'
+                        className='chevron-icon text-sm text-secondary'
                         animate={{ rotate: isExpanded ? 90 : 0 }}
                         transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                         aria-hidden='true'

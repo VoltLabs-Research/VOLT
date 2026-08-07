@@ -86,7 +86,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
                 <textarea
                     ref={textareaRef}
                     id={EDIT_MESSAGE_TEXTAREA_ID}
-                    className='edit-message-textarea w-max radius-sm'
+                    className='edit-message-textarea w-full rounded-sm'
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}

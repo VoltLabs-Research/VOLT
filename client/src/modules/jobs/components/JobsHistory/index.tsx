@@ -67,7 +67,7 @@ const JobsHistory = ({
             <EmptyState
                 title='No events to display'
                 description='No jobs match the current filters yet.'
-                icon={<Inbox size={24} strokeWidth={1} className='color-muted' />}
+                icon={<Inbox size={24} strokeWidth={1} className='text-muted' />}
             />
         );
     }

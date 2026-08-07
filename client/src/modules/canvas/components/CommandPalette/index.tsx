@@ -151,7 +151,7 @@ const CommandPalette = () => {
                             data-command-index={index}
                             role='option'
                             aria-selected={index === activeIndex}
-                            className={`canvas-command-palette__item d-flex items-center content-between gap-05${index === activeIndex ? ' is-active' : ''}`}
+                            className={`canvas-command-palette__item flex items-center justify-between gap-2${index === activeIndex ? ' is-active' : ''}`}
                             onMouseEnter={() => setActiveIndex(index)}
                             onClick={() => runCommand(item)}
                         >
@@ -163,7 +163,7 @@ const CommandPalette = () => {
                                 {item.keys.map((key, keyIndex) => (
                                     <Row key={key} gap='025' as='span'>
                                         {keyIndex > 0 && <Text size='xs' tone='secondary'>+</Text>}
-                                        <kbd className='canvas-command-palette__key font-mono font-size-05'>{formatKeyName(key)}</kbd>
+                                        <kbd className='canvas-command-palette__key font-mono text-xs'>{formatKeyName(key)}</kbd>
                                     </Row>
                                 ))}
                             </Row>

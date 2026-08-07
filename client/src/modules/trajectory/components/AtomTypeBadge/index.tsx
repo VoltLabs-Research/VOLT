@@ -1,4 +1,3 @@
-import './AtomTypeBadge.css';
 import { Box, StatusBadge } from '@voltstack/bravais';
 interface AtomTypeBadgeProps {
     type: number | string;
@@ -30,8 +29,12 @@ export default function AtomTypeBadge({ type }: AtomTypeBadgeProps) {
             <Box
                 as='span'
                 radius='full'
-                className='atom-type-badge-color-indicator'
-                style={{ backgroundColor: typeToColor(typeNumber) }}
+                style={{
+                    width: 9,
+                    height: 9,
+                    display: 'inline-block',
+                    backgroundColor: typeToColor(typeNumber)
+                }}
             />
             {String(type)}
         </StatusBadge>

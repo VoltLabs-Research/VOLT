@@ -39,7 +39,7 @@ const NotificationsPopover = () => {
 
     const trigger = (
         <IconButton
-            className='notification-trigger p-relative'
+            className='notification-trigger relative'
             aria-label={triggerLabel}
             title={triggerLabel}
             aria-haspopup='dialog'
@@ -47,7 +47,7 @@ const NotificationsPopover = () => {
         >
             <IoNotificationsOutline size={18} />
             {unreadCount > 0 && (
-                <Row position='absolute' justify='center' radius='sm' className='notification-badge font-weight-6' aria-hidden='true'>
+                <Row position='absolute' justify='center' radius='sm' className='notification-badge font-semibold' aria-hidden='true'>
                     {unreadCount > 99 ? '99+' : unreadCount}
                 </Row>
             )}
@@ -63,7 +63,7 @@ const NotificationsPopover = () => {
                         <Button
                             variant='ghost'
                             size='sm'
-                            className='notifications-header-action color-muted'
+                            className='notifications-header-action text-muted'
                             onClick={handleMarkAllAsRead}
                             disabled={isMarkingAllAsRead}
                         >
@@ -88,7 +88,7 @@ const NotificationsPopover = () => {
         <Popover
             id='notifications-popover'
             trigger={trigger}
-            className='notifications-popover-dropdown panel-floating radius-md overflow-hidden'
+            className='notifications-popover-dropdown panel-floating rounded-md overflow-hidden'
             noPadding
             onOpenChange={handleOpenChange}
         >

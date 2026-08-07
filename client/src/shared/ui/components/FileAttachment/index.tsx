@@ -72,17 +72,17 @@ const FileAttachment = ({
     
     return (
         <Row gap='075' className={cn('file-attachment', `file-attachment--${variant}`, className)}>
-            <div className={cn('d-flex flex-center f-shrink-0', showPreview && isImage ? 'file-attachment-preview' : 'file-attachment-icon')}>
+            <div className={cn('flex items-center justify-center shrink-0', showPreview && isImage ? 'file-attachment-preview' : 'file-attachment-icon')}>
                 {showPreview && isImage && fileUrl ? (
                     <img
                         src={fileUrl}
                         alt={fileName}
-                        className='w-max h-max radius-sm file-attachment-image'
+                        className='w-full h-full rounded-sm file-attachment-image'
                     />
                 ) : isImage ? (
-                    <Image size={iconSize} className='color-muted' />
+                    <Image size={iconSize} className='text-muted' />
                 ) : (
-                    <FileText size={iconSize} className='color-muted' />
+                    <FileText size={iconSize} className='text-muted' />
                 )}
             </div>
 
@@ -106,7 +106,7 @@ const FileAttachment = ({
                         </Button>
                     </Tooltip>
                 </Row>
-                <Row gap='05' className='font-size-1'>
+                <Row gap='05' className='text-sm'>
                     {fileSize !== undefined && <p>{formatSize(fileSize)}</p>}
                     {timestamp && (
                         <>
@@ -122,7 +122,7 @@ const FileAttachment = ({
                     <a
                         href={fileUrl}
                         download={fileName}
-                        className='d-flex flex-center file-attachment-download color-secondary'
+                        className='flex items-center justify-center file-attachment-download text-secondary'
                         onClick={(e) => e.stopPropagation()}
                         aria-label={`Download ${fileName}`}
                         title={`Download ${fileName}`}

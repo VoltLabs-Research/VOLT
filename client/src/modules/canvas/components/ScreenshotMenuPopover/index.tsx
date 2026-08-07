@@ -142,7 +142,7 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
         <ContextMenuPopover
             id='viewport-screenshot-menu'
             trigger={compact ? (
-                <span className='d-inline-flex flex-center'>
+                <span className='inline-flex items-center justify-center'>
                     <Tooltip content='Screenshot' placement='bottom'>
                         <Button
                             variant='ghost'
@@ -163,7 +163,7 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
                     intent='canvas'
                     shape='rounded'
                     size='sm'
-                    className='font-size-05 canvas-btn-compact'
+                    className='text-xs canvas-btn-compact'
                     leftIcon={<Row as='span' justify='center' shrink='0'><Camera size={12} /></Row>}
                     aria-label='Screenshot settings'
                     title='Screenshot settings'

@@ -81,7 +81,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 </IconButton>
             </Row>
 
-            <Stack gap='05' flex='1' minH='0' className='y-auto debug-arguments-panel-body'>
+            <Stack gap='05' flex='1' minH='0' className='overflow-y-auto debug-arguments-panel-body'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}

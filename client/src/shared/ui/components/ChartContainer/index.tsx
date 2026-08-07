@@ -33,7 +33,7 @@ const ChartContainer = ({
             return (Icon as () => ReactNode)();
         }
         const LucideIcon = Icon as LucideIcon;
-        return <LucideIcon className='color-muted-foreground' style={{
+        return <LucideIcon className='text-muted' style={{
             width: 20,
             height: 20
         }} />;

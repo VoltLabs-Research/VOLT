@@ -82,19 +82,19 @@ const CodeEditor = ({
     };
 
     return (
-        <div className={`code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
+        <div className={`code-editor-wrapper flex flex-col h-full gap-2 ${className} ${error ? 'has-error' : ''}`}>
             {label && (
-                <label htmlFor={editorId} id={labelId} className='code-editor-label font-size-2 font-weight-5 color-primary'>
+                <label htmlFor={editorId} id={labelId} className='code-editor-label text-md font-medium text-primary'>
                     {label}
                 </label>
             )}
             {description && (
-                <p id={descriptionId} className='code-editor-description font-size-1 color-secondary'>
+                <p id={descriptionId} className='code-editor-description text-sm text-secondary'>
                     {description}
                 </p>
             )}
 
-            <div className='p-relative overflow-hidden code-editor-container d-flex column' style={{ height: editorHeight }}>
+            <div className='relative overflow-hidden code-editor-container flex flex-col' style={{ height: editorHeight }}>
                 <textarea
                     id={editorId}
                     name={name}
@@ -108,12 +108,12 @@ const CodeEditor = ({
                     aria-label={ariaLabel ?? (label ? undefined : 'Code editor')}
                     aria-labelledby={ariaLabel ? undefined : labelledBy}
                     style={textareaStyle}
-                    className='code-editor-textarea font-size-2'
+                    className='code-editor-textarea text-md'
                 />
             </div>
 
             {error && (
-                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='code-editor-error font-size-1'>
+                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='code-editor-error text-sm'>
                     {error}
                 </p>
             )}

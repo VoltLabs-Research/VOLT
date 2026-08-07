@@ -80,7 +80,7 @@ const AIMessageItem = memo(({
         if (segment.type === 'reasoning') {
             segmentElements.push(
                 <Box key={`seg-${segmentIndex}`} className='ai-message-reasoning'>
-                    <SectionLabel className='ai-message-reasoning-label d-block'>
+                    <SectionLabel className='ai-message-reasoning-label block'>
                         Thinking
                     </SectionLabel>
                     <Text as='div' size='sm' className='ai-message-text ai-message-markdown'>
@@ -97,7 +97,7 @@ const AIMessageItem = memo(({
         if (segment.type === 'text') {
             segmentElements.push(
                 <Box key={`seg-${segmentIndex}`} className={`ai-message-bubble ${bubbleVariant}`}>
-                    <Box className='font-size-2-5 ai-message-text ai-message-markdown'>
+                    <Box className='text-[0.95rem] ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={markdownComponents}>
                             {segment.content}
                         </ReactMarkdown>
@@ -133,7 +133,7 @@ const AIMessageItem = memo(({
 
     return (
         <article
-            className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}
+            className={`flex flex-col gap-4 ai-message-row ${bubbleVariant}`}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
         >
             <VisuallyHidden>

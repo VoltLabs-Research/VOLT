@@ -4,11 +4,11 @@ import type { ReactNode } from 'react';
 
 const COLLAPSIBLE_PRESET = {
     className: 'canvas-right-dropdown',
-    headerClassName: 'canvas-right-dropdown-header d-flex items-center gap-05',
-    titleClassName: 'canvas-right-dropdown-title font-size-05 color-muted',
+    headerClassName: 'canvas-right-dropdown-header flex items-center gap-2',
+    titleClassName: 'canvas-right-dropdown-title text-xs text-muted',
     iconClassName: 'canvas-right-dropdown-icon',
     bodyClassName: 'canvas-right-dropdown-body',
-    contentClassName: 'd-flex column',
+    contentClassName: 'flex flex-col',
     noSpacing: true,
     arrowSize: 13,
     useDefaultHeaderStyles: false,

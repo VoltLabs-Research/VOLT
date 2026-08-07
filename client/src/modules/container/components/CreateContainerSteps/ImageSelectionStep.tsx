@@ -27,7 +27,7 @@ const ImageSelectionStep = ({
                 <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</Text>
             </Stack>
 
-            <Box className='create-container-templates-grid gap-1' role='radiogroup' aria-label='Container image templates'>
+            <Box className='create-container-templates-grid gap-4' role='radiogroup' aria-label='Container image templates'>
                 {CONTAINER_TEMPLATES.map((template) => (
                     <TemplateCard
                         key={template.id}
@@ -41,7 +41,7 @@ const ImageSelectionStep = ({
                 <TemplateCard
                     name='Custom Image'
                     description={customImageDescription}
-                    icon={<Server size={32} className='color-muted' />}
+                    icon={<Server size={32} className='text-muted' />}
                     isSelected={!selectedTemplate && !!customImage}
                     onClick={onCustomImageClick}
                     variant='custom'
@@ -52,7 +52,7 @@ const ImageSelectionStep = ({
                 <Stack className='create-container-image-preview' gap='025' p='1' radius='sm'>
                     <Text as='p' size='md' tone='secondary'>Custom image preview</Text>
                     <Text as='p' size='md' tone='primary' weight='medium'>{customImage}</Text>
-                    <Text as='p' size='md' className={customImageError ? 'color-danger' : 'color-secondary'}>
+                    <Text as='p' size='md' className={customImageError ? 'text-danger' : 'text-secondary'}>
                         {customImageError ?? 'Volt will pull this image directly from the registry when you deploy.'}
                     </Text>
                 </Stack>

@@ -124,25 +124,25 @@ const DebugContextPanel = () => {
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
 
     return (
-        <Stack position='absolute' zIndex='10' className='debug-context-panel glass-bg panel-floating top-1 right-1'>
-            <Row justify='between' gap='05' onClick={() => setIsOpen((v) => !v)} className='debug-context-row debug-context-panel-header cursor-pointer u-select-none'>
+        <Stack position='absolute' zIndex='10' className='debug-context-panel glass-bg panel-floating top-4 right-4'>
+            <Row justify='between' gap='05' onClick={() => setIsOpen((v) => !v)} className='debug-context-row debug-context-panel-header cursor-pointer select-none'>
                 <Braces size={12} />
-                <Row as='p' gap='035' className='debug-context-panel-title f-1 font-size-05 font-weight-6'>
+                <Row as='p' gap='035' className='debug-context-panel-title f-1 text-xs font-semibold'>
                     Context
-                    <Text as='span' weight='bold' className='debug-context-panel-count radius-full'>{entries.length}</Text>
+                    <Text as='span' weight='bold' className='debug-context-panel-count rounded-full'>{entries.length}</Text>
                 </Row>
-                {isOpen ? <X size={12} className='color-secondary' /> : <ChevronRight size={12} />}
+                {isOpen ? <X size={12} className='text-secondary' /> : <ChevronRight size={12} />}
             </Row>
 
             {isOpen && (
-                <Box flex='1' minH='0' className='debug-context-panel-body nowheel y-auto'>
+                <Box flex='1' minH='0' className='debug-context-panel-body nowheel overflow-y-auto'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
                         <div className='debug-context-entry'>
                             <Row justify='between' gap='05' onClick={() => toggleKey(forEachGroupKey)} className='debug-context-row cursor-pointer'>
                                 <Row gap='05'>
-                                    <Repeat size={10} className='color-muted' />
+                                    <Repeat size={10} className='text-muted' />
                                     <Stack>
                                         <p className='debug-context-label'>{getNodeLabel(forEachEntry[0])}</p>
                                         <Text as='p' tone='muted' className='debug-context-id'>

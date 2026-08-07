@@ -122,7 +122,7 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saved) {
         saveFeedback = (
-            <InlineStatus tone='muted' icon={<CheckCircle2 size={14} className='color-success' />}>
+            <InlineStatus tone='muted' icon={<CheckCircle2 size={14} className='text-success' />}>
                 Changes saved
             </InlineStatus>
         );

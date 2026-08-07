@@ -4,6 +4,8 @@ import App from '@/renderer/src/pages/App';
 import { initTheme } from '@/renderer/src/theme';
 import 'sileo/styles.css';
 import '@voltstack/bravais/styles.css';
+/* Stands where bravais's own utility sheet used to; see the file's header. */
+import './tailwind.css';
 import '@voltstack/bravais/components.css';
 import './styles.css';
 

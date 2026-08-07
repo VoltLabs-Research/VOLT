@@ -36,7 +36,7 @@ const SettingsRow = ({
             onClick={onClick}
         >
             {icon && (
-                <Row justify='center' shrink='0' className='font-size-4 color-muted'>
+                <Row justify='center' shrink='0' className='text-xl text-muted'>
                     {icon}
                 </Row>
             )}

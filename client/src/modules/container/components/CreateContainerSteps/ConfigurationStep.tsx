@@ -112,12 +112,12 @@ const ConfigurationStep = ({
                 <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</Text>
             </Stack>
 
-            <Box className='create-container-config-grid gap-1-5 mt-1-5'>
+            <Box className='create-container-config-grid gap-6 mt-6'>
                 <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
                     <SettingsSectionHeader
                         title='Deployment details'
                         description='These fields are required before you can continue to review.'
-                        className='create-container-config-section-header mb-1 pb-075'
+                        className='create-container-config-section-header mb-4 pb-075'
                     />
                     <Box className='create-container-deployment-fields'>
                         <Box className='create-container-deployment-name'>
@@ -218,7 +218,7 @@ const ConfigurationStep = ({
                 </OptionalConfigSection>
             </Box>
 
-            <Row className='create-container-step-actions mt-2' justify='between' gap='1'>
+            <Row className='create-container-step-actions mt-8' justify='between' gap='1'>
                 <Text as='p' size='md' tone='secondary'>
                     {canProceed ? 'Required fields complete. Continue when you are ready.' : remainingItemsLabel}
                 </Text>

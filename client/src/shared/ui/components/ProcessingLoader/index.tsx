@@ -28,12 +28,12 @@ const ProcessingLoader = ({
 
     return (
         <Row gap='075' className={`processing-loader-container ${className}`} role='status' aria-live='polite' aria-atomic='true'>
-            <Loader scale={0.6} isFixed={false} className='f-shrink-0' reducedMotionLabel={statusMessage} />
+            <Loader scale={0.6} isFixed={false} className='shrink-0' reducedMotionLabel={statusMessage} />
             <Stack gap='035' flex='1'>
                 <Text as='p' tone='secondary' className='processing-loader-text overflow-hidden' title={message}>{message}</Text>
                 {showProgress && completionRate > 0 && (
-                    <div className='w-max overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
-                        <div className='processing-loader-progress-fill h-max' style={{
+                    <div className='w-full overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
+                        <div className='processing-loader-progress-fill h-full' style={{
                             width: `${progressPercentage}%`,
                             transition: prefersReducedMotion ? 'none' : undefined
                         }} />

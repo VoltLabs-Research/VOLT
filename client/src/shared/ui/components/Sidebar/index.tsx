@@ -115,7 +115,7 @@ const Sidebar = ({
 
     return (
         <motion.aside
-            className={`editor-sidebar-wrapper d-flex ${positionClass} ${className} p-absolute`}
+            className={`editor-sidebar-wrapper flex ${positionClass} ${className} absolute`}
             data-collapsed={collapsed}
             data-collapsible={collapsible}
             data-mobile={isMobile}
@@ -128,7 +128,7 @@ const Sidebar = ({
                 damping: 30
             }}
         >
-            <div className='editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
+            <div className='editor-sidebar-container glass-bg border-0 flex flex-col glass-bg justify-between overflow-hidden w-full h-full'>
                 <div id={`${sidebarId}-content`} className='editor-sidebar-top-container'>
                     {headerElement}
 
@@ -137,12 +137,12 @@ const Sidebar = ({
                     ) : (
                         <>
                             {tags.length > 1 && (
-                                <div className='p-1-5 editor-sidebar-tabs-region'>
-                                    <div className='editor-sidebar-tabs-wrapper p-relative'>
+                                <div className='p-6 editor-sidebar-tabs-region'>
+                                    <div className='editor-sidebar-tabs-wrapper relative'>
                                         {canScrollLeft && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' aria-hidden='true' />
                                         )}
-                                            <div ref={tabsContainerRef} className='d-flex p-05 content-between editor-sidebar-options-container scrollbar-none' role='tablist' aria-label='Sidebar sections'>
+                                            <div ref={tabsContainerRef} className='flex p-2 justify-between editor-sidebar-options-container scrollbar-none' role='tablist' aria-label='Sidebar sections'>
                                                 {tags.map((tag) => {
                                                     const isSelected = tag.id === activeTagId;
 
@@ -155,10 +155,10 @@ const Sidebar = ({
                                                             aria-selected={isSelected}
                                                             aria-controls={`${sidebarId}-panel-${tag.id}`}
                                                             tabIndex={isSelected ? 0 : -1}
-                                                            className={`d-flex content-center items-center editor-sidebar-option-container ${isSelected ? 'selected' : ''}`}
+                                                            className={`flex justify-center items-center editor-sidebar-option-container ${isSelected ? 'selected' : ''}`}
                                                             onClick={() => onTagChange?.(tag.id)}
                                                         >
-                                                            <span className='font-size-3 editor-sidebar-option-title font-weight-5'>
+                                                            <span className='text-lg editor-sidebar-option-title font-medium'>
                                                                 {tag.name}
                                                             </span>
                                                         </button>

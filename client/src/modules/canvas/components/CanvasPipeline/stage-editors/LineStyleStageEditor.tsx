@@ -272,7 +272,7 @@ const LineStyleStageEditor = ({
                             size='sm'
                             block
                             onClick={() => removeFilterRow(row.id)}
-                            className='font-size-05'
+                            className='text-xs'
                         >
                             Remove Filter
                         </Button>
@@ -284,7 +284,7 @@ const LineStyleStageEditor = ({
                     size='sm'
                     block
                     onClick={addFilterRow}
-                    className='font-size-05'
+                    className='text-xs'
                 >
                     Add Filter
                 </Button>
@@ -311,7 +311,7 @@ const LineStyleStageEditor = ({
                 block
                 onClick={() => { void handleApply(); }}
                 disabled={isApplying || !canMutateCanvas || currentTimestep === undefined}
-                className='font-size-05'
+                className='text-xs'
             >
                 Apply (bake)
             </Button>
@@ -335,7 +335,7 @@ const LineStyleStageEditor = ({
                     block
                     onClick={() => { void handleInspect(); }}
                     disabled={isInspecting}
-                    className='font-size-05'
+                    className='text-xs'
                 >
                     Inspect
                 </Button>

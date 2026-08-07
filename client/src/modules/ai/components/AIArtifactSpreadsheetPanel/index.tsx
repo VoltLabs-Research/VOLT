@@ -155,7 +155,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         onChange={(event) => setEditBuffer(event.target.value)}
                         onBlur={commitEdit}
                         onKeyDown={handleEditKeyDown}
-                        aria-label={`Edit row ${rowIndex + 1}, ${col}`}
+                        aria-label={`Edit flex-row ${rowIndex + 1}, ${col}`}
                     />
                 ) : (
                     <span className='ai-sheet-cell-value'>
@@ -229,7 +229,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 {statusMessage}
             </VisuallyHidden>
 
-            <Box className='ai-artifact-spreadsheet-body x-auto y-auto'>
+            <Box className='ai-artifact-spreadsheet-body overflow-x-auto overflow-y-auto'>
                 <table
                     className='ai-artifact-spreadsheet-table'
                     role='grid'
@@ -251,7 +251,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <tbody>
                         {rows.map((_, rowIndex) => (
                             <tr key={rowIndex} role='row'>
-                                <th scope='row' className='ai-sheet-row-index-cell'>
+                                <th scope='flex-row' className='ai-sheet-row-index-cell'>
                                     {rowIndex + 1}
                                 </th>
                                 {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}

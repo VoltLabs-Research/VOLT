@@ -43,13 +43,13 @@ const OptionRow = ({
     const hasError = Boolean(errorTitle);
 
     return (
-        <li className={`argument-options-row d-flex items-center gap-05${hasError ? ' has-error' : ''}`}>
+        <li className={`argument-options-row flex items-center gap-2${hasError ? ' has-error' : ''}`}>
             <input
                 type='text'
                 value={option.key}
                 onChange={(event) => onOptionChange({ key: event.currentTarget.value })}
                 placeholder={KEY_PLACEHOLDER}
-                className={`argument-options-input argument-options-input--key font-mono font-size-2 flex-1${hasError ? ' has-error' : ''}`}
+                className={`argument-options-input argument-options-input--key font-mono text-md flex-1${hasError ? ' has-error' : ''}`}
                 aria-label={`Option ${index + 1} key`}
                 aria-invalid={hasError}
                 title={errorTitle}
@@ -61,7 +61,7 @@ const OptionRow = ({
                 value={option.label}
                 onChange={(event) => onOptionChange({ label: event.currentTarget.value })}
                 placeholder={LABEL_PLACEHOLDER}
-                className='argument-options-input argument-options-input--label font-size-2 flex-1'
+                className='argument-options-input argument-options-input--label text-md flex-1'
                 aria-label={`Option ${index + 1} label`}
                 onKeyDown={handleLabelKeyDown}
             />

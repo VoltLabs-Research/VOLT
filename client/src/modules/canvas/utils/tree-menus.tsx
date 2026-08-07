@@ -98,7 +98,7 @@ const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
             <Button
                 variant='ghost'
                 size='sm'
-                className='font-size-05'
+                className='text-xs'
                 onClick={() => onChange(undefined)}
             >
                 Reset

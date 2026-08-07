@@ -172,7 +172,7 @@ const GroupManagementModal = ({
                         aria-controls={getTabPanelId(tab.id)}
                         tabIndex={activeTab === tab.id ? 0 : -1}
                         className={cn(
-                            'd-flex items-center gap-05 group-management-tab transition-normal cursor-pointer color-secondary',
+                            'flex items-center gap-2 group-management-tab transition-normal cursor-pointer text-secondary',
                             activeTab === tab.id && 'active'
                         )}
                         onClick={() => setActiveTab(tab.id)}

@@ -8,7 +8,7 @@ import type { QueryKey } from '@tanstack/react-query';
 
 /**
  * Marks "the user explicitly hid nothing", which cannot be expressed by an absent
- * param because absence means "fall back to the column defaults".
+ * param because absence means "fall back to the flex-col defaults".
  */
 const NONE_HIDDEN = '-';
 

@@ -32,7 +32,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                 {SKELETON_COLUMNS.map((index) => (
                     <div
                         key={`skeleton-header-${index}`}
-                        className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
+                        className='plugin-compact-table-header-cell overflow-hidden font-medium'
                         style={skeletonCellStyle}
                     >
                         <Skeleton variant='text' width='70%' height={18} animation='wave' />
@@ -52,7 +52,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                         {SKELETON_COLUMNS.map((cellIndex) => (
                             <div
                                 key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                                className='plugin-compact-table-cell overflow-hidden font-size-1'
+                                className='plugin-compact-table-cell overflow-hidden text-sm'
                                 style={skeletonCellStyle}
                             >
                                 <Skeleton variant='text' width={`${55 + ((rowIndex + cellIndex) % 3) * 15}%`} height={16} animation='wave' />

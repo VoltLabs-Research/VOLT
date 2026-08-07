@@ -38,7 +38,7 @@ const renderMetricBars = (percentage: number, label: string): ReactNode => {
     const activeBars = Math.floor(percentage / 20);
     return (
         <Row gap='05'>
-            <Box display='flex' className='gap-01'>
+            <Box display='flex' className='gap-[0.1rem]'>
                 {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className={`server-table-bar ${i < activeBars ? 'server-table-bar-active' : ''}`} />
                 ))}
@@ -107,7 +107,7 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
                     <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
                         {getTeamClusterRoleLabel(row.desiredRole)}
                     </StatusBadge>
-                    <Text as='p' size='sm' className={isTransitionPending ? 'color-warning' : 'color-muted'}>
+                    <Text as='p' size='sm' className={isTransitionPending ? 'text-warning' : 'text-muted'}>
                         {isTransitionPending
                             ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
                             : getTeamClusterRoleSummary(row.desiredRole)}

@@ -90,7 +90,7 @@ const ArgumentFieldsRenderer = ({
                     deleteActionLabel={`Remove ${argument.label || argument.argument} item ${itemIndex + 1}`}
                     noSpacing
                     className='canvas-argument-list-item'
-                    bodyClassName='mt-05'
+                    bodyClassName='mt-2'
                 >
                     <ArgumentFieldsRenderer
                         arguments={argument.listArguments ?? []}
@@ -168,7 +168,7 @@ const ArgumentFieldsRenderer = ({
                         variant='outline'
                         intent='neutral'
                         size='sm'
-                        className='w-max canvas-argument-list-add'
+                        className='w-full canvas-argument-list-add'
                         leftIcon={<Plus size={12} />}
                         onClick={() => {
                             onChange(argument.argument, [...items, createDefaultListItem(argument.listArguments)]);

@@ -97,7 +97,7 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                             </StatusBadge>
                         </Row>
                         {isTransitionPending && (
-                            <Text as='p' size='sm' className='color-warning'>
+                            <Text as='p' size='sm' className='text-warning'>
                                 {drainingSummary
                                     ? `${drainingSummary}. Effective role is still converging.`
                                     : 'The daemon is still converging to the desired role.'}
@@ -132,7 +132,7 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                     </Text>
                 </Stack>
                 {error && (
-                    <Text as='p' size='md' className='color-danger'>{error}</Text>
+                    <Text as='p' size='md' className='text-danger'>{error}</Text>
                 )}
             </Stack>
         </Modal>

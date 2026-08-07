@@ -107,7 +107,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     const trigger = (
         <button
             type='button'
-            className='populated-cell-trigger d-inline-flex cursor-pointer'
+            className='populated-cell-trigger inline-flex cursor-pointer'
             aria-haspopup='dialog'
             aria-controls={popoverId}
         >
@@ -132,7 +132,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                     <nav aria-label={`${modelName} links`}>
                         <Link
                             to={listingRoute}
-                            className='populated-cell-popover-link d-flex items-center gap-025'
+                            className='populated-cell-popover-link flex items-center gap-1'
                             onClick={handleNavigate}
                         >
                             View in listing
@@ -154,7 +154,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     };
 
     return (
-        <div className='d-inline-flex' onClick={handleStopPropagation}>
+        <div className='inline-flex' onClick={handleStopPropagation}>
             <Popover id={popoverId} trigger={trigger} placement='bottom-start'>
                 {(close: () => void) => (
                     <Stack role='dialog' aria-label={`${modelName} details`}>
@@ -162,7 +162,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                         <Stack className='populated-cell-popover-body'>
                             {fields.length > 0
                                 ? <dl className='populated-cell-popover-fields m-0'>{fields.map(renderField)}</dl>
-                                : <Text size='sm' tone='muted' className='p-05'>No fields to display</Text>
+                                : <Text size='sm' tone='muted' className='p-2'>No fields to display</Text>
                             }
                         </Stack>
                     </Stack>

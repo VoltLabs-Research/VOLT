@@ -113,7 +113,7 @@ const TimelineHeader = ({
                 intent="canvas"
                 shape="rounded"
                 size="sm"
-                className="font-size-05 canvas-btn-compact"
+                className="text-xs canvas-btn-compact"
                 onClick={() => onTabChange(tab.id)}
                 leftIcon={tab.icon}
             >
@@ -207,7 +207,7 @@ const TimelineHeader = ({
                             title='End timestep'
                         />
 
-                        <Divider orientation='vertical' className='f-shrink-0' />
+                        <Divider orientation='vertical' className='shrink-0' />
 
                         <PresetPopover
                             id="timeline-speed"

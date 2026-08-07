@@ -142,7 +142,7 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                         <Stack key={col.title} style={{ minWidth: 140 }}>
                             <Text size='xs' tone='muted'>{col.title}</Text>
                             {col.rows.map(([label, value, valueClass]) => (
-                                <Row key={label} justify='between' gap='1' className="font-size-1 color-secondary">
+                                <Row key={label} justify='between' gap='1' className="text-sm text-secondary">
                                     <Text tone='muted'>{label}</Text>
                                     <span className={valueClass}>{value}</span>
                                 </Row>

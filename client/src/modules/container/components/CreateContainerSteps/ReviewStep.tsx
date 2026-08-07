@@ -112,11 +112,11 @@ const ReviewStep = ({
                 message={deployProgressMessage || 'Deploying container...'}
                 showProgress={(deployProgressRate ?? 0) > 0}
                 completionRate={deployProgressRate ?? 0}
-                className='mt-1'
+                className='mt-4'
             />
 
             {isLoading && deployStartedAt && (
-                <Text as='p' size='md' tone='muted' className='mt-05' aria-live='polite'>
+                <Text as='p' size='md' tone='muted' className='mt-2' aria-live='polite'>
                     {formatElapsed(elapsedSeconds)}
                 </Text>
             )}

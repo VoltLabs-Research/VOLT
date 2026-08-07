@@ -30,7 +30,7 @@ const ExecutionConfigSummary = ({ config, plugin, pluginsById }: ExecutionConfig
                     <Stack key={column.key} gap='05' style={{ minWidth: 140 }}>
                         <Text size='xs' tone='muted'>{column.title}</Text>
                         {column.rows.map((row, rowIndex) => (
-                            <Row key={`${row.label}:${rowIndex}`} justify='between' gap='1' className='font-size-1 color-secondary'>
+                            <Row key={`${row.label}:${rowIndex}`} justify='between' gap='1' className='text-sm text-secondary'>
                                 <Text tone='muted'>{row.label}</Text>
                                 {row.value}
                             </Row>

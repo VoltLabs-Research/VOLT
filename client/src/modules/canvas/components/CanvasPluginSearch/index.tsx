@@ -191,7 +191,7 @@ const CanvasPluginSearch = () => {
                                             type='button'
                                             role='option'
                                             aria-selected={isActive}
-                                            className={`canvas-plugin-search-item d-flex items-center gap-05 p-05 radius-sm ${isActive ? 'canvas-plugin-search-item--active' : ''}`}
+                                            className={`canvas-plugin-search-item flex items-center gap-2 p-2 rounded-sm ${isActive ? 'canvas-plugin-search-item--active' : ''}`}
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}

@@ -22,7 +22,7 @@ const PresetPopover = ({ id, icon, presets, value, suffix, onSelect }: PresetPop
                 intent="canvas"
                 shape="rounded"
                 size="sm"
-                className="font-size-05 canvas-btn-compact"
+                className="text-xs canvas-btn-compact"
                 leftIcon={icon}
             >
                 {`${value}${suffix}`}
@@ -38,7 +38,7 @@ const PresetPopover = ({ id, icon, presets, value, suffix, onSelect }: PresetPop
                         intent="canvas"
                         shape="rounded"
                         size="sm"
-                        className="font-size-05"
+                        className="text-xs"
                         block
                         align="start"
                         onClick={() => {

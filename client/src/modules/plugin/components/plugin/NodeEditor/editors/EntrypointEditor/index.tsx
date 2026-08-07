@@ -197,7 +197,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                                 language='plaintext'
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
-                                loading={<Box p='1' className='color-secondary'>Loading editor...</Box>}
+                                loading={<Box p='1' className='text-secondary'>Loading editor...</Box>}
                                 options={MONACO_OPTIONS}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });

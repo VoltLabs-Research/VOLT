@@ -98,7 +98,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                             {result.message}
                         </Text>
                         {result.manualUninstallCommand && (
-                            <Box p='1' radius='md' overflow='auto' className='bg-page font-family-mono font-size-1'>
+                            <Box p='1' radius='md' overflow='auto' className='bg-page font-family-mono text-sm'>
                                 {result.manualUninstallCommand}
                             </Box>
                         )}

@@ -129,7 +129,7 @@ const AIConversationSidebar = ({
     const renderConversationItem = (conversation: AIConversation) => {
         const isActive = conversation._id === activeConversationId;
         const isEditing = editingConversationId === conversation._id;
-        let itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer';
+        let itemClassName = 'flex flex-col gap-1 ai-conversation-item cursor-pointer';
         if (isActive) {
             itemClassName += ' is-active';
         }

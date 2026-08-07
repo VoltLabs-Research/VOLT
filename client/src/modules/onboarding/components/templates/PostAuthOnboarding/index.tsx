@@ -103,7 +103,7 @@ const PostAuthOnboarding = () => {
                 </Stack>
             ) : (
                 <Stack gap='2' className='post-auth-onboarding-shell'>
-                    <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
+                    <form className='post-auth-onboarding-content flex flex-col gap-8' onSubmit={handleSubmit}>
                         <Stack gap='1' textAlign='center'>
                             <Heading level={1} size='3xl' weight='bold'>
                                 Let&apos;s create a team for you!

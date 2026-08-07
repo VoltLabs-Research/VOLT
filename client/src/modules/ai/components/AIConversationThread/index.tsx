@@ -61,7 +61,7 @@ const AIConversationThread = ({
 
     if (error) {
         return (
-            <Box display='flex' flex='1' className='flex-center ai-thread-empty'>
+            <Box display='flex' flex='1' className='items-center justify-center ai-thread-empty'>
                 <RecoveryState
                     title='Failed to load conversation'
                     description={error}

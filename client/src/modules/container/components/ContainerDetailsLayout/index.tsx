@@ -20,7 +20,6 @@ import useContainerStats from '../../hooks/use-container-stats';
 import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { ContainerDetailsContext } from '../../hooks/use-container-details-context';
-import './ContainerDetailsLayout.css';
 
 const ContainerDetailsLayout = () => {
     const { id } = useParams<{ id: string }>();
@@ -155,7 +154,7 @@ const ContainerDetailsLayout = () => {
 
     if(!container || !outletContext){
         return (
-            <Box className='flex-center' display='flex' height='max'>
+            <Box className='items-center justify-center' display='flex' height='max'>
                 <RecoveryState
                     title='Container not found'
                     description={error?.message ?? 'The requested container could not be loaded.'}
@@ -168,7 +167,7 @@ const ContainerDetailsLayout = () => {
     }
 
     return (
-        <Stack className='container-details-layout'>
+        <Stack height='max' minH='0'>
             <ContainerDetailsHeader
                 container={container}
                 onBack={handleBack}
@@ -177,7 +176,7 @@ const ContainerDetailsLayout = () => {
                 contextualActions={headerActions}
             />
 
-            <Stack className='container-details-content-area' flex='1'>
+            <Stack flex='1' minW='0' minH='0' overflow='auto'>
                 <motion.div
                     key={pathname}
                     initial={prefersReducedMotion ? false : { opacity: 0 }}

@@ -138,7 +138,7 @@ const ClusterTransferModal = ({
                         disabled={isSubmitting}
                     />
                 ) : (
-                    <Text as='p' size='md' className='color-warning'>
+                    <Text as='p' size='md' className='text-warning'>
                         No connected destination clusters can currently accept storage writes.
                     </Text>
                 )}
@@ -148,10 +148,10 @@ const ClusterTransferModal = ({
                     </Text>
                 </Stack>
                 {queuedMessage && (
-                    <Text as='p' size='md' className='color-success'>{queuedMessage}</Text>
+                    <Text as='p' size='md' className='text-success'>{queuedMessage}</Text>
                 )}
                 {error && (
-                    <Text as='p' size='md' className='color-danger'>{error}</Text>
+                    <Text as='p' size='md' className='text-danger'>{error}</Text>
                 )}
                 <Stack gap='075'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Recent transfer jobs</Heading>
@@ -177,7 +177,7 @@ const ClusterTransferModal = ({
                                     Copied {job.stats.copiedObjects} objects | Verified {job.stats.verifiedObjects} objects | Updated {formatClusterTimestamp(job.updatedAt)}
                                 </Text>
                                 {job.errorMessage && (
-                                    <Text as='p' size='sm' className='color-danger'>{job.errorMessage}</Text>
+                                    <Text as='p' size='sm' className='text-danger'>{job.errorMessage}</Text>
                                 )}
                             </Stack>
                         ))

@@ -22,7 +22,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     size='sm'
                     shape='pill'
                     className={cn(
-                        'font-size-2 chat-reaction',
+                        'text-md chat-reaction',
                         hasUserReacted(reaction, currentUserId) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}

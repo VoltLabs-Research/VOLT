@@ -155,7 +155,7 @@ const FileUploaderContainer = ({
     }, [handleWindowDragEnter]);
 
     const containerClasses = useMemo(() => {
-        const classes = ['file-uploader-container', 'p-absolute', 'w-max', 'h-max'];
+        const classes = ['file-uploader-container', 'absolute', 'w-full', 'h-full'];
         if (isDraggingOver) classes.push('is-dragging-over');
         return classes.join(' ');
     }, [isDraggingOver]);

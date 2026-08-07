@@ -32,7 +32,7 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             ref={ref}
             variant='ghost'
             intent='neutral'
-            className={`sidebar-nav-item ${isSelected ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer transition-fast`}
+            className={`sidebar-nav-item ${isSelected ? 'is-selected' : ''} relative gap-3 w-full text-md font-normal text-secondary cursor-pointer transition-fast`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
@@ -41,7 +41,7 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             {...(commandFor ? { commandfor: commandFor } : {})}
             {...(command ? { command } : {})}
         >
-            <div className='sidebar-nav-icon font-size-4'>
+            <div className='sidebar-nav-icon text-xl'>
                 <Icon size='1em' />
             </div>
             <span className='sidebar-nav-label'>{label}</span>

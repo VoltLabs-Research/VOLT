@@ -23,7 +23,7 @@ export const getColumnSortIndicator = <TRow,>(
 
     return (
         <span
-            className={`sort-indicator d-flex flex-center ${isActive ? 'is-active' : ''}`}
+            className={`sort-indicator flex items-center justify-center ${isActive ? 'is-active' : ''}`}
             aria-hidden='true'
         >
             <Icon size={12} strokeWidth={2} />
@@ -47,7 +47,7 @@ export const describeSortState = <TRow,>(
     if(!sortConfig) return 'List sorted by default order.';
 
     const activeColumn = columns.find((col) => getColumnKey(col) === sortConfig.key);
-    const columnTitle = (activeColumn && getColumnTitle(activeColumn)) || 'selected column';
+    const columnTitle = (activeColumn && getColumnTitle(activeColumn)) || 'selected flex-col';
     const directionLabel = sortConfig.direction === 'asc' ? 'ascending' : 'descending';
 
     return `Sorted by ${columnTitle} in ${directionLabel} order.`;

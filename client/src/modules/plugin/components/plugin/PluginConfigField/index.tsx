@@ -192,7 +192,7 @@ const PluginConfigField = ({
                         title={getSelectionTitle(selection, pluginOptions)}
                         defaultExpanded={index === 0}
                         noSpacing
-                        bodyClassName='mt-05'
+                        bodyClassName='mt-2'
                     >
                         <ArgumentFieldsRenderer
                             arguments={selectedPluginArguments}

@@ -140,7 +140,7 @@ export const RoleEditorModal = ({
                     autoFocus={!isEditing}
                 />
 
-                <fieldset className='role-editor-fieldset d-flex column gap-1'>
+                <fieldset className='role-editor-fieldset flex flex-col gap-4'>
                     <legend className='role-editor-legend'>
                         <Heading level={3} tone='secondary' weight='bold'>Permissions</Heading>
                     </legend>
@@ -161,7 +161,7 @@ export const RoleEditorModal = ({
                                 <Fragment key={resource.key}>
                                     <button
                                         type='button'
-                                        className='role-editor-grid-resource font-size-2 font-weight-5 color-primary'
+                                        className='role-editor-grid-resource text-md font-medium text-primary'
                                         onClick={() => handleToggleResourceAll(resource.key)}
                                         disabled={isSystemRole}
                                         aria-pressed={areAllPermissionsChecked}

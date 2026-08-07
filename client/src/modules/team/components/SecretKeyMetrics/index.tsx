@@ -17,7 +17,7 @@ const metricsTitle = (
 );
 
 const loadingView = (
-    <Box height='vh-max' className='secret-key-page color-primary'>
+    <Box height='vh-max' className='secret-key-page text-primary'>
         <Stack gap='2' width='max' className='secret-key-page-main'>
             <Stack gap='05'>
                 <Skeleton variant='text' width={240} height={32} />
@@ -26,7 +26,7 @@ const loadingView = (
             <Box gap='1' className='secret-key-page-cards'>
                 {[...Array(4)].map((_, i) => (
                     <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
-                        <Row gap='05' className='mb-075'>
+                        <Row gap='05' className='mb-3'>
                             <Skeleton variant='circular' width={16} height={16} />
                             <Skeleton variant='text' width={120} height={20} />
                         </Row>
@@ -104,7 +104,7 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <Box height='vh-max' className='secret-key-page color-primary'>
+        <Box height='vh-max' className='secret-key-page text-primary'>
             <Stack gap='2' width='max' className='secret-key-page-main'>
                 <Stack gap='05'>
                     <Heading level={3} size='2xl' weight='bold' tone='primary'>Secret Key Metrics</Heading>

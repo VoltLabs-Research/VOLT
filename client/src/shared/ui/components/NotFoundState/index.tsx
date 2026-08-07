@@ -11,7 +11,7 @@ const NotFoundState = () => {
     usePageTitle('Page Not Found');
 
     return (
-        <section aria-labelledby={headingId} className='not-found-state d-flex items-center content-center vh-max w-max'>
+        <section aria-labelledby={headingId} className='not-found-state flex items-center justify-center h-dvh w-full'>
             <Stack align='center' gap='1-5' textAlign='center' className='not-found-state-content'>
                 <Row justify='center' className='not-found-state-icon'>
                     <SearchX size={24} />

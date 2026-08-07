@@ -25,15 +25,15 @@
 }
 
 .chat-reaction.user-reacted {
-    background: var(--accent-blue);
-    color: var(--color-contrast-high);
-    border-color: var(--accent-blue);
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--accent-blue) 28%, transparent);
+    background: var(--color-brand-primary);
+    color: var(--color-on-accent);
+    border-color: var(--color-brand-primary);
 }
 
+/* Hover shifts weight, not hue: a second accent for a hover state is noise. */
 .chat-reaction.user-reacted:hover {
-    background: var(--accent-indigo);
-    border-color: var(--accent-indigo);
+    background: color-mix(in srgb, var(--color-brand-primary) 82%, var(--color-bg));
+    border-color: color-mix(in srgb, var(--color-brand-primary) 82%, var(--color-bg));
 }
 
 :root[data-theme='light'] .chat-reaction {

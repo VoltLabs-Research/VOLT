@@ -103,7 +103,7 @@ const FloatingNodePanel = () => {
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
                 <motion.div
-                    className='floating-node-panel p-absolute overflow-hidden glass-bg d-flex column'
+                    className='floating-node-panel absolute overflow-hidden glass-bg flex flex-col'
                     style={{
                         top: position.top,
                         right: position.right,
@@ -121,7 +121,7 @@ const FloatingNodePanel = () => {
                     onClick={(event) => event.stopPropagation()}
                 >
                     <Row gap='075' p='1' className='floating-node-panel-header'>
-                        <Box display='flex' radius='sm' className='flex-center floating-node-panel-icon color-secondary'>
+                        <Box display='flex' radius='sm' className='items-center justify-center floating-node-panel-icon text-secondary'>
                             <DynamicIcon iconName={config.icon} />
                         </Box>
                         <Heading level={3} size='lg' weight='bold' className='flex-1'>

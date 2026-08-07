@@ -116,7 +116,7 @@ const PluginReferenceMappingsEditor = ({
 
                 return (
                     <div key={`${fieldPrefix}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
-                        <Row justify='between' gap='05' className='mb-05'>
+                        <Row justify='between' gap='05' className='mb-2'>
                             <Text as='span' size='sm' tone='muted'>Mapping {mappingIndex + 1}</Text>
                             <button
                                 type='button'

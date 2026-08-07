@@ -90,7 +90,7 @@ export const createFolderedTitleColumn = <TRow,>({
     resolveTitle,
     skeletonWidth,
     wrapperClassName,
-    titleClassName = 'font-weight-6 color-secondary',
+    titleClassName = 'font-semibold text-secondary',
     getAriaLabel,
     showTitleAttribute = false
 }: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {
@@ -102,7 +102,7 @@ export const createFolderedTitleColumn = <TRow,>({
         return (
             <Row gap='075' className={wrapperClassName} aria-label={getAriaLabel?.(row)}>
                 {isFolder(row) && (
-                    <Box display='flex' className='flex-center color-secondary'>
+                    <Box display='flex' className='items-center justify-center text-secondary'>
                         <Folder size={16} />
                     </Box>
                 )}

@@ -37,7 +37,7 @@ const ClustersDrawer = () => {
     }, [clusters]);
 
     const clustersLoadingState = (
-        <Box display='flex' className='dashboard-operations-panel flex-center'>
+        <Box display='flex' className='dashboard-operations-panel items-center justify-center'>
             <Loader scale={0.4} />
         </Box>
     );

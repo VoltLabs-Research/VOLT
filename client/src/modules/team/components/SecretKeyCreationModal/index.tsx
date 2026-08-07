@@ -141,7 +141,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                                 value={generatedKey}
                                 successMessage='Secret key copied to clipboard'
                             />
-                            <Row as='label' gap='075' cursor='pointer' className='color-secondary font-size-2'>
+                            <Row as='label' gap='075' cursor='pointer' className='text-secondary text-md'>
                                 <input
                                     type='checkbox'
                                     checked={hasConfirmedCopy}

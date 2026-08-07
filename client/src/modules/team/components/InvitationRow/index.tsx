@@ -20,7 +20,7 @@ export const InvitationRow = ({
         <ListRow
             className='invitation-row'
             leading={
-                <Box display='flex' align='center' justify='center' radius='full' shrink='0' className='invitation-avatar font-weight-5' style={{ backgroundColor: getAvatarColorFromString(email) }}>
+                <Box display='flex' align='center' justify='center' radius='full' shrink='0' className='invitation-avatar font-medium' style={{ backgroundColor: getAvatarColorFromString(email) }}>
                     {getInitialsFromEmail(email)}
                 </Box>
             }

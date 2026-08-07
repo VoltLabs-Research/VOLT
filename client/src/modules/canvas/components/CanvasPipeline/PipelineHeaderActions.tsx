@@ -83,7 +83,7 @@ const PipelineHeaderActions = ({
                         leftIcon={<Plus size={12} />}
                         disabled={!canMutateCanvas || !trajectoryId}
                         aria-label='Add pipeline stage'
-                        className='font-size-05'
+                        className='text-xs'
                     >
                         Add new
                     </Button>

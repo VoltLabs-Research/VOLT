@@ -1,8 +1,7 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
-import { VisuallyHidden } from '@voltstack/bravais';
+import { Box, VisuallyHidden } from '@voltstack/bravais';
 import { resolveCanvasRuntimeProps } from '@/shared/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
-import './FractalScene.css';
 import { Canvas } from '@react-three/fiber';
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
@@ -265,7 +264,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     }, [config.orbitControls]);
 
     return (
-        <section className='fractal-scene' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
+        <Box as='section' position='relative' width='max' height='max' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
             <VisuallyHidden as='h2' id={titleId}>3D model viewer</VisuallyHidden>
             <VisuallyHidden as='p' id={descriptionId}>
                 Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. On desktop, hold Control or Command while dragging a model to move it. On touch devices, double tap and drag to move the model. When a model is selected, extra rotation controls appear in the viewer.
@@ -278,7 +277,9 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 dpr={canvasRuntimeProps.dpr}
                 frameloop='demand'
                 performance={canvasRuntimeProps.performance}
-                className='fractal-scene__canvas'
+                /* Canvas is third-party, so it takes bravais's utility classes
+                   directly rather than a bespoke one this component would own. */
+                className='w-full h-full'
                 onCreated={(state) => {
                     canvasEventCleanupRef.current?.();
 
@@ -336,7 +337,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     {children}
                 </FractalScenePipeline>
             </Canvas>
-        </section>
+        </Box>
     );
 });
 

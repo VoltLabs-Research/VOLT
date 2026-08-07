@@ -43,8 +43,8 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
                 <span className='tabular-nums'>{item.private}/tcp</span>
                 {publicPort !== undefined && (
                     <>
-                        <span className='color-muted'>→</span>
-                        <span className='tabular-nums color-muted'>{publicPort}</span>
+                        <span className='text-muted'>→</span>
+                        <span className='tabular-nums text-muted'>{publicPort}</span>
                     </>
                 )}
             </Row>
@@ -85,7 +85,7 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
             onSave={onUpdatePorts}
             createEmpty={() => ({ private: 0 })}
             showCard={false}
-            className='d-flex column'
+            className='flex flex-col'
             renderItem={renderPortRow}
         />
     );

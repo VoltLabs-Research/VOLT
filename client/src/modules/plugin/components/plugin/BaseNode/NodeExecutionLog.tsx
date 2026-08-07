@@ -36,7 +36,7 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
 
     return (
         <Box position='absolute' overflow='hidden' zIndex='5' className='center-x workflow-node-exec-log nowheel' onClick={(event) => event.stopPropagation()}>
-            <Row gap='025' className='color-secondary workflow-node-exec-log-header'>
+            <Row gap='025' className='text-secondary workflow-node-exec-log-header'>
                 <Terminal size={10} />
                 <Text as='p' size='sm' weight='bold'>Execution Log</Text>
                 {exitCode !== undefined && (
@@ -49,7 +49,7 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                     </Tag>
                 )}
             </Row>
-            <pre className='m-0 p-05 y-auto workflow-node-exec-log-content'>
+            <pre className='m-0 p-2 overflow-y-auto workflow-node-exec-log-content'>
                 {logSegments.length > 0 ? (
                     logSegments.map((segment, index) => (
                         <span

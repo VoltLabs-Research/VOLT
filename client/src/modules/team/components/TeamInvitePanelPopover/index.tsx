@@ -14,7 +14,7 @@ export const TeamInvitePanelPopover = () => {
                     <GoPersonAdd size={18} />
                 </IconButton>
             }
-            className='team-invite-panel-popover glass-bg d-flex column overflow-hidden'
+            className='team-invite-panel-popover glass-bg flex flex-col overflow-hidden'
             noPadding
         >
             {(closePopover) => selectedTeam && (

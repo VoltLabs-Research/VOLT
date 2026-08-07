@@ -1,7 +1,13 @@
 import '@/shared/ui/assets/stylesheets/fonts.css';
-import '@/shared/ui/assets/stylesheets/theme.css';
+/* Design tokens and utility classes come from bravais, which owns them. The app
+   used to ship a copy of both sheets; the copy had already drifted behind. */
+import '@voltstack/bravais/styles.css';
+/* Rebases bravais's tokens into VOLT's identity. Must follow the sheet it rebases. */
+import '@/shared/ui/assets/stylesheets/identity.css';
+/* Stands exactly where bravais's own utility sheet used to, so a component's
+   CSS still wins over a utility passed through className. See the file header. */
+import '@/shared/ui/assets/stylesheets/tailwind.css';
 import '@/shared/ui/assets/stylesheets/base.css';
-import '@/shared/ui/assets/stylesheets/general.css';
 import '@voltstack/bravais/components.css';
 import { initializeCustomScrollbars } from '@/shared/ui/utils/custom-scrollbars';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';

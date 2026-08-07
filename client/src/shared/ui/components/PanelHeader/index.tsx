@@ -32,10 +32,10 @@ const PanelHeader = ({
     const rootClasses = cn(
         'shared-panel-header',
         'panel-header-bordered',
-        'd-flex',
+        'flex',
         'items-center',
-        'content-between',
-        'f-shrink-0',
+        'justify-between',
+        'shrink-0',
         variant === 'compact' && 'shared-panel-header--compact',
         className
     );

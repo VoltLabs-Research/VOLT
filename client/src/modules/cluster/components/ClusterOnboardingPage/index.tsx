@@ -171,7 +171,7 @@ const ClusterOnboardingPage = () => {
         <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
             <Button
                 to='/dashboard'
-                className='cluster-onboarding-breadcrumb-link font-size-2'
+                className='cluster-onboarding-breadcrumb-link text-md'
                 variant='ghost'
                 intent='neutral'
                 size='sm'
@@ -219,8 +219,8 @@ const ClusterOnboardingPage = () => {
         >
             <>
                 <Box className='cluster-onboarding-center'>
-                    <Stack align='center' className='cluster-onboarding-form-shell gap-1-5'>
-                        <form className='cluster-onboarding-form d-flex column gap-1-5 items-center' onSubmit={handleSubmit}>
+                    <Stack align='center' className='cluster-onboarding-form-shell gap-6'>
+                        <form className='cluster-onboarding-form flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
                             <Stack align='center' gap='075'>
                                 <Heading level={3} size='2xl' weight='bold' className='cluster-onboarding-title'>
                                     Let's name your cluster

@@ -98,7 +98,7 @@ const CompactTableRow = ({
                 return (
                     <div
                         key={columnKey}
-                        className='plugin-compact-table-cell overflow-hidden font-size-1'
+                        className='plugin-compact-table-cell overflow-hidden text-sm'
                         style={resolveColumnStyle(col, columnWidthScale)}
                         title={titleAttribute}
                     >

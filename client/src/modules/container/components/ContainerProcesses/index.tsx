@@ -49,12 +49,12 @@ const COLUMNS: Column<ProcessInfo>[] = [
     {
         key: 'Program',
         header: 'Program',
-        cellClassName: 'font-weight-5 color-secondary'
+        cellClassName: 'font-medium text-secondary'
     },
     {
         key: 'Command',
         header: 'Command',
-        cellClassName: 'container-processes-command-cell text-truncate'
+        cellClassName: 'container-processes-command-cell truncate'
     },
     {
         key: 'Threads',
@@ -104,12 +104,12 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
 
     if(accessDenied){
         return (
-            <Stack className='flex-center' height='max' gap='1' p='2'>
+            <Stack className='items-center justify-center' height='max' gap='1' p='2'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view running processes.'}
                     tone={RecoveryStateTone.AccessDenied}
-                    className='w-max'
+                    className='w-full'
                 />
             </Stack>
         );
@@ -117,7 +117,7 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
 
     if(isError && mappedProcesses.length === 0){
         return (
-            <Stack className='flex-center color-muted' height='max' gap='1' p='2' textAlign='center'>
+            <Stack className='items-center justify-center text-muted' height='max' gap='1' p='2' textAlign='center'>
                 <RecoveryState
                     title='Unable to load running processes'
                     description={error?.message ?? 'Failed to fetch processes'}
@@ -125,7 +125,7 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
                     onRetry={() => {
                         refetch().catch(() => undefined);
                     }}
-                    className='w-max'
+                    className='w-full'
                 />
             </Stack>
         );

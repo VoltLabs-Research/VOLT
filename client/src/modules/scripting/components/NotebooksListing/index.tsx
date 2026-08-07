@@ -44,7 +44,7 @@ const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['rend
 
     return (
         <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
-            <span className='font-size-2 color-secondary font-mono'>{trajectory?.name?.trim() || ''}</span>
+            <span className='text-md text-secondary font-mono'>{trajectory?.name?.trim() || ''}</span>
         </PopulatedCellPopover>
     );
 };
@@ -53,7 +53,7 @@ const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'title',
     title: 'Title',
     sortable: true,
-    render: (_value, row) => <span className='font-weight-6 color-secondary text-truncate'>{row.title || 'Untitled Notebook'}</span>,
+    render: (_value, row) => <span className='font-semibold text-secondary truncate'>{row.title || 'Untitled Notebook'}</span>,
     skeleton: {
         variant: 'text',
         width: 180

@@ -291,19 +291,19 @@ export default function SimulationCardFooter({
     );
 
     return (
-        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer w-max'>
+        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer w-full'>
             <Stack gap='05' flex='1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
-                    className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
+                    className='simulation-card-title text-lg text-primary font-medium truncate'
                     allowSingleClickPropagation
                     readOnly={readOnly}
                 />
-                <Row gap='075' className='simulation-card-status color-secondary font-size-2'>
+                <Row gap='075' className='simulation-card-status text-secondary text-md'>
                     {isProcessing ? (
                         <>
-                            <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader f-shrink-0' />
+                            <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader shrink-0' />
                             <Text as='p' className='simulation-card-status-text' title={processingMessage}>
                                 {processingMessage}
                             </Text>

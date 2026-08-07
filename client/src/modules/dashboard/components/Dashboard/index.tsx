@@ -87,7 +87,7 @@ const DashboardPage = () => {
                         icon={<HiOutlineServerStack size={20} />}
                         title='Create your first team'
                         description='Use the team creation dialog to finish setup and unlock the dashboard.'
-                        className='w-max'
+                        className='w-full'
                     />
                 </Box>
             </Box>

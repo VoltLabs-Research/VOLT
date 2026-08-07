@@ -107,7 +107,7 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <Box height='vh-max' className='secret-key-page color-primary'>
+        <Box height='vh-max' className='secret-key-page text-primary'>
             <Stack gap='2' width='max' className='secret-key-page-main'>
                 <Stack gap='05'>
                     <Row gap='1'>

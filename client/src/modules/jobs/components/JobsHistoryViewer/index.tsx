@@ -4,7 +4,7 @@ import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import useJobsHistoryFilters from '@/modules/jobs/hooks/use-jobs-history-filters';
 import useJobsAutoSelectAnalysis from '@/modules/jobs/hooks/use-jobs-auto-select-analysis';
 import useJobsCompletionToast from '@/modules/jobs/hooks/use-jobs-completion-toast';
-import '@/modules/jobs/components/JobsHistoryViewer/JobsHistoryViewer.css';
+import { Stack } from '@voltstack/bravais';
 import { useEffect } from 'react';
 
 interface JobsHistoryViewerProps {
@@ -57,7 +57,7 @@ const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     }, [autoSelectAnalysis, hasActiveJobs, resetTracking]);
 
     return (
-        <div className='jobs-history-viewer-embedded'>
+        <Stack width='max' height='max' overflow='y-auto' p='075'>
             <JobsHistory
                 trajectoryId={trajectoryId}
                 queueFilter={queueFilter}
@@ -66,7 +66,7 @@ const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                 displayMode={displayMode}
                 groupStatusPresentation={groupStatusPresentation}
             />
-        </div>
+        </Stack>
     );
 };
 

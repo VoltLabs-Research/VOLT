@@ -74,7 +74,7 @@ const TrajectoryVisibilityToggle = ({
                 <Heading level={4} id={labelId} size='sm' weight='medium' tone='primary'>
                     Public visibility
                 </Heading>
-                <Text as='p' id={descriptionId} size='xs' className='color-tertiary'>
+                <Text as='p' id={descriptionId} size='xs' className='text-tertiary'>
                     Anyone with the link can view this trajectory.
                 </Text>
             </Stack>

@@ -167,7 +167,7 @@ const TopToolbar = ({
     );
 
     return (
-        <header className={`canvas-top-toolbar d-flex items-stretch u-select-none${useGuestMobileNavigation ? ' canvas-top-toolbar--guest-mobile-nav' : ''}`}>
+        <header className={`canvas-top-toolbar flex items-stretch select-none${useGuestMobileNavigation ? ' canvas-top-toolbar--guest-mobile-nav' : ''}`}>
             {renderToolbarOptions('canvas-toolbar-options--mobile', 'mobile-menu', { includeBackButton: useGuestMobileNavigation })}
 
             <div className="canvas-toolbar-main">

@@ -42,7 +42,7 @@ const MembersTab = ({
 
         {canEdit && availableMembers.length > 0 && (
             <>
-                <Text as='p' size='lg' weight='bold' className='mt-1'>
+                <Text as='p' size='lg' weight='bold' className='mt-4'>
                     Add Members
                 </Text>
                 <TeamMemberList

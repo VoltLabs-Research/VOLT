@@ -151,7 +151,7 @@ export default function TeamInvitationTemplate() {
                 You've been invited to join this team
             </Text>
 
-            <Text as='p' size='md' className='color-tertiary'>
+            <Text as='p' size='md' className='text-tertiary'>
                 Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
             </Text>
 

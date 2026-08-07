@@ -138,7 +138,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className='document-listing-grid-empty flex-center'>
+                <div className='document-listing-grid-empty items-center justify-center'>
                     <RecoveryState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
@@ -151,7 +151,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowErrorState && (
-                <div className='document-listing-grid-empty flex-center'>
+                <div className='document-listing-grid-empty items-center justify-center'>
                     <RecoveryState
                         title="Couldn't load these items"
                         description={errorMessage ?? 'Try again in a moment.'}
@@ -164,7 +164,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className='document-listing-grid-empty flex-center'>
+                <div className='document-listing-grid-empty items-center justify-center'>
                     <RecoveryState
                         title='Access denied'
                         description={errorMessage ?? "You don't have permission to view these items."}

@@ -133,7 +133,7 @@ const ClusterResourceSelectionPanel = ({
                 <SettingsSectionHeader
                     title={clusterTitle}
                     description={clusterDescription}
-                    className='mb-1 pb-075'
+                    className='mb-4 pb-075'
                 />
                 <FormFieldRHF
                     fieldType='select'
@@ -153,7 +153,7 @@ const ClusterResourceSelectionPanel = ({
                     <SettingsSectionHeader
                         title={resourcesTitle}
                         description={resourcesDescription}
-                        className='mb-1 pb-075'
+                        className='mb-4 pb-075'
                     />
                     {resourceBlocker ? (
                         <EmptyState
@@ -169,14 +169,14 @@ const ClusterResourceSelectionPanel = ({
                             {resourceStatusMessage && (
                                 <Text as='p' size='md' tone='secondary'>{resourceStatusMessage}</Text>
                             )}
-                            <Box className='cluster-resource-selection-row mb-075' radius='sm' p='1'>
-                                <Row className='mb-075' justify='between'>
+                            <Box className='cluster-resource-selection-row mb-3' radius='sm' p='1'>
+                                <Row className='mb-3' justify='between'>
                                     <Row gap='05'>
                                         <Text as='span' size='md' weight='medium' tone='secondary'>
                                             <Cpu size={16} /> CPU
                                         </Text>
                                     </Row>
-                                    <Text as='span' weight='bold' className='cluster-resource-selection-value radius-full'>{selectedCpuValue} vCPU</Text>
+                                    <Text as='span' weight='bold' className='cluster-resource-selection-value rounded-full'>{selectedCpuValue} vCPU</Text>
                                 </Row>
                                 <Slider
                                     min={MIN_CLUSTER_CPU}
@@ -185,19 +185,19 @@ const ClusterResourceSelectionPanel = ({
                                     value={selectedCpuValue}
                                     onChange={onCpusChange ?? (() => {})}
                                 />
-                                <Row justify='between' className='font-size-1 color-muted'>
+                                <Row justify='between' className='text-sm text-muted'>
                                     <Text as='span'>{MIN_CLUSTER_CPU} vCPU</Text>
                                     <Text as='span'>{maxCpu} vCPU</Text>
                                 </Row>
                             </Box>
                             <Box className='cluster-resource-selection-row' radius='sm' p='1'>
-                                <Row className='mb-075' justify='between'>
+                                <Row className='mb-3' justify='between'>
                                     <Row gap='05'>
                                         <Text as='span' size='md' weight='medium' tone='secondary'>
                                             <HardDrive size={16} /> Memory
                                         </Text>
                                     </Row>
-                                    <Text as='span' weight='bold' className='cluster-resource-selection-value radius-full'>{selectedMemoryValue} MB</Text>
+                                    <Text as='span' weight='bold' className='cluster-resource-selection-value rounded-full'>{selectedMemoryValue} MB</Text>
                                 </Row>
                                 <Slider
                                     min={MIN_CLUSTER_MEMORY_MB}
@@ -206,7 +206,7 @@ const ClusterResourceSelectionPanel = ({
                                     value={selectedMemoryValue}
                                     onChange={onMemoryChange ?? (() => {})}
                                 />
-                                <Row justify='between' className='font-size-1 color-muted'>
+                                <Row justify='between' className='text-sm text-muted'>
                                     <Text as='span'>{MIN_CLUSTER_MEMORY_MB} MB</Text>
                                     <Text as='span'>{maxMemory} MB</Text>
                                 </Row>

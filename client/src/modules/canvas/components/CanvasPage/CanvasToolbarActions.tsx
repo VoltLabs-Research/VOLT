@@ -28,7 +28,7 @@ const CanvasToolbarActions = ({
                         intent='canvas'
                         shape='rounded'
                         size='sm'
-                        className='font-size-05 canvas-btn-compact'
+                        className='text-xs canvas-btn-compact'
                         leftIcon={<Download size={12} />}
                         isLoading={isDownloadingAnalysis}
                         onClick={() => onDownloadAnalysis()}
@@ -44,7 +44,7 @@ const CanvasToolbarActions = ({
                         intent='canvas'
                         shape='rounded'
                         size='sm'
-                        className='font-size-05 canvas-btn-compact'
+                        className='text-xs canvas-btn-compact'
                         leftIcon={<ExternalLink size={12} />}
                         onClick={() => window.open(jupyterUrl, '_blank', 'noopener,noreferrer')}
                     >

@@ -121,7 +121,7 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
     if (activityData.length === 0) {
         return (
             <EmptyState
-                className='dashboard-activity-empty-state h-max'
+                className='dashboard-activity-empty-state h-full'
                 icon={<ActivityIcon size={20} strokeWidth={1.6} />}
                 title='No activity yet'
                 description='Once you start navigating the app, this chart will show your time spent and actions across the week.'

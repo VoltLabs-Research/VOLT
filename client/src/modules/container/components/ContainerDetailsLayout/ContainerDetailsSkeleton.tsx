@@ -2,7 +2,7 @@ import { Box, Row, Skeleton, Stack } from '@voltstack/bravais';
 
 /** Placeholder shown while the container behind the detail route is still loading. */
 const ContainerDetailsSkeleton = () => (
-    <Stack className='container-details-layout'>
+    <Stack height='max' minH='0'>
         <Stack className='container-details-header'>
             <Skeleton variant='text' width={60} height={24} style={{ marginBottom: 8 }} />
             <Row justify='between' align='start' style={{ gap: '1rem' }}>
@@ -19,7 +19,7 @@ const ContainerDetailsSkeleton = () => (
                 <Skeleton variant='rounded' width={320} height={30} />
             </Box>
         </Stack>
-        <Stack className='container-details-content-area' flex='1' p='1-5' gap='1-5'>
+        <Stack flex='1' minW='0' minH='0' overflow='auto' p='1-5' gap='1-5'>
             <Row gap='2'>
                 <Skeleton variant='rounded' width='33%' height={140} />
                 <Skeleton variant='rounded' width='33%' height={140} />

@@ -61,7 +61,7 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
 
         return (
             <Stack key={resource.name} className='resource-usage-item'>
-                <Row justify='between' className='mb-05'>
+                <Row justify='between' className='mb-2'>
                     <Text size='sm' tone='secondary'>{resource.name}</Text>
                     <Text size='md' weight='bold' style={{ color }}>
                         {resource.value}%
@@ -93,7 +93,7 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
 
     return (
         <Stack height='max' p='1-5' radius='lg' className='resource-usage'>
-            <Row align='start' justify='between' shrink='0' className='resource-usage-header mb-1-5'>
+            <Row align='start' justify='between' shrink='0' className='resource-usage-header mb-6'>
                 <Heading level={3} size='lg' weight='bold'>Resource Usage</Heading>
             </Row>
             {content}

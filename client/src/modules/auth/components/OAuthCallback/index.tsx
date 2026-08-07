@@ -107,9 +107,9 @@ const OAuthCallbackTemplate = () => {
                         opacity: 1,
                         scale: 1
                     }}
-                    className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
+                    className='oauth-card glass-bg rounded-2xl relative w-full text-center p-8'
                 >
-                    <Row justify='center' className='mb-1-5 oauth-status-icon'>
+                    <Row justify='center' className='mb-6 oauth-status-icon'>
                         {status === 'loading' && (
                             <Loader scale={0.6} isFixed={false} />
                         )}

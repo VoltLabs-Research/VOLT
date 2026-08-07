@@ -14,7 +14,6 @@ import { hasUserReactedWith } from '@/modules/chat/utils/reactions';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import type { TypingUser } from '@volt/contracts/modules/chat/domain';
-import './ChatArea.css';
 
 interface ChatAreaProps {
     chat: Chat | null;
@@ -87,9 +86,14 @@ const ChatArea = ({
         return onSetReaction(message._id, emoji);
     };
 
+    /*
+     * `chat-area` is not this component's own styling — MessagesPage selects it
+     * to run the responsive master-detail swap, so it stays as the parent's
+     * layout contract while everything else moved to style props.
+     */
     if (!chat) {
         return (
-            <Box display='flex' height='max' className='flex-center chat-area chat-area-empty'>
+            <Box display='flex' height='max' flex='1' minW='0' align='center' justify='center' className='chat-area'>
                 <EmptyState
                     icon={<IoChatbubblesOutline size={32} />}
                     title='Welcome to Messages'
@@ -119,7 +123,7 @@ const ChatArea = ({
     );
 
     return (
-        <Stack height='max' className='chat-area'>
+        <Stack height='max' flex='1' minW='0' className='chat-area'>
             <ChatHeader
                 chat={chat}
                 currentUserId={currentUserId}

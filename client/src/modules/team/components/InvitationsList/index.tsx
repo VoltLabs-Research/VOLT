@@ -19,7 +19,7 @@ export const InvitationsList = ({
     if(isLoading) {
         return (
             <Box display='flex' align='center' justify='center' className='invitations-list-loading'>
-                <Text as='p' tone='secondary' size='md' align='center' className='p-1'>
+                <Text as='p' tone='secondary' size='md' align='center' className='p-4'>
                     Loading invitations...
                 </Text>
             </Box>

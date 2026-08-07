@@ -141,7 +141,7 @@ const AnalysisTreeNode = ({
     const nameClassName = [
         'canvas-tree-analysis-name',
         'truncate',
-        isSelectedAnalysis ? 'color-primary' : 'color-secondary',
+        isSelectedAnalysis ? 'text-primary' : 'text-secondary',
         tone ? `canvas-tree-analysis-name--${tone}` : ''
     ].filter(Boolean).join(' ');
 
@@ -153,7 +153,7 @@ const AnalysisTreeNode = ({
                 options={analysisMenuOptions}
             >
                 <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-                    <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
+                    <div className={`canvas-tree-item text-sm flex items-center gap-2 text-secondary select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
                         <span className="canvas-tree-analysis-label-group">
                             <span className={nameClassName} title={analysis.pluginDisplayName}>
                                 {analysis.pluginDisplayName}
@@ -174,7 +174,7 @@ const AnalysisTreeNode = ({
                                 e.stopPropagation();
                                 onToggle(analysis._id);
                             }}
-                            className="canvas-tree-toggle b-none p-0"
+                            className="canvas-tree-toggle border-0 p-0"
                             aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         >
                             {isExpanded

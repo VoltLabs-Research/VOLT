@@ -24,7 +24,7 @@ const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
 
             {onToggleCollapse && (
                 <IconButton
-                    className='sidebar-collapse-toggle d-flex flex-center radius-xs transition-fast'
+                    className='sidebar-collapse-toggle flex items-center justify-center rounded-xs transition-fast'
                     onClick={onToggleCollapse}
                     size='md'
                     title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

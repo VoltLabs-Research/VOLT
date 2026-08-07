@@ -37,7 +37,7 @@ const ActivityDrawer = () => {
     const isInAppTab = activeTab === 'in-app-activity';
 
     const loadingState: ReactNode = isInAppTab
-        ? <Box display='flex' className='dashboard-activity-chart-surface flex-center' />
+        ? <Box display='flex' className='dashboard-activity-chart-surface items-center justify-center' />
         : <ActivityTimelineSkeleton />;
 
     const accessDeniedState: ReactNode = (

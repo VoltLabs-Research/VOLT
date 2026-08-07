@@ -35,7 +35,7 @@ export default function DiscoverTeamTrajectoriesPage() {
     if (!teamId) {
         return (
             <main className='discover-team-trajectories-page'>
-                <div className='discover-team-trajectories-page__inner flex-center'>
+                <div className='discover-team-trajectories-page__inner items-center justify-center'>
                     <RecoveryState
                         title='Team not found'
                         description='The discovery link is missing a team identifier.'

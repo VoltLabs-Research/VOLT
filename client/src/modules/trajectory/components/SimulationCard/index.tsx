@@ -92,7 +92,7 @@ export default function SimulationCard({
         : undefined;
 
     const containerClass = cn(
-        'simulation-card radius-md b-soft p-relative',
+        'simulation-card rounded-md border border-soft relative',
         canOpen && 'cursor-pointer',
         isProcessing && 'has-jobs',
         isSelected && 'is-selected'
@@ -131,15 +131,15 @@ export default function SimulationCard({
             aria-label={canOpen ? cardAriaLabel : undefined}
             aria-busy={isProcessing}
         >
-            <Row overflow='hidden' position='relative' width='max' radius='md' className='flex-center cover-container'>
+            <Row overflow='hidden' position='relative' width='max' radius='md' className='items-center justify-center cover-container'>
                 {previewBlobUrl ? (
                     <img
-                        className='w-max h-max cover-image'
+                        className='w-full h-full cover-image'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
                     />
                 ) : (
-                    <Row width='max' height='max' className='flex-center color-muted font-size-5-5'>
+                    <Row width='max' height='max' className='items-center justify-center text-muted text-[1.8rem]'>
                         <PiAtomThin />
                     </Row>
                 )}

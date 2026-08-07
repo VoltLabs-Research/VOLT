@@ -70,7 +70,7 @@ const AvatarUpload = ({
                 type='button'
                 variant='ghost'
                 align='start'
-                className='avatar-upload-trigger d-flex items-center gap-1 p-0'
+                className='avatar-upload-trigger flex items-center gap-4 p-0'
                 onClick={handleAvatarTrigger}
                 aria-describedby={helperTextId}
                 aria-label={preview ? 'Change profile picture' : 'Upload profile picture'}
@@ -98,7 +98,7 @@ const AvatarUpload = ({
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="d-none"
+                className="hidden"
                 tabIndex={-1}
                 aria-hidden='true'
             />

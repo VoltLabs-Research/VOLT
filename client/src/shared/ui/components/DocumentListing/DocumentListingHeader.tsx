@@ -102,10 +102,10 @@ const DocumentListingHeader = <TRow,>({
                                                         role='menuitemcheckbox'
                                                         aria-checked={isVisible}
                                                         key={`document-listing-column-option-${columnKey}`}
-                                                        className='document-listing-column-picker-item d-flex items-center gap-075'
+                                                        className='document-listing-column-picker-item flex items-center gap-3'
                                                         onClick={() => preferences.toggleColumnVisibility(columnKey)}
                                                     >
-                                                        <span className='document-listing-column-picker-check d-flex flex-center' aria-hidden='true'>
+                                                        <span className='document-listing-column-picker-check flex items-center justify-center' aria-hidden='true'>
                                                             {isVisible ? <Check size={14} /> : null}
                                                         </span>
                                                         <span className='flex-1 text-left'>{getColumnTitle(col)}</span>

@@ -177,9 +177,9 @@ const InlineCanvasFieldRenderer = ({
 
     let containerClass: string;
     if(fieldType === 'checkbox'){
-        containerClass = `${containerBaseClass} form-field-inline-checkbox-container d-flex content-between items-center checkbox-container`;
+        containerClass = `${containerBaseClass} form-field-inline-checkbox-container flex justify-between items-center checkbox-container`;
     }else if(isCanvasVariant){
-        containerClass = `${containerBaseClass} d-flex content-between items-center gap-1`;
+        containerClass = `${containerBaseClass} flex justify-between items-center gap-4`;
     }else if(label){
         containerClass = containerBaseClass;
     }else{
@@ -188,7 +188,7 @@ const InlineCanvasFieldRenderer = ({
 
     const labelClass = isCanvasVariant
         ? 'canvas-form-label'
-        : 'form-field-inline-label font-size-2-5 font-weight-4 labeled-input-label';
+        : 'form-field-inline-label text-[0.95rem] font-normal labeled-input-label';
     const loadingClass = isLoading ? 'is-loading form-field-loading' : '';
 
     return (
@@ -198,13 +198,13 @@ const InlineCanvasFieldRenderer = ({
                     {label}
                 </label>
             )}
-            <div ref={tokenAutocomplete.refs.setReference} className='d-flex items-center render-input-container w-max content-end p-relative'>
+            <div ref={tokenAutocomplete.refs.setReference} className='flex items-center render-input-container w-full justify-end relative'>
                 {renderInlineField()}
             </div>
 
             {tokenAutocomplete.isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu d-flex column' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
+                    <div ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu flex flex-col' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
                         {tokenAutocomplete.options.map((option, index) => (
                             <button
                                 type='button'
@@ -226,7 +226,7 @@ const InlineCanvasFieldRenderer = ({
             )}
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
+                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='flex items-center gap-1 form-field-error text-sm'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

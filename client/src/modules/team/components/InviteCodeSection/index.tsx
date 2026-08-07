@@ -35,7 +35,7 @@ export const InviteCodeSection = ({
 
             {inviteCode ? (
                 <Row gap='05' className='invite-code-display'>
-                    <Box radius='sm' flex='1' className='invite-code-badge font-size-4 font-weight-6 font-mono'>
+                    <Box radius='sm' flex='1' className='invite-code-badge text-xl font-semibold font-mono'>
                         {inviteCode}
                     </Box>
                     <Popover
@@ -100,7 +100,7 @@ export const InviteCodeSection = ({
             ) : (
                 canManageCode && (
                     <Stack gap='1'>
-                        <Text as='p' size='md' className='color-tertiary'>
+                        <Text as='p' size='md' className='text-tertiary'>
                             Generate a code so anyone with it can join this team.
                         </Text>
                         <Button

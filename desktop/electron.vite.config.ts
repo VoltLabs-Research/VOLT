@@ -1,5 +1,6 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 const alias = {
@@ -28,7 +29,13 @@ export default defineConfig({
     },
     renderer: {
         root: resolve('src/renderer'),
-        plugins: [react()],
+        /*
+         * Tailwind runs in the renderer only. bravais's primitives emit Tailwind
+         * class names, so the utilities they need are generated here rather than
+         * shipped precompiled — which is why `styles.css` carries a `@source`
+         * pointing at the bravais bundle.
+         */
+        plugins: [react(), tailwindcss()],
         resolve: { alias },
         build: {
             outDir: 'out/renderer',

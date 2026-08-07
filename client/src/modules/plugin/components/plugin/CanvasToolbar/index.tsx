@@ -60,7 +60,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                             <ZoomOut size={16} />
                         </Button>
                     </Tooltip>
-                    <Text as='p' size='sm' tone='secondary' align='center' className='u-select-none canvas-toolbar-zoom-label tabular-nums'>
+                    <Text as='p' size='sm' tone='secondary' align='center' className='select-none canvas-toolbar-zoom-label tabular-nums'>
                         {Math.round(zoom * 100)}%
                     </Text>
                     <Tooltip content='Zoom in' placement='top'>

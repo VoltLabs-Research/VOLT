@@ -132,7 +132,7 @@ const ArtifactTreeSection = ({
                     align='start'
                     block
                     id={groupId}
-                    className='canvas-tree-group-header gap-05'
+                    className='canvas-tree-group-header gap-2'
                     onClick={() => section.toggleTimestep(timestep)}
                     aria-expanded={isExpanded}
                     aria-controls={isExpanded ? `${groupId}-children` : undefined}
@@ -171,7 +171,7 @@ const ArtifactTreeSection = ({
                     <Button
                         variant='ghost'
                         size='sm'
-                        className='canvas-tree-show-more font-size-05 color-secondary'
+                        className='canvas-tree-show-more text-xs text-secondary'
                         onClick={section.showMoreTimesteps}
                     >
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)

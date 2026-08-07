@@ -1,7 +1,7 @@
 import { Box, Row, Skeleton, Stack } from '@voltstack/bravais';
 
 const UsageSkeleton = () => (
-    <Box height='vh-max' className='secret-key-page color-primary'>
+    <Box height='vh-max' className='secret-key-page text-primary'>
         <Stack gap='2' width='max' className='secret-key-page-main'>
             <Row gap='1'>
                 <Skeleton variant='circular' width={24} height={24} />

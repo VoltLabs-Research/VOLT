@@ -95,7 +95,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     );
 
     if(viewingFile && fileContent !== undefined){
-        return renderFileViewer(<pre className='container-file-content overflow-auto flex-1 p-1'>{fileContent}</pre>);
+        return renderFileViewer(<pre className='container-file-content overflow-auto flex-1 p-4'>{fileContent}</pre>);
     }
 
     if (viewingFile && fileContentError) {

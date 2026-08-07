@@ -69,7 +69,7 @@ const line = (width: string, extra?: CSSProperties): CSSProperties => ({
 const WhiteboardEditorSkeleton = () => (
     <Row p='1' className='whiteboard-editor-loading justify-center'>
         <div style={styles.root} role='status' aria-live='polite' aria-label='Loading whiteboard workspace'>
-            <Stack gap='1' className='h-100'>
+            <Stack gap='1' height='max'>
                 <Row gap='1' className='justify-between' style={styles.toolbar}>
                     <Row gap='05' flex='1'>
                         <div style={chip('8rem')} />

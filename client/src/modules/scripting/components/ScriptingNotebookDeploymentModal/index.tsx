@@ -99,7 +99,7 @@ const ScriptingNotebookDeploymentModal = ({
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
             width='720px'
         >
-            <div className='p-1-5 d-flex column gap-1'>
+            <div className='p-6 flex flex-col gap-4'>
                 {request?.notebook && (
                     <Text as='p' size='md' tone='secondary'>
                         Notebook: {request.notebook.title || 'Untitled Notebook'}

@@ -52,7 +52,7 @@ export default function IntegrationsSettings() {
                             size='sm'
                             variant='solid'
                             intent='white'
-                            className='radius-full'
+                            className='rounded-full'
                             leftIcon={<IoAddOutline size={14} />}
                             onClick={handleCreateProvider}
                             disabled={!teamId || availableProviders.length === 0}

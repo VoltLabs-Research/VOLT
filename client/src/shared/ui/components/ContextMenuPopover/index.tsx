@@ -95,7 +95,7 @@ const ContextMenuPopover = ({
                 ) : (
                     <PopoverMenu label={menuLabel} onClose={close}>
                         {menuError && (
-                            <Text as='p' size='sm' className='context-menu-popover-error color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                            <Text as='p' size='sm' className='context-menu-popover-error text-danger' role='status' aria-live='polite' aria-atomic='true'>
                                 {menuError}
                             </Text>
                         )}

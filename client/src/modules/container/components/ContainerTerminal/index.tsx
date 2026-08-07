@@ -72,7 +72,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
                     </Tooltip>
                 </Row>
             )}
-            <Box className='container-terminal-body p-relative' flex='1' overflow='hidden'>
+            <Box className='container-terminal-body relative' flex='1' overflow='hidden'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} onResize={handleTerminalResize} />
             </Box>
         </Stack>
@@ -81,7 +81,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     if (embedded) return content;
 
     return (
-        <Box className='container-terminal-overlay p-fixed' display='flex' inset='0' align='center' justify='center' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
+        <Box className='container-terminal-overlay fixed' display='flex' inset='0' align='center' justify='center' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
         </Box>
     );

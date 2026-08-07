@@ -171,7 +171,7 @@ const CanvasPipeline = ({
                                     trigger={
                                         <button
                                             type='button'
-                                            className='canvas-pipeline-stage__select u-select-none'
+                                            className='canvas-pipeline-stage__select select-none'
                                             aria-label={`${label} settings`}
                                         >
                                             <span className='canvas-pipeline-stage__icon'>{STAGE_ICONS[stage.type]}</span>

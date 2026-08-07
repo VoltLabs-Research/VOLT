@@ -13,9 +13,9 @@ interface TimelineRulerTick {
 const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => (
     <>
         {ticks.map((tick) => (
-            <div key={tick.frame} className={`canvas-ruler-tick d-flex column items-center${tick.tone ? ` is-${tick.tone}` : ''}${tick.dimmed ? ' canvas-ruler-tick--dimmed' : ''}`}>
+            <div key={tick.frame} className={`canvas-ruler-tick flex flex-col items-center${tick.tone ? ` is-${tick.tone}` : ''}${tick.dimmed ? ' canvas-ruler-tick--dimmed' : ''}`}>
                 {tick.major && (
-                    <span className={`canvas-ruler-tick-label font-size-1${tick.tone ? ` canvas-ruler-tick-label--${tick.tone}` : ''}`}>
+                    <span className={`canvas-ruler-tick-label text-sm${tick.tone ? ` canvas-ruler-tick-label--${tick.tone}` : ''}`}>
                         {tick.frame}
                     </span>
                 )}

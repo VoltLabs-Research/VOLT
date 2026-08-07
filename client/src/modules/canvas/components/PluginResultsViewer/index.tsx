@@ -72,7 +72,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 intent="canvas"
                                 shape="rounded"
                                 size="sm"
-                                className="font-size-05 canvas-btn-compact"
+                                className="text-xs canvas-btn-compact"
                                 onClick={download}
                                 isLoading={isDownloading}
                             >
@@ -102,7 +102,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 intent="canvas"
                                 shape="rounded"
                                 size="sm"
-                                className="font-size-05 canvas-btn-compact"
+                                className="text-xs canvas-btn-compact"
                                 onClick={() => setActiveTab(index)}
                             >
                                 {tab.label}

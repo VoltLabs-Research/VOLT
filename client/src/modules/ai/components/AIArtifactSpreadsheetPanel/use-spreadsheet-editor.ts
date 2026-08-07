@@ -79,7 +79,7 @@ const useSpreadsheetEditor = (columns: string[], rows: Record<string, unknown>[]
 
         const key = cellKey(editingCell.row, editingCell.col);
         const original = stringifyValue(rows[editingCell.row]?.[columns[editingCell.col]]);
-        const location = `row ${editingCell.row + 1}, ${columnLabel(editingCell.col)}`;
+        const location = `flex-row ${editingCell.row + 1}, ${columnLabel(editingCell.col)}`;
 
         if (editBuffer !== original) {
             setEdits((previous) => ({
@@ -109,7 +109,7 @@ const useSpreadsheetEditor = (columns: string[], rows: Record<string, unknown>[]
             col
         });
         setEditBuffer(getCellValue(row, col));
-        setStatusMessage(`Editing row ${row + 1}, ${columnLabel(col)}.`);
+        setStatusMessage(`Editing flex-row ${row + 1}, ${columnLabel(col)}.`);
     };
 
     const moveWhileEditing = (rowDelta: number, colDelta: number) => {
@@ -135,7 +135,7 @@ const useSpreadsheetEditor = (columns: string[], rows: Record<string, unknown>[]
         }
 
         if (event.key === 'Escape' && editingCell) {
-            setStatusMessage(`Canceled edit for row ${editingCell.row + 1}, ${columnLabel(editingCell.col)}.`);
+            setStatusMessage(`Canceled edit for flex-row ${editingCell.row + 1}, ${columnLabel(editingCell.col)}.`);
             setActiveCell(editingCell);
             setEditingCell(null);
         }

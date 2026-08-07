@@ -110,7 +110,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                     variant='outline'
                     intent='neutral'
                     size='sm'
-                    className='w-max'
+                    className='w-full'
                     leftIcon={<Plus size={14} />}
                     onClick={addItem}
                 >

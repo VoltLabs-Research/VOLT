@@ -98,7 +98,7 @@ const IntegrationFormModal = ({
                 </>
             )}
         >
-            <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-1-5' onSubmit={handleSubmit}>
+            <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-6' onSubmit={handleSubmit}>
                 <Stack gap='1'>
                     {!editingProvider ? (
                         <Stack gap='05'>

@@ -197,7 +197,7 @@ const PluginCompactTable = ({
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
-                            className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
+                            className='plugin-compact-table-header-cell overflow-hidden font-medium'
                             style={resolveColumnStyle(col, columnWidthScale)}
                         >
                             {getColumnTitle(col)}

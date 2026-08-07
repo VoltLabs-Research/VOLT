@@ -18,6 +18,8 @@
         "noFallthroughCasesInSwitch": true,
         "baseUrl": ".",
         "paths": {
+            /* TEMPORARY: mirrors the local link in vite.config.ts. Remove with it. */
+            "@voltstack/bravais": ["../../bravais/dist/index.d.ts"],
             "@volt/contracts/*": ["../contracts/src/*"],
             "@/*": ["src/*"],
             "typia": ["./node_modules/typia"],

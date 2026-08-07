@@ -65,11 +65,11 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
                     variant='ghost'
                     intent='neutral'
                     align='start'
-                    className={`sidebar-sub-item transition-fast ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                    className={`sidebar-sub-item transition-fast ${item.isSelected ? 'is-selected' : ''} w-full text-secondary cursor-pointer`}
                     onClick={item.onClick}
                     aria-current={item.isSelected ? 'page' : undefined}
                 >
-                    <span className="text-truncate">{item.label}</span>
+                    <span className="truncate">{item.label}</span>
                 </Button>
             );
         }
@@ -89,18 +89,18 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
             <Button
                 variant='ghost'
                 intent='neutral'
-                className={`sidebar-nav-item sidebar-section-header ${isActive ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
+                className={`sidebar-nav-item sidebar-section-header ${isActive ? 'is-selected' : ''} relative gap-3 w-full text-md font-normal text-secondary cursor-pointer`}
                 onClick={handleToggle}
                 disabled={disabled}
                 aria-expanded={expanded}
                 aria-controls={subItemsId}
             >
-                <div className='sidebar-nav-icon font-size-4'>
+                <div className='sidebar-nav-icon text-xl'>
                     <Icon size='1em' />
                 </div>
-                <span className='sidebar-nav-label text-truncate'>{label}</span>
+                <span className='sidebar-nav-label truncate'>{label}</span>
                 <ChevronDown
-                    className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} color-muted`}
+                    className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} text-muted`}
                     size={14}
                     aria-hidden='true'
                 />

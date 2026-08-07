@@ -17,11 +17,17 @@
 
 
 
+/*
+ * A fallback avatar is a placeholder, not an accent: it used to be a
+ * blue-to-purple gradient, which put two hues on screen for every message and
+ * competed with the one thing in a thread that should carry the accent — the
+ * reader's own bubble.
+ */
 .message-bubble-avatar {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    color: var(--color-contrast-high);
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
 }
 
 .message-bubble-sender {
@@ -35,11 +41,13 @@
     color: var(--color-text-primary);
 }
 
+/* The reader's own message is the accent, flat — the gradient added a second hue
+   for no distinction the position and colour weren't already making. */
 .message-bubble.sent .message-bubble-content {
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
-    border: 1px solid var(--color-border);
+    background: var(--color-brand-primary);
+    border: 1px solid var(--color-brand-primary);
     border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
-    color: var(--color-contrast-high);
+    color: var(--color-on-accent);
 }
 
 .message-bubble.deleted .message-bubble-content {

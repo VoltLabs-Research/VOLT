@@ -80,7 +80,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                     footer={(
                         <Row align='center' justify='between' gap='05'>
                             <Text as='span' size='sm' tone='secondary'>{card.subtitle}</Text>
-                            <Row as='span' align='center' gap='025' className={`font-size-1 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
+                            <Row as='span' align='center' gap='025' className={`text-sm ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
                                 {card.trendUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                 {card.trend}
                             </Row>

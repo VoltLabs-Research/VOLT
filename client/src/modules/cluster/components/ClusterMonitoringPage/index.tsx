@@ -78,7 +78,7 @@ const ClusterMonitoringPage = () => {
     const shouldShowProgressiveVisualizationLoader = hasRenderableMetrics && !shouldRenderVisualizations;
 
     return (
-        <Box className='clusters-page vh-max color-primary'>
+        <Box className='clusters-page h-dvh text-primary'>
             <Stack gap='1-5' width='max' className='clusters-main'>
                 {vm.isLoading && !vm.hasClusters && (
                     <Loader scale={0.5} isFixed={false} />

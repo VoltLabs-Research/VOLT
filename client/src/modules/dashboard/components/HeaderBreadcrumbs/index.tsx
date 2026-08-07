@@ -44,7 +44,7 @@ const HeaderBreadcrumbs = () => {
     const renderBreadcrumb = (breadcrumb: BreadcrumbItem) => {
         if (breadcrumb.path) {
             return (
-                <Link to={breadcrumb.path} className='breadcrumb-item breadcrumb-link color-secondary'>
+                <Link to={breadcrumb.path} className='breadcrumb-item breadcrumb-link text-secondary'>
                     {breadcrumb.label}
                 </Link>
             );
@@ -61,14 +61,14 @@ const HeaderBreadcrumbs = () => {
     };
 
     return (
-        <Row as='nav' gap='05' className='breadcrumb-nav font-size-2' aria-label='Dashboard breadcrumbs'>
-            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link color-secondary'>
+        <Row as='nav' gap='05' className='breadcrumb-nav text-md' aria-label='Dashboard breadcrumbs'>
+            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link text-secondary'>
                 Dashboard
             </Link>
 
             {breadcrumbs.map((breadcrumb, index) => (
                 <Row key={`${breadcrumb.label}-${index}`} gap='05'>
-                    <IoChevronForward className='breadcrumb-separator color-muted' size={14} />
+                    <IoChevronForward className='breadcrumb-separator text-muted' size={14} />
                     {renderBreadcrumb(breadcrumb)}
                 </Row>
             ))}

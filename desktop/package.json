@@ -2,6 +2,7 @@
   "name": "volt-desktop",
   "version": "0.1.0",
   "productName": "Volt",
+  "desktopName": "volt.desktop",
   "description": "Volt desktop \u2014 runs the local Volt stack via Docker Compose",
   "author": "Volt Labs",
   "homepage": "https://github.com/voltlabs-research/volt",
@@ -51,22 +52,26 @@
         "AppImage",
         "deb"
       ],
-      "category": "Development"
+      "category": "Development",
+      "synopsis": "Connect to a VOLT deployment, or run the stack on this machine",
+      "syncDesktopName": true
     }
   },
   "dependencies": {
     "@clack/prompts": "1.5.1",
-    "@voltstack/bravais": "^1.0.0",
+    "@voltstack/bravais": "^1.0.5",
     "dockerode": "^5.0.0",
     "extract-zip": "^2.0.1",
     "lucide-react": "^1.17.0",
     "octokit": "^5.0.5",
     "p-wait-for": "^6.0.0",
+    "react-hotkeys-hook": "^5.3.3",
     "react-icons": "^5.6.0",
     "sileo": "^0.1.5"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/dockerode": "^4.0.1",
     "@types/node": "^22.10.1",
     "@types/react": "^19.2.17",
@@ -79,6 +84,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.22.4",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.65.0",

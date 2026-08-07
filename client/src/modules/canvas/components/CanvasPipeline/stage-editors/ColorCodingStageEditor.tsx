@@ -212,7 +212,7 @@ const ColorCodingStageEditor = ({
                 isLoading={isApplying}
                 onClick={() => { void handleApply(); }}
                 disabled={!canApply || isLoading}
-                className='font-size-05'
+                className='text-xs'
             >
                 Apply (bake)
             </Button>

@@ -60,7 +60,7 @@ const AIConversationPanelContent = ({
 }: AIConversationPanelContentProps) => {
     if (accessDenied) {
         return (
-            <Box display='flex' flex='1' className='flex-center'>
+            <Box display='flex' flex='1' className='items-center justify-center'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
@@ -72,7 +72,7 @@ const AIConversationPanelContent = ({
 
     if (!selectedTeamId) {
         return (
-            <Box display='flex' flex='1' className='flex-center'>
+            <Box display='flex' flex='1' className='items-center justify-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to use the AI assistant.'
@@ -83,7 +83,7 @@ const AIConversationPanelContent = ({
 
     if (noProviderConfigured) {
         return (
-            <Box display='flex' flex='1' className='flex-center'>
+            <Box display='flex' flex='1' className='items-center justify-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations.'

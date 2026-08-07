@@ -112,8 +112,8 @@
 }
 
 .icon-picker-cell.is-selected {
-    background: var(--accent-blue);
-    color: #ffffff;
+    background: var(--color-brand-primary);
+    color: var(--color-on-accent);
 }
 
 .icon-picker-empty {
