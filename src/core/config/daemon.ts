@@ -1,16 +1,8 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-
-interface MinioConfig {
-    endpoint: string;
-    accessKey: string;
-    secretKey: string;
-    useSSL: boolean;
-}
+import { DAEMON_PATHS } from '@core/config/paths';
 
 interface JupyterConfig {
     image: string;
-    memoryInMegabytes: number;
-    cpus: number;
     execTimeoutMs: number;
     notebookRoot: string;
     port: number;
@@ -30,7 +22,6 @@ export interface DaemonConfig {
     metricsIntervalMs: number;
     composeProjectName?: string;
     installRoot?: string;
-    minio: MinioConfig;
     /*
      * The daemon's own relational store. Separate from the control plane's database
      * even when a single-node deployment points both at the same server: a remote
@@ -40,6 +31,8 @@ export interface DaemonConfig {
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
     bucketPrefix: string;
+    /** Where the cluster's objects live on disk. */
+    objectStoreRoot: string;
     isDemoMode: boolean;
     /*
      * Where the control plane can reach this daemon's object gateway without going
@@ -99,16 +92,8 @@ export const getConfig = (): DaemonConfig => {
 };
 
 export const loadConfig = (): DaemonConfig => {
-    const minio: MinioConfig = {
-        endpoint: readRequiredString('MINIO_ENDPOINT'),
-        accessKey: readRequiredString('MINIO_ACCESS_KEY'),
-        secretKey: readRequiredString('MINIO_SECRET_KEY'),
-        useSSL: readBooleanWithDefault('MINIO_USE_SSL', false)
-    };
     const jupyter: JupyterConfig = {
         image: readStringWithDefault('JUPYTER_IMAGE', DEFAULT_JUPYTER_IMAGE),
-        memoryInMegabytes: readNumberWithDefault('JUPYTER_CONTAINER_MEMORY_MB', 2048),
-        cpus: readNumberWithDefault('JUPYTER_CONTAINER_CPUS', 2),
         execTimeoutMs: readNumberWithDefault('JUPYTER_EXEC_TIMEOUT_MS', 45_000),
         notebookRoot: normalizePath(readStringWithDefault('JUPYTER_NOTEBOOK_ROOT', '/home/jovyan/work/volt-notebooks')),
         port: readNumberWithDefault('JUPYTER_PORT', 8888),
@@ -137,11 +122,11 @@ export const loadConfig = (): DaemonConfig => {
         metricsIntervalMs: readNumberWithDefault('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
         composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
         installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
-        minio,
         databaseUrl: readRequiredString('DATABASE_URL'),
         jupyter,
         allowedBuckets,
         bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
+        objectStoreRoot: readStringWithDefault('OBJECT_STORE_ROOT', DAEMON_PATHS.objectStore),
         isDemoMode: readBooleanWithDefault('DEMO_MODE', false),
         objectGatewayPublicBaseUrl: readOptionalString('OBJECT_GATEWAY_PUBLIC_BASE_URL')?.replace(/\/+$/g, '')
     };

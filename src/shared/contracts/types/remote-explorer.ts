@@ -1,6 +1,6 @@
 export const RemoteExplorerTarget = Object.freeze({
     DaemonTables: 'daemon-tables',
-    Minio: 'minio'
+    ObjectStore: 'object-store'
 } as const);
 export type RemoteExplorerTarget = typeof RemoteExplorerTarget[keyof typeof RemoteExplorerTarget];
 

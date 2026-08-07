@@ -1,4 +1,3 @@
-import { updateJobProgress } from '@shared/infrastructure/queues/queue-job-store';
 import type { JsonObject } from '@shared/contracts/types/json';
 
 /**
@@ -14,6 +13,11 @@ export class DeferJobError extends Error {
     }
 }
 
+/** The attempt budget, as the processor sees it. */
+export interface QueueJobAttemptOptions {
+    attempts?: number;
+}
+
 /**
  * What a processor sees of the job it is running.
  *
@@ -26,11 +30,8 @@ export interface QueueJobHandle<TPayload> {
     name: string;
     data: TPayload;
     attemptsMade: number;
-    opts: { attempts?: number };
-    /** Present for signature compatibility; leases are held by worker id, not token. */
-    token?: string;
-    updateProgress(progress: number | JsonObject): Promise<void>;
-    moveToDelayed(untilEpochMs: number, token?: string): Promise<void>;
+    opts: QueueJobAttemptOptions;
+    moveToDelayed(untilEpochMs: number): Promise<void>;
 }
 
 export interface QueueJobHandleContext<TPayload> {
@@ -50,6 +51,5 @@ export const createQueueJobHandle = <TPayload>(
     data: context.payload,
     attemptsMade: context.attemptsMade,
     opts: { attempts: context.maxAttempts },
-    updateProgress: (progress) => updateJobProgress(context.id, progress),
     moveToDelayed: (untilEpochMs) => context.onDefer(new Date(untilEpochMs))
 });

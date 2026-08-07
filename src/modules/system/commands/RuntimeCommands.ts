@@ -29,15 +29,6 @@ export class RuntimeCommands {
         private readonly queueService: QueueService
     ) {}
 
-    @Command('restart')
-    restart() {
-        setTimeout(() => {
-            process.exit(0);
-        }, DEFERRED_RUNTIME_COMMAND_DELAY_MS);
-
-        return { accepted: true };
-    }
-
     @Command('queues.snapshot')
     async queuesSnapshot() {
         const queueNames = this.queueService.listKnownQueueNames();

@@ -24,8 +24,6 @@ interface NetworkSnapshot {
     incomingKilobytesPerSecond: number;
     outgoingKilobytesPerSecond: number;
     totalKilobytesPerSecond: number;
-    receivedBytes: number;
-    sentBytes: number;
 }
 
 export interface MetricsSnapshot {
@@ -40,5 +38,4 @@ export interface MetricsSnapshot {
     diskOperations: DiskOperationsSnapshot;
     network: NetworkSnapshot;
     cloudLatencyMs: number | null;
-    connectedToCloud: boolean;
 }

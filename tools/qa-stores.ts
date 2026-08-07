@@ -1,4 +1,5 @@
 import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { getDaemonEntities } from '@core/bootstrap/entities';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import * as store from '@shared/infrastructure/queues/queue-job-store';
 
@@ -9,15 +10,20 @@ const check = (label: string, actual: unknown, expected: unknown) => {
     console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${label.padEnd(52)} esperado=${JSON.stringify(expected)} obtenido=${JSON.stringify(actual)}`);
 };
 
+const STATE_KEYS = ['k1', 'k2', 'lst', 'nunca-existio'];
+const JOB_KEYS = ['qa-1', 'qa-2', 'qa-3', 'qa-retry', 'qa-stall'];
+
 const main = async () => {
-    await connectDaemonDataSource();
+    await connectDaemonDataSource(getDaemonEntities());
     const s = getDaemonStateStore();
     const Q = 'analysis_processing';
     const req = (jobKey: string, attempts = 1, backoff: string | null = null, delay: number | null = null) =>
         ({ queue: Q, jobKey, payload: { jobId: jobKey, n: 1 } as never, maxAttempts: attempts, backoffType: backoff, backoffDelayMs: delay });
 
     console.log('\n== DaemonStateStore ==');
-    await s.deleteKeys(['k1', 'k2', 'lst']);
+    /* Every key the suite touches, cleared before and after: a suite that only
+       passes against a virgin database is not proving isolation, it is relying on it. */
+    await s.deleteKeys(STATE_KEYS);
     check('setKeyIfAbsent en clave libre', await s.setKeyIfAbsent('k1', 'a', 60), true);
     check('setKeyIfAbsent bloqueado por clave viva', await s.setKeyIfAbsent('k1', 'b', 60), false);
     check('getValue devuelve el primero', await s.getValue('k1'), 'a');
@@ -35,7 +41,7 @@ const main = async () => {
     check('sweep no revienta', typeof await (await import('@shared/infrastructure/persistence/DaemonStateStore')).sweepExpiredDaemonState(), 'number');
 
     console.log('\n== queue-job-store ==');
-    await store.removeJobByKey('qa-1'); await store.removeJobByKey('qa-2'); await store.removeJobByKey('qa-3');
+    for (const k of JOB_KEYS) await store.removeJobByKey(k);
     check('insertJob', await store.insertJob(req('qa-1')), true);
     check('insertJob duplicado en estado vivo', await store.insertJob(req('qa-1')), false);
     check('isJobLive', await store.isJobLive(Q, 'qa-1'), true);
@@ -58,20 +64,20 @@ const main = async () => {
     check('insertJobs omite duplicados vivos', await store.insertJobs(Q, [req('qa-2')]), 0);
     const counts = await store.countJobsByState(Q);
     check('countJobsByState suma', counts.waiting >= 3, true);
-    check('findJobByKey', (await store.findJobByKey('qa-2'))?.jobKey, 'qa-2');
+    check('el job insertado esta vivo', await store.isJobLive(Q, 'qa-2'), true);
     check('removeJobByKey', await store.removeJobByKey('qa-2'), true);
     check('removeJobByKey inexistente', await store.removeJobByKey('no-existe'), false);
 
     // reintentos con backoff — la cola debe quedar vacia: claimNextJob coge el mas antiguo
-    for (const k of ['qa-1','qa-2','qa-3']) await store.removeJobByKey(k);
+    for (const k of JOB_KEYS) await store.removeJobByKey(k);
     await store.removeJobByKey('qa-retry');
     await store.insertJob(req('qa-retry', 3, 'exponential', 100));
     const r1 = await store.claimNextJob(Q, 'w1', 60_000);
     check('el job reclamado es el esperado', r1?.jobKey, 'qa-retry');
     check('maxAttempts persistido', r1?.maxAttempts, 3);
     check('failJob con intentos restantes -> delayed', await store.failJob(r1!.id, 'x'), 'delayed');
-    const backoffRow = await store.findJobByKey('qa-retry');
-    check('el reintento queda programado en el futuro', new Date(backoffRow!.runAt).getTime() > Date.now(), true);
+    const scheduled = await store.claimNextJob(Q, 'w1', 60_000);
+    check('el reintento no es reclamable todavia (backoff)', scheduled, null);
 
     // reclamo de leases caducados — de nuevo con la cola limpia
     await store.removeJobByKey('qa-retry');
@@ -89,7 +95,8 @@ const main = async () => {
 
     check('purgeExpiredTerminalJobs no revienta', typeof await store.purgeExpiredTerminalJobs(), 'number');
 
-    for (const k of ['qa-1','qa-2','qa-3','qa-retry','qa-stall']) await store.removeJobByKey(k);
+    for (const k of JOB_KEYS) await store.removeJobByKey(k);
+    await s.deleteKeys(STATE_KEYS);
     await disconnectDaemonDataSource();
     console.log(`\n${failures === 0 ? 'TODO OK' : failures + ' FALLOS'}`);
     process.exit(failures === 0 ? 0 : 1);

@@ -41,12 +41,6 @@ export class TrajectoryNativeCommands {
         private readonly lineModelEvaluator: LineModelEvaluator
     ) {}
 
-    @Command('preprocess')
-    async preprocess(payload: PreprocessTrajectoryInput) {
-        await this.glbExporter.preprocessTrajectory(payload);
-        return { glbExported: true };
-    }
-
     @Command('metadata')
     metadata(payload: TrajectoryFrameLookupInput) {
         return this.trajectoryParser.getTrajectoryMetadata(payload);
@@ -60,11 +54,6 @@ export class TrajectoryNativeCommands {
     @Command('unique-values')
     uniqueValues(payload: UniqueValuesInput) {
         return this.trajectoryParser.getUniqueValues(payload);
-    }
-
-    @Command('atom-ids')
-    atomIds(payload: TrajectoryFrameLookupInput) {
-        return this.trajectoryParser.getAtomIds(payload);
     }
 
     @Command('atoms')

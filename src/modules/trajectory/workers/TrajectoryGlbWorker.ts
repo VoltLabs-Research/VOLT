@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -40,16 +41,20 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
         );
     }
 
-    protected async process(payload: GlbConversionQueueJobPayload, bullJob: QueueJobHandle<GlbConversionQueueJobPayload>): Promise<void> {
+    protected async process(payload: GlbConversionQueueJobPayload, job: QueueJobHandle<GlbConversionQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(bullJob),
-                progress: (value) => bullJob.updateProgress(value)
+                shouldReportTerminal: () => isFinalAttempt(job)
             },
             () => this.glbExporter.preprocessTrajectory(payload)
         );
     }
 }
 
-export const getTrajectoryGlbWorker = singleton((): TrajectoryGlbWorker => new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter()));
+export const getTrajectoryGlbWorker = registerDaemonWorker({
+    name: 'trajectory-glb',
+    scope: 'compute',
+    concurrencyKey: 'glbPreprocessing',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): TrajectoryGlbWorker => new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter())));

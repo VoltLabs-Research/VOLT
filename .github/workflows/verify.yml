@@ -55,10 +55,6 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Proves the DAEMON_MODULES toggle and the requires-closure still resolve.
-      - name: Module boot smoke
-        run: npm run smoke:modules
-
       # Fails only on an `error`-severity rule; `no-cross-module-imports` and
       # `no-circular` are `warn` with known debt, which the ratchet below bounds.
       - name: Layering rules

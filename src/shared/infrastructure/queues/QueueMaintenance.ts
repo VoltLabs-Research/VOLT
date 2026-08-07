@@ -56,7 +56,10 @@ export class QueueMaintenance {
             ]);
 
             if (purged > 0 || swept > 0) {
-                logger.info({ purged, swept }, '@queue-maintenance: reclaimed space');
+                logger.info({
+                    purged,
+                    swept
+                }, '@queue-maintenance: reclaimed space');
             }
         } catch (error) {
             /* Housekeeping must never take the daemon down; the next pass retries. */

@@ -16,9 +16,11 @@ import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/na
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 /**
- * What a GLB export needs, whatever queues it. Both entry points — the
- * `trajectory.native preprocess` command from the cloud and the GLB conversion
- * worker — satisfy this, so the boundary is typed instead of `any`.
+ * What a GLB export needs.
+ *
+ * Typed rather than `any` because the payload crosses the queue boundary: the GLB
+ * conversion worker reads it back off a job row, so a field renamed on one side
+ * has to fail at compile time instead of at runtime.
  */
 export interface PreprocessTrajectoryInput {
     trajectoryId: string;

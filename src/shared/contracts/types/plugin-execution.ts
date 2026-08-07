@@ -34,7 +34,6 @@ export interface PersistentPluginInvocationInput {
     frame?: PluginFrameDescriptor;
     frames?: PluginFrameDescriptor[];
     shmFramePublish?: SharedFramePublishInput;
-    shmFramePublishes?: SharedFramePublishInput[];
     config?: Record<string, unknown>;
     mode?: 'single' | 'batch';
     timeoutMs?: number;

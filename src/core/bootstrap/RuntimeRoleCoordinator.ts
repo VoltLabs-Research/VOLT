@@ -1,7 +1,7 @@
 import { withDefaults, withNestedDefaults } from '@shared/application/utilities/with-defaults';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { mountConcurrencyTrackedWorkers, mountWorkers } from '@core/bootstrap/mount-workers';
+import { concurrencyTrackedWorkers, workersForScope } from '@shared/infrastructure/queues/worker-registry';
 import { logger } from '@shared/infrastructure/logger';
 import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, createDefaultTeamClusterRuntimeRoleConfig } from '@shared/contracts/types/team-cluster-runtime';
 import type {
@@ -45,7 +45,7 @@ export class RuntimeRoleCoordinator {
 
             getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
-            for (const worker of mountWorkers('always')) {
+            for (const worker of workersForScope('always')) {
                 worker.resolve().start(this.snapshot.queueConcurrency[worker.concurrencyKey]);
             }
 
@@ -67,7 +67,7 @@ export class RuntimeRoleCoordinator {
         this.snapshot.queueScopeLimits = withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, queueScopeLimits);
         getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
-        for (const worker of mountWorkers('always')) {
+        for (const worker of workersForScope('always')) {
             worker.resolve().setConcurrency(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
 
@@ -126,7 +126,7 @@ export class RuntimeRoleCoordinator {
     }
 
     private applyQueueConcurrency(): void {
-        for (const worker of mountConcurrencyTrackedWorkers()) {
+        for (const worker of concurrencyTrackedWorkers()) {
             worker.resolve().setConcurrency(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
     }
@@ -137,7 +137,7 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        const workers = mountWorkers('compute');
+        const workers = workersForScope('compute');
         for (const worker of workers) {
             worker.resolve().start(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
@@ -150,7 +150,7 @@ export class RuntimeRoleCoordinator {
     async stopComputeWorkers(): Promise<void> {
         if (!this.computeWorkersRunning) return;
 
-        await Promise.all(mountWorkers('compute').map((worker) => worker.resolve().stop()));
+        await Promise.all(workersForScope('compute').map((worker) => worker.resolve().stop()));
 
         this.computeWorkersRunning = false;
     }

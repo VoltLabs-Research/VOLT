@@ -1,3 +1,5 @@
+import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+
 export type JobLifecycleStatus = 'started' | 'completed' | 'failed';
 
 export interface JobLifecycleCleanupContext {
@@ -7,7 +9,6 @@ export interface JobLifecycleCleanupContext {
 
 export interface JobLifecycleHandlers {
     reportStatus: (status: JobLifecycleStatus, error?: string) => void;
-    progress?: (value: number) => Promise<void>;
     cleanup?: (context: JobLifecycleCleanupContext) => Promise<void> | void;
 
     shouldReportTerminal?: (error: Error) => boolean;
@@ -22,11 +23,9 @@ export const withJobLifecycle = async <T>(
 
     try {
         handlers.reportStatus('started');
-        await handlers.progress?.(10);
 
         const result = await operation();
 
-        await handlers.progress?.(100);
         handlers.reportStatus('completed');
         reachedTerminal = true;
 
@@ -53,5 +52,5 @@ export const withJobLifecycle = async <T>(
     }
 };
 
-export const isFinalAttempt = (bullJob: { attemptsMade: number; opts: { attempts?: number } }): boolean =>
-    bullJob.attemptsMade + 1 >= (bullJob.opts.attempts ?? 1);
+export const isFinalAttempt = (job: QueueJobHandle<unknown>): boolean =>
+    job.attemptsMade + 1 >= (job.opts.attempts ?? 1);

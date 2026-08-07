@@ -23,11 +23,6 @@ export class TrajectoryPluginCommands {
         return this.pluginPropertyStore.buildPluginIndexForAtomIds(payload);
     }
 
-    @Command('modifier-values')
-    modifierValues(payload: Parameters<PluginPropertyStore['getModifierValues']>[0]) {
-        return this.pluginPropertyStore.getModifierValues(payload);
-    }
-
     @Command('modifier-stats')
     modifierStats(payload: Parameters<PluginPropertyStore['getModifierStats']>[0]) {
         return this.pluginPropertyStore.getModifierStats(payload);
@@ -36,11 +31,6 @@ export class TrajectoryPluginCommands {
     @Command('modifier-unique-values')
     modifierUniqueValues(payload: Parameters<PluginPropertyStore['getModifierUniqueValues']>[0]) {
         return this.pluginPropertyStore.getModifierUniqueValues(payload);
-    }
-
-    @Command('analysis-all-atoms')
-    analysisAllAtoms(payload: Parameters<PluginPropertyStore['getAnalysisAllPerAtomData']>[0]) {
-        return this.pluginPropertyStore.getAnalysisAllPerAtomData(payload);
     }
 }
 

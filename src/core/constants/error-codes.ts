@@ -2,8 +2,8 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 /**
  * `const T` is load-bearing: without it TypeScript widens each property to
- * `string` and `ErrorCode` silently becomes `string`, which defeats both the
- * `isErrorCode` guard and every `code: ErrorCode` parameter.
+ * `string` and `ErrorCode` silently becomes `string`, which defeats every
+ * `code: ErrorCode` parameter.
  */
 const createErrorCodes = <const T extends Record<string, string>>(errorCodes: T): Readonly<T> => Object.freeze(errorCodes);
 
@@ -55,9 +55,3 @@ export const ErrorCodes = createErrorCodes({
     LINE_SCENE_SOURCE_NOT_FOUND: 'LineScene::SourceNotFound',
     MODIFIER_VALUES_UNAVAILABLE: 'Modifier::ValuesUnavailable'
 });
-
-const ERROR_CODE_SET = new Set<string>(Object.values(ErrorCodes));
-
-export const isErrorCode = (value: unknown): value is ErrorCode => {
-    return typeof value === 'string' && ERROR_CODE_SET.has(value);
-};

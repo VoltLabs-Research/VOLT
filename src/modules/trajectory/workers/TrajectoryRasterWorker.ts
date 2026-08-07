@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
@@ -44,12 +45,11 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
         );
     }
 
-    protected async process(payload: RasterQueueJobPayload, bullJob: QueueJobHandle<RasterQueueJobPayload>): Promise<void> {
+    protected async process(payload: RasterQueueJobPayload, job: QueueJobHandle<RasterQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(bullJob),
-                progress: (value) => bullJob.updateProgress(value),
+                shouldReportTerminal: () => isFinalAttempt(job),
                 cleanup: async ({ reachedTerminal }) => {
                     if (reachedTerminal && payload.metadata.autoPreview) {
                         await this.trajectoryAutoPreviewClaimStore
@@ -74,4 +74,9 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 }
 
-export const getTrajectoryRasterWorker = singleton((): TrajectoryRasterWorker => new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter()));
+export const getTrajectoryRasterWorker = registerDaemonWorker({
+    name: 'trajectory-raster',
+    scope: 'always',
+    concurrencyKey: 'rasterizer',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): TrajectoryRasterWorker => new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter())));

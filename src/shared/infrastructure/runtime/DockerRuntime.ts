@@ -2,6 +2,7 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { getEventBroker } from '@shared/application/events/RuntimeEventBroker';
 import { getConfig } from '@core/config/daemon';
 import { attachContainerTerminal } from '@shared/infrastructure/runtime/docker-terminal-exec';
+import { createDockerClient } from '@shared/infrastructure/runtime/docker-client';
 import { ensureDockerImage } from '@shared/infrastructure/runtime/docker-image-pull';
 import { listContainerFiles, readContainerFile, writeContainerFile } from '@shared/infrastructure/runtime/docker-container-filesystem';
 import type { ContainerAction } from '@shared/contracts/types/http-container';
@@ -25,26 +26,6 @@ interface DockerContainerFilter {
 interface DockerTopProcessesResult {
     Processes: string[][];
 }
-
-const DOCKER_CLIENT_TIMEOUT_MS = 60_000;
-
-const createDockerClient = (): Docker => {
-    const dockerHost = process.env.DOCKER_HOST;
-
-    if (dockerHost && dockerHost.startsWith('tcp://')) {
-        const url = new URL(dockerHost);
-        return new Docker({
-            host: url.hostname,
-            port: Number(url.port || 2375),
-            timeout: DOCKER_CLIENT_TIMEOUT_MS
-        });
-    }
-
-    return new Docker({
-        socketPath: '/var/run/docker.sock',
-        timeout: DOCKER_CLIENT_TIMEOUT_MS
-    });
-};
 
 export class DockerRuntime {
     private readonly docker: Docker = createDockerClient();

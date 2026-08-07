@@ -9,5 +9,6 @@ export const DAEMON_PATHS = Object.freeze({
     artifactUploads: path.join(dataDir, 'artifact-uploads'),
     pluginBinCache: path.join(dataDir, 'plugin-bin-cache'),
     pluginParquetCache: path.join(dataDir, 'plugin-parquet-cache'),
-    trajectoryParquetCache: path.join(dataDir, 'trajectory-parquet-cache')
+    trajectoryParquetCache: path.join(dataDir, 'trajectory-parquet-cache'),
+    objectStore: path.join(dataDir, 'object-store')
 });

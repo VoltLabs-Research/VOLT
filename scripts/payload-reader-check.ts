@@ -29,8 +29,12 @@ const buildDocument = (perAtom: unknown): string => JSON.stringify({
     },
     sub_listings: {
         regions: [
-            { region_id: 0, size: 2 },
-            { region_id: 1, size: 1 }
+            {
+ region_id: 0, size: 2 
+},
+            {
+ region_id: 1, size: 1 
+}
         ]
     },
     'export': { MeshExporter: { vertices: [] } },
@@ -89,9 +93,15 @@ const check = async (label: string, perAtom: unknown): Promise<void> => {
 
 const main = async (): Promise<void> => {
     await check('array de objetos', [
-        { id: 10, region: 0, rmsd: 0.11 },
-        { id: 11, region: 0, rmsd: 0.12 },
-        { id: 12, region: 1, rmsd: 0.13 }
+        {
+ id: 10, region: 0, rmsd: 0.11 
+},
+        {
+ id: 11, region: 0, rmsd: 0.12 
+},
+        {
+ id: 12, region: 1, rmsd: 0.13 
+}
     ]);
 
     await check('objeto de arrays', {

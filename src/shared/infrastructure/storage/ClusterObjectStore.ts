@@ -1,6 +1,6 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getRemoteClient } from '@shared/infrastructure/storage/DirectObjectStoreClient';
 import type { DaemonConfig } from '@core/config/daemon';
 import type {
@@ -14,17 +14,17 @@ import type {
 
 export type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 
-const MINIO_METADATA_PREFIX = 'x-amz-meta-';
+const S3_METADATA_PREFIX = 'x-amz-meta-';
 
 const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse => {
     const metadata: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(stat.metaData)) {
-        if (!key.startsWith(MINIO_METADATA_PREFIX)) {
+        if (!key.startsWith(S3_METADATA_PREFIX)) {
             continue;
         }
 
-        metadata[key.slice(MINIO_METADATA_PREFIX.length).toLowerCase()] = value;
+        metadata[key.slice(S3_METADATA_PREFIX.length).toLowerCase()] = value;
     }
 
     return {
@@ -37,7 +37,7 @@ const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse
     };
 };
 
-/** Splits caller metadata into minio's `x-amz-meta-*` form and the proxy's plain form. */
+/** Splits caller metadata into S3's `x-amz-meta-*` form and the proxy's plain form. */
 const splitObjectMetadata = (metadata?: Record<string, string>) => {
     const localMetadata: Record<string, string> = {};
     const remoteMetadata: Record<string, string> = {};
@@ -57,7 +57,7 @@ const splitObjectMetadata = (metadata?: Record<string, string>) => {
             continue;
         }
 
-        localMetadata[`${MINIO_METADATA_PREFIX}${normalizedKey}`] = value;
+        localMetadata[`${S3_METADATA_PREFIX}${normalizedKey}`] = value;
         remoteMetadata[key] = value;
     }
 
@@ -75,7 +75,7 @@ const splitObjectMetadata = (metadata?: Record<string, string>) => {
 
 const createClusterObjectStore = (
     config: DaemonConfig,
-    minioService: LocalClusterObjectStoreGateway,
+    objectStore: LocalClusterObjectStoreGateway,
     remoteClient: RemoteClusterObjectStoreGateway
 ): ClusterObjectStore => {
     const isLocalOwner = (ownerClusterId: string): boolean => ownerClusterId === config.teamClusterId;
@@ -86,7 +86,7 @@ const createClusterObjectStore = (
                 return remoteClient.head(ownerClusterId, bucket, objectKey);
             }
 
-            return toHeadResponse(await minioService.statObject(bucket, objectKey));
+            return toHeadResponse(await objectStore.statObject(bucket, objectKey));
         },
 
         getStream: async (ownerClusterId, bucket, objectKey, options) => {
@@ -96,8 +96,8 @@ const createClusterObjectStore = (
 
             const range = options?.range;
             const readStream = () => (range
-                ? minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
-                : minioService.getObjectStream(bucket, objectKey));
+                ? objectStore.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
+                : objectStore.getObjectStream(bucket, objectKey));
 
             if (options?.skipMetadata) {
                 return {
@@ -107,7 +107,7 @@ const createClusterObjectStore = (
             }
 
             const [stat, stream] = await Promise.all([
-                minioService.statObject(bucket, objectKey),
+                objectStore.statObject(bucket, objectKey),
                 readStream()
             ]);
 
@@ -121,7 +121,7 @@ const createClusterObjectStore = (
             const metadata = splitObjectMetadata(input.metadata);
 
             if (isLocalOwner(input.ownerClusterId)) {
-                await minioService.putObject({
+                await objectStore.putObject({
                     bucket: input.bucket,
                     objectKey: input.objectKey,
                     body: input.body,
@@ -144,7 +144,7 @@ const createClusterObjectStore = (
             const metadata = splitObjectMetadata(input.metadata);
 
             if (isLocalOwner(input.ownerClusterId)) {
-                await minioService.putObjectStream({
+                await objectStore.putObjectStream({
                     bucket: input.bucket,
                     objectKey: input.objectKey,
                     stream: input.stream,
@@ -170,7 +170,7 @@ const createClusterObjectStore = (
                 return remoteClient.list(ownerClusterId, request);
             }
 
-            return minioService.listObjectsPage({
+            return objectStore.listObjectsPage({
                 bucket: request.bucket,
                 prefix: request.prefix,
                 cursor: request.cursor,
@@ -181,7 +181,7 @@ const createClusterObjectStore = (
 };
 
 export const getObjectStore = singleton((): ClusterObjectStore =>
-    createClusterObjectStore(getConfig(), getMinioService(), getRemoteClient()));
+    createClusterObjectStore(getConfig(), getFilesystemObjectStore(), getRemoteClient()));
 
 export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,

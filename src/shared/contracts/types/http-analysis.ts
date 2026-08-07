@@ -40,14 +40,6 @@ export interface PluginWarmupResponse {
     jobId: string;
 }
 
-interface ResolvedObjectRef {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    expectedHash?: string;
-    sizeBytes?: number;
-}
-
 interface AnalysisExposureExportDefinition {
     exporter: string;
     type: string;
@@ -98,7 +90,6 @@ export interface AnalysisEntrypointSnapshot {
     type: EntrypointType;
     requirementsFile?: string;
     entrypointScript?: string;
-    binaryRef?: ResolvedObjectRef;
 }
 
 export interface AnalysisExecutionIdentity extends Omit<JobIdentity, 'jobId'> {
@@ -163,12 +154,9 @@ export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extend
     status: string;
     queueType: string;
     name: string;
-    maxRetries?: number;
     metadata?: TMetadata;
-    completedAt?: string;
     error?: string;
     startTime?: string;
-    progress?: number;
     message?: string;
     workerId?: number;
     executionDataReference?: AnalysisExecutionDataReference;

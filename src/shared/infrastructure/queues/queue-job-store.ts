@@ -23,7 +23,7 @@ export const QUEUE_NOTIFY_CHANNEL = 'volt_queue_jobs';
  * taken minutes later, and `getJobCounts` reports both states to the runtime
  * view. Nothing reads them after that.
  */
-export const TERMINAL_JOB_RETENTION_MS = 86_400_000;
+const TERMINAL_JOB_RETENTION_MS = 86_400_000;
 
 export interface EnqueueRequest {
     queue: string;
@@ -32,6 +32,11 @@ export interface EnqueueRequest {
     maxAttempts: number;
     backoffType: string | null;
     backoffDelayMs: number | null;
+}
+
+export interface ReclaimedJobs {
+    requeued: number;
+    failed: number;
 }
 
 export interface QueueJobCounts {
@@ -253,13 +258,6 @@ export const deferJob = async (jobId: string, runAt: Date): Promise<void> => {
     );
 };
 
-export const updateJobProgress = async (jobId: string, progress: JsonObject | number): Promise<void> => {
-    await manager().query(
-        'UPDATE queue_jobs SET progress = $2, "updatedAt" = now() WHERE id = $1',
-        [jobId, JSON.stringify(progress)]
-    );
-};
-
 /**
  * Reclaims jobs whose lease lapsed, and fails those that have now stalled twice.
  *
@@ -267,7 +265,7 @@ export const updateJobProgress = async (jobId: string, progress: JsonObject | nu
  * innocent, so the first reclaim returns it to the queue. A second means the job
  * is what took the worker down, and handing it out again would loop.
  */
-export const reclaimStalledJobs = async (): Promise<{ requeued: number; failed: number }> => {
+export const reclaimStalledJobs = async (): Promise<ReclaimedJobs> => {
     const rows = await manager().query<{ state: QueueJobState }[]>(
         `WITH reclaimed AS (
          UPDATE queue_jobs
@@ -303,15 +301,6 @@ export const purgeExpiredTerminalJobs = async (): Promise<number> => {
     );
 
     return rows.length;
-};
-
-export const findJobByKey = async (jobKey: string): Promise<QueueJob | null> => {
-    const rows = await manager().query<QueueJob[]>(
-        `SELECT * FROM queue_jobs WHERE "jobKey" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
-        [jobKey]
-    );
-
-    return rows[0] ?? null;
 };
 
 /** Only a failed job may be retried, matching the contract the callers relied on. */

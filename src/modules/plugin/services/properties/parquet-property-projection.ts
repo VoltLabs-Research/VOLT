@@ -67,6 +67,18 @@ const isListType = (type: string): boolean => type.endsWith('[]') || type.starts
 const listElementType = (type: string): string =>
     type.endsWith('[]') ? type.slice(0, -2) : type;
 
+/** Collapses the projections to one aggregate row, so no per-atom value crosses into JS. */
+const readAggregateRow = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    projections: string[]
+): Promise<Record<string, unknown> | undefined> => {
+    const reader = await connection.runAndReadAll(
+        `SELECT ${projections.join(', ')} FROM read_parquet(${sqlString(filePath)})`
+    );
+    return reader.getRowObjectsJS()[0];
+};
+
 /** Longest list per list-typed column, so vectors expand into the same fixed columns the flattener produced. */
 const measureListLengths = async (
     connection: DuckDBConnection,
@@ -79,12 +91,8 @@ const measureListLengths = async (
     }
 
     const projections = listColumns
-        .map((column, index) => `MAX(LEN(${quoteIdentifier(column.name)})) AS len_${index}`)
-        .join(', ');
-    const reader = await connection.runAndReadAll(
-        `SELECT ${projections} FROM read_parquet(${sqlString(filePath)})`
-    );
-    const [row] = reader.getRowObjectsJS();
+        .map((column, index) => `MAX(LEN(${quoteIdentifier(column.name)})) AS len_${index}`);
+    const row = await readAggregateRow(connection, filePath, projections);
 
     for (let index = 0; index < listColumns.length; index += 1) {
         const value = Number(row?.[`len_${index}`] ?? 0);
@@ -114,12 +122,8 @@ const resolveTextColumnNumeracy = async (
     const projections = expressions
         .map(({ expression }, index) =>
             `COUNT(*) FILTER (WHERE (${expression}) IS NOT NULL `
-            + `AND TRY_CAST((${expression}) AS DOUBLE) IS NULL) AS bad_${index}`)
-        .join(', ');
-    const reader = await connection.runAndReadAll(
-        `SELECT ${projections} FROM read_parquet(${sqlString(filePath)})`
-    );
-    const [row] = reader.getRowObjectsJS();
+            + `AND TRY_CAST((${expression}) AS DOUBLE) IS NULL) AS bad_${index}`);
+    const row = await readAggregateRow(connection, filePath, projections);
 
     for (let index = 0; index < expressions.length; index += 1) {
         if (Number(row?.[`bad_${index}`] ?? 0) === 0) {
@@ -131,10 +135,8 @@ const resolveTextColumnNumeracy = async (
 };
 
 const countRows = async (connection: DuckDBConnection, filePath: string): Promise<number> => {
-    const reader = await connection.runAndReadAll(
-        `SELECT COUNT(*) AS total FROM read_parquet(${sqlString(filePath)})`
-    );
-    return Number(reader.getRowObjectsJS()[0]?.total ?? 0);
+    const row = await readAggregateRow(connection, filePath, ['COUNT(*) AS total']);
+    return Number(row?.total ?? 0);
 };
 
 /**

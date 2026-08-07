@@ -5,9 +5,9 @@ import type { LocalClusterObjectStat } from '@shared/contracts/types/cluster-obj
 import type { ObjectByteRange } from '@shared/infrastructure/http/object-gateway-range';
 import type { Request, Response } from 'express';
 
-const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
+const S3_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 
-/** minio echoes metadata keys back with unspecified casing. */
+/** The object store echoes metadata keys back with unspecified casing. */
 const readObjectMetadata = (stat: LocalClusterObjectStat): Record<string, string> => {
     const metadata: Record<string, string> = {};
     for (const [key, value] of Object.entries(stat.metaData)) {
@@ -47,9 +47,9 @@ export const writeObjectHeaders = (response: Response, stat: LocalClusterObjectS
     response.setHeader('content-length', stat.size);
 
     for (const [metadataKey, metadataValue] of Object.entries(metadata)) {
-        if (metadataKey.startsWith(MINIO_METADATA_HEADER_PREFIX)) {
+        if (metadataKey.startsWith(S3_METADATA_HEADER_PREFIX)) {
             response.setHeader(
-                `${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${metadataKey.slice(MINIO_METADATA_HEADER_PREFIX.length)}`,
+                `${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${metadataKey.slice(S3_METADATA_HEADER_PREFIX.length)}`,
                 metadataValue
             );
         }
@@ -73,7 +73,7 @@ export const writePartialObjectHeaders = (
     response.setHeader('content-range', `bytes ${range.start}-${range.end}/${stat.size}`);
 };
 
-/** Translates the daemon's metadata request headers into minio's `x-amz-meta-*` form. */
+/** Translates the daemon's metadata request headers into S3's `x-amz-meta-*` form. */
 export const readUploadMetadata = (request: Pick<Request, 'get' | 'headers'>): Record<string, string> | undefined => {
     const metadata: Record<string, string> = {};
     const contentType = request.get('content-type');
@@ -95,7 +95,7 @@ export const readUploadMetadata = (request: Pick<Request, 'get' | 'headers'>): R
         const headerSuffix = headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length);
         const singleValue = request.get(headerName);
         if (headerSuffix && singleValue) {
-            metadata[`${MINIO_METADATA_HEADER_PREFIX}${headerSuffix}`] = singleValue;
+            metadata[`${S3_METADATA_HEADER_PREFIX}${headerSuffix}`] = singleValue;
         }
     }
 

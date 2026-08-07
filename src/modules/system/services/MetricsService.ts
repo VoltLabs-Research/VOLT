@@ -5,7 +5,6 @@ import si from 'systeminformation'
 
 interface CloudMetricsSnapshot {
     cloudLatencyMs: number | null;
-    connectedToCloud: boolean;
 }
 
 const BYTES_PER_MB = 1024 * 1024;
@@ -57,8 +56,7 @@ export class MetricsService {
             disk,
             diskOperations,
             network: this.collectNetwork(networkStats),
-            cloudLatencyMs: cloudMetrics.cloudLatencyMs,
-            connectedToCloud: cloudMetrics.connectedToCloud
+            cloudLatencyMs: cloudMetrics.cloudLatencyMs
         };
     }
 
@@ -90,17 +88,13 @@ export class MetricsService {
 
     private collectNetwork(networkStats: Awaited<ReturnType<typeof si.networkStats>>) {
         const activeInterfaces = networkStats.filter((stats) => stats.iface !== 'lo');
-        const receivedBytes = activeInterfaces.reduce((total, stats) => total + stats.rx_bytes, 0);
-        const sentBytes = activeInterfaces.reduce((total, stats) => total + stats.tx_bytes, 0);
         const incomingKilobytesPerSecond = activeInterfaces.reduce((total, stats) => total + stats.rx_sec, 0) / 1024;
         const outgoingKilobytesPerSecond = activeInterfaces.reduce((total, stats) => total + stats.tx_sec, 0) / 1024;
 
         return {
             incomingKilobytesPerSecond: Math.round(incomingKilobytesPerSecond * 10) / 10,
             outgoingKilobytesPerSecond: Math.round(outgoingKilobytesPerSecond * 10) / 10,
-            totalKilobytesPerSecond: Math.round((incomingKilobytesPerSecond + outgoingKilobytesPerSecond) * 10) / 10,
-            receivedBytes,
-            sentBytes
+            totalKilobytesPerSecond: Math.round((incomingKilobytesPerSecond + outgoingKilobytesPerSecond) * 10) / 10
         };
     }
 }

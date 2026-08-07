@@ -35,7 +35,6 @@ export * from '@shared/contracts/channel/reverse-channel-trajectory';
 
 export type {
     TeamClusterDaemonSessionAttachPayload,
-    TeamClusterDaemonSessionEndPayload,
     TeamClusterDaemonSessionResizePayload
 } from '@voltstack/daemon-cluster-client';
 

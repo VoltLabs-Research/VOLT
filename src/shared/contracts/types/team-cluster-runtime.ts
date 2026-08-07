@@ -53,6 +53,17 @@ export interface TeamClusterDaemonRuntimeConfig {
     roleConfig: TeamClusterRuntimeRoleConfig;
 }
 
+/**
+ * What this host can do, observed rather than configured.
+ *
+ * Reported on every heartbeat instead of once at registration, so it follows the
+ * machine: a user who installs a container runtime later sees the features that
+ * need one light up without re-enrolling the cluster.
+ */
+export interface TeamClusterHostCapabilities {
+    containerRuntime: boolean;
+}
+
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
     analysisProcessing: {
         maxRunningPerTrajectory: 0

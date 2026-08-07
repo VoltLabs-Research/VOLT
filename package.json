@@ -8,7 +8,6 @@
         "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
         "dev": "tsx src/daemon.ts",
         "lint": "eslint .",
-        "smoke:modules": "tsx scripts/module-boot-smoke.ts",
         "start": "node scripts/start.js",
         "typecheck": "tsc -p tsconfig.json --noEmit"
     },
@@ -29,7 +28,6 @@
         "fast-glob": "^3.3.3",
         "jsonata": "^2.1.0",
         "jsonwebtoken": "^9.0.3",
-        "minio": "^8.0.6",
         "pg": "^8.16.3",
         "pino": "^10.1.0",
         "pino-pretty": "^13.1.2",

@@ -1,7 +1,8 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
@@ -46,7 +47,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     constructor(
         queueService: QueueService,
         queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
-        private readonly minioService: LocalClusterObjectStoreGateway,
+        private readonly localObjectStore: LocalClusterObjectStoreGateway,
         private readonly objectStore: ClusterObjectStore,
         private readonly trajectoryRasterQueue: TrajectoryRasterQueue,
         private readonly trajectoryFrameStore: TrajectoryFrameStore,
@@ -67,18 +68,17 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         );
     }
 
-    protected async process(payload: FrameProcessingQueueJobPayload, bullJob: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
+    protected async process(payload: FrameProcessingQueueJobPayload, job: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
-                shouldReportTerminal: () => isFinalAttempt(bullJob),
-                progress: (value) => bullJob.updateProgress(value)
+                shouldReportTerminal: () => isFinalAttempt(job)
             },
-            () => this.processFrame(payload, bullJob)
+            () => this.processFrame(payload, job)
         );
     }
 
-    private async processFrame(payload: FrameProcessingQueueJobPayload, bullJob: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
+    private async processFrame(payload: FrameProcessingQueueJobPayload, job: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
         const { trajectoryId, timestep, stagingObjectKey, ownerClusterId } = payload;
         const bucket = ObjectBucketName.Dumps;
 
@@ -86,16 +86,15 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             const localRawPath = path.join(tempDirectory, `timestep-${timestep}.dump`);
             const localCompressedPath = `${localRawPath}.zst`;
 
-            const stream = await this.minioService.getObjectStream(bucket, stagingObjectKey);
+            const stream = await this.localObjectStore.getObjectStream(bucket, stagingObjectKey);
             await pipeline(stream, createWriteStream(localRawPath));
 
-            await bullJob.updateProgress(10);
 
             await compressFileWithZstd(localRawPath, localCompressedPath);
             const compressedStat = await fs.stat(localCompressedPath);
             const finalObjectKey = toTrajectoryFrameDumpObjectKey(trajectoryId, timestep);
 
-            await this.minioService.putObjectStream({
+            await this.localObjectStore.putObjectStream({
                 bucket,
                 objectKey: finalObjectKey,
                 stream: createReadStream(localCompressedPath),
@@ -103,13 +102,11 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             });
 
             await fs.unlink(localCompressedPath).catch(() => {});
-            await bullJob.updateProgress(30);
 
             await this.generateGlb(trajectoryId, timestep, ownerClusterId, localRawPath, tempDirectory);
 
-            await bullJob.updateProgress(80);
 
-            await this.minioService.removeObject(bucket, stagingObjectKey).catch((err) => {
+            await this.localObjectStore.removeObject(bucket, stagingObjectKey).catch((err) => {
                 logger.debug(`@trajectory-frame-processing: staging cleanup failed ${stagingObjectKey}: ${String(err)}`);
             });
 
@@ -215,4 +212,9 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 }
 
-export const getTrajectoryFrameProcessingWorker = singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getMinioService(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getDaemonStateStore(), getDaemonJobReporter()));
+export const getTrajectoryFrameProcessingWorker = registerDaemonWorker({
+    name: 'trajectory-frame-processing',
+    scope: 'always',
+    concurrencyKey: 'glbPreprocessing',
+    tracksConcurrencyWhileRunning: false
+}, singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getFilesystemObjectStore(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getDaemonStateStore(), getDaemonJobReporter())));

@@ -53,12 +53,6 @@ export class PluginListingRow {
     @Column('jsonb', { default: () => '\'{}\'::jsonb' })
     row!: JsonObject;
 
-    @Column('varchar', { nullable: true })
-    propertyObjectKey?: string | null;
-
-    @Column('varchar', { nullable: true })
-    propertyOwnerClusterId?: string | null;
-
     @Column('jsonb', { default: () => '\'[]\'::jsonb' })
     subListingNames!: string[];
 }

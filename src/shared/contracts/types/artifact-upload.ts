@@ -8,10 +8,6 @@ export interface ArtifactStageInput {
     fileName?: string;
 }
 
-export type ArtifactStageFileInput = ArtifactStageInput & {
-    sourcePath: string;
-};
-
 export type ArtifactStageBufferInput = ArtifactStageInput & {
     buffer: Buffer;
 };
@@ -53,7 +49,6 @@ export interface ArtifactUploadBatchEnqueueResult {
 }
 
 export interface ArtifactUploadBatch {
-    stageFileUpload(input: ArtifactUploadStageFileInput): Promise<void>;
     stageBufferUpload(input: ArtifactUploadStageBufferInput): Promise<void>;
     enqueue(): Promise<ArtifactUploadBatchEnqueueResult>;
     cleanup(): Promise<void>;

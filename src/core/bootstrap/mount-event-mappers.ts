@@ -1,54 +1,26 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { getEnabledModules } from '@core/bootstrap/module-state';
 import { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
 import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import { registerRuntimeEventMappers } from '@shared/infrastructure/events/register-runtime-event-mappers';
+import { getRegisteredEventMapperSets } from '@shared/infrastructure/events/event-mapper-registry';
 import { getVoltEventChannelConnection } from '@modules/container/socket/connection/VoltEventChannelConnection';
-import { registerAnalysisEventMappers } from '@modules/analysis/events/register-analysis-event-mappers';
-import { registerContainerEventMappers } from '@modules/container/events/register-container-event-mappers';
-import { registerPluginEventMappers } from '@modules/plugin/events/register-plugin-event-mappers';
-import { registerTrajectoryEventMappers } from '@modules/trajectory/events/register-trajectory-event-mappers';
 import { logger } from '@shared/infrastructure/logger';
 
-interface EventMapperBinding {
-    moduleKey: string | null;
-    register: (bridge: DomainEventBridge) => void;
-}
-
-const EVENT_MAPPERS: readonly EventMapperBinding[] = [
-    {
-        moduleKey: null,
-        register: registerRuntimeEventMappers
-    },
-    {
-        moduleKey: 'container',
-        register: registerContainerEventMappers
-    },
-    {
-        moduleKey: 'analysis',
-        register: registerAnalysisEventMappers
-    },
-    {
-        moduleKey: 'plugin',
-        register: registerPluginEventMappers
-    },
-    {
-        moduleKey: 'trajectory',
-        register: registerTrajectoryEventMappers
-    }
-];
-
+/**
+ * Builds the bridge every module's events cross to reach the control plane.
+ *
+ * The mapper sets are collected by the registry as their files are imported, so
+ * adding a set is creating its file rather than also remembering to list it here.
+ */
 export const getDomainEventBridge = singleton((): DomainEventBridge => {
-    const enabled = getEnabledModules();
     const bridge = new DomainEventBridge(getVoltEventChannelConnection());
-    const mounted = EVENT_MAPPERS.filter(({ moduleKey }) => moduleKey === null || enabled.has(moduleKey));
+    const sets = getRegisteredEventMapperSets();
 
-    for (const { register } of mounted) {
+    for (const register of sets) {
         register(bridge);
     }
 
     bridge.subscribeAll(getEventDispatcher());
-    logger.info(`@event-bootstrap: mounted ${mounted.length}/${EVENT_MAPPERS.length} event mapper sets`);
+    logger.info(`@event-bootstrap: mounted ${sets.length} event mapper sets`);
 
     return bridge;
 });

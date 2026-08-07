@@ -1,12 +1,9 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import type { JsonObject } from '@shared/contracts/types/json';
 
-export const QUEUE_JOB_STATES = ['waiting', 'delayed', 'active', 'completed', 'failed'] as const;
+const QUEUE_JOB_STATES = ['waiting', 'delayed', 'active', 'completed', 'failed'] as const;
 
 export type QueueJobState = typeof QUEUE_JOB_STATES[number];
-
-/** The states in which the queue still owns a job, so its key cannot be reused. */
-export const NON_TERMINAL_QUEUE_JOB_STATES: readonly QueueJobState[] = ['waiting', 'delayed', 'active'];
 
 /**
  * One unit of queued work.
@@ -37,7 +34,10 @@ export class QueueJob {
     @Column('jsonb')
     payload!: JsonObject;
 
-    @Column('varchar', { length: 16, default: 'waiting' })
+    @Column('varchar', {
+        length: 16,
+        default: 'waiting'
+    })
     state!: QueueJobState;
 
     @Column('int', { default: 0 })
@@ -47,7 +47,10 @@ export class QueueJob {
     maxAttempts!: number;
 
     /** Mirrors the caller's backoff request so a retry can be re-scheduled without it. */
-    @Column('varchar', { length: 32, nullable: true })
+    @Column('varchar', {
+        length: 32,
+        nullable: true
+    })
     backoffType!: string | null;
 
     @Column('int', { nullable: true })
@@ -61,9 +64,6 @@ export class QueueJob {
     @Column('int', { default: 0 })
     stalledCount!: number;
 
-    @Column('jsonb', { nullable: true })
-    progress!: JsonObject | number | null;
-
     /** When the job becomes eligible; a delay is a `runAt` in the future. */
     @Column('timestamptz')
     runAt!: Date;
@@ -72,7 +72,10 @@ export class QueueJob {
     @Column('timestamptz', { nullable: true })
     lockedUntil!: Date | null;
 
-    @Column('varchar', { length: 64, nullable: true })
+    @Column('varchar', {
+        length: 64,
+        nullable: true
+    })
     lockedBy!: string | null;
 
     @Column('text', { nullable: true })

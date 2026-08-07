@@ -1,12 +1,11 @@
 import { errorMessage } from '@shared/application/utilities/error-message';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
-import { isModuleEnabled } from '@core/bootstrap/module-state';
 import mountCommands from '@core/bootstrap/mount-commands';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import { getDomainEventBridge } from '@core/bootstrap/mount-event-mappers';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getQueueMaintenance } from '@shared/infrastructure/queues/QueueMaintenance';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getDebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';
@@ -19,6 +18,7 @@ import { getReverseChannelBridge } from '@modules/container/socket/ReverseChanne
 import { getHeartbeatPlaneProcess } from '@modules/system/services/HeartbeatPlaneProcess';
 import { getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
 import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { getDaemonEntities } from '@core/bootstrap/entities';
 import { logger } from '@shared/infrastructure/logger';
 
 export class DaemonLifecycle {
@@ -26,8 +26,8 @@ export class DaemonLifecycle {
         /* The analysis data store now shares the daemon's data source, so it has
            no connection of its own to open. */
         await Promise.all([
-            connectDaemonDataSource(),
-            getMinioService().ensureBuckets()
+            connectDaemonDataSource(getDaemonEntities()),
+            getFilesystemObjectStore().ensureBuckets()
         ]);
     }
 
@@ -81,9 +81,7 @@ export class DaemonLifecycle {
     async stop(): Promise<void> {
         const objectGatewayServer = getObjectGatewayServer();
 
-        if (isModuleEnabled('analysis')) {
-            getDebugSessionManager().shutdown();
-        }
+        getDebugSessionManager().shutdown();
 
         await getRuntimeRoleCoordinator().stopComputeWorkers();
 
@@ -100,9 +98,7 @@ export class DaemonLifecycle {
         getQueueMaintenance().stop();
         await getQueueService().close();
 
-        if (isModuleEnabled('plugin')) {
-            await getPluginProcessPool().shutdown();
-        }
+        await getPluginProcessPool().shutdown();
 
         await this.disconnectInfrastructure();
     }

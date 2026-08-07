@@ -1,4 +1,5 @@
 import { toError } from '@shared/application/utilities/error-message';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { logger } from '@shared/infrastructure/logger';
@@ -32,11 +33,11 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
         super.start(concurrency);
     }
 
-    protected async process(payload: PluginWarmupJobPayload, bullJob: QueueJobHandle<PluginWarmupJobPayload>): Promise<void> {
+    protected async process(payload: PluginWarmupJobPayload, job: QueueJobHandle<PluginWarmupJobPayload>): Promise<void> {
         logger.info(
             {
                 pluginId: payload.pluginId,
-                bullJobId: bullJob.id
+                jobId: job.id
             },
             '@plugin-warmup-worker: starting plugin warmup'
         );
@@ -68,4 +69,9 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
     }
 }
 
-export const getPluginWarmupWorker = singleton((): PluginWarmupWorker => new PluginWarmupWorker(getQueueService(), getPluginBinaryCache()));
+export const getPluginWarmupWorker = registerDaemonWorker({
+    name: 'plugin-warmup',
+    scope: 'compute',
+    concurrencyKey: 'pluginWarmup',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): PluginWarmupWorker => new PluginWarmupWorker(getQueueService(), getPluginBinaryCache())));

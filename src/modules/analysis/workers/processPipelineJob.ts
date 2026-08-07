@@ -46,10 +46,6 @@ export interface ProcessPipelineJobDependencies {
     objectStore: ClusterObjectStore;
 }
 
-export interface ProcessPipelineJobHooks {
-    updateProgress?: (value: number) => Promise<void> | void;
-}
-
 /** Everything the stages of one pipeline job share: the job, its services and the dump they pass along. */
 interface PipelineStageRun {
     payload: PipelineQueueJobPayload;
@@ -68,8 +64,7 @@ const WORKING_DUMP_EXPOSURE_ID = '__working_dump__';
 
 export const processPipelineJob = async (
     payload: PipelineQueueJobPayload,
-    deps: ProcessPipelineJobDependencies,
-    hooks: ProcessPipelineJobHooks = {}
+    deps: ProcessPipelineJobDependencies
 ): Promise<void> => {
     const { timestep, storageClusterId } = payload;
     if (!storageClusterId) {
@@ -92,17 +87,6 @@ export const processPipelineJob = async (
         reportedAnalysisIds: new Set<string>()
     };
 
-    const setProgress = async (value: number): Promise<void> => {
-        try {
-            await hooks.updateProgress?.(value);
-        } catch (error) {
-            logger.warn({
-                err: error,
-                jobId: payload.jobId
-            }, 'processPipelineJob progress callback failed');
-        }
-    };
-
     try {
         const downloadedDump = await downloadCompressedDump(
             deps.objectStore,
@@ -112,7 +96,6 @@ export const processPipelineJob = async (
         );
         await fs.copyFile(downloadedDump, run.workingDump);
         await safeRemovePath(downloadedDump);
-        await setProgress(10);
 
         for (let index = 0; index < payload.stages.length; index += 1) {
             const stage = payload.stages[index]!;
@@ -133,7 +116,6 @@ export const processPipelineJob = async (
             }
         }
 
-        await setProgress(95);
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Pipeline stage failed';
         for (const stage of payload.stages) {

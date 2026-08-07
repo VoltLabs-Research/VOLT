@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
@@ -46,7 +47,7 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
         });
     }
 
-    protected async process(payload: PipelineQueueJobPayload, bullJob: QueueJobHandle<PipelineQueueJobPayload>): Promise<void> {
+    protected async process(payload: PipelineQueueJobPayload, job: QueueJobHandle<PipelineQueueJobPayload>): Promise<void> {
         await processPipelineJob(payload, {
             analysisDataStore: this.analysisDataStore,
             analysisEnvironment: this.analysisEnvironment,
@@ -56,10 +57,13 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
             dumpTransformService: this.dumpTransformService,
             pipelineSharedExposureStore: this.pipelineSharedExposureStore,
             objectStore: this.objectStore
-        }, {
-            updateProgress: (value) => bullJob.updateProgress(value)
         });
     }
 }
 
-export const getPipelineWorker = singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore()));
+export const getPipelineWorker = registerDaemonWorker({
+    name: 'pipeline',
+    scope: 'compute',
+    concurrencyKey: 'analysis',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore())));

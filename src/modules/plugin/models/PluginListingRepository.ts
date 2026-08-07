@@ -44,7 +44,7 @@ const chunk = <T>(items: T[], size: number): T[][] => {
 const LISTING_COLUMNS = [
     '_id', 'plugin', 'team', 'trajectory', 'analysis',
     'exposureId', 'exposureName', 'timestep', 'row',
-    'propertyObjectKey', 'propertyOwnerClusterId', 'subListingNames'
+    'subListingNames'
 ] as const;
 
 const SUB_LISTING_COLUMNS = [

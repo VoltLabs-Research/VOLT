@@ -54,11 +54,6 @@ export interface WorkflowEntrypointConfigDefaults {
     entrypointScript?: string;
 }
 
-export interface WorkflowPreparedEntrypointArgs {
-    args: string[];
-    release?: () => void;
-}
-
 export interface WorkflowEntrypointExecutionOptions {
     defaults?: WorkflowEntrypointConfigDefaults;
     jobId: string;
@@ -68,7 +63,6 @@ export interface WorkflowEntrypointExecutionOptions {
     trajectoryFrameStore?: TrajectoryFrameStore;
     ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
-    prepareArgs?: (args: string[]) => WorkflowPreparedEntrypointArgs;
     restoreOutputOnError?: boolean;
     includeOutputFiles?: boolean;
     extraOutput?: WorkflowNodeOutput;
@@ -112,7 +106,6 @@ export interface WorkflowExecutionContext {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     selectedTimestep?: number;
-    windowFrames?: TrajectoryDumpDescriptor[];
     primaryFrameIndex?: number;
     workflow: WorkflowGraph;
     nestedWorkflows: Map<string, WorkflowDefinition>;
@@ -145,6 +138,8 @@ const matchesIfBranchHandle = (
 
     return edgeHandle === 'output-false';
 };
+
+type WorkflowNeighborIdResolver = (nodeId: string) => string[];
 
 export class WorkflowGraph {
     private readonly graph: GraphlibGraph<undefined, WorkflowNode, WorkflowEdge>;
@@ -259,7 +254,11 @@ export class WorkflowGraph {
             : this.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
     }
 
-    findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
+    private findRelatedNodeByType(
+        nodeId: string,
+        type: WorkflowNodeType,
+        resolveNeighborIds: WorkflowNeighborIdResolver
+    ): WorkflowNode | null {
         const visited = new Set<string>();
         const queue = [nodeId];
 
@@ -274,48 +273,32 @@ export class WorkflowGraph {
             }
             visited.add(currentId);
 
-            for (const parentNodeId of this.graph.predecessors(currentId) ?? []) {
-                const parentNode = this.getNode(parentNodeId);
-                if (parentNode?.type === type) {
-                    return parentNode;
+            for (const neighborId of resolveNeighborIds(currentId)) {
+                const neighborNode = this.getNode(neighborId);
+                if (neighborNode?.type === type) {
+                    return neighborNode;
                 }
-                queue.push(parentNodeId);
+                queue.push(neighborId);
             }
         }
 
         return null;
     }
 
+    findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
+        return this.findRelatedNodeByType(
+            nodeId,
+            type,
+            (currentId) => this.graph.predecessors(currentId) ?? []
+        );
+    }
+
     findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
-        const visited = new Set<string>();
-        const queue = [nodeId];
-
-        while (queue.length > 0) {
-            const currentId = queue.shift();
-            if (!currentId) {
-                continue;
-            }
-
-            if (visited.has(currentId)) {
-                continue;
-            }
-            visited.add(currentId);
-
-            for (const childNodeId of this.graph.successors(currentId) ?? []) {
-                const childNode = this.getNode(childNodeId);
-                if (!childNode) {
-                    continue;
-                }
-
-                if (childNode.type === type) {
-                    return childNode;
-                }
-
-                queue.push(childNode.id);
-            }
-        }
-
-        return null;
+        return this.findRelatedNodeByType(
+            nodeId,
+            type,
+            (currentId) => this.graph.successors(currentId) ?? []
+        );
     }
 
     topologicalSort(): WorkflowNode[] {

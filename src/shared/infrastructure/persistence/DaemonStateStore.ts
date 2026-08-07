@@ -16,7 +16,9 @@ const LIVE = '("expiresAt" IS NULL OR "expiresAt" > now())';
 
 const manager = () => getDaemonDataSource().manager;
 
-const toDeadline = (ttlSeconds: number | undefined): Date | null =>
+/* Named for its unit: the sibling store on the control plane takes milliseconds,
+   and two same-named helpers disagreeing about that is a quiet way to break a TTL. */
+const deadlineFromSeconds = (ttlSeconds: number | undefined): Date | null =>
     ttlSeconds === undefined ? null : new Date(Date.now() + ttlSeconds * 1000);
 
 /**
@@ -42,7 +44,7 @@ export class DaemonStateStore {
                  SET value = excluded.value, "expiresAt" = excluded."expiresAt"
                  WHERE target."expiresAt" IS NOT NULL AND target."expiresAt" <= now()
              RETURNING target.key`,
-            [key, value, toDeadline(ttlSeconds)]
+            [key, value, deadlineFromSeconds(ttlSeconds)]
         );
 
         return rows.length > 0;
@@ -100,7 +102,7 @@ export class DaemonStateStore {
              VALUES ($1, $2, $3)
              ON CONFLICT (key) DO UPDATE
                  SET value = excluded.value, "expiresAt" = excluded."expiresAt"`,
-            [key, value, toDeadline(ttlSeconds)]
+            [key, value, deadlineFromSeconds(ttlSeconds)]
         );
     }
 
@@ -123,7 +125,7 @@ export class DaemonStateStore {
                 `INSERT INTO daemon_state_list_items (key, position, value, "expiresAt")
                  SELECT $1, source.position - 1, source.value, $3
                  FROM unnest($2::text[]) WITH ORDINALITY AS source(value, position)`,
-                [key, values, toDeadline(ttlSeconds)]
+                [key, values, deadlineFromSeconds(ttlSeconds)]
             );
         });
     }

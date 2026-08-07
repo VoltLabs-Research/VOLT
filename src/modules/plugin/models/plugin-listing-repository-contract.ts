@@ -38,8 +38,6 @@ export interface BulkUpsertOperation {
         exposureId: string;
         timestep: number;
         row: PluginListingTransferRow;
-        propertyObjectKey?: string;
-        propertyOwnerClusterId?: string;
         subListingNames: string[];
     };
 }

@@ -1308,13 +1308,7 @@ const buildElementTable = (input) => {
 };
 
 module.exports = {
-    PERIODIC_TABLE,
-    DEFAULT_TYPE_PALETTE,
-    typePaletteColor,
-    inferElementFromMass,
-    LAMMPS_UNITS,
     DEFAULT_UNITS,
     asLammpsUnits,
-    buildElementTableEntry,
     buildElementTable
 };

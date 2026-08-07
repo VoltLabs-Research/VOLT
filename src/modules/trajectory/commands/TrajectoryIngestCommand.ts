@@ -2,7 +2,7 @@ import { errorMessage } from '@shared/application/utilities/error-message';
 import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getConfig } from '@core/config/daemon';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -77,7 +77,7 @@ const toIngestFrame = (
 export class TrajectoryIngestCommand {
     constructor(
         private readonly config: DaemonConfig,
-        private readonly minioService: LocalClusterObjectStoreGateway,
+        private readonly objectStore: LocalClusterObjectStoreGateway,
         private readonly queueService: QueueService,
         private readonly stateStore: DaemonStateStore
     ) {}
@@ -157,7 +157,7 @@ export class TrajectoryIngestCommand {
 
         const statUploaded = async (objectKey: string, label: string): Promise<number> => {
             try {
-                return (await this.minioService.statObject(INGEST_BUCKET, objectKey)).size;
+                return (await this.objectStore.statObject(INGEST_BUCKET, objectKey)).size;
             } catch {
                 throw ApplicationError.unprocessableEntity(
                     ErrorCodes.TRAJECTORY_UPLOAD_INCOMPLETE,
@@ -196,7 +196,7 @@ export class TrajectoryIngestCommand {
         }
 
         if (parts.length > 1 || parts[0]?.objectKey !== staged.objectKey) {
-            await this.minioService.composeObject({
+            await this.objectStore.composeObject({
                 bucket: INGEST_BUCKET,
                 objectKey: staged.objectKey,
                 sourceObjectKeys: parts.map((part) => part.objectKey)
@@ -205,7 +205,7 @@ export class TrajectoryIngestCommand {
 
         await Promise.all(parts
             .filter((part) => part.objectKey !== staged.objectKey)
-            .map((part) => this.minioService.removeObject(INGEST_BUCKET, part.objectKey).catch((error) => {
+            .map((part) => this.objectStore.removeObject(INGEST_BUCKET, part.objectKey).catch((error) => {
                 logger.debug(`@trajectory-ingest: upload part cleanup failed ${part.objectKey}: ${String(error)}`);
             })));
     }
@@ -221,7 +221,7 @@ export class TrajectoryIngestCommand {
             ? Math.min(staged.size, METADATA_READ_BYTES)
             : METADATA_READ_BYTES;
 
-        const stream = await this.minioService.getObjectRangeStream(
+        const stream = await this.objectStore.getObjectRangeStream(
             INGEST_BUCKET,
             staged.objectKey,
             0,
@@ -270,7 +270,7 @@ export class TrajectoryIngestCommand {
 
         await fs.mkdir(extractRoot, { recursive: true });
 
-        const archiveStream = await this.minioService.getObjectStream(INGEST_BUCKET, staged.objectKey);
+        const archiveStream = await this.objectStore.getObjectStream(INGEST_BUCKET, staged.objectKey);
         await pipeline(archiveStream, createWriteStream(archivePath));
 
         const directory = await unzipper.Open.file(archivePath);
@@ -323,7 +323,7 @@ export class TrajectoryIngestCommand {
             }
 
             const expandedObjectKey = `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`;
-            await this.minioService.putObjectStream({
+            await this.objectStore.putObjectStream({
                 bucket: INGEST_BUCKET,
                 objectKey: expandedObjectKey,
                 stream: createReadStream(resolvedOutputPath),
@@ -338,7 +338,7 @@ export class TrajectoryIngestCommand {
             return [];
         }
 
-        await this.minioService.removeObject(INGEST_BUCKET, staged.objectKey).catch((error) => {
+        await this.objectStore.removeObject(INGEST_BUCKET, staged.objectKey).catch((error) => {
             logger.debug(`@trajectory-ingest: archive staging cleanup failed ${staged.objectKey}: ${String(error)}`);
         });
 
@@ -350,7 +350,7 @@ export class TrajectoryIngestCommand {
     }
 
     private async removeIgnoredStagedObject(objectKey: string): Promise<void> {
-        await this.minioService.removeObject(INGEST_BUCKET, objectKey).catch(() => undefined);
+        await this.objectStore.removeObject(INGEST_BUCKET, objectKey).catch(() => undefined);
     }
 
     private async enqueueFrameProcessingJobs(
@@ -410,4 +410,4 @@ export class TrajectoryIngestCommand {
     }
 }
 
-export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getMinioService(), getQueueService(), getDaemonStateStore()));
+export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getFilesystemObjectStore(), getQueueService(), getDaemonStateStore()));

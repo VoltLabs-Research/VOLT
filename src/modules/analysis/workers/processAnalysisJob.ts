@@ -32,14 +32,9 @@ export interface ProcessAnalysisJobDependencies {
     analysisProvenanceCollector: AnalysisProvenanceCollector;
 }
 
-export interface ProcessAnalysisJobHooks {
-    updateProgress?: (value: number) => Promise<void> | void;
-}
-
 export const processAnalysisJob = async (
     payload: AnalysisQueueJobPayload,
-    deps: ProcessAnalysisJobDependencies,
-    hooks: ProcessAnalysisJobHooks = {}
+    deps: ProcessAnalysisJobDependencies
 ): Promise<void> => {
     const job = payload;
     const metadata = job.metadata as AnalysisJobMetadata;
@@ -111,18 +106,6 @@ export const processAnalysisJob = async (
         }
     };
 
-    const setProgress = async (value: number) => {
-        if (!hooks.updateProgress) return;
-        try {
-            await hooks.updateProgress(value);
-        } catch (error) {
-            logger.warn({
-                err: error,
-                jobId: job.jobId
-            }, 'processAnalysisJob progress callback failed');
-        }
-    };
-
     try {
         await withJobLifecycle(
             {
@@ -153,7 +136,6 @@ export const processAnalysisJob = async (
                     },
                     () => deps.analysisEnvironment.prepare(executionData, metadata, timestep)
                 );
-                await setProgress(10);
 
                 const emitExecutionTrace = async (
                     trace: InlineWorkflowTraceNode[],
@@ -216,7 +198,6 @@ export const processAnalysisJob = async (
                 }
 
                 await emitExecutionTrace(workflowOutcome.trace, true);
-                await setProgress(70);
 
                 await deps.analysisProvenanceCollector.recordCompletion({
                     executionData,
@@ -233,7 +214,6 @@ export const processAnalysisJob = async (
                     },
                     () => artifactUploadBatch.enqueue()
                 );
-                await setProgress(95);
             }
         );
     } finally {

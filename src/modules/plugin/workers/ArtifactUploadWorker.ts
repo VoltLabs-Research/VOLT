@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getDaemonArtifactReporter } from '@modules/analysis/services/DaemonArtifactReporter';
@@ -65,7 +66,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         super.start(concurrency);
     }
 
-    protected async process(payload: ArtifactUploadBatchJobPayload, bullJob: QueueJobHandle<ArtifactUploadBatchJobPayload>): Promise<void> {
+    protected async process(payload: ArtifactUploadBatchJobPayload, job: QueueJobHandle<ArtifactUploadBatchJobPayload>): Promise<void> {
         const statusPayload: BaseArtifactUploadEventData = {
             jobId: payload.jobId,
             analysisId: payload.analysisId,
@@ -73,8 +74,8 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
             trajectoryId: payload.trajectoryId,
             timestep: payload.timestep
         };
-        const maxAttempts = bullJob.opts.attempts ?? 1;
-        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
+        const maxAttempts = job.opts.attempts ?? 1;
+        const isFinalAttempt = () => job.attemptsMade + 1 >= maxAttempts;
         const stageReporter = createAnalysisStageReporter(this.daemonJobReporter, {
             jobId: payload.analysisJobId,
             name: 'Artifact Upload',
@@ -120,14 +121,8 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                 }
             },
             async () => {
-                let completed = 0;
-                const total = payload.uploads.length;
-
-                await mapLimited(payload.uploads, DEFAULT_PER_JOB_UPLOAD_CONCURRENCY, async (upload) => {
-                    await this.uploadOne(upload);
-                    completed += 1;
-                    await bullJob.updateProgress(Math.round((completed / total) * 100));
-                });
+                await mapLimited(payload.uploads, DEFAULT_PER_JOB_UPLOAD_CONCURRENCY, (upload) =>
+                    this.uploadOne(upload));
             }
         );
     }
@@ -193,4 +188,9 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 }
 
-export const getArtifactUploadWorker = singleton((): ArtifactUploadWorker => new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter()));
+export const getArtifactUploadWorker = registerDaemonWorker({
+    name: 'artifact-upload',
+    scope: 'compute',
+    concurrencyKey: 'artifactUpload',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): ArtifactUploadWorker => new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter())));

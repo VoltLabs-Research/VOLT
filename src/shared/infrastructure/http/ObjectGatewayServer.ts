@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts/types/service-exposure';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
@@ -355,7 +355,7 @@ export class ObjectGatewayServer {
         objectKey: string,
         response: Response
     ): Promise<void> {
-        // content-length is raw wire text; minio needs a real byte count up front.
+        // content-length is raw wire text; the store needs a real byte count up front.
         const contentLength = Number(request.get('content-length'));
         if (!Number.isInteger(contentLength) || contentLength < 0) {
             throw new ApplicationError(ErrorCodes.OBJECT_GATEWAY_MISSING_CONTENT_LENGTH, 'content-length header is required for uploads', 400);
@@ -426,7 +426,7 @@ export class ObjectGatewayServer {
 
 export const getObjectGatewayServer = singleton((): ObjectGatewayServer => {
     const config = getConfig();
-    return new ObjectGatewayServer(config, getMinioService(), {
+    return new ObjectGatewayServer(config, getFilesystemObjectStore(), {
         verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
     });
 });

@@ -30,22 +30,6 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         private readonly context: ArtifactUploadBatchContext
     ) {}
 
-    async stageFileUpload(input: ArtifactUploadStageFileInput): Promise<void> {
-        await this.stageUpload(input, async (stagedPath) => {
-            try {
-                await fs.link(input.sourcePath, stagedPath);
-                return;
-            } catch (error) {
-                const nodeError = error as NodeJS.ErrnoException;
-                if (nodeError.code !== 'EXDEV' && nodeError.code !== 'EPERM' && nodeError.code !== 'EEXIST') {
-                    throw error;
-                }
-            }
-
-            await fs.copyFile(input.sourcePath, stagedPath);
-        });
-    }
-
     async stageBufferUpload(input: ArtifactUploadStageBufferInput): Promise<void> {
         await this.stageUpload(input, (stagedPath) => fs.writeFile(stagedPath, input.buffer));
     }

@@ -1,16 +1,16 @@
-import { MinioService } from '@shared/infrastructure/storage/MinioService';
+import { FilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@shared/contracts';
 import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { RemoteExplorerEntry, RemoteExplorerNode } from '@shared/contracts';
-import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath, parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@modules/container/services/remote-access/shared';
+import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath, parseObjectStorePath, splitExplorerPathSegments, toWebReadableStream } from '@modules/container/services/remote-access/shared';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 
-export default class MinioRemoteAccess extends BaseRemoteAccess {
-    readonly target = RemoteExplorerTarget.Minio;
+export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
+    readonly target = RemoteExplorerTarget.ObjectStore;
 
     constructor(
-        private readonly minioService: MinioService
+        private readonly objectStore: FilesystemObjectStore
     ) {
         super();
     }
@@ -18,7 +18,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
     async list(path: string): Promise<RemoteExplorerEntry[]> {
         const normalizedPath = normalizeExplorerPath(path);
         if (!normalizedPath) {
-            return this.minioService.listBuckets().map((bucket) => ({
+            return this.objectStore.listBuckets().map((bucket) => ({
                 id: bucket,
                 name: bucket,
                 path: bucket,
@@ -29,15 +29,15 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
             }));
         }
 
-        const parsedPath = parseMinioPath(normalizedPath);
-        if (!parsedPath || !this.minioService.listBuckets().includes(parsedPath.bucket)) {
+        const parsedPath = parseObjectStorePath(normalizedPath);
+        if (!parsedPath || !this.objectStore.listBuckets().includes(parsedPath.bucket)) {
             return [];
         }
 
         const prefixSegments = splitExplorerPathSegments(parsedPath.objectKey);
         const prefix = prefixSegments.join('/');
         const effectivePrefix = prefix ? `${prefix.replace(/\/+$/g, '')}/` : '';
-        const objectKeys = await this.minioService.listObjects(parsedPath.bucket, effectivePrefix);
+        const objectKeys = await this.objectStore.listObjects(parsedPath.bucket, effectivePrefix);
         const entries = new Map<string, RemoteExplorerEntry>();
 
         for (const objectKey of objectKeys) {
@@ -85,12 +85,12 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
 
     async node(path: string): Promise<RemoteExplorerNode> {
         const normalizedPath = normalizeExplorerPath(path);
-        const parsedPath = parseMinioPath(normalizedPath);
+        const parsedPath = parseObjectStorePath(normalizedPath);
 
-        if (!parsedPath || !parsedPath.objectKey || !this.minioService.listBuckets().includes(parsedPath.bucket)) {
+        if (!parsedPath || !parsedPath.objectKey || !this.objectStore.listBuckets().includes(parsedPath.bucket)) {
             return {
                 path,
-                title: parsedPath?.bucket ?? 'MinIO',
+                title: parsedPath?.bucket ?? 'Object store',
                 type: RemoteExplorerNodeType.Object,
                 contentType: RemoteExplorerContentType.Empty,
                 textContent: null,
@@ -100,7 +100,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
 
         const { bucket, objectKey } = parsedPath;
 
-        const stream = await this.minioService.getObjectStream(bucket, objectKey);
+        const stream = await this.objectStore.getObjectStream(bucket, objectKey);
         const chunks: Buffer[] = [];
         let totalBytes = 0;
 
@@ -134,24 +134,24 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
 
     async download(path: string): Promise<ReverseChannelCommandResult> {
         const normalizedPath = normalizeExplorerPath(path);
-        const parsedPath = parseMinioPath(normalizedPath);
+        const parsedPath = parseObjectStorePath(normalizedPath);
 
         if (!parsedPath) {
-            throw new Error('MinIO download requires a bucket and object key');
+            throw new Error('Object download requires a bucket and object key');
         }
 
         const { bucket, objectKey } = parsedPath;
 
-        if (!objectKey || !this.minioService.listBuckets().includes(bucket)) {
-            throw new Error('MinIO download requires a bucket and object key');
+        if (!objectKey || !this.objectStore.listBuckets().includes(bucket)) {
+            throw new Error('Object download requires a bucket and object key');
         }
 
         let stat;
         let nodeStream;
 
         try {
-            stat = await this.minioService.statObject(bucket, objectKey);
-            nodeStream = await this.minioService.getObjectStream(bucket, objectKey);
+            stat = await this.objectStore.statObject(bucket, objectKey);
+            nodeStream = await this.objectStore.getObjectStream(bucket, objectKey);
         } catch (error) {
             if (isObjectNotFoundError(error)) {
                 throw Object.assign(new Error(`Object not found: ${bucket}/${objectKey}`), {

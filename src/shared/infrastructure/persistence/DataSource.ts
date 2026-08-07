@@ -1,13 +1,8 @@
 import { DataSource } from 'typeorm';
 import { getConfig } from '@core/config/daemon';
-import { PluginListingRow } from '@modules/plugin/models/plugin-listing-row-model';
-import { PluginSubListingRow } from '@modules/plugin/models/plugin-sub-listing-row-model';
-import { QueueJob } from '@shared/infrastructure/queues/queue-job-model';
-import { DaemonStateEntry, DaemonStateListItem } from '@shared/infrastructure/persistence/daemon-state-model';
 import { logger } from '@shared/infrastructure/logger';
-import { singleton } from '@shared/application/utilities/singleton';
 
-const ENTITIES = [PluginListingRow, PluginSubListingRow, QueueJob, DaemonStateEntry, DaemonStateListItem];
+let dataSource: DataSource | null = null;
 
 /**
  * The daemon's relational store.
@@ -19,19 +14,13 @@ const ENTITIES = [PluginListingRow, PluginSubListingRow, QueueJob, DaemonStateEn
  * table ever holds something authored rather than computed, this needs migrations
  * first.
  */
-export const getDaemonDataSource = singleton((): DataSource => new DataSource({
-    type: 'postgres',
-    url: getConfig().databaseUrl,
-    synchronize: true,
-    entities: ENTITIES,
-    applicationName: 'volt-cluster-daemon',
-    /*
-     * Listing writes arrive in batches from the result processor rather than from
-     * concurrent requests, so a wide pool buys nothing and only competes with the
-     * control plane for connections on a single-node deployment.
-     */
-    poolSize: 10
-}));
+export const getDaemonDataSource = (): DataSource => {
+    if (!dataSource) {
+        throw new Error('The daemon data source was read before connectDaemonDataSource ran');
+    }
+
+    return dataSource;
+};
 
 /**
  * Creates the daemon's database when it is missing.
@@ -76,11 +65,24 @@ const ensureDatabaseExists = async (url: string): Promise<void> => {
     }
 };
 
-export const connectDaemonDataSource = async (): Promise<DataSource> => {
-    const dataSource = getDaemonDataSource();
-    if (dataSource.isInitialized) {
+export const connectDaemonDataSource = async (entities: Function[]): Promise<DataSource> => {
+    if (dataSource?.isInitialized) {
         return dataSource;
     }
+
+    dataSource = new DataSource({
+        type: 'postgres',
+        url: getConfig().databaseUrl,
+        synchronize: true,
+        entities,
+        applicationName: 'volt-cluster-daemon',
+        /*
+         * Listing writes arrive in batches from the result processor rather than from
+         * concurrent requests, so a wide pool buys nothing and only competes with the
+         * control plane for connections on a single-node deployment.
+         */
+        poolSize: 10
+    });
 
     await ensureDatabaseExists(getConfig().databaseUrl);
     await dataSource.initialize();
@@ -89,10 +91,10 @@ export const connectDaemonDataSource = async (): Promise<DataSource> => {
 };
 
 export const disconnectDaemonDataSource = async (): Promise<void> => {
-    const dataSource = getDaemonDataSource();
-    if (!dataSource.isInitialized) {
+    if (!dataSource?.isInitialized) {
         return;
     }
 
     await dataSource.destroy();
+    dataSource = null;
 };

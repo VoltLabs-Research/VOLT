@@ -120,7 +120,6 @@ export class DefaultResultProcessor implements ResultProcessorService {
                     listingPayload,
                     subListingNames,
                     propertyObjectKey,
-                    storageOwnerClusterId,
                     timestep,
                     teamId
                 );

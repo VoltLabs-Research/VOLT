@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
@@ -43,7 +44,7 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         });
     }
 
-    protected async process(payload: AnalysisQueueJobPayload, bullJob: QueueJobHandle<AnalysisQueueJobPayload>): Promise<void> {
+    protected async process(payload: AnalysisQueueJobPayload, job: QueueJobHandle<AnalysisQueueJobPayload>): Promise<void> {
         await processAnalysisJob(payload, {
             analysisDataStore: this.analysisDataStore,
             analysisEnvironment: this.analysisEnvironment,
@@ -52,10 +53,13 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
             workflowRuntime: this.workflowRuntime,
             analysisQueueAdmissionController: this.analysisQueueAdmissionController,
             analysisProvenanceCollector: this.analysisProvenanceCollector
-        }, {
-            updateProgress: (value) => bullJob.updateProgress(value)
         });
     }
 }
 
-export const getAnalysisWorker = singleton((): AnalysisWorker => new AnalysisWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getAnalysisQueueAdmissionController(), getAnalysisProvenanceCollector()));
+export const getAnalysisWorker = registerDaemonWorker({
+    name: 'analysis',
+    scope: 'compute',
+    concurrencyKey: 'analysis',
+    tracksConcurrencyWhileRunning: true
+}, singleton((): AnalysisWorker => new AnalysisWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getAnalysisQueueAdmissionController(), getAnalysisProvenanceCollector())));

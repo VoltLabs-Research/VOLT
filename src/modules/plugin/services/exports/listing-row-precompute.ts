@@ -3,7 +3,7 @@ import { isRecord } from '@shared/domain/utilities/is-record';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
-import type { PluginListingTransferRow } from '@modules/plugin  /models/plugin-listing-repository-contract';
+import type { PluginListingTransferRow } from '@modules/plugin/models/plugin-listing-repository-contract';
 
 /** Flattens an exposure payload into the precomputed listing rows the UI reads. */
 
@@ -14,7 +14,6 @@ export const precomputeListingRows = async (
     decoded: JsonObject | null,
     subListingNames: string[],
     objectKey: string | undefined,
-    propertyOwnerClusterId: string,
     timestep: number,
     teamId: string
 ): Promise<void> => {
@@ -58,10 +57,6 @@ export const precomputeListingRows = async (
             exposureId: exposure.nodeId,
             timestep,
             row: cleanedMainListing,
-            ...(objectKey ? {
-                propertyObjectKey: objectKey,
-                propertyOwnerClusterId
-            } : {}),
             subListingNames
         }
     }]);

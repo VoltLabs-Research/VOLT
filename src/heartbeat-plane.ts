@@ -6,7 +6,9 @@ import https from 'node:https';
 import { loadConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import { MetricsService } from '@modules/system/services/MetricsService';
-import type { TeamClusterDaemonRuntimeConfig } from '@shared/contracts/types/team-cluster-runtime';
+import { probeContainerRuntime } from '@shared/infrastructure/runtime/docker-client';
+import type { MetricsSnapshot } from '@shared/contracts/types/metrics';
+import type { TeamClusterDaemonRuntimeConfig, TeamClusterHostCapabilities } from '@shared/contracts/types/team-cluster-runtime';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     connectPlaneSocket,
@@ -16,6 +18,15 @@ import {
 interface RuntimeConfigMessage {
     type: 'runtime-config';
     runtimeConfig: TeamClusterDaemonRuntimeConfig | null;
+}
+
+/** What one heartbeat carries to the control plane. */
+interface HeartbeatPayload {
+    teamClusterId: string;
+    daemonPassword: string;
+    runtime: TeamClusterDaemonRuntimeConfig | null;
+    metrics: MetricsSnapshot;
+    hostCapabilities: TeamClusterHostCapabilities;
 }
 
 const HEARTBEAT_CHANNEL = 'heartbeat';
@@ -54,7 +65,7 @@ const scheduleHeartbeat = (immediate = false): void => {
     heartbeatTimer.unref();
 };
 
-const emitHeartbeatEvent = (payload: object): void => {
+const emitHeartbeatEvent = (payload: HeartbeatPayload): void => {
     const activeSocket = socket;
     if (!activeSocket || !isRegistered()) {
         throw new Error('Heartbeat socket is not connected or not registered');
@@ -67,16 +78,16 @@ const emitHeartbeatEvent = (payload: object): void => {
 };
 
 const sendHeartbeat = async (): Promise<void> => {
-    const metrics = await metricsService.collectSnapshot({
-        cloudLatencyMs: lastCloudLatencyMs,
-        connectedToCloud: isRegistered()
-    });
+    const metrics = await metricsService.collectSnapshot({ cloudLatencyMs: lastCloudLatencyMs });
 
     emitHeartbeatEvent({
         teamClusterId: config.teamClusterId,
         daemonPassword: config.daemonPassword,
         runtime: runtimeConfig,
-        metrics
+        metrics,
+        hostCapabilities: {
+            containerRuntime: await probeContainerRuntime()
+        }
     });
 };
 

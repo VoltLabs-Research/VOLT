@@ -1,7 +1,7 @@
 import type { RemoteExplorerDocument } from '@shared/contracts';
 import { Readable } from 'node:stream';
 
-interface ParsedMinioPath {
+interface ParsedObjectStorePath {
     bucket: string;
     objectKey: string;
 }
@@ -33,7 +33,7 @@ export const joinExplorerPathSegments = (...segments: string[]): string => {
     return segments.flatMap(splitExplorerPathSegments).join('/');
 };
 
-export const parseMinioPath = (path: string): ParsedMinioPath | null => {
+export const parseObjectStorePath = (path: string): ParsedObjectStorePath | null => {
     const segments = splitExplorerPathSegments(path);
     const [bucket, ...objectKeySegments] = segments;
 

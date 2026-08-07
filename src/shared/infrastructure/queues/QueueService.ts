@@ -7,7 +7,6 @@ import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import {
     countJobsByState,
     deleteTerminalJob,
-    findJobByKey,
     insertJob,
     insertJobs,
     isJobLive,
@@ -19,18 +18,24 @@ import type { EnqueueRequest, QueueJobCounts } from '@shared/infrastructure/queu
 import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 import type { JsonObject } from '@shared/contracts/types/json';
 
+export interface CreateWorkerOptions {
+    concurrency?: number;
+}
+
 export interface QueuePayload {
     jobId?: string;
 }
 
-type EnqueueOptions = {
+export interface EnqueueBackoff {
+    type: string;
+    delay: number;
+}
+
+export interface EnqueueOptions {
     preserveExistingJob?: boolean;
     attempts?: number;
-    backoff?: {
-        type: string;
-        delay: number;
-    };
-};
+    backoff?: EnqueueBackoff;
+}
 
 const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
@@ -161,7 +166,7 @@ export class QueueService {
     createWorker = <T extends QueuePayload>(
         queueName: string,
         processor: (payload: T, job: QueueJobHandle<T>) => Promise<void>,
-        options: { concurrency?: number } = {}
+        options: CreateWorkerOptions = {}
     ): QueueWorker<T> => {
         assertKnownQueue(queueName);
 
@@ -182,10 +187,6 @@ export class QueueService {
 
     removeJobById(jobId: string): Promise<boolean> {
         return removeJobByKey(jobId);
-    }
-
-    async hasJob(jobId: string): Promise<boolean> {
-        return (await findJobByKey(jobId)) !== null;
     }
 
     getJobCounts(queueName: string): Promise<QueueJobCounts> {

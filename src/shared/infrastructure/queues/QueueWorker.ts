@@ -4,6 +4,7 @@ import { getQueueNotifier } from '@shared/infrastructure/queues/QueueNotifier';
 import { DeferJobError, createQueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 import { claimNextJob, completeJob, deferJob, failJob, renewLease } from '@shared/infrastructure/queues/queue-job-store';
 import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import type { QueueJob } from '@shared/infrastructure/queues/queue-job-model';
 
 export type QueueJobProcessor<TPayload> = (payload: TPayload, job: QueueJobHandle<TPayload>) => Promise<void>;
 
@@ -130,10 +131,7 @@ export class QueueWorker<TPayload> {
         }
     }
 
-    private async runClaimedJob(
-        slot: Slot,
-        claimed: { id: string; payload: unknown; attemptsMade: number; maxAttempts: number }
-    ): Promise<void> {
+    private async runClaimedJob(slot: Slot, claimed: QueueJob): Promise<void> {
         let deferred = false;
 
         const handle = createQueueJobHandle<TPayload>({

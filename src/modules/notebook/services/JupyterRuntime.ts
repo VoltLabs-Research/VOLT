@@ -226,13 +226,12 @@ export class JupyterRuntime {
         const detectedCpus = os.availableParallelism();
         const detectedMemoryMB = Math.floor(os.totalmem() / (1024 * 1024));
 
+        /* The notebook container is sized to the whole host. The two knobs that used
+           to appear to cap it could never take effect, so they are gone rather than
+           left as documentation of a limit nobody enforces. */
         return {
-            cpus: detectedCpus > 0
-                ? detectedCpus
-                : Math.max(1, Math.floor(this.config.jupyter.cpus)),
-            memoryMB: detectedMemoryMB > 0
-                ? detectedMemoryMB
-                : Math.max(128, Math.floor(this.config.jupyter.memoryInMegabytes))
+            cpus: detectedCpus,
+            memoryMB: detectedMemoryMB
         };
     }
 

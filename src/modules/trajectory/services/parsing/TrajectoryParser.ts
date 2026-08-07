@@ -262,14 +262,6 @@ export class TrajectoryParser {
         };
     }
 
-    public async getAtomIds(input: TrajectoryFrameLookupInput): Promise<number[]> {
-        const parsed = await this.readFrame(input);
-        if (!parsed.ids) {
-            throw new Error('Trajectory atom ids are required for atom-id lookup');
-        }
-        return Array.from(parsed.ids);
-    }
-
     public getPropertyColumn(parsed: ParsedTrajectory, property: string): TypedColumn {
         const lowerProperty = property.toLowerCase();
         const axisIndex = ['x', 'y', 'z'].indexOf(lowerProperty);

@@ -1,7 +1,7 @@
 import { errorMessage } from '@shared/application/utilities/error-message';
 import { getConfig } from '@core/config/daemon';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { DaemonConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
@@ -93,7 +93,7 @@ export class ObjectStoreArchiveCommands {
     constructor(
         private readonly config: DaemonConfig,
         private readonly objectStore: ClusterObjectStore,
-        private readonly minioService: LocalClusterObjectStoreGateway
+        private readonly localObjectStore: LocalClusterObjectStoreGateway
     ) {}
 
     @Command('archive.create')
@@ -128,7 +128,7 @@ export class ObjectStoreArchiveCommands {
             await finished(output);
 
             const stat = await fs.stat(archivePath);
-            await this.minioService.putObjectStream({
+            await this.localObjectStore.putObjectStream({
                 bucket: outputBucket,
                 objectKey: payload.output.objectKey,
                 stream: createReadStream(archivePath),
@@ -179,4 +179,4 @@ export class ObjectStoreArchiveCommands {
     }
 }
 
-export const getObjectStoreArchiveCommands = commandGroupFactory(ObjectStoreArchiveCommands, () => new ObjectStoreArchiveCommands(getConfig(), getObjectStore(), getMinioService()));
+export const getObjectStoreArchiveCommands = commandGroupFactory(ObjectStoreArchiveCommands, () => new ObjectStoreArchiveCommands(getConfig(), getObjectStore(), getFilesystemObjectStore()));

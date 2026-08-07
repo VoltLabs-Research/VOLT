@@ -1,19 +1,19 @@
-import { getMinioService } from '@shared/infrastructure/storage/MinioService';
+import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { RemoteExplorerTarget, type RemoteExplorerRequest } from '@shared/contracts';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import type { MinioService } from '@shared/infrastructure/storage/MinioService';
+import type { FilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';
-import MinioRemoteAccess from '@modules/container/services/remote-access/MinIORemoteAccess';
+import ObjectStoreRemoteAccess from '@modules/container/services/remote-access/ObjectStoreRemoteAccess';
 import DaemonTableRemoteAccess from '@modules/container/services/remote-access/DaemonTableRemoteAccess';
 
 @CommandGroup('remote')
 export class RemoteCommands {
     private readonly remoteAccessByTarget: Map<RemoteExplorerTarget, BaseRemoteAccess>;
 
-    constructor(private readonly minioService: MinioService) {
+    constructor(private readonly objectStore: FilesystemObjectStore) {
         const remoteAccesses = [
             new DaemonTableRemoteAccess(),
-            new MinioRemoteAccess(this.minioService)
+            new ObjectStoreRemoteAccess(this.objectStore)
         ];
 
         this.remoteAccessByTarget = new Map(remoteAccesses.map((remoteAccess) => [remoteAccess.target, remoteAccess]));
@@ -44,4 +44,4 @@ export class RemoteCommands {
     }
 }
 
-export const getRemoteCommands = commandGroupFactory(RemoteCommands, () => new RemoteCommands(getMinioService()));
+export const getRemoteCommands = commandGroupFactory(RemoteCommands, () => new RemoteCommands(getFilesystemObjectStore()));

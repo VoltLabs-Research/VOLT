@@ -3,7 +3,6 @@ import path from 'node:path';
 import type {
     ArtifactStageInput,
     ArtifactStageBufferInput,
-    ArtifactStageFileInput,
     ArtifactUploadBatchEnqueueResult
 } from '@shared/contracts/types/artifact-upload';
 import { sanitizeFileName } from '@shared/infrastructure/utilities/sanitize-file-name';
@@ -18,7 +17,6 @@ interface DebugArtifactRecord {
 }
 
 export interface DebugArtifactBatch {
-    stageFileUpload(input: ArtifactStageFileInput): Promise<void>;
     stageBufferUpload(input: ArtifactStageBufferInput): Promise<void>;
     enqueue(): Promise<ArtifactUploadBatchEnqueueResult>;
     cleanup(): Promise<void>;
@@ -53,10 +51,6 @@ export const createDebugArtifactBatch = (baseDirectory: string): DebugArtifactBa
     };
 
     return {
-        async stageFileUpload(input: ArtifactStageFileInput): Promise<void> {
-            await stageArtifact(input, (stagedPath) => fs.copyFile(input.sourcePath, stagedPath));
-        },
-
         async stageBufferUpload(input: ArtifactStageBufferInput): Promise<void> {
             await stageArtifact(input, (stagedPath) => fs.writeFile(stagedPath, input.buffer));
         },
