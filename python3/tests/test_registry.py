@@ -14,6 +14,7 @@ from urllib.parse import urlparse, parse_qs
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from voltsdk.plugins.hub import PluginHub
+from voltsdk.plugins.interface import params_checksum
 from voltsdk.plugins.registry import (
     BundleRef,
     PluginRegistry,
@@ -29,8 +30,21 @@ def _write_bundle(path: Path) -> bytes:
         bin_dir.mkdir(parents=True, exist_ok=True)
         executable = bin_dir / 'demo-plugin'
         executable.write_text('#!/bin/sh\nexit 0\n', encoding='utf-8')
+        options = [{'flag': '--cutoff', 'type': 'float', 'default': '3.2'}]
+        manifest = root / 'plugin.json'
+        manifest.write_text(json.dumps({'interface': {
+            'version': 2,
+            'provides': {'volt/per-atom-properties@1': {'atoms': 'atoms.parquet'}},
+            'params': {
+                'descriptor': 1,
+                'generated': True,
+                'checksum': params_checksum(options),
+                'options': options,
+            },
+        }}), encoding='utf-8')
         with tarfile.open(path, 'w:gz') as archive:
             archive.add(bin_dir, arcname='bin')
+            archive.add(manifest, arcname='plugin.json')
     return path.read_bytes()
 
 

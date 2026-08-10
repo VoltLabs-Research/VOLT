@@ -1,4 +1,3 @@
-# pip install voltsdk
 from voltsdk import PluginHub
 
 INPUT_FILE = 'dump'
@@ -17,12 +16,9 @@ ptm_run = ptm(
 )
 
 dxa_run = dxa(
-    ptm_run['annotated.dump'],
+    ptm_run,
     output_dir=OUTPUT_DIR,
-    reference_topology='FCC',
-    clusters_table=ptm_run['clusters.table'],
-    clusters_transitions=ptm_run['cluster_transitions.table'],
-    export_as='json',
+    reference_topology='fcc',
 )
 
 dislocations = dxa_run['dislocations']

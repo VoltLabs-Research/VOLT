@@ -8,9 +8,18 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .errors import PluginError
+from .interface import (
+    Param,
+    PluginInterface,
+    Requirement,
+    build_signature,
+    coerce_param,
+    describe_interface,
+    load_interface,
+)
 
 @dataclass(frozen=True)
 class PluginArtifact(os.PathLike[str]):
@@ -77,6 +86,8 @@ class PluginRun:
     output_prefix: Path
     output_dir: Path
     artifacts: dict[str, Path] = field(default_factory=dict)
+    provides: dict[str, dict[str, Path]] = field(default_factory=dict)
+    unmet: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __getitem__(self, name: str) -> PluginArtifact:
         path = self._resolve_artifact_path(name)
@@ -96,14 +107,14 @@ class PluginRun:
         raise PluginError(f'Artifact {name!r} not found. Available artifacts: {available}.')
 
     def _find_artifact_path(self, name: str) -> Path | None:
-        for candidate in _artifact_lookup_candidates(name):
-            artifact = self.artifacts.get(candidate)
-            if artifact is not None:
-                return artifact
+        artifact = self.artifacts.get(name)
+        if artifact is not None:
+            return artifact
         stem = Path(name).stem
-        for key, artifact in self.artifacts.items():
-            if Path(key).stem == stem:
-                return artifact
+        if stem == name:
+            for key, artifact in self.artifacts.items():
+                if Path(key).stem == stem:
+                    return artifact
         return None
 
 class Plugin:
@@ -112,18 +123,22 @@ class Plugin:
         self._key = key
         self._version = version
         self.root = Path(root)
+        self._interface = load_interface(self.root, plugin_key=key)
+        self.__signature__ = build_signature(self._interface)
+        self.__doc__ = describe_interface(self._interface, key, version)
 
     def __call__(
         self,
-        input_file: str | os.PathLike[str],
+        source: Any,
         *,
         output_dir: str | os.PathLike[str] | None = None,
         output_name: str | None = None,
         timeout: int | float | None = None,
-        **options: Any,
+        **kwargs: Any,
     ) -> PluginRun:
-        config = _prepare_config(options)
-        input_path = Path(input_file).expanduser().resolve()
+        bindings, options = self._split_kwargs(kwargs)
+        input_path, wired = self._resolve_wiring(source, bindings)
+
         output_prefix = _resolve_output_prefix(
             input_path,
             plugin_key=self._key,
@@ -132,12 +147,17 @@ class Plugin:
         )
         output_prefix.parent.mkdir(parents=True, exist_ok=True)
 
-        command, completed = self._run_subprocess(
-            input_path,
-            output_prefix,
-            config,
-            timeout=timeout,
-        )
+        command = [
+            *self._resolve_entrypoint(),
+            str(input_path),
+            str(output_prefix),
+            *wired,
+            *self._option_argv(options),
+        ]
+        completed = _subprocess_run(command, self.root, timeout)
+
+        artifacts = self._collect_artifacts(output_prefix)
+        provides, unmet = self._resolve_provides(artifacts)
         result = PluginRun(
             command=command,
             returncode=completed.returncode,
@@ -145,16 +165,16 @@ class Plugin:
             stderr=completed.stderr,
             output_prefix=output_prefix.resolve(),
             output_dir=output_prefix.parent.resolve(),
-            artifacts=self._collect_artifacts(output_prefix),
+            artifacts=artifacts,
+            provides=provides,
+            unmet=unmet,
         )
         if completed.returncode != 0:
-
             detail = (completed.stderr or '').strip() or (completed.stdout or '').strip()
             error = PluginError(
                 f"{self._key} failed (exit {completed.returncode}).\n"
                 f"$ {shlex.join(command)}\n{detail}".rstrip()
             )
-
             error.run = result
             raise error
         return result
@@ -167,8 +187,151 @@ class Plugin:
     def version(self) -> str:
         return self._version
 
+    @property
+    def interface(self) -> PluginInterface:
+        return self._interface
+
+    @property
+    def params(self) -> Mapping[str, Param]:
+        return self._interface.params
+
     def __repr__(self) -> str:
         return f"<Plugin key={self._key!r} version={self._version!r}>"
+
+    def _split_kwargs(self, kwargs: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+        requirement_ids = {requirement.id for requirement in self._interface.requires}
+        bindings: dict[str, Any] = {}
+        options: dict[str, Any] = {}
+        unknown: list[str] = []
+        for name, value in kwargs.items():
+            if name in requirement_ids:
+                bindings[name] = value
+            elif name in self._interface.params:
+                options[name] = value
+            else:
+                unknown.append(name)
+        if unknown:
+            raise PluginError(
+                f'{self._key} got unexpected argument(s): {", ".join(sorted(unknown))}.\n'
+                f'{self._accepted_summary()}'
+            )
+        return bindings, options
+
+    def _accepted_summary(self) -> str:
+        lines = []
+        if self._interface.requires:
+            lines.append('Accepted inputs: ' + ', '.join(
+                f'{requirement.id} ({requirement.capability})'
+                for requirement in self._interface.requires
+            ))
+        lines.append('Accepted parameters: ' + (', '.join(self._interface.param_names) or '<none>'))
+        return '\n'.join(lines)
+
+    def _resolve_wiring(self, source: Any, bindings: Mapping[str, Any]) -> tuple[Path, list[str]]:
+        interface = self._interface
+        input_spec = interface.input
+
+        if input_spec.requirement is not None and input_spec.requirement not in bindings:
+            bindings = {**bindings, input_spec.requirement: source}
+
+        resolved: dict[str, list[Mapping[str, Path]]] = {}
+        for requirement in interface.requires:
+            value = bindings.get(requirement.id)
+            if value is None:
+                if requirement.required:
+                    raise PluginError(self._unbound_message(requirement))
+                continue
+            sources = list(value) if requirement.multiple and isinstance(value, (list, tuple)) else [value]
+            resolved[requirement.id] = [
+                self._capability_ports(requirement, item) for item in sources
+            ]
+
+        if input_spec.requirement is None:
+            if isinstance(source, PluginRun):
+                raise PluginError(
+                    f'{self._key} takes a trajectory file as its input, not a plugin run. '
+                    f'Pass a path, or one of the run\'s artifacts.'
+                )
+            input_path = Path(os.fspath(source)).expanduser().resolve()
+        else:
+            ports = resolved[input_spec.requirement][0]
+            port = input_spec.port or ''
+            if port not in ports:
+                raise PluginError(
+                    f'{self._key} reads its input from {input_spec.requirement}.{port}, '
+                    f'which the upstream run does not provide '
+                    f'(has: {", ".join(sorted(ports)) or "<none>"}).'
+                )
+            input_path = Path(ports[port]).resolve()
+
+        return input_path, self._wired_argv(resolved)
+
+    def _wired_argv(self, resolved: Mapping[str, list[Mapping[str, Path]]]) -> list[str]:
+        argv: list[str] = []
+        for requirement in self._interface.requires:
+            sources = resolved.get(requirement.id)
+            if not sources:
+                continue
+            for port, flag in requirement.bind.items():
+                paths: list[str] = []
+                for ports in sources:
+                    if port not in ports:
+                        raise PluginError(
+                            f'{self._key} needs {requirement.id}.{port} for {flag}, but the '
+                            f'upstream run provides only: {", ".join(sorted(ports)) or "<none>"}.'
+                        )
+                    paths.append(str(ports[port]))
+                argv.extend([flag, ','.join(paths)])
+        return argv
+
+    def _capability_ports(self, requirement: Requirement, value: Any) -> Mapping[str, Path]:
+        if not isinstance(value, PluginRun):
+            kind = 'a path' if isinstance(value, (str, os.PathLike)) else type(value).__name__
+            raise PluginError(
+                f'{self._key} needs {requirement.id} to provide {requirement.capability}, '
+                f'but got {kind}. Pass the upstream plugin run itself, so the SDK can wire '
+                f'every port the capability carries.'
+            )
+        ports = value.provides.get(requirement.capability)
+        if ports is not None:
+            return ports
+
+        missing = value.unmet.get(requirement.capability)
+        if missing:
+            raise PluginError(
+                f'{self._key} needs {requirement.capability} from {requirement.id}, but the '
+                f'upstream run did not produce: {", ".join(missing)}.'
+            )
+        available = ', '.join(sorted(value.provides)) or '<none>'
+        raise PluginError(
+            f'{self._key} needs {requirement.capability} from {requirement.id}, which the '
+            f'upstream run does not provide. It provides: {available}.'
+        )
+
+    def _unbound_message(self, requirement: Requirement) -> str:
+        return (
+            f'{self._key} requires {requirement.capability} and nothing supplied it. '
+            f'Pass the upstream run as the positional argument, or as {requirement.id}=<run>.'
+        )
+
+    def _option_argv(self, options: Mapping[str, Any]) -> list[str]:
+        argv: list[str] = []
+        for name, value in options.items():
+            if value is None:
+                continue
+            param = self._interface.params[name]
+            argv.extend([param.flag, coerce_param(param, value)])
+        for param in self._interface.params.values():
+            if param.bundle_default is None or param.name in options:
+                continue
+            path = self.root / param.bundle_default
+            if not path.exists():
+                raise PluginError(
+                    f'{self._key} declares {param.flag} defaults to {param.bundle_default} '
+                    f'inside the bundle, but {path} is missing from the installed plugin.'
+                )
+            argv.extend([param.flag, str(path)])
+        return argv
 
     def _resolve_entrypoint(self) -> list[str]:
         binary = self._pick_file(self.root / "bin", prefer_named=True)
@@ -201,18 +364,6 @@ class Plugin:
             f"Ambiguous plugin entrypoint in {directory}: " + ", ".join(p.name for p in files)
         )
 
-    def _run_subprocess(
-        self,
-        input_path: Path,
-        output: Path,
-        config: dict[str, Any],
-        *,
-        timeout: int | float | None,
-    ) -> tuple[list[str], subprocess.CompletedProcess[str]]:
-        command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(config)]
-        completed = _subprocess_run(command, self.root, timeout)
-        return command, completed
-
     def _collect_artifacts(self, output: Path) -> dict[str, Path]:
         result: dict[str, Path] = {}
         directory = output.parent
@@ -228,21 +379,25 @@ class Plugin:
             result[key] = path
         return result
 
-def _argv(options: dict[str, Any]) -> list[str]:
-    args: list[str] = []
-    for key, value in options.items():
-        if value is None:
-            continue
-        flag = f"--{key}"
-        value = _coerce_option_value(value)
-        if isinstance(value, bool):
-            args.extend([flag, "true" if value else "false"])
-            continue
-        if isinstance(value, (dict, list, tuple)):
-            args.extend([flag, json.dumps(value, separators=(",", ":"), ensure_ascii=True)])
-            continue
-        args.extend([flag, str(value)])
-    return args
+    def _resolve_provides(
+        self, artifacts: Mapping[str, Path]
+    ) -> tuple[dict[str, dict[str, Path]], dict[str, tuple[str, ...]]]:
+        provides: dict[str, dict[str, Path]] = {}
+        unmet: dict[str, tuple[str, ...]] = {}
+        for capability, ports in self._interface.provides.items():
+            resolved: dict[str, Path] = {}
+            missing: list[str] = []
+            for port, artifact_name in ports.items():
+                path = artifacts.get(artifact_name)
+                if path is None:
+                    missing.append(f'{port} ({artifact_name})')
+                else:
+                    resolved[port] = path
+            if missing:
+                unmet[capability] = tuple(missing)
+            else:
+                provides[capability] = resolved
+        return provides, unmet
 
 def _resolve_output_prefix(
     input_path: Path,
@@ -265,24 +420,6 @@ def _plugin_output_name(plugin_key: str) -> str:
     normalized = re.sub(r'[^A-Za-z0-9_.-]+', '-', name).strip('-._')
     return normalized or 'plugin'
 
-def _coerce_option_value(value: Any) -> Any:
-    if isinstance(value, os.PathLike):
-        return os.fspath(value)
-    if isinstance(value, list):
-        return [_coerce_option_value(item) for item in value]
-    if isinstance(value, tuple):
-        return [_coerce_option_value(item) for item in value]
-    if isinstance(value, dict):
-        return {key: _coerce_option_value(item) for key, item in value.items()}
-    return value
-
-def _prepare_config(options: dict[str, Any]) -> dict[str, Any]:
-    config = dict(options)
-    value = config.pop("export_as", None)
-    if value is not None:
-        config["export-as"] = value
-    return config
-
 def _subprocess_run(
     command: list[str],
     root: Path,
@@ -297,16 +434,6 @@ def _subprocess_run(
         stderr=subprocess.PIPE,
         timeout=None if timeout is None or timeout < 0 else timeout,
     )
-
-def _artifact_lookup_candidates(name: str) -> tuple[str, ...]:
-    candidates: list[str] = [name]
-    if name.endswith(".msgpack"):
-        candidates.append(f"{name[:-8]}.json")
-    elif name.endswith(".json"):
-        candidates.append(f"{name[:-5]}.msgpack")
-    else:
-        candidates.extend([f"{name}.msgpack", f"{name}.json"])
-    return tuple(dict.fromkeys(candidates))
 
 def _canonical_artifact_name(prefix: str, filename: str) -> str:
     if filename == prefix:
@@ -327,6 +454,8 @@ def _default_glb_output_path(path: Path) -> Path:
 
 def _artifact_df(path: Path, key: str | None):
     suffix = path.suffix.lower()
+    if suffix == '.parquet':
+        return _parquet_df(path, key)
     if suffix == '.msgpack':
         from ..io.msgpack import msgpack_as_df
 
@@ -334,6 +463,24 @@ def _artifact_df(path: Path, key: str | None):
     if suffix == '.json':
         return _json_df(path, key)
     raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
+
+def _parquet_df(path: Path, key: str | None):
+    import pandas as pd
+
+    from ..io.msgpack import frame_from_data, get_nested_value
+
+    frame = pd.read_parquet(path)
+
+    if list(frame.columns) == ['payload'] and len(frame) == 1:
+        data = json.loads(frame['payload'].iloc[0])
+        return frame_from_data(get_nested_value(data, key))
+
+    if key is None:
+        return frame
+    if key not in frame.columns:
+        available = ', '.join(map(str, frame.columns)) or '<none>'
+        raise PluginError(f'Column {key!r} not in {path.name}. Available columns: {available}.')
+    return frame[key]
 
 def _json_df(path: Path, key: str | None):
     from ..io.msgpack import frame_from_data, get_nested_value
