@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import DashboardService from '@modules/dashboard/services/DashboardService';
@@ -10,7 +9,6 @@ import type {
     GlobalSearchInput
 } from '@volt/contracts/modules/dashboard/ai-tools';
 
-@AIToolProvider()
 export default class DashboardAIToolController extends AIToolController {
     #service = new DashboardService();
 

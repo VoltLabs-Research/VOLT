@@ -1,7 +1,28 @@
-import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
+import {
+    computeGroupStatus,
+    isCompletedJobStatus,
+    isFailedJobStatus,
+    isQueuedJobStatus,
+    isRunningJobStatus
+} from '@/modules/jobs/utils/job-status-semantics';
 import { AnalysisStatus } from './analysis-status';
 
 import type { Job } from '@volt/contracts/modules/jobs/domain';
+
+/*
+ * The canvas used to declare its own `isQueuedJobStatus` / `isRunningJobStatus` that
+ * disagreed with the jobs module about `Retrying`. They are re-exported here rather
+ * than redeclared so the canvas keeps its import path and there is still only one
+ * definition.
+ */
+export {
+    computeGroupStatus,
+    isCompletedJobStatus,
+    isFailedJobStatus,
+    isQueuedJobStatus,
+    isRunningJobStatus
+};
 
 export const resolveJobAnalysisId = (job: Job): string | undefined => {
     if (job.analysisId?.trim()) {
@@ -15,34 +36,23 @@ export const resolveJobAnalysisId = (job: Job): string | undefined => {
     return undefined;
 };
 
-export const isQueuedJobStatus = (status: JobStatus | string | undefined): boolean => {
-    return status === JobStatus.Queued || status === JobStatus.QueuedAfterFailure;
-};
-
-export const isRunningJobStatus = (status: JobStatus | string | undefined): boolean => {
-    return status === JobStatus.Running || status === JobStatus.Retrying;
+/*
+ * A job aggregate and an analysis answer the same question in two vocabularies, so
+ * this is a translation of `computeGroupStatus` rather than a second implementation
+ * of it. `Partial` — some completed, some failed, nothing pending — has no analysis
+ * equivalent, and returning `undefined` for it lets the persisted row decide.
+ */
+const ANALYSIS_STATUS_BY_GROUP_STATUS: Record<FrameJobGroupStatus, AnalysisStatus | undefined> = {
+    [FrameJobGroupStatus.Running]: AnalysisStatus.Running,
+    [FrameJobGroupStatus.Queued]: AnalysisStatus.Pending,
+    [FrameJobGroupStatus.Completed]: AnalysisStatus.Completed,
+    [FrameJobGroupStatus.Failed]: AnalysisStatus.Failed,
+    [FrameJobGroupStatus.Partial]: undefined
 };
 
 export const deriveAnalysisStatusFromJobs = (jobs: Job[]): AnalysisStatus | undefined => {
+    /* An empty set says nothing; `computeGroupStatus` would call it completed. */
     if (jobs.length === 0) return undefined;
 
-    if (jobs.some((job) => isRunningJobStatus(job.status))) {
-        return AnalysisStatus.Running;
-    }
-
-    if (jobs.some((job) => isQueuedJobStatus(job.status))) {
-        return AnalysisStatus.Pending;
-    }
-
-    if (jobs.every((job) => job.status === JobStatus.Completed)) {
-        return AnalysisStatus.Completed;
-    }
-
-    const anyFailed = jobs.some((job) => job.status === JobStatus.Failed);
-    const anyCompleted = jobs.some((job) => job.status === JobStatus.Completed);
-    if (anyFailed && !anyCompleted) {
-        return AnalysisStatus.Failed;
-    }
-
-    return undefined;
+    return ANALYSIS_STATUS_BY_GROUP_STATUS[computeGroupStatus(jobs)];
 };

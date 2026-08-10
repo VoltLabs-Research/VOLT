@@ -60,22 +60,27 @@ const hasCommand = async (name: string): Promise<boolean> => {
     return result.code === 0;
 };
 
+/**
+ * How long a provisioning command may stay silent before it is treated as hung.
+ *
+ * Every command here either prints progress or finishes quickly, so silence is a
+ * reliable signal. It is what bounds the case this exists for: a `winget install`
+ * that blocks on a prompt or an elevation dialog nobody will ever see produces no
+ * output at all, and used to sit there until the 30-minute ceiling expired.
+ */
+const IDLE_TIMEOUT_MS = 180_000;
+
 /** Streams a provisioning command into the deploy log so the UI shows progress. */
 const runLogged = async (bin: string, args: string[], timeoutMs?: number): Promise<ProvisionAttempt['ok']> => {
     log(`$ ${bin} ${args.join(' ')}`);
     try{
-        await Promise.race([
-            run(bin, args, {
-                env: { PATH: augmentedPath() },
-                onStdout: (line) => line.trim() && log(line),
-                onStderr: (line) => line.trim() && logError(line)
-            }),
-            ...(timeoutMs
-                ? [new Promise<never>((_, reject) => {
-                    setTimeout(() => reject(new Error(`${bin} timed out`)), timeoutMs).unref();
-                })]
-                : [])
-        ]);
+        await run(bin, args, {
+            env: { PATH: augmentedPath() },
+            onStdout: (line) => line.trim() && log(line),
+            onStderr: (line) => line.trim() && logError(line),
+            timeoutMs,
+            idleTimeoutMs: IDLE_TIMEOUT_MS
+        });
         return true;
     }catch(err){
         logError(err instanceof Error ? err.message : String(err));
@@ -199,15 +204,41 @@ const installOnWindows = async (): Promise<ProvisionAttempt> => {
         };
     }
 
+    /*
+     * `where.exe winget.exe` finding a file is not the same as winget working.
+     * Stripped-down Windows images — Sandbox, a WinBoat guest, Server core, a
+     * fresh LTSC — often ship the App Installer stub without a usable package
+     * manager, and there `winget install` blocks instead of failing. One cheap
+     * `--version` call distinguishes "absent" from "present but broken", and both
+     * are worth reporting rather than hanging on.
+     */
+    const version = await probe('winget', ['--version'], {
+        env: { PATH: augmentedPath() },
+        timeoutMs: 15_000
+    });
+    if(version.code !== 0){
+        return {
+            action: 'install',
+            attempted: false,
+            ok: false,
+            detail: version.errno === 'ETIMEDOUT'
+                ? 'winget is present but did not respond, so it cannot be used to install Docker'
+                : `winget is present but not usable (${version.stderr.trim() || `exit ${version.code}`})`
+        };
+    }
+    log(`winget ${version.stdout.trim()}`);
+
     log('installing Docker Desktop with winget; Windows will ask for permission');
     const ok = await runLogged('winget', [
         'install',
         '--id', 'Docker.DockerDesktop',
         '--exact',
+        '--source', 'winget',
         '--accept-package-agreements',
         '--accept-source-agreements',
-        '--disable-interactivity'
-    ], 30 * 60_000);
+        '--disable-interactivity',
+        '--silent'
+    ], 20 * 60_000);
 
     return {
         action: 'install',

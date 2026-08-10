@@ -2,6 +2,7 @@ import { AlertCircle, CheckCircle2, Circle, LoaderCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
+import useCanvasAnalysisStatus from '@/modules/canvas/hooks/use-canvas-analysis-status';
 import { buildAnalysisExecutionRows } from './execution-rows';
 import { Text } from '@voltstack/bravais';
 
@@ -62,6 +63,7 @@ const resolveSelectedAnalysis = (
 
 const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: AnalysisExecutionOverlayProps) => {
     const trajectoryId = trajectory?._id;
+    const { getAnalysisStatus } = useCanvasAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
     const analysesQuery = useAnalysesByTrajectoryQuery(
         {
             trajectoryId: trajectoryId ?? '',
@@ -89,9 +91,10 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
         return buildAnalysisExecutionRows({
             analysis,
             trajectory,
-            currentTimestep
+            currentTimestep,
+            resolvedStatus: getAnalysisStatus(analysis._id)
         });
-    }, [analysis, currentTimestep, trajectory]);
+    }, [analysis, currentTimestep, trajectory, getAnalysisStatus]);
 
     if (!analysis || rows.length === 0) {
         return null;

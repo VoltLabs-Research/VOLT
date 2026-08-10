@@ -1,5 +1,6 @@
 import { isSameScene, isSameSceneRenderMetadata } from '../utils/scene-identity';
 import useExposureManager from './use-exposure-manager';
+import useCanvasAnalysisStatus from './use-canvas-analysis-status';
 import useSidebarSceneAnalysisDeletion from './use-sidebar-scene-analysis-deletion';
 import useSidebarSceneExecutionNotifications from './use-sidebar-scene-execution-notifications';
 import useSidebarSceneSectionState from './use-sidebar-scene-section-state';
@@ -86,6 +87,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const { analysisId: analysisConfigId, setAnalysisId } = useCanvasUrlState();
 
     const { exposureEntries, getEntry, loadExposuresForAnalysis, resetEntries } = useExposureManager({ trajectoryId });
+    const { getAnalysisStatus } = useCanvasAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
     const { pluginsById } = usePluginSelectors();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -271,9 +273,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return filterVisibleSections(
             buildAnalysisSections(resolvedAnalyses, exposureEntries, analysisConfigId),
             analysisConfigId,
-            searchQuery
+            searchQuery,
+            getAnalysisStatus
         );
-    }, [resolvedAnalyses, exposureEntries, analysisConfigId, searchQuery]);
+    }, [resolvedAnalyses, exposureEntries, analysisConfigId, searchQuery, getAnalysisStatus]);
 
     const sceneCollectionSections = useMemo(() => {
         return filterSectionsByTimestep(filteredSections, analysisConfigId, currentTimestep, trajectoryTimesteps);

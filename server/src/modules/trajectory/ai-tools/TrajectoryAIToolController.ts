@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
@@ -17,7 +16,6 @@ import type {
     UpdateTrajectoryInput
 } from '@volt/contracts/modules/trajectory/ai-tools';
 
-@AIToolProvider()
 export default class TrajectoryAIToolController extends AIToolController {
     #service = new TrajectoryService();
 

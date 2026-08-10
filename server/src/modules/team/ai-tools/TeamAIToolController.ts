@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import TeamService from '@modules/team/services/TeamService';
@@ -8,7 +7,6 @@ import TeamMemberService from '@modules/team/services/TeamMemberService';
 import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
 
-@AIToolProvider()
 export default class TeamAIToolController extends AIToolController {
     #team = new TeamService();
     #members = new TeamMemberService();

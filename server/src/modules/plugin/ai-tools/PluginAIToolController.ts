@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
@@ -60,7 +59,6 @@ const diffSets = (a: string[], b: string[]) => ({
     shared: a.filter((item) => b.includes(item))
 });
 
-@AIToolProvider()
 export default class PluginAIToolController extends AIToolController {
     #service = new PluginService();
     #summarizer = new AnalysisResultSummarizer();

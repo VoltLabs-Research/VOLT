@@ -1,7 +1,7 @@
 import { ANALYSIS_LISTING_DOWNLOAD_MODAL_ID } from '../AnalysisListingDownloadModal';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
-import useAnalysisStatus from '../../hooks/use-analysis-status';
+import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
 import useDownloadPluginListing from '../../hooks/use-download-plugin-listing';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import { openModal } from '@voltstack/bravais';
@@ -24,7 +24,7 @@ const useCanvasDownloads = ({ trajectory, analysisId }: CanvasDownloadsParams) =
         downloadTrajectoryAnalyses,
         isDownloading: isDownloadingTrajectoryAnalyses
     } = useDownloadTrajectoryAnalyses();
-    const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id });
+    const { statusMap } = useCanvasAnalysisStatus({ trajectoryId: trajectory?._id });
     const [analysisDownloadTargetId, setAnalysisDownloadTargetId] = useState<string | null>(null);
 
     const openAnalysisDownloadModal = useCallback((targetAnalysisId?: string) => {

@@ -1,18 +1,12 @@
-import { FrameJobGroupStatus, JobStatus } from '@volt/contracts/modules/jobs/domain';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import { computeGroupStatus } from '@/modules/jobs/utils/job-status-semantics';
 import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
-export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
-    const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
-    const hasQueued = jobs.some((job) => job.status === JobStatus.Queued || job.status === JobStatus.Retrying || job.status === JobStatus.QueuedAfterFailure);
-    const hasFailed = jobs.some((job) => job.status === JobStatus.Failed);
-    const allCompleted = jobs.every((job) => job.status === JobStatus.Completed);
-
-    if (hasRunning) return FrameJobGroupStatus.Running;
-    if (hasQueued) return FrameJobGroupStatus.Queued;
-    if (allCompleted) return FrameJobGroupStatus.Completed;
-    if (hasFailed && jobs.filter((job) => job.status === JobStatus.Completed).length === 0) return FrameJobGroupStatus.Failed;
-    return FrameJobGroupStatus.Partial;
-};
+/*
+ * Re-exported so existing importers keep their path. The definition lives in
+ * `job-status-semantics`, next to the predicates it is built from.
+ */
+export { computeGroupStatus };
 
 const isUngroupedTimestep = (timestep: number): boolean => timestep === UNGROUPED_TIMESTEP;
 

@@ -1,12 +1,14 @@
-import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summary';
+import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
+import { formatAnalysisActivityLabels } from '../../utils/analysis-activity-labels';
 import { formatSize } from '@voltstack/bravais';
 import { Divider, Row, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { Analysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { ReactNode } from 'react';
 
 import './StatusBar.css';
@@ -44,8 +46,11 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     </Row>
 );
 
-const getLatestRunningStage = (analysis: Analysis | undefined): AnalysisStage | undefined => {
-    const analysisStatus = normalizeCanvasAnalysisStatus(analysis?.status);
+const getLatestRunningStage = (
+    analysis: Analysis | undefined,
+    resolvedStatus: CanvasAnalysisStatus | undefined
+): AnalysisStage | undefined => {
+    const analysisStatus = resolvedStatus ?? normalizeCanvasAnalysisStatus(analysis?.status);
     return [...(analysis?.stages ?? [])].reverse().find((stage) => {
         if (stage.status !== 'running') {
             return false;
@@ -56,13 +61,14 @@ const getLatestRunningStage = (analysis: Analysis | undefined): AnalysisStage | 
 };
 
 const resolveSelectedAnalysisStatusValue = (
-    analysis: Analysis | undefined
+    analysis: Analysis | undefined,
+    resolvedStatus: CanvasAnalysisStatus | undefined
 ): AnalysisStatusValue | null => {
     if (!analysis) {
         return null;
     }
 
-    const runningStage = getLatestRunningStage(analysis);
+    const runningStage = getLatestRunningStage(analysis, resolvedStatus);
     if (runningStage) {
         return {
             label: runningStage.label,
@@ -100,7 +106,7 @@ const resolveSelectedAnalysisStatusValue = (
         };
     }
 
-    const status = normalizeCanvasAnalysisStatus(analysis.status);
+    const status = resolvedStatus ?? normalizeCanvasAnalysisStatus(analysis.status);
     if (status === 'running') {
         return {
             label: 'Running',
@@ -143,8 +149,15 @@ const renderAnalysisStatusValue = (value: AnalysisStatusValue) => (
 );
 
 const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) => {
-    const activitySummary = useAnalysisActivitySummary(trajectory ?? undefined);
     const trajectoryId = trajectory?._id;
+    const { activitySummary: rawActivitySummary, getAnalysisStatus } = useCanvasAnalysisStatus({
+        trajectoryId,
+        enabled: !!trajectoryId,
+        fallbackAnalyses: trajectory?.analysis
+    });
+    const activitySummary = useMemo(() => {
+        return formatAnalysisActivityLabels(rawActivitySummary);
+    }, [rawActivitySummary]);
     const analysesQuery = useAnalysesByTrajectoryQuery(
         {
             trajectoryId: trajectoryId ?? '',
@@ -167,7 +180,15 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
             ]
         });
     }, [analysisId, analysesQuery.data, trajectory?.analysis, trajectoryId]);
-    const selectedAnalysisStatusValue = resolveSelectedAnalysisStatusValue(selectedAnalysis);
+    /*
+     * The merged status, not `selectedAnalysis.status`: the row lags the jobs, so
+     * reading it directly showed "Queued" while the timeline had already gone live.
+     */
+    const selectedAnalysisStatus = analysisId ? getAnalysisStatus(analysisId) : undefined;
+    const selectedAnalysisStatusValue = resolveSelectedAnalysisStatusValue(
+        selectedAnalysis,
+        selectedAnalysisStatus
+    );
 
     let teamName = '-';
     if (trajectory && typeof trajectory.team === 'object' && trajectory.team) {

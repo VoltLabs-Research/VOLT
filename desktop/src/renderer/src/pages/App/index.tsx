@@ -255,6 +255,8 @@ const App = () => {
                         result={preflight}
                         onRecheck={start}
                         onOpenUrl={(target) => window.volt.shell.openExternal(target)}
+                        logs={logs}
+                        onSwitchDeployment={switchDeployment}
                     />
                 )}
 

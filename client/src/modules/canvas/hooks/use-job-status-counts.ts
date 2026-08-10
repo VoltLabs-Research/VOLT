@@ -1,58 +1,23 @@
-import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { isQueuedJobStatus, isRunningJobStatus } from '@/modules/canvas/utils/analysis-job-status';
+import { buildJobStatusCounts } from '@/modules/canvas/utils/analysis-status-selectors';
 import { useMemo } from 'react';
 
-interface JobStatusCounts {
-    queued: number;
-    running: number;
-    completed: number;
-    failed: number;
-}
+import type { JobStatusCounts } from '@/modules/canvas/utils/analysis-status-selectors';
 
-const INITIAL_COUNTS: JobStatusCounts = {
-    queued: 0,
-    running: 0,
-    completed: 0,
-    failed: 0
-};
-
-const useJobStatusCounts = (trajectoryId?: string) => {
+/**
+ * Job counts for one trajectory, or team-wide when no id is given.
+ *
+ * Kept separate from `useCanvasAnalysisStatus` on purpose: the dashboard's bottom bar
+ * counts jobs with no canvas open, and pulling it through that hook would make it
+ * fetch a trajectory's analyses it has no use for. The bucketing itself is shared —
+ * `buildJobStatusCounts` is the same derivation the canvas uses, so the drawer and the
+ * timeline can no longer disagree about what "queued" means.
+ */
+const useJobStatusCounts = (trajectoryId?: string): JobStatusCounts => {
     const { data: groups = [] } = teamJobsGroups();
 
     return useMemo(() => {
-        const counts = { ...INITIAL_COUNTS };
-
-        for (const group of groups) {
-            if (trajectoryId && group.trajectoryId !== trajectoryId) {
-                continue;
-            }
-
-            for (const frame of group.frameGroups) {
-                for (const job of frame.jobs) {
-                    if (isQueuedJobStatus(job.status)) {
-                        counts.queued += 1;
-                        continue;
-                    }
-
-                    if (isRunningJobStatus(job.status)) {
-                        counts.running += 1;
-                        continue;
-                    }
-
-                    if (job.status === JobStatus.Completed) {
-                        counts.completed += 1;
-                        continue;
-                    }
-
-                    if (job.status === JobStatus.Failed) {
-                        counts.failed += 1;
-                    }
-                }
-            }
-        }
-
-        return counts;
+        return buildJobStatusCounts(groups, trajectoryId);
     }, [groups, trajectoryId]);
 };
 

@@ -1,4 +1,4 @@
-import useAnalysisStatus from './use-analysis-status';
+import useCanvasAnalysisStatus from './use-canvas-analysis-status';
 import { CanvasAnalysisStatusEnum } from '../utils/analysis-status';
 import { isRenderableSceneExport } from '../utils/plugin-exposure-export';
 
@@ -84,7 +84,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         }
     }, [analysisIdArray, queryResults, checkAccessDeniedError]);
 
-    const { statusMap } = useAnalysisStatus({
+    const { statusMap } = useCanvasAnalysisStatus({
         trajectoryId,
         enabled: !!trajectoryId
     });

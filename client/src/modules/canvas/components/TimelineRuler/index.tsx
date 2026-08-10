@@ -1,6 +1,6 @@
 import { Box } from '@voltstack/bravais';
 import { memo } from 'react';
-import type { TimelineTickTone } from '@/modules/canvas/hooks/use-timeline-job-activity';
+import type { TimelineTickTone } from '@/modules/canvas/utils/analysis-status-selectors';
 import type { RefObject } from 'react';
 
 interface TimelineRulerTick {

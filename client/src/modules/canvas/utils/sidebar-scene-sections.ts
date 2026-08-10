@@ -3,6 +3,7 @@ import { getSelectedTimestepsForAnalysis } from './selected-timestep-analysis';
 import { DEFAULT_ENTRY } from '../hooks/use-exposure-manager';
 
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
+import type { CanvasAnalysisStatus } from './analysis-status';
 import type { ExposureEntry } from '../hooks/use-exposure-manager';
 
 export interface AnalysisSectionData {
@@ -30,7 +31,13 @@ export const buildAnalysisSections = (
 export const filterVisibleSections = (
     sections: AnalysisSectionData[],
     selectedAnalysisId: string | undefined,
-    searchQuery: string
+    searchQuery: string,
+    /*
+     * The merged status, supplied by the caller that holds the hook. Reading
+     * `section.analysis.status` alone hid an analysis whose row still said `failed`
+     * after its retry had already been picked up.
+     */
+    getResolvedStatus?: (analysisId: string) => CanvasAnalysisStatus | undefined
 ): AnalysisSectionData[] => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -42,7 +49,8 @@ export const filterVisibleSections = (
             return true;
         }
 
-        const status = normalizeCanvasAnalysisStatus(section.analysis.status);
+        const status = getResolvedStatus?.(section.analysis._id)
+            ?? normalizeCanvasAnalysisStatus(section.analysis.status);
         return status !== undefined && status !== AnalysisStatus.Failed;
     });
 };

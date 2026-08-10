@@ -1,14 +1,12 @@
-import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { isQueuedJobStatus, isRunningJobStatus, resolveJobAnalysisId } from '../utils/analysis-job-status';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useCanvasAnalysisStatus from './use-canvas-analysis-status';
+import { isRunningJobStatus } from '../utils/analysis-job-status';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Job } from '@volt/contracts/modules/jobs/domain';
-
-export type TimelineTickTone = 'queued' | 'running' | 'completed';
-type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';
+import type { TimelineTickTone } from '../utils/analysis-status-selectors';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 
@@ -16,8 +14,22 @@ const resolveTimestep = (job: Job): number | undefined => {
     return job.timestep ?? job.metadata?.timestep;
 };
 
-const useTimelineJobActivity = (trajectoryId?: string) => {
-    const { data: groups = [] } = teamJobsGroups();
+/**
+ * Timeline tick presentation: the shared status, plus a brief flash when a frame lands.
+ *
+ * This hook used to derive frame status itself with a raw `.some(isQueued)` per frame,
+ * which made it a fourth opinion on a question the server and two other hooks already
+ * answered — and because it ignored which analysis a job belonged to, a queued PTM run
+ * painted a tick orange while the DXA row beside it read as running. Status now comes
+ * from `useCanvasAnalysisStatus`; all that is left here is the ephemeral highlight,
+ * which is genuinely presentation and has no other home.
+ */
+const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
+    const { getFrameTone, getAnalysisFrameStatus } = useCanvasAnalysisStatus({
+        trajectoryId,
+        enabled: !!trajectoryId
+    });
+
     const runningJobIdsRef = useRef<Set<string>>(new Set());
     const completionTimersRef = useRef<Map<number, number>>(new Map());
     const [completedTimesteps, setCompletedTimesteps] = useState<Set<number>>(new Set());
@@ -73,26 +85,6 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
         };
     }, [clearAllCompletionTimers]);
 
-    useEffect(() => {
-        if (!trajectoryId) {
-            return;
-        }
-
-        for (const group of groups) {
-            if (group.trajectoryId !== trajectoryId) {
-                continue;
-            }
-
-            for (const frameGroup of group.frameGroups) {
-                for (const job of frameGroup.jobs) {
-                    if (isRunningJobStatus(job.status)) {
-                        runningJobIdsRef.current.add(job.jobId);
-                    }
-                }
-            }
-        }
-    }, [groups, trajectoryId]);
-
     const handleJobUpdated = useCallback((job: Job) => {
         if (!trajectoryId || job.trajectoryId !== trajectoryId) {
             return;
@@ -108,6 +100,7 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
             return;
         }
 
+        /* Only a job this session watched running earns a flash on landing. */
         if (job.status === JobStatus.Completed) {
             if (runningJobIdsRef.current.has(job.jobId)) {
                 markCompletedHighlight(timestep);
@@ -122,87 +115,21 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
 
     useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdated, { enabled: !!trajectoryId });
 
-    const toneByTimestep = useMemo(() => {
-        const next = new Map<number, TimelineTickTone>();
+    /**
+     * Tone for one tick, scoped to the selected analysis when there is one.
+     *
+     * The completion flash wins while it lasts, because it is the one thing here the
+     * shared status cannot express: a frame that just finished looks the same to the
+     * selectors as one that finished an hour ago.
+     */
+    const getTickTone = useCallback((timestep: number): TimelineTickTone | undefined => {
+        if (completedTimesteps.has(timestep)) return 'completed';
 
-        if (!trajectoryId) {
-            return next;
-        }
-
-        for (const group of groups) {
-            if (group.trajectoryId !== trajectoryId) {
-                continue;
-            }
-
-            for (const frameGroup of group.frameGroups) {
-                const timestep = frameGroup.timestep;
-
-                if (completedTimesteps.has(timestep)) {
-                    next.set(timestep, 'completed');
-                    continue;
-                }
-
-                const hasRunning = frameGroup.jobs.some((job) => isRunningJobStatus(job.status));
-                if (hasRunning) {
-                    next.set(timestep, 'running');
-                    continue;
-                }
-
-                const hasQueued = frameGroup.jobs.some((job) => isQueuedJobStatus(job.status));
-                if (hasQueued) {
-                    next.set(timestep, 'queued');
-                }
-            }
-        }
-
-        return next;
-    }, [completedTimesteps, groups, trajectoryId]);
-
-    const getAnalysisFrameStatus = useCallback((
-        analysisId: string,
-        timestep: number
-    ): AnalysisFrameActivityStatus | undefined => {
-        if (!trajectoryId) {
-            return undefined;
-        }
-
-        for (const group of groups) {
-            if (group.trajectoryId !== trajectoryId) {
-                continue;
-            }
-
-            const frameGroup = group.frameGroups.find((frame) => frame.timestep === timestep);
-            if (!frameGroup) {
-                continue;
-            }
-
-            const matchingJobs = frameGroup.jobs.filter((job) => resolveJobAnalysisId(job) === analysisId);
-            if (matchingJobs.length === 0) {
-                continue;
-            }
-
-            if (matchingJobs.some((job) => isRunningJobStatus(job.status))) {
-                return 'running';
-            }
-
-            if (matchingJobs.some((job) => isQueuedJobStatus(job.status))) {
-                return 'queued';
-            }
-
-            if (matchingJobs.some((job) => job.status === JobStatus.Failed)) {
-                return 'failed';
-            }
-
-            if (matchingJobs.some((job) => job.status === JobStatus.Completed)) {
-                return 'completed';
-            }
-        }
-
-        return undefined;
-    }, [groups, trajectoryId]);
+        return getFrameTone(timestep, analysisId);
+    }, [analysisId, completedTimesteps, getFrameTone]);
 
     return {
-        toneByTimestep,
+        getTickTone,
         getAnalysisFrameStatus
     };
 };

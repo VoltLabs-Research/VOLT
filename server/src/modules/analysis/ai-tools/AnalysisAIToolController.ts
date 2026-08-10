@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
@@ -22,7 +21,6 @@ interface ConfigDelta {
     unchangedKeys: string[];
 }
 
-@AIToolProvider()
 export default class AnalysisAIToolController extends AIToolController {
     #service = new AnalysisService();
 

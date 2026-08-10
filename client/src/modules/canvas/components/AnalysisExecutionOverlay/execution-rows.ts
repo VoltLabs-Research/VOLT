@@ -4,6 +4,7 @@ import {
     getSelectedTimestepsForAnalysis
 } from '../../utils/selected-timestep-analysis';
 
+import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type {
     Analysis,
     AnalysisChildAnalysis,
@@ -26,6 +27,12 @@ interface BuildAnalysisExecutionRowsInput {
     analysis: Analysis;
     trajectory?: Trajectory | null;
     currentTimestep?: number;
+    /*
+     * The merged status, from the caller that holds the hook. The row alone lags the
+     * jobs, so child and stage rows were labelled against a status the timeline had
+     * already moved past.
+     */
+    resolvedStatus?: CanvasAnalysisStatus;
 }
 
 const rowKey = (baseKey: string, timestep?: number): string => {
@@ -98,13 +105,14 @@ const filterRowsForCurrentTimestep = <T extends { timestep?: number }>(
 export const buildAnalysisExecutionRows = ({
     analysis,
     trajectory,
-    currentTimestep
+    currentTimestep,
+    resolvedStatus: mergedStatus
 }: BuildAnalysisExecutionRowsInput): AnalysisExecutionOverlayRow[] => {
     if (isOutsideSelectedTimestepScope(analysis, trajectory, currentTimestep)) {
         return [];
     }
 
-    const resolvedStatus = normalizeCanvasAnalysisStatus(analysis.status);
+    const resolvedStatus = mergedStatus ?? normalizeCanvasAnalysisStatus(analysis.status);
     const allChildRows = (analysis.childAnalyses ?? [])
         .map((child) => normalizeChildForDisplay(child, resolvedStatus));
     const allStageRows = (analysis.stages ?? [])

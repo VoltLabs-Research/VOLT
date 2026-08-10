@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ScriptingService from '@modules/scripting/services/ScriptingService';
@@ -13,7 +12,6 @@ import type {
     UpdateScriptingNotebookInput
 } from '@volt/contracts/modules/scripting/ai-tools';
 
-@AIToolProvider()
 export default class ScriptingAIToolController extends AIToolController {
     #service = new ScriptingService();
     #sessions = new ScriptingSessionService();

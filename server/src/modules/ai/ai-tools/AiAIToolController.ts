@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool, ClientAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AiService from '@modules/ai/services/AiService';
@@ -30,7 +29,6 @@ import type {
     UpdateConversationInput
 } from '@volt/contracts/modules/ai/ai-tools';
 
-@AIToolProvider()
 export default class AiAIToolController extends AIToolController {
     #service = new AiService();
 

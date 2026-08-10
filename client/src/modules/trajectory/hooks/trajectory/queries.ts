@@ -1,5 +1,6 @@
 import trajectoryService from '../../api/services/trajectory-service';
 import canvasService from '@/modules/canvas/api/services/canvas-service';
+import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
 import {
     buildKeys,
     createInfiniteQuery,
@@ -118,7 +119,7 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
     });
 
     return result.data.filter(
-        (trajectory: Trajectory) => trajectory.status === 'completed'
+        (trajectory: Trajectory) => isTrajectoryCompleted(trajectory.status)
             && trajectory.frames.length > 0
     );
 });

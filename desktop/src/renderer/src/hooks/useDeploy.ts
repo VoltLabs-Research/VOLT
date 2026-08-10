@@ -49,7 +49,7 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         });
 
     const run = (op: () => Promise<unknown>, reset?: () => void) => {
-        if(busyRef.current) return;
+        if(busyRef.current) return false;
         busyRef.current = true;
         setBusy(true);
         reset?.();
@@ -57,6 +57,7 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
             busyRef.current = false;
             setBusy(false);
         });
+        return true;
     };
 
     /**
@@ -65,10 +66,15 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
      * This used to probe Docker first and stop at the gate when it was missing,
      * which meant the automatic provisioning inside `deploy.start()` was never
      * reached. The gate is now driven purely by `deploy:preflight` events.
+     *
+     * `clear` distinguishes a deliberate restart from the background re-check
+     * below. A user pressing Retry should see the gate reset; the two-second poll
+     * should not, because clearing the preflight unmounts the gate and remounts it
+     * on the next event — which reads as a flickering, stuck window rather than as
+     * "still waiting for Docker".
      */
-    const boot = async (): Promise<void> => {
-        setPreflight(null);
-        run(() => window.volt.deploy.start());
+    const boot = async ({ clear = true }: { clear?: boolean } = {}): Promise<void> => {
+        run(() => window.volt.deploy.start(), clear ? () => setPreflight(null) : undefined);
     };
 
     useEffect(() => {
@@ -157,7 +163,7 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     useEffect(() => {
         if(!preflight || !AUTOMATIC_REASONS.has(preflight.reason)) return;
         if(busyRef.current) return;
-        const id = setInterval(() => { void boot(); }, POLL_INTERVAL);
+        const id = setInterval(() => { void boot({ clear: false }); }, POLL_INTERVAL);
         return () => clearInterval(id);
     }, [preflight?.reason]);
 

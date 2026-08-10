@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
@@ -22,7 +21,6 @@ import type {
 
 const MASKED = '••••••••';
 
-@AIToolProvider()
 export default class ClusterAIToolController extends AIToolController {
     #service = new ClusterService();
 

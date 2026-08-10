@@ -46,7 +46,10 @@ const useClustersListingPage = () => {
         queryClient.setQueriesData<ClusterListingCache>({
             queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(selectedTeamId)
         }, (cachedData) => {
-            if (!cachedData) {
+            // `byTeam` is a shared prefix: the plain useTeamClustersQuery entry lives at
+            // exactly this key while the listing's infinite query hangs one segment below
+            // it, so this fuzzy match also hands us non-paginated cache shapes to skip.
+            if (!cachedData?.pages) {
                 return cachedData;
             }
 

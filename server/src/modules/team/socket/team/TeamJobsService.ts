@@ -246,9 +246,21 @@ export default class TeamJobsService {
         return 0;
     }
 
+    /**
+     * The status of a set of jobs taken together — a frame, or a whole trajectory.
+     *
+     * Kept identical to `computeGroupStatus` in the client's
+     * `modules/jobs/utils/job-status-semantics`, which is what the browser applies to
+     * its own optimistic socket patches. `QueuedAfterFailure` was missing here, so a
+     * frame in that state was reported as `partial` by the server and as `queued` by
+     * the client patch — the same frame changing colour depending on whether the page
+     * had reloaded since.
+     */
     private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {
         const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
-        const hasQueued = jobs.some((job) => job.status === JobStatus.Queued || job.status === JobStatus.Retrying);
+        const hasQueued = jobs.some((job) => job.status === JobStatus.Queued
+            || job.status === JobStatus.Retrying
+            || job.status === JobStatus.QueuedAfterFailure);
         const hasFailed = jobs.some((job) => job.status === JobStatus.Failed);
         const allCompleted = jobs.every((job) => job.status === JobStatus.Completed);
 

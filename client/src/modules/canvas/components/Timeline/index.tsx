@@ -6,6 +6,7 @@ import useTimelineTabsState from './use-timeline-tabs-state';
 import useTimelineJobActivity from '../../hooks/use-timeline-job-activity';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
+import { toAnalysisFrameActivityStatus } from '@/modules/canvas/utils/analysis-status-selectors';
 import useTip from '@/shared/tips/use-tip';
 
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -51,7 +52,7 @@ const Timeline = ({
         trajectory,
         analysisId
     });
-    const { toneByTimestep, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id);
+    const { getTickTone, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id, analysisId);
 
     const {
         playSpeed,
@@ -101,16 +102,16 @@ const Timeline = ({
         return rangedTimesteps.map((frame) => ({
             frame,
             major: true,
-            tone: toneByTimestep.get(frame),
+            tone: getTickTone(frame),
             dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false
         }));
-    }, [rangedTimesteps, toneByTimestep, selectedAnalysisTimesteps]);
+    }, [rangedTimesteps, getTickTone, selectedAnalysisTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];
     const currentFrame = currentTimestep ?? startFrame;
     const analysisFrameStatus = analysisId
-        ? getAnalysisFrameStatus(analysisId, currentFrame)
+        ? toAnalysisFrameActivityStatus(getAnalysisFrameStatus(analysisId, currentFrame))
         : undefined;
 
     const { rulerRef, playheadLeft, rulerHandlers } = useTimelineScrubber({

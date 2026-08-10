@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool, ClientAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
@@ -21,7 +20,6 @@ import type {
 /** Excalidraw persists an image cache alongside the scene; the realtime path ignores it. */
 type StoredScene = WhiteboardScene & { files?: Record<string, unknown> };
 
-@AIToolProvider()
 export default class WhiteboardAIToolController extends AIToolController {
     #service = new WhiteboardService();
 

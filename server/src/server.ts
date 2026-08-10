@@ -3,8 +3,9 @@ import './core/config/env';
 import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import http from 'http';
+import { AI_TOOL_CONTROLLERS } from './core/bootstrap/ai-tools';
+import { registerAIToolControllers } from './modules/ai/services/AIToolService';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
-import { loadAllModules } from './core/bootstrap/load-modules';
 import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
 import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@core/bootstrap/runtime-state-maintenance';
 import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
@@ -125,7 +126,7 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
-    await loadAllModules();
+    registerAIToolControllers(AI_TOOL_CONTROLLERS);
 
     configureOAuthStrategies();
 

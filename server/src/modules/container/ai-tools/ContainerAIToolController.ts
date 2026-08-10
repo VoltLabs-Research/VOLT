@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ContainerService from '@modules/container/services/ContainerService';
@@ -20,7 +19,6 @@ import type {
     UpdateContainerInput
 } from '@volt/contracts/modules/container/ai-tools';
 
-@AIToolProvider()
 export default class ContainerAIToolController extends AIToolController {
     #service = new ContainerService();
 

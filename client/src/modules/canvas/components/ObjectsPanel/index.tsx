@@ -2,7 +2,7 @@ import ArtifactTreeSection from './ArtifactTreeSection';
 import RightCollapsible, { PANEL_ICON_STYLE } from './RightCollapsible';
 import useArtifactSections from './use-artifact-sections';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
-import useAnalysisStatus from '../../hooks/use-analysis-status';
+import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
 import CanvasPipeline from '../CanvasPipeline';
@@ -74,7 +74,7 @@ const ObjectsPanel = ({
         trajectoryId: trajectory?._id
     });
 
-    const { statusMap } = useAnalysisStatus({
+    const { statusMap } = useCanvasAnalysisStatus({
         trajectoryId: trajectory?._id,
         enabled: !!trajectory?._id
     });

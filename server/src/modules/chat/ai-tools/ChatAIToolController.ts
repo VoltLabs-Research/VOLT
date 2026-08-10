@@ -1,6 +1,5 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AIToolProvider } from '@shared/ai/provider-registry';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ChatService from '@modules/chat/services/ChatService';
@@ -8,7 +7,6 @@ import ChatMessageService from '@modules/chat/services/ChatMessageService';
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import type { ChatCollaborationInput } from '@volt/contracts/modules/chat/ai-tools';
 
-@AIToolProvider()
 export default class ChatAIToolController extends AIToolController {
     #service = new ChatService();
 

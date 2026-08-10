@@ -4,6 +4,7 @@ import {
     getSelectedTimestepsForAnalysis
 } from '../utils/selected-timestep-analysis';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
+import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from './queries';
 import useAccessDenied, { createAccessDeniedRetry } from '@/shared/ui/hooks/use-access-denied';
@@ -148,7 +149,8 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
 
     useEffect(() => {
         if (trajectory?._id && trajectory.status) {
-            if (trajectory.status === 'completed' && prevTrajectoryStatusRef.current !== 'completed') {
+            if (isTrajectoryCompleted(trajectory.status)
+                && !isTrajectoryCompleted(prevTrajectoryStatusRef.current)) {
                 resetModel();
             }
 
