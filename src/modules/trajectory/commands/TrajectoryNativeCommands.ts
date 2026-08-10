@@ -2,7 +2,6 @@ import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import { getFilterEvaluator } from '@modules/trajectory/services/FilterEvaluator';
-import { getLineModelEvaluator } from '@modules/trajectory/services/LineModelEvaluator';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -20,7 +19,6 @@ import type {
     FilterEvaluator,
     PreviewFilterInput
 } from '@modules/trajectory/services/FilterEvaluator';
-import type { ExportLineModelInput, LineModelEvaluator } from '@modules/trajectory/services/LineModelEvaluator';
 import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/trajectory-frame-store';
 
 /**
@@ -37,8 +35,7 @@ export class TrajectoryNativeCommands {
         private readonly glbExporter: GlbExporter,
         private readonly trajectoryParser: TrajectoryParser,
         private readonly pluginPropertyStore: PluginPropertyStore,
-        private readonly filterEvaluator: FilterEvaluator,
-        private readonly lineModelEvaluator: LineModelEvaluator
+        private readonly filterEvaluator: FilterEvaluator
     ) {}
 
     @Command('metadata')
@@ -100,11 +97,6 @@ export class TrajectoryNativeCommands {
     particleFilterModel(payload: ExportParticleFilterModelInput) {
         return this.filterEvaluator.exportParticleFilterModel(payload);
     }
-
-    @Command('line-model')
-    lineModel(payload: ExportLineModelInput) {
-        return this.lineModelEvaluator.exportLineModel(payload);
-    }
 }
 
-export const getTrajectoryNativeCommands = commandGroupFactory(TrajectoryNativeCommands, () => new TrajectoryNativeCommands(getGlbExporter(), getTrajectoryParser(), getPluginPropertyStore(), getFilterEvaluator(), getLineModelEvaluator()));
+export const getTrajectoryNativeCommands = commandGroupFactory(TrajectoryNativeCommands, () => new TrajectoryNativeCommands(getGlbExporter(), getTrajectoryParser(), getPluginPropertyStore(), getFilterEvaluator()));
