@@ -1,0 +1,133 @@
+name: Publish Cluster Daemon Stack Image
+
+# The image the desktop app's single-machine stack runs.
+#
+# This is built from `Dockerfile.dev`, not `Dockerfile`: the stack bind-mounts the
+# resolved release over `/app` and takes `node_modules` from a named volume seeded
+# by the image, so what the image needs to carry is the system packages and the
+# installed dependencies — not a compiled copy of the source. `publish-cluster-daemon.yml`
+# still publishes the self-contained production image for other deployments.
+#
+# Built per architecture on native runners because this image compiles native
+# modules, which is very slow under QEMU emulation.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-stack-image.yml'
+      - 'Dockerfile.dev'
+      - '.dockerignore'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/voltlabs-research/volt-cluster-daemon-stack
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./Dockerfile.dev
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          provenance: false
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=stack-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=stack-${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.build.outputs.digest }}" > "/tmp/digests/${{ matrix.arch }}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  manifest:
+    name: Publish manifest
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: digest-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          set -euo pipefail
+          REFS=""
+          for file in /tmp/digests/*; do
+            REFS="$REFS ${IMAGE_NAME}@$(cat "$file")"
+          done
+
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:main" \
+            --tag "${IMAGE_NAME}:sha-${{ github.sha }}" \
+            $REFS
+
+          docker buildx imagetools inspect "${IMAGE_NAME}:main"
+
+      - name: Publish summary
+        run: |
+          {
+            echo '## Cluster daemon stack image published'
+            echo ''
+            echo "- Image: \`${IMAGE_NAME}\`"
+            echo '- Tags: `main`, `sha-${{ github.sha }}`'
+            echo '- Platforms: `linux/amd64`, `linux/arm64`'
+          } >> "$GITHUB_STEP_SUMMARY"

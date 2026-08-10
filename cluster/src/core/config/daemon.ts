@@ -1,0 +1,135 @@
+import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import { DAEMON_PATHS } from '@core/config/paths';
+
+interface JupyterConfig {
+    image: string;
+    execTimeoutMs: number;
+    notebookRoot: string;
+    port: number;
+    token: string;
+    uiPath: string;
+    frameAncestors: string;
+}
+
+export interface DaemonConfig {
+    port: number;
+    host: string;
+    teamId?: string;
+    teamClusterId: string;
+    daemonPassword: string;
+    voltCloudUrl: string;
+    heartbeatIntervalMs: number;
+    metricsIntervalMs: number;
+    composeProjectName?: string;
+    installRoot?: string;
+    /*
+     * The daemon's own relational store. Separate from the control plane's database
+     * even when a single-node deployment points both at the same server: a remote
+     * cluster has no route to the control plane's Postgres.
+     */
+    databaseUrl: string;
+    jupyter: JupyterConfig;
+    allowedBuckets: ObjectBucketName[];
+    bucketPrefix: string;
+    /** Where the cluster's objects live on disk. */
+    objectStoreRoot: string;
+    isDemoMode: boolean;
+    /*
+     * Where the control plane can reach this daemon's object gateway without going
+     * through the reverse channel. Only set where the daemon is actually routable
+     * from the server (compose network, LAN, published ingress); left undefined the
+     * server keeps tunnelling, which always works and is only slow.
+     */
+    objectGatewayPublicBaseUrl?: string;
+}
+
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
+const DEFAULT_METRICS_INTERVAL_MS = 3_000;
+const DEFAULT_JUPYTER_IMAGE = 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main';
+
+const BOOLEAN_TRUTHY = new Set(['true', '1', 'yes']);
+
+const readRequiredString = (name: string): string => {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return value;
+};
+
+const readOptionalString = (name: string): string | undefined => {
+    return process.env[name] || undefined;
+};
+
+const readStringWithDefault = (name: string, fallback: string): string => {
+    return process.env[name] || fallback;
+};
+
+const readNumberWithDefault = (name: string, fallback: number): number => {
+    const value = process.env[name];
+    if (!value) return fallback;
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const readBooleanWithDefault = (name: string, fallback: boolean): boolean => {
+    const value = process.env[name];
+    return value ? BOOLEAN_TRUTHY.has(value.toLowerCase()) : fallback;
+};
+
+const normalizePath = (value: string): string => {
+    if (value === '/') return '/';
+
+    return `/${value.replace(/^\/+|\/+$/g, '')}`;
+};
+
+let cachedConfig: DaemonConfig | null = null;
+
+export const getConfig = (): DaemonConfig => {
+    cachedConfig ??= loadConfig();
+    return cachedConfig;
+};
+
+export const loadConfig = (): DaemonConfig => {
+    const jupyter: JupyterConfig = {
+        image: readStringWithDefault('JUPYTER_IMAGE', DEFAULT_JUPYTER_IMAGE),
+        execTimeoutMs: readNumberWithDefault('JUPYTER_EXEC_TIMEOUT_MS', 45_000),
+        notebookRoot: normalizePath(readStringWithDefault('JUPYTER_NOTEBOOK_ROOT', '/home/jovyan/work/volt-notebooks')),
+        port: readNumberWithDefault('JUPYTER_PORT', 8888),
+        token: readStringWithDefault('JUPYTER_TOKEN', 'volt-scripting'),
+        uiPath: normalizePath(readStringWithDefault('JUPYTER_UI_PATH', '/lab')),
+        frameAncestors: readStringWithDefault('JUPYTER_FRAME_ANCESTORS', '*')
+    };
+    const allowedBuckets: ObjectBucketName[] = [
+        ObjectBucketName.Dumps,
+        ObjectBucketName.Models,
+        ObjectBucketName.Plugins,
+        ObjectBucketName.Rasterizer,
+        ObjectBucketName.AnalysisLogs,
+        ObjectBucketName.Whiteboards,
+        ObjectBucketName.Trajectories
+    ];
+
+    const config: DaemonConfig = {
+        port: readNumberWithDefault('PORT', 8080),
+        host: readStringWithDefault('HOST', '0.0.0.0'),
+        teamId: readOptionalString('TEAM_ID') ?? readOptionalString('VOLT_TEAM_ID'),
+        teamClusterId: readRequiredString('TEAM_CLUSTER_ID'),
+        daemonPassword: readRequiredString('TEAM_CLUSTER_DAEMON_PASSWORD'),
+        voltCloudUrl: readRequiredString('VOLT_CLOUD_URL').replace(/\/+$/g, ''),
+        heartbeatIntervalMs: readNumberWithDefault('TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS', DEFAULT_HEARTBEAT_INTERVAL_MS),
+        metricsIntervalMs: readNumberWithDefault('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
+        composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
+        installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
+        databaseUrl: readRequiredString('DATABASE_URL'),
+        jupyter,
+        allowedBuckets,
+        bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
+        objectStoreRoot: readStringWithDefault('OBJECT_STORE_ROOT', DAEMON_PATHS.objectStore),
+        isDemoMode: readBooleanWithDefault('DEMO_MODE', false),
+        objectGatewayPublicBaseUrl: readOptionalString('OBJECT_GATEWAY_PUBLIC_BASE_URL')?.replace(/\/+$/g, '')
+    };
+
+    return config;
+};

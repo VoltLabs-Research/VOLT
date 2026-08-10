@@ -1,0 +1,69 @@
+import type { FlatAtomProperties, PerAtomParquetSource, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
+import type { PluginExposureEntityKind } from '@shared/infrastructure/storage/storage-codec';
+
+export interface PluginExposureRequestBase {
+    trajectoryId: string;
+    analysisId: string;
+    exposureId: string;
+    ownerClusterId: string;
+}
+
+export type PluginPropertyNamesRequest = PluginExposureRequestBase & { timestep?: number };
+export type PluginModifierAnalysisRequest = PluginExposureRequestBase & { timestep: number };
+export type PluginAtomIndexRequest = PluginModifierAnalysisRequest & { targetIds: number[] };
+
+export interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
+    property: string;
+}
+
+export interface PluginModifierUniqueValuesRequest extends PluginModifierValuesRequest {
+    maxValues?: number;
+}
+
+export type PluginAnalysisAllAtomsRequest = Omit<PluginModifierAnalysisRequest, 'exposureId'> & {
+    atomIds?: Set<number>;
+};
+
+export interface PluginAnalysisAllAtomsResponse {
+    propertyNames: string[];
+    atoms: FlatAtomProperties[];
+}
+
+export interface PluginPropertyStoreWriteInput extends PluginModifierAnalysisRequest {
+    rows: PerAtomProperties | null | undefined;
+    /**
+     * Columnar fast path. When present the exposure parquet is projected from this
+     * file and `rows` is ignored, which is what keeps large frames off the JS heap.
+     */
+    source?: PerAtomParquetSource | null;
+    entityKind?: PluginExposureEntityKind;
+}
+
+export interface PluginPropertyStoreWriteResult {
+    objectKey: string;
+    rowCount: number;
+    propertyNames: string[];
+}
+
+export type PluginAtomIndex = Record<number, FlatAtomProperties>;
+export type PluginPropertyType = 'number' | 'string';
+export interface PluginPropertySchema {
+    name: string;
+    type: PluginPropertyType;
+}
+export type ModifierStats = { min: number; max: number };
+export type ModifierScalarValues =
+    | { type: 'number'; values: Float32Array }
+    | { type: 'string'; values: Array<string | null> };
+
+export interface PluginPropertyStore {
+    writeExposureProperties(input: PluginPropertyStoreWriteInput): Promise<PluginPropertyStoreWriteResult | null>;
+    discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]>;
+    discoverPerAtomPropertySchemas(request: PluginPropertyNamesRequest): Promise<PluginPropertySchema[]>;
+    getModifierValues(request: PluginModifierValuesRequest): Promise<Float32Array | null>;
+    getModifierScalarValues(request: PluginModifierValuesRequest): Promise<ModifierScalarValues | null>;
+    getModifierStats(request: PluginModifierValuesRequest): Promise<ModifierStats | null>;
+    getModifierUniqueValues(request: PluginModifierUniqueValuesRequest): Promise<Array<number | string>>;
+    buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<PluginAtomIndex | null>;
+    getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse>;
+}

@@ -1,0 +1,237 @@
+import { toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { singleton } from '@shared/application/utilities/singleton';
+import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
+import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
+import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import { ObjectBucketName } from '@shared/contracts';
+import type { RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@shared/contracts';
+import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
+import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import { buildRasterJobPayload, type ParsedRasterModel } from '@modules/trajectory/services/raster-job-factory';
+import { toQueuedJobNotification } from '@shared/application/utilities/to-queued-job-notification';
+import { mapLimited } from '@shared/application/utilities/map-limited';
+
+const RASTER_JOB_NAME = 'Rasterize trajectory preview';
+
+interface AutoPreviewRasterizationConfig {
+    timestep: number;
+}
+
+const STAT_CONCURRENCY = 10;
+
+const ANALYSIS_MODEL_PATTERN = /^trajectory-[^/]+\/analysis-([^/]+)\/glb\/(\d+)\/([^/]+)\.glb\.zst$/;
+
+export class TrajectoryRasterQueue {
+    constructor(
+        private readonly objectStore: ClusterObjectStore,
+        private readonly queueService: QueueService,
+        private readonly trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore
+    ) {}
+
+    async queueRasterizationJobs(input: RasterizeTrajectoryRequest): Promise<RasterizeTrajectoryResponse> {
+        if (!input.storageClusterId) {
+            throw new Error(`Missing storageClusterId for rasterization of trajectory ${input.trajectoryId}`);
+        }
+
+        const autoPreviewRasterizationConfig = this.readAutoPreviewRasterizationConfig(input);
+
+        if (autoPreviewRasterizationConfig) {
+            return this.queueAutoPreviewRasterizationJob(
+                input,
+                autoPreviewRasterizationConfig
+            );
+        }
+
+        const prefix = `trajectory-${input.trajectoryId}/`;
+        const keys: string[] = [];
+        let cursor: string | undefined;
+
+        do {
+            const page = await this.objectStore.list(input.storageClusterId, {
+                bucket: ObjectBucketName.Models,
+                prefix,
+                cursor,
+                limit: 200
+            });
+            keys.push(...page.keys);
+            cursor = page.nextCursor;
+        } while (cursor);
+        const glbKeys = keys.filter((key) => key.endsWith('.glb.zst'));
+
+        const rasterModels: ParsedRasterModel[] = [];
+        for (const key of glbKeys) {
+            const trajectoryModel = this.parseTrajectoryModel(input.trajectoryId, key);
+            if (trajectoryModel) {
+                rasterModels.push(trajectoryModel);
+                continue;
+            }
+
+            const analysisModel = this.parseAnalysisModel(input.trajectoryId, key);
+            if (analysisModel) {
+                rasterModels.push(analysisModel);
+            }
+        }
+
+        const existingOutputKeys = await this.getExistingOutputKeys(
+            input.storageClusterId,
+            rasterModels
+        );
+        const rasterJobs = rasterModels.map((rasterModel) => buildRasterJobPayload(input, rasterModel));
+        const result = this.createQueueRasterizationJobsResult();
+
+        for (const job of rasterJobs) {
+            if (existingOutputKeys.has(job.outputObjectKey)) {
+                result.skippedJobs += 1;
+                result.alreadyRasterizedJobs += 1;
+                continue;
+            }
+
+            const wasEnqueued = await this.queueService.enqueue(TRAJECTORY_RASTER_QUEUE_NAME, job, {
+                preserveExistingJob: true
+            });
+
+            if (!wasEnqueued) {
+                result.skippedJobs += 1;
+                result.duplicateJobs += 1;
+                continue;
+            }
+
+            result.queuedJobs += 1;
+            result.jobs.push(toQueuedJobNotification(job, RASTER_JOB_NAME));
+        }
+
+        return result;
+    }
+
+    private createQueueRasterizationJobsResult(): RasterizeTrajectoryResponse {
+        return {
+            queuedJobs: 0,
+            duplicateJobs: 0,
+            skippedJobs: 0,
+            alreadyRasterizedJobs: 0,
+            jobs: []
+        };
+    }
+
+    private readAutoPreviewRasterizationConfig(input: RasterizeTrajectoryRequest): AutoPreviewRasterizationConfig | null {
+        if (!input.config || input.config.autoPreview !== true) {
+            return null;
+        }
+
+        if (typeof input.config.timestep !== 'number' || !Number.isFinite(input.config.timestep)) {
+            return null;
+        }
+
+        return {
+            timestep: input.config.timestep
+        };
+    }
+
+    private async getExistingOutputKeys(ownerClusterId: string, models: ParsedRasterModel[]): Promise<Set<string>> {
+        const existingOutputKeys = new Set<string>();
+
+        const results = await mapLimited(models, STAT_CONCURRENCY, async (rasterModel): Promise<string | null> => {
+            try {
+                await this.objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
+                return rasterModel.outputObjectKey;
+            } catch (error) {
+                if (isObjectNotFoundError(error)) {
+                    return null;
+                }
+
+                throw error;
+            }
+        });
+
+        for (const key of results) {
+            if (key !== null) {
+                existingOutputKeys.add(key);
+            }
+        }
+
+        return existingOutputKeys;
+    }
+
+    private parseTrajectoryModel(trajectoryId: string, objectKey: string): ParsedRasterModel | null {
+        const match = objectKey.match(/timestep-(\d+)\.glb\.zst$/);
+        if (!match) {
+            return null;
+        }
+
+        const timestep = Number.parseInt(match[1], 10);
+
+        return {
+            modelObjectKey: objectKey,
+            outputObjectKey: `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`,
+            timestep
+        };
+    }
+
+    private parseAnalysisModel(trajectoryId: string, objectKey: string): ParsedRasterModel | null {
+        const match = objectKey.match(ANALYSIS_MODEL_PATTERN);
+        if (!match) {
+            return null;
+        }
+
+        const analysisId = match[1];
+        const timestep = Number.parseInt(match[2], 10);
+        const nodeId = match[3];
+
+        return {
+            modelObjectKey: objectKey,
+            outputObjectKey: `trajectory-${trajectoryId}/analysis-${analysisId}/raster/${timestep}_${nodeId}.png`,
+            timestep,
+            analysisId,
+            model: nodeId
+        };
+    }
+
+    private async queueAutoPreviewRasterizationJob(
+        input: RasterizeTrajectoryRequest,
+        config: AutoPreviewRasterizationConfig
+    ): Promise<RasterizeTrajectoryResponse> {
+        const result = this.createQueueRasterizationJobsResult();
+        const wasClaimed = await this.trajectoryAutoPreviewClaimStore.claimRasterization(input.trajectoryId);
+
+        if (!wasClaimed) {
+            result.skippedJobs += 1;
+            result.duplicateJobs += 1;
+            return result;
+        }
+
+        const job = buildRasterJobPayload(
+            input,
+            {
+                modelObjectKey: toTrajectoryFrameModelObjectKey(input.trajectoryId, config.timestep),
+                outputObjectKey: `trajectory-${input.trajectoryId}/previews/timestep-${config.timestep}.png`,
+                timestep: config.timestep
+            },
+            { autoPreview: true }
+        );
+
+        try {
+            const wasEnqueued = await this.queueService.enqueue(TRAJECTORY_RASTER_QUEUE_NAME, job, {
+                preserveExistingJob: true
+            });
+
+            if (!wasEnqueued) {
+                await this.trajectoryAutoPreviewClaimStore.releaseRasterization(input.trajectoryId);
+                result.skippedJobs += 1;
+                result.duplicateJobs += 1;
+                return result;
+            }
+        } catch (error) {
+            await this.trajectoryAutoPreviewClaimStore.releaseRasterization(input.trajectoryId);
+            throw error;
+        }
+
+        result.queuedJobs += 1;
+        result.jobs.push(toQueuedJobNotification(job, RASTER_JOB_NAME));
+        return result;
+    }
+}
+
+export const getTrajectoryRasterQueue = singleton((): TrajectoryRasterQueue => new TrajectoryRasterQueue(getObjectStore(), getQueueService(), getTrajectoryAutoPreviewClaimStore()));
