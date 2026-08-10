@@ -1,4 +1,3 @@
-import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/ClusterListPanel';
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
@@ -9,13 +8,14 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-us
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Button, Modal, closeModal, openModal, StatusDot } from '@voltstack/bravais';
-import type { StatusDotTone } from '@voltstack/bravais';
+import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
+import { Button, buttonVariants } from '@heroui/react';
+import { Modal, closeModal, openModal } from '@/shared/ui/modal';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { FormEvent } from 'react';
@@ -27,6 +27,28 @@ enum ClusterOnboardingStep {
 
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
 const ENROLLMENT_WAIT_TIMEOUT_MS = 90_000;
+
+/**
+ * `.cluster-onboarding-center` — the form's own viewport. `min(100%, 560px)` is a
+ * clamp rather than a breakpoint, so it stays an arbitrary value; the 768px rule
+ * only dropped the horizontal padding and moved it all to the top.
+ */
+const CENTER_CLASS = 'relative flex items-center justify-center w-[min(100%,560px)] h-full min-h-0 max-h-full px-4 py-8 max-md:px-0 max-md:pt-4 max-md:pb-0';
+
+/**
+ * `.cluster-onboarding-success-title`. The sheet's `@keyframes
+ * cluster-onboarding-fade-in` (opacity 0→1, `translateY(12px)`→0, over 0.4s
+ * `ease-out`) needs no bespoke rule: `tw-animate-css` ships with `@heroui/styles`,
+ * and `slide-in-from-bottom-3` is `calc(3 * var(--spacing))` — exactly 12px. The
+ * sheet's reduced-motion `animation: none` is now global in `index.css`.
+ */
+const SUCCESS_TITLE_CLASS = 'text-center text-[clamp(2.25rem,5vw,3rem)] font-semibold text-foreground animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out';
+
+/**
+ * `.cluster-onboarding-continue-btn` — 200px wide, and full-width below 640px.
+ * `shape='pill'` was bravais's; spec §4d makes it `rounded-full`.
+ */
+const CONTINUE_BUTTON_CLASS = 'min-w-[200px] rounded-full max-sm:w-full max-sm:min-w-0';
 
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
@@ -168,17 +190,25 @@ const ClusterOnboardingPage = () => {
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
 
     const leftSlot = hasConnectedCluster ? (
-        <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
-            <Button
+        <nav className='flex items-center gap-1' aria-label='Cluster onboarding breadcrumbs'>
+            {/*
+              * `.cluster-onboarding-breadcrumb-link { padding-inline: 0 }` reached into
+              * bravais's `.button`, which spec §4f says to delete rather than port —
+              * HeroUI's button root is *also* `.button`, so a left-behind override would
+              * have kept applying to a different component. The zero inline padding is
+              * restated as `px-0` on the element itself.
+              */}
+            <Link
                 to='/dashboard'
-                className='cluster-onboarding-breadcrumb-link text-sm'
-                variant='ghost'
-                intent='neutral'
-                size='sm'
+                className={buttonVariants({
+                    variant: 'ghost',
+                    size: 'sm',
+                    className: 'px-0 text-sm'
+                })}
             >
                 Dashboard
-            </Button>
-            <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
+            </Link>
+            <ChevronRight size={14} className='shrink-0 text-muted' />
             <p className='text-sm text-muted' aria-current='page'>Add new cluster</p>
         </nav>
     ) : undefined;
@@ -197,8 +227,8 @@ const ClusterOnboardingPage = () => {
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             >
-                <div className='flex flex-col items-center justify-center gap-4 cluster-onboarding-success-content' role='status' aria-live='polite' aria-atomic='true'>
-                    <h1 className='text-base font-semibold text-foreground cluster-onboarding-success-title'>
+                <div className='flex flex-col items-center justify-center gap-4 h-full min-h-0' role='status' aria-live='polite' aria-atomic='true'>
+                    <h1 className={SUCCESS_TITLE_CLASS}>
                         {successMessage}
                     </h1>
                     <p className='text-muted'>
@@ -218,18 +248,28 @@ const ClusterOnboardingPage = () => {
             overlay={overlay}
         >
             <>
-                <div className='cluster-onboarding-center'>
-                    <div className='flex flex-col items-center cluster-onboarding-form-shell gap-6'>
-                        <form className='cluster-onboarding-form flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
+                <div className={CENTER_CLASS}>
+                    <div className='flex flex-col items-center w-full gap-6'>
+                        <form className='w-full flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
                             <div className='flex flex-col items-center gap-3'>
-                                <h3 className='text-2xl font-semibold text-foreground cluster-onboarding-title'>
+                                <h3 className='text-2xl font-semibold text-foreground text-center'>
                                     Let's name your cluster
                                 </h3>
                             </div>
 
-                            <div className='cluster-onboarding-name-input'>
+                            {/*
+                              * `.cluster-onboarding-name-input .form-field-input {
+                              * border-radius: var(--radius-full) }` was the dependent side
+                              * of a cross-module contract into FormFieldRHF's sheet, and it
+                              * has been dead for a while: `--radius-full` is not one of the
+                              * tokens HeroUI emits, so the pill never rendered. The intent
+                              * is restored through `className`, which FormFieldRHF already
+                              * forwards to the control itself.
+                              */}
+                            <div className='w-full'>
                                 <FormFieldRHF
                                     label='Cluster name'
+                                    className='rounded-full'
                                     placeholder='e.g., Research Lab Cluster'
                                     value={name}
                                     error={error}
@@ -243,13 +283,11 @@ const ClusterOnboardingPage = () => {
                             </div>
 
                             <Button
-                                className='cluster-onboarding-continue-btn'
-                                variant='solid'
-                                intent='brand'
+                                className={CONTINUE_BUTTON_CLASS}
+                                variant='primary'
                                 size='lg'
-                                shape='pill'
                                 type='submit'
-                                isLoading={isSubmitting}
+                                isPending={isSubmitting}
                             >
                                 Continue
                             </Button>
@@ -277,10 +315,16 @@ const ClusterOnboardingPage = () => {
                                 onRetry={handleRetryWait}
                             />
                         ) : (
-                            <div className='flex flex-row items-center gap-3 cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
+                            /*
+                             * `.cluster-onboarding-status-row` added `flex-wrap` and a
+                             * 0.5rem `row-gap` over the row's own 0.75rem `gap`, so the two
+                             * axes are named separately rather than left to depend on which
+                             * utility the sheet happens to emit last.
+                             */
+                            <div className='flex flex-row items-center flex-wrap gap-x-3 gap-y-2' role='status' aria-live='polite' aria-atomic='true'>
                                 <div className='flex flex-row items-center gap-2'>
-                                    <StatusDot
-                                        tone={statusVariant === 'inactive' ? 'neutral' : (statusVariant as StatusDotTone)}
+                                    <ClusterStatusDot
+                                        tone={statusVariant === 'inactive' ? 'neutral' : statusVariant}
                                         pulse={statusVariant !== 'inactive'}
                                         glow={statusVariant !== 'inactive'}
                                     />

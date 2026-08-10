@@ -5,7 +5,7 @@ import {
     getPrimitiveArgumentFieldValue
 } from '@/modules/plugin/utils/plugin/argument-values';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
 

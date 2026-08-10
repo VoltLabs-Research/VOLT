@@ -24,8 +24,24 @@ import {
     isMultiValueVisibilityOperator
 } from './argument-definition-helpers';
 import FormSection from '@/shared/ui/components/FormSection';
-import { Select, Tag, getMultiSelectTriggerLabel } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { Chip, cn } from '@heroui/react';
+import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
+import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import {
+    ARGUMENT_ROW_BODY_CLASS,
+    ARGUMENT_ROW_CHEVRON_CLASS,
+    ARGUMENT_ROW_CHEVRON_EXPANDED_CLASS,
+    ARGUMENT_ROW_CLASS,
+    ARGUMENT_ROW_DELETE_CLASS,
+    ARGUMENT_ROW_HEADER_CLASS,
+    ARGUMENT_ROW_NESTED_CLASS,
+    ARGUMENT_ROW_SUBBLOCK_CLASS,
+    ARGUMENT_ROW_SUBHEADING_CLASS,
+    ARGUMENT_ROW_TITLE_CLASS,
+    ARGUMENT_ROW_TITLE_PLACEHOLDER_CLASS,
+    ARGUMENT_ROW_TOGGLE_CLASS
+} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { ChevronRight, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
@@ -113,26 +129,35 @@ const ArgumentDefinitionRow = ({
     const scalarFieldType: 'input' | 'select' = scalarOptions ? 'select' : 'input';
 
     return (
-        <div className={`argument-row ${isExpanded ? 'is-expanded' : ''}`}>
-            <div className='argument-row-header'>
+        <div className={ARGUMENT_ROW_CLASS}>
+            <div className={ARGUMENT_ROW_HEADER_CLASS}>
                 <button
                     type='button'
-                    className='argument-row-toggle'
+                    className={ARGUMENT_ROW_TOGGLE_CLASS}
                     onClick={onToggle}
                     aria-expanded={isExpanded}
                     aria-controls={`argument-row-body-${fieldPrefix}`}
                 >
-                    <ChevronRight size={14} className='argument-row-chevron' aria-hidden='true' />
-                    <span className={`argument-row-title ${argumentLabel ? '' : 'argument-row-title--placeholder'}`}>
+                    <ChevronRight
+                        size={14}
+                        className={cn(ARGUMENT_ROW_CHEVRON_CLASS, isExpanded ? ARGUMENT_ROW_CHEVRON_EXPANDED_CLASS : null)}
+                        aria-hidden='true'
+                    />
+                    <span className={cn(ARGUMENT_ROW_TITLE_CLASS, argumentLabel ? null : ARGUMENT_ROW_TITLE_PLACEHOLDER_CLASS)}>
                         {displayLabel}
                     </span>
-                    <Tag size='xs' className='argument-row-type-badge'>
+                    {/*
+                      * bravais `Tag` at `size='xs'` with the default soft neutral tone.
+                      * `.argument-row-type-badge` was declared in no stylesheet, so the
+                      * badge's own metrics are all there ever was.
+                      */}
+                    <Chip size='sm' variant='soft' className='shrink-0 rounded-full px-1.5 py-[0.05rem] text-[0.65rem] font-medium'>
                         {ARGUMENT_TYPE_SELECT_OPTIONS.find((option) => option.value === argument.type)?.title ?? argument.type}
-                    </Tag>
+                    </Chip>
                 </button>
                 <button
                     type='button'
-                    className='argument-row-delete'
+                    className={ARGUMENT_ROW_DELETE_CLASS}
                     onClick={onRemove}
                     aria-label={`Delete ${displayLabel}`}
                     title='Delete argument'
@@ -142,7 +167,7 @@ const ArgumentDefinitionRow = ({
             </div>
 
             {isExpanded && (
-                <div className='argument-row-body' id={`argument-row-body-${fieldPrefix}`}>
+                <div className={ARGUMENT_ROW_BODY_CLASS} id={`argument-row-body-${fieldPrefix}`}>
                     <FormSection title='General'>
                         <ArgumentField
                             label='Key'
@@ -299,8 +324,8 @@ const ArgumentDefinitionRow = ({
 
                     {argument.type === ArgumentType.SELECT && (
                         <>
-                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Options</h4>
-                            <div className='argument-row-subblock'>
+                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Options</h4>
+                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
                                 <ArgumentOptionsEditor
                                     options={argument.options ?? []}
                                     onOptionsChange={(nextOptions) => onUpdate(applyArgumentOptionsEdit(argument, nextOptions))}
@@ -311,10 +336,10 @@ const ArgumentDefinitionRow = ({
 
                     {isListLike && (
                         <>
-                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
+                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>
                                 {argument.type === ArgumentType.TUPLE ? 'Tuple Components' : 'Nested Arguments'}
                             </h4>
-                            <div className='argument-row-subblock argument-row-nested'>
+                            <div className={cn(ARGUMENT_ROW_SUBBLOCK_CLASS, ARGUMENT_ROW_NESTED_CLASS)}>
                                 {nestedArgumentsSection}
                             </div>
                         </>
@@ -322,17 +347,18 @@ const ArgumentDefinitionRow = ({
 
                     {isPluginReference && (
                         <>
-                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Allowed Plugins</h4>
-                            <div className='argument-row-subblock'>
+                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Allowed Plugins</h4>
+                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
                                 <div className='flex flex-col gap-2'>
-                                    <Select
+                                    <PluginMultiSelect
                                         id={`plugin-reference-filter-${fieldPrefix}`}
                                         options={pluginOptions}
-                                        isMulti
                                         selectedValues={argument.pluginReferenceFilter ?? []}
                                         onMultiChange={(nextValues) => editPluginFilter('pluginReferenceFilter', nextValues)}
                                         hasSearch
+                                        searchPlaceholder='Search plugins…'
                                         placeholder='Select plugins'
+                                        ariaLabel='Allowed plugins'
                                         renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                             selectedCount,
                                             argument.pluginReferenceFilter,
@@ -341,14 +367,15 @@ const ArgumentDefinitionRow = ({
                                             'selected'
                                         )}
                                     />
-                                    <Select
+                                    <PluginMultiSelect
                                         id={`plugin-reference-filter-keys-${fieldPrefix}`}
                                         options={pluginKeyOptions}
-                                        isMulti
                                         selectedValues={argument.pluginReferenceFilterKeys ?? []}
                                         onMultiChange={(nextValues) => editPluginFilter('pluginReferenceFilterKeys', nextValues)}
                                         hasSearch
+                                        searchPlaceholder='Search portable keys…'
                                         placeholder='Select portable keys'
+                                        ariaLabel='Allowed portable keys'
                                         renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                             selectedCount,
                                             argument.pluginReferenceFilterKeys,
@@ -375,8 +402,8 @@ const ArgumentDefinitionRow = ({
                                     onChange={(event) => editField('showPluginConfiguration', event.target.value)}
                                 />
                             </FormSection>
-                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Argument Mappings</h4>
-                            <div className='argument-row-subblock'>
+                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Argument Mappings</h4>
+                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
                                 <PluginReferenceMappingsEditor
                                     mappings={argument.pluginReferenceMappings ?? []}
                                     fieldPrefix={fieldPrefix}

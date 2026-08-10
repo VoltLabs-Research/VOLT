@@ -1,7 +1,7 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
-import JobGroup from '@/modules/jobs/components/JobGroup';
+import JobGroup, { JOB_GROUP_CHILDREN_CLASS_NAMES } from '@/modules/jobs/components/JobGroup';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import { EmptyState } from '@voltstack/bravais';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
@@ -45,7 +45,7 @@ const JobsHistory = ({
     let content: ReactNode = filteredGroups.map((group: TJG) => {
         if (displayMode === 'children-only') {
             return group.frameGroups.map((frame) => (
-                <div key={`${group.trajectoryId}-${frame.timestep}`} className='job-group-children'>
+                <div key={`${group.trajectoryId}-${frame.timestep}`} className={JOB_GROUP_CHILDREN_CLASS_NAMES}>
                     <FrameGroup frame={frame} />
                 </div>
             ));
@@ -64,7 +64,7 @@ const JobsHistory = ({
         content = <JobSkeleton />;
     } else if (filteredGroups.length === 0) {
         content = (
-            <EmptyState
+            <RecoveryState
                 title='No events to display'
                 description='No jobs match the current filters yet.'
                 icon={<Inbox size={24} strokeWidth={1} className='text-muted' />}

@@ -125,7 +125,10 @@ export class ReverseChannelBridge {
                 ok: true,
                 status: result.status ?? 200,
                 headers: result.headers,
-                bodyBase64: result.body.toString('base64')
+                data: {
+                    status: 'success',
+                    data: { body: result.body }
+                }
             });
             return;
         }
@@ -175,7 +178,7 @@ export class ReverseChannelBridge {
                     type: 'stream',
                     requestId,
                     streamId,
-                    chunkBase64: Buffer.from(value).toString('base64')
+                    chunk: value
                 };
 
                 socket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, chunk);

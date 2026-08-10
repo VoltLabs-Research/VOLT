@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
-import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useSaveWorkflow from './use-save-workflow';
+
+/**
+ * bravais exported this union alongside its `SaveStatusIndicator`. Both are gone, so
+ * it moves here — the hook below is what produces every value of it, and the two
+ * components that render one (`CanvasToolbar`, `PluginBuilderCanvas`) take it as a
+ * prop straight from this hook. The four members are bravais's, unchanged.
+ */
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const SAVED_RESET_DELAY_MS = 2000;
 const ERROR_RESET_DELAY_MS = 3000;

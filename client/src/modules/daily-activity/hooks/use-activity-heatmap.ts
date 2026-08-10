@@ -1,52 +1,64 @@
-import { addDays, format, subDays } from 'date-fns';
-import { useMemo, useState } from 'react';
-import type { FocusEvent, MouseEvent } from 'react';
-import type { HeatmapValue } from 'react-calendar-heatmap';
+import { addDays, format, getDay, subDays } from 'date-fns';
+import { useMemo } from 'react';
 import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
 
-export interface ActivityHeatmapChartDataItem extends HeatmapValue {
+export interface ActivityHeatmapDayData {
+    activity: DailyActivityHeatmapDetailEntry[];
+    minutesOnline: number;
+};
+
+export interface ActivityHeatmapDay {
     date: string;
     count: number;
     level: number;
-    data?: {
-        activity: DailyActivityHeatmapDetailEntry[];
-        minutesOnline: number;
-    };
+    data?: ActivityHeatmapDayData;
 };
 
-interface UseActivityHeatmapParams {
-    data: DailyActivity[];
-    range: number;
+/**
+ * One square. `day` is null for the leading and trailing squares that pad the first
+ * and last calendar weeks out to seven rows — they occupy a grid slot and nothing else.
+ */
+export interface ActivityHeatmapCell {
+    key: string;
+    day: ActivityHeatmapDay | null;
 };
 
-interface TooltipState {
+/** One column. `monthLabel` is empty unless a new month starts in this column. */
+export interface ActivityHeatmapWeek {
+    key: string;
+    monthLabel: string;
+};
+
+export interface ActivityHeatmapTooltipState {
     activity: DailyActivityHeatmapDetailEntry[];
     dateLabel: string;
     minutesOnline: number;
     score: number;
 };
 
-const ACTIVITY_HEATMAP_LEGEND = [
+const DAYS_PER_WEEK = 7;
+
+export const ACTIVITY_HEATMAP_LEGEND: { label: string; level: number }[] = [
     {
         label: 'No activity',
-        className: 'color-empty'
+        level: 0
     },
     {
         label: 'Low',
-        className: 'color-scale-1'
+        level: 1
     },
     {
         label: 'Moderate',
-        className: 'color-scale-2'
+        level: 2
     },
     {
         label: 'High',
-        className: 'color-scale-3'
+        level: 3
     },
     {
         label: 'Peak',
-        className: 'color-scale-4'
+        level: 4
     }
 ];
 
@@ -58,7 +70,7 @@ const getDateLabel = (date: string): string => {
     }).format(new Date(date));
 };
 
-const getDayAriaLabel = (value: ActivityHeatmapChartDataItem | null): string => {
+export const getDayAriaLabel = (value: ActivityHeatmapDay | null): string => {
     if (!value) {
         return 'No activity data available for this day.';
     }
@@ -74,15 +86,7 @@ const getDayAriaLabel = (value: ActivityHeatmapChartDataItem | null): string => 
     return `${dateLabel}: ${actionsCount} activities and ${minutesOnline.toLocaleString()} minutes online.`;
 };
 
-const getUserDisplayName = (user: DailyActivity['user']): string => {
-    if (typeof user === 'string') {
-        return 'Unknown user';
-    }
-
-    return `${user.firstName} ${user.lastName}`.trim();
-};
-
-const createTooltipState = (value: ActivityHeatmapChartDataItem | null): TooltipState => {
+export const getDayTooltipState = (value: ActivityHeatmapDay | null): ActivityHeatmapTooltipState => {
     return {
         activity: value?.data?.activity ?? [],
         dateLabel: value ? getDateLabel(value.date) : 'No date selected',
@@ -91,11 +95,19 @@ const createTooltipState = (value: ActivityHeatmapChartDataItem | null): Tooltip
     };
 };
 
-const buildChartData = (
+const getUserDisplayName = (user: DailyActivity['user']): string => {
+    if (typeof user === 'string') {
+        return 'Unknown user';
+    }
+
+    return `${user.firstName} ${user.lastName}`.trim();
+};
+
+const buildDays = (
     data: DailyActivity[],
     range: number,
     startDate: Date
-): ActivityHeatmapChartDataItem[] => {
+): ActivityHeatmapDay[] => {
     const dataMap = new Map<string, DailyActivity[]>();
 
     data.forEach((item) => {
@@ -110,7 +122,7 @@ const buildChartData = (
         dataMap.set(dateKey, [item]);
     });
 
-    const days: ActivityHeatmapChartDataItem[] = [];
+    const days: ActivityHeatmapDay[] = [];
     let maxScore = 0;
 
     for(let index = 0; index <= range; index++){
@@ -155,58 +167,80 @@ const buildChartData = (
     return days;
 };
 
+/**
+ * The grid, column-major: seven rows of weekdays, one column per calendar week, which
+ * is why the first column has to start on a Sunday. `getDay(startDate)` leading blanks
+ * push the range's first day onto its real weekday row, and the tail is padded so the
+ * last column is full — the same shape `react-calendar-heatmap` drew in SVG, now
+ * expressed as cells a `grid-flow-col` container places for us.
+ */
+const buildCells = (days: ActivityHeatmapDay[], leadingBlankCount: number): ActivityHeatmapCell[] => {
+    const cells: ActivityHeatmapCell[] = [];
+
+    for(let index = 0; index < leadingBlankCount; index++){
+        cells.push({
+            key: `leading-${index}`,
+            day: null
+        });
+    }
+
+    days.forEach((day) => {
+        cells.push({
+            key: day.date,
+            day
+        });
+    });
+
+    while(cells.length % DAYS_PER_WEEK !== 0){
+        cells.push({
+            key: `trailing-${cells.length}`,
+            day: null
+        });
+    }
+
+    return cells;
+};
+
+const buildWeeks = (gridStartDate: Date, weekCount: number): ActivityHeatmapWeek[] => {
+    const weeks: ActivityHeatmapWeek[] = [];
+    let previousMonth = -1;
+
+    for(let index = 0; index < weekCount; index++){
+        const columnStartDate = addDays(gridStartDate, index * DAYS_PER_WEEK);
+        const month = columnStartDate.getMonth();
+
+        weeks.push({
+            key: format(columnStartDate, 'yyyy-MM-dd'),
+            monthLabel: index > 0 && month !== previousMonth ? format(columnStartDate, 'MMM') : ''
+        });
+
+        previousMonth = month;
+    }
+
+    return weeks;
+};
+
+interface UseActivityHeatmapParams {
+    data: DailyActivity[];
+    range: number;
+};
+
 const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
     const today = useMemo(() => new Date(), []);
     const startDate = useMemo(() => subDays(today, range), [today, range]);
 
-    const [tooltipOpen, setTooltipOpen] = useState(false);
-    const [tooltipPos, setTooltipPos] = useState({
-        x: 0,
-        y: 0
-    });
-    const [tooltipState, setTooltipState] = useState<TooltipState>(() => createTooltipState(null));
+    const cells = useMemo(() => {
+        return buildCells(buildDays(data, range, startDate), getDay(startDate));
+    }, [data, range, startDate]);
 
-    const chartData = useMemo(
-        () => buildChartData(data, range, startDate),
-        [data, range, startDate]
-    );
-
-    const handleDayActivate = (
-        event: MouseEvent<SVGRectElement> | FocusEvent<SVGRectElement>,
-        value: ActivityHeatmapChartDataItem | null
-    ) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipPos({
-            x: rect.left + (rect.width / 2),
-            y: rect.top
-        });
-        setTooltipState(createTooltipState(value));
-        setTooltipOpen(true);
-    };
-
-    const handleMouseLeave = () => {
-        setTooltipOpen(false);
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-        setTooltipPos({
-            x: event.clientX,
-            y: event.clientY
-        });
-    };
+    const weeks = useMemo(() => {
+        return buildWeeks(subDays(startDate, getDay(startDate)), cells.length / DAYS_PER_WEEK);
+    }, [cells.length, startDate]);
 
     return {
-        chartData,
-        legendItems: ACTIVITY_HEATMAP_LEGEND,
-        today,
-        startDate,
-        tooltipOpen,
-        tooltipPos,
-        tooltipState,
-        getDayAriaLabel,
-        handleDayActivate,
-        handleMouseLeave,
-        handleMouseMove
+        cells,
+        weeks,
+        legendItems: ACTIVITY_HEATMAP_LEGEND
     };
 };
 

@@ -100,7 +100,7 @@ const ContainersListing = () => {
     return (
         <>
             <FolderedDocumentListing<ContainerListingRow, { folderId: string | null }>
-                title={<h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Containers</h3>}
+                title={<h3 className='text-3xl font-medium text-foreground'>Containers</h3>}
                 columns={columns}
                 listing={listing}
                 createButtonTitle={canCreate ? 'New Container' : undefined}

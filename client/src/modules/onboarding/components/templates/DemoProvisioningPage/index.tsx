@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -145,7 +145,7 @@ const DemoProvisioningPage = () => {
                         retryLabel='Try again'
                         onRetry={handleRetry}
                     />
-                    <Button variant='ghost' intent='neutral' onClick={() => navigate('/onboarding/cluster/setup')}>
+                    <Button variant='ghost' onPress={() => navigate('/onboarding/cluster/setup')}>
                         Connect your own cluster instead
                     </Button>
                 </div>

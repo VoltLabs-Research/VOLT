@@ -1,5 +1,4 @@
-import { ProgressBar } from '@voltstack/bravais';
-import './PreloadingOverlay.css';
+import { Label, ProgressBar } from '@heroui/react';
 
 interface PreloadingOverlayProps {
     active: boolean;
@@ -19,15 +18,19 @@ const PreloadingOverlay = ({
     const hasProgress = progress !== undefined;
 
     return (
-        <div className='flex flex-row items-center justify-center absolute inset-0 canvas-preload-overlay'>
+        <div className='flex flex-row items-center justify-center absolute inset-0 bg-overlay z-[1000]'>
             <ProgressBar
-                className="canvas-preload-card"
+                className='w-[min(320px,70%)]'
                 size='sm'
-                label={description ?? title}
                 value={hasProgress ? progress * 100 : undefined}
-                showValue={hasProgress}
-                indeterminate={!hasProgress}
-            />
+                isIndeterminate={!hasProgress}
+            >
+                <Label>{description ?? title}</Label>
+                {hasProgress && <ProgressBar.Output />}
+                <ProgressBar.Track>
+                    <ProgressBar.Fill />
+                </ProgressBar.Track>
+            </ProgressBar>
         </div>
     );
 };

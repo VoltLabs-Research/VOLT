@@ -5,15 +5,14 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utils/screenshot';
-import { Button, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@heroui/react';
+import { VIEWPORT_FLOATING_BUTTON_CLASS } from '../ViewportFloatingControls/floating-button';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import type { ScreenshotSettings } from '@/modules/canvas/utils/screenshot';
-
-import './ScreenshotMenuPopover.css';
 
 const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
     const lastUsedSettings = useScreenshotStore((state) => state.lastUsedSettings);
@@ -46,8 +45,8 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
     };
 
     return (
-        <div className='flex flex-col gap-3 canvas-screenshot-popover'>
-            <div className='flex flex-col gap-2 canvas-screenshot-popover-fields'>
+        <div className='flex min-w-[min(21rem,calc(100vw-3rem))] flex-col gap-3'>
+            <div className='flex flex-col gap-2'>
                 <FormFieldRHF
                     fieldKey='resolutionPreset'
                     fieldType='select'
@@ -67,7 +66,7 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
                 />
 
                 {draft.resolutionPreset === 'custom' && (
-                    <div className='flex flex-row items-center gap-2 canvas-screenshot-popover-custom-size'>
+                    <div className='flex flex-row items-center gap-2 [&>*]:min-w-0 [&>*]:flex-1'>
                         <FormFieldRHF
                             fieldKey='customWidth'
                             fieldType='input'
@@ -108,7 +107,7 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
                 />
             </div>
 
-            <div className='flex flex-col gap-1 canvas-screenshot-popover-summary'>
+            <div className='flex flex-col gap-1 pt-1'>
                 <p className='text-xs text-muted'>
                     {resolutionCopy}
                 </p>
@@ -118,15 +117,13 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
             </div>
 
             <Button
-                variant='solid'
-                intent='brand'
+                variant='primary'
                 size='sm'
-                shape='rounded'
-                block
-                isLoading={isCapturing}
-                leftIcon={isCapturing ? undefined : <Image size={14} />}
-                onClick={handleCapture}
+                fullWidth
+                isPending={isCapturing}
+                onPress={handleCapture}
             >
+                {isCapturing ? undefined : <Image size={14} />}
                 {isCapturing ? 'Capturing...' : 'Capture screenshot'}
             </Button>
         </div>
@@ -143,38 +140,32 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
             id='viewport-screenshot-menu'
             trigger={compact ? (
                 <span className='inline-flex items-center justify-center'>
-                    <Tooltip content='Screenshot' placement='bottom'>
+                    <Tooltip>
                         <Button
                             variant='ghost'
-                            intent='canvas'
-                            shape='rounded'
                             size='sm'
-                            iconOnly
-                            className='canvas-viewport-floating-btn'
+                            isIconOnly
+                            className={VIEWPORT_FLOATING_BUTTON_CLASS}
                             aria-label='Screenshot settings'
                         >
                             <Camera size={14} />
                         </Button>
+                        <Tooltip.Content placement='bottom'>Screenshot</Tooltip.Content>
                     </Tooltip>
                 </span>
             ) : (
-                <Button
-                    variant='ghost'
-                    intent='canvas'
-                    shape='rounded'
-                    size='sm'
-                    className='text-xs canvas-btn-compact'
-                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Camera size={12} /></span>}
-                    aria-label='Screenshot settings'
-                    title='Screenshot settings'
-                >
-                    Screenshot
-                </Button>
+                <Tooltip>
+                    <Button variant='ghost' size='sm' className='text-xs' aria-label='Screenshot settings'>
+                        <Camera size={12} className='shrink-0' />
+                        Screenshot
+                    </Button>
+                    <Tooltip.Content placement='bottom'>Screenshot settings</Tooltip.Content>
+                </Tooltip>
             )}
             content={(close) => <ScreenshotMenuPanel close={close} />}
             triggerAction='click'
             ariaLabel='Screenshot settings'
-            className='context-menu-popover--screenshot-config'
+            className='min-w-[min(22rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))]'
         />
     );
 };

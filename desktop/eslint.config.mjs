@@ -86,28 +86,24 @@ export default tseslint.config(
         }
     },
     /*
-     * The design-system boundary, matching the client's.
+     * The design-system boundary, matching the client's — now fully closed.
      *
-     * This surface is small and mostly earns its CSS: a frameless titlebar,
-     * platform vibrancy and the deploy-progress animations are not style props,
-     * and 43% of these declarations map to bravais against the client's 41%. So
-     * the four stylesheets below stay — what the rule prevents is a *fifth*.
-     * `styles.css` is exempt by path: it is the token rebase, wired at the root.
+     * The four per-component sheets this rule used to grandfather in (Titlebar,
+     * DockerGate, Onboarding, DevModeModal) are gone: their rules are HeroUI
+     * components and Tailwind utilities on the elements. `main.tsx` is the only
+     * remaining exemption because it wires the one app-level sheet,
+     * `src/renderer/src/styles.css`, which holds the HeroUI token rebase and the
+     * frameless-window chrome that lands on `html`/`body`/`#root` — elements no
+     * `className` can reach.
      */
     {
         files: ['src/renderer/**/*.{ts,tsx}'],
-        ignores: [
-            'src/renderer/src/main.tsx',
-            'src/renderer/src/components/Titlebar/index.tsx',
-            'src/renderer/src/components/DockerGate/index.tsx',
-            'src/renderer/src/components/Onboarding/index.tsx',
-            'src/renderer/src/components/DevModeModal/index.tsx'
-        ],
+        ignores: ['src/renderer/src/main.tsx'],
         rules: {
             'no-restricted-imports': ['error', {
                 patterns: [{
                     regex: '^(\\.{1,2}/|@/).*\\.css(\\?.*)?$',
-                    message: 'Per-component stylesheets are closed. Use bravais style props (Box/Stack/Row/Grid, Text/Heading); genuinely shared visual language belongs in bravais itself, and global sheets are wired in src/renderer/src/main.tsx.'
+                    message: 'Per-component stylesheets are closed. Express it as Tailwind utilities on the element, or as a HeroUI component prop; the one app-level sheet is wired in src/renderer/src/main.tsx.'
                 }]
             }]
         }

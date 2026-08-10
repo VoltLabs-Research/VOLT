@@ -1,5 +1,5 @@
-import { AsyncBoundary } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import { SECRET_KEY_PAGE_CLASS, SECRET_KEY_PAGE_MAIN_CLASS } from './secret-key-page-styles';
 import type { ReactNode } from 'react';
 
 interface SecretKeyPageShellProps {
@@ -31,8 +31,8 @@ interface SecretKeyAsyncStateProps {
 }
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
-    <div className='h-dvh secret-key-page text-foreground'>
-        <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+    <div className={SECRET_KEY_PAGE_CLASS}>
+        <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
             {header}
             {children}
         </div>
@@ -67,6 +67,18 @@ export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps)
 /**
  * Loading / error / empty boundary shared by the secret key pages, rendered while their
  * metrics payload is still absent.
+ *
+ * This used to be bravais's `AsyncBoundary` with `state={{ loading, error: error ??
+ * undefined, empty: true }}` and `children={null}`. Its five-way switch is inlined here
+ * — for this one call site there is no `accessDenied` slot and `empty` is always true,
+ * so the whole of it reduces to the three branches below. Two of its properties are
+ * load-bearing and preserved exactly:
+ *
+ *   • **error beats loading.** A refetch that is `loading` while still holding a stale
+ *     error shows the error, not the spinner. The obvious `isLoading ? … : error ? …`
+ *     rewrite inverts that.
+ *   • **the error test is `!== undefined && !== null`, not truthiness**, so a falsy
+ *     error value (`0`, `''`, `false`, `NaN`) still takes the error branch.
  */
 export const SecretKeyAsyncState = ({
     header,
@@ -77,29 +89,26 @@ export const SecretKeyAsyncState = ({
     errorFallbackDescription,
     emptyMessage,
     onRetry
-}: SecretKeyAsyncStateProps) => (
-    <AsyncBoundary
-        state={{
-            loading: isLoading,
-            error: error ?? undefined,
-            empty: true
-        }}
-        loading={loadingView}
-        error={(boundaryError: unknown) => (
+}: SecretKeyAsyncStateProps) => {
+    if (error !== undefined && error !== null) {
+        return (
             <SecretKeyRecoveryView
                 header={header}
                 title={errorTitle}
-                description={boundaryError instanceof Error ? boundaryError.message : errorFallbackDescription}
+                description={error instanceof Error ? error.message : errorFallbackDescription}
                 onRetry={onRetry}
             />
-        )}
-        empty={(
-            <SecretKeyEmptyView
-                header={header}
-                message={emptyMessage}
-            />
-        )}
-    >
-        {null}
-    </AsyncBoundary>
-);
+        );
+    }
+
+    if (isLoading) {
+        return <>{loadingView}</>;
+    }
+
+    return (
+        <SecretKeyEmptyView
+            header={header}
+            message={emptyMessage}
+        />
+    );
+};

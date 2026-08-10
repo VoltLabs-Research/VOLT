@@ -1,4 +1,5 @@
-import { Button, openModal, closeModal } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { closeModal, openModal } from '@/shared/ui/modal';
 import { Ban, Check, Copy, Download, FilePen, Pencil, Store, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
@@ -20,7 +21,6 @@ import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
-import './PluginsListing.css';
 import { useNavigate } from 'react-router-dom';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [SOCKET_PLUGIN_EVENTS.CREATED, SOCKET_PLUGIN_EVENTS.DELETED].map((event) => ({
@@ -84,7 +84,7 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         title: 'Name',
         sortable: true,
         render: (_, plugin) => (
-            <span className='text-sm font-medium plugin-name-link'>
+            <span className='text-sm font-medium text-foreground transition-colors duration-150 ease-out-fluid hover:text-accent'>
                 {plugin.modifier?.name}
             </span>
         ),
@@ -111,7 +111,7 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         key: 'exposures',
         title: 'Exposures',
         render: (_, plugin) => (
-            <span className='text-xs font-semibold exposure-count'>
+            <span className='min-w-6 rounded-lg bg-default px-1.5 py-0.5 text-xs font-semibold'>
                 {(plugin.exposures ?? []).length}
             </span>
         ),
@@ -263,26 +263,24 @@ const PluginsListing = () => {
                             style={{ display: 'none' }}
                         />
                         <Button
-                            variant='toggle'
-                            intent='neutral'
-                            className='import-plugin-btn transition-[all] duration-150 ease-out-fluid'
-                            onClick={() => importInputRef.current?.click()}
-                            disabled={importPluginMutation.isPending}
-                            isLoading={importPluginMutation.isPending}
-                            leftIcon={<Upload size={18} />}
+                            variant='secondary'
+                            className='transition-colors duration-150 ease-out-fluid'
+                            onPress={() => importInputRef.current?.click()}
+                            isDisabled={importPluginMutation.isPending}
+                            isPending={importPluginMutation.isPending}
                         >
+                            <Upload size={18} aria-hidden='true' />
                             Import
                         </Button>
                         <Button
-                            variant='toggle'
-                            intent='neutral'
-                            className='transition-[all] duration-150 ease-out-fluid'
-                            onClick={() => {
+                            variant='secondary'
+                            className='transition-colors duration-150 ease-out-fluid'
+                            onPress={() => {
                                 setIsRegistryOpen(true);
                                 openModal(REGISTRY_BROWSER_MODAL_ID);
                             }}
-                            leftIcon={<Store size={18} />}
                         >
+                            <Store size={18} aria-hidden='true' />
                             Browse registry
                         </Button>
                     </>

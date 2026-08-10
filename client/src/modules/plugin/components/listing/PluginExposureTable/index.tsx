@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
-import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
+import { TABLE_RECOVERY_STATE_CLASS } from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 
 export interface PluginExposureTableProps {
     pluginId: string;
@@ -140,7 +140,7 @@ const CompactPluginExposureTable = ({
                 title='Access denied'
                 description='You do not have permission to view this data.'
                 tone={RecoveryStateTone.AccessDenied}
-                className='plugin-exposure-recovery-state'
+                className={TABLE_RECOVERY_STATE_CLASS}
             />
         );
     }

@@ -1,4 +1,5 @@
-import { Button, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@heroui/react';
+import { PALETTE_LIST_CLASS } from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
@@ -15,7 +16,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { DragEvent, ReactNode } from 'react';
 import '@xyflow/react/dist/style.css';
-import './PluginBuilder.css';
 
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
@@ -119,7 +119,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <div className='flex flex-col gap-6 p-8 plugin-builder-palette-list-container'>
+                <div className={PALETTE_LIST_CLASS}>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
@@ -136,24 +136,33 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             >
                 <Sidebar.Header>
                     <div className='flex flex-row items-center gap-3'>
-                        <Tooltip content='Back' placement='right'>
+                        <Tooltip>
                             <Button
                                 variant='ghost'
-                                intent='neutral'
-                                iconOnly
+                                isIconOnly
                                 size='sm'
-                                onClick={handleBackClick}
+                                aria-label='Back'
+                                onPress={handleBackClick}
                             >
-                                <ArrowLeft size={18} />
+                                <ArrowLeft size={18} aria-hidden='true' />
                             </Button>
+                            <Tooltip.Content placement='right'>Back</Tooltip.Content>
                         </Tooltip>
-                        <Tooltip content='Double-click to edit plugin name' placement='bottom'>
-                            <EditableTag
-                                as='h3'
-                                onSave={handlePluginNameChange}
-                            >
-                                {pluginName}
-                            </EditableTag>
+                        <Tooltip>
+                            {/*
+                              * `EditableTag` is a plain element rather than a focusable
+                              * RAC component, so it needs the explicit `Tooltip.Trigger`
+                              * wrapper that a `Button` does not.
+                              */}
+                            <Tooltip.Trigger>
+                                <EditableTag
+                                    as='h3'
+                                    onSave={handlePluginNameChange}
+                                >
+                                    {pluginName}
+                                </EditableTag>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content placement='bottom'>Double-click to edit plugin name</Tooltip.Content>
                         </Tooltip>
                     </div>
                 </Sidebar.Header>

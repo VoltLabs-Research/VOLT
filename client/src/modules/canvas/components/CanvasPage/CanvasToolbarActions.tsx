@@ -1,4 +1,4 @@
-import { Button, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@heroui/react';
 import { Download } from 'lucide-react';
 
 interface CanvasToolbarActionsProps {
@@ -19,19 +19,18 @@ const CanvasToolbarActions = ({
 
     return (
         <div className='flex flex-row items-center gap-2'>
-            <Tooltip content='Download analysis listings'>
+            <Tooltip>
                 <Button
                     variant='ghost'
-                    intent='canvas'
-                    shape='rounded'
                     size='sm'
-                    className='text-xs canvas-btn-compact'
-                    leftIcon={<Download size={12} />}
-                    isLoading={isDownloadingAnalysis}
-                    onClick={() => onDownloadAnalysis()}
+                    className='text-xs'
+                    isPending={isDownloadingAnalysis}
+                    onPress={() => onDownloadAnalysis()}
                 >
+                    <Download size={12} />
                     Download Analysis
                 </Button>
+                <Tooltip.Content placement='bottom'>Download analysis listings</Tooltip.Content>
             </Tooltip>
         </div>
     );

@@ -1,5 +1,7 @@
 import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
-import { Button, KeyValueList, KeyValueRow } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { ContainerKeyValueList, ContainerKeyValueRow } from '../ContainerKeyValueList';
+import { OVERVIEW_SECTION_TITLE_CLASS_NAMES } from './section-title';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { isBrowserAccessiblePort } from '@/modules/container/utils/get-primary-accessible-port';
 import { normalizePortMapping } from '@/modules/container/utils/port-mapping';
@@ -53,13 +55,19 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
         let portAction: ReactNode = <span className='text-xs text-muted'>TCP only</span>;
 
         if (isBrowserAccessiblePort(accessiblePort)) {
+            /*
+             * bravais's `variant='ghost' intent='brand'` painted a transparent
+             * button whose ink was `--color-brand-primary`; under VOLT's monochrome
+             * accent that token is the foreground, which is what `text-foreground`
+             * restates on top of HeroUI's muted ghost ink.
+             */
             portAction = (
                 <Button
                     variant='ghost'
-                    intent='brand'
                     size='sm'
-                    onClick={() => openPort(container._id, item.private)}
-                    isLoading={openingPort === item.private}
+                    className='text-foreground'
+                    onPress={() => { void openPort(container._id, item.private); }}
+                    isPending={openingPort === item.private}
                 >
                     Open :{accessiblePort?.public}
                 </Button>
@@ -69,16 +77,16 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
         }
 
         return (
-            <KeyValueList key={index}>
-                <KeyValueRow label={portLabel} value='' action={portAction} />
-            </KeyValueList>
+            <ContainerKeyValueList key={index}>
+                <ContainerKeyValueRow label={portLabel} value='' action={portAction} />
+            </ContainerKeyValueList>
         );
     };
 
     return (
         <EditableKeyValueCard<PortMappingFormItem>
             title='Port Bindings'
-            titleClassName='container-overview-section-title'
+            titleClassName={OVERVIEW_SECTION_TITLE_CLASS_NAMES}
             items={portItems}
             fields={PORT_FIELDS}
             emptyMessage='No ports exposed'

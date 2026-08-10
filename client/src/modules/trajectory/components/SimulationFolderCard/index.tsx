@@ -1,12 +1,34 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/contracts/listing';
-import { IconButton, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
-import './SimulationFolderCard.css';
 
 const FOLDER_DRAG_INTENT_DISTANCE = 8;
+
+/**
+ * `simulation-folder-card` MUST keep its class name. `shared/ui/components/DocumentListingGrid/GridItem.tsx`
+ * tints this card's border when a trajectory is dragged over its cell, through
+ * `[&_.simulation-folder-card]:border-accent/76` — the drop-target affordance lives in the
+ * grid, not here, so the hook has to stay on the DOM.
+ *
+ * `group/card` is named rather than bare because the same grid item is itself a `group`; an
+ * unnamed `group-hover:` on the actions would match whichever `.group` ancestor is nearest
+ * and the two are not the same box.
+ */
+const CARD = 'simulation-folder-card group/card relative flex h-full min-h-[200px] cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-transparent p-6 transition-[border-color,box-shadow] duration-[160ms] hover:border-border/72';
+
+const ACTIONS = 'absolute top-[0.45rem] right-[0.45rem] z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100';
+
+/**
+ * A plain `<button>`, not a HeroUI `Button`: `ContextMenuPopover` clones its trigger to
+ * attach the floating-ui reference and the press handlers, and HeroUI's `Button` has a
+ * closed prop interface with no `title`.
+ */
+const ACTIONS_BUTTON = 'flex size-7 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted shadow-none transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground';
+
+const ICON = 'flex size-[3.25rem] flex-row items-center justify-center rounded-[0.95rem] border-0 bg-surface-secondary text-muted';
 
 interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
@@ -78,7 +100,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
 
     return (
         <article
-            className='simulation-folder-card rounded-xl border border-border relative cursor-pointer'
+            className={CARD}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -90,45 +112,31 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
         >
             {menuOptions.length > 0 ? (
                 <div
-                    className='simulation-folder-card__actions'
+                    className={ACTIONS}
                     data-row-click-ignore='true'
                 >
-                    <Popover
+                    <ContextMenuPopover
                         id={`simulation-folder-popover-${folder._id}`}
                         trigger={(
-                            <IconButton
-                                size='sm'
-                                className='simulation-folder-card__actions-btn'
+                            <button
+                                type='button'
+                                className={ACTIONS_BUTTON}
                                 title={`Open actions for ${folder.title}`}
                                 aria-label={`Open actions for ${folder.title}`}
                             >
                                 <MoreHorizontal size={16} />
-                            </IconButton>
+                            </button>
                         )}
-                    >
-                        <PopoverMenu>
-                            {menuOptions.map((option) => {
-                                const Icon = option.icon;
-
-                                return (
-                                    <PopoverMenuItem
-                                        key={option.label}
-                                        icon={Icon ? <Icon /> : undefined}
-                                        label={option.label}
-                                        onClick={() => {
-                                            void option.onClick?.();
-                                        }}
-                                        disabled={option.disabled}
-                                        variant={option.destructive ? 'danger' : undefined}
-                                    />
-                                );
-                            })}
-                        </PopoverMenu>
-                    </Popover>
+                        options={menuOptions}
+                        triggerAction='click'
+                        placement='bottom-end'
+                        ariaLabel={`Actions for ${folder.title}`}
+                        menuLabel={`Actions for ${folder.title}`}
+                    />
                 </div>
             ) : null}
-            <div className='flex flex-col gap-6 h-full simulation-folder-card__content'>
-                <div className='flex flex-row items-center simulation-folder-card__icon justify-center'>
+            <div className='flex min-h-full flex-col gap-6 h-full'>
+                <div className={ICON}>
                     <Folder size={30} strokeWidth={1.75} />
                 </div>
 
@@ -138,7 +146,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                     </h3>
                 </div>
 
-                <div className='flex flex-row items-center gap-2 simulation-folder-card__footer text-muted text-sm'>
+                <div className='mt-auto flex flex-row items-center gap-2 text-sm text-muted'>
                     <span>Open folder</span>
                     <ChevronRight size={14} strokeWidth={2} />
                 </div>

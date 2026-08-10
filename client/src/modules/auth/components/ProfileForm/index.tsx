@@ -1,5 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { InlineStatus, Loader, Stack } from '@voltstack/bravais';
+import { Spinner } from '@heroui/react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -18,6 +18,15 @@ interface ProfileFormProps {
 }
 
 const AUTO_SAVE_DELAY = 1000;
+
+/*
+ * bravais's `InlineStatus` is a live region, not decoration: `role='status'` or
+ * `role='alert'` plus `aria-live` and `aria-atomic='true'` are what announce the
+ * result of this form's debounced auto-save. HeroUI has no equivalent, so the row
+ * is hand-built and every one of those attributes is preserved. The icon stays
+ * `aria-hidden`, exactly as before, because the text carries the message.
+ */
+const STATUS_ROW = 'flex flex-row items-center gap-2 text-sm';
 
 const ProfileForm = ({
     initialValues,
@@ -114,36 +123,42 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saving) {
         saveFeedback = (
-            <InlineStatus tone='muted' icon={<Loader scale={0.6} isFixed={false} />}>
-                Saving changes...
-            </InlineStatus>
+            <div className={STATUS_ROW} role='status' aria-live='polite' aria-atomic='true'>
+                <span className='flex items-center' aria-hidden='true'>
+                    <Spinner size='sm' color='current' />
+                </span>
+                <span className='text-sm text-muted'>Saving changes...</span>
+            </div>
         );
     }
 
     if (saveState === ProfileSaveState.Saved) {
         saveFeedback = (
-            <InlineStatus tone='muted' icon={<CheckCircle2 size={14} className='text-success' />}>
-                Changes saved
-            </InlineStatus>
+            <div className={STATUS_ROW} role='status' aria-live='polite' aria-atomic='true'>
+                <span className='flex items-center' aria-hidden='true'>
+                    <CheckCircle2 size={14} className='text-success' />
+                </span>
+                <span className='text-sm text-muted'>Changes saved</span>
+            </div>
         );
     }
 
     if (saveState === ProfileSaveState.Error) {
         saveFeedback = (
-            <InlineStatus tone='danger' severity='alert' live='assertive' icon={<AlertCircle size={14} />}>
-                Could not save changes. We will retry after your next edit.
-            </InlineStatus>
+            <div className={`${STATUS_ROW} text-danger`} role='alert' aria-live='assertive' aria-atomic='true'>
+                <span className='flex items-center' aria-hidden='true'>
+                    <AlertCircle size={14} />
+                </span>
+                <span className='text-sm'>Could not save changes. We will retry after your next edit.</span>
+            </div>
         );
     }
 
     return (
-        <Stack
-            as='form'
-            gap='1'
-            {...({
-                onSubmit: (event: React.FormEvent<HTMLFormElement>) => event.preventDefault(),
-                noValidate: true
-            } as React.FormHTMLAttributes<HTMLFormElement>)}
+        <form
+            className='flex flex-col gap-4'
+            onSubmit={(event) => event.preventDefault()}
+            noValidate
         >
             <FormFieldRHF
                 name='fullName'
@@ -175,7 +190,7 @@ const ProfileForm = ({
             />
 
             {saveFeedback}
-        </Stack>
+        </form>
     );
 };
 

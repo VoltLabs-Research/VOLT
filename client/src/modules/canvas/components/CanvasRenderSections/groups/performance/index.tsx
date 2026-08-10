@@ -1,4 +1,4 @@
-import { selectField } from '../../../CanvasRenderConfigHelpers';
+import { selectField, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     isPerformancePreset,
@@ -6,7 +6,7 @@ import {
     PERFORMANCE_PRESET_OPTIONS,
     POWER_PREFERENCE_OPTIONS
 } from '@/shared/rendering/performance';
-import { Select } from '@voltstack/bravais';
+import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
 import { useMemo } from 'react';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -32,8 +32,10 @@ const usePerformanceGroup = (): RenderGroup => {
                     enabled: true,
                     rows: [],
                     extras: (
-                        <div className='canvas-render-grid'>
-                            <Select
+                        <div className={RENDER_GRID_CLASS}>
+                            <CanvasOptionSelect
+                                ariaLabel='Performance preset'
+                                size='compact'
                                 value={performanceSettings.preset}
                                 onChange={(value: string) => {
                                     if (isPerformancePreset(value)) {

@@ -1,4 +1,5 @@
-import { Button, CollapsibleSection } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
@@ -58,6 +59,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                     title={`Condition ${index + 1}`}
                     defaultExpanded={index === 0}
                     onDelete={() => removeItem(index)}
+                    deleteActionLabel={`Delete condition ${index + 1}`}
                 >
                     {index > 0 && (
                         <FormFieldRHF
@@ -105,15 +107,14 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                 </CollapsibleSection>
             ))}
 
-            <div style={{ marginTop: conditions.length > 0 ? '0.5rem' : 0 }}>
+            <div className={conditions.length > 0 ? 'mt-2' : 'mt-0'}>
                 <Button
                     variant='outline'
-                    intent='neutral'
                     size='sm'
-                    className='w-full'
-                    leftIcon={<Plus size={14} />}
-                    onClick={addItem}
+                    fullWidth
+                    onPress={addItem}
                 >
+                    <Plus size={14} aria-hidden='true' />
                     Add Condition
                 </Button>
             </div>

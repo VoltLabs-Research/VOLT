@@ -9,7 +9,6 @@ import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { resolvePersistenceKey } from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-import './SubListingsPage.css';
 
 interface SubListingRow extends Record<string, unknown> {
     _id: string;
@@ -129,7 +128,7 @@ const SubListingsPage = () => {
 
     if(!paramsValid){
         return (
-            <div className='plugin-sub-listings-page plugin-sub-listings-page--empty'>
+            <div className='flex h-full min-h-0 w-full flex-row overflow-hidden max-[900px]:flex-col'>
                 <RecoveryState
                     title='Missing required parameters'
                     description={`This page needs ${missingParams.join(', ')} in the URL.`}
@@ -141,7 +140,7 @@ const SubListingsPage = () => {
 
     if(!hasNames){
         return (
-            <div className='plugin-sub-listings-page plugin-sub-listings-page--empty'>
+            <div className='flex h-full min-h-0 w-full flex-row overflow-hidden max-[900px]:flex-col'>
                 <RecoveryState
                     title='No sub-listings available'
                     description='This exposure has no sub-listings to display.'
@@ -151,8 +150,8 @@ const SubListingsPage = () => {
     }
 
     return (
-        <div className='plugin-sub-listings-page'>
-            <div className='plugin-sub-listings-page__listing'>
+        <div className='flex h-full min-h-0 w-full flex-row overflow-hidden max-[900px]:flex-col'>
+            <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
                 <DocumentListing<SubListingRow, SubListingFetchContext>
                     title={activeTab ? formatSnakeCaseToTitle(activeTab) : 'Sub-Listings'}
                     description={`Timestep ${timestep}`}
@@ -170,7 +169,7 @@ const SubListingsPage = () => {
                 />
             </div>
             {selectedRow && (
-                <div className='plugin-sub-listings-page__detail'>
+                <div className='flex min-h-0 flex-col overflow-hidden flex-[0_0_clamp(320px,38%,520px)] max-[900px]:flex-[0_0_45%] max-[900px]:border-t max-[900px]:border-border'>
                     <SubListingDetailPanel
                         row={selectedRow}
                         columns={columns}

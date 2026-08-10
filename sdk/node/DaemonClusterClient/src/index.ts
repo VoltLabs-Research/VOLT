@@ -31,19 +31,23 @@ export type {
     RuntimeProgressEvent
 } from './contracts/events';
 
-export { REVERSE_CHANNEL } from './contracts/reverseChannel';
+export { REVERSE_CHANNEL, TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL } from './contracts/reverseChannel';
 export type {
     TeamClusterDaemonResponseType,
     TeamClusterDaemonSessionKind,
     TeamClusterDaemonTerminalTarget,
     TeamClusterTunnelSessionStatus,
+    TeamClusterDaemonSocketChannel,
     TeamClusterDaemonSocketHeaders,
     TeamClusterDaemonRegisterPayload,
     TeamClusterDaemonCommandMessage,
+    TeamClusterDaemonSuccessEnvelope,
+    TeamClusterDaemonErrorResult,
     TeamClusterDaemonSocketResponsePayload,
     TeamClusterDaemonSocketStreamPayload,
     TeamClusterDaemonSocketStreamStatePayload,
     TeamClusterDaemonSessionAttachPayload,
+    TeamClusterDaemonSessionAttachResult,
     TeamClusterDaemonSessionInputPayload,
     TeamClusterDaemonSessionResizePayload,
     TeamClusterDaemonSessionDetachPayload,
@@ -52,13 +56,36 @@ export type {
     TeamClusterDaemonExposureSnapshotPayload,
     TeamClusterDaemonExposureUpsertPayload,
     TeamClusterDaemonExposureRemovePayload,
+    TeamClusterDaemonExposureTunnelOpenPayload,
+    TeamClusterDaemonDirectTunnelOpenPayload,
     TeamClusterDaemonTunnelOpenPayload,
     TeamClusterDaemonTunnelStatePayload,
     TeamClusterDaemonTunnelDataPayload,
+    TeamClusterDaemonTunnelDrainPayload,
     TeamClusterDaemonTunnelClosePayload,
     TeamClusterDaemonTunnelHeartbeatPayload,
+    TeamClusterDaemonContainerCreateProgress,
+    TeamClusterDaemonRuntimeProgressPayload,
     TeamClusterDaemonMessage
 } from './contracts/reverseChannel';
+
+export type {
+    TeamClusterDaemonRole,
+    TeamClusterDaemonRoleDrainState,
+    TeamClusterDaemonRuntimeRoleConfig,
+    TeamClusterDaemonQueueScopeLimit,
+    TeamClusterDaemonQueueScopeLimits,
+    TeamClusterDaemonQueueConcurrency,
+    TeamClusterDaemonHostCapabilities,
+    TeamClusterDaemonMemoryMetrics,
+    TeamClusterDaemonDiskMetrics,
+    TeamClusterDaemonDiskOperationMetrics,
+    TeamClusterDaemonNetworkMetrics,
+    TeamClusterDaemonHeartbeatMetrics,
+    TeamClusterDaemonHeartbeatCommand,
+    TeamClusterDaemonLifecycleCommand,
+    TeamClusterDaemonDeleteCompletedCommand
+} from './contracts/runtime';
 
 export type {
     EnrollmentRequestBody,

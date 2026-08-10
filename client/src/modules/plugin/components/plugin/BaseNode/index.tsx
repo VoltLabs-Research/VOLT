@@ -1,8 +1,18 @@
-import { cn } from '@heroui/react';
+import { Chip, cn } from '@heroui/react';
 import NodeDebugOutput from '@/modules/plugin/components/plugin/BaseNode/NodeDebugOutput';
 import NodeExecutionLog from '@/modules/plugin/components/plugin/BaseNode/NodeExecutionLog';
 import useNodeDebugView from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
-import { Button, Tag } from '@voltstack/bravais';
+import {
+    NODE_BADGE_CLASS,
+    NODE_BTN_GROUP_CLASS,
+    NODE_CLASS,
+    NODE_DATA_BTN_ACTIVE_CLASS,
+    NODE_DATA_BTN_CLASS,
+    NODE_DESCRIPTION_CLASS,
+    NODE_SELECTED_CLASS,
+    NODE_WRAPPER_BADGE_CLASS,
+    NODE_WRAPPER_CLASS
+} from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import {
     createReactFlowHandleStyle,
@@ -13,11 +23,12 @@ import {
 import { Database, Terminal } from 'lucide-react';
 import { Handle, useUpdateNodeInternals } from '@xyflow/react';
 import { useEffect } from 'react';
+import type { ChipProps } from '@heroui/react';
 import type { INodeData } from '@volt/contracts/modules/plugin/workflow';
+import type { NodeOverheadBadgeTone } from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
 import type { NodeType } from '@volt/contracts/modules/plugin/enums';
 import type { NodeProps } from '@xyflow/react';
-import type { ReactNode } from 'react';
-import './BaseNode.css';
+import type { MouseEvent, ReactNode } from 'react';
 
 interface BaseNodeProps extends NodeProps {
     nodeType: NodeType;
@@ -26,6 +37,17 @@ interface BaseNodeProps extends NodeProps {
     children?: ReactNode;
 }
 
+/**
+ * bravais's `Tag` defaulted to `variant='soft'`, so each tone was a tinted fill with
+ * the hue as the text colour — which is exactly HeroUI's `Chip variant='soft'`. Its
+ * `neutral` becomes `default`; there is no `brand` tone in play here.
+ */
+const BADGE_COLOR: Record<NodeOverheadBadgeTone, ChipProps['color']> = {
+    success: 'success',
+    danger: 'danger',
+    neutral: 'default'
+};
+
 interface DebugActionButtonProps {
     icon: ReactNode;
     isActive: boolean;
@@ -33,20 +55,28 @@ interface DebugActionButtonProps {
     children: ReactNode;
 }
 
+/**
+ * A plain `<button>`, deliberately.
+ *
+ * The handler calls `event.stopPropagation()` so opening the data or log overlay does
+ * not also select the node underneath — and React Aria's `onPress` receives a
+ * `PressEvent`, which has no `stopPropagation` (spec §4b). Nothing is lost by staying
+ * native: `.workflow-node-data-btn` re-painted every part of bravais's Button anyway
+ * (fill, border, padding, font size, colour), so those declarations are the whole
+ * look and they are utilities now.
+ */
 const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionButtonProps) => (
-    <Button
-        variant='ghost'
-        size='sm'
-        shape='pill'
-        leftIcon={icon}
-        className={`border border-border workflow-node-data-btn ${isActive ? 'workflow-node-data-btn--active' : ''}`}
-        onClick={(event) => {
+    <button
+        type='button'
+        className={cn(NODE_DATA_BTN_CLASS, isActive ? NODE_DATA_BTN_ACTIVE_CLASS : null)}
+        onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             onClick();
         }}
     >
+        {icon}
         {children}
-    </Button>
+    </button>
 );
 
 const BaseNode = ({
@@ -85,18 +115,19 @@ const BaseNode = ({
     }, [connectorLayoutSignature, id, updateNodeInternals]);
 
     return (
-        <div className={cn('relative', `workflow-node-wrapper ${overheadBadge ? 'workflow-node-wrapper--has-badge' : ''}`)}>
+        <div className={cn(NODE_WRAPPER_CLASS, overheadBadge ? NODE_WRAPPER_BADGE_CLASS : null)}>
             {overheadBadge && (
-                <Tag
-                    size='xs'
-                    tone={overheadBadge.tone}
-                    className='absolute top-0 center-x font-semibold workflow-node-overhead-badge'
+                <Chip
+                    size='sm'
+                    variant='soft'
+                    color={BADGE_COLOR[overheadBadge.tone]}
+                    className={NODE_BADGE_CLASS}
                 >
                     {overheadBadge.label}
-                </Tag>
+                </Chip>
             )}
 
-            <div className={cn('rounded-lg border border-border relative', `workflow-node bg-surface border border-border ${selected ? 'workflow-node--selected' : ''} ${debugClass}`)}>
+            <div className={cn(NODE_CLASS, selected ? NODE_SELECTED_CLASS : null, debugClass)}>
                 {getNodeHandleDefinitions(nodeType).map((handleDefinition) => {
                     const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
@@ -113,10 +144,10 @@ const BaseNode = ({
                 })}
 
                 <div className='flex flex-row items-center gap-4'>
-                    <div className='flex flex-col gap-[0.2rem] f-1'>
+                    <div className='flex flex-1 flex-col gap-[0.2rem]'>
                         <h3 className='text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
                         {description && (
-                            <p className='text-muted overflow-hidden workflow-node-description'>
+                            <p className={NODE_DESCRIPTION_CLASS}>
                                 {description}
                             </p>
                         )}
@@ -127,10 +158,10 @@ const BaseNode = ({
             </div>
 
             {(hasInspectableOutput || hasLog) && (
-                <div className='absolute center-x items-center workflow-node-btn-group'>
+                <div className={NODE_BTN_GROUP_CLASS}>
                     {hasInspectableOutput && (
                         <DebugActionButton
-                            icon={<Database size={11} />}
+                            icon={<Database size={11} aria-hidden='true' />}
                             isActive={isInspectingOutput}
                             onClick={toggleInspectedOutput}
                         >
@@ -140,7 +171,7 @@ const BaseNode = ({
 
                     {hasLog && (
                         <DebugActionButton
-                            icon={<Terminal size={11} />}
+                            icon={<Terminal size={11} aria-hidden='true' />}
                             isActive={isShowingLog}
                             onClick={toggleExecutionLog}
                         >

@@ -1,12 +1,21 @@
 import { cn } from '@heroui/react';
-import './DashboardOverviewCard.css';
-import { Sparkline, IconFrame } from '@voltstack/bravais';
+import Sparkline from '@/modules/dashboard/components/Sparkline';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
+import {
+    STAT_CARD,
+    STAT_CARD_BUTTON,
+    STAT_CARD_ICON,
+    STAT_NAVIGATE,
+    STAT_SPARKLINE,
+    STAT_TREND,
+    STAT_VALUE
+} from '@/modules/dashboard/components/stat-tile-chrome';
 import { getTrendColor } from '@/modules/dashboard/utils/trend-color';
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/contracts/cards';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 interface DashboardOverviewCardProps {
     card: DashboardMetricsCard;
     icon: ReactNode;
@@ -28,15 +37,15 @@ const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: Dashbo
     return (
         <div className={cn('flex flex-col gap-4 relative z-[5]', className)}>
             <div className='flex flex-row items-center gap-3'>
-                <IconFrame size='md' className='dashboard-stat-card-icon'>
+                <span className={STAT_CARD_ICON} aria-hidden='true'>
                     {icon}
-                </IconFrame>
+                </span>
                 <span className='text-sm font-medium'>{card.name}</span>
             </div>
 
             <div className='flex flex-row items-end gap-3'>
-                <span className='dashboard-stat-value'>{card.count}</span>
-                <div className={cn('flex flex-row items-center gap-1', `dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`)} style={{ marginBottom: '0.3rem' }}>
+                <span className={STAT_VALUE}>{card.count}</span>
+                <div className={cn(STAT_TREND, isPositiveTrend ? 'text-success' : 'text-danger')}>
                     <TrendIcon size={10} />
                     <span>{Math.abs(card.lastMonthStatus)}%</span>
                 </div>
@@ -48,7 +57,7 @@ const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: Dashbo
 };
 
 const DashboardSparkline = ({ card, color }: DashboardSparklineProps) => (
-    <div className='absolute bottom-0 right-0 dashboard-stat-sparkline'>
+    <div className={STAT_SPARKLINE}>
         <Sparkline
             color={color}
             values={card.series}
@@ -74,17 +83,17 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     const lineColor = getTrendColor(isPositiveTrend);
 
     return (
-        <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true}>
+        <DashboardCard className={STAT_CARD} isRelative={true} overflowHidden={true}>
             {isClickable ? (
                 <button
                     type='button'
-                    className='dashboard-stat-card-button'
+                    className={STAT_CARD_BUTTON}
                     onClick={handleClick}
                     aria-label={`Open ${card.name}`}
                 >
                     <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} />
 
-                    <div className='absolute top-4 right-4 dashboard-stat-navigate'>
+                    <div className={STAT_NAVIGATE}>
                         <ArrowRight />
                     </div>
 
@@ -92,7 +101,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                 </button>
             ) : (
                 <>
-                    <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} className='dashboard-stat-card-content' />
+                    <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} />
                     <DashboardSparkline card={card} color={lineColor} />
                 </>
             )}

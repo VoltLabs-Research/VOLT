@@ -1,4 +1,3 @@
-import './ConnectEndpoint.css';
 import {
     commitBackendEndpoint
 } from '@/modules/auth/services/endpoint-session';
@@ -7,7 +6,7 @@ import {
     probeEndpointHealth
 } from '@/modules/auth/services/endpoint-health';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
 import { Server } from 'lucide-react';
 import { useState } from 'react';
@@ -55,19 +54,15 @@ const ConnectEndpointTemplate = () => {
     };
 
     return (
-        <main className='connect-page screen-vh'>
-            <section className='flex flex-col justify-center p-6 connect-form-shell screen-vh' aria-labelledby='connect-form-title'>
-                <div className='flex flex-col gap-8 w-full connect-form-section'>
+        <main className='min-h-dvh bg-background'>
+            <section className='relative flex min-h-dvh flex-col justify-center bg-background p-6 max-sm:p-4' aria-labelledby='connect-form-title'>
+                <div className='mx-auto flex w-full max-w-[26rem] flex-col gap-8'>
                     <header className='flex flex-col gap-2'>
-                        <h1 className='text-base font-medium text-foreground connect-form-title' id='connect-form-title'>Connect to a server</h1>
+                        <h1 className='text-[2rem] font-bold tracking-[-0.03em] text-foreground max-lg:text-[1.75rem]' id='connect-form-title'>Connect to a server</h1>
                         <p>Enter the address of the VOLT deployment you want to work on.</p>
                     </header>
 
-                    <Stack
-                        as='form'
-                        gap='1'
-                        {...({ onSubmit: handleSubmit } as React.FormHTMLAttributes<HTMLFormElement>)}
-                    >
+                    <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
                         <FormFieldRHF
                             name='endpoint'
                             control={control}
@@ -88,16 +83,15 @@ const ConnectEndpointTemplate = () => {
 
                         <Button
                             type='submit'
-                            isLoading={isVerifying}
-                            variant='solid'
-                            intent='brand'
-                            block
+                            isPending={isVerifying}
+                            variant='primary'
+                            fullWidth
                         >
                             {isVerifying ? 'Verifying…' : 'Continue'}
                         </Button>
-                    </Stack>
+                    </form>
 
-                    <p className='text-center connect-hint'>
+                    <p className='border-t border-border/70 pt-2 text-center text-sm leading-[1.6] text-muted'>
                         Need help? Read the <a href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.
                     </p>
                 </div>

@@ -121,7 +121,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
                 >
                     <CartesianGrid
                         strokeDasharray='3 3'
-                        stroke='var(--color-border-soft)'
+                        stroke='var(--border)'
                         vertical={false}
                     />
                     <YAxis domain={[0, 100]} hide />

@@ -9,7 +9,7 @@ import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
-import type { SaveStatus } from '@voltstack/bravais';
+import type { SaveStatus } from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';

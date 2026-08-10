@@ -1,4 +1,3 @@
-import './PostAuthOnboarding.css';
 import {
     getClusterOnboardingRedirectPath,
     resolvePostAuthDestination
@@ -14,7 +13,7 @@ import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Loader } from '@voltstack/bravais';
+import { Button, Spinner } from '@heroui/react';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -98,17 +97,25 @@ const PostAuthOnboarding = () => {
             isSigningOut={isSigningOut}
         >
             {isLoading ? (
-                <div className='flex flex-col items-center justify-center gap-4 post-auth-onboarding-loading'>
-                    <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
+                <div
+                    className='flex flex-col items-center justify-center gap-4 w-[min(100%,24rem)] min-h-[18rem]'
+                    role='status'
+                    aria-live='polite'
+                    aria-atomic='true'
+                >
+                    <Spinner size='lg' />
+                    <span className='text-sm text-muted text-center leading-normal'>
+                        Loading onboarding
+                    </span>
                 </div>
             ) : (
-                <div className='flex flex-col gap-8 post-auth-onboarding-shell'>
-                    <form className='post-auth-onboarding-content flex flex-col gap-8' onSubmit={handleSubmit}>
+                <div className='flex flex-col gap-8 w-[min(100%,32rem)] max-[768px]:w-full'>
+                    <form className='flex flex-col gap-8 w-full' onSubmit={handleSubmit}>
                         <div className='flex flex-col gap-4 text-center'>
                             <h1 className='text-3xl font-semibold text-foreground'>
                                 Let&apos;s create a team for you!
                             </h1>
-                            <p className='text-muted post-auth-onboarding-description'>
+                            <p className='text-muted text-lg leading-[1.6] max-[768px]:text-base'>
                                 Invite other users to collaborate or join existing teams. You&apos;ll have the option to create new teams later.
                             </p>
                         </div>
@@ -129,13 +136,12 @@ const PostAuthOnboarding = () => {
                         </div>
 
                         <Button
-                            variant='solid'
-                            intent='brand'
+                            variant='primary'
                             size='lg'
-                            shape='pill'
-                            block
+                            fullWidth
+                            className='rounded-full'
                             type='submit'
-                            isLoading={isSubmitting}
+                            isPending={isSubmitting}
                         >
                             Create Team & Continue
                         </Button>

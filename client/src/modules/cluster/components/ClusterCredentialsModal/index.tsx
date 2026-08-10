@@ -1,10 +1,18 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
-import { Button, Modal, closeModal } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useState } from 'react';
-import './ClusterCredentialsModal.css';
 import type { TeamCluster, TeamClusterCredentialServices } from '@volt/contracts/modules/cluster/domain';
+
+/**
+ * `.cluster-credentials-warning`, the only rule in the deleted sheet that was not
+ * a plain border: a 35% warning-tinted edge over a 8% warning wash. bravais's
+ * `--color-warning` fallback chain is gone, so the mixes read HeroUI's `--warning`
+ * and `--border` directly.
+ */
+const WARNING_CARD_CLASS = 'border border-[color-mix(in_srgb,var(--warning)_35%,var(--border))] bg-[color-mix(in_srgb,var(--warning)_8%,transparent)]';
 
 export const CLUSTER_CREDENTIALS_MODAL_ID = 'cluster-credentials-modal';
 
@@ -123,12 +131,13 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
 
                 {credentials && (
                     <>
-                        <div className='flex flex-col gap-2 p-4 rounded-xl cluster-credentials-warning' role='status' aria-live='polite'>
+                        <div className={`flex flex-col gap-2 p-4 rounded-xl ${WARNING_CARD_CLASS}`} role='status' aria-live='polite'>
                             <h3 className='text-sm font-semibold text-foreground'>Sensitive credentials</h3>
                             <p className='text-sm text-muted'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</p>
-                            <label className='flex items-start gap-2 cluster-credentials-acknowledgement'>
+                            <label className='flex items-start gap-2'>
                                 <input
                                     type='checkbox'
+                                    className='mt-[0.2rem]'
                                     checked={hasAcknowledgedSensitiveCopy}
                                     onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
                                 />
@@ -137,20 +146,19 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                         </div>
 
                         {services.map((service) => (
-                            <div className='flex flex-col gap-1 p-4 rounded-xl cluster-credentials-card' key={service.label}>
+                            <div className='flex flex-col gap-1 p-4 rounded-xl border border-border' key={service.label}>
                                 <h3 className='text-sm font-semibold text-foreground'>{service.label}</h3>
                                 <p className='text-xs text-muted'>Port: {service.port ?? 'Not assigned'}</p>
                                 {service.username && (
                                     <p className='text-xs text-muted'>Username: {service.username}</p>
                                 )}
                                 <div className='flex flex-row items-center justify-between gap-2'>
-                                    <p className='text-xs text-foreground font-family-mono'>Password: {service.password}</p>
+                                    <p className='text-xs text-foreground font-mono'>Password: {service.password}</p>
                                     <Button
                                         variant='ghost'
-                                        intent='neutral'
                                         size='sm'
-                                        onClick={() => handleCopyPassword(service.password)}
-                                        disabled={!hasAcknowledgedSensitiveCopy}
+                                        onPress={() => handleCopyPassword(service.password)}
+                                        isDisabled={!hasAcknowledgedSensitiveCopy}
                                     >
                                         Copy
                                     </Button>

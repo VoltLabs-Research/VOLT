@@ -3,6 +3,18 @@ import TemplateCard from '../TemplateCard';
 import { CONTAINER_TEMPLATES } from '../../services/container-templates';
 import { Server } from 'lucide-react';
 
+/**
+ * From the deleted `CreateContainer.css`: the template grid's
+ * `repeat(auto-fill, minmax(200px, 1fr))` (collapsed to one column below 768px),
+ * the 46rem measure on the step's intro copy, the 36px contained template logo,
+ * and the custom-image preview's `color-mix(in srgb, var(--color-surface-2) 70%,
+ * transparent)` fill — `--color-surface-2` is HeroUI's `--surface-tertiary`.
+ */
+const TEMPLATES_GRID_CLASS_NAMES = 'grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 max-[768px]:grid-cols-1';
+const STEP_COPY_CLASS_NAMES = 'max-w-[46rem] text-base text-muted';
+const TEMPLATE_LOGO_CLASS_NAMES = 'size-9 object-contain';
+const IMAGE_PREVIEW_CLASS_NAMES = 'flex flex-col gap-1 rounded-lg border border-border bg-[color-mix(in_srgb,var(--surface-tertiary)_70%,transparent)] p-4';
+
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;
     customImage: string;
@@ -21,19 +33,19 @@ const ImageSelectionStep = ({
     const customImageDescription = customImage || 'Pull any image from Docker Hub.';
 
     return (
-        <div className='flex flex-col gap-8 create-container-step'>
+        <div className='flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
                 <h3 className='text-xl font-semibold text-foreground'>Choose an image</h3>
-                <p className='text-base text-muted create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</p>
+                <p className={STEP_COPY_CLASS_NAMES}>Select one starter image or continue with a custom Docker Hub image.</p>
             </div>
 
-            <div className='create-container-templates-grid gap-4' role='radiogroup' aria-label='Container image templates'>
+            <div className={TEMPLATES_GRID_CLASS_NAMES} role='radiogroup' aria-label='Container image templates'>
                 {CONTAINER_TEMPLATES.map((template) => (
                     <TemplateCard
                         key={template.id}
                         name={template.name}
                         description={template.description}
-                        icon={<img src={template.logo} alt='' className='create-container-template-logo' />}
+                        icon={<img src={template.logo} alt='' className={TEMPLATE_LOGO_CLASS_NAMES} />}
                         isSelected={selectedTemplate === template.id}
                         onClick={() => onTemplateSelect(template.id)}
                     />
@@ -49,7 +61,7 @@ const ImageSelectionStep = ({
             </div>
 
             {customImage && (
-                <div className='flex flex-col gap-1 p-4 rounded-lg create-container-image-preview'>
+                <div className={IMAGE_PREVIEW_CLASS_NAMES}>
                     <p className='text-sm text-muted'>Custom image preview</p>
                     <p className='text-sm font-medium text-foreground'>{customImage}</p>
                     <p className={cn('text-sm', customImageError ? 'text-danger' : 'text-muted')}>

@@ -1,4 +1,4 @@
-import { Button, Skeleton } from '@voltstack/bravais';
+import { Button, Skeleton, Spinner } from '@heroui/react';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Settings2, Trash2 } from 'lucide-react';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
@@ -14,6 +14,23 @@ interface ProviderListProps {
     onRetry: () => void;
 }
 
+/** `.integrations-provider-list` */
+const PROVIDER_LIST_CLASS = 'border-t border-border';
+
+/**
+ * `.integrations-provider-row`. `group` is what lets the actions below react to the
+ * row's hover, which used to be the descendant selector
+ * `.integrations-provider-row:hover .integrations-provider-row-actions`.
+ */
+const PROVIDER_ROW_CLASS = 'group flex flex-row items-center justify-between gap-4 border-b border-border py-3 min-h-14 transition-colors duration-[120ms] ease-out';
+
+/**
+ * `.integrations-provider-row-actions` plus both of its reveal rules — the row hover
+ * and the `@media (max-width: 640px)` block that pins the actions visible on a narrow
+ * viewport, where there is no hover to reveal them with.
+ */
+const PROVIDER_ROW_ACTIONS_CLASS = 'flex flex-row items-center gap-1 opacity-75 transition-opacity duration-[120ms] group-hover:opacity-100 max-[640px]:opacity-100';
+
 const ProviderList = ({
     integrations,
     isLoading,
@@ -25,13 +42,13 @@ const ProviderList = ({
 }: ProviderListProps) => {
     if (isLoading) {
         return (
-            <div className='integrations-provider-list'>
+            <div className={PROVIDER_LIST_CLASS}>
                 {Array.from({ length: 3 }).map((_, index) => (
-                    <div className='flex flex-row items-center justify-between gap-4 integrations-provider-row' key={index}>
-                        <Skeleton variant='text' width={100} height={20} />
+                    <div className={PROVIDER_ROW_CLASS} key={index}>
+                        <Skeleton className='h-5 w-[100px] rounded-md' />
                         <div className='flex flex-row items-center gap-1'>
-                            <Skeleton variant='circular' width={24} height={24} />
-                            <Skeleton variant='circular' width={24} height={24} />
+                            <Skeleton className='size-6 rounded-full' />
+                            <Skeleton className='size-6 rounded-full' />
                         </div>
                     </div>
                 ))}
@@ -53,7 +70,7 @@ const ProviderList = ({
 
     if (integrations.length === 0) {
         return (
-            <div className='integrations-empty-state'>
+            <div className='py-10 text-center'>
                 <p className='text-sm text-muted'>
                     No providers configured yet.
                 </p>
@@ -62,10 +79,10 @@ const ProviderList = ({
     }
 
     return (
-        <div className='integrations-provider-list'>
+        <div className={PROVIDER_LIST_CLASS}>
             {integrations.map((integration) => (
-                <div className='flex flex-row items-center justify-between gap-4 integrations-provider-row' key={integration.provider}>
-                    <div className='flex flex-col gap-1' style={{ minWidth: 0 }}>
+                <div className={PROVIDER_ROW_CLASS} key={integration.provider}>
+                    <div className='flex flex-col gap-1 min-w-0'>
                         <p className='text-sm font-medium text-foreground'>
                             {integration.providerName}
                         </p>
@@ -76,26 +93,34 @@ const ProviderList = ({
                         </p>
                     </div>
 
-                    <div className='flex flex-row items-center gap-1 integrations-provider-row-actions'>
+                    <div className={PROVIDER_ROW_ACTIONS_CLASS}>
                         <Button
+                            isIconOnly
                             size='sm'
                             variant='ghost'
-                            intent='neutral'
-                            leftIcon={<Settings2 size={14} />}
-                            onClick={() => onConfigure(integration)}
-                            title={`Configure ${integration.providerName}`}
+                            onPress={() => onConfigure(integration)}
                             aria-label={`Configure ${integration.providerName}`}
-                        />
+                        >
+                            {/* React Aria's Button drops `title`, so the native tooltip hangs off the glyph. */}
+                            <span className='flex items-center justify-center' title={`Configure ${integration.providerName}`}>
+                                <Settings2 size={14} aria-hidden='true' />
+                            </span>
+                        </Button>
                         <Button
+                            isIconOnly
                             size='sm'
                             variant='ghost'
-                            intent='danger'
-                            leftIcon={<Trash2 size={14} />}
-                            onClick={() => onRemove(integration.provider)}
-                            isLoading={busyProvider === integration.provider}
-                            title={`Remove ${integration.providerName}`}
+                            className='text-danger'
+                            onPress={() => onRemove(integration.provider)}
+                            isPending={busyProvider === integration.provider}
                             aria-label={`Remove ${integration.providerName}`}
-                        />
+                        >
+                            <span className='flex items-center justify-center' title={`Remove ${integration.providerName}`}>
+                                {busyProvider === integration.provider
+                                    ? <Spinner size='sm' color='current' />
+                                    : <Trash2 size={14} aria-hidden='true' />}
+                            </span>
+                        </Button>
                     </div>
                 </div>
             ))}

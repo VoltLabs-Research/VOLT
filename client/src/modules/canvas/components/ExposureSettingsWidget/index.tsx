@@ -9,8 +9,6 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
-import './ExposureSettingsWidget.css';
-
 const ExposureSettingsWidget = () => {
     const { settingsKey } = useCanvasUrlState();
     const isSceneInteracting = useSceneInteraction();
@@ -45,7 +43,7 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <div className={cn('bg-surface border border-border', `canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`)} style={{
+        <div className={cn('min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2.5', `canvas-widget ${isSceneInteracting ? 'is-dimmed' : ''}`)} style={{
             bottom: '1rem',
             right: '1rem',
             top: 'auto',

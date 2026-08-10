@@ -5,6 +5,13 @@ import { useMedia } from '@/shared/ui/hooks/use-media';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { getColumnKey, getColumnTitle } from '@/shared/ui/components/DocumentListingTable';
 import { getTotalColumnsWidth, MOBILE_COLUMN_WIDTH_SCALE, resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
+import {
+    TABLE_FRAME_CLASS,
+    TABLE_HEADER_CELL_CLASS,
+    TABLE_HEADER_CLASS,
+    TABLE_LOADING_CLASS,
+    TABLE_RECOVERY_STATE_CLASS
+} from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { List } from 'react-window';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,8 +19,6 @@ import type { CompactTableRowProps } from '@/modules/plugin/components/listing/P
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
 import type { CSSProperties } from 'react';
-import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
-import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
 
 export type { PluginTableColumnConfig };
 
@@ -168,7 +173,7 @@ const PluginCompactTable = ({
                 title='Unable to load this data'
                 description={getDisplayErrorMessage(error)}
                 tone={RecoveryStateTone.Error}
-                className='plugin-exposure-recovery-state'
+                className={TABLE_RECOVERY_STATE_CLASS}
             />
         );
     }
@@ -178,14 +183,14 @@ const PluginCompactTable = ({
             <RecoveryState
                 title='No data available'
                 description='There are no rows to display for this selection.'
-                className='plugin-exposure-recovery-state'
+                className={TABLE_RECOVERY_STATE_CLASS}
             />
         );
     }
 
     return (
         <div
-            className='plugin-exposure-table-compact w-full h-full overflow-hidden'
+            className={TABLE_FRAME_CLASS}
             ref={setContainerElement}
             style={compactTableFrameStyle}
         >
@@ -193,18 +198,18 @@ const PluginCompactTable = ({
                 ...compactTableInnerStyle,
                 minWidth: `${effectiveWidth}px`
             }}>
-                <div className='sticky plugin-compact-table-header'>
+                <div className={TABLE_HEADER_CLASS}>
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
-                            className='plugin-compact-table-header-cell overflow-hidden font-medium'
+                            className={TABLE_HEADER_CELL_CLASS}
                             style={resolveColumnStyle(col, columnWidthScale)}
                         >
                             {getColumnTitle(col)}
                         </div>
                     ))}
                 </div>
-                <div className='plugin-compact-table-list-container' style={listContainerStyle}>
+                <div style={listContainerStyle}>
                     <List<CompactTableRowProps>
                         onScroll={handleScroll}
                         defaultHeight={rowHeight * Math.min(Math.max(data.length, 1), DEFAULT_VISIBLE_ROWS)}
@@ -225,10 +230,7 @@ const PluginCompactTable = ({
                 </div>
             </div>
             {isFetchingMore && (
-                <div className='plugin-exposure-loading' style={{
-                    padding: '0.25rem',
-                    borderTop: '1px solid var(--color-border-soft)'
-                }}>
+                <div className={TABLE_LOADING_CLASS}>
                     Loading more...
                 </div>
             )}

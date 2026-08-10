@@ -316,7 +316,7 @@ export default class Deploy{
     async applyDevMode(payload: DevModeState){
         let changed: boolean;
         try{
-            if(payload.enabled) assertDevPaths(payload.voltPath, payload.clusterDaemonPath);
+            if(payload.enabled) assertDevPaths(payload.voltPath);
             changed = this.#sourcesChanged(await this.props.appConfig.getPersistedDevMode(), payload);
         }catch(err){
             this.#fail(err);
@@ -342,8 +342,7 @@ export default class Deploy{
 
     #sourcesChanged(prev: Partial<DevModeState> | undefined, next: DevModeState){
         return prev?.enabled !== next.enabled
-            || prev?.voltPath !== next.voltPath
-            || prev?.clusterDaemonPath !== next.clusterDaemonPath;
+            || prev?.voltPath !== next.voltPath;
     }
 
     #fail(err: unknown){

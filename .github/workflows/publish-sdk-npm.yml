@@ -1,0 +1,61 @@
+name: Publish VoltSDK to npm
+
+# Publishes the Node.js SDKs that live in this monorepo (sdk/node/*) to the
+# public npm registry under the @voltstack scope. Bump the package version
+# before publishing: npm rejects re-publishing an existing version.
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'SDK to publish'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - voltclient
+          - daemon-cluster-client
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.package }}
+    # Releases here cover other products too, so only releases tagged
+    # `voltsdk-node-*` publish; dispatch publishes on demand.
+    if: >
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'voltsdk-node-')) ||
+      (github.event_name == 'workflow_dispatch' && (inputs.package == 'both' || inputs.package == matrix.package))
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [voltclient, daemon-cluster-client]
+        include:
+          - package: voltclient
+            directory: sdk/node/VoltClient
+          - package: daemon-cluster-client
+            directory: sdk/node/DaemonClusterClient
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Build SDK
+        working-directory: ${{ matrix.directory }}
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Publish to npm
+        working-directory: ${{ matrix.directory }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public

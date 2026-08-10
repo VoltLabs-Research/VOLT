@@ -3,7 +3,7 @@ import useAIPage from '@/modules/ai/hooks/use-ai-page';
 import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
 import { useCallback, useMemo } from 'react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
-import type { SelectOption } from '@voltstack/bravais';
+import type { AISelectOption } from '@/modules/ai/utils/model-options';
 import { useNavigate } from 'react-router-dom';
 
 type AIPageState = ReturnType<typeof useAIPage>;
@@ -32,7 +32,7 @@ const useConversationPanelView = ({
     const navigate = useNavigate();
     const { loadConversationMessages } = pageState;
 
-    const conversationOptions: SelectOption[] = useMemo(() => {
+    const conversationOptions: AISelectOption[] = useMemo(() => {
         return pageState.conversations.map((conversation) => ({
             value: conversation._id,
             title: conversation.title || 'Untitled Conversation',

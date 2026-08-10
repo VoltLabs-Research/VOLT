@@ -1,4 +1,3 @@
-import './ThemeSelector.css';
 import ThemeCard from '@/modules/auth/components/ThemeCard';
 import { Theme, useTheme } from '@/shared/ui/hooks/use-theme';
 import { Sun, Moon, Monitor } from 'lucide-react';
@@ -8,31 +7,33 @@ import type { KeyboardEvent, ReactNode } from 'react';
 interface ThemeOption {
     theme: Theme;
     label: string;
-    previewClassName: string;
     icon: ReactNode;
 }
 
 const ThemeSelector = () => {
     const { preference, setTheme } = useTheme();
     const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    /*
+     * The sizes below are the ones the preview actually rendered at: the deleted
+     * stylesheet overrode every preview `svg` to 28px, and the system one to 34px,
+     * so `size={32}` at the call site never took effect. They are stated here now
+     * instead of being corrected by a descendant selector.
+     */
     const options: ThemeOption[] = [
         {
             theme: Theme.System,
             label: 'System',
-            previewClassName: 'system-preview',
-            icon: <Monitor size={32} />
+            icon: <Monitor size={34} />
         },
         {
             theme: Theme.Light,
             label: 'Light',
-            previewClassName: 'light-preview',
-            icon: <Sun size={32} />
+            icon: <Sun size={28} />
         },
         {
             theme: Theme.Dark,
             label: 'Dark',
-            previewClassName: 'dark-preview',
-            icon: <Moon size={32} />
+            icon: <Moon size={28} />
         }
     ];
 
@@ -71,7 +72,7 @@ const ThemeSelector = () => {
     };
 
     return (
-        <div className='gap-4 theme-selector-grid' role='radiogroup' aria-label='Theme selector'>
+        <div className='grid grid-cols-2 items-stretch gap-4' role='radiogroup' aria-label='Theme selector'>
             {options.map((option, index) => (
                 <ThemeCard
                     key={option.theme}
@@ -81,7 +82,6 @@ const ThemeSelector = () => {
                     theme={option.theme}
                     label={option.label}
                     icon={option.icon}
-                    previewClassName={option.previewClassName}
                     isSelected={preference === option.theme}
                     onClick={() => setTheme(option.theme)}
                     onKeyDown={handleKeyDown(index)}

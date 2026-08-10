@@ -1,12 +1,11 @@
 import useCanvasRenderGroups from '../CanvasRenderSections/useCanvasRenderGroups';
 import RenderGroupSubmenuContent from './RenderGroupSubmenuContent';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Tooltip } from '@voltstack/bravais';
+import { VIEWPORT_FLOATING_BUTTON_CLASS } from '../ViewportFloatingControls/floating-button';
+import { Button, Tooltip } from '@heroui/react';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
-
-import './RenderMenuPopover.css';
 
 interface RenderMenuPopoverProps {
     compact?: boolean;
@@ -26,42 +25,46 @@ const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
 
     return (
         <ContextMenuPopover
-            id="viewport-render-menu"
+            id='viewport-render-menu'
             trigger={compact ? (
+                /*
+                 * The wrapping span is `ContextMenuPopover`'s trigger element — it is the
+                 * node that receives the popover ref, `data-popover-trigger` and the
+                 * click handlers — so it has to stay outside the Tooltip.
+                 */
                 <span className='inline-flex items-center justify-center'>
-                    <Tooltip content="Render" placement="bottom">
+                    <Tooltip>
                         <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            iconOnly
-                            className="canvas-viewport-floating-btn"
-                            aria-label="Render settings"
+                            variant='ghost'
+                            size='sm'
+                            isIconOnly
+                            className={VIEWPORT_FLOATING_BUTTON_CLASS}
+                            aria-label='Render settings'
                         >
                             <Monitor size={14} />
                         </Button>
+                        <Tooltip.Content placement='bottom'>Render</Tooltip.Content>
                     </Tooltip>
                 </span>
             ) : (
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    className="text-xs canvas-btn-compact"
-                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Monitor size={12} /></span>}
-                    aria-label="Render settings"
-                    title="Render settings"
-                >
-                    Render
-                </Button>
+                <Tooltip>
+                    <Button
+                        variant='ghost'
+                        size='sm'
+                        className='text-xs'
+                        aria-label='Render settings'
+                    >
+                        <Monitor size={12} className='shrink-0' />
+                        Render
+                    </Button>
+                    <Tooltip.Content placement='bottom'>Render settings</Tooltip.Content>
+                </Tooltip>
             )}
             options={options}
-            triggerAction="click"
-            ariaLabel="Render settings"
-            menuLabel="Render settings"
-            size="sm"
+            triggerAction='click'
+            ariaLabel='Render settings'
+            menuLabel='Render settings'
+            size='sm'
         />
     );
 };

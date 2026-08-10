@@ -1,20 +1,3 @@
-# Overlay that runs the stack from prebuilt images instead of compiling it on the
-# user's machine.
-#
-# Applied as `-f compose.yml -f compose.images.yml`. Without it, first launch runs
-# apt-get (including texlive) and `npm ci` inside three image builds, which costs
-# many minutes on every install; with it, that work has already happened in CI and
-# first launch is a pull.
-#
-# `Deploy` only applies this overlay after the images pull successfully, and falls
-# back to `compose.yml` alone otherwise, so a tag that has not been published yet
-# degrades to the old behaviour instead of breaking the app.
-#
-# The service images keep the source bind-mounts declared in `compose.yml`: the
-# published images carry the system packages and `node_modules`, and the source
-# still comes from the resolved release. That keeps this overlay a build-time
-# shortcut rather than a second runtime model to reason about.
-
 services:
   volt-server:
     build: !reset null

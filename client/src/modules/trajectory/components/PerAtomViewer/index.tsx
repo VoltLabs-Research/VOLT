@@ -4,8 +4,7 @@ import { TRAJECTORY_QUERY_KEYS, fetchTrajectoryAtoms, trajectoryAtomsQuery } fro
 import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { Select } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { ComboBox, Input, Label, ListBox } from '@heroui/react';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -38,6 +37,28 @@ const COORDINATE_SKELETON = {
 } as const;
 
 const EMPTY_PROPERTIES: string[] = [];
+
+interface TimestepOption {
+    value: string;
+    title: string;
+};
+
+/**
+ * `.form-field-canvas-input--compact` belonged to the now-deleted `FormField.css`, so its
+ * styling has to be restated at the call site. These are the canvas field surface's own
+ * metrics — the ones `shared/ui/components/FormFieldRHF/field-styles.ts` carries for
+ * `surface: 'canvas'` — at the compact width the modifier set
+ * (`clamp(3.25rem, 17vw, 4.5rem)`, from the sheet that overrode it).
+ *
+ * The control is a `ComboBox` rather than a `Select` because bravais's `isEditable` made
+ * this an editable field: the timestep could be typed as well as picked, and the list can
+ * be long. `Select` would silently drop that.
+ */
+const TIMESTEP_ROOT = 'min-w-0 shrink-0';
+
+const TIMESTEP_GROUP = 'h-6 min-h-6 w-[clamp(3.25rem,17vw,4.5rem)] rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary';
+
+const TIMESTEP_INPUT = 'h-6 min-h-6 border-0 bg-transparent px-[0.4rem] text-[0.7rem] text-foreground shadow-none placeholder:text-[0.7rem] placeholder:text-muted';
 
 const COORDINATE_KEYS = ['x', 'y', 'z'] as const;
 
@@ -104,7 +125,7 @@ export default function PerAtomViewer() {
 
     const properties = firstPageAtomsQuery.data?.propertyNames ?? EMPTY_PROPERTIES;
 
-    const timestepOptions = useMemo<SelectOption[]>(() => {
+    const timestepOptions = useMemo<TimestepOption[]>(() => {
         return availableTimesteps.map((availableTimestep) => ({
             value: String(availableTimestep),
             title: String(availableTimestep)
@@ -195,17 +216,31 @@ export default function PerAtomViewer() {
         return (
             <div className='flex flex-row items-center gap-3'>
                 <p className='text-xs text-muted'>Timestep</p>
-                <Select
-                    isEditable
-                    options={timestepOptions}
-                    value={String(timestep)}
-                    onChange={handleTimestepChange}
-                    placeholder={String(timestep)}
-                    className='form-field-canvas-input--compact'
-                    showSelectionIcon={false}
-                    title='Select timestep'
+                <ComboBox
+                    className={TIMESTEP_ROOT}
+                    selectedKey={String(timestep)}
+                    onSelectionChange={(key) => {
+                        if (key === null) return;
+
+                        handleTimestepChange(String(key));
+                    }}
                     aria-label='Select timestep'
-                />
+                >
+                    <ComboBox.InputGroup className={TIMESTEP_GROUP}>
+                        <Input className={TIMESTEP_INPUT} placeholder={String(timestep)} />
+                        <ComboBox.Trigger />
+                    </ComboBox.InputGroup>
+                    <ComboBox.Popover>
+                        <ListBox>
+                            {timestepOptions.map((option) => (
+                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
+                                    <ListBox.ItemIndicator />
+                                    <Label>{option.title}</Label>
+                                </ListBox.Item>
+                            ))}
+                        </ListBox>
+                    </ComboBox.Popover>
+                </ComboBox>
             </div>
         );
     }, [handleTimestepChange, timestep, timestepOptions]);

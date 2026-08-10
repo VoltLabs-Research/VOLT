@@ -1,8 +1,8 @@
 import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
+import JobStatusBadge from '@/modules/jobs/components/JobStatusBadge';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
-import { StatusBadge } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -11,6 +11,17 @@ import type { FrameJobGroup, Job } from '@volt/contracts/modules/jobs/domain';
 interface FrameGroupProps {
     frame: FrameJobGroup;
 };
+
+/**
+ * `.frame-job-group-header` + `.frame-job-group-toggle`. Shorter than a job-group
+ * row and, as before, without the background transition that row carries.
+ */
+const TOGGLE_CLASS_NAMES = [
+    'w-full min-h-[2.75rem] px-3 py-2.5 border-0 bg-transparent text-left select-none rounded-xl',
+    'hover:bg-surface-hover',
+    'focus-visible:outline-none',
+    'focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
+].join(' ');
 
 const FrameGroup = ({ frame }: FrameGroupProps) => {
     const containsTransferJobs = useMemo(() => {
@@ -36,10 +47,10 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
     }, [containsTransferJobs]);
 
     return (
-        <div className='frame-job-group'>
+        <div className='ml-2 border-l border-border'>
             <button
                 type='button'
-                className='frame-job-group-header frame-job-group-toggle select-none'
+                className={TOGGLE_CLASS_NAMES}
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
                 aria-controls={contentId}
@@ -47,9 +58,9 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                 <div className='flex flex-row items-center justify-between w-full'>
                     <p className='text-xs text-muted'>{label}</p>
                     <div className='flex flex-row items-center gap-2'>
-                        <StatusBadge status={frame.overallStatus} size='compact'>{statusLabel}</StatusBadge>
+                        <JobStatusBadge status={frame.overallStatus}>{statusLabel}</JobStatusBadge>
                         <motion.i
-                            className='chevron-icon text-xs text-muted'
+                            className='text-xs text-muted'
                             animate={{ rotate: isExpanded ? 90 : 0 }}
                             transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
                             aria-hidden='true'

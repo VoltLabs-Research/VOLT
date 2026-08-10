@@ -19,8 +19,8 @@ type ResolvedNumberArrayValue =
     | { numbers?: never; fallback: ReactNode };
 
 const MAX_SUMMARY_KEYS = 2;
-const EMPTY_CELL = <span className='plugin-cell-empty'>-</span>;
-const EMPTY_ARRAY_CELL = <span className='plugin-cell-empty'>[]</span>;
+const EMPTY_CELL = <span className='italic'>-</span>;
+const EMPTY_ARRAY_CELL = <span className='italic'>[]</span>;
 
 const resolveNumberArrayCellValue = (value: unknown): ResolvedNumberArrayValue => {
     if (!isNumberArray(value)) return { fallback: EMPTY_CELL };
@@ -39,10 +39,10 @@ const isNumberMatrix = (input: unknown, requireNonEmptyRows = false): input is n
 
 const BooleanCell = ({ value }: CellProps) => {
     if (value === true) {
-        return <span className='plugin-cell-bool plugin-cell-bool--true' title='true' aria-label='true'>✓</span>;
+        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-[4px] bg-success/14 text-xs font-semibold leading-none' title='true' aria-label='true'>✓</span>;
     }
     if (value === false) {
-        return <span className='plugin-cell-bool plugin-cell-bool--false' title='false' aria-label='false'>✕</span>;
+        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-[4px] bg-danger/12 text-xs font-semibold leading-none' title='false' aria-label='false'>✕</span>;
     }
     return EMPTY_CELL;
 };
@@ -52,22 +52,22 @@ const DateCell = ({ value }: CellProps) => {
 
     const iso = value.toISOString();
     const display = iso.replace('T', ' ').replace(/\.\d+Z$/, 'Z');
-    return <span className='plugin-cell-date tabular-nums' title={iso}>{display}</span>;
+    return <span className='overflow-hidden text-ellipsis tabular-nums' title={iso}>{display}</span>;
 };
 
 const FallbackCell = ({ value }: CellProps) => {
     if (value === null || value === undefined) return EMPTY_CELL;
 
     const text = formatUnknownValue(value);
-    return <span className='plugin-cell-fallback' title={text}>{text}</span>;
+    return <span className='overflow-hidden text-ellipsis' title={text}>{text}</span>;
 };
 
 const IntegerCell = ({ value }: CellProps) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
-        return <span className='plugin-cell-integer tabular-nums'>{String(value)}</span>;
+        return <span className='overflow-hidden text-ellipsis tabular-nums'>{String(value)}</span>;
     }
     if (typeof value === 'bigint') {
-        return <span className='plugin-cell-integer tabular-nums'>{value.toString()}</span>;
+        return <span className='overflow-hidden text-ellipsis tabular-nums'>{value.toString()}</span>;
     }
     return EMPTY_CELL;
 };
@@ -80,9 +80,9 @@ const MatrixCell = ({ value }: CellProps) => {
     const cols = value.reduce((acc, row) => Math.max(acc, row.length), 0);
 
     return (
-        <span className='plugin-cell-matrix tabular-nums' title={JSON.stringify(value)}>
-            <span className='plugin-cell-matrix__dims'>{rows}×{cols}</span>
-            <span className='plugin-cell-matrix__label'>matrix</span>
+        <span className='inline-flex flex-row items-baseline gap-[0.3rem] tabular-nums' title={JSON.stringify(value)}>
+            <span className='font-medium'>{rows}×{cols}</span>
+            <span className='text-[0.6875rem]'>matrix</span>
         </span>
     );
 };
@@ -100,9 +100,9 @@ const NumberArrayCell = ({ value }: CellProps) => {
     }
 
     return (
-        <span className='plugin-cell-array tabular-nums' title={JSON.stringify(numbers)}>
-            <span className='plugin-cell-array__count'>[{numbers.length}]</span>
-            <span className='plugin-cell-array__range'>
+        <span className='inline-flex flex-row items-center gap-[0.35rem] overflow-hidden whitespace-nowrap text-ellipsis tabular-nums' title={JSON.stringify(numbers)}>
+            <span className='text-[0.6875rem]'>[{numbers.length}]</span>
+            <span>
                 {formatScientific(min, 3).short} … {formatScientific(max, 3).short}
             </span>
         </span>
@@ -113,41 +113,41 @@ const NumberCell = ({ value }: CellProps) => {
     if (typeof value !== 'number') {
         if (typeof value === 'bigint') {
             const text = value.toString();
-            return <span className='plugin-cell-number tabular-nums' title={text}>{text}</span>;
+            return <span className='overflow-hidden text-ellipsis tabular-nums lining-nums' title={text}>{text}</span>;
         }
         return EMPTY_CELL;
     }
 
     if (!Number.isFinite(value)) {
-        return <span className='plugin-cell-empty tabular-nums'>{String(value)}</span>;
+        return <span className='italic tabular-nums'>{String(value)}</span>;
     }
 
     const { short, long } = formatScientific(value, 4);
-    return <span className='plugin-cell-number tabular-nums' title={short === long ? undefined : long}>{short}</span>;
+    return <span className='overflow-hidden text-ellipsis tabular-nums lining-nums' title={short === long ? undefined : long}>{short}</span>;
 };
 
 const ObjectCell = ({ value }: CellProps) => {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) return EMPTY_CELL;
 
     const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return <span className='plugin-cell-empty'>{'{}'}</span>;
+    if (entries.length === 0) return <span className='italic'>{'{}'}</span>;
 
     const visible = entries.slice(0, MAX_SUMMARY_KEYS);
     const overflow = entries.length - visible.length;
 
     return (
-        <span className='plugin-cell-object' title={JSON.stringify(value)}>
-            <span className='plugin-cell-object__brace'>{'{'}</span>
+        <span className='inline-flex flex-row items-baseline gap-0.5 overflow-hidden whitespace-nowrap text-ellipsis tabular-nums lining-nums' title={JSON.stringify(value)}>
+            <span>{'{'}</span>
             {visible.map(([key, raw], index) => (
                 <Fragment key={key}>
-                    {index > 0 && <span className='plugin-cell-object__sep'>,</span>}
-                    <span className='plugin-cell-object__key'>{key}</span>
-                    <span className='plugin-cell-object__colon'>:</span>
-                    <span className='plugin-cell-object__value tabular-nums'>{summarizeScalar(raw)}</span>
+                    {index > 0 && <span className='mr-[0.2rem]'>,</span>}
+                    <span>{key}</span>
+                    <span className='mr-[0.2rem]'>:</span>
+                    <span className='tabular-nums'>{summarizeScalar(raw)}</span>
                 </Fragment>
             ))}
-            {overflow > 0 && <span className='plugin-cell-object__overflow'>, +{overflow}</span>}
-            <span className='plugin-cell-object__brace'>{'}'}</span>
+            {overflow > 0 && <span className='ml-[0.1rem] text-[0.6875rem]'>, +{overflow}</span>}
+            <span>{'}'}</span>
         </span>
     );
 };
@@ -157,12 +157,12 @@ const PointsCell = ({ value }: CellProps) => {
     if (value.length === 0) return EMPTY_ARRAY_CELL;
 
     const title = `${value.length} point${value.length === 1 ? '' : 's'}`;
-    return <span className='plugin-cell-points tabular-nums' title={title}>{value.length}</span>;
+    return <span className='overflow-hidden whitespace-nowrap text-ellipsis tabular-nums' title={title}>{value.length}</span>;
 };
 
 const StringCell = ({ value }: CellProps) => {
     if (typeof value !== 'string' || value.length === 0) return EMPTY_CELL;
-    return <span className='plugin-cell-string' title={value}>{value}</span>;
+    return <span className='overflow-hidden text-ellipsis tabular-nums' title={value}>{value}</span>;
 };
 
 const VectorCell = ({ value }: CellProps) => {
@@ -174,15 +174,15 @@ const VectorCell = ({ value }: CellProps) => {
     const title = `${JSON.stringify(numbers)}  |v|=${magnitude.toPrecision(6)}`;
 
     return (
-        <span className='plugin-cell-vector tabular-nums' title={title}>
-            <span className='plugin-cell-vector__bracket'>⟨</span>
+        <span className='inline-flex flex-row items-baseline gap-0.5 overflow-hidden whitespace-nowrap text-ellipsis tabular-nums lining-nums' title={title}>
+            <span className='font-medium'>⟨</span>
             {numbers.map((component, index) => (
                 <Fragment key={index}>
-                    {index > 0 && <span className='plugin-cell-vector__sep'>,</span>}
-                    <span className='plugin-cell-vector__component'>{formatScientific(component, 3).short}</span>
+                    {index > 0 && <span className='mr-0.5'>,</span>}
+                    <span>{formatScientific(component, 3).short}</span>
                 </Fragment>
             ))}
-            <span className='plugin-cell-vector__bracket'>⟩</span>
+            <span className='font-medium'>⟩</span>
         </span>
     );
 };

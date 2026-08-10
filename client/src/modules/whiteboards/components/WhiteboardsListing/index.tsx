@@ -11,7 +11,6 @@ import {
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useTip from '@/shared/tips/use-tip';
-import './WhiteboardsListing.css';
 import { SquarePen } from 'lucide-react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
@@ -25,8 +24,8 @@ const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
     isFolder: isWhiteboardFolderRow,
     resolveTitle: (row) => row.title,
     skeletonWidth: 180,
-    wrapperClassName: 'whiteboards-listing-title-cell',
-    titleClassName: 'whiteboards-listing-title font-semibold text-muted',
+    wrapperClassName: 'min-w-0',
+    titleClassName: 'block truncate font-semibold text-muted',
     getAriaLabel: (row) => row.hierarchyTitle,
     showTitleAttribute: true
 });

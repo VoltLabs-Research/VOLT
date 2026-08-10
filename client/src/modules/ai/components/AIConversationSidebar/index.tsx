@@ -1,13 +1,39 @@
-import { matchesQuery } from '@/shared/utils/matches-query';
-import { EmptyState, IconButton, SearchInput, Skeleton, Tooltip } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
+import { SearchField, Skeleton, Tooltip, cn } from '@heroui/react';
 import { useMemo, useState } from 'react';
 import { MessageCircle, Pencil, Trash2 } from 'lucide-react';
+import { matchesQuery } from '@/shared/utils/matches-query';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
-import './AIConversationSidebar.css';
+
+const SIDEBAR = 'flex h-full w-[300px] flex-col overflow-hidden border-r border-border max-lg:w-[270px] max-md:max-h-[42vh] max-md:w-full';
+
+const SIDEBAR_LIST = 'flex flex-1 flex-col gap-[0.4rem] overflow-y-auto p-2';
+
+/**
+ * `group/conv` is what makes the row's actions appear on hover; the stylesheet did it with
+ * `.ai-conversation-item:hover .ai-conversation-item-actions`. The name is explicit
+ * because `DocumentListingGrid`'s item wrapper is also a `group` in other listings, and an
+ * unnamed `group-hover:` would match whichever `.group` ancestor is nearest.
+ */
+const CONVERSATION_ITEM = 'group/conv flex w-full cursor-pointer appearance-none flex-col gap-1 rounded-xl border-0 bg-transparent px-[0.7rem] py-[0.6rem] text-left transition-colors duration-200 hover:bg-surface-hover focus-visible:bg-surface-hover';
+
+const CONVERSATION_ITEM_ACTIONS = 'flex flex-row items-center gap-1 opacity-0 transition-opacity duration-200 group-hover/conv:opacity-100 group-focus-within/conv:opacity-100';
+
+const CONVERSATION_TITLE_INPUT = 'w-full rounded-lg border border-border bg-transparent px-[0.45rem] py-[0.3rem] text-foreground';
+
+/**
+ * The row actions stay real `<button>` elements rather than HeroUI `Button`s, and the
+ * tooltip trigger is rendered *as* that button through `Tooltip.Trigger`'s polymorphic
+ * `render`. Two reasons, both forced: HeroUI's `Button` omits `onClick` from its prop
+ * surface (`onPress` receives a React Aria `PressEvent`, which has no `stopPropagation`),
+ * and these handlers must stop the click reaching the row, whose own `onClick` selects the
+ * conversation. `role={undefined}` cancels the `role='button'` the trigger applies for the
+ * `<div>` it renders by default, which would be redundant on a real button.
+ */
+const ICON_ACTION = 'inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
 
 interface AIConversationSidebarProps {
     conversations: AIConversation[];
@@ -91,19 +117,9 @@ const AIConversationSidebar = ({
         }
     };
 
-    const createRenameClickHandler = (conversation: AIConversation) => (event: MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        beginEditing(conversation);
-    };
-
-    const createDeleteClickHandler = (conversationId: string) => (event: MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        handleDeleteConversation(conversationId).catch(console.warn);
-    };
-
     const renderConversationTitle = (conversation: AIConversation) => {
         let content: ReactNode = (
-            <p className='text-sm font-medium text-foreground ai-conversation-title'>
+            <p className='truncate text-sm font-medium text-foreground'>
                 {conversation.title || 'Untitled conversation'}
             </p>
         );
@@ -111,7 +127,7 @@ const AIConversationSidebar = ({
         if (editingConversationId === conversation._id) {
             content = (
                 <input
-                    className='ai-conversation-title-input'
+                    className={CONVERSATION_TITLE_INPUT}
                     value={draftTitle}
                     autoFocus
                     onChange={(event) => setDraftTitle(event.target.value)}
@@ -128,10 +144,6 @@ const AIConversationSidebar = ({
     const renderConversationItem = (conversation: AIConversation) => {
         const isActive = conversation._id === activeConversationId;
         const isEditing = editingConversationId === conversation._id;
-        let itemClassName = 'flex flex-col gap-1 ai-conversation-item cursor-pointer';
-        if (isActive) {
-            itemClassName += ' is-active';
-        }
 
         let renameTooltip = 'You do not have permission to rename conversations.';
         if (canUpdate) {
@@ -160,35 +172,45 @@ const AIConversationSidebar = ({
         return (
             <div
                 key={conversation._id}
-                className={itemClassName}
+                className={cn(CONVERSATION_ITEM, isActive && 'is-active bg-surface-hover')}
                 {...interactiveProps}
             >
                 <div className='flex flex-row items-center justify-between gap-2'>
                     {renderConversationTitle(conversation)}
 
-                    <div className='flex flex-row items-center gap-1 ai-conversation-item-actions'>
-                        <Tooltip content={renameTooltip}>
-                            <IconButton
+                    <div className={cn(CONVERSATION_ITEM_ACTIONS, isActive && 'opacity-100')}>
+                        <Tooltip>
+                            <Tooltip.Trigger<'button'>
+                                render={(triggerProps) => <button type='button' {...triggerProps} />}
+                                role={undefined}
+                                className={ICON_ACTION}
                                 aria-label={`Rename conversation ${conversation.title}`}
-                                size='sm'
-                                variant='ghost'
                                 disabled={!canUpdate}
-                                onClick={createRenameClickHandler(conversation)}
+                                onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                                    event.stopPropagation();
+                                    beginEditing(conversation);
+                                }}
                             >
                                 <Pencil size={14} />
-                            </IconButton>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>{renameTooltip}</Tooltip.Content>
                         </Tooltip>
 
-                        <Tooltip content={deleteTooltip}>
-                            <IconButton
+                        <Tooltip>
+                            <Tooltip.Trigger<'button'>
+                                render={(triggerProps) => <button type='button' {...triggerProps} />}
+                                role={undefined}
+                                className={ICON_ACTION}
                                 aria-label={`Delete conversation ${conversation.title}`}
-                                size='sm'
-                                variant='ghost'
                                 disabled={!canDelete}
-                                onClick={createDeleteClickHandler(conversation._id)}
+                                onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                                    event.stopPropagation();
+                                    handleDeleteConversation(conversation._id).catch(console.warn);
+                                }}
                             >
                                 <Trash2 size={14} />
-                            </IconButton>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>{deleteTooltip}</Tooltip.Content>
                         </Tooltip>
                     </div>
                 </div>
@@ -204,7 +226,7 @@ const AIConversationSidebar = ({
 
     if (isLoading) {
         listContent = Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} variant='text' width='100%' height='3rem' />
+            <Skeleton key={index} className='h-12 w-full rounded-md' />
         ));
     } else if (filteredConversations.length === 0) {
         let title = 'No conversations yet';
@@ -218,7 +240,7 @@ const AIConversationSidebar = ({
         }
 
         listContent = (
-            <EmptyState
+            <RecoveryState
                 title={title}
                 description={description}
             />
@@ -231,24 +253,29 @@ const AIConversationSidebar = ({
     }
 
     return (
-        <div className='flex flex-col h-full ai-conversation-sidebar'>
-            <div className='flex flex-col gap-3 ai-conversation-sidebar-header panel-header-bordered'>
-                <SearchInput
-                    placeholder='Search conversations...'
+        <div className={SIDEBAR}>
+            <div className='flex flex-col gap-3'>
+                <SearchField
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                />
-
-                <Tooltip
-                    content='You do not have permission to create conversations.'
-                    disabled={canCreate}
+                    onChange={setQuery}
+                    aria-label='Search conversations'
+                    fullWidth
                 >
+                    <SearchField.Group>
+                        <SearchField.SearchIcon />
+                        <SearchField.Input placeholder='Search conversations...' />
+                        <SearchField.ClearButton />
+                    </SearchField.Group>
+                </SearchField>
+
+                <Tooltip isDisabled={canCreate}>
                     <SidebarNavItem
                         label='Chat'
                         icon={MessageCircle}
                         onClick={createConversationClick}
                         disabled={!canCreate}
                     />
+                    <Tooltip.Content>You do not have permission to create conversations.</Tooltip.Content>
                 </Tooltip>
 
                 {error && (
@@ -260,7 +287,7 @@ const AIConversationSidebar = ({
                 )}
             </div>
 
-            <div className='flex flex-col overflow-y-auto flex-1 ai-conversation-sidebar-list'>
+            <div className={SIDEBAR_LIST}>
                 {listContent}
             </div>
         </div>

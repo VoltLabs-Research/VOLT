@@ -13,190 +13,133 @@ import type {
     SceneArtifactSourceType,
     SceneArtifactStatus
 } from '@shared/contracts/types';
-import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
-import type {
-    TeamClusterHostCapabilitiesProps,
-    TeamClusterRuntimeRoleConfigProps,
-    TeamClusterStatus
-} from '@shared/contracts/types/TeamCluster';
 import {
     TeamClusterServiceExposureAccessMode,
     type TeamClusterDaemonExecutionLogSegment,
     type TeamClusterServiceExposure
 } from '@shared/contracts/types/TeamClusterExposure';
+import type {
+    TeamClusterRuntimeRoleConfigProps,
+    TeamClusterStatus
+} from '@shared/contracts/types/TeamCluster';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT
 } from '@shared/infrastructure/contracts/team-cluster';
+import {
+    REVERSE_CHANNEL,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
+    type TeamClusterDaemonCommandMessage,
+    type TeamClusterDaemonContainerCreateProgress,
+    type TeamClusterDaemonDeleteCompletedCommand,
+    type TeamClusterDaemonErrorResult,
+    type TeamClusterDaemonExposureRemovePayload as SdkExposureRemovePayload,
+    type TeamClusterDaemonExposureSnapshotPayload as SdkExposureSnapshotPayload,
+    type TeamClusterDaemonExposureUpsertPayload as SdkExposureUpsertPayload,
+    type TeamClusterDaemonHeartbeatCommand,
+    type TeamClusterDaemonHeartbeatMetrics,
+    type TeamClusterDaemonMessage as SdkTeamClusterDaemonMessage,
+    type TeamClusterDaemonRegisterPayload,
+    type TeamClusterDaemonResponseType as SdkResponseType,
+    type TeamClusterDaemonRuntimeProgressPayload as SdkRuntimeProgressPayload,
+    type TeamClusterDaemonSessionAttachPayload,
+    type TeamClusterDaemonSessionAttachResult,
+    type TeamClusterDaemonSessionDataPayload,
+    type TeamClusterDaemonSessionDetachPayload,
+    type TeamClusterDaemonSessionEndPayload,
+    type TeamClusterDaemonSessionInputPayload,
+    type TeamClusterDaemonSessionKind as SdkSessionKind,
+    type TeamClusterDaemonSessionResizePayload,
+    type TeamClusterDaemonSocketChannel,
+    type TeamClusterDaemonSocketHeaders,
+    type TeamClusterDaemonSocketResponsePayload,
+    type TeamClusterDaemonSocketStreamPayload,
+    type TeamClusterDaemonSocketStreamStatePayload,
+    type TeamClusterDaemonSuccessEnvelope,
+    type TeamClusterDaemonTunnelClosePayload,
+    type TeamClusterDaemonTunnelDataPayload,
+    type TeamClusterDaemonTunnelDrainPayload,
+    type TeamClusterDaemonTunnelOpenPayload,
+    type TeamClusterDaemonTunnelStatePayload,
+    type TeamClusterTunnelSessionStatus as SdkTunnelSessionStatus
+} from '@voltstack/daemon-cluster-client';
 
-export interface TeamClusterHeartbeatMetricsInput {
-    timestamp: string;
-    hostname: string;
-    uptimeSeconds: number;
-    cpuUsagePercent: number;
-    cpuLoadAverage: number[];
-    cpuPerCoreUsagePercent: number[];
-    memory: {
-        totalBytes: number;
-        freeBytes: number;
-        usedBytes: number;
-        usagePercent: number;
+/**
+ * The reverse-channel transport contract is owned by `@voltstack/daemon-cluster-client`
+ * (sdk/node/DaemonClusterClient); the server compiles it from source through the
+ * `@voltstack/daemon-cluster-client` tsconfig path, the same way it consumes
+ * `@volt/contracts`. This file re-exports those transport types under their
+ * historical names and layers the server-specific, domain-typed frames on top.
+ */
+export { TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL };
+export type {
+    TeamClusterDaemonCommandMessage,
+    TeamClusterDaemonContainerCreateProgress,
+    TeamClusterDaemonErrorResult,
+    TeamClusterDaemonRegisterPayload,
+    TeamClusterDaemonSessionAttachPayload,
+    TeamClusterDaemonSessionAttachResult,
+    TeamClusterDaemonSessionDataPayload,
+    TeamClusterDaemonSessionDetachPayload,
+    TeamClusterDaemonSessionEndPayload,
+    TeamClusterDaemonSessionInputPayload,
+    TeamClusterDaemonSessionResizePayload,
+    TeamClusterDaemonSocketChannel,
+    TeamClusterDaemonSocketHeaders,
+    TeamClusterDaemonSocketResponsePayload,
+    TeamClusterDaemonSocketStreamPayload,
+    TeamClusterDaemonSocketStreamStatePayload,
+    TeamClusterDaemonSuccessEnvelope,
+    TeamClusterDaemonTunnelClosePayload,
+    TeamClusterDaemonTunnelDataPayload,
+    TeamClusterDaemonTunnelDrainPayload,
+    TeamClusterDaemonTunnelOpenPayload,
+    TeamClusterDaemonTunnelStatePayload
+};
+
+export const TeamClusterDaemonResponseType = REVERSE_CHANNEL.ResponseType;
+export type TeamClusterDaemonResponseType = SdkResponseType;
+
+export const TeamClusterDaemonSessionKind = REVERSE_CHANNEL.SessionKind;
+export type TeamClusterDaemonSessionKind = SdkSessionKind;
+
+export const TeamClusterTunnelSessionStatus = REVERSE_CHANNEL.TunnelSessionStatus;
+export type TeamClusterTunnelSessionStatus = SdkTunnelSessionStatus;
+
+/** Heartbeat metrics are the SDK wire contract, re-exported under the historical input name. */
+export type TeamClusterHeartbeatMetricsInput = TeamClusterDaemonHeartbeatMetrics;
+
+/** Lifecycle commands a daemon invokes on the control plane. */
+export interface ClusterRuntimeHeartbeatCommand extends TeamClusterDaemonHeartbeatCommand {
+    /* The server persists role config with `Date`, narrower than the wire's ISO string. */
+    runtime?: {
+        roleConfig: TeamClusterRuntimeRoleConfigProps;
     };
-    disk: {
-        totalBytes: number;
-        freeBytes: number;
-        usedBytes: number;
-        usagePercent: number;
-    };
-    diskOperations: {
-        readMegabytesPerSecond: number;
-        writeMegabytesPerSecond: number;
-        readIOPS: number;
-        writeIOPS: number;
-        totalIOPS: number;
-    };
-    network: {
-        incomingKilobytesPerSecond: number;
-        outgoingKilobytesPerSecond: number;
-        totalKilobytesPerSecond: number;
-    };
-    cloudLatencyMs: number | null;
 }
 
-export { TeamClusterDaemonResponseType };
-
-export enum TeamClusterDaemonSessionKind {
-    Terminal = 'terminal',
-    WebSocket = 'websocket'
-}
-
-export enum TeamClusterTunnelSessionStatus {
-    Opening = 'opening',
-    Open = 'open',
-    Closed = 'closed'
-}
-
-export interface TeamClusterDaemonSocketHeaders {
-    [key: string]: string;
-}
-
-export const TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL = {
-    Heartbeat: 'heartbeat',
-    Control: 'control',
-    ObjectGateway: 'object-gateway',
-    Events: 'events'
-} as const;
-
-export type TeamClusterDaemonSocketChannel =
-    typeof TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL[keyof typeof TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL];
-
-export interface TeamClusterDaemonRegisterPayload {
+export interface ClusterRuntimeLifecycleCommand {
     teamClusterId: string;
     daemonPassword: string;
-    channel?: TeamClusterDaemonSocketChannel;
+    status: TeamClusterStatus;
+    installedVersion?: string;
 }
 
-export interface TeamClusterDaemonSessionAttachPayload {
-    sessionId: string;
-    kind: TeamClusterDaemonSessionKind;
-    containerId?: string;
-    targetUrl?: string;
-    protocols?: string[];
-}
+export type ClusterRuntimeDeleteCompletedCommand = TeamClusterDaemonDeleteCompletedCommand;
 
-export interface TeamClusterDaemonSessionAttachResult {
-    attached: boolean;
-    selectedProtocol?: string;
+/**
+ * The server narrows the generic `runtime-progress` payload to the container-create
+ * shape it actually handles; the daemon is free to carry other payloads (e.g. trace
+ * context) which this handler ignores.
+ */
+export interface TeamClusterDaemonRuntimeProgressPayload extends Omit<SdkRuntimeProgressPayload, 'payload'> {
+    payload?: TeamClusterDaemonContainerCreateProgress;
 }
 
 /**
- * Commands travel in both directions: the control plane issues them to a daemon,
- * and a daemon issues the runtime.* commands below back to the control plane.
+ * Exposure frames are typed with the server's `TeamClusterServiceExposure` rather
+ * than the SDK's `unknown[]`, so these local declarations stand in for the SDK's.
  */
-export interface TeamClusterDaemonCommandMessage {
-    type: 'command';
-    requestId: string;
-    command: string;
-    responseType?: TeamClusterDaemonResponseType;
-    payload?: unknown;
-}
-
-/**
- * Every JSON reply on the reverse channel is wrapped by @voltstack/daemon-cluster-client,
- * so `data` is the envelope and the handler result sits one level in. The handler
- * result itself may be an error report, which is why it is a declared union member.
- */
-export interface TeamClusterDaemonSuccessEnvelope<T> {
-    status: 'success';
-    data: T;
-}
-
-export interface TeamClusterDaemonErrorResult {
-    status: 'error';
-    code: string;
-    message: string;
-}
-
-export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
-    type: 'response';
-    requestId: string;
-    ok: boolean;
-    status: number;
-    data?: TeamClusterDaemonSuccessEnvelope<T | TeamClusterDaemonErrorResult>;
-    headers?: TeamClusterDaemonSocketHeaders;
-    message?: string;
-    streamId?: string;
-}
-
-export interface TeamClusterDaemonSocketStreamPayload {
-    type: 'stream';
-    requestId: string;
-    streamId: string;
-    chunk: Uint8Array;
-}
-
-export interface TeamClusterDaemonSocketStreamStatePayload {
-    type: 'stream-end';
-    requestId: string;
-    streamId: string;
-    message?: string;
-}
-
-export interface TeamClusterDaemonSessionInputPayload {
-    type: 'session-input';
-    sessionId: string;
-    chunk: Uint8Array;
-    isBinary: boolean;
-}
-
-export interface TeamClusterDaemonSessionResizePayload {
-    type: 'session-resize';
-    sessionId: string;
-    rows: number;
-    cols: number;
-}
-
-export interface TeamClusterDaemonSessionDetachPayload {
-    type: 'session-detach';
-    sessionId: string;
-}
-
-export interface TeamClusterDaemonSessionDataPayload {
-    type: 'session-data';
-    sessionId: string;
-    chunk: Uint8Array;
-    isBinary: boolean;
-}
-
-export interface TeamClusterDaemonSessionEndPayload {
-    type: 'session-end';
-    sessionId: string;
-    code?: number;
-    message?: string;
-    error?: string;
-}
-
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
     exposures: TeamClusterServiceExposure[];
@@ -210,98 +153,6 @@ interface TeamClusterDaemonExposureUpsertPayload {
 interface TeamClusterDaemonExposureRemovePayload {
     type: 'exposure-remove';
     exposureIds: string[];
-}
-
-interface TeamClusterDaemonExposureTunnelOpenPayload {
-    type: 'tunnel-open';
-    sessionId: string;
-    exposureId: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-interface TeamClusterDaemonDirectTunnelOpenPayload {
-    type: 'tunnel-open';
-    sessionId: string;
-    targetHost: string;
-    targetPort: number;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-export type TeamClusterDaemonTunnelOpenPayload =
-    | TeamClusterDaemonExposureTunnelOpenPayload
-    | TeamClusterDaemonDirectTunnelOpenPayload;
-
-export interface TeamClusterDaemonTunnelStatePayload {
-    type: 'tunnel-state';
-    sessionId: string;
-    status: TeamClusterTunnelSessionStatus;
-    message?: string;
-    error?: string;
-}
-
-export interface TeamClusterDaemonTunnelDataPayload {
-    type: 'tunnel-data';
-    sessionId: string;
-    chunk: Uint8Array;
-    isBinary: boolean;
-    sequence?: number;
-    requiresAck?: boolean;
-}
-
-export interface TeamClusterDaemonTunnelDrainPayload {
-    type: 'tunnel-drain';
-    sessionId: string;
-    sequence: number;
-}
-
-export interface TeamClusterDaemonTunnelClosePayload {
-    type: 'tunnel-close';
-    sessionId: string;
-    code?: number;
-    message?: string;
-}
-
-export interface TeamClusterDaemonContainerCreateProgress {
-    operationId: string;
-    step?: string;
-    image?: string;
-    containerName?: string;
-    containerId?: string;
-}
-
-export interface TeamClusterDaemonRuntimeProgressPayload {
-    type: 'runtime-progress';
-    action: string;
-    stage: string;
-    timestamp: string;
-    payload?: TeamClusterDaemonContainerCreateProgress;
-}
-
-/** Lifecycle commands a daemon invokes on the control plane. */
-export interface ClusterRuntimeHeartbeatCommand {
-    teamClusterId: string;
-    daemonPassword: string;
-    installedVersion?: string;
-    runtime?: ClusterRuntimeHeartbeatRoleConfig;
-    metrics?: TeamClusterHeartbeatMetricsInput;
-    /** Absent from daemons older than the capability probe; that is not "no runtime". */
-    hostCapabilities?: TeamClusterHostCapabilitiesProps;
-}
-
-export interface ClusterRuntimeHeartbeatRoleConfig {
-    roleConfig: TeamClusterRuntimeRoleConfigProps;
-}
-
-export interface ClusterRuntimeLifecycleCommand {
-    teamClusterId: string;
-    daemonPassword: string;
-    status: TeamClusterStatus;
-    installedVersion?: string;
-}
-
-export interface ClusterRuntimeDeleteCompletedCommand {
-    teamClusterId: string;
-    daemonPassword: string;
 }
 
 export interface TeamClusterDaemonAnalysisProvenanceEvent {
@@ -382,24 +233,21 @@ export type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisProvenanceEvent
     | (ClusterRuntimeHeartbeatCommand & { type: 'runtime-heartbeat' });
 
+type SdkExposureFrames =
+    | SdkExposureSnapshotPayload
+    | SdkExposureUpsertPayload
+    | SdkExposureRemovePayload;
+
+/**
+ * The full message union: the SDK transport frames (minus the `unknown[]`-typed
+ * exposure frames and the generic runtime-progress frame), plus the server's
+ * domain-typed stand-ins and the server-bound event messages.
+ */
 export type TeamClusterDaemonMessage =
-    | TeamClusterDaemonCommandMessage
-    | TeamClusterDaemonSocketResponsePayload
-    | TeamClusterDaemonSocketStreamPayload
-    | TeamClusterDaemonSocketStreamStatePayload
-    | TeamClusterDaemonSessionInputPayload
-    | TeamClusterDaemonSessionResizePayload
-    | TeamClusterDaemonSessionDetachPayload
-    | TeamClusterDaemonSessionDataPayload
-    | TeamClusterDaemonSessionEndPayload
+    | Exclude<SdkTeamClusterDaemonMessage, SdkExposureFrames | SdkRuntimeProgressPayload>
     | TeamClusterDaemonExposureSnapshotPayload
     | TeamClusterDaemonExposureUpsertPayload
     | TeamClusterDaemonExposureRemovePayload
-    | TeamClusterDaemonTunnelOpenPayload
-    | TeamClusterDaemonTunnelStatePayload
-    | TeamClusterDaemonTunnelDataPayload
-    | TeamClusterDaemonTunnelDrainPayload
-    | TeamClusterDaemonTunnelClosePayload
     | TeamClusterDaemonRuntimeProgressPayload
     | TeamClusterDaemonServerEventMessage;
 

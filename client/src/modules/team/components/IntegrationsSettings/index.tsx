@@ -1,4 +1,5 @@
-import { Button, openModal } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { openModal } from '@/shared/ui/modal';
 import { invalidateTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import useTeamAIIntegrationsSettings, { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import IntegrationFormModal from './IntegrationFormModal';
@@ -8,7 +9,6 @@ import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader'
 import useTip from '@/shared/tips/use-tip';
 import { Plus } from 'lucide-react';
 import type { TeamAIIntegration } from '@volt/contracts/modules/team/domain';
-import './IntegrationsSettings.css';
 
 export default function IntegrationsSettings() {
     useTip('team-integrations');
@@ -50,13 +50,12 @@ export default function IntegrationsSettings() {
                     action={(
                         <Button
                             size='sm'
-                            variant='solid'
-                            intent='white'
+                            variant='primary'
                             className='rounded-full'
-                            leftIcon={<Plus size={14} />}
-                            onClick={handleCreateProvider}
-                            disabled={!teamId || availableProviders.length === 0}
+                            onPress={handleCreateProvider}
+                            isDisabled={!teamId || availableProviders.length === 0}
                         >
+                            <Plus size={14} aria-hidden='true' />
                             Connect
                         </Button>
                     )}

@@ -1,4 +1,5 @@
-import { Button, Tag, openModal } from '@voltstack/bravais';
+import { Button, Chip } from '@heroui/react';
+import { openModal } from '@/shared/ui/modal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -51,7 +52,12 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'keyPrefix',
         title: 'Prefix',
-        render: (_value, key) => <Tag tone='neutral' variant='soft' size='xs' shape='square' className='font-mono'>{key.keyPrefix}...</Tag>,
+        render: (_value, key) => (
+            /* bravais `Tag shape='square'` was `--radius-sm`, 8px — HeroUI's `rounded-lg`. */
+            <Chip color='default' variant='soft' size='sm' className='rounded-lg font-mono'>
+                <Chip.Label>{key.keyPrefix}...</Chip.Label>
+            </Chip>
+        ),
         skeleton: {
             variant: 'text',
             width: 80
@@ -200,10 +206,9 @@ export default function SecretKeysListing() {
                 headerActions={(
                     <Button
                         variant='ghost'
-                        intent='neutral'
-                        onClick={handleOpenMetrics}
-                        leftIcon={<ChartColumn size={18} />}
+                        onPress={handleOpenMetrics}
                     >
+                        <ChartColumn size={18} aria-hidden='true' />
                         Metrics
                     </Button>
                 )}

@@ -347,11 +347,11 @@ function Materialize-Manifest {
             Fail-Install 'The Windows tar utility is required to extract the daemon build context.'
         }
 
+        # The archive mirrors the repository layout (cluster/ + sdk/), which is the
+        # build context the daemon's Dockerfile expects, so it extracts verbatim.
         $archivePath = Join-Path $env:TEMP 'volt-cluster-daemon-build-context.tar.gz'
-        $clusterDaemonDirectory = Join-Path $TargetDirectory 'cluster-daemon'
         [System.IO.File]::WriteAllBytes($archivePath, [Convert]::FromBase64String($Manifest.buildContextArchiveBase64))
-        New-Item -ItemType Directory -Force -Path $clusterDaemonDirectory | Out-Null
-        tar -xzf $archivePath -C $clusterDaemonDirectory
+        tar -xzf $archivePath -C $TargetDirectory
         if ($LASTEXITCODE -ne 0) {
             Fail-Install 'Failed to extract the daemon build context archive.'
         }

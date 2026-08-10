@@ -2,10 +2,10 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 
 const PIE_COLORS = [
-    'var(--status-success)',
-    'var(--accent-blue)',
-    'var(--status-warning)',
-    'var(--status-error)',
+    'var(--success)',
+    'var(--accent)',
+    'var(--warning)',
+    'var(--danger)',
     'var(--accent-purple)'
 ];
 

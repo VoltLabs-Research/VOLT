@@ -1,8 +1,16 @@
-import { Button, StatCard } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import EndpointsBarChart from '@/modules/team/components/secret-key/shared/EndpointsBarChart';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import { SecretKeyAsyncState } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
+import SecretKeyStatCard from '@/modules/team/components/secret-key/shared/SecretKeyStatCard';
+import {
+    SECRET_KEY_PAGE_CARDS_CLASS,
+    SECRET_KEY_PAGE_CHARTS_CLASS,
+    SECRET_KEY_PAGE_CLASS,
+    SECRET_KEY_PAGE_MAIN_CLASS,
+    SECRET_KEY_USAGE_BACK_CLASS
+} from '@/modules/team/components/secret-key/shared/secret-key-page-styles';
 import RecentRequestsTable from './RecentRequestsTable';
 import StatusCodesPieChart from './StatusCodesPieChart';
 import UsageSkeleton from './UsageSkeleton';
@@ -13,8 +21,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import '../secret-key/shared/SecretKeyShared.css';
-import './SecretKeyUsage.css';
 
 export default function SecretKeyUsage() {
     const { secretKeyId } = useParams<{ secretKeyId: string }>();
@@ -50,12 +56,11 @@ export default function SecretKeyUsage() {
     const backButton = (
         <Button
             variant='ghost'
-            intent='neutral'
             size='sm'
-            className='secret-key-usage-back'
-            onClick={() => navigate(-1)}
-            leftIcon={<ArrowLeft size={18} />}
+            className={SECRET_KEY_USAGE_BACK_CLASS}
+            onPress={() => navigate(-1)}
         >
+            <ArrowLeft size={18} aria-hidden='true' />
             Back
         </Button>
     );
@@ -99,39 +104,43 @@ export default function SecretKeyUsage() {
         {
             icon: Clock,
             title: 'Last Used',
+            /*
+             * `smallText` used to add `.secret-key-page-card--small`, a class defined in
+             * no stylesheet in the app — so it never did anything. Dropped rather than
+             * ported (migration spec §5b.4).
+             */
             value: usage.key.lastUsedAt
                 ? formatDistanceToNow(new Date(usage.key.lastUsedAt), { addSuffix: true })
-                : 'Never',
-            smallText: true
+                : 'Never'
         }
     ];
 
     return (
-        <div className='h-dvh secret-key-page text-foreground'>
-            <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+        <div className={SECRET_KEY_PAGE_CLASS}>
+            <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
                 <div className='flex flex-col gap-2'>
                     <div className='flex flex-row items-center gap-4'>
                         {backButton}
                         <h3 className='text-2xl font-semibold text-foreground'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</h3>
                     </div>
-                    <p className='text-sm text-muted' style={{ marginLeft: '2rem' }}>
+                    <p className='text-sm text-muted ms-8'>
                         {usage.stats.totalRequests.toLocaleString()} total requests
                     </p>
                 </div>
 
-                <div className='gap-4 secret-key-page-cards'>
+                <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
                     {cards.map((card) => (
-                        <StatCard
+                        <SecretKeyStatCard
                             key={card.title}
                             icon={<card.icon size={16} />}
                             label={card.title}
                             value={card.value}
-                            className={`bg-surface border border-border${card.smallText ? ' secret-key-page-card--small' : ''}`}
+                            className='bg-surface border border-border'
                         />
                     ))}
                 </div>
 
-                <div className='secret-key-page-charts'>
+                <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
                     <ChartContainer
                         icon={Activity}
                         title='Hourly Requests'

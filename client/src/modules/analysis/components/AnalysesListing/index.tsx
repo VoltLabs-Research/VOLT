@@ -9,7 +9,7 @@ import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/list
 import { AnalysisStatus } from '@/modules/fractal/contracts';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
-import { Button, StatusBadge } from '@voltstack/bravais';
+import { Button, cn } from '@heroui/react';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { useMemo } from 'react';
@@ -20,6 +20,56 @@ import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useNavigate } from 'react-router-dom';
+
+const STATUS_TONE_CLASS_NAMES: Record<string, string> = {
+    ready: 'text-success',
+    completed: 'text-success',
+    success: 'text-success',
+    active: 'text-success',
+    published: 'text-success',
+    healthy: 'text-success',
+    online: 'text-success',
+    accepted: 'text-success',
+    connected: 'text-success',
+
+    processing: 'text-warning',
+    queued: 'text-warning',
+    rendering: 'text-warning',
+    warning: 'text-warning',
+    pending: 'text-warning',
+    'waiting-for-process': 'text-warning',
+    analyzing: 'text-warning',
+
+    running: 'text-accent',
+    brand: 'text-accent',
+
+    failed: 'text-danger',
+    error: 'text-danger',
+    danger: 'text-danger',
+    critical: 'text-danger',
+    rejected: 'text-danger',
+
+    inactive: 'text-muted',
+    draft: 'text-muted',
+    disabled: 'text-muted',
+    offline: 'text-muted',
+    disconnected: 'text-muted',
+
+    primary: 'text-foreground'
+};
+
+const STATUS_BASE_CLASS_NAMES = 'inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium uppercase';
+
+const renderStatus: NonNullable<ColumnConfig<Analysis>['render']> = (value) => {
+    const status = String(value);
+
+    return (
+        <span className={cn(STATUS_BASE_CLASS_NAMES, STATUS_TONE_CLASS_NAMES[status.toLowerCase()] ?? 'text-muted')}>
+            {status}
+        </span>
+    );
+};
+
 const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
     return (
         <PopulatedCellPopover document={row.trajectory} modelName='Trajectory'>
@@ -86,7 +136,7 @@ const BASE_COLUMNS: ColumnConfig<Analysis>[] = [
         key: 'status',
         title: 'Status',
         sortable: true,
-        render: (value) => <StatusBadge status={String(value)} />,
+        render: renderStatus,
         skeleton: {
             variant: 'rounded',
             width: 90,
@@ -125,11 +175,10 @@ const AnalysesListing = () => {
                 return (
                     <Button
                         variant='ghost'
-                        intent='brand'
                         size='sm'
-                        leftIcon={<ExternalLink size={14} />}
-                        onClick={() => { navigate(listingPath); }}
+                        onPress={() => { navigate(listingPath); }}
                     >
+                        <ExternalLink size={14} />
                         View results
                     </Button>
                 );

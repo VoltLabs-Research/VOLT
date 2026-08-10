@@ -10,13 +10,16 @@ const RenderGroupSubmenuContent = ({ group }: RenderGroupSubmenuContentProps) =>
     const showSubsectionLabels = visibleSubsections.length > 1;
 
     return (
-        <div className='flex flex-col canvas-render-menu-submenu'>
+        <div className='flex min-w-[320px] flex-col px-2 py-1'>
             {visibleSubsections.map((subsection, index) => (
-                <div className='flex flex-col gap-2 canvas-render-menu-submenu-section' key={`${group.id}-${subsection.label}-${index}`}>
+                <div
+                    className='flex flex-col gap-2 not-first:mt-3 not-first:border-t not-first:border-border not-first:pt-3'
+                    key={`${group.id}-${subsection.label}-${index}`}
+                >
                     {showSubsectionLabels && (
                         <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted'>{subsection.label}</span>
                     )}
-                    <CanvasRenderSubsectionContent subsection={subsection} className="canvas-render-menu-submenu-body" />
+                    <CanvasRenderSubsectionContent subsection={subsection} />
                 </div>
             ))}
         </div>

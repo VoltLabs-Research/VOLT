@@ -1,8 +1,8 @@
-import { valueRow } from '../../../CanvasRenderConfigHelpers';
+import { valueRow, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Select } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
+import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 
 import { useMemo } from 'react';
 import { Grip } from 'lucide-react';
@@ -96,8 +96,10 @@ const usePointCloudGroup = (): RenderGroup => {
                     rows: [],
                     extras: (
                         <div className='flex flex-col gap-2'>
-                            <div className='canvas-render-grid'>
-                                <Select
+                            <div className={RENDER_GRID_CLASS}>
+                                <CanvasOptionSelect
+                                    ariaLabel='Detail level'
+                                    size='compact'
                                     value={pointCloudSettings.detailLevel}
                                     onChange={(value: string) => {
                                         if (isEnumValue(value, PointCloudDetailLevel)) {
@@ -106,9 +108,11 @@ const usePointCloudGroup = (): RenderGroup => {
                                     }}
                                     placeholder='Detail Level'
                                     options={DETAIL_LEVEL_OPTIONS}
-                                    disabled={!pointCloudSettings.overridesEnabled}
+                                    isDisabled={!pointCloudSettings.overridesEnabled}
                                 />
-                                <Select
+                                <CanvasOptionSelect
+                                    ariaLabel='Visual style'
+                                    size='compact'
                                     value={pointCloudSettings.style}
                                     onChange={(value: string) => {
                                         if (isEnumValue(value, PointCloudStyleMode)) {
@@ -117,7 +121,7 @@ const usePointCloudGroup = (): RenderGroup => {
                                     }}
                                     placeholder='Visual Style'
                                     options={STYLE_OPTIONS}
-                                    disabled={!pointCloudSettings.overridesEnabled}
+                                    isDisabled={!pointCloudSettings.overridesEnabled}
                                 />
                             </div>
                             <FormFieldRHF

@@ -1,4 +1,4 @@
-import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
@@ -24,7 +24,7 @@ const useGridGroup = (): RenderGroup => {
                     row(PRESETS.fadeStrength, () => s.fadeStrength, (v: number) => s.setGrid({ fadeStrength: v }))
                 ],
                 extras: (
-                    <div className='canvas-render-grid'>
+                    <div className={RENDER_GRID_CLASS}>
                         {checkbox('enabled', 'Enabled', s.enabled, (v: boolean) => s.setGrid({ enabled: v }))}
                         {checkbox('infiniteGrid', 'Infinite Grid', s.infiniteGrid, (v: boolean) => s.setGrid({ infiniteGrid: v }))}
                     </div>
@@ -36,7 +36,7 @@ const useGridGroup = (): RenderGroup => {
                 enabled: true,
                 rows: [],
                 extras: (
-                    <div className='canvas-render-grid'>
+                    <div className={RENDER_GRID_CLASS}>
                         {colorField('sectionColor', 'Section Color', s.sectionColor, (v: string) => s.setGrid({ sectionColor: v }))}
                         {colorField('cellColor', 'Cell Color', s.cellColor, (v: string) => s.setGrid({ cellColor: v }))}
                     </div>

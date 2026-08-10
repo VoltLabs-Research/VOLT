@@ -1,6 +1,6 @@
 import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
-import { KeyValueList, KeyValueRow } from '@voltstack/bravais';
+import { ContainerKeyValueList, ContainerKeyValueRow } from '../ContainerKeyValueList';
 
 export interface InspectorRow {
     label: string;
@@ -14,28 +14,33 @@ interface ContainerInspectorListProps {
     className?: string;
 }
 
+/*
+ * `container-inspector-list` and `container-inspector-list-title` were carried on
+ * these two elements but were defined in no stylesheet in the app — not before
+ * this migration either. They are dropped rather than converted.
+ */
 const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspectorListProps) => {
     if (rows.length === 0) {
         return null;
     }
 
     return (
-        <div className={cn('flex flex-col', `container-inspector-list ${className}`)}>
+        <div className={cn('flex flex-col', className)}>
             {title && (
-                <h3 className='text-base font-medium text-foreground container-inspector-list-title'>
+                <h3 className='text-base font-medium text-foreground'>
                     {title}
                 </h3>
             )}
-            <KeyValueList>
+            <ContainerKeyValueList>
                 {rows.map((row) => (
-                    <KeyValueRow
+                    <ContainerKeyValueRow
                         key={row.label}
                         label={row.label}
                         value={row.value}
                         copyValue={row.copyValue}
                     />
                 ))}
-            </KeyValueList>
+            </ContainerKeyValueList>
         </div>
     );
 };

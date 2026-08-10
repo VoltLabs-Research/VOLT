@@ -1,6 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
 import type { WorkspaceCursor } from '@/modules/canvas/collaboration/use-workspace-cursors';
-import './WorkspaceCursorsOverlay.css';
 
 interface WorkspaceCursorsOverlayProps {
     cursors: WorkspaceCursor[];
@@ -67,7 +66,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
     }
 
     return (
-        <div className='absolute inset-0 select-none workspace-cursors-overlay' aria-hidden='true'>
+        <div className='pointer-events-none absolute inset-0 z-[8] select-none' aria-hidden='true'>
             {resolvedCursors.map((cursor) => {
                 const color = resolveColor(cursor.userId);
                 const name = resolveDisplayName(cursor);
@@ -75,7 +74,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
                 return (
                     <div
                         key={cursor.userId}
-                        className='workspace-cursor'
+                        className='absolute left-0 top-0 flex items-start gap-0.5 opacity-85 will-change-transform [transition:transform_80ms_linear,opacity_120ms_linear]'
                         style={{ transform: `translate3d(${cursor.left}px, ${cursor.top}px, 0)` }}
                     >
                         <svg
@@ -93,7 +92,10 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
                                 strokeLinejoin='round'
                             />
                         </svg>
-                        <span className='workspace-cursor-label' style={{ backgroundColor: color }}>
+                        <span
+                            className='inline-flex max-w-[140px] translate-x-1.5 translate-y-2.5 items-center truncate rounded-[10px] px-1.5 py-0.5 text-[10px] font-semibold leading-[1.2] text-white shadow-[0_1px_2px_rgba(0,0,0,0.2)]'
+                            style={{ backgroundColor: color }}
+                        >
                             {name}
                         </span>
                     </div>

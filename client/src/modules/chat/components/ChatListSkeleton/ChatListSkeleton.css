@@ -1,8 +1,0 @@
-.chat-skeleton-item {
-    padding: 0.75rem;
-    background: var(--color-surface-2);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border-soft);
-    cursor: default;
-    pointer-events: none;
-}

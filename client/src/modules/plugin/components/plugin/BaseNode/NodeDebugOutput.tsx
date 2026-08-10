@@ -3,6 +3,30 @@ import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import { DebugNodeStatus } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { formatTraceDuration } from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
+import {
+    NODE_DEBUG_ERROR_CLASS,
+    NODE_DEBUG_OUTPUT_CLASS,
+    NODE_DEBUG_SKIPPED_CLASS,
+    NODE_DEBUG_STACK_CLASS,
+    NODE_DEBUG_TREE_CLASS,
+    TRACE_CHILDREN_CLASS,
+    TRACE_DETAILS_CLASS,
+    TRACE_DURATION_CLASS,
+    TRACE_ITEM_CLASS,
+    TRACE_ITEM_STATUS_CLASS,
+    TRACE_JSON_CLASS,
+    TRACE_MESSAGE_CLASS,
+    TRACE_MESSAGE_ERROR_CLASS,
+    TRACE_MESSAGE_SKIPPED_CLASS,
+    TRACE_META_CLASS,
+    TRACE_PANEL_CLASS,
+    TRACE_ROW_CLASS,
+    TRACE_STATUS_CLASS,
+    TRACE_STATUS_TONE_CLASS,
+    TRACE_TITLE_CLASS,
+    TRACE_TREE_CLASS,
+    resolveTraceTreeIndentClass
+} from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, SkipForward } from 'lucide-react';
 import type { DebugNodeState, DebugTraceNode } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { NodeType } from '@volt/contracts/modules/plugin/enums';
@@ -46,33 +70,33 @@ const DebugExecutionTraceTree = ({
     onToggleTraceNode,
     depth = 0
 }: TraceTreeProps) => (
-    <div className={`workflow-node-trace-tree workflow-node-trace-tree--depth-${depth}`}>
+    <div className={cn(TRACE_TREE_CLASS, resolveTraceTreeIndentClass(depth))}>
         {nodes.map((node) => {
             const children = node.children ?? [];
             const hasDetails = Boolean(node.output || node.error || node.reason || children.length > 0);
             const isExpanded = expandedTraceIds.has(node.traceId);
 
             return (
-                <div className={`workflow-node-trace-item workflow-node-trace-item--${node.status}`} key={node.traceId}>
-                    <div className={cn('flex flex-row items-start justify-between gap-2', `workflow-node-trace-row ${hasDetails ? 'cursor-pointer' : ''}`)} onClick={() => {
+                <div className={cn(TRACE_ITEM_CLASS, TRACE_ITEM_STATUS_CLASS[node.status])} key={node.traceId}>
+                    <div className={cn(TRACE_ROW_CLASS, hasDetails ? 'cursor-pointer' : null)} onClick={() => {
                             if (hasDetails) {
                                 onToggleTraceNode(node.traceId);
                             }
                         }}>
                         <div className='flex flex-row items-start gap-[0.35rem]'>
-                            <span className={`workflow-node-trace-status workflow-node-trace-status--${node.status}`}>
+                            <span className={cn(TRACE_STATUS_CLASS, TRACE_STATUS_TONE_CLASS[node.status])}>
                                 {TRACE_STATUS_ICONS[node.status]}
                             </span>
                             <div className='flex flex-col gap-[0.2rem]'>
-                                <p className='workflow-node-trace-title'>{resolveTraceNodeLabel(node)}</p>
-                                <p className='text-muted workflow-node-trace-meta'>
+                                <p className={TRACE_TITLE_CLASS}>{resolveTraceNodeLabel(node)}</p>
+                                <p className={TRACE_META_CLASS}>
                                     {node.pluginId ? `${node.pluginId} · ` : ''}{node.nodeId}
                                 </p>
                             </div>
                         </div>
 
                         <div className='flex flex-row items-center gap-[0.35rem]'>
-                            <span className='workflow-node-trace-duration'>
+                            <span className={TRACE_DURATION_CLASS}>
                                 {formatTraceDuration(node.durationMs)}
                             </span>
                             {hasDetails && (
@@ -82,30 +106,30 @@ const DebugExecutionTraceTree = ({
                     </div>
 
                     {isExpanded && (
-                        <div className='flex flex-col gap-[0.35rem] workflow-node-trace-details'>
+                        <div className={TRACE_DETAILS_CLASS}>
                             {node.error && (
-                                <div className='workflow-node-trace-message workflow-node-trace-message--error'>
+                                <div className={cn(TRACE_MESSAGE_CLASS, TRACE_MESSAGE_ERROR_CLASS)}>
                                     <p className='text-xs'>{node.error}</p>
                                     {node.stack && (
-                                        <pre className='m-0 workflow-node-debug-stack'>{node.stack}</pre>
+                                        <pre className={NODE_DEBUG_STACK_CLASS}>{node.stack}</pre>
                                     )}
                                 </div>
                             )}
 
                             {node.reason && !node.error && (
-                                <div className='workflow-node-trace-message workflow-node-trace-message--skipped'>
+                                <div className={cn(TRACE_MESSAGE_CLASS, TRACE_MESSAGE_SKIPPED_CLASS)}>
                                     <p className='text-xs'>{node.reason}</p>
                                 </div>
                             )}
 
                             {node.output && (
-                                <div className='workflow-node-trace-json'>
+                                <div className={TRACE_JSON_CLASS}>
                                     <JsonTree data={node.output} defaultExpanded={false} />
                                 </div>
                             )}
 
                             {children.length > 0 && (
-                                <div className='workflow-node-trace-children'>
+                                <div className={TRACE_CHILDREN_CLASS}>
                                     <DebugExecutionTraceTree
                                         nodes={children}
                                         expandedTraceIds={expandedTraceIds}
@@ -129,7 +153,7 @@ const NestedExecutionTracePanel = (props: TracePanelProps) => {
     }
 
     return (
-        <div className='flex flex-col gap-[0.35rem] workflow-node-trace-panel'>
+        <div className={TRACE_PANEL_CLASS}>
             <p className='text-xs font-semibold'>Nested Execution</p>
             <DebugExecutionTraceTree {...props} />
         </div>
@@ -156,16 +180,16 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
     );
 
     return (
-        <div className='p-2 absolute overflow-y-auto center-x workflow-node-debug-output nowheel' onClick={(event) => event.stopPropagation()}>
+        <div className={cn(NODE_DEBUG_OUTPUT_CLASS, 'nowheel')} onClick={(event) => event.stopPropagation()}>
             {debugState.status === DebugNodeStatus.Failed && (
-                <div className='flex flex-col gap-1 p-2 rounded-lg text-xs workflow-node-debug-error'>
+                <div className={NODE_DEBUG_ERROR_CLASS}>
                     <div className='flex flex-row items-center gap-1'>
                         <AlertCircle size={12} />
                         <p className='text-xs font-semibold'>Error</p>
                     </div>
                     <p className='text-xs'>{debugState.error}</p>
                     {debugState.stack && (
-                        <pre className='m-0 workflow-node-debug-stack'>{debugState.stack}</pre>
+                        <pre className={NODE_DEBUG_STACK_CLASS}>{debugState.stack}</pre>
                     )}
 
                     {tracePanel}
@@ -173,7 +197,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
             )}
 
             {debugState.status === DebugNodeStatus.Skipped && (
-                <div className='flex flex-col gap-[0.35rem] p-2 rounded-lg text-xs workflow-node-debug-skipped'>
+                <div className={NODE_DEBUG_SKIPPED_CLASS}>
                     <div className='flex flex-row items-center gap-1'>
                         <SkipForward size={12} />
                         <p className='text-xs'>{debugState.reason || 'Skipped'}</p>
@@ -184,7 +208,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
             )}
 
             {debugState.status === DebugNodeStatus.Completed && (
-                <div className='flex flex-col gap-2 workflow-node-debug-tree text-xs leading-normal'>
+                <div className={NODE_DEBUG_TREE_CLASS}>
                     {tracePanel}
 
                     {debugState.output && (

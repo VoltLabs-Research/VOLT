@@ -1,4 +1,4 @@
-import { Button, Callout } from '@voltstack/bravais';
+import { Alert, AlertContent, AlertDescription, AlertTitle, Button } from '@heroui/react';
 import { LogOut } from 'lucide-react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
@@ -13,6 +13,15 @@ interface GeneralTabProps {
     onLeave: () => void;
 }
 
+/*
+ * bravais's `Callout` in its stacked form: `role='region'`, an `aria-label` taken
+ * from the title, and the action button to the right of the copy. HeroUI's `Alert`
+ * is that layout, so only the role and label have to be restated — Alert sets
+ * neither, and this one is a landmark rather than a live region.
+ *
+ * The action was `variant='outline' intent='danger'`, which §4d resolves to a ghost
+ * button carrying the danger hue rather than to `danger`'s filled version.
+ */
 const GeneralTab = ({
     groupName,
     groupDescription,
@@ -41,27 +50,31 @@ const GeneralTab = ({
         {canEdit && (
             <div className='flex justify-end'>
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    onClick={onSave}
-                    isLoading={isLoading}
-                    disabled={!groupName.trim()}
+                    variant='primary'
+                    onPress={onSave}
+                    isPending={isLoading}
+                    isDisabled={!groupName.trim()}
                 >
                     Save Changes
                 </Button>
             </div>
         )}
 
-        <Callout
-            tone='danger'
-            title='Leave Group'
-            description='You will no longer be able to see messages in this group.'
-            action={{
-                label: 'Leave Group',
-                icon: <LogOut />,
-                onClick: onLeave
-            }}
-        />
+        <Alert status='danger' role='region' aria-label='Leave Group'>
+            <AlertContent>
+                <AlertTitle<'h2'> render={(props) => <h2 {...props} />}>
+                    Leave Group
+                </AlertTitle>
+                <AlertDescription>
+                    You will no longer be able to see messages in this group.
+                </AlertDescription>
+            </AlertContent>
+
+            <Button variant='ghost' size='sm' className='text-danger' onPress={onLeave}>
+                <LogOut />
+                Leave Group
+            </Button>
+        </Alert>
     </div>
 );
 

@@ -1,6 +1,7 @@
-import { Button, Divider, Loader, StatusDot, Tooltip, Select } from '@voltstack/bravais';
+import { Button, Separator, Spinner, Tooltip, cn } from '@heroui/react';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
+import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
@@ -9,27 +10,55 @@ import { isUserConfigurableArgument } from '@/modules/plugin/utils/plugin/argume
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import type { ReactNode } from 'react';
-import './DebugToolbar.css';
+
+/**
+ * `DebugToolbar.css`, as utilities.
+ *
+ * Two of its rules reached into bravais's Select trigger by state class
+ * (`.select-trigger:disabled`, `.select-trigger.open`); HeroUI publishes both as
+ * attributes on its own trigger, so they move to the call site as `disabled:` and
+ * `data-[open]:` variants. The open-state border was `--accent-blue`, which is
+ * `--accent` (spec §3a).
+ *
+ * `panel-floating` is dropped rather than translated: it is one of the bravais
+ * utility classes whose stylesheet is gone, and nothing in the app has ever defined
+ * it — the surface it implied is already spelled out here as
+ * `border border-border bg-surface`.
+ */
+const TOOLBAR_WRAPPER_CLASS = 'absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-[0.375rem]';
+const TOOLBAR_CLASS = 'flex flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-4';
+const TOOLBAR_DIVIDER_CLASS = 'mx-1 h-5 bg-border-secondary';
+const TOOLBAR_STATUS_CLASS = 'flex flex-row items-center gap-2 whitespace-nowrap';
+const TOOLBAR_SELECT_TRIGGER_CLASS = 'disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent';
+
+/**
+ * bravais's `StatusDot` at its default `size='sm'` — an 8px dot ringed against the
+ * raised surface it sits on. `tone='info'` had *no* rule in bravais's stylesheet, so
+ * the "running" dot has been rendering with no fill at all; §3a keeps a meaningful
+ * hue as itself, so it becomes `bg-info` rather than inheriting that omission.
+ */
+const STATUS_DOT_CLASS = 'inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]';
 
 interface DebugControlButtonProps {
     tooltip: string;
-    onClick: () => void;
-    disabled: boolean;
+    onPress: () => void;
+    isDisabled: boolean;
     children: ReactNode;
 }
 
-const DebugControlButton = ({ tooltip, onClick, disabled, children }: DebugControlButtonProps) => (
-    <Tooltip content={tooltip} placement='bottom'>
+const DebugControlButton = ({ tooltip, onPress, isDisabled, children }: DebugControlButtonProps) => (
+    <Tooltip>
         <Button
             variant='ghost'
-            intent='neutral'
-            iconOnly
+            isIconOnly
             size='sm'
-            onClick={onClick}
-            disabled={disabled}
+            aria-label={tooltip}
+            onPress={onPress}
+            isDisabled={isDisabled}
         >
             {children}
         </Button>
+        <Tooltip.Content placement='bottom'>{tooltip}</Tooltip.Content>
     </Tooltip>
 );
 
@@ -96,16 +125,16 @@ const DebugToolbar = () => {
     }
 
     return (
-        <div className='flex flex-col items-center absolute top-4 z-10 center-x debug-toolbar-wrapper'>
-            <div className='flex flex-row items-center gap-2 panel-floating rounded-full debug-toolbar bg-surface border border-border'>
+        <div className={TOOLBAR_WRAPPER_CLASS}>
+            <div className={TOOLBAR_CLASS}>
                 <div className='flex flex-row items-center gap-2'>
-                    <Bug size={14} className='text-muted' />
+                    <Bug size={14} className='text-muted' aria-hidden='true' />
                     <p className='text-xs font-semibold text-muted'>Debug</p>
                 </div>
 
-                <Divider orientation='vertical' className='debug-toolbar-divider' />
+                <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
 
-                <Select
+                <PluginSelect
                     options={trajectories.map((trajectory) => ({
                         value: trajectory._id,
                         title: trajectory.name
@@ -113,12 +142,13 @@ const DebugToolbar = () => {
                     value={selectedTrajectoryId || null}
                     onChange={(value: string) => setSelectedTrajectory(value || null)}
                     placeholder={trajLoading ? 'Loading...' : 'Trajectory'}
-                    disabled={isDebugging || isStarting}
-                    isLoading={trajLoading}
-                    className='debug-toolbar-select'
+                    ariaLabel='Trajectory'
+                    isDisabled={isDebugging || isStarting}
+                    isPending={trajLoading}
+                    triggerClassName={TOOLBAR_SELECT_TRIGGER_CLASS}
                 />
 
-                <Select
+                <PluginSelect
                     options={frames.map((frame) => ({
                         value: String(frame.timestep),
                         title: `t=${frame.timestep} (${frame.natoms} atoms)`
@@ -126,38 +156,39 @@ const DebugToolbar = () => {
                     value={selectedTimestep !== null ? String(selectedTimestep) : null}
                     onChange={(value: string) => setSelectedTimestep(value ? Number(value) : null)}
                     placeholder='Frame'
-                    disabled={!selectedTrajectoryId || isDebugging || isStarting}
-                    className='debug-toolbar-select'
+                    ariaLabel='Frame'
+                    isDisabled={!selectedTrajectoryId || isDebugging || isStarting}
+                    triggerClassName={TOOLBAR_SELECT_TRIGGER_CLASS}
                 />
 
-                <Divider orientation='vertical' className='debug-toolbar-divider' />
+                <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
 
                 <div className='flex flex-row items-center gap-1'>
-                    <DebugControlButton tooltip={startTooltip} onClick={handlePlayClick} disabled={!canStart}>
-                        {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
+                    <DebugControlButton tooltip={startTooltip} onPress={handlePlayClick} isDisabled={!canStart}>
+                        {isStarting ? <Spinner size='sm' color='current' /> : <Play size={14} aria-hidden='true' />}
                     </DebugControlButton>
 
-                    <DebugControlButton tooltip='Step to next node' onClick={step} disabled={!canAdvance}>
-                        <StepForward size={14} />
+                    <DebugControlButton tooltip='Step to next node' onPress={step} isDisabled={!canAdvance}>
+                        <StepForward size={14} aria-hidden='true' />
                     </DebugControlButton>
 
-                    <DebugControlButton tooltip='Continue (run all remaining)' onClick={continueAll} disabled={!canAdvance}>
-                        <FastForward size={14} />
+                    <DebugControlButton tooltip='Continue (run all remaining)' onPress={continueAll} isDisabled={!canAdvance}>
+                        <FastForward size={14} aria-hidden='true' />
                     </DebugControlButton>
 
-                    <DebugControlButton tooltip='Stop debug session' onClick={stop} disabled={!canStop}>
-                        <Square size={14} />
+                    <DebugControlButton tooltip='Stop debug session' onPress={stop} isDisabled={!canStop}>
+                        <Square size={14} aria-hidden='true' />
                     </DebugControlButton>
                 </div>
             </div>
 
             {isDebugging && (
                 <>
-                    <Divider orientation='vertical' className='debug-toolbar-divider' />
-                    <div className='flex flex-row items-center gap-2 debug-toolbar-status'>
+                    <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
+                    <div className={TOOLBAR_STATUS_CLASS}>
                         {isPaused && currentNodeLabel && (
                             <>
-                                <StatusDot tone='warning' pulse />
+                                <span role='status' aria-label='warning status' className={cn(STATUS_DOT_CLASS, 'bg-warning')} />
                                 <p className='text-xs'>
                                     Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
                                 </p>
@@ -165,7 +196,7 @@ const DebugToolbar = () => {
                         )}
                         {!isPaused && (
                             <>
-                                <StatusDot tone='info' pulse />
+                                <span role='status' aria-label='info status' className={cn(STATUS_DOT_CLASS, 'bg-info')} />
                                 <p className='text-xs text-muted'>
                                     Running... {completedCount}/{totalNodes}
                                 </p>
@@ -178,14 +209,14 @@ const DebugToolbar = () => {
             <DebugArgumentsPanel onStart={startDebug} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
-                <div className='flex flex-col mt-4 text-center debug-toolbar-below-status'>
+                <div className='mt-4 flex flex-col whitespace-nowrap text-center'>
                     {totalDuration !== null && totalDuration >= 0 && (
-                        <p className='text-xs debug-toolbar-status--completed'>
+                        <p className='text-xs text-success'>
                             Completed in {formatDuration(totalDuration)}
                         </p>
                     )}
                     {sessionError && (
-                        <p className='text-xs debug-toolbar-status--error'>
+                        <p className='text-xs text-danger'>
                             {sessionError}
                         </p>
                     )}

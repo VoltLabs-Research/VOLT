@@ -4,11 +4,19 @@ import ChatSidebar from '../ChatSidebar';
 import CreateGroupModal from '../CreateGroupModal';
 import GroupManagementModal from '../GroupManagementModal';
 import ChatDetailsPanel from '../ChatDetailsPanel';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@heroui/react';
 import { useParams } from 'react-router-dom';
 import useTip from '@/shared/tips/use-tip';
-import './MessagesPage.css';
 
+/**
+ * The three-pane responsive swap used to live in `MessagesPage.css` as child
+ * selectors on the other three components' classes (`.messages-page > .chat-area`
+ * and friends). Those classes stay on the elements, but each pane now carries its
+ * own share of the layout as utilities, and the two state flags below are read
+ * back through ancestor-flag variants (`[.messages-page--chat-open_&]`) instead of
+ * through descendant rules in a stylesheet — see ChatSidebar / ChatArea /
+ * ChatDetailsPanel for the receiving end.
+ */
 const MessagesPage = () => {
     const { chatId } = useParams<'chatId'>();
     const {
@@ -51,11 +59,11 @@ const MessagesPage = () => {
     });
 
     return (
-        <div className={cn('flex h-full', cn(
-                'messages-page',
-                chatId && 'messages-page--chat-open',
-                showDetails && currentChat && 'messages-page--details-open'
-            ))}>
+        <div className={cn(
+            'relative flex h-full border-t border-border messages-page',
+            chatId && 'messages-page--chat-open',
+            showDetails && currentChat && 'messages-page--details-open'
+        )}>
             <ChatSidebar
                 chats={chats}
                 currentChatId={chatId}

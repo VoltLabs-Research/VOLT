@@ -1,12 +1,16 @@
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
+import { NODE_DEBUG_STATUS_CLASS } from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { useState } from 'react';
 
 export const formatTraceDuration = (ms: number): string => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`);
 
+/** bravais `Tag` tones; `BaseNode` maps them onto HeroUI `Chip` colours. */
+export type NodeOverheadBadgeTone = 'success' | 'danger' | 'neutral';
+
 interface NodeOverheadBadge {
     label: string;
-    tone: 'success' | 'danger' | 'neutral';
+    tone: NodeOverheadBadgeTone;
 }
 
 const INSPECTABLE_STATUSES: DebugNodeStatus[] = [
@@ -103,7 +107,12 @@ const useNodeDebugView = (nodeId: string, nodeType: NodeType) => {
         debugState,
         logSegments,
         overheadBadge: resolveOverheadBadge(status, debugState?.durationMs),
-        debugClass: debugState ? `workflow-node--debug-${status}` : '',
+        /*
+         * This used to hand back the class name `workflow-node--debug-${status}`.
+         * The stylesheet is gone, so it hands back that status's utilities instead —
+         * from a lookup, so every value stays a complete literal Tailwind can scan.
+         */
+        debugClass: status ? NODE_DEBUG_STATUS_CLASS[status] : '',
         isInspectingOutput: inspectedNodeId === nodeId && hasInspectableOutput,
         hasInspectableOutput,
         hasLog,

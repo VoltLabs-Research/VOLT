@@ -2,7 +2,7 @@ import { buildSheetBlob, buildSheetTsv } from '@/modules/ai/components/AIArtifac
 import { resolveTabularPayload } from '@/modules/ai/utils/message-artifacts';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import useSpreadsheetEditor from '@/modules/ai/components/AIArtifactSpreadsheetPanel/use-spreadsheet-editor';
-import { Divider, IconButton, Tooltip } from '@voltstack/bravais';
+import { Button, Separator, Tooltip, cn } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -10,7 +10,6 @@ import { Check, Clipboard, FileSpreadsheet, FileText } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { SheetExportFormat } from '@/modules/ai/components/AIArtifactSpreadsheetPanel/spreadsheet-export';
 import type { CSSProperties } from 'react';
-import './AIArtifactSpreadsheetPanel.css';
 
 interface AIArtifactSpreadsheetPanelProps {
     artifact: AIMessageArtifact;
@@ -26,6 +25,45 @@ const SHEET_FORMAT_LABEL: Record<SheetExportFormat, string> = {
     csv: 'CSV',
     xlsx: 'Excel'
 };
+
+/**
+ * The `@media (max-width: 900px)` block reset `width` with `!important` because the panel's
+ * width arrives as an inline style from the resize handle; `max-md:w-full!` is that same
+ * override in utility form \u2014 an inline style still wins, so the `!` is what beats it.
+ */
+const PANEL = 'flex min-w-[320px] max-w-[900px] flex-col border-l border-border bg-surface max-[1180px]:min-w-[280px] max-md:min-w-0 max-md:max-w-none max-md:w-full! max-md:border-l-0 max-md:border-t max-md:max-h-[calc(45vh-env(safe-area-inset-bottom,0px))]';
+
+const PANEL_META = 'flex shrink-0 min-w-0 flex-col gap-1 border-b border-border bg-surface-secondary p-3';
+
+const TOOLBAR_BUTTON = 'size-[1.7rem] min-h-[1.7rem] min-w-[1.7rem] rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground';
+
+const TABLE = 'min-w-full border-collapse';
+
+const HEAD_CELL = 'sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-surface-secondary px-[0.65rem] py-2 text-left text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted';
+
+/**
+ * `.ai-sheet-row-index-header` / `-cell` needed `text-align: right !important` to beat the
+ * sheet's own `th { text-align: left }`; here the two are separate class strings applied to
+ * separate elements, so no override is needed.
+ */
+const INDEX_HEAD_CELL = 'sticky top-0 z-[1] w-12 min-w-12 max-w-12 whitespace-nowrap border-b border-border bg-surface-secondary px-[0.65rem] py-2 text-right text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted';
+
+const INDEX_CELL = 'w-12 min-w-12 max-w-12 border-b border-border bg-surface-secondary px-[0.65rem] py-[0.45rem] text-right text-[0.7rem] tabular-nums text-muted';
+
+/** `tbody tr:hover` and `tbody tr:last-child td` become variants on the row itself. */
+const BODY_ROW = 'hover:bg-surface-hover last:[&>td]:border-b-0 last:[&>th]:border-b-0';
+
+const CELL = 'relative min-w-[120px] cursor-default border-b border-border p-0 text-[0.8125rem] text-foreground';
+
+const CELL_ACTIVE = 'outline-2 -outline-offset-2 outline-[color-mix(in_srgb,var(--accent)_32%,transparent)] bg-[color-mix(in_srgb,var(--accent)_6%,transparent)]';
+
+const CELL_EDITED = 'bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]';
+
+const CELL_VALUE = 'block max-w-[280px] overflow-hidden text-ellipsis whitespace-nowrap px-[0.65rem] py-[0.45rem]';
+
+const CELL_VALUE_EDITED = 'text-accent';
+
+const CELL_INPUT = 'h-full w-full rounded-none border-none bg-background px-[0.6rem] py-[0.4rem] text-[0.8125rem] leading-[1.4] text-foreground outline-2 -outline-offset-2 outline-accent focus:outline-2 focus:-outline-offset-2 focus:outline-accent';
 
 const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpreadsheetPanelProps) => {
     const table = resolveTabularPayload(artifact);
@@ -120,15 +158,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     const renderRowCell = (rowIndex: number, col: string, colIndex: number) => {
         const isEditing = editingCell?.row === rowIndex && editingCell?.col === colIndex;
         const isActive = activeCell.row === rowIndex && activeCell.col === colIndex;
-        let cellClassName = 'ai-sheet-cell';
-
-        if (isCellEdited(rowIndex, colIndex)) {
-            cellClassName = 'ai-sheet-cell is-edited';
-        }
-
-        if (isActive) {
-            cellClassName += ' is-active';
-        }
+        const isEdited = isCellEdited(rowIndex, colIndex);
+        const cellClassName = cn(CELL, isEdited && CELL_EDITED, isActive && CELL_ACTIVE);
 
         return (
             <td
@@ -149,7 +180,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <input
                         ref={inputRef}
                         type='text'
-                        className='ai-sheet-cell-input'
+                        className={CELL_INPUT}
                         value={editBuffer}
                         onChange={(event) => setEditBuffer(event.target.value)}
                         onBlur={commitEdit}
@@ -157,7 +188,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         aria-label={`Edit flex-row ${rowIndex + 1}, ${col}`}
                     />
                 ) : (
-                    <span className='ai-sheet-cell-value'>
+                    <span className={cn(CELL_VALUE, isEdited && CELL_VALUE_EDITED)}>
                         {getCellValue(rowIndex, colIndex) || EMPTY_CELL_PLACEHOLDER}
                     </span>
                 )}
@@ -166,50 +197,59 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const toolbarActions = (
-        <div className='flex flex-row items-center gap-1 ai-artifact-spreadsheet-toolbar'>
-            <Tooltip content={copyFeedback ? 'Copied!' : 'Copy to clipboard'}>
-                <IconButton
+        <div className='flex shrink-0 flex-row items-center gap-1'>
+            <Tooltip>
+                <Button
+                    isIconOnly
+                    variant='ghost'
                     aria-label='Copy table to clipboard'
-                    onClick={handleCopyToClipboard}
-                    className='ai-sheet-toolbar-btn'
+                    onPress={handleCopyToClipboard}
+                    className={TOOLBAR_BUTTON}
                 >
                     {copyFeedback ? <Check size={15} /> : <Clipboard size={15} />}
-                </IconButton>
+                </Button>
+                <Tooltip.Content>{copyFeedback ? 'Copied!' : 'Copy to clipboard'}</Tooltip.Content>
             </Tooltip>
 
-            <Tooltip content='Download CSV'>
-                <IconButton
+            <Tooltip>
+                <Button
+                    isIconOnly
+                    variant='ghost'
                     aria-label='Download CSV'
-                    onClick={createDownloadHandler('csv')}
-                    className='ai-sheet-toolbar-btn'
+                    onPress={createDownloadHandler('csv')}
+                    className={TOOLBAR_BUTTON}
                 >
                     <FileText size={15} />
-                </IconButton>
+                </Button>
+                <Tooltip.Content>Download CSV</Tooltip.Content>
             </Tooltip>
 
-            <Tooltip content='Download Excel'>
-                <IconButton
+            <Tooltip>
+                <Button
+                    isIconOnly
+                    variant='ghost'
                     aria-label='Download Excel'
-                    onClick={createDownloadHandler('xlsx')}
-                    className='ai-sheet-toolbar-btn'
+                    onPress={createDownloadHandler('xlsx')}
+                    className={TOOLBAR_BUTTON}
                 >
                     <FileSpreadsheet size={15} />
-                </IconButton>
+                </Button>
+                <Tooltip.Content>Download Excel</Tooltip.Content>
             </Tooltip>
 
-            <Divider orientation='vertical' />
+            <Separator orientation='vertical' />
         </div>
     );
 
     return (
-        <div className='flex flex-col ai-artifact-spreadsheet-panel' style={panelStyle} aria-label={artifact.title}>
+        <div className={PANEL} style={panelStyle} aria-label={artifact.title}>
             <PanelHeader
                 title={artifact.title}
                 actions={toolbarActions}
                 onClose={onClose}
             />
 
-            <div className='flex flex-col gap-1 p-3 ai-artifact-spreadsheet-meta'>
+            <div className={PANEL_META}>
                 <p className='text-xs text-muted'>
                     {rows.length} rows · {columns.length} columns
                     {hasEdits && ' · edited'}
@@ -228,9 +268,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 {statusMessage}
             </span>
 
-            <div className='ai-artifact-spreadsheet-body overflow-x-auto overflow-y-auto'>
+            <div className='flex-1 overflow-x-auto overflow-y-auto'>
                 <table
-                    className='ai-artifact-spreadsheet-table'
+                    className={TABLE}
                     role='grid'
                     aria-label={`${artifact.title} spreadsheet`}
                     aria-describedby={`${instructionsId} ${statusId}`}
@@ -239,9 +279,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 >
                     <thead>
                         <tr role='row'>
-                            <th scope='col' className='ai-sheet-row-index-header'>#</th>
+                            <th scope='col' className={INDEX_HEAD_CELL}>#</th>
                             {columns.map((col) => (
-                                <th key={col} scope='col'>
+                                <th key={col} scope='col' className={HEAD_CELL}>
                                     {col}
                                 </th>
                             ))}
@@ -249,8 +289,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     </thead>
                     <tbody>
                         {rows.map((_, rowIndex) => (
-                            <tr key={rowIndex} role='row'>
-                                <th scope='flex-row' className='ai-sheet-row-index-cell'>
+                            <tr key={rowIndex} role='row' className={BODY_ROW}>
+                                <th scope='flex-row' className={INDEX_CELL}>
                                     {rowIndex + 1}
                                 </th>
                                 {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}

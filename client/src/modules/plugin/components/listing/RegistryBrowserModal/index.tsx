@@ -1,5 +1,5 @@
-import './RegistryBrowserModal.css';
-import { Button, EmptyState, Loader, Modal, SearchInput } from '@voltstack/bravais';
+import { Button, EmptyStateRoot, SearchField, Spinner } from '@heroui/react';
+import { Modal } from '@/shared/ui/modal';
 import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -46,27 +46,26 @@ const RegistryResultCard = ({ item, installedVersion, isInstalling, isAnyInstall
     const isInstalled = installedVersion !== undefined && !updatable;
 
     return (
-        <div className='registry-card list-item-hoverable'>
-            <span className='registry-card__icon'>
-                <Package size={22} />
+        <div className='flex flex-row items-center gap-3 rounded-[0.625rem] p-3 transition-colors duration-200 ease-out-fluid hover:bg-surface-tertiary'>
+            <span className='flex size-11 shrink-0 flex-row items-center justify-center rounded-[0.625rem] bg-[rgba(127,127,127,0.14)]'>
+                <Package size={22} aria-hidden='true' />
             </span>
-            <div className='registry-card__body'>
-                <p className='text-sm font-medium truncate'>
+            <div className='min-w-0 flex-1'>
+                <p className='truncate text-sm font-medium'>
                     {item.name}{item.latest ? ` v${item.latest}` : ''}
                 </p>
                 {item.description && (
-                    <p className='text-xs text-muted registry-card__desc'>
+                    <p className='line-clamp-2 text-xs text-muted'>
                         {item.description}
                     </p>
                 )}
             </div>
             <Button
-                variant='toggle'
-                intent={updatable ? 'brand' : 'neutral'}
-                className='registry-card__action'
-                onClick={() => onInstall(item)}
-                isLoading={isInstalling}
-                disabled={isInstalled || isAnyInstalling}
+                variant={updatable ? 'primary' : 'secondary'}
+                className='shrink-0'
+                onPress={() => onInstall(item)}
+                isPending={isInstalling}
+                isDisabled={isInstalled || isAnyInstalling}
             >
                 {isInstalled ? 'Installed' : updatable ? 'Update' : 'Install'}
             </Button>
@@ -129,26 +128,36 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
             width='960px'
         >
             <div className='flex flex-col gap-4 p-6'>
-                <SearchInput
-                    placeholder='Search plugins…'
+                <SearchField
                     value={search}
+                    onChange={setSearch}
                     aria-label='Search the plugin registry'
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+                    fullWidth
+                >
+                    <SearchField.Group>
+                        <SearchField.SearchIcon />
+                        <SearchField.Input placeholder='Search plugins…' />
+                        <SearchField.ClearButton />
+                    </SearchField.Group>
+                </SearchField>
 
-                <div className='registry-results'>
+                <div className='h-[460px] overflow-y-auto'>
                     {isFetching && (
-                        <div className='p-8'>
-                            <Loader scale={0.5} isFixed={false} announce />
+                        <div className='flex flex-row items-center justify-center p-8' role='status'>
+                            <Spinner />
+                            <span className='sr-only'>Loading registry results</span>
                         </div>
                     )}
 
                     {!isFetching && items.length === 0 && (
-                        <EmptyState title='No plugins found' description='' announce />
+                        <EmptyStateRoot className='flex flex-col items-center justify-center gap-2 p-8 text-center'>
+                            <span className='sr-only' aria-live='polite' aria-atomic='true'>No plugins found</span>
+                            <h3 className='text-base font-medium text-foreground'>No plugins found</h3>
+                        </EmptyStateRoot>
                     )}
 
                     {!isFetching && items.length > 0 && (
-                        <div className='registry-grid'>
+                        <div className='grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2'>
                             {items.map((item) => (
                                 <RegistryResultCard
                                     key={item.fullName}

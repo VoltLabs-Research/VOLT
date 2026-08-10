@@ -4,7 +4,7 @@ import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
-import { Callout } from '@voltstack/bravais';
+import { Alert, Button } from '@heroui/react';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -91,16 +91,28 @@ const GeneralSettings = () => {
                 </div>
             </div>
 
-            <Callout
-                tone='danger'
-                title='Delete Account'
-                description='Permanently delete your account and all associated data'
-                action={{
-                    label: 'Delete Account',
-                    icon: <Trash2 size={16} />,
-                    onClick: handleDeleteAccount
-                }}
-            />
+            {/*
+              * bravais's stacked `Callout` was a landmark, not a live region:
+              * `role='region'` labelled by its own title. HeroUI's `Alert` declares no
+              * role, so both are restated here.
+              */}
+            <Alert status='danger' role='region' aria-label='Delete Account'>
+                <Alert.Content>
+                    <Alert.Title>Delete Account</Alert.Title>
+                    <Alert.Description>
+                        Permanently delete your account and all associated data
+                    </Alert.Description>
+                </Alert.Content>
+                <Button
+                    variant='ghost'
+                    size='sm'
+                    className='text-danger'
+                    onPress={handleDeleteAccount}
+                >
+                    <Trash2 size={16} />
+                    Delete Account
+                </Button>
+            </Alert>
         </SettingsPage>
     );
 };

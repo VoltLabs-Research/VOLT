@@ -1,10 +1,11 @@
 import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type { SelectOption, StatusBadgeProps } from '@voltstack/bravais';
+import type { ClusterSelectOption } from '@/modules/cluster/components/shared/ClusterOptionSelect';
+import type { ClusterBadgeTone } from '@/modules/cluster/components/shared/ClusterStatusBadge';
 
-interface TeamClusterRoleOption extends SelectOption {
+interface TeamClusterRoleOption extends ClusterSelectOption {
     value: TeamClusterRole;
     summary: string;
-    badgeVariant: StatusBadgeProps['variant'];
+    badgeVariant: ClusterBadgeTone;
 }
 
 const TEAM_CLUSTER_ROLE_META: Record<TeamClusterRole, TeamClusterRoleOption> = {
@@ -45,8 +46,18 @@ export const getTeamClusterRoleSummary = (role: TeamClusterRole): string => {
     return TEAM_CLUSTER_ROLE_META[role].summary;
 };
 
-export const getTeamClusterRoleBadgeVariant = (role: TeamClusterRole): StatusBadgeProps['variant'] => {
+export const getTeamClusterRoleBadgeVariant = (role: TeamClusterRole): ClusterBadgeTone => {
     return TEAM_CLUSTER_ROLE_META[role].badgeVariant;
+};
+
+/**
+ * Narrows a `Select`'s emitted key back to the union. bravais's `Select` handed
+ * back a bare `string` and the call site asserted; HeroUI's hands back a React
+ * `Key`, so the check is done once here against the same record the options are
+ * built from — the option list and the guard cannot drift apart.
+ */
+export const isTeamClusterRole = (value: string): value is TeamClusterRole => {
+    return Object.hasOwn(TEAM_CLUSTER_ROLE_META, value);
 };
 
 export const describeTeamClusterDraining = (teamCluster: TeamCluster): string | null => {

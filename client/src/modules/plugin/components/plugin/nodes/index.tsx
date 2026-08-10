@@ -14,8 +14,6 @@ import BaseNode from '@/modules/plugin/components/plugin/BaseNode';
 import { CONTEXT_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import EntrypointNode from './EntrypointNode';
 import PluginNode from './PluginNode';
-import './IfStatementNode/IfStatementNode.css';
-import './SwitchStatementNode/SwitchStatementNode.css';
 
 const ForEachNode = (props: NodeProps) => (
     <BaseNode {...props} nodeType={NodeType.FOREACH} description='Receives an array to iterate' />

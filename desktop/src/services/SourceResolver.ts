@@ -22,16 +22,15 @@ export interface RepoUpdateStatus{
     changed: boolean;
 }
 
+/*
+ * The cluster daemon and the SDKs live inside the VOLT repository now
+ * (cluster/ and sdk/), so a single source checkout covers the whole stack.
+ */
 const REPOS = [
     {
         owner: 'voltlabs-research',
         repo: 'volt',
         envKey: 'VOLT_SOURCE_DIR'
-    },
-    {
-        owner: 'voltlabs-research',
-        repo: 'clusterdaemon',
-        envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
     }
 ] as const;
 
@@ -42,15 +41,14 @@ export default class SourceResolver{
         const dev = await this.props.appConfig.getActiveDevMode();
         if(!dev) return null;
         return {
-            VOLT_SOURCE_DIR: dev.voltPath,
-            CLUSTER_DAEMON_SOURCE_DIR: dev.clusterDaemonPath
+            VOLT_SOURCE_DIR: dev.voltPath
         };
     }
 
     async resolve(): Promise<ResolvedSources>{
         const dev = await this.#devSources();
         if(dev){
-            assertDevPaths(dev.VOLT_SOURCE_DIR, dev.CLUSTER_DAEMON_SOURCE_DIR);
+            assertDevPaths(dev.VOLT_SOURCE_DIR);
             return {
                 env: dev,
                 changed: true,

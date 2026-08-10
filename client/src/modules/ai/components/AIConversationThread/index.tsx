@@ -2,15 +2,22 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import AIMessageItem from '@/modules/ai/components/AIConversationThread/AIMessageItem';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
 import useNormalizedMessages from '@/modules/ai/components/AIConversationThread/use-normalized-messages';
+import {
+    MESSAGE_ROW,
+    MESSAGE_ROW_ASSISTANT,
+    THREAD_LIST,
+    THREAD_REGION,
+    THREAD_STARTER,
+    THREAD_STARTER_TITLE
+} from '@/modules/ai/components/AIConversationThread/thread-styles';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { Skeleton } from '@voltstack/bravais';
+import { Skeleton, cn } from '@heroui/react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { NormalizedConversationMessage } from '@/modules/ai/utils/message-segments';
 import type { UIMessage } from 'ai';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
 import type { ReactNode } from 'react';
-import './AIConversationThread.css';
 
 interface AIConversationThreadProps {
     conversationId?: string;
@@ -24,8 +31,8 @@ interface AIConversationThreadProps {
 }
 
 const renderPromptStarter = () => (
-    <div className='flex flex-col items-center justify-center gap-4 flex-1 ai-thread-starter'>
-        <p className='text-3xl font-medium text-foreground ai-thread-starter-title'>
+    <div className={THREAD_STARTER}>
+        <p className={THREAD_STARTER_TITLE}>
             Ready when you are.
         </p>
     </div>
@@ -76,7 +83,7 @@ const AIConversationThread = ({
     let autoScrollDependency = '';
     if (showStandaloneTyping) {
         renderAfter = (
-            <div className='flex flex-col gap-1 ai-message-row is-assistant'>
+            <div className={cn(MESSAGE_ROW, MESSAGE_ROW_ASSISTANT, 'gap-1')}>
                 <ThinkingBubble />
             </div>
         );
@@ -89,12 +96,12 @@ const AIConversationThread = ({
         <AutoScrollList
             items={normalizedMessages}
             isLoading={isLoading}
-            className='ai-thread-list'
+            className={THREAD_LIST}
             getItemKey={(message) => message.id}
             autoScrollDependency={autoScrollDependency}
             autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
             renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} variant='text' width='100%' height='3.5rem' />
+                <Skeleton key={index} className='h-14 w-full rounded-md' />
             ))}
             renderAfter={renderAfter}
             renderItem={renderMessageItem}
@@ -106,7 +113,7 @@ const AIConversationThread = ({
     }
 
     return (
-        <section className='flex flex-col flex-1 ai-thread-region' aria-label='Conversation messages'>
+        <section className={THREAD_REGION} aria-label='Conversation messages'>
             {threadContent}
 
             <span className='sr-only'

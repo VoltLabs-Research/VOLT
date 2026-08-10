@@ -1,13 +1,25 @@
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { SearchInput } from '@voltstack/bravais';
+import { SearchField } from '@heroui/react';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import usePaginationParams from '@/shared/ui/hooks/use-pagination-params';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import type { ChangeEvent } from 'react';
 import type { PublicSimulationGridSummary } from '@/modules/trajectory/components/SimulationGrid';
-import './DiscoverTeamTrajectoriesPage.css';
+
+const PAGE = 'min-h-screen bg-background p-[2rem_1.5rem_3rem] text-foreground max-md:p-[1.25rem_1rem_2rem]';
+
+const INNER = 'mx-auto flex w-[min(100%,1180px)] min-h-[calc(100vh-5rem)] flex-col gap-6 max-md:min-h-[calc(100vh-3.25rem)]';
+
+const HEADER = 'flex flex-row items-end justify-between gap-4 pt-2 pb-1 max-md:flex-col max-md:items-stretch';
+
+/**
+ * `.discover-team-trajectories-page__grid > *` is what makes the grid fill the section, and
+ * the child is `DocumentListing`, so the sizing cannot move onto it from here.
+ */
+const GRID_SECTION = 'flex min-h-0 flex-1 [&>*]:w-full';
+
+const SEARCH = 'w-[min(100%,22rem)] shrink-0 max-md:w-full';
 
 const DEFAULT_DISCOVERY_SUMMARY: PublicSimulationGridSummary = {
     team: null,
@@ -28,14 +40,10 @@ export default function DiscoverTeamTrajectoriesPage() {
         setSummary(DEFAULT_DISCOVERY_SUMMARY);
     }, [teamId]);
 
-    const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-        setSearch(event.target.value);
-    }, [setSearch]);
-
     if (!teamId) {
         return (
-            <main className='discover-team-trajectories-page'>
-                <div className='discover-team-trajectories-page__inner items-center justify-center'>
+            <main className={PAGE}>
+                <div className={`${INNER} items-center justify-center`}>
                     <RecoveryState
                         title='Team not found'
                         description='The discovery link is missing a team identifier.'
@@ -47,29 +55,37 @@ export default function DiscoverTeamTrajectoriesPage() {
     }
 
     return (
-        <main className='discover-team-trajectories-page'>
-            <div className='discover-team-trajectories-page__inner'>
-                <section className='discover-team-trajectories-page__header' aria-labelledby='discover-team-trajectories-title'>
-                    <div className='discover-team-trajectories-page__title-block'>
-                        <h1 className='text-3xl font-medium text-foreground discover-team-trajectories-page__title'
+        <main className={PAGE}>
+            <div className={INNER}>
+                <section className={HEADER} aria-labelledby='discover-team-trajectories-title'>
+                    <div className='min-w-0'>
+                        <h1 className='m-0 text-3xl font-medium leading-[1.1] text-foreground'
                             id='discover-team-trajectories-title'
                         >
                             Trajectories ({summary.total})
                         </h1>
-                        <p className='text-xs text-muted discover-team-trajectories-page__description'
-                        >
+                        <p className='mt-[0.35rem] mb-0 text-xs text-muted'>
                             {`Public trajectories from ${summary.team?.name ?? 'this team'}.`}
                         </p>
                     </div>
-                    <SearchInput
+                    {/*
+                      * HeroUI's `SearchField` reports the next value directly rather than a
+                      * `ChangeEvent`, so `setSearch` can be handed to it unwrapped.
+                      */}
+                    <SearchField
                         value={search}
-                        onChange={handleSearchChange}
-                        placeholder='Search trajectories'
+                        onChange={setSearch}
                         aria-label='Search public trajectories'
-                        containerClassName='discover-team-trajectories-page__search'
-                    />
+                        className={SEARCH}
+                    >
+                        <SearchField.Group>
+                            <SearchField.SearchIcon />
+                            <SearchField.Input placeholder='Search trajectories' />
+                            <SearchField.ClearButton />
+                        </SearchField.Group>
+                    </SearchField>
                 </section>
-                <section className='discover-team-trajectories-page__grid' aria-label='Public trajectories'>
+                <section className={GRID_SECTION} aria-label='Public trajectories'>
                     <SimulationGrid
                         mode='public'
                         teamId={teamId}

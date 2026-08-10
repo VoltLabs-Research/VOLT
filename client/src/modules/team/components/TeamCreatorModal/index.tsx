@@ -4,12 +4,11 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, resetModal } from '@voltstack/bravais';
+import { Modal, resetModal } from '@/shared/ui/modal';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { TeamCreatorForm } from './validation-schema';
-import './TeamCreatorModal.css';
 
 const MODAL_ID = 'team-creator-modal';
 const TEAM_CREATOR_FORM_ID = 'team-creator-form';
@@ -123,7 +122,7 @@ export const TeamCreatorModal = ({
                 />
 
                 {apiError && (
-                    <p className='text-sm team-creator-error rounded-lg'>
+                    <p className='text-sm text-danger px-3 py-2 bg-danger-soft rounded-lg'>
                         {apiError}
                     </p>
                 )}

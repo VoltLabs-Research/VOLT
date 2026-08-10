@@ -1,8 +1,7 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
-import { EmptyState } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import type { AISelectOption } from '@/modules/ai/utils/model-options';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { UIMessage } from 'ai';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
@@ -14,7 +13,7 @@ interface AIConversationPanelContentProps {
     isSendingMessage: boolean;
     messagesError?: string | null;
     messageDraft: string;
-    modelOptions: SelectOption[];
+    modelOptions: AISelectOption[];
     selectedModel: string | null;
     canSendMessage: boolean;
     isProviderCatalogLoading: boolean;
@@ -73,7 +72,7 @@ const AIConversationPanelContent = ({
     if (!selectedTeamId) {
         return (
             <div className='flex flex-1 items-center justify-center'>
-                <EmptyState
+                <RecoveryState
                     title='No team selected'
                     description='Select a team to use the AI assistant.'
                 />
@@ -84,11 +83,12 @@ const AIConversationPanelContent = ({
     if (noProviderConfigured) {
         return (
             <div className='flex flex-1 items-center justify-center'>
-                <EmptyState
+                <RecoveryState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations.'
-                    buttonText='Open integrations'
-                    buttonOnClick={onOpenIntegrations}
+                    tone={RecoveryStateTone.Info}
+                    retryLabel='Open integrations'
+                    onRetry={onOpenIntegrations}
                 />
             </div>
         );

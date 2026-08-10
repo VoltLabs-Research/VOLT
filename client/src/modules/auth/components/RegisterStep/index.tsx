@@ -1,6 +1,6 @@
 import UserBadge from '../UserBadge';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { ArrowLeft } from 'lucide-react';
 import type { FormEventHandler } from 'react';
 import type { Control } from 'react-hook-form';
@@ -26,11 +26,7 @@ const RegisterStep = ({
             label='Signing up as'
             email={email}
             onChangeClick={onBack} />
-        <Stack
-            as='form'
-            gap='1'
-            {...({ onSubmit } as React.FormHTMLAttributes<HTMLFormElement>)}
-        >
+        <form className='flex flex-col gap-4' onSubmit={onSubmit}>
             <FormFieldRHF
                 name='fullName'
                 control={control}
@@ -75,21 +71,19 @@ const RegisterStep = ({
             />
             <Button
                 type='submit'
-                isLoading={isLoading}
-                variant='solid'
-                intent='brand'
-                block>
+                isPending={isLoading}
+                variant='primary'
+                fullWidth>
                 Create Account
             </Button>
             <Button
                 variant='ghost'
-                intent='neutral'
-                block
-                leftIcon={<ArrowLeft size={16} />}
-                onClick={onBack}>
+                fullWidth
+                onPress={onBack}>
+                <ArrowLeft size={16} />
                 Back
             </Button>
-        </Stack>
+        </form>
     </div>
 );
 

@@ -1,8 +1,7 @@
-import { Modal, closeModal } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import { useState, useEffect, useRef } from 'react';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import type { KeyboardEvent } from 'react';
-import './EditMessageModal.css';
 
 interface EditMessageModalProps {
     messageId: string | null;
@@ -13,6 +12,15 @@ interface EditMessageModalProps {
 
 export const EDIT_MESSAGE_MODAL_ID = 'edit-message-modal';
 const EDIT_MESSAGE_TEXTAREA_ID = 'edit-message-modal-textarea';
+
+/*
+ * A plain `<textarea>` rather than HeroUI's `TextField` + `TextArea`: the field is
+ * unlabelled on purpose (the modal's own title is the label, via the sr-only one
+ * below), it is focused and selected imperatively through a ref on open, and
+ * Enter-to-save / Escape-to-cancel are its own key handling. `[font-family:inherit]`
+ * is what keeps a textarea from falling back to the UA's monospace stack.
+ */
+const TEXTAREA_CLASS_NAMES = 'w-full p-3 rounded-lg border border-border bg-surface-tertiary text-foreground text-sm [font-family:inherit] resize-y min-h-[80px] focus:outline-none focus:border-accent';
 
 const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMessageModalProps) => {
     const [content, setContent] = useState(initialContent);
@@ -79,14 +87,14 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
                 />
             }
         >
-            <div className='edit-message-modal-content'>
+            <div>
                 <label htmlFor={EDIT_MESSAGE_TEXTAREA_ID} className='sr-only'>
                     Edit message
                 </label>
                 <textarea
                     ref={textareaRef}
                     id={EDIT_MESSAGE_TEXTAREA_ID}
-                    className='edit-message-textarea w-full rounded-lg'
+                    className={TEXTAREA_CLASS_NAMES}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}

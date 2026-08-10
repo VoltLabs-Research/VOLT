@@ -1,4 +1,4 @@
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import WhiteboardEditorSkeleton from './WhiteboardEditorSkeleton';
 import useWhiteboardCanvasBridge from '@/modules/whiteboards/hooks/use-whiteboard-canvas-bridge';
 import useWhiteboardImageInsertion from '@/modules/whiteboards/hooks/use-whiteboard-image-insertion';
@@ -13,9 +13,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { RenderTopRightUI } from '@/modules/whiteboards/contracts/excalidraw';
 import { ImagePlus } from 'lucide-react';
 import '@excalidraw/excalidraw/index.css';
-import './WhiteboardEditorPage.css';
 
 const AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS = 250;
+
+/**
+ * The Suspense fallback for the AI panel, which mounts inside Excalidraw's own
+ * toolbar and so has to look like part of it rather than like a HeroUI control.
+ *
+ * `border` and `bg-surface-secondary` are restored deliberately: the stylesheet asked
+ * for `var(--color-border-primary)` and `var(--color-surface-secondary)`, neither of
+ * which was ever defined, and an invalid `border:` shorthand removes the border
+ * outright — so this button has been rendering edgeless and transparent.
+ */
+const AI_LOADING_BUTTON_CLASS_NAMES = 'rounded-full border border-border bg-surface-secondary px-3.5 py-2 text-foreground [font:inherit] cursor-pointer';
 
 const WhiteboardCanvas = lazy(
     () => import('./WhiteboardCanvas')
@@ -85,7 +95,7 @@ const WhiteboardEditorPage = () => {
                 <button
                     type='button'
                     disabled
-                    className='whiteboard-ai-loading-button'
+                    className={AI_LOADING_BUTTON_CLASS_NAMES}
                     aria-label='Loading the Volt AI assistant'
                 >
                     Loading AI...
@@ -100,31 +110,29 @@ const WhiteboardEditorPage = () => {
         const collaboratorsLabel = users.length === 1 ? '1 collaborator online' : `${users.length} collaborators online`;
         const insertImageControl = isMobile ? (
             <Button
-                variant='soft'
-                intent='neutral'
+                variant='secondary'
                 size='sm'
-                iconOnly
+                isIconOnly
                 aria-label='Insert image'
-                onClick={handleOpenImagePicker}
+                onPress={handleOpenImagePicker}
             >
                 <ImagePlus size={16} />
             </Button>
         ) : (
             <Button
-                variant='soft'
-                intent='neutral'
+                variant='secondary'
                 size='sm'
-                leftIcon={<ImagePlus size={16} />}
-                onClick={handleOpenImagePicker}
+                onPress={handleOpenImagePicker}
             >
+                <ImagePlus size={16} />
                 Insert image
             </Button>
         );
 
         return (
-            <div className='flex flex-row items-center gap-2 whiteboard-presence-indicator'>
+            <div className='flex flex-row items-center gap-2 px-2 text-xs text-muted'>
                 {users.length > 0 && (
-                    <div className='whiteboard-presence-count' aria-label={collaboratorsLabel}>
+                    <div className='max-w-[16rem] truncate' aria-label={collaboratorsLabel}>
                         {collaboratorsLabel}
                     </div>
                 )}
@@ -139,8 +147,8 @@ const WhiteboardEditorPage = () => {
     }
 
     return (
-        <div className='whiteboard-editor-root'>
-            <span className='whiteboard-presence-live-region' aria-live='polite' aria-atomic='true'>
+        <div className='box-border w-full h-full p-2'>
+            <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {announcement?.message ?? ''}
             </span>
             <input
@@ -148,7 +156,7 @@ const WhiteboardEditorPage = () => {
                 type='file'
                 accept='image/*'
                 multiple
-                className='whiteboard-image-input'
+                className='sr-only'
                 onChange={handleImagePickerChange}
             />
             {isLoading ? (

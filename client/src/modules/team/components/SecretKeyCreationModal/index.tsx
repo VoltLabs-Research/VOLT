@@ -1,4 +1,5 @@
-import { Modal, resetModal, Callout } from '@voltstack/bravais';
+import { Alert } from '@heroui/react';
+import { Modal, resetModal } from '@/shared/ui/modal';
 import { runAction } from '@/shared/ui/actions/run-action';
 import CopyableField from '@/shared/ui/components/CopyableField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -130,13 +131,22 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     <div className='flex flex-col gap-6'>
                     {generatedKey ? (
                         <>
-                            <Callout
-                                tone='warning'
-                                role='alert'
-                                ariaLive='polite'
-                                title='Copy this key now'
-                                message="This is the only time you'll see this key. Copy and store it securely now — you won't be able to view it again after closing."
-                            />
+                            {/*
+                              * bravais's stacked `Callout` (the layout a `title`
+                              * selected) silently IGNORED `message`, so this warning
+                              * rendered as a bare heading. HeroUI's `Alert` has one
+                              * layout, so the sentence the author wrote is now visible;
+                              * `role`/`aria-live` were explicit on the Callout and are
+                              * restated because `Alert` sets neither.
+                              */}
+                            <Alert status='warning' role='alert' aria-live='polite'>
+                                <Alert.Content>
+                                    <Alert.Title>Copy this key now</Alert.Title>
+                                    <Alert.Description>
+                                        This is the only time you&apos;ll see this key. Copy and store it securely now — you won&apos;t be able to view it again after closing.
+                                    </Alert.Description>
+                                </Alert.Content>
+                            </Alert>
                             <CopyableField
                                 value={generatedKey}
                                 successMessage='Secret key copied to clipboard'

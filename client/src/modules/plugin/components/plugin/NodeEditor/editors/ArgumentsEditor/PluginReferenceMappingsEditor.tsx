@@ -1,9 +1,15 @@
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ArgumentField from './ArgumentField';
 import { ANY_PLUGIN_KEY_OPTION, ANY_PLUGIN_OPTION } from './argument-definition-constants';
+import { cn } from '@heroui/react';
 import { isRecord } from '@/shared/utils/type-guards';
-import { DashedActionBox } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import DashedActionBox from '@/modules/plugin/components/plugin/DashedActionBox';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import {
+    ARGUMENT_ROW_DELETE_CLASS,
+    ARGUMENT_ROW_NESTED_CLASS,
+    ARGUMENT_ROW_SUBBLOCK_CLASS
+} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { Plus, Trash2 } from 'lucide-react';
 import type { IPluginReferenceArgumentMapping } from '@volt/contracts/modules/plugin/workflow';
 
@@ -114,13 +120,21 @@ const PluginReferenceMappingsEditor = ({
                     }, ...targetArgumentOptions];
                 const hasTargetOptions = targetOptions.length > 0;
 
+                /*
+                 * `group` is what `.argument-row:hover .argument-row-delete` needed: the
+                 * trash button is revealed from its own block, which is the nearest thing
+                 * to a row here.
+                 */
                 return (
-                    <div key={`${fieldPrefix}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
-                        <div className='flex flex-row items-center justify-between gap-2 mb-2'>
+                    <div
+                        key={`${fieldPrefix}-mapping-${mappingIndex}`}
+                        className={cn('group', ARGUMENT_ROW_SUBBLOCK_CLASS, ARGUMENT_ROW_NESTED_CLASS)}
+                    >
+                        <div className='mb-2 flex flex-row items-center justify-between gap-2'>
                             <span className='text-xs text-muted'>Mapping {mappingIndex + 1}</span>
                             <button
                                 type='button'
-                                className='argument-row-delete'
+                                className={ARGUMENT_ROW_DELETE_CLASS}
                                 onClick={() => removeMapping(mappingIndex)}
                                 aria-label={`Delete mapping ${mappingIndex + 1}`}
                                 title='Delete mapping'
@@ -176,9 +190,8 @@ const PluginReferenceMappingsEditor = ({
             <DashedActionBox
                 icon={<Plus size={14} aria-hidden='true' />}
                 label='Add Mapping'
-                size='sm'
-                block
-                onClick={addMapping}
+                isBlock
+                onPress={addMapping}
             />
         </div>
     );

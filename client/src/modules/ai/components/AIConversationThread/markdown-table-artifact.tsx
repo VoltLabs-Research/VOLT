@@ -1,6 +1,12 @@
 import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
 import { parseTableFromChildren } from '@/modules/ai/utils/message-content';
-import { Button } from '@voltstack/bravais';
+import {
+    MD_TABLE,
+    MD_TABLE_OPEN_BUTTON,
+    MD_TABLE_SCROLL,
+    MD_TABLE_WRAPPER
+} from '@/modules/ai/components/AIConversationThread/thread-styles';
+import { Button, cn } from '@heroui/react';
 import { Expand } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { ComponentPropsWithoutRef } from 'react';
@@ -18,7 +24,7 @@ export const createTableArtifactComponents = (
     let tableIndex = 0;
 
     return {
-        table: ({ children, ...props }: MarkdownTableProps) => {
+        table: ({ children, className, ...props }: MarkdownTableProps) => {
             const parsed = children ? parseTableFromChildren(children) : null;
             const artifactId = `md-table:${messageId}:${tableIndex}`;
             tableIndex += 1;
@@ -39,23 +45,20 @@ export const createTableArtifactComponents = (
             };
 
             return (
-                <div className='ai-md-table-wrapper'>
-                    <div className='ai-md-table-scroll'>
-                        <table {...props}>{children}</table>
+                <div className={MD_TABLE_WRAPPER}>
+                    <div className={MD_TABLE_SCROLL}>
+                        <table {...props} className={cn(MD_TABLE, className)}>{children}</table>
                     </div>
                     {parsed && parsed.rows.length > 0 && (
                         <Button
                             type='button'
                             size='sm'
-                            variant='soft'
-                            intent='brand'
-                            shape='square'
-                            block
-                            align='start'
-                            className='ai-open-spreadsheet-btn'
-                            leftIcon={<Expand size={13} />}
-                            onClick={handleOpen}
+                            variant='secondary'
+                            fullWidth
+                            className={MD_TABLE_OPEN_BUTTON}
+                            onPress={handleOpen}
                         >
+                            <Expand size={13} />
                             Open spreadsheet
                         </Button>
                     )}

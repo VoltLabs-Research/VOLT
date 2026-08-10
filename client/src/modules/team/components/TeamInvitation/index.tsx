@@ -1,5 +1,15 @@
-import { Button, Tag } from '@voltstack/bravais';
-import { TeamInvitationCard, TeamInvitationStateCard } from '@/modules/team/components/TeamInvitationShared';
+import { Button, Chip, Spinner, cn } from '@heroui/react';
+import {
+    TEAM_INVITATION_ACTIONS_CLASS,
+    TEAM_INVITATION_DETAILS_CLASS,
+    TEAM_INVITATION_DETAIL_CLASS,
+    TEAM_INVITATION_DETAIL_LABEL_CLASS,
+    TEAM_INVITATION_DETAIL_VALUE_CLASS,
+    TEAM_INVITATION_ICON_ERROR_CLASS,
+    TEAM_INVITATION_ICON_WARNING_CLASS,
+    TeamInvitationCard,
+    TeamInvitationStateCard
+} from '@/modules/team/components/TeamInvitationShared';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {
     getOnboardingRedirectPath,
@@ -14,7 +24,6 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import './TeamInvitation.css';
 
 const ACCEPT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Accepting invitation...',
@@ -95,7 +104,7 @@ export default function TeamInvitationTemplate() {
     const renderUnavailableCard = (icon: 'error' | 'warning', title: string, description: string) => (
         <TeamInvitationStateCard
             icon={(
-                <div className={icon === 'error' ? 'team-invitation-icon-error' : 'team-invitation-icon-warning'}>
+                <div className={icon === 'error' ? TEAM_INVITATION_ICON_ERROR_CLASS : TEAM_INVITATION_ICON_WARNING_CLASS}>
                     {icon === 'error' ? <XCircle size={48} /> : <Clock size={48} />}
                 </div>
             )}
@@ -103,9 +112,8 @@ export default function TeamInvitationTemplate() {
             description={description}
             action={(
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    onClick={() => navigate(getPostAuthRedirectPath(nextDestination))}
+                    variant='primary'
+                    onPress={() => navigate(getPostAuthRedirectPath(nextDestination))}
                 >
                     Back to Dashboard
                 </Button>
@@ -141,9 +149,10 @@ export default function TeamInvitationTemplate() {
 
     return (
         <TeamInvitationCard>
-            <Tag tone='success' variant='soft' size='md' leftIcon={<CheckCircle size={20} />}>
-                You've been invited!
-            </Tag>
+            <Chip color='success' variant='soft' size='md'>
+                <CheckCircle size={20} aria-hidden='true' />
+                <Chip.Label>You&apos;ve been invited!</Chip.Label>
+            </Chip>
 
             <h3 className='text-2xl font-semibold text-foreground'>{invitation.team.name}</h3>
 
@@ -155,24 +164,24 @@ export default function TeamInvitationTemplate() {
                 Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
             </p>
 
-            <div className='flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl team-invitation-details'>
-                <div className='flex flex-col text-center team-invitation-detail'>
-                    <span className='team-invitation-detail-label'>Email</span>
-                    <p className='flex flex-row items-center gap-1 team-invitation-detail-value'>
+            <div className={cn('flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl', TEAM_INVITATION_DETAILS_CLASS)}>
+                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
+                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Email</span>
+                    <p className={cn('flex flex-row items-center gap-1', TEAM_INVITATION_DETAIL_VALUE_CLASS)}>
                         <Mail size={14} />
                         {invitation.email}
                     </p>
                 </div>
-                <div className='flex flex-col text-center team-invitation-detail'>
-                    <span className='team-invitation-detail-label'>Invited</span>
-                    <p className='flex flex-row items-center gap-1 team-invitation-detail-value'>
+                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
+                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Invited</span>
+                    <p className={cn('flex flex-row items-center gap-1', TEAM_INVITATION_DETAIL_VALUE_CLASS)}>
                         <Clock size={14} />
                         {new Date(invitation.createdAt).toLocaleDateString()}
                     </p>
                 </div>
-                <div className='flex flex-col text-center team-invitation-detail'>
-                    <span className='team-invitation-detail-label'>Expires</span>
-                    <p className='team-invitation-detail-value'>
+                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
+                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Expires</span>
+                    <p className={TEAM_INVITATION_DETAIL_VALUE_CLASS}>
                         {expiresAt.toLocaleString(undefined, {
                             month: 'short',
                             day: 'numeric',
@@ -182,34 +191,35 @@ export default function TeamInvitationTemplate() {
                 </div>
             </div>
 
-            <div className='flex flex-row items-center gap-4 w-full team-invitation-actions'>
+            <div className={cn('flex flex-row items-center gap-4 w-full', TEAM_INVITATION_ACTIONS_CLASS)}>
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    block
-                    leftIcon={<CheckCircle size={20} />}
-                    onClick={() => respondToInvitation('accept')}
-                    disabled={actionLoading}
-                    isLoading={actionLoading}
+                    variant='primary'
+                    fullWidth
+                    onPress={() => respondToInvitation('accept')}
+                    isDisabled={actionLoading}
+                    isPending={actionLoading}
                 >
+                    {actionLoading
+                        ? <Spinner size='sm' color='current' />
+                        : <CheckCircle size={20} aria-hidden='true' />}
                     Accept Invitation
                 </Button>
                 <Button
                     variant='outline'
-                    intent='neutral'
-                    block
-                    leftIcon={<XCircle size={20} />}
-                    onClick={() => respondToInvitation('reject')}
-                    disabled={actionLoading}
+                    fullWidth
+                    onPress={() => respondToInvitation('reject')}
+                    isDisabled={actionLoading}
                 >
+                    <XCircle size={20} aria-hidden='true' />
                     Reject Invitation
                 </Button>
             </div>
 
             {error && (
-                <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
-                    {error}
-                </Tag>
+                <Chip color='danger' variant='soft' size='md'>
+                    <AlertCircle size={16} aria-hidden='true' />
+                    <Chip.Label>{error}</Chip.Label>
+                </Chip>
             )}
         </TeamInvitationCard>
     );

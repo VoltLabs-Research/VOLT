@@ -3,7 +3,13 @@ import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 interface ClusterModalActionFooterProps {
     cancelLabel?: string;
     confirmLabel: string;
-    confirmIntent?: 'danger';
+    /**
+     * Was `confirmIntent`. HeroUI crosses no intent axis — bravais's
+     * `intent='danger'` is HeroUI's `variant='danger'` — and `ModalFooterActions`
+     * now types its actions on HeroUI's own `ButtonProps`, so the prop is named
+     * after what it sets. No caller passes it, so the rename costs nothing.
+     */
+    confirmVariant?: 'danger';
     onCancel: () => void;
     onConfirm: () => void;
     isSubmitting?: boolean;
@@ -13,7 +19,7 @@ interface ClusterModalActionFooterProps {
 const ClusterModalActionFooter = ({
     cancelLabel = 'Cancel',
     confirmLabel,
-    confirmIntent,
+    confirmVariant,
     onCancel,
     onConfirm,
     isSubmitting = false,
@@ -27,7 +33,7 @@ const ClusterModalActionFooter = ({
         }}
         primary={{
             label: confirmLabel,
-            variant: confirmIntent,
+            variant: confirmVariant,
             onPress: onConfirm,
             isPending: isSubmitting,
             isDisabled: confirmDisabled

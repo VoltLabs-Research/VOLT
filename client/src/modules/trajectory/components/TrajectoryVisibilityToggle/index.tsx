@@ -1,4 +1,4 @@
-import { LiquidToggle } from '@voltstack/bravais';
+import { Switch } from '@heroui/react';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -78,13 +78,19 @@ const TrajectoryVisibilityToggle = ({
                     Anyone with the link can view this trajectory.
                 </p>
             </div>
-            <LiquidToggle
-                pressed={effectivePublic}
+            <Switch
+                isSelected={effectivePublic}
                 onChange={handleChange}
-                disabled={disabled || updateMutation.isPending}
+                isDisabled={disabled || updateMutation.isPending}
                 aria-labelledby={labelId}
                 aria-describedby={descriptionId}
-            />
+            >
+                <Switch.Content>
+                    <Switch.Control>
+                        <Switch.Thumb />
+                    </Switch.Control>
+                </Switch.Content>
+            </Switch>
         </div>
     );
 };

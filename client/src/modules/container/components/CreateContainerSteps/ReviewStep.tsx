@@ -1,5 +1,6 @@
 import ProcessingLoader from '@/shared/ui/components/ProcessingLoader';
-import { Button, KeyValueList, KeyValueRow } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { ContainerKeyValueList, ContainerKeyValueRow } from '../ContainerKeyValueList';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -24,6 +25,17 @@ interface ReviewStepProps {
     onBack: () => void;
     onCreate: () => void;
 }
+
+/**
+ * From the deleted `CreateContainer.css`. `.create-container-review-card`'s fill was
+ * `color-mix(in srgb, var(--color-surface-1) 94%, var(--color-surface-2))` — a
+ * barely-there step between the two card surfaces, which under HeroUI's names is
+ * `--surface-secondary` mixed with `--surface-tertiary`. `.create-container-step-actions`
+ * keeps its top rule and its 768px reversed-column arm.
+ */
+const REVIEW_CARD_CLASS_NAMES = 'overflow-hidden rounded-xl border border-border bg-[color-mix(in_srgb,var(--surface-secondary)_94%,var(--surface-tertiary))] p-4';
+const STEP_ACTIONS_CLASS_NAMES = 'mt-12 flex flex-row items-center justify-end gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full';
+const STEP_COPY_CLASS_NAMES = 'max-w-[46rem] text-base text-muted';
 
 const formatElapsed = (totalSeconds: number): string => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -82,29 +94,27 @@ const ReviewStep = ({
         portsDisplay = config.ports.map((p) => `${p.private}:${p.public === undefined ? 'Auto' : p.public}`).join(', ');
     }
 
-    const leftIcon = !isLoading ? <BoxIcon size={18} /> : undefined;
-
     return (
-        <div className='flex flex-col gap-8 create-container-step'>
+        <div className='flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
-                <h3 className='text-xl font-semibold text-foreground'>Review & Deploy</h3>
-                <p className='text-base text-muted create-container-step-copy'>Confirm the deployment details before creating the container.</p>
+                <h3 className='text-xl font-semibold text-foreground'>Review &amp; Deploy</h3>
+                <p className={STEP_COPY_CLASS_NAMES}>Confirm the deployment details before creating the container.</p>
             </div>
 
-            <div className='p-4 rounded-xl overflow-hidden create-container-review-card'>
-                <KeyValueList>
-                    <KeyValueRow label='Name' value={config.name} />
-                    <KeyValueRow label='Team' value={selectedTeamName} />
-                    <KeyValueRow label='Cluster' value={selectedClusterName} />
-                    <KeyValueRow label='Image' value={selectedImage} />
-                    <KeyValueRow label='Image source' value={imageSource} />
-                    <KeyValueRow label='CPU' value={`${config.cpus} vCPU`} />
-                    <KeyValueRow label='Memory' value={`${config.memory} MB`} />
-                    <KeyValueRow label='Ports' value={portsDisplay} />
-                    <KeyValueRow label='Environment' value={environmentDisplay} />
-                    <KeyValueRow label='Docker access' value={dockerAccessLabel} />
-                    {draftLastSavedAt ? <KeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
-                </KeyValueList>
+            <div className={REVIEW_CARD_CLASS_NAMES}>
+                <ContainerKeyValueList>
+                    <ContainerKeyValueRow label='Name' value={config.name} />
+                    <ContainerKeyValueRow label='Team' value={selectedTeamName} />
+                    <ContainerKeyValueRow label='Cluster' value={selectedClusterName} />
+                    <ContainerKeyValueRow label='Image' value={selectedImage} />
+                    <ContainerKeyValueRow label='Image source' value={imageSource} />
+                    <ContainerKeyValueRow label='CPU' value={`${config.cpus} vCPU`} />
+                    <ContainerKeyValueRow label='Memory' value={`${config.memory} MB`} />
+                    <ContainerKeyValueRow label='Ports' value={portsDisplay} />
+                    <ContainerKeyValueRow label='Environment' value={environmentDisplay} />
+                    <ContainerKeyValueRow label='Docker access' value={dockerAccessLabel} />
+                    {draftLastSavedAt ? <ContainerKeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
+                </ContainerKeyValueList>
             </div>
 
             <ProcessingLoader
@@ -121,15 +131,14 @@ const ReviewStep = ({
                 </p>
             )}
 
-            <div className='flex flex-row items-center justify-end gap-4 mt-12 create-container-step-actions'>
-                <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
+            <div className={STEP_ACTIONS_CLASS_NAMES}>
+                <Button variant='outline' onPress={onBack}>Back</Button>
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    onClick={onCreate}
-                    isLoading={isLoading}
-                    leftIcon={leftIcon}
+                    variant='primary'
+                    onPress={onCreate}
+                    isPending={isLoading}
                 >
+                    {!isLoading && <BoxIcon size={18} />}
                     {!isLoading && 'Deploy container'}
                 </Button>
             </div>

@@ -1,12 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
-import { IconButton } from '@voltstack/bravais';
+import { Button, cn } from '@heroui/react';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import './InlineSubListingView.css';
 
 export interface InlineSubListingViewProps {
     analysisId: string;
@@ -78,17 +77,18 @@ const InlineSubListingView = ({
     }, [error]);
 
     return (
-        <div className='plugin-inline-sub-listing'>
-            <div className='plugin-inline-sub-listing__header'>
-                <IconButton
+        <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+            <div className='flex shrink-0 flex-row items-center gap-2 border-b border-border px-2 py-1'>
+                <Button
+                    isIconOnly
                     size='sm'
                     variant='ghost'
-                    onClick={onClose}
+                    onPress={onClose}
                     aria-label='Back to listing'
                 >
-                    <ArrowLeft size={14} />
-                </IconButton>
-                <div className='plugin-inline-sub-listing__tabs' role='tablist'>
+                    <ArrowLeft size={14} aria-hidden='true' />
+                </Button>
+                <div className='flex min-w-0 flex-1 flex-row flex-nowrap gap-[0.2rem] overflow-x-auto' role='tablist'>
                     {subListingNames.map((name) => {
                         const isActive = name === activeName;
                         return (
@@ -97,7 +97,10 @@ const InlineSubListingView = ({
                                 type='button'
                                 role='tab'
                                 aria-selected={isActive}
-                                className={`plugin-inline-sub-listing__tab${isActive ? ' plugin-inline-sub-listing__tab--active' : ''}`}
+                                className={cn(
+                                    'cursor-pointer whitespace-nowrap rounded-[4px] border-0 bg-transparent px-[0.55rem] py-[0.2rem] text-[0.6875rem] font-medium transition-colors duration-[120ms] ease-out hover:bg-surface-hover hover:text-foreground',
+                                    isActive ? 'bg-accent/14 text-foreground' : 'text-muted'
+                                )}
                                 onClick={() => onActiveNameChange(name)}
                             >
                                 {formatSnakeCaseToTitle(name)}
@@ -106,7 +109,7 @@ const InlineSubListingView = ({
                     })}
                 </div>
             </div>
-            <div className='plugin-inline-sub-listing__body'>
+            <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                 <PluginCompactTable
                     columns={columns}
                     data={rows}

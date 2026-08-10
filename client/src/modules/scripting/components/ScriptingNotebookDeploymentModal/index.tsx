@@ -1,6 +1,6 @@
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
-import { Modal, closeModal } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { getNotebookTeamClusterId } from '@/modules/scripting/utils/notebooks';
 import { useCallback, useEffect, useState } from 'react';

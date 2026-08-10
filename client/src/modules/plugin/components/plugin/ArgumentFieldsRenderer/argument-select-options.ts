@@ -1,5 +1,5 @@
 import { isRecord } from '@/shared/utils/type-guards';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type {
     IArgumentDefinition,

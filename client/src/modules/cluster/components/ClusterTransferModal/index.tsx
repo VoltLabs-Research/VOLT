@@ -1,7 +1,9 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useTeamClusterTransferJobsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { Modal, closeModal, StatusBadge, Select } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
+import ClusterOptionSelect from '@/modules/cluster/components/shared/ClusterOptionSelect';
+import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
 import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-timestamp';
 import {
     getClusterTransferJobStateBadgeVariant,
@@ -125,7 +127,8 @@ const ClusterTransferModal = ({
                     </p>
                 </div>
                 {destinationOptions.length > 0 ? (
-                    <Select
+                    <ClusterOptionSelect
+                        ariaLabel='Destination cluster'
                         options={destinationOptions}
                         value={destinationClusterId}
                         onChange={(value) => {
@@ -135,7 +138,7 @@ const ClusterTransferModal = ({
                             }
                         }}
                         placeholder='Select destination cluster...'
-                        disabled={isSubmitting}
+                        isDisabled={isSubmitting}
                     />
                 ) : (
                     <p className='text-sm text-warning'>
@@ -161,9 +164,9 @@ const ClusterTransferModal = ({
                         transferJobs.map((job) => (
                             <div className='flex flex-col gap-2 p-4 rounded-xl bg-background' key={job._id}>
                                 <div className='flex flex-row items-center flex-wrap gap-2'>
-                                    <StatusBadge variant={getClusterTransferJobStateBadgeVariant(job.state)} size='compact'>
+                                    <ClusterStatusBadge tone={getClusterTransferJobStateBadgeVariant(job.state)}>
                                         {getClusterTransferJobStateLabel(job.state)}
-                                    </StatusBadge>
+                                    </ClusterStatusBadge>
                                     <p className='text-xs text-muted'>
                                         {getClusterTransferScopeLabel(job.scopeType)} {job.scopeId}
                                     </p>

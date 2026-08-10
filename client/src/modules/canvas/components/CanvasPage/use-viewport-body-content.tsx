@@ -1,7 +1,7 @@
 import { cn } from '@heroui/react';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { EmptyState } from '@voltstack/bravais';
+import { EmptyState, Typography } from '@heroui/react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,8 +29,19 @@ const centeredViewportState = (children: ReactNode, className?: string): ReactNo
     </div>
 );
 
+/**
+ * bravais's `EmptyState` took `title` / `description` props; HeroUI's is a single
+ * polymorphic part whose children you compose. `level={3}` keeps bravais's default
+ * heading level.
+ */
 const emptyViewportState = (title: string, description: string, className?: string): ReactNode => (
-    centeredViewportState(<EmptyState title={title} description={description} />, className)
+    centeredViewportState(
+        <EmptyState>
+            <Typography.Heading level={3}>{title}</Typography.Heading>
+            <Typography.Paragraph size='sm'>{description}</Typography.Paragraph>
+        </EmptyState>,
+        className
+    )
 );
 
 /**
@@ -97,14 +108,14 @@ const useViewportBodyContent = ({
                         retryLabel='Back to trajectories'
                         onRetry={backToTrajectories}
                     />,
-                    'canvas-viewport-state'
+                    'z-[1] p-6'
                 );
             }
 
             return emptyViewportState(
                 'No timesteps yet',
                 'This trajectory finished uploading but has no timesteps processed yet. Once ingestion completes they will appear here automatically.',
-                'canvas-viewport-state'
+                'z-[1] p-6'
             );
         }
 

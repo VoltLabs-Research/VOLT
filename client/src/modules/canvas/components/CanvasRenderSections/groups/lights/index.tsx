@@ -1,4 +1,4 @@
-import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, positionRows, vec3Rows, colorExtras, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
@@ -155,7 +155,7 @@ const useLightsGroup = (): RenderGroup => {
                     ...positionRows(() => st.hemisphere.position, (i: number, v: number) => setVec3<HemiLight>(setHemisphere, st.hemisphere.position, i, v))
                 ],
                 extras: (
-                    <div className="canvas-render-grid">
+                    <div className={RENDER_GRID_CLASS}>
                         {colorExtras(
                             {
                                 key: 'hSky',

@@ -1,6 +1,13 @@
-import { Button, IconButton, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import {
+    Button,
+    DropdownItem,
+    DropdownMenu,
+    DropdownPopover,
+    DropdownRoot,
+    DropdownTrigger,
+    Spinner
+} from '@heroui/react';
 import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
-import './InviteCodeSection.css';
 
 interface InviteCodeSectionProps {
     inviteCode: string | null;
@@ -11,6 +18,16 @@ interface InviteCodeSectionProps {
     onDelete: () => Promise<void>;
     onCopy: () => Promise<void>;
 }
+
+/**
+ * bravais's `IconButton variant='ghost' size='sm'` as utilities, because
+ * `DropdownTrigger` *is* the React Aria button and a HeroUI `Button` cannot be nested
+ * inside it (`DocumentListingHeader` reaches the same conclusion). The metrics are
+ * bravais's own: `.volt-icon-button`'s `min-width`/`min-height` of 2.75rem beat every
+ * per-size width, `--radius-sm` is 8px (`rounded-lg`), `--color-text-secondary` is
+ * `text-muted` and `--hover-bg` is `bg-surface-hover`.
+ */
+const GHOST_ICON_BUTTON = 'flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
 
 export const InviteCodeSection = ({
     inviteCode,
@@ -28,74 +45,69 @@ export const InviteCodeSection = ({
     }
 
     return (
-        <div className='flex flex-col gap-3 p-6 invite-code-section'>
+        <div className='flex flex-col gap-3 p-6'>
             <p className='text-sm font-medium text-muted'>
                 Invite Code
             </p>
 
             {inviteCode ? (
-                <div className='flex flex-row items-center gap-2 invite-code-display'>
-                    <div className='rounded-lg flex-1 invite-code-badge text-xl font-semibold font-mono'>
+                <div className='flex flex-row items-center gap-2'>
+                    <div className='rounded-lg flex-1 px-3 py-2 bg-surface-tertiary border border-border tracking-[0.15em] text-xl font-semibold font-mono'>
                         {inviteCode}
                     </div>
-                    <Popover
-                        id='invite-code-actions-menu'
-                        placement='bottom-end'
-                        noPadding
-                        trigger={(
-                            <IconButton
-                                variant='ghost'
-                                size='sm'
-                                className='invite-code-actions-trigger'
-                                title='Invite code actions'
-                                aria-label='Open invite code actions'
-                                disabled={isLoading}
-                            >
-                                <EllipsisVertical size={16} />
-                            </IconButton>
-                        )}
-                    >
-                        {(close) => (
-                            <PopoverMenu>
-                                <PopoverMenuItem
-                                    icon={<Copy size={14} />}
-                                    onClick={async () => {
-                                        await onCopy();
-                                        close();
-                                    }}
-                                >
+                    {/*
+                      * bravais's Popover + PopoverMenu + PopoverMenuItem — an action
+                      * menu of `role='menu'` items with a `close` render prop. React
+                      * Aria closes the menu itself when an item is actioned, so the
+                      * explicit `close()` calls are gone rather than dropped.
+                      */}
+                    <DropdownRoot>
+                        <DropdownTrigger
+                            className={GHOST_ICON_BUTTON}
+                            aria-label='Open invite code actions'
+                            isDisabled={isLoading}
+                        >
+                            {/* React Aria's Button drops `title`, so the native tooltip hangs off the glyph. */}
+                            <span className='flex items-center justify-center' title='Invite code actions'>
+                                <EllipsisVertical size={16} aria-hidden='true' />
+                            </span>
+                        </DropdownTrigger>
+                        <DropdownPopover placement='bottom end'>
+                            <DropdownMenu aria-label='Invite code actions'>
+                                <DropdownItem id='copy' textValue='Copy' onAction={onCopy}>
+                                    <Copy size={14} aria-hidden='true' />
                                     Copy
-                                </PopoverMenuItem>
+                                </DropdownItem>
                                 {canManageCode && (
-                                    <>
-                                        <PopoverMenuItem
-                                            icon={<RefreshCw size={14} />}
-                                            onClick={() => {
-                                                onGenerate();
-                                                close();
-                                            }}
-                                            disabled={isLoading}
-                                            isLoading={isGenerating}
-                                        >
-                                            Regenerate
-                                        </PopoverMenuItem>
-                                        <PopoverMenuItem
-                                            icon={<Trash2 size={14} />}
-                                            onClick={() => {
-                                                onDelete();
-                                                close();
-                                            }}
-                                            variant='danger'
-                                            disabled={isLoading}
-                                            isLoading={isDeleting}
-                                        >
-                                            Delete
-                                        </PopoverMenuItem>
-                                    </>
+                                    <DropdownItem
+                                        id='regenerate'
+                                        textValue='Regenerate'
+                                        isDisabled={isLoading}
+                                        onAction={onGenerate}
+                                    >
+                                        {isGenerating
+                                            ? <Spinner size='sm' color='current' />
+                                            : <RefreshCw size={14} aria-hidden='true' />}
+                                        Regenerate
+                                    </DropdownItem>
                                 )}
-                            </PopoverMenu>
-                        )}
-                    </Popover>
+                                {canManageCode && (
+                                    <DropdownItem
+                                        id='delete'
+                                        textValue='Delete'
+                                        variant='danger'
+                                        isDisabled={isLoading}
+                                        onAction={onDelete}
+                                    >
+                                        {isDeleting
+                                            ? <Spinner size='sm' color='current' />
+                                            : <Trash2 size={14} aria-hidden='true' />}
+                                        Delete
+                                    </DropdownItem>
+                                )}
+                            </DropdownMenu>
+                        </DropdownPopover>
+                    </DropdownRoot>
                 </div>
             ) : (
                 canManageCode && (
@@ -105,13 +117,14 @@ export const InviteCodeSection = ({
                         </p>
                         <Button
                             variant='outline'
-                            intent='neutral'
                             size='sm'
-                            leftIcon={<RefreshCw size={14} />}
-                            onClick={onGenerate}
-                            disabled={isLoading}
-                            isLoading={isGenerating}
+                            onPress={onGenerate}
+                            isDisabled={isLoading}
+                            isPending={isGenerating}
                         >
+                            {isGenerating
+                                ? <Spinner size='sm' color='current' />
+                                : <RefreshCw size={14} aria-hidden='true' />}
                             Generate Invite Code
                         </Button>
                     </div>

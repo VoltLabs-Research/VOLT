@@ -1,4 +1,14 @@
-import { Tag } from '@voltstack/bravais';
+import { Chip, cn } from '@heroui/react';
+import {
+    EXEC_LOG_CHUNK_CLASS,
+    EXEC_LOG_CLASS,
+    EXEC_LOG_CONTENT_CLASS,
+    EXEC_LOG_EMPTY_CLASS,
+    EXEC_LOG_EXIT_CLASS,
+    EXEC_LOG_HEADER_CLASS,
+    EXEC_LOG_STDERR_CLASS,
+    EXEC_LOG_STDOUT_CLASS
+} from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { Terminal } from 'lucide-react';
 import type { DebugExecutionLogSegment } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { ReactNode } from 'react';
@@ -35,26 +45,27 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
     const stderr = renderOutputStream(output?.stderr);
 
     return (
-        <div className='absolute overflow-hidden z-[5] center-x workflow-node-exec-log nowheel' onClick={(event) => event.stopPropagation()}>
-            <div className='flex flex-row items-center gap-1 text-muted workflow-node-exec-log-header'>
-                <Terminal size={10} />
+        <div className={cn(EXEC_LOG_CLASS, 'nowheel')} onClick={(event) => event.stopPropagation()}>
+            <div className={EXEC_LOG_HEADER_CLASS}>
+                <Terminal size={10} aria-hidden='true' />
                 <p className='text-xs font-semibold'>Execution Log</p>
                 {exitCode !== undefined && (
-                    <Tag
-                        size='xs'
-                        tone={exitCode === 0 ? 'success' : 'danger'}
-                        className='font-mono workflow-node-exec-log-exit'
+                    <Chip
+                        size='sm'
+                        variant='soft'
+                        color={exitCode === 0 ? 'success' : 'danger'}
+                        className={EXEC_LOG_EXIT_CLASS}
                     >
                         exit {exitCode}
-                    </Tag>
+                    </Chip>
                 )}
             </div>
-            <pre className='m-0 p-2 overflow-y-auto workflow-node-exec-log-content'>
+            <pre className={EXEC_LOG_CONTENT_CLASS}>
                 {logSegments.length > 0 ? (
                     logSegments.map((segment, index) => (
                         <span
                             key={`${segment.occurredAt}-${index}`}
-                            className={`workflow-node-exec-log-chunk workflow-node-exec-log-chunk--${segment.stream}`}
+                            className={EXEC_LOG_CHUNK_CLASS[segment.stream] ?? undefined}
                         >
                             {segment.text}
                         </span>
@@ -62,13 +73,13 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                 ) : (
                     <>
                         {stdout && (
-                            <span className='workflow-node-exec-log-stdout'>{stdout}</span>
+                            <span className={EXEC_LOG_STDOUT_CLASS}>{stdout}</span>
                         )}
                         {stderr && (
-                            <span className='workflow-node-exec-log-stderr'>{stderr}</span>
+                            <span className={EXEC_LOG_STDERR_CLASS}>{stderr}</span>
                         )}
                         {!stdout && !stderr && (
-                            <span className='workflow-node-exec-log-empty'>Waiting for output...</span>
+                            <span className={EXEC_LOG_EMPTY_CLASS}>Waiting for output...</span>
                         )}
                     </>
                 )}

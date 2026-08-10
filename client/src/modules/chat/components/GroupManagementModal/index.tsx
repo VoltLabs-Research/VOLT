@@ -4,9 +4,8 @@ import { Settings, Shield, Users } from 'lucide-react';
 import AdminsTab from './tabs/AdminsTab';
 import GeneralTab from './tabs/GeneralTab';
 import MembersTab from './tabs/MembersTab';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@heroui/react';
 import { toggleSelection } from '@/shared/utils/selection';
-import { Button } from '@voltstack/bravais';
 import { Modal } from '@/shared/ui/modal';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 
@@ -16,7 +15,6 @@ import { confirm } from '@/shared/ui/hooks/use-confirm';
 export const GROUP_MANAGEMENT_MODAL_ID = 'group-management-modal';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
-import './GroupManagementModal.css';
 
 enum Tab {
     General = 'general',
@@ -39,6 +37,19 @@ interface GroupManagementModalProps {
     onUpdateAdmins: (chatId: string, adminIds: string[], action: 'add' | 'remove') => Promise<unknown>;
     onLeaveGroup: (chatId: string) => Promise<unknown>;
 }
+
+/*
+ * The tablist stays hand-rolled on plain `<button>`s rather than becoming HeroUI's
+ * `Tabs`. It owns a roving `tabIndex`, a ref per tab and its own
+ * arrow/Home/End handling, and every one of those is a prop HeroUI's `Button`
+ * closes off — `role`, `tabIndex` and `ref` all go straight to a DOM button here.
+ * What the old bravais Button contributed visually was nothing: the padding, the
+ * 2px underline and the active colour all came from GroupManagementModal.css,
+ * which is now this pair of literals.
+ */
+const TAB_CLASS_NAMES = 'flex items-center gap-2 px-4 py-3 border-b-2 border-transparent bg-transparent text-muted cursor-pointer transition-colors duration-200 ease-out-fluid [&_svg]:size-4 hover:text-foreground focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--focus)]';
+
+const ACTIVE_TAB_CLASS_NAMES = 'border-b-accent text-accent';
 
 const TABS: GroupManagementTab[] = [
     {
@@ -163,34 +174,30 @@ const GroupManagementModal = ({
 
     return (
         <Modal id={GROUP_MANAGEMENT_MODAL_ID} title='Group Settings' width='600px'>
-            <div className='flex flex-row items-center gap-2 group-management-tabs' role='tablist' aria-label='Group settings sections'>
+            <div className='flex flex-row items-center gap-2 border-b border-border' role='tablist' aria-label='Group settings sections'>
                 {TABS.map((tab, index) => (
-                    <Button
+                    <button
                         key={tab.id}
+                        type='button'
                         ref={(node) => {
                             tabButtonRefs.current[index] = node;
                         }}
-                        variant='ghost'
-                        intent='neutral'
                         id={getTabButtonId(tab.id)}
                         role='tab'
                         aria-selected={activeTab === tab.id}
                         aria-controls={getTabPanelId(tab.id)}
                         tabIndex={activeTab === tab.id ? 0 : -1}
-                        className={cn(
-                            'flex items-center gap-2 group-management-tab transition-[all] duration-200 ease-out-fluid cursor-pointer text-muted',
-                            activeTab === tab.id && 'active'
-                        )}
+                        className={cn(TAB_CLASS_NAMES, activeTab === tab.id && ACTIVE_TAB_CLASS_NAMES)}
                         onClick={() => setActiveTab(tab.id)}
                         onKeyDown={(event) => handleTabKeyDown(event, index)}
                     >
                         {tab.icon}
                         <p className='text-sm'>{tab.label}</p>
-                    </Button>
+                    </button>
                 ))}
             </div>
 
-            <div className='group-management-content' id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0}>
+            <div className='p-6' id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0}>
                 {activeTab === Tab.General && (
                     <GeneralTab
                         groupName={groupName}

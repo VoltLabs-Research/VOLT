@@ -5,8 +5,6 @@ import { resolve } from 'node:path';
 
 const alias = {
     '@': resolve('src'),
-    // Same alias the server and client use, so desktop consumes the shared wire
-    // contracts instead of restating routes and types.
     '@volt/contracts': resolve('../contracts/src')
 };
 
@@ -29,12 +27,6 @@ export default defineConfig({
     },
     renderer: {
         root: resolve('src/renderer'),
-        /*
-         * Tailwind runs in the renderer only. bravais's primitives emit Tailwind
-         * class names, so the utilities they need are generated here rather than
-         * shipped precompiled — which is why `styles.css` carries a `@source`
-         * pointing at the bravais bundle.
-         */
         plugins: [react(), tailwindcss()],
         resolve: { alias },
         build: {

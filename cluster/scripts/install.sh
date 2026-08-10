@@ -635,12 +635,12 @@ def materialize_build_context(install_dir: pathlib.Path, manifest: dict) -> None
     if not archive_b64:
         return
 
-    cluster_daemon_dir = install_dir / 'cluster-daemon'
-    cluster_daemon_dir.mkdir(parents=True, exist_ok=True)
+    # The archive mirrors the repository layout (cluster/ + sdk/), which is the
+    # build context the daemon's Dockerfile expects, so it extracts verbatim.
     archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
 
     with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:
-        tar.extractall(cluster_daemon_dir, filter='data')
+        tar.extractall(install_dir, filter='data')
 
 payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
 manifest = payload['data']['manifest']
@@ -691,7 +691,7 @@ PY
         compose_project_name="$(tr -d '\r\n' < "$INSTALL_DIR/.compose-project-name")"
 
         log 'Starting Team Cluster stack'
-        run_stack_shell "cd '$INSTALL_DIR' && if [ -d '$INSTALL_DIR/cluster-daemon' ]; then docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d --build; else docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d; fi"
+        run_stack_shell "cd '$INSTALL_DIR' && if [ -d '$INSTALL_DIR/cluster' ]; then docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d --build; else docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d; fi"
     }
 
     wait_for_daemon_ready() {

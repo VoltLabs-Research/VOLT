@@ -4,8 +4,12 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utils/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import { CollapsibleSection, Select, getMultiSelectTriggerLabel } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
+import { PluginMultiSelect, PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
+import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import { CANVAS_FIELD, CANVAS_FIELD_CLASS, CANVAS_LABEL_CLASS, CANVAS_SELECT_SLOT_CLASS } from '@/modules/plugin/components/plugin/canvas-field-styles';
 import { useMemo } from 'react';
 import type {
     IArgumentDefinition,
@@ -137,22 +141,24 @@ const PluginConfigField = ({
 
     return (
         <div className='flex flex-col gap-2'>
-            <div className='flex flex-row items-center justify-between gap-4 form-field-canvas'>
-                <p className='canvas-form-label'>
+            <div className={CANVAS_FIELD_CLASS}>
+                <p className={CANVAS_LABEL_CLASS}>
                     {argument.label || argument.argument}
                 </p>
-                <div className='flex flex-row items-center justify-end relative w-full render-input-container'>
+                <div className={CANVAS_SELECT_SLOT_CLASS}>
                     {argument.multipleSelection ? (
-                        <Select
+                        <PluginMultiSelect
                             id={`${fieldKey}-plugins-select`}
                             options={pluginOptions}
-                            isMulti
                             selectedValues={selectedPluginIds}
                             onMultiChange={handleMultiPluginChange}
                             hasSearch
+                            searchPlaceholder='Search plugins…'
                             placeholder='Select plugins'
-                            className='form-field-canvas-select labeled-input'
-                            aria-label={argument.label || argument.argument}
+                            className={cn('form-field-canvas-select labeled-input', CANVAS_FIELD.selectRoot)}
+                            triggerClassName={CANVAS_FIELD.selectTrigger}
+                            valueClassName={CANVAS_FIELD.selectValue}
+                            ariaLabel={argument.label || argument.argument}
                             renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                 selectedCount,
                                 selectedPluginIds,
@@ -162,14 +168,16 @@ const PluginConfigField = ({
                             )}
                         />
                     ) : (
-                        <Select
+                        <PluginSelect
                             id={`${fieldKey}-plugin-select`}
                             options={pluginOptions}
                             value={selectedPluginIds[0] ?? ''}
                             onChange={handleSinglePluginChange}
                             placeholder='Select…'
-                            className='form-field-canvas-select labeled-input'
-                            aria-label={argument.label || argument.argument}
+                            className={cn('form-field-canvas-select labeled-input', CANVAS_FIELD.selectRoot)}
+                            triggerClassName={CANVAS_FIELD.selectTrigger}
+                            valueClassName={CANVAS_FIELD.selectValue}
+                            ariaLabel={argument.label || argument.argument}
                         />
                     )}
                 </div>

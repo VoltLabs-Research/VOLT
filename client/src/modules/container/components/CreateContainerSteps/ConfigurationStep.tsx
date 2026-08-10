@@ -3,8 +3,7 @@ import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import OptionalConfigSection from './OptionalConfigSection';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { Button } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { normalizePortMapping } from '../../utils/port-mapping';
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
 import type { ContainerConfig, EnvVariableFormItem, PortMappingFormItem } from '@/modules/container/contracts/forms';
@@ -59,6 +58,26 @@ const ENV_FIELDS: FieldConfig[] = [
     }
 ];
 
+/**
+ * From the deleted `CreateContainer.css`.
+ *
+ * `.create-container-config-grid` was `display: flex; flex-direction: column;
+ * gap: 1rem` — its 768px arm set `grid-template-columns: 1fr` on a flex container,
+ * which did nothing. The `gap-6` the call site already carried wins over the
+ * sheet's `gap: 1rem`, so `flex flex-col gap-6` is what actually rendered.
+ * `.full-width`'s `grid-column: 1 / -1` is likewise inert inside a flex column, but
+ * it is preserved as `col-span-full` because `OptionalConfigSection` shares the
+ * class and the grid could come back.
+ *
+ * `.create-container-step-actions` is the one rule with a real responsive arm: at
+ * 768px the row becomes a reversed column whose children each go full width.
+ */
+const CONFIG_GRID_CLASS_NAMES = 'mt-6 flex flex-col gap-6';
+const CONFIG_CARD_CLASS_NAMES = 'col-span-full flex flex-col gap-4 rounded-xl border border-border p-6';
+const DEPLOYMENT_FIELDS_CLASS_NAMES = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 max-[768px]:grid-cols-1';
+const STEP_ACTIONS_CLASS_NAMES = 'mt-8 flex flex-row items-center justify-between gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full';
+const STEP_COPY_CLASS_NAMES = 'max-w-[46rem] text-base text-muted';
+
 const getTeamFieldError = (selectedTeamId: string | null, teams: Team[]) => {
     if (selectedTeamId) {
         return undefined;
@@ -93,7 +112,11 @@ const ConfigurationStep = ({
         value: item.value
     }));
     const teamFieldError = getTeamFieldError(selectedTeamId, teams);
-    const teamOptions: SelectOption[] = teams.map((team) => ({
+    /*
+     * Was annotated `SelectOption[]`, a bravais type. The inferred shape still
+     * satisfies `FormFieldRHF`'s `options`, so no type needs naming here.
+     */
+    const teamOptions = teams.map((team) => ({
         value: team._id,
         title: team.name
     }));
@@ -106,21 +129,33 @@ const ConfigurationStep = ({
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
 
     return (
-        <div className='flex flex-col gap-8 create-container-step'>
+        <div className='flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
                 <h3 className='text-xl font-semibold text-foreground'>Configuration</h3>
-                <p className='text-base text-muted create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</p>
+                <p className={STEP_COPY_CLASS_NAMES}>Fill in the required deployment details, then adjust optional settings only if needed.</p>
             </div>
 
-            <div className='create-container-config-grid gap-6 mt-6'>
-                <div className='flex flex-col gap-4 p-6 rounded-xl create-container-config-card full-width'>
+            <div className={CONFIG_GRID_CLASS_NAMES}>
+                <div className={CONFIG_CARD_CLASS_NAMES}>
                     <SettingsSectionHeader
                         title='Deployment details'
                         description='These fields are required before you can continue to review.'
-                        className='create-container-config-section-header mb-4 pb-075'
+                        className='mb-4'
                     />
-                    <div className='create-container-deployment-fields'>
-                        <div className='create-container-deployment-name'>
+                    {/*
+                      * `.create-container-deployment-name` and
+                      * `.create-container-deployment-selects` existed only to force
+                      * `width: 100%` onto FormFieldRHF's internals through
+                      * `.form-field-container`, `.form-field-input`, `.render-input-container`
+                      * and `.select-trigger`. All four arms are now dead: the migrated
+                      * stacked renderer carries `w-full` on `.form-field-container` itself
+                      * and passes `fullWidth` to HeroUI's TextField and Select, and it emits
+                      * neither `.form-field-input`, `.render-input-container` nor
+                      * `.select-trigger` at all. So the wrappers keep only `w-full`, which is
+                      * what they were reaching for.
+                      */}
+                    <div className={DEPLOYMENT_FIELDS_CLASS_NAMES}>
+                        <div className='w-full'>
                             <FormFieldRHF
                                 label='Container Name'
                                 placeholder='my-container-app'
@@ -130,7 +165,7 @@ const ConfigurationStep = ({
                                 className='w-full'
                             />
                         </div>
-                        <div className='flex flex-col gap-4 create-container-deployment-selects'>
+                        <div className='flex w-full flex-col gap-4'>
                             <FormFieldRHF
                                 fieldType='select'
                                 label='Team'
@@ -218,13 +253,13 @@ const ConfigurationStep = ({
                 </OptionalConfigSection>
             </div>
 
-            <div className='flex flex-row items-center justify-between gap-4 create-container-step-actions mt-8'>
+            <div className={STEP_ACTIONS_CLASS_NAMES}>
                 <p className='text-sm text-muted'>
                     {canProceed ? 'Required fields complete. Continue when you are ready.' : remainingItemsLabel}
                 </p>
-                <div className='flex flex-row items-center gap-4 create-container-step-actions-buttons'>
-                    <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
-                    <Button variant='solid' intent='brand' onClick={onNext} disabled={!canProceed}>Continue to review</Button>
+                <div className='flex shrink-0 flex-row items-center gap-4'>
+                    <Button variant='outline' onPress={onBack}>Back</Button>
+                    <Button variant='primary' onPress={onNext} isDisabled={!canProceed}>Continue to review</Button>
                 </div>
             </div>
         </div>

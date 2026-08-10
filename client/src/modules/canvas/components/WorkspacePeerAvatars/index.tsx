@@ -1,9 +1,7 @@
-import { Avatar, IconButton, Tooltip } from '@voltstack/bravais';
+import { Avatar, cn } from '@heroui/react';
+import { getInitialsFromUser } from '@/shared/utils/user';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
-import type { User } from '@volt/contracts/modules/auth/domain';
-
-import './WorkspacePeerAvatars.css';
 
 interface WorkspacePeerAvatarsProps {
     peers: WorkspacePresenceUser[];
@@ -22,6 +20,16 @@ const resolveFullName = (peer: WorkspacePresenceUser): string => {
     return peer.email ?? 'Peer';
 };
 
+/**
+ * bravais's `Avatar size='xs'` was 1.5rem with 0.625rem initials, and the button
+ * around it was a 2px transparent ring that turned `--color-primary` (the
+ * foreground, under VOLT's monochrome accent) when that peer's workspace was the
+ * one on screen. The button stays a plain `<button>` rather than a HeroUI one:
+ * HeroUI's `Button` has no `title`, and its own padding/size variants would have to
+ * be unset to get back to a bare 24px ring.
+ */
+const AVATAR_BUTTON_CLASS = 'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[120ms] ease-out';
+
 const renderAvatarButton = (
     user: WorkspacePresenceUser,
     options: {
@@ -32,31 +40,30 @@ const renderAvatarButton = (
 ) => {
     const fullName = resolveFullName(user);
     const label = options.isSelf ? `${fullName} (you)` : fullName;
-    const classes = ['workspace-peer-avatar-button'];
-    if (options.isActive) classes.push('is-active');
-    if (options.isSelf) classes.push('is-self');
+    const initials = getInitialsFromUser({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email
+    });
 
     return (
-        <Tooltip key={user.id} content={label} placement='bottom'>
-            <IconButton
-                variant='ghost'
-                size='sm'
-                className={classes.join(' ')}
-                onClick={options.onClick}
-                aria-label={options.isSelf ? 'Go to your workspace' : `Open ${fullName} workspace`}
-            >
-                <Avatar
-                    user={{
-                        _id: user.id,
-                        email: user.email ?? '',
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        avatar: user.avatar
-                    } as User}
-                    size='xs'
-                />
-            </IconButton>
-        </Tooltip>
+        <button
+            key={user.id}
+            type='button'
+            className={cn(
+                AVATAR_BUTTON_CLASS,
+                options.isActive && 'border-foreground',
+                options.isSelf && 'shadow-[0_0_0_1px_var(--foreground)_inset]'
+            )}
+            onClick={options.onClick}
+            title={label}
+            aria-label={options.isSelf ? 'Go to your workspace' : `Open ${fullName} workspace`}
+        >
+            <Avatar className='size-6'>
+                {user.avatar && <Avatar.Image src={user.avatar} alt={fullName} />}
+                <Avatar.Fallback className='text-[0.625rem] font-semibold'>{initials}</Avatar.Fallback>
+            </Avatar>
+        </button>
     );
 };
 
@@ -74,15 +81,15 @@ const WorkspacePeerAvatars = ({
     const overflow = peers.length - visible.length;
 
     return (
-        <div className='flex flex-row items-center gap-1 workspace-peer-avatars'>
+        <div className='ml-2 flex h-full flex-row items-center gap-1 pl-2'>
             {visible.map((peer) => renderAvatarButton(peer, {
                 isActive: peer.id === activeOwnerId,
                 isSelf: false,
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (
-                <div className='flex rounded-full workspace-peer-overflow avatar avatar-xs items-center justify-center'>
-                    <span className='text-xs font-semibold'>+{overflow}</span>
+                <div className='ml-0.5 flex size-6 items-center justify-center overflow-hidden rounded-full bg-white/8 text-white/70'>
+                    <span className='text-[0.625rem] font-semibold'>+{overflow}</span>
                 </div>
             )}
         </div>

@@ -1,15 +1,18 @@
 import useCreateContainerForm from '../../hooks/use-create-container-form';
 import { getCustomImageValidationError } from '../../utils/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
+import CreateContainerStepper from '../CreateContainerStepper';
+import type { StepperIndicator } from '../CreateContainerStepper';
 import { useStepper } from '@/shared/ui/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Modal, closeModal, openModal, Stepper } from '@voltstack/bravais';
-import type { StepIndicator } from '@voltstack/bravais';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
+import { Modal, closeModal, openModal } from '@/shared/ui/modal';
+import { Button, Tooltip } from '@heroui/react';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import './CreateContainer.css';
 import { useNavigate } from 'react-router-dom';
+
 enum StepKey {
     Image = 'image',
     Config = 'config',
@@ -18,7 +21,7 @@ enum StepKey {
 
 const STEP_ORDER: StepKey[] = [StepKey.Image, StepKey.Config, StepKey.Review];
 
-const STEP_INDICATORS: StepIndicator<StepKey>[] = [
+const STEP_INDICATORS: StepperIndicator<StepKey>[] = [
     {
         key: StepKey.Image,
         label: 'Image',
@@ -156,17 +159,24 @@ const CreateContainer = () => {
     ];
 
     return (
-        <div className='flex flex-col overflow-hidden h-full create-container-page'>
-            <div className='flex flex-row items-center gap-6 p-6 shrink-0 create-container-header'>
-                <Button variant='ghost' intent='neutral' iconOnly aria-label='Back to containers' title='Back to containers' onClick={() => navigate('/dashboard/containers')}>
-                    <ArrowLeft size={20} />
-                </Button>
+        <div className='flex flex-col overflow-hidden h-full'>
+            <div className='flex flex-row items-center gap-6 p-6 shrink-0'>
+                {/*
+                  * HeroUI's `Button` prop interface is closed and has no `title`, so the
+                  * native tooltip this icon button carried becomes a real `Tooltip`.
+                  */}
+                <Tooltip>
+                    <Button variant='ghost' isIconOnly aria-label='Back to containers' onPress={() => navigate('/dashboard/containers')}>
+                        <ArrowLeft size={20} />
+                    </Button>
+                    <Tooltip.Content placement='bottom'>Back to containers</Tooltip.Content>
+                </Tooltip>
                 <div className='flex flex-col gap-[0.2rem]'>
                     <h3 className='text-xl font-semibold text-foreground'>Create New Container</h3>
                 </div>
             </div>
 
-            <Stepper
+            <CreateContainerStepper
                 steps={steps}
                 activeStep={step}
                 indicators={STEP_INDICATORS}
@@ -180,10 +190,18 @@ const CreateContainer = () => {
                 description='Paste a Docker Hub image reference, then confirm it before continuing.'
                 width='420px'
                 footer={
-                    <>
-                        <Button variant='outline' intent='neutral' onClick={() => closeModal(CUSTOM_IMAGE_MODAL_ID)}>Cancel</Button>
-                        <Button variant='solid' intent='brand' onClick={confirmCustomImage} disabled={!trimmedCustomImage || !!tempCustomImageError}>Save image and continue</Button>
-                    </>
+                    <ModalFooterActions
+                        secondary={{
+                            label: 'Cancel',
+                            variant: 'outline',
+                            onPress: () => closeModal(CUSTOM_IMAGE_MODAL_ID)
+                        }}
+                        primary={{
+                            label: 'Save image and continue',
+                            onPress: confirmCustomImage,
+                            isDisabled: !trimmedCustomImage || !!tempCustomImageError
+                        }}
+                    />
                 }
             >
                 <div className='flex flex-col gap-3 p-6'>

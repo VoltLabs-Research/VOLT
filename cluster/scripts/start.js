@@ -1,17 +1,4 @@
 #!/usr/bin/env node
-
-/**
- * Heap-aware startup wrapper for ClusterDaemon.
- *
- * Computes --max-old-space-size dynamically at 80% of the available memory,
- * capped at a reasonable ceiling, and spawns the actual application with that flag.
- *
- * In containerised environments (Docker / cgroup v2) `process.constrainedMemory()`
- * returns the cgroup memory limit rather than the host's total RAM — preventing the
- * daemon from sizing its heap beyond the container budget and getting OOM-killed.
- * Falls back to `os.totalmem()` when running outside a cgroup.
- */
-
 'use strict';
 
 const { execFileSync } = require('node:child_process');

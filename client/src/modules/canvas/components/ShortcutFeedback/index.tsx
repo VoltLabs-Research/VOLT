@@ -2,7 +2,6 @@ import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-st
 import formatKeyName from '../../utils/format-key-name';
 
 import { Fragment } from 'react';
-import './ShortcutFeedback.css';
 
 const ShortcutFeedback = () => {
     const lastTriggered = useKeyboardShortcutsStore((s) => s.lastTriggered);
@@ -12,12 +11,14 @@ const ShortcutFeedback = () => {
     if (!lastTriggered || !shortcut) return null;
 
     return (
-        <div className='bg-surface border border-border flex items-center gap-2 fixed canvas-shortcut-feedback center-x'>
-            <div className='flex flex-row items-center gap-1 canvas-shortcut-feedback-keys'>
+        <div className='center-x fixed bottom-28 z-[1001] flex items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5'>
+            <div className='flex flex-row items-center gap-1'>
                 {shortcut.keys.map((key, i) => (
                     <Fragment key={key}>
                         {i > 0 && <span className='text-xs text-muted'>+</span>}
-                        <kbd className="canvas-shortcut-key text-xs">{formatKeyName(key)}</kbd>
+                        <kbd className='inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-border bg-surface-tertiary text-xs'>
+                            {formatKeyName(key)}
+                        </kbd>
                     </Fragment>
                 ))}
             </div>

@@ -1,10 +1,8 @@
-import { frameGroupStatusClassNames } from '@/modules/jobs/utils/frame-group-status';
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
-import '@/modules/jobs/components/JobGroup/JobGroup.css';
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@volt/contracts/modules/jobs/domain';
 
@@ -14,13 +12,15 @@ interface JobGroupProps {
     statusPresentation?: 'badge' | 'trajectory-name';
 };
 
+/** `.job-group-children`: the indent, and the rail its child rows hang their border off. */
+export const JOB_GROUP_CHILDREN_CLASS_NAMES = 'pt-1 pl-4';
+
 const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge' }: JobGroupProps) => {
     const containsTransferJobs = useMemo(() => {
         return group.frameGroups.some((frame) => frame.jobs.some((job) => job.queueType === 'cluster_transfer'));
     }, [group.frameGroups]);
     const [isExpanded, setIsExpanded] = useState(defaultExpanded || containsTransferJobs);
     const contentId = useId();
-    const statusClassName = frameGroupStatusClassNames[group.overallStatus];
     const {
         loadingAction,
         handleRemoveRunningJobs,
@@ -42,7 +42,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
     ));
 
     return (
-        <div className='job-group' role='listitem'>
+        <div className='mb-2' role='listitem'>
             <JobGroupMenu
                 trajectoryId={group.trajectoryId}
                 loadingAction={loadingAction}
@@ -51,7 +51,6 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
                 trigger={(
                     <JobGroupHeader
                         group={group}
-                        statusClassName={statusClassName}
                         isExpanded={isExpanded}
                         contentId={contentId}
                         statusPresentation={statusPresentation}
@@ -60,7 +59,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
                 )}
             />
 
-            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='job-group-children' duration={0.25} ease='easeInOut'>
+            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className={JOB_GROUP_CHILDREN_CLASS_NAMES} duration={0.25} ease='easeInOut'>
                 {content}
             </CollapsibleJobContent>
         </div>

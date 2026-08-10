@@ -1,4 +1,4 @@
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
@@ -13,7 +13,28 @@ import { ENTRYPOINT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
-import './EntrypointEditor.css';
+
+/**
+ * `EntrypointEditor.css`, as utilities.
+ *
+ * `--status-success-bg` / `--status-success-border` are `--success-soft` and
+ * `color-mix(… success 24% …)`; `--accent-green` is `--success`; `--radius-sm` is 8px,
+ * which is `rounded-lg` (spec §3b). `--accent-indigo` stays a literal token — it is a
+ * per-theme colour the global sheet declares, and the progress bar's gradient is the
+ * one place in this module that names it.
+ *
+ * One repair rather than a translation: the requirements editor's border read
+ * `var(--color-border-subtle)`, a token nothing has ever declared. An undefined
+ * `var()` inside the `border:` shorthand invalidates the whole declaration, so that
+ * frame has been rendering with no border at all — it becomes `border border-border`,
+ * which is what every other framed block here uses.
+ */
+const BINARY_UPLOADED_CLASS = 'flex flex-row items-center justify-between rounded-lg border border-success/24 bg-success-soft px-3 py-2.5';
+const BINARY_FILE_INFO_CLASS = 'flex flex-row items-center gap-2 text-success';
+const BINARY_FILENAME_CLASS = 'max-w-[180px] overflow-hidden whitespace-nowrap text-ellipsis text-sm font-medium';
+const BINARY_PROGRESS_CLASS = 'h-1 w-full overflow-hidden rounded-[2px] bg-[color-mix(in_srgb,var(--accent-indigo)_10%,transparent)]';
+const BINARY_PROGRESS_BAR_CLASS = 'h-full rounded-[2px] bg-[linear-gradient(90deg,var(--accent-indigo),color-mix(in_srgb,var(--accent-indigo)_70%,white))] transition-[width] duration-200 ease-out';
+const REQUIREMENTS_EDITOR_CLASS = 'overflow-hidden rounded-lg border border-border';
 
 const ENTRYPOINT_TYPE_OPTIONS = [{
     value: EntrypointType.EXECUTABLE,
@@ -93,7 +114,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     return (
         <>
             <FormSection title={binarySectionTitle}>
-                <div className='flex flex-col gap-2 binary-upload-container'>
+                <div className='mt-2 flex flex-col gap-2'>
                     <input
                         ref={fileInputRef}
                         type='file'
@@ -102,49 +123,51 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <div className='flex flex-row items-center justify-between binary-uploaded'>
-                            <div className='flex flex-row items-center gap-2 binary-file-info'>
-                                <File size={20} />
-                                <span className='text-sm font-medium binary-filename overflow-hidden'>
+                        <div className={BINARY_UPLOADED_CLASS}>
+                            <div className={BINARY_FILE_INFO_CLASS}>
+                                <File size={20} aria-hidden='true' />
+                                <span className={BINARY_FILENAME_CLASS}>
                                     {watchedBinaryFileName || watchedBinary}
                                 </span>
-                                <Check size={16} className='binary-check-icon' />
+                                <Check size={16} className='text-success' aria-hidden='true' />
                             </div>
+                            {/* bravais `ghost` + `danger` is `ghost` plus `text-danger` (spec §4d). */}
                             <Button
                                 variant='ghost'
-                                intent='danger'
                                 size='sm'
-                                onClick={handleRemoveBinary}
+                                className='text-danger'
+                                aria-label={`Remove ${binarySectionTitle.toLowerCase()}`}
+                                onPress={handleRemoveBinary}
                             >
-                                <Trash2 size={16} />
+                                <Trash2 size={16} aria-hidden='true' />
                             </Button>
                         </div>
                     ) : (
                         <Button
                             variant='outline'
-                            intent='neutral'
                             size='sm'
-                            leftIcon={<Upload size={18} />}
-                            onClick={triggerFileSelect}
-                            disabled={isUploading || !currentPluginId}
+                            onPress={triggerFileSelect}
+                            isDisabled={isUploading || !currentPluginId}
                         >
+                            <Upload size={18} aria-hidden='true' />
                             {isUploading ? `Uploading... ${uploadProgress}%` : uploadButtonLabel}
                         </Button>
                     )}
 
                     {!currentPluginId && (
-                        <p className='text-xs binary-upload-hint'>
+                        <p className='m-0 text-xs italic text-muted'>
                             Save the plugin first (Ctrl+S) to enable binary upload
                         </p>
                     )}
 
                     {uploadError && (
-                        <p className='text-xs binary-upload-error'>{uploadError}</p>
+                        <p className='m-0 text-xs text-danger'>{uploadError}</p>
                     )}
 
                     {isUploading && (
-                        <div className='w-full binary-upload-progress overflow-hidden'>
-                            <div className='h-full binary-upload-progress-bar'
+                        <div className={BINARY_PROGRESS_CLASS}>
+                            <div
+                                className={BINARY_PROGRESS_BAR_CLASS}
                                 style={{ width: `${uploadProgress}%` }}
                             />
                         </div>
@@ -186,10 +209,10 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
                 <FormSection title='Requirements File'>
                     <div className='flex flex-col gap-2'>
-                        <p className='text-xs text-muted entrypoint-requirements-hint'>
+                        <p className='m-0 text-xs text-muted'>
                             Define the Python dependencies to install into the cached virtual environment.
                         </p>
-                        <div className='entrypoint-requirements-editor'>
+                        <div className={REQUIREMENTS_EDITOR_CLASS}>
                             <Editor
                                 height='180px'
                                 language='plaintext'

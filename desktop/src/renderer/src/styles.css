@@ -1,364 +1,324 @@
-:root{
-    color-scheme: light dark;
+/**
+ * VOLT desktop's entire stylesheet.
+ *
+ * This one file replaces bravais (`styles.css` + `components.css` + `tailwind.css`),
+ * the renderer's own `tailwind.css`, and the four per-component sheets that had
+ * grown up beside it — Titlebar (182 lines), DevModeModal (107), Onboarding (103)
+ * and DockerGate (98). Everything visual now comes from HeroUI's components plus
+ * Tailwind utilities written at the call site; what remains here is only what a
+ * utility class cannot express:
+ *
+ *   1. token rebasing — HeroUI's tokens redefined into VOLT desktop's identity
+ *   2. two real utilities for `-webkit-app-region`, which Tailwind has no
+ *      equivalent for and which a frameless window cannot work without
+ *   3. chrome that is genuinely bespoke — the frameless window's own rounded
+ *      corner and its platform transparency, both of which land on `html`, `body`
+ *      and `#root`: elements that live in `index.html`, so no `className` reaches
+ *      them
+ *
+ * Same rule as the client's sheet keeps this file this size: a rule may live here
+ * only if it has no selector of its own (a token redefinition) or if no
+ * combination of utilities can produce it. "It would be tidier in CSS" is not a
+ * reason.
+ */
 
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-window: 12px;
-    --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+@import '@heroui/styles';
 
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+/**
+ * HeroUI does not own the type stack, so these are plain `@theme` (not `inline`):
+ * we want the literal value emitted into `:root`, not a pass-through to a token
+ * that nothing declares. Tailwind's preflight feeds `--font-sans` to `html`
+ * through `--default-font-family`, which is what replaces the `font-family` the
+ * old sheet set on `:root` by hand.
+ *
+ * The desktop ships no webfont — unlike the client, which loads Inter and
+ * JetBrains Mono from `@fontsource`. A shell whose whole job is to look like part
+ * of the OS wants the OS's own UI face first, so the stack stays platform-led.
+ */
+@theme {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Monaco, monospace;
+}
+
+/**
+ * The frameless window's drag handle, as two real utilities.
+ *
+ * `-webkit-app-region` is the only way to tell Chromium which pixels move the
+ * OS window, and Electron gives this window no frame, so without it the titlebar
+ * is inert and the app cannot be moved. Tailwind has no equivalent — the property
+ * is not in any of its plugins — and it is needed on five separate elements
+ * (the bar itself, each traffic light, the settings button, the settings menu and
+ * its dismiss backdrop, and the modal backdrop).
+ *
+ * Declaring them as `@utility` rather than as `.titlebar { … }` rules is what
+ * keeps the sheet free of component selectors: the drag region is a property of
+ * *this element*, applied at the call site like any other class, and it composes
+ * with `cn()` and variants. `no-drag-region` is not merely the absence of
+ * `drag-region` — a draggable region swallows clicks for everything painted over
+ * it, including elements that are not its descendants, so anything interactive
+ * that overlaps the titlebar has to punch its own hole.
+ */
+@utility drag-region {
+    -webkit-app-region: drag;
+}
+
+@utility no-drag-region {
+    -webkit-app-region: no-drag;
+}
+
+/**
+ * The accent is monochrome: it IS the foreground, inverted.
+ *
+ * HeroUI drives every accent surface off these tokens — `.button--primary` sets
+ * `--button-bg: var(--accent)`, `--focus: var(--accent)`, and so on — so
+ * redefining them here is what makes every primary action black-on-light /
+ * white-on-dark without a single call site restating it.
+ *
+ * This is not a new decision, and it is the same one the client made: the desktop
+ * already collapsed bravais's blue onto the ink, declaring `--color-brand`
+ * as `#1D1D1F` / `#F5F5F7` — the foreground of each theme — with `--color-on-brand`
+ * as the page behind it. `--accent` / `--accent-foreground` say exactly that, and
+ * `--focus` derives from `--accent` upstream, which is what retires the old
+ * `.volt-text-input--focused` override that existed only to cancel bravais's blue
+ * focus glow.
+ */
+:root,
+.light,
+[data-theme='light'],
+.dark,
+[data-theme='dark'] {
+    --accent: var(--foreground);
+    --accent-foreground: var(--background);
+    --accent-soft-foreground: var(--default-foreground);
+    --link: var(--foreground);
+}
+
+/**
+ * A field is defined by its edge, not by elevation — the same correction the
+ * client makes. HeroUI lifts a field with a drop shadow and gives it no border;
+ * the desktop's fields sit flat on the surface with a hairline, matching the
+ * platform.
+ *
+ * The shadow is emptied to a transparent inset rather than to `none`, which is
+ * HeroUI's own trick: `.input` feeds `--field-shadow` into Tailwind's
+ * `--tw-shadow`, and a `none` inside a box-shadow list would take the focus ring
+ * down with it. `--field-border-hover` and `--field-border-focus` derive from
+ * `--field-border` upstream, so they follow for free.
+ */
+:root,
+.light,
+[data-theme='light'],
+.dark,
+[data-theme='dark'] {
+    --field-shadow: 0 0 0 0 transparent inset;
+    --field-border-width: 1px;
+    --field-border: var(--border);
+}
+
+/**
+ * The scrim behind a modal. HeroUI's is `rgba(0,0,0,.5)` / `.6`; this is the
+ * lighter slate wash the desktop's own modal used, in both themes, so a dialog
+ * still reads as floating over a translucent window rather than over a hole.
+ */
+:root,
+.light,
+[data-theme='light'],
+.dark,
+[data-theme='dark'] {
+    --backdrop: rgba(15, 23, 42, 0.28);
+}
+
+/**
+ * Light theme — the desktop's macOS palette, unchanged in value from the sheet
+ * this replaces, restated on HeroUI's token names.
+ *
+ *   --color-bg           #FFFFFF   → --background
+ *   --color-surface-2    #F6F6FA   → --surface-secondary  (a field, a card, a well)
+ *   --color-surface-3    #EFEFF4   → --default            (a neutral/hover fill)
+ *   --color-text-primary #1D1D1F   → --foreground
+ *   --color-text-secondary #6E6E73 → --muted
+ *
+ * Two notes on the mapping.
+ *
+ * The old sheet carried *three* greys: primary, secondary (#6E6E73 / #AEAEB2) and
+ * muted (#8E8E93). HeroUI has one supporting-text token, and the migration spec
+ * collapses the three onto it. Rather than invent a second token, `--muted` takes
+ * the secondary value and the fainter tier is written as `text-muted/75` at the
+ * ~10 call sites that need it — which lands within a few units of #8E8E93 in both
+ * themes, and stays a complete static literal.
+ *
+ * `--surface` is HeroUI's "panel above the page" step. The desktop's ladder is
+ * flatter than the client's and never uses it; it is set to the page colour so
+ * that `--surface-hover`, which HeroUI derives from it, still resolves sensibly.
+ */
+:root,
+.light,
+[data-theme='light'] {
+    --background: #ffffff;
+    --foreground: #1d1d1f;
+
+    --surface: #ffffff;
+    --surface-secondary: #f6f6fa;
+    --surface-tertiary: #efeff4;
+
+    --overlay: #ffffff;
+
+    --default: #efeff4;
+    --default-foreground: var(--foreground);
+
+    --muted: #6e6e73;
+
+    --border: rgba(60, 60, 67, 0.12);
+    --separator: rgba(60, 60, 67, 0.12);
+    --border-secondary: rgba(60, 60, 67, 0.18);
+
+    --field-background: #f6f6fa;
+
+    --danger: #ff3b30;
+}
+
+/**
+ * Dark theme.
+ *
+ * macOS vibrancy and Windows acrylic adapt natively behind the window; these keep
+ * the chrome painted on top of them in sync. Pure black is deliberate — it is
+ * what the platform's own dark chrome sits on, and it is why the titlebar below
+ * is opaque rather than tinted.
+ *
+ * `--danger` moves from #FF3B30 to #FF453A here, which is the one value that is
+ * not a straight restatement: #FF453A is Apple's systemRed for dark mode and is
+ * what the VOLT client uses, so the two apps now agree.
+ */
+.dark,
+[data-theme='dark'] {
+    --background: #000000;
+    --foreground: #f5f5f7;
+
+    --surface: #1c1c1e;
+    --surface-secondary: #1c1c1e;
+    --surface-tertiary: #2c2c2e;
+
+    --overlay: #1c1c1e;
+
+    --default: #2c2c2e;
+    --default-foreground: var(--foreground);
+
+    --muted: #aeaeb2;
+
+    --border: rgba(255, 255, 255, 0.12);
+    --separator: rgba(255, 255, 255, 0.12);
+    --border-secondary: rgba(255, 255, 255, 0.2);
+
+    --field-background: #1c1c1e;
+
+    --danger: #ff453a;
+}
+
+/**
+ * The focus ring. HeroUI rings its own components with `--focus`, which the
+ * monochrome accent above already points at the foreground; this covers the plain
+ * elements that are not HeroUI components and therefore ring through the UA — the
+ * traffic lights, the settings menu's items and the recent-endpoint rows, all of
+ * which are deliberately hand-rolled buttons.
+ *
+ * It replaces three near-identical `box-shadow: 0 0 0 2px var(--color-border-strong)`
+ * rules that the component sheets each declared for themselves.
+ */
+:where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus {
+    outline: none;
+}
+
+:where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+
+/**
+ * The app shell.
+ *
+ * `color-scheme` is no longer set here: it used to be `light dark` on `:root`,
+ * but HeroUI declares it per theme block, and `theme.ts` always writes a resolved
+ * `light`/`dark` onto `data-theme`, so the UA now gets the one scheme actually in
+ * effect instead of both.
+ *
+ * `user-select: none` is what makes the window feel like an application rather
+ * than a document; the one region that is meant to be selectable — the deploy log
+ * on failure — opts back in with `select-text`.
+ */
+html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* The desktop's macOS palette. Scoped under [data-theme] (mirrored from the OS
-   scheme in main.tsx) so these win over @voltstack/bravais's same-named tokens,
-   while bravais still provides its component-only tokens (brand, button/input bg). */
-:root[data-theme='light']{
-    --color-bg: #FFFFFF;
-    --color-surface-2: #F6F6FA;
-    --color-surface-3: #EFEFF4;
-    --color-text-primary: #1D1D1F;
-    --color-text-secondary: #6E6E73;
-    --color-text-muted: #8E8E93;
-    --color-border: rgba(60, 60, 67, 0.12);
-    --color-border-strong: rgba(60, 60, 67, 0.18);
-    --header-border: rgba(0, 0, 0, 0.06);
-    --color-brand: #1D1D1F;
-    --color-on-brand: #FFFFFF;
-    --status-error: #ff3b30;
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-strong: rgba(255, 255, 255, 0.9);
+html,
+body {
+    height: 100%;
+    width: 100%;
+    background-color: transparent;
 }
 
-/* macOS vibrancy / Windows acrylic adapt natively; this keeps chrome in sync. */
-:root[data-theme='dark']{
-    --color-bg: #000000;
-    --color-surface-2: #1C1C1E;
-    --color-surface-3: #2C2C2E;
-    --color-text-primary: #F5F5F7;
-    --color-text-secondary: #AEAEB2;
-    --color-text-muted: #8E8E93;
-    --color-border: rgba(255, 255, 255, 0.12);
-    --color-border-strong: rgba(255, 255, 255, 0.2);
-    --header-border: rgba(255, 255, 255, 0.05);
-    --color-brand: #F5F5F7;
-    --color-on-brand: #1D1D1F;
-    --status-error: #ff3b30;
-    /* Header matches the pure-black app surface exactly: opaque black, no glass tint. */
-    --glass-bg: #000000;
-    --glass-strong: #1C1C1E;
-}
-
-*{ box-sizing: border-box; }
-
-/* bravais ships no CSS reset; zero the default heading/paragraph margins so its
-   Heading/Text primitives are spaced by layout (gap), not browser defaults. */
-h1, h2, h3, h4, h5, h6, p, figure{ margin: 0; }
-
-/* TextInput: keep a plain border on focus; drop bravais's blue focus-ring glow. */
-.volt-text-input--focused{ border-color: var(--color-brand); box-shadow: none; }
-.volt-text-input--error.volt-text-input--focused{ box-shadow: none; }
-
-/* The native window is transparent (glass on macOS/Windows); the rounded surface
-   is painted by .app so the corners read as see-through. */
-html, body, #root{ margin: 0; height: 100%; background: transparent; }
-
-body{
-    color: var(--color-text-primary);
+body {
+    color: var(--foreground);
     user-select: none;
 }
 
-.app{
-    display: flex;
-    flex-direction: column;
+/**
+ * Frameless desktop chrome.
+ *
+ * Electron gives this window no frame, so the app draws its own rounded corner
+ * and has to let the desktop show through behind it — which is why `html` and
+ * `body` go transparent above and `#root` takes the background instead. This is
+ * the same arrangement the client's stylesheet makes for the page it serves
+ * inside this window; there it is gated on `data-volt-desktop`, but here every
+ * render is the desktop, so the gate would always be true.
+ *
+ * `data-volt-maximized` is set on `documentElement` from `main.tsx` off the
+ * `window:state` IPC event: a maximized window is flush with the screen edge and
+ * has no corner to round. `data-platform` is set there too, and carries the one
+ * genuine platform difference — macOS vibrancy and Windows acrylic paint *behind*
+ * the window, so the shell must not cover them, while Linux has no compositor
+ * blur to reveal and stays solid.
+ *
+ * The radius is a literal 12px rather than a token: it is the window's corner, a
+ * value the OS cares about and the design scale does not.
+ */
+#root {
     height: 100%;
-    border-radius: var(--radius-window);
+    border-radius: 12px;
     overflow: hidden;
-    background: var(--color-bg);
+    background-color: var(--background);
 }
 
-[data-volt-maximized] .app{ border-radius: 0; }
-
-/* Let macOS vibrancy / Windows acrylic show through the chrome by keeping the
-   surface transparent there. Linux has no native blur, so it stays solid. */
-[data-platform='darwin'] .app,
-[data-platform='win32'] .app{ background: transparent; }
-
-.body{
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
+[data-volt-maximized] #root {
+    border-radius: 0;
 }
 
-.volt-frame{
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: var(--color-bg);
+[data-platform='darwin'] #root,
+[data-platform='win32'] #root {
+    background-color: transparent;
 }
 
-.boot{
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: clamp(32px, 6vw, 80px);
-    padding: 0 clamp(40px, 6vw, 96px);
-    background: var(--color-bg);
-}
-
-/* Left: the current phase, large and flat. */
-.boot-lead{
-    flex: 1 1 0;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 28px;
-}
-
-/* Left heading: the overall deploy state, pulsing while in flight. */
-.boot-heading{
-    font-size: clamp(24px, 2.8vw, 34px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-    color: var(--color-text-primary);
-}
-
-.boot-heading.is-loading{ animation: boot-pulse 1.6s var(--ease-standard) infinite; }
-
-.boot-heading.boot-error{
-    color: var(--status-error);
-    animation: none;
-}
-
-@keyframes boot-pulse{
-    0%, 100%{ opacity: 1; }
-    50%{ opacity: 0.5; }
-}
-
-/* Vercel-style timeline: each phase advances pending → running → done/error. */
-.boot-steps{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 13px;
-}
-
-.boot-step{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 15px;
-    line-height: 1;
-    color: var(--color-text-muted);
-    transition: color 200ms var(--ease-standard);
-}
-
-.boot-step.is-running{ color: var(--color-text-primary); }
-.boot-step.is-done{ color: var(--color-text-secondary); }
-.boot-step.is-error{ color: var(--status-error); }
-
-.boot-step-label{ letter-spacing: -0.01em; }
-
-.boot-step-detail{
-    font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Monaco, monospace;
-    font-size: 11.5px;
-    color: var(--color-text-muted);
-}
-
-/* Step icons share a fixed 16px box so labels stay aligned across every state. */
-.step-dot,
-.step-spinner,
-.step-glyph{
-    flex: 0 0 16px;
-    width: 16px;
-    height: 16px;
-    box-sizing: border-box;
-}
-
-.step-dot{
-    border-radius: 50%;
-    border: 1.5px solid var(--color-border-strong);
-}
-
-.step-spinner{
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent, var(--color-text-primary));
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-            mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-    animation: step-spin 0.7s linear infinite;
-}
-
-.boot-step.is-done .step-glyph{ color: var(--color-text-primary); }
-
-@keyframes step-spin{ to{ transform: rotate(360deg); } }
-
-/* Right: raw log stream, flat, latest pinned to the bottom and faded out at the top. */
-.boot-logs{
-    flex: 0 0 clamp(260px, 32vw, 430px);
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 56px 0;
-    overflow: hidden;
-    font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Monaco, monospace;
-    font-size: 11.5px;
-    line-height: 1.7;
-    color: var(--color-text-muted);
-    text-align: left;
-    white-space: pre-wrap;
-    word-break: break-word;
-    -webkit-mask: linear-gradient(to bottom, transparent 0, #000 88px);
-            mask: linear-gradient(to bottom, transparent 0, #000 88px);
-}
-
-/* Don't let the flex column compress lines to fit: keep each at its natural height
-   and let the overflow spill off the top (clipped + faded by the mask above). */
-.term-line{ flex: 0 0 auto; min-height: 1.7em; }
-.term-stdout{ color: var(--color-text-muted); }
-.term-stderr{ color: var(--status-error); }
-
-.retry{
-    padding: 9px 24px;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--color-text-primary);
-    background: transparent;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background 150ms var(--ease-standard);
-}
-
-.retry:hover{ background: var(--color-surface-3); }
-
-.retry--primary{
-    color: var(--color-on-brand);
-    background: var(--color-brand);
-    border-color: var(--color-brand);
-}
-
-.retry--primary:hover{ background: var(--color-brand); opacity: 0.9; }
-
-/* Centered layouts: loading splash, the paused "ready" card and remote connecting. */
-.boot--center{ justify-content: center; }
-
-.boot-lead--center{ align-items: center; text-align: center; }
-
-/* Initial loading splash */
-.splash{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-.splash-mark{
-    font-size: clamp(28px, 3vw, 38px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: var(--color-text-primary);
-}
-
-.splash-spinner{
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent, var(--color-text-primary));
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-            mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-    animation: step-spin 0.7s linear infinite;
-}
-
-/* Paused "Volt is ready" card */
-.ready-card{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 12px;
-    max-width: 460px;
-}
-
-.ready-eyebrow{
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-}
-
-.ready-endpoint{
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    word-break: break-all;
-}
-
-.ready-error{
-    max-width: 38ch;
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--status-error);
-}
-
-.ready-actions{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 8px;
-}
-
-.ready-link{
-    padding: 9px 12px;
-    font-family: inherit;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-}
-
-.ready-link:hover{ color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 2px; }
-
-.ready-hint{
-    margin-top: 4px;
-    max-width: 42ch;
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--color-text-muted);
-}
-
-/* Boot actions row (retry / start / copy logs) */
-.boot-actions{
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-/* Logs read as ambient texture while running, but become readable and scrollable
-   on failure so the user can diagnose what went wrong. */
-.boot-logs.is-scrollable{
-    overflow-y: auto;
-    -webkit-mask: none;
-            mask: none;
-    user-select: text;
-}
-
-.boot-logs.is-scrollable .term-line{ user-select: text; }
-
-@media (prefers-reduced-motion: reduce){
-    .boot-heading,
-    .step-spinner,
-    .splash-spinner{ animation: none; }
+/**
+ * Reduced motion, declared once for the whole app.
+ *
+ * This is load-bearing, not a nicety. The four deleted sheets each carried their
+ * own `prefers-reduced-motion` block — for the boot heading's pulse, the three
+ * ring spinners and the modal's entrance — and every one of those animations is
+ * now either a Tailwind utility or a HeroUI component. Without this block the
+ * opt-out would have disappeared along with the sheets that declared it, silently,
+ * at every animated site in the window.
+ *
+ * Declaring it globally rather than as a `motion-reduce:` utility per call site is
+ * deliberate: an accessibility guarantee that depends on each author remembering a
+ * modifier is not a guarantee.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

@@ -34,6 +34,9 @@
       "@volt/contracts/*": [
         "../contracts/src/*"
       ],
+      "@voltstack/daemon-cluster-client": [
+        "../sdk/node/DaemonClusterClient/src/contracts/index.ts"
+      ],
       "typia": [
         "node_modules/typia"
       ]

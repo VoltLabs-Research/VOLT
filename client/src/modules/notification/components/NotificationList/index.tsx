@@ -1,7 +1,8 @@
-import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
+import { Skeleton } from '@heroui/react';
+import { BellOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { Skeleton, EmptyState } from '@voltstack/bravais';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 interface NotificationListProps {
@@ -14,19 +15,25 @@ interface NotificationListProps {
 
 const LOAD_MORE_THRESHOLD = 50;
 
+/**
+ * The two bars are sized to what bravais actually painted, not to what it reserved:
+ * `variant='text'` carried `transform: scale(1, 0.6)`, so `height={20}` rendered ~12px
+ * of bar inside a 20px box. HeroUI's Skeleton paints its full box, so the heights come
+ * down to the painted values and the box is made up with a gap.
+ */
 const skeletonLines = (
     <>
-        <Skeleton variant='text' width='60%' height={20} />
-        <Skeleton variant='text' width='90%' height={16} />
+        <Skeleton className='h-3 w-[60%] rounded-sm' />
+        <Skeleton className='h-2.5 w-[90%] rounded-sm' />
     </>
 );
 
-const NotificationList = ({ 
-    notifications, 
-    isLoading, 
-    hasMore, 
-    onLoadMore, 
-    onClose 
+const NotificationList = ({
+    notifications,
+    isLoading,
+    hasMore,
+    onLoadMore,
+    onClose
 }: NotificationListProps) => {
     const containerRef = useRef<HTMLUListElement>(null);
 
@@ -50,7 +57,7 @@ const NotificationList = ({
         return (
             <div className='flex flex-col gap-2 p-2'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <div className='notification-item list-item-hoverable p-3 rounded-lg' key={`notif-skel-${i}`}>
+                    <div className='flex flex-col gap-2 p-3 rounded-lg' key={`notif-skel-${i}`}>
                         {skeletonLines}
                     </div>
                 ))}
@@ -59,13 +66,20 @@ const NotificationList = ({
     }
 
     if (notifications.length === 0) {
-        return <EmptyState title='No notifications' description="You're all caught up!" className='p-4' />;
+        return (
+            <RecoveryState
+                title='No notifications'
+                description="You're all caught up!"
+                icon={<BellOff size={26} strokeWidth={1.5} />}
+                className='p-4'
+            />
+        );
     }
 
     return (
         <ul
             ref={containerRef}
-            className='notification-list-container flex flex-col gap-2 p-2 overflow-y-auto'
+            className='flex flex-col gap-2 p-2 m-0 list-none overflow-y-auto max-h-[360px] max-[480px]:max-h-[calc(60vh-60px)]'
             aria-busy={isLoading}
         >
             {notifications.map((notification) => (
@@ -76,8 +90,8 @@ const NotificationList = ({
                 />
             ))}
             {isLoading && (
-                <li className='notification-row'>
-                    <div className='notification-item list-item-hoverable p-3 rounded-lg'>
+                <li className='list-none'>
+                    <div className='flex flex-col gap-2 p-3 rounded-lg'>
                         {skeletonLines}
                     </div>
                 </li>

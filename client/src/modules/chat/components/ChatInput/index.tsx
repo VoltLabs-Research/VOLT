@@ -2,11 +2,10 @@ import { FileText, Paperclip, Send, Smile, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
 import { formatSize } from '@/shared/utils/format';
-import { Button, IconButton, Popover, Tooltip } from '@voltstack/bravais';
+import { Button, PopoverContent, PopoverDialog, PopoverRoot, PopoverTrigger, Tooltip, buttonVariants } from '@heroui/react';
 import EmojiPicker from '@/shared/ui/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
-import './ChatInput.css';
 
 interface ChatInputProps {
     disabled?: boolean;
@@ -16,11 +15,25 @@ interface ChatInputProps {
     onSendFiles: (files: File[]) => Promise<unknown>;
 }
 
+/*
+ * The composer's edge is the input: the wrapper carries the border and lights it
+ * up on focus-within, and the textarea inside is transparent and borderless. Below
+ * 640px the row wraps and the textarea takes a line of its own (`order-4`), which
+ * puts the three controls above it.
+ */
+const WRAPPER_CLASS_NAMES = 'flex flex-row items-center gap-2 min-w-0 px-3 py-2 rounded-2xl border border-border transition-colors duration-200 focus-within:border-accent max-[640px]:flex-wrap max-[640px]:items-start max-[640px]:p-2.5';
+
+const TEXTAREA_CLASS_NAMES = 'flex-1 min-w-0 min-h-11 py-2 resize-none bg-transparent outline-none [font-family:inherit] text-sm text-foreground max-[640px]:order-4 max-[640px]:basis-full max-[640px]:w-full';
+
+/* bravais sized the composer's controls to the 44px touch target. */
+const CONTROL_CLASS_NAMES = 'size-11';
+
 const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFiles }: ChatInputProps) => {
     useTip('chat-file-attachments');
 
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
     const { files, previews, inputRef, removeFile, clear, handleInputChange: handleFileInput, openFilePicker, hasFiles } = useFilePreview();
     const textareaId = useId();
     const statusId = `${textareaId}-status`;
@@ -63,32 +76,32 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
     };
 
     const renderFilePreview = (item: typeof previews[number], index: number) => (
-        <div className='flex flex-row items-center gap-3 chat-file-preview-item' key={index}>
+        <div className='flex flex-row items-center gap-3 p-2 rounded-lg border border-border bg-surface-tertiary' key={index}>
             {item.preview ? (
-                <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail shrink-0' />
+                <img src={item.preview} alt={item.file.name} className='shrink-0 size-12 rounded-md bg-default object-cover' />
             ) : (
-                <div className='flex shrink-0 items-center justify-center chat-file-preview-icon'>
+                <div className='flex shrink-0 items-center justify-center size-12 rounded-md bg-default'>
                     <FileText size={20} className='text-muted' />
                 </div>
             )}
             <div className='flex flex-col overflow-hidden flex-1'>
-                <p className='text-sm font-medium chat-file-preview-name'>
+                <p className='text-sm font-medium truncate max-w-[150px] max-[640px]:max-w-none'>
                     {item.file.name}
                 </p>
                 <p className='text-sm text-muted'>
                     {formatSize(item.file.size)}
                 </p>
             </div>
-            <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title={`Remove ${item.file.name}`} aria-label={`Remove ${item.file.name}`}>
+            <Button size='sm' variant='ghost' isIconOnly onPress={() => removeFile(index)} aria-label={`Remove ${item.file.name}`}>
                 <X size={16} />
-            </IconButton>
+            </Button>
         </div>
     );
 
     return (
-        <form onSubmit={handleSend} className='chat-input-container'>
+        <form onSubmit={handleSend} className='px-6 py-4 border-t border-border max-[640px]:px-4 max-[640px]:py-3.5'>
             {previews.length > 0 && (
-                <div className='flex flex-col gap-2 overflow-y-auto chat-file-previews'>
+                <div className='flex flex-col gap-2 overflow-y-auto max-h-[150px] mb-3'>
                     {previews.map(renderFilePreview)}
                 </div>
             )}
@@ -97,18 +110,19 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                 Message
             </label>
 
-            <div className='flex flex-row items-center gap-2 chat-input-wrapper'>
+            <div className={WRAPPER_CLASS_NAMES}>
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
-                <Tooltip content='Attach file'>
-                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={isPending} title='Attach file' aria-label='Attach file'>
+                <Tooltip>
+                    <Button size='sm' variant='ghost' isIconOnly className={CONTROL_CLASS_NAMES} onPress={openFilePicker} isDisabled={isPending} aria-label='Attach file'>
                         <Paperclip size={20} />
-                    </IconButton>
+                    </Button>
+                    <Tooltip.Content>Attach file</Tooltip.Content>
                 </Tooltip>
 
                 <textarea
                     id={textareaId}
-                    className='flex-1 chat-input-textarea text-sm text-foreground'
+                    className={TEXTAREA_CLASS_NAMES}
                     placeholder='Type a message...'
                     rows={1}
                     value={message}
@@ -118,40 +132,52 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                     aria-describedby={isPending ? statusId : undefined}
                 />
 
-                <Popover
-                    id='chat-emoji-picker'
-                    trigger={
-                        <IconButton size='sm' variant='ghost' disabled={isPending} title='Open emoji picker' aria-label='Open emoji picker'>
-                            <Smile size={20} />
-                        </IconButton>
-                    }
-                >
-                    {(close: () => void) => (
-                        <EmojiPicker onSelect={(emoji: string) => {
-                            setMessage((previous) => previous + emoji);
-                            close();
-                        }} />
-                    )}
-                </Popover>
+                {/*
+                  * The trigger stays a real `<button>` rather than a HeroUI `Button`
+                  * inside `PopoverTrigger`: the trigger part is a `div role='button'`,
+                  * so nesting a button inside it would give the picker two of them.
+                  * `buttonVariants` supplies the same chrome a ghost icon button has.
+                  */}
+                <PopoverRoot isOpen={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                    <PopoverTrigger<'button'>
+                        type='button'
+                        className={`${buttonVariants({ variant: 'ghost', size: 'sm', isIconOnly: true })} ${CONTROL_CLASS_NAMES}`}
+                        disabled={isPending}
+                        title='Open emoji picker'
+                        aria-label='Open emoji picker'
+                        render={(triggerProps) => <button {...triggerProps} />}
+                    >
+                        <Smile size={20} />
+                    </PopoverTrigger>
 
-                <Tooltip content='Send'>
+                    <PopoverContent placement='top end' className='bg-transparent shadow-none'>
+                        <PopoverDialog aria-label='Emoji picker' className='p-0'>
+                            <EmojiPicker onSelect={(emoji: string) => {
+                                setMessage((previous) => previous + emoji);
+                                setIsEmojiPickerOpen(false);
+                            }} />
+                        </PopoverDialog>
+                    </PopoverContent>
+                </PopoverRoot>
+
+                <Tooltip>
                     <Button
-                        variant='solid'
-                        intent='brand'
-                        iconOnly
+                        variant='primary'
+                        isIconOnly
+                        className={CONTROL_CLASS_NAMES}
                         type='submit'
-                        disabled={isPending || (!message.trim() && !hasFiles)}
-                        isLoading={isPending}
-                        title='Send message'
+                        isDisabled={isPending || (!message.trim() && !hasFiles)}
+                        isPending={isPending}
                         aria-label='Send message'
                         aria-describedby={isPending ? statusId : undefined}
                     >
                         <Send size={18} />
                     </Button>
+                    <Tooltip.Content>Send</Tooltip.Content>
                 </Tooltip>
             </div>
 
-            <p className='text-sm text-muted chat-input-status' id={statusId} role='status' aria-live='polite'>
+            <p className='text-sm text-muted min-h-6 mt-2' id={statusId} role='status' aria-live='polite'>
                 {isPending ? 'Sending message…' : ''}
             </p>
         </form>

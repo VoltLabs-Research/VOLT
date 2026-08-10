@@ -18,7 +18,7 @@ import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argu
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
 import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-team-clusters';
 import { useSearchParams } from 'react-router-dom';

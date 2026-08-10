@@ -3,7 +3,7 @@ import { usePluginCatalogQuery } from './catalog-query';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 
 export interface RenderableExposure {
     pluginId: string;

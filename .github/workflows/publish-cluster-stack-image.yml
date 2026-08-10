@@ -3,10 +3,11 @@ name: Publish Cluster Daemon Stack Image
 # The image the desktop app's single-machine stack runs.
 #
 # This is built from `Dockerfile.dev`, not `Dockerfile`: the stack bind-mounts the
-# resolved release over `/app` and takes `node_modules` from a named volume seeded
-# by the image, so what the image needs to carry is the system packages and the
-# installed dependencies — not a compiled copy of the source. `publish-cluster-daemon.yml`
-# still publishes the self-contained production image for other deployments.
+# resolved release over `/app/cluster` and takes `node_modules` from a named volume
+# seeded by the image, so what the image needs to carry is the system packages and
+# the installed dependencies — not a compiled copy of the source.
+# `publish-cluster-daemon.yml` still publishes the self-contained production image
+# for other deployments.
 #
 # Built per architecture on native runners because this image compiles native
 # modules, which is very slow under QEMU emulation.
@@ -16,11 +17,13 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/publish-stack-image.yml'
-      - 'Dockerfile.dev'
+      - '.github/workflows/publish-cluster-stack-image.yml'
       - '.dockerignore'
-      - 'package.json'
-      - 'package-lock.json'
+      - 'cluster/Dockerfile.dev'
+      - 'cluster/package.json'
+      - 'cluster/package-lock.json'
+      # The daemon consumes @voltstack/daemon-cluster-client from the repository.
+      - 'sdk/node/DaemonClusterClient/**'
   workflow_dispatch:
 
 env:
@@ -62,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./
-          file: ./Dockerfile.dev
+          file: cluster/Dockerfile.dev
           platforms: linux/${{ matrix.arch }}
           push: true
           provenance: false

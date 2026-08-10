@@ -1,5 +1,6 @@
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
-import { Modal, StatusDot } from '@voltstack/bravais';
+import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
+import { Modal } from '@/shared/ui/modal';
 
 export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
 
@@ -22,7 +23,7 @@ const ClusterInstallCommandModal = ({ clusterId, enrollmentToken }: ClusterInsta
                 />
 
                 <div className='flex flex-row items-center gap-2'>
-                    <StatusDot tone='warning' pulse glow />
+                    <ClusterStatusDot tone='warning' pulse glow />
                     <p className='text-sm text-muted'>
                         Waiting for connection
                     </p>

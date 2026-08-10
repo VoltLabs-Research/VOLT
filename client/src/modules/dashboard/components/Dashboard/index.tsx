@@ -9,12 +9,13 @@ import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
-import { Button, EmptyState, openModal } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import { openModal } from '@/shared/ui/modal';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
-import './Dashboard.css';
+import { STAT_CARD } from '@/modules/dashboard/components/stat-tile-chrome';
 import { FlaskConical, FolderPlus, Server, Upload } from 'lucide-react';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/contracts/cards';
 import type { ReactNode } from 'react';
@@ -23,6 +24,19 @@ const CARD_ICONS: Record<string, ReactNode> = {
     trajectories: <Server size={16} />,
     analysis: <FlaskConical size={16} strokeWidth={1.8} />
 };
+
+/** `.dashboard-bento` — the 12-column bento grid the whole page hangs off. */
+const BENTO = 'grid w-full max-w-[1440px] mx-auto grid-cols-12 auto-rows-[minmax(0,auto)] gap-4 p-4 max-[768px]:gap-3 max-[768px]:p-3';
+
+/**
+ * `.dashboard-bottom-row`. The sheet's second breakpoint (`@media 900px`) only
+ * restated `height: auto`, which the 1200px block had already set, so it is
+ * dropped rather than duplicated.
+ */
+const BOTTOM_ROW = 'col-span-12 flex h-[470px] items-stretch justify-between gap-4 max-[1200px]:h-auto max-[1200px]:flex-col';
+
+/** `.dashboard-card-state` — fill the tile a recovery/empty state is standing in for. */
+const CARD_STATE = 'min-h-full';
 
 const DashboardPage = () => {
     usePageTitle('Dashboard');
@@ -52,25 +66,25 @@ const DashboardPage = () => {
 
     if (accessDenied) {
         statCards = [
-            <DashboardCard key='denied' className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
+            <DashboardCard key='denied' className={STAT_CARD} isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view dashboard metrics.'}
                     tone={RecoveryStateTone.AccessDenied}
                     requiredPermissions={toPermissionLabels(['trajectory:read'])}
                     contactHint={getTeamOwnerContactHint(selectedTeam)}
-                    className='dashboard-card-state'
+                    className={CARD_STATE}
                 />
             </DashboardCard>
         ];
     } else if (error) {
         statCards = [
-            <DashboardCard key='error' className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
+            <DashboardCard key='error' className={STAT_CARD} isRelative={true} overflowHidden={true} style={{ gridColumn: 'span 4' }}>
                 <RecoveryState
                     title='Unable to load dashboard metrics'
                     description={error}
                     tone={RecoveryStateTone.Error}
-                    className='dashboard-card-state'
+                    className={CARD_STATE}
                 />
             </DashboardCard>
         ];
@@ -80,9 +94,9 @@ const DashboardPage = () => {
 
     if (!selectedTeam) {
         return (
-            <div className='dashboard-bento'>
-                <div className='dashboard-bottom-row'>
-                    <EmptyState
+            <div className={BENTO}>
+                <div className={BOTTOM_ROW}>
+                    <RecoveryState
                         icon={<Server size={20} />}
                         title='Create your first team'
                         description='Use the team creation dialog to finish setup and unlock the dashboard.'
@@ -94,34 +108,30 @@ const DashboardPage = () => {
     }
 
     return (
-        <div className='dashboard-bento'>
+        <div className={BENTO}>
             {statCards}
 
-            <div className='dashboard-simulations-section'>
-                <div className='flex flex-row items-center justify-between gap-4 dashboard-simulations-header'>
+            <div className='col-span-12 flex flex-col gap-4 my-8'>
+                <div className='flex flex-row items-center justify-between gap-4 min-w-0 max-[768px]:gap-2'>
                     <h3 className='text-xl font-medium text-foreground'>Trajectories</h3>
                     {canCreateTrajectoryFolders && (
                         <div className='flex flex-row items-center gap-2'>
                             <input ref={fileInputRef} type='file' multiple hidden onChange={handlePickerChange} />
                             <Button
                                 variant='ghost'
-                                intent='neutral'
                                 size='sm'
-                                shape='rounded'
-                                className='dashboard-simulations-new-folder-btn'
-                                onClick={openFilePicker}
-                                disabled={isUploading}
+                                className='shrink-0'
+                                onPress={openFilePicker}
+                                isDisabled={isUploading}
                             >
                                 <Upload size={14} />
                                 Upload
                             </Button>
                             <Button
                                 variant='ghost'
-                                intent='neutral'
                                 size='sm'
-                                shape='rounded'
-                                className='dashboard-simulations-new-folder-btn'
-                                onClick={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
+                                className='shrink-0'
+                                onPress={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
                             >
                                 <FolderPlus size={14} />
                                 New folder

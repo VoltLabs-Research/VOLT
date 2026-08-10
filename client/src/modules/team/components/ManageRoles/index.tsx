@@ -1,4 +1,4 @@
-import { StatusBadge } from '@voltstack/bravais';
+import { Chip } from '@heroui/react';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleListingActions from '@/modules/team/hooks/role/use-team-role-listing-actions';
@@ -44,9 +44,9 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'isSystem',
         title: 'Type',
         render: (_value, role) => (
-            <StatusBadge variant={role.isSystem ? 'warning' : 'brand'}>
-                {role.isSystem ? 'System' : 'Custom'}
-            </StatusBadge>
+            <Chip color={role.isSystem ? 'warning' : 'accent'} variant='soft' size='sm'>
+                <Chip.Label>{role.isSystem ? 'System' : 'Custom'}</Chip.Label>
+            </Chip>
         )
     },
     {
@@ -54,7 +54,11 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         title: 'Permissions',
         render: (_value, role) => {
             if(role.permissions.includes('*')){
-                return <StatusBadge variant='primary'>All Permissions</StatusBadge>;
+                return (
+                    <Chip color='default' variant='soft' size='sm'>
+                        <Chip.Label>All Permissions</Chip.Label>
+                    </Chip>
+                );
             }
             const count = role.permissions.length;
             return (

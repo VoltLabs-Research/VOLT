@@ -1,10 +1,14 @@
-import './ArgumentDefinitionSection.css';
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import { createDefaultArgumentDefinition } from '@/modules/plugin/utils/plugin/argument-values';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ArgumentDefinitionRow from './ArgumentDefinitionRow';
-import { DashedActionBox } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import DashedActionBox from '@/modules/plugin/components/plugin/DashedActionBox';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import {
+    ARGUMENT_ADD_BUTTON_CLASS,
+    ARGUMENT_EMPTY_CLASS,
+    ARGUMENT_LIST_CLASS
+} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
@@ -97,9 +101,9 @@ const ArgumentDefinitionSection = ({
     };
 
     return (
-        <div className='argument-definition-list'>
+        <div className={ARGUMENT_LIST_CLASS}>
             {argumentDefinitions.length === 0 && (
-                <div className='argument-definition-empty'>
+                <div className={ARGUMENT_EMPTY_CLASS}>
                     No arguments yet. Add one to define user input.
                 </div>
             )}
@@ -124,10 +128,9 @@ const ArgumentDefinitionSection = ({
             <DashedActionBox
                 icon={<Plus size={14} aria-hidden='true' />}
                 label='Add Argument'
-                size='sm'
-                block
-                className='add-argument-button'
-                onClick={handleAddArgument}
+                isBlock
+                className={ARGUMENT_ADD_BUTTON_CLASS}
+                onPress={handleAddArgument}
             />
         </div>
     );

@@ -1,6 +1,5 @@
-import './PasswordChangeForm.css';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Callout, Button } from '@voltstack/bravais';
+import { Alert, Button } from '@heroui/react';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -75,7 +74,7 @@ const PasswordChangeForm = ({
     };
 
     return (
-        <form className='password-form flex flex-col gap-12 border border-border rounded-xl p-6' onSubmit={onFormSubmit} noValidate>
+        <form className='flex flex-col gap-12 border border-border rounded-xl p-6' onSubmit={onFormSubmit} noValidate>
             {passwordInfo?.hasPassword && (
                 <FormFieldRHF
                     name='currentPassword'
@@ -129,28 +128,41 @@ const PasswordChangeForm = ({
                 }}
             />
 
+            {/*
+              * bravais's inline `Callout` was a live region (`role='status'` +
+              * `aria-live='polite'`), which is how a failed password change was
+              * announced. HeroUI's `Alert` sets no role of its own, so both are stated
+              * here explicitly.
+              */}
             {submitError && (
-                <Callout
-                    tone='warning'
-                    icon={<AlertCircle size={16} />}
-                    message={submitError}
-                    className='password-form-error'
-                />
+                <Alert
+                    status='warning'
+                    role='status'
+                    aria-live='polite'
+                    className='-mt-2'
+                >
+                    <Alert.Indicator>
+                        <AlertCircle size={16} />
+                    </Alert.Indicator>
+                    <Alert.Content>
+                        <Alert.Description>{submitError}</Alert.Description>
+                    </Alert.Content>
+                </Alert>
             )}
 
             <div className='flex flex-wrap gap-3'>
                 <Button
                     type='submit'
-                    intent='brand'
-                    isLoading={isSubmitting}
-                    disabled={isSubmitting}
+                    variant='primary'
+                    isPending={isSubmitting}
+                    isDisabled={isSubmitting}
                 >
                     {passwordInfo?.hasPassword ? 'Change Password' : 'Set Password'}
                 </Button>
                 <Button
                     type='button'
                     variant='ghost'
-                    onClick={handleCancel}
+                    onPress={handleCancel}
                 >
                     Cancel
                 </Button>

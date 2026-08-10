@@ -2,8 +2,19 @@ import { useTrajectoriesInfiniteQuery } from './queries';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { SelectOption } from '@voltstack/bravais';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+
+/**
+ * bravais's `SelectOption`, field for field. That type is not one of the symbols the
+ * migration relocated into the client, so the shape is declared beside the hook that
+ * produces it; it stays structurally identical, so consumers in other modules are
+ * unaffected.
+ */
+export interface TrajectorySelectOption {
+    value: string;
+    title: string;
+    description?: string;
+};
 
 interface UseTrajectorySelectorOptions {
     allowEmpty?: boolean;
@@ -11,7 +22,7 @@ interface UseTrajectorySelectorOptions {
 }
 
 interface UseTrajectorySelectorReturn {
-    options: SelectOption[];
+    options: TrajectorySelectOption[];
     isLoading: boolean;
     hasMore: boolean;
     loadMore: () => void;
@@ -56,8 +67,8 @@ export default function useTrajectorySelector(options: UseTrajectorySelectorOpti
         }
     }, [isLoading, isFetchingNextPage, hasMore, fetchNextPage]);
 
-    const selectOptions = useMemo((): SelectOption[] => {
-        const result: SelectOption[] = [];
+    const selectOptions = useMemo((): TrajectorySelectOption[] => {
+        const result: TrajectorySelectOption[] = [];
 
         if (allowEmpty) {
             result.push({

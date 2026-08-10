@@ -1,6 +1,6 @@
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
-import { Select } from '@voltstack/bravais';
+import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTrajectorySelector from '@/modules/trajectory/hooks/trajectory/use-trajectory-selector';
 import { useQueryClient } from '@tanstack/react-query';
@@ -58,12 +58,13 @@ const PluginListingPage = () => {
             teamId={team._id}
             showTrajectoryColumn={!trajectoryId}
             headerActions={
-                <Select
+                <PluginSelect
                     options={options}
                     value={trajectoryId ?? null}
                     onChange={handleTrajectorySelect}
                     placeholder='All Trajectories'
-                    isLoading={isLoading}
+                    ariaLabel='Trajectory'
+                    isPending={isLoading}
                     onScrollEnd={loadMore}
                 />
             }

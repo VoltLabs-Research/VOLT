@@ -4,7 +4,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, resetModal } from '@voltstack/bravais';
+import { Modal, resetModal } from '@/shared/ui/modal';
 import { useForm } from 'react-hook-form';
 import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
 import type { JoinTeamForm } from './validation-schema';
@@ -97,7 +97,7 @@ export const JoinTeamModal = ({
                 />
 
                 {apiError && (
-                    <p className='text-sm team-creator-error rounded-lg'>
+                    <p className='text-sm text-danger px-3 py-2 bg-danger-soft rounded-lg'>
                         {apiError}
                     </p>
                 )}

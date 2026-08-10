@@ -1,4 +1,4 @@
-import { Skeleton, StatCard } from '@voltstack/bravais';
+import { Skeleton } from '@heroui/react';
 import { useMemo } from 'react';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
@@ -7,8 +7,15 @@ import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/
 import EndpointsBarChart from '@/modules/team/components/secret-key/shared/EndpointsBarChart';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { SecretKeyAsyncState } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
+import SecretKeyStatCard from '@/modules/team/components/secret-key/shared/SecretKeyStatCard';
+import {
+    SECRET_KEY_PAGE_CARDS_CLASS,
+    SECRET_KEY_PAGE_CARD_CLASS,
+    SECRET_KEY_PAGE_CHARTS_CLASS,
+    SECRET_KEY_PAGE_CLASS,
+    SECRET_KEY_PAGE_MAIN_CLASS
+} from '@/modules/team/components/secret-key/shared/secret-key-page-styles';
 import PerKeyBreakdownTable from './PerKeyBreakdownTable';
-import '../secret-key/shared/SecretKeyShared.css';
 
 const metricsTitle = (
     <div className='flex flex-col gap-2'>
@@ -16,27 +23,31 @@ const metricsTitle = (
     </div>
 );
 
+const CARD_SKELETON_KEYS = ['total-requests', 'avg-response-time', 'unique-endpoints', 'active-keys'];
+const CHART_SKELETON_KEYS = ['requests-over-time', 'top-endpoints'];
+
 const loadingView = (
-    <div className='h-dvh secret-key-page text-foreground'>
-        <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+    <div className={SECRET_KEY_PAGE_CLASS}>
+        <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
             <div className='flex flex-col gap-2'>
-                <Skeleton variant='text' width={240} height={32} />
-                <Skeleton variant='text' width={160} height={20} />
+                <Skeleton className='h-8 w-[240px] rounded-md' />
+                <Skeleton className='h-5 w-[160px] rounded-md' />
             </div>
-            <div className='gap-4 secret-key-page-cards'>
-                {[...Array(4)].map((_, i) => (
-                    <div className='rounded-2xl transition-[all] duration-200 ease-out-fluid secret-key-page-card' key={i}>
+            <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
+                {CARD_SKELETON_KEYS.map((key) => (
+                    <div className={SECRET_KEY_PAGE_CARD_CLASS} key={key}>
                         <div className='flex flex-row items-center gap-2 mb-3'>
-                            <Skeleton variant='circular' width={16} height={16} />
-                            <Skeleton variant='text' width={120} height={20} />
+                            <Skeleton className='size-4 rounded-full' />
+                            <Skeleton className='h-5 w-[120px] rounded-md' />
                         </div>
-                        <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
+                        <Skeleton className='h-12 w-[100px] rounded-sm' />
                     </div>
                 ))}
             </div>
-            <div className='secret-key-page-charts'>
-                <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
-                <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
+            <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
+                {CHART_SKELETON_KEYS.map((key) => (
+                    <Skeleton key={key} className='h-[340px] w-full rounded-lg' />
+                ))}
             </div>
         </div>
     </div>
@@ -104,8 +115,8 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <div className='h-dvh secret-key-page text-foreground'>
-            <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+        <div className={SECRET_KEY_PAGE_CLASS}>
+            <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
                 <div className='flex flex-col gap-2'>
                     <h3 className='text-2xl font-semibold text-foreground'>Secret Key Metrics</h3>
                     <p className='text-sm text-muted'>
@@ -113,9 +124,9 @@ export default function SecretKeyMetrics() {
                     </p>
                 </div>
 
-                <div className='gap-4 secret-key-page-cards'>
+                <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
                     {cards.map((card) => (
-                        <StatCard
+                        <SecretKeyStatCard
                             key={card.title}
                             icon={<card.icon size={16} />}
                             label={card.title}
@@ -126,7 +137,7 @@ export default function SecretKeyMetrics() {
                     ))}
                 </div>
 
-                <div className='secret-key-page-charts'>
+                <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
                     <ChartContainer
                         icon={Activity}
                         title='Requests Over Time'

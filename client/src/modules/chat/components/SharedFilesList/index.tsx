@@ -2,7 +2,6 @@ import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import { formatDistanceToNow } from 'date-fns';
 import FileAttachment from '@/shared/ui/components/FileAttachment';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
-import './SharedFilesList.css';
 
 interface SharedFilesListProps {
     messages: ChatMessage[];
@@ -22,7 +21,7 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
     }
 
     return (
-        <div className='flex flex-col gap-1 overflow-y-auto shared-files-list'>
+        <div className='flex flex-col gap-1 overflow-y-auto max-h-[300px]'>
             {fileMessages.map((message) => (
                 <FileAttachment
                     key={message._id}
@@ -34,7 +33,6 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
                     showPreview
                     variant='detailed'
                     timestamp={formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-                    className='shared-file-item'
                 />
             ))}
         </div>

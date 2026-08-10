@@ -46,7 +46,12 @@ services:
       - volt-server-data:/var/lib/volt-server
       - ${VOLT_SOURCE_DIR}/server:/app
       - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro
-      - ${CLUSTER_DAEMON_SOURCE_DIR}:/ClusterDaemon:ro
+      # The install-manifest build distribution mode ships the daemon source (and
+      # the SDK it links) to enrolled hosts; both live in this repository now. The
+      # server also compiles the SDK contracts from source through its tsconfig
+      # paths map, which resolves to /sdk inside this container.
+      - ${VOLT_SOURCE_DIR}/cluster:/ClusterDaemon:ro
+      - ${VOLT_SOURCE_DIR}/sdk:/sdk:ro
       - volt-server-node-modules:/app/node_modules
     ports: ["${SERVER_PORT:-8100}:8000"]
 
@@ -67,8 +72,10 @@ services:
   cluster-daemon:
     profiles: [enrolled]
     build:
-      context: ${CLUSTER_DAEMON_SOURCE_DIR}
-      dockerfile: Dockerfile.dev
+      # The daemon links @voltstack/daemon-cluster-client from the repository, so
+      # the build context is the repo root and the SDK travels with it.
+      context: ${VOLT_SOURCE_DIR}
+      dockerfile: cluster/Dockerfile.dev
     image: cluster-daemon:local
     restart: unless-stopped
     cap_add:
@@ -92,8 +99,8 @@ services:
       volt-server:   { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${CLUSTER_DAEMON_SOURCE_DIR}:/app
-      - cluster-daemon-node-modules:/app/node_modules
+      - ${VOLT_SOURCE_DIR}/cluster:/app/cluster
+      - cluster-daemon-node-modules:/app/cluster/node_modules
       # The object store lives here now, so this holds the cluster's data — not a cache.
       - cluster-daemon-data:/var/lib/volt-daemon
     ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]

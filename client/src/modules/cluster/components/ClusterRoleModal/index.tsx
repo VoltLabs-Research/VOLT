@@ -1,6 +1,8 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import { Modal, closeModal, StatusBadge, Select } from '@voltstack/bravais';
+import ClusterOptionSelect from '@/modules/cluster/components/shared/ClusterOptionSelect';
+import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     describeTeamClusterDraining,
@@ -8,6 +10,7 @@ import {
     getTeamClusterRoleDescription,
     getTeamClusterRoleLabel,
     getTeamClusterRoleSummary,
+    isTeamClusterRole,
     isTeamClusterRoleTransitionPending,
     TEAM_CLUSTER_ROLE_OPTIONS
 } from '@/modules/cluster/utils/team-cluster-role';
@@ -88,13 +91,13 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                     <div className='flex flex-col gap-3 p-4 rounded-xl bg-background'>
                         <div className='flex flex-row items-center flex-wrap gap-2'>
                             <p className='text-xs text-muted'>Desired</p>
-                            <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.desiredRole)} size='compact'>
+                            <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.desiredRole)}>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.desiredRole)}
-                            </StatusBadge>
+                            </ClusterStatusBadge>
                             <p className='text-xs text-muted'>Effective</p>
-                            <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.effectiveRole)} size='compact'>
+                            <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.effectiveRole)}>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.effectiveRole)}
-                            </StatusBadge>
+                            </ClusterStatusBadge>
                         </div>
                         {isTransitionPending && (
                             <p className='text-xs text-warning'>
@@ -105,24 +108,29 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                         )}
                     </div>
                 )}
-                <Select
+                <ClusterOptionSelect
+                    ariaLabel='Cluster scheduling role'
                     options={TEAM_CLUSTER_ROLE_OPTIONS}
                     value={selectedRole}
                     onChange={(value) => {
-                        setSelectedRole(value as TeamClusterRole);
+                        if (!isTeamClusterRole(value)) {
+                            return;
+                        }
+
+                        setSelectedRole(value);
                         if (error) {
                             setError(undefined);
                         }
                     }}
                     placeholder='Select a role...'
-                    disabled={isSubmitting}
+                    isDisabled={isSubmitting}
                 />
                 <div className='flex flex-col gap-2 p-4 rounded-xl bg-background'>
                     <div className='flex flex-row items-center flex-wrap gap-2'>
                         <p className='text-xs text-muted'>Selected role</p>
-                        <StatusBadge variant={getTeamClusterRoleBadgeVariant(selectedRole)} size='compact'>
+                        <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(selectedRole)}>
                             {getTeamClusterRoleLabel(selectedRole)}
-                        </StatusBadge>
+                        </ClusterStatusBadge>
                     </div>
                     <p className='text-sm text-muted'>
                         {getTeamClusterRoleDescription(selectedRole)}

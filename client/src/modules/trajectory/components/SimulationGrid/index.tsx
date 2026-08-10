@@ -1,6 +1,5 @@
 import DashboardSimulationGrid from './DashboardSimulationGrid';
 import PublicSimulationGrid from './PublicSimulationGrid';
-import './SimulationGrid.css';
 import type { PublicSimulationGridSummary } from './PublicSimulationGrid';
 
 export type { PublicSimulationGridSummary };

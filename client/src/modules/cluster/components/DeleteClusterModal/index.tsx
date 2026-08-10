@@ -1,5 +1,5 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
@@ -98,7 +98,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                             {result.message}
                         </p>
                         {result.manualUninstallCommand && (
-                            <div className='p-4 rounded-xl overflow-auto bg-background font-family-mono text-xs'>
+                            <div className='p-4 rounded-xl overflow-auto bg-background font-mono text-xs'>
                                 {result.manualUninstallCommand}
                             </div>
                         )}

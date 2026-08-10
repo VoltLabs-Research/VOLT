@@ -8,8 +8,26 @@ import { Atom } from 'lucide-react';
 import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import './SimulationCard.css';
 import { useNavigate } from 'react-router-dom';
+
+/**
+ * `simulation-card` keeps its class name because `SimulationCardFooter`'s scrim and this
+ * card's own selectors used to be reached by name; the styling itself is here now.
+ *
+ * The sheet's `transition:` list ended in a stray trailing comma, which made the whole
+ * declaration invalid — so no transition has actually been applied for as long as that
+ * typo has existed. It is written correctly here rather than reproduced.
+ */
+const CARD = 'simulation-card group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-border transition-[background-color,border-color,box-shadow] duration-[250ms] hover:border-border-secondary';
+
+/**
+ * `.simulation-card.is-selected` mixed 10% of the info-soft fill into the card surface.
+ * `--selected-indicator` was the accent, which is the foreground.
+ */
+const CARD_SELECTED = 'is-selected border-accent bg-[color-mix(in_srgb,var(--surface-secondary)_90%,var(--info-soft))]';
+
+const COVER = 'relative flex h-[200px] w-full flex-row items-center justify-center overflow-hidden rounded-xl';
+
 const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
     '.footer-options-btn',
     '[data-popover-trigger^="simulation-card-popover-"]'
@@ -91,10 +109,10 @@ export default function SimulationCard({
         : undefined;
 
     const containerClass = cn(
-        'simulation-card rounded-xl border border-border relative',
+        CARD,
         canOpen && 'cursor-pointer',
         isProcessing && 'has-jobs',
-        isSelected && 'is-selected'
+        isSelected && CARD_SELECTED
     );
 
     const handleClick = (event: MouseEvent<HTMLElement>): void => {
@@ -130,10 +148,10 @@ export default function SimulationCard({
             aria-label={canOpen ? cardAriaLabel : undefined}
             aria-busy={isProcessing}
         >
-            <div className='flex flex-row items-center rounded-xl relative overflow-hidden w-full justify-center cover-container'>
+            <div className={COVER}>
                 {previewBlobUrl ? (
                     <img
-                        className='w-full h-full cover-image'
+                        className='block h-full w-full object-cover'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
                     />

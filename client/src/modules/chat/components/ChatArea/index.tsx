@@ -8,7 +8,8 @@ import TypingIndicator from '../TypingIndicator';
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { useState } from 'react';
 import { MessagesSquare } from 'lucide-react';
-import { EmptyState, openModal } from '@voltstack/bravais';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
+import { openModal } from '@/shared/ui/modal';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { hasUserReactedWith } from '@/modules/chat/utils/reactions';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
@@ -36,6 +37,20 @@ interface ChatAreaProps {
     onRemoveReaction: (messageId: string, emoji: string) => Promise<unknown>;
     onInfoClick?: () => void;
 }
+
+/*
+ * `chat-area` is not this component's own styling — it was MessagesPage's handle
+ * for the responsive master-detail swap, and it stays on the element because the
+ * swap is still keyed off the page's state flags. What changed is where the swap
+ * is written: the rules that used to be `.messages-page > .chat-area` in
+ * MessagesPage.css are the variants below.
+ *
+ * Below 768px the pane is hidden and the sidebar owns the viewport, unless a chat
+ * is open. Below 1024px an open details panel takes the viewport instead — which
+ * is why the chat-open variant excludes that case rather than relying on which
+ * rule the cascade happens to reach last, as the two stylesheets did.
+ */
+const AREA_CLASS_NAMES = 'flex h-full flex-1 min-w-0 chat-area max-[768px]:hidden max-[768px]:w-full max-[768px]:min-w-0 max-[1024px]:[.messages-page--details-open_&]:hidden max-[768px]:[.messages-page--chat-open:not(.messages-page--details-open)_&]:flex';
 
 const ChatArea = ({
     chat,
@@ -86,15 +101,10 @@ const ChatArea = ({
         return onSetReaction(message._id, emoji);
     };
 
-    /*
-     * `chat-area` is not this component's own styling — MessagesPage selects it
-     * to run the responsive master-detail swap, so it stays as the parent's
-     * layout contract while everything else moved to style props.
-     */
     if (!chat) {
         return (
-            <div className='flex items-center justify-center h-full flex-1 min-w-0 chat-area'>
-                <EmptyState
+            <div className={`items-center justify-center ${AREA_CLASS_NAMES}`}>
+                <RecoveryState
                     icon={<MessagesSquare size={32} />}
                     title='Welcome to Messages'
                     description='Select a conversation or start a new chat'
@@ -123,7 +133,7 @@ const ChatArea = ({
     );
 
     return (
-        <div className='flex flex-col h-full flex-1 min-w-0 chat-area'>
+        <div className={`flex-col ${AREA_CLASS_NAMES}`}>
             <ChatHeader
                 chat={chat}
                 currentUserId={currentUserId}

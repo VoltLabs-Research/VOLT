@@ -1,5 +1,7 @@
-import { Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Redo2, Square } from 'lucide-react';
+import { useMemo } from 'react';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { ReactElement } from 'react';
 
 interface JobGroupMenuProps {
@@ -10,6 +12,16 @@ interface JobGroupMenuProps {
     onRetryFailedJobs: () => void;
 };
 
+/**
+ * A right-click menu, so it stays on the app's own `ContextMenuPopover` rather than
+ * moving to HeroUI's `Dropdown`: the panel anchors to the pointer's coordinate, not
+ * to an element, and opening it needs `preventDefault`/`stopPropagation` on a real
+ * `contextmenu` event — neither of which React Aria's press model gives.
+ *
+ * `isLoading` per item is gone because `AsyncContextMenuItem` already awaits
+ * `onClick` and shows its own spinner; `loadingAction` still disables both entries
+ * while either mutation is in flight, which is what it was really for.
+ */
 const JobGroupMenu = ({
     trajectoryId,
     trigger,
@@ -17,43 +29,31 @@ const JobGroupMenu = ({
     onRemoveRunningJobs,
     onRetryFailedJobs
 }: JobGroupMenuProps) => {
+    const options = useMemo<MenuOption[]>(() => [
+        {
+            label: 'Remove Running Jobs',
+            icon: Square,
+            destructive: true,
+            disabled: loadingAction !== null,
+            onClick: onRemoveRunningJobs
+        },
+        {
+            label: 'Retry Failed Jobs',
+            icon: Redo2,
+            disabled: loadingAction !== null,
+            onClick: onRetryFailedJobs
+        }
+    ], [loadingAction, onRemoveRunningJobs, onRetryFailedJobs]);
+
     return (
-        <Popover
+        <ContextMenuPopover
             id={`job-group-menu-${trajectoryId}`}
             trigger={trigger}
+            options={options}
             triggerAction='contextmenu'
-            role='menu'
-            triggerAriaHaspopup='menu'
             ariaLabel='Job group actions'
-        >
-            {(close) => (
-                <PopoverMenu label='Job group actions' onClose={close}>
-                    <PopoverMenuItem
-                        icon={<Square />}
-                        onClick={() => {
-                            onRemoveRunningJobs();
-                            close();
-                        }}
-                        variant='danger'
-                        isLoading={loadingAction === 'remove'}
-                        disabled={loadingAction !== null}
-                    >
-                        Remove Running Jobs
-                    </PopoverMenuItem>
-                    <PopoverMenuItem
-                        icon={<Redo2 />}
-                        onClick={() => {
-                            onRetryFailedJobs();
-                            close();
-                        }}
-                        isLoading={loadingAction === 'retry'}
-                        disabled={loadingAction !== null}
-                    >
-                        Retry Failed Jobs
-                    </PopoverMenuItem>
-                </PopoverMenu>
-            )}
-        </Popover>
+            menuLabel='Job group actions'
+        />
     );
 };
 

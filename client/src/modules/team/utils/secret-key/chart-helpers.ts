@@ -1,4 +1,4 @@
 export const CHART_COLORS = {
-    requests: 'var(--accent-blue)',
-    endpoints: 'var(--accent-green)'
+    requests: 'var(--accent)',
+    endpoints: 'var(--success)'
 } as const;

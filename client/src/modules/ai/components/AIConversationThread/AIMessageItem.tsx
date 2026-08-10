@@ -2,7 +2,23 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import { createTableArtifactComponents } from '@/modules/ai/components/AIConversationThread/markdown-table-artifact';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
 import ToolInvocationCard from '@/modules/ai/components/AIConversationThread/ToolInvocationCard';
-import { IconButton, Tooltip } from '@voltstack/bravais';
+import {
+    ACTION_REQUEST_LIST,
+    MARKDOWN_PROSE,
+    MESSAGE_ACTION,
+    MESSAGE_ACTIONS,
+    MESSAGE_BUBBLE,
+    MESSAGE_BUBBLE_ASSISTANT,
+    MESSAGE_BUBBLE_USER,
+    MESSAGE_REASONING,
+    MESSAGE_REASONING_LABEL,
+    MESSAGE_ROW,
+    MESSAGE_ROW_ASSISTANT,
+    MESSAGE_ROW_USER,
+    MESSAGE_TEXT,
+    REASONING_PROSE
+} from '@/modules/ai/components/AIConversationThread/thread-styles';
+import { Button, Tooltip, cn } from '@heroui/react';
 import { Check, Copy } from 'lucide-react';
 import { memo, useState } from 'react';
 import remarkGfm from 'remark-gfm';
@@ -33,16 +49,18 @@ const CopyMessageButton = ({ text }: CopyMessageButtonProps) => {
     };
 
     return (
-        <Tooltip content={copied ? 'Copied' : 'Copy message'} placement='top'>
-            <IconButton
+        <Tooltip>
+            <Button
+                isIconOnly
                 variant='ghost'
                 size='sm'
-                className='ai-message-action'
+                className={MESSAGE_ACTION}
                 aria-label='Copy message'
-                onClick={handleCopy}
+                onPress={handleCopy}
             >
                 {copied ? <Check size={13} /> : <Copy size={13} />}
-            </IconButton>
+            </Button>
+            <Tooltip.Content placement='top'>{copied ? 'Copied' : 'Copy message'}</Tooltip.Content>
         </Tooltip>
     );
 };
@@ -64,7 +82,8 @@ const AIMessageItem = memo(({
 }: AIMessageItemProps) => {
     const isUser = message.role === AIMessageRole.User;
     const messageLabel = isUser ? 'You' : 'Assistant';
-    const bubbleVariant = isUser ? 'is-user' : 'is-assistant';
+    const bubbleVariant = isUser ? MESSAGE_BUBBLE_USER : MESSAGE_BUBBLE_ASSISTANT;
+    const rowVariant = isUser ? MESSAGE_ROW_USER : MESSAGE_ROW_ASSISTANT;
 
     let markdownComponents = {};
     if (!isUser && onOpenTableArtifact) {
@@ -79,11 +98,11 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'reasoning') {
             segmentElements.push(
-                <div className='ai-message-reasoning' key={`seg-${segmentIndex}`}>
-                    <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted ai-message-reasoning-label block'>
+                <div className={MESSAGE_REASONING} key={`seg-${segmentIndex}`}>
+                    <span className={MESSAGE_REASONING_LABEL}>
                         Thinking
                     </span>
-                    <div className='text-xs ai-message-text ai-message-markdown'>
+                    <div className={cn('text-xs', MESSAGE_TEXT, MARKDOWN_PROSE, REASONING_PROSE)}>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
                             {segment.content}
                         </ReactMarkdown>
@@ -96,8 +115,8 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'text') {
             segmentElements.push(
-                <div className={`ai-message-bubble ${bubbleVariant}`} key={`seg-${segmentIndex}`}>
-                    <div className='text-[0.95rem] ai-message-text ai-message-markdown'>
+                <div className={`${MESSAGE_BUBBLE} ${bubbleVariant}`} key={`seg-${segmentIndex}`}>
+                    <div className={cn('text-[0.95rem]', MESSAGE_TEXT, MARKDOWN_PROSE)}>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={markdownComponents}>
                             {segment.content}
                         </ReactMarkdown>
@@ -119,7 +138,7 @@ const AIMessageItem = memo(({
         }
 
         segmentElements.push(
-            <div className='flex flex-col gap-2 ai-action-request-list' key={`seg-${groupStart}`}>
+            <div className={ACTION_REQUEST_LIST} key={`seg-${groupStart}`}>
                 {invocations.map((invocation, index) => (
                     <ToolInvocationCard
                         key={`${invocation.toolCallId}-${index}`}
@@ -133,7 +152,7 @@ const AIMessageItem = memo(({
 
     return (
         <article
-            className={`flex flex-col gap-4 ai-message-row ${bubbleVariant}`}
+            className={`${MESSAGE_ROW} ${rowVariant}`}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
         >
             <span className='sr-only'>
@@ -142,7 +161,7 @@ const AIMessageItem = memo(({
             {segmentElements}
             {!isUser && message.segments.length === 0 && <ThinkingBubble />}
             {!isUser && message.preview.trim().length > 0 && (
-                <div className='flex flex-row items-center gap-1 ai-message-actions'>
+                <div className={MESSAGE_ACTIONS}>
                     <CopyMessageButton text={message.preview} />
                 </div>
             )}

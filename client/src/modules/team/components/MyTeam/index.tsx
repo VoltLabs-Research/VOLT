@@ -16,7 +16,6 @@ import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domai
 import type { TeamMemberStats } from '@volt/contracts/modules/team/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { SOCKET_TEAM_MEMBER_EVENTS } from '@/modules/socket/events/team';
-import './MyTeam.css';
 
 const TEAM_MEMBERS_QUERY_KEY = ['team-members'] as const;
 

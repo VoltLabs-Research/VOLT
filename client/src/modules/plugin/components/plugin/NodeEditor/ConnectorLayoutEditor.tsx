@@ -1,4 +1,5 @@
-import { Button, CollapsibleSection } from '@voltstack/bravais';
+import { Button, cn } from '@heroui/react';
+import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -81,18 +82,18 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
             {handleDefinitions.map((handleDefinition, index) => {
                 const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
+                // bravais's `rounded-lg` was 16px, which is HeroUI's `rounded-2xl` (spec §3b).
                 return (
-                    <div className='rounded-lg border border-border' key={handleDefinition.id} style={{
-                            padding: '0.75rem',
-                            marginTop: index === 0 ? 0 : '0.75rem'
-                        }}>
-                        <div className='flex flex-row items-center justify-between gap-2' style={{ marginBottom: '0.75rem' }}>
+                    <div
+                        className={cn('rounded-2xl border border-border p-3', index === 0 ? 'mt-0' : 'mt-3')}
+                        key={handleDefinition.id}
+                    >
+                        <div className='mb-3 flex flex-row items-center justify-between gap-2'>
                             <strong>{handleDefinition.label}</strong>
                             <Button
                                 variant='outline'
-                                intent='neutral'
                                 size='sm'
-                                onClick={() => resetHandlePlacement(handleDefinition.id)}
+                                onPress={() => resetHandlePlacement(handleDefinition.id)}
                             >
                                 Reset
                             </Button>

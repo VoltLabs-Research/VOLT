@@ -2,8 +2,6 @@ import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { GRADIENT_CSS, formatLegendValue } from '../../utils/gradient-legend';
 import { useState, useRef } from 'react';
 
-import './GradientPreview.css';
-
 interface GradientPreviewProps {
     gradient: string;
     startValue: number;
@@ -51,15 +49,15 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
     const gradientStyle = GRADIENT_CSS[gradient];
 
     return (
-        <div className='w-full canvas-gradient-preview'>
-            <div className='rounded-lg relative cursor-pointer canvas-gradient-bar' ref={barRef} style={{ background: gradientStyle }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+        <div className='mt-1 w-full'>
+            <div className='relative h-3.5 cursor-pointer rounded-md' ref={barRef} style={{ background: gradientStyle }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
                 {tooltipValue !== null && (
-                    <div className='rounded-lg absolute canvas-gradient-tooltip text-xs' style={{ left: tooltipX }}>
+                    <div className='absolute -top-[22px] -translate-x-1/2 rounded-md bg-surface-tertiary px-1.5 py-0.5 text-xs' style={{ left: tooltipX }}>
                         {tooltipValue}
                     </div>
                 )}
             </div>
-            <div className='flex flex-row items-center justify-between canvas-gradient-labels text-xs'>
+            <div className='flex flex-row items-center justify-between text-xs text-muted'>
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
             </div>

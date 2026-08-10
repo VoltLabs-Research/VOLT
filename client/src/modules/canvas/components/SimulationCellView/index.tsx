@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import { Button, Checkbox, NumberInput } from '@voltstack/bravais';
+import { Button, Checkbox, Label, NumberField } from '@heroui/react';
 import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
 import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 import { hasValidCellVectors } from '@/modules/fractal/utils/cell-wireframe';
@@ -17,6 +17,27 @@ const AXIS_LABELS = ['a', 'b', 'c'] as const;
 const PBC_AXES = ['x', 'y', 'z'] as const;
 
 const cloneVectors = (vectors: number[][]): number[][] => vectors.map((v) => [...v]);
+
+/**
+ * bravais's `Checkbox` took an inline `label` and a native change event; HeroUI's is
+ * compositional and reports the next boolean directly.
+ */
+interface CellCheckboxProps {
+    isSelected: boolean;
+    label: string;
+    onChange: (isSelected: boolean) => void;
+}
+
+const CellCheckbox = ({ isSelected, label, onChange }: CellCheckboxProps) => (
+    <Checkbox isSelected={isSelected} onChange={onChange}>
+        <Checkbox.Content>
+            <Checkbox.Control>
+                <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Label>{label}</Label>
+        </Checkbox.Content>
+    </Checkbox>
+);
 
 const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewProps) => {
     const teamId = typeof trajectory?.team === 'object' ? trajectory.team._id : trajectory?.team;
@@ -151,18 +172,18 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                     ))}
                 </div>
                 <div className='flex flex-col gap-2' style={{ minWidth: 150 }}>
-                    <Checkbox
-                        checked={showPbcImages}
+                    <CellCheckbox
+                        isSelected={showPbcImages}
                         label='Show PBC images'
-                        onChange={(event) => setShowPbcImages(event.target.checked)}
+                        onChange={setShowPbcImages}
                     />
                     {canEdit && !isEditing && (
-                        <Button variant='ghost' size='sm' onClick={() => setIsEditing(true)}>
+                        <Button variant='ghost' size='sm' onPress={() => setIsEditing(true)}>
                             Edit Cell
                         </Button>
                     )}
                     {cellOverride && !isEditing && (
-                        <Button variant='ghost' size='sm' intent='neutral' onClick={resetEdit}>
+                        <Button variant='ghost' size='sm' onPress={resetEdit}>
                             Reset Cell
                         </Button>
                     )}
@@ -176,33 +197,39 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                         <div className='flex flex-row items-center gap-2' key={AXIS_LABELS[vectorIndex] ?? vectorIndex}>
                             <span className='text-xs' style={{ width: 16 }}>{AXIS_LABELS[vectorIndex] ?? `v${vectorIndex + 1}`}</span>
                             {vector.map((component, componentIndex) => (
-                                <NumberInput
+                                <NumberField
                                     key={componentIndex}
                                     value={component}
                                     step={0.1}
-                                    onValueChange={(next) => updateDraftComponent(vectorIndex, componentIndex, next)}
+                                    onChange={(next) => updateDraftComponent(vectorIndex, componentIndex, next)}
                                     aria-label={`${AXIS_LABELS[vectorIndex] ?? vectorIndex} component ${componentIndex + 1}`}
-                                />
+                                >
+                                    <NumberField.Group>
+                                        <NumberField.DecrementButton />
+                                        <NumberField.Input />
+                                        <NumberField.IncrementButton />
+                                    </NumberField.Group>
+                                </NumberField>
                             ))}
                         </div>
                     ))}
                     <span className='text-xs text-muted'>Periodic boundary conditions</span>
                     <div className='flex flex-row items-center gap-4'>
                         {PBC_AXES.map((axis) => (
-                            <Checkbox
+                            <CellCheckbox
                                 key={axis}
-                                checked={draftPbc[axis]}
+                                isSelected={draftPbc[axis]}
                                 label={axis.toUpperCase()}
-                                onChange={(event) => setDraftPbc((previous) => ({
+                                onChange={(isSelected) => setDraftPbc((previous) => ({
                                     ...previous,
-                                    [axis]: event.target.checked
+                                    [axis]: isSelected
                                 }))}
                             />
                         ))}
                     </div>
                     <div className='flex flex-row items-center gap-2'>
-                        <Button size='sm' onClick={applyEdit}>Apply</Button>
-                        <Button size='sm' variant='ghost' intent='neutral' onClick={() => setIsEditing(false)}>Cancel</Button>
+                        <Button variant='secondary' size='sm' onPress={applyEdit}>Apply</Button>
+                        <Button size='sm' variant='ghost' onPress={() => setIsEditing(false)}>Cancel</Button>
                     </div>
                 </div>
             )}

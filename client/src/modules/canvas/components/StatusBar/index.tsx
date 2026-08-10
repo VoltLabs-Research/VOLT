@@ -1,10 +1,7 @@
-import { cn } from '@heroui/react';
+import { Separator, cn } from '@heroui/react';
 import { formatSize } from '@/shared/utils/format';
-import { Divider } from '@voltstack/bravais';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
-
-import './StatusBar.css';
 
 interface StatusItem {
     key: string;
@@ -20,10 +17,10 @@ interface StatusBarProps {
 }
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
-    <div className='flex flex-row items-center gap-2 canvas-status-group'>
+    <div className='flex flex-row items-center gap-2'>
         {items.map(({ key, label, value, title, className }, i) => (
-            <div className='flex flex-row items-center gap-2 canvas-status-item' key={key}>
-                {i > 0 && <Divider orientation='vertical' className="canvas-status-divider" />}
+            <div className='flex flex-row items-center gap-2' key={key}>
+                {i > 0 && <Separator orientation='vertical' className='h-3 w-px bg-border' />}
                 <span className={cn('text-xs text-muted', className)} title={title}>
                     {label}{label && ': '}{value}
                 </span>
@@ -73,9 +70,14 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
         }
     ];
 
+    /*
+     * `--canvas-right-overlay-size` is written as an inline style on
+     * `.canvas-editor-root` by `CanvasPage`, so the bar shrinks with the right panel.
+     * The `var()` reference is kept rather than resolved, exactly as before.
+     */
     return (
-        <div className='flex flex-row items-center justify-between canvas-status-bar'>
-            <div className='flex flex-row items-center gap-2 canvas-status-main'>
+        <div className='flex h-7 w-[calc(100%-max(12px,var(--canvas-right-overlay-size,0px)))] flex-row items-center justify-between gap-3 overflow-scroll px-3'>
+            <div className='flex flex-row items-center gap-2'>
                 <StatusGroup items={left} />
             </div>
             <StatusGroup items={right} />

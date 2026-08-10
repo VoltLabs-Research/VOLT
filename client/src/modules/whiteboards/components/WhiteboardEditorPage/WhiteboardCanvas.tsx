@@ -39,7 +39,7 @@ const WhiteboardCanvas = ({
     onBack
 }: WhiteboardCanvasProps) => (
     <div
-        className='whiteboard-canvas-shell'
+        className='w-full h-full rounded-2xl overflow-hidden'
         onPasteCapture={onCanvasPasteCapture}
         onDragOver={onCanvasDragOver}
         onDrop={onCanvasDrop}

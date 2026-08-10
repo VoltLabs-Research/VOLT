@@ -1,9 +1,0 @@
-.resource-usage {
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-}
-
-.resource-usage-list {
-    justify-content: space-around;
-}

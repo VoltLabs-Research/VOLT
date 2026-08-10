@@ -1,7 +1,7 @@
 import { getMemberRole } from '@/modules/chat/utils/chat/chat-display';
 import TeamMemberList from '../../TeamMemberList';
 import { MemberListItem } from '../../MemberListItem';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 
@@ -53,10 +53,9 @@ const MembersTab = ({
                 />
                 {selectedMembers.length > 0 && (
                     <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={onAddMembers}
-                        isLoading={isLoading}
+                        variant='primary'
+                        onPress={onAddMembers}
+                        isPending={isLoading}
                     >
                         Add {selectedMembers.length} Member{selectedMembers.length > 1 ? 's' : ''}
                     </Button>

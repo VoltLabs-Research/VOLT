@@ -6,7 +6,7 @@ import type {
     NodeConnectorSide
 } from '@volt/contracts/modules/plugin/workflow';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 
 interface NodeHandleDefinition {
     id: string;

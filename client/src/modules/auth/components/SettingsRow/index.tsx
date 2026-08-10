@@ -1,7 +1,7 @@
-import './SettingsRow.css';
-import { cn } from '@/shared/utils/cn';
-import { Row } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
+
+const ROW = 'flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap';
 
 interface SettingsRowProps {
     icon?: ReactNode;
@@ -21,17 +21,13 @@ const SettingsRow = ({
     className = ''
 }: SettingsRowProps) => {
     const classes = cn(
-        'settings-row',
-        onClick && 'clickable',
+        ROW,
+        onClick && 'cursor-pointer hover:bg-surface-hover',
         className
     );
 
     return (
-        <Row
-            gap='075'
-            p='05'
-            radius='md'
-            cursor={onClick ? 'pointer' : undefined}
+        <div
             className={classes}
             onClick={onClick}
         >
@@ -51,11 +47,11 @@ const SettingsRow = ({
                 )}
             </div>
             {rightContent && (
-                <div className='flex flex-row items-center shrink-0 settings-row-right'>
+                <div className='flex flex-row items-center shrink-0 max-sm:basis-full max-sm:ml-8'>
                     {rightContent}
                 </div>
             )}
-        </Row>
+        </div>
     );
 };
 

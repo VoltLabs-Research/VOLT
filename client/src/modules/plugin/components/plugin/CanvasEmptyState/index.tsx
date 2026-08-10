@@ -1,6 +1,13 @@
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import {
+    EMPTY_STATE_CARD_CLASS,
+    EMPTY_STATE_CLASS,
+    EMPTY_STATE_DESCRIPTION_CLASS,
+    EMPTY_STATE_FLOW_CLASS,
+    EMPTY_STATE_ICON_CLASS
+} from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
 
 const WORKFLOW_STEPS = ['Modifier', 'Arguments', 'Context', 'ForEach', 'Entrypoint', 'Exposure'];
@@ -9,39 +16,39 @@ const CanvasEmptyState = () => {
     const addNode = usePluginBuilderStore((state) => state.addNode);
 
     return (
-        <div className='flex absolute inset-0 z-10 items-center justify-center canvas-empty-state'>
-            <div className='flex flex-col items-center gap-4 text-center canvas-empty-state-card bg-surface border border-border'>
-                <div className='flex rounded-xl items-center justify-center canvas-empty-state-icon-wrapper'>
-                    <PlugZap size={28} />
+        <div className={EMPTY_STATE_CLASS}>
+            <div className={EMPTY_STATE_CARD_CLASS}>
+                <div className={EMPTY_STATE_ICON_CLASS}>
+                    <PlugZap size={28} aria-hidden='true' />
                 </div>
 
                 <div className='flex flex-col items-center gap-2'>
                     <h3 className='text-xl font-semibold text-foreground'>
                         Start building your plugin
                     </h3>
-                    <p className='text-xs text-muted leading-normal canvas-empty-state-description'>
+                    <p className={EMPTY_STATE_DESCRIPTION_CLASS}>
                         Drag nodes from the palette on the left, or add a Modifier node to get started with the plugin workflow.
                     </p>
                 </div>
 
+                {/* bravais `variant='solid' intent='brand'` — the accent fill — is HeroUI's `primary` (spec §4d). */}
                 <Button
-                    intent='brand'
-                    variant='solid'
+                    variant='primary'
                     size='sm'
-                    rightIcon={<ArrowRight size={16} />}
-                    onClick={() => addNode(NodeType.MODIFIER, {
+                    onPress={() => addNode(NodeType.MODIFIER, {
                         x: 250,
                         y: 250
                     })}
                 >
                     Add Modifier Node
+                    <ArrowRight size={16} aria-hidden='true' />
                 </Button>
 
-                <div className='flex flex-row items-center justify-center flex-wrap gap-1 w-full canvas-empty-state-flow'>
+                <div className={EMPTY_STATE_FLOW_CLASS}>
                     {WORKFLOW_STEPS.map((step, i, arr) => (
-                        <span className='flex flex-row items-center gap-1 text-muted text-xs' key={step}>
+                        <span className='flex flex-row items-center gap-1 text-xs text-muted' key={step}>
                             {step}
-                            {i < arr.length - 1 && <ChevronRight size={10} />}
+                            {i < arr.length - 1 && <ChevronRight size={10} aria-hidden='true' />}
                         </span>
                     ))}
                 </div>

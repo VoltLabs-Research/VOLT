@@ -1,8 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { LuServer } from 'react-icons/lu';
-import { Heading, Text, TextInput, Button } from '@voltstack/bravais';
+import { Server } from 'lucide-react';
+import { Button, FieldError, InputGroup, Spinner, TextField } from '@heroui/react';
 import type { RemoteProbeResult } from '@/services/RemoteProbe';
-import './Onboarding.css';
 
 interface OnboardingProps{
     onConnectRemote: (endpoint: string) => Promise<RemoteProbeResult>;
@@ -58,42 +57,65 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
     };
 
     return (
-        <main className='onb'>
-            <div className='onb-card'>
-                <div className='onb-head'>
-                    <Heading level={1} size='2xl' weight='bold'>Connect to VOLT</Heading>
-                    <Text as='p' size='md' tone='secondary'>Enter the server address of your deployment.</Text>
+        <main className='absolute inset-0 z-10 flex items-center justify-center p-[clamp(24px,5vw,64px)]'>
+            <div className='flex w-full max-w-[420px] flex-col gap-6'>
+                <div className='flex flex-col gap-1.5'>
+                    <h1 className='text-2xl font-semibold text-foreground'>Connect to VOLT</h1>
+                    <p className='text-sm text-muted'>Enter the server address of your deployment.</p>
                 </div>
 
-                <form className='onb-form' onSubmit={submit}>
-                    <TextInput
-                        leftIcon={<LuServer size={18} aria-hidden='true' />}
-                        hasError={Boolean(error)}
-                        fullWidth
+                <form className='flex flex-col gap-2' onSubmit={submit}>
+                    {/*
+                     * `TextField` owns the value and the invalid state, which is what
+                     * lets `FieldError` render the message with the field's own
+                     * `aria-describedby` wiring instead of an unassociated span.
+                     * The icon becomes an `InputGroup.Prefix` — HeroUI's replacement
+                     * for the old `leftIcon` prop.
+                     */}
+                    <TextField
+                        aria-label='Server address'
                         value={endpoint}
-                        spellCheck={false}
-                        autoFocus
-                        autoComplete='url'
-                        inputMode='url'
-                        autoCapitalize='none'
-                        placeholder='https://volt.your-lab.org'
-                        onChange={(event) => { setEndpoint(event.target.value); setError(null); }}
-                    />
+                        onChange={(value) => { setEndpoint(value); setError(null); }}
+                        isInvalid={Boolean(error)}
+                        fullWidth
+                    >
+                        <InputGroup>
+                            <InputGroup.Prefix><Server size={18} aria-hidden='true' /></InputGroup.Prefix>
+                            <InputGroup.Input
+                                spellCheck={false}
+                                autoFocus
+                                autoComplete='url'
+                                inputMode='url'
+                                autoCapitalize='none'
+                                placeholder='https://volt.your-lab.org'
+                            />
+                        </InputGroup>
+                        {error && <FieldError>{error}</FieldError>}
+                    </TextField>
 
-                    {error && <Text as='span' size='sm' className='onb-error'>{error}</Text>}
-
-                    <Button type='submit' intent='brand' block isLoading={connecting} disabled={!endpoint.trim() || connecting}>
+                    {/*
+                     * `isPending` covers what `disabled` used to: React Aria blocks the
+                     * press and rewrites a pending submit button's type so Enter in the
+                     * field cannot double-submit either.
+                     */}
+                    <Button type='submit' variant='primary' fullWidth isPending={connecting} isDisabled={!endpoint.trim()}>
+                        {connecting && <Spinner size='sm' color='current' />}
                         Continue
                     </Button>
                 </form>
 
                 {recent.length > 0 && (
-                    <div className='onb-recent'>
-                        <span className='onb-recent-label'>Recent</span>
-                        <ul className='onb-recent-list'>
+                    <div className='flex flex-col gap-2'>
+                        <span className='text-[11px] font-semibold uppercase tracking-[0.04em] text-muted/75'>Recent</span>
+                        <ul className='flex flex-col gap-1.5'>
                             {recent.map((item) => (
                                 <li key={item}>
-                                    <button type='button' className='onb-recent-item' disabled={connecting} onClick={() => void connect(item)}>
+                                    <button
+                                        type='button'
+                                        className='w-full cursor-pointer overflow-hidden truncate rounded-lg border border-border bg-surface-secondary px-3 py-2.5 text-left text-[13px] text-muted transition-colors duration-[120ms] ease-out-fluid hover:bg-default hover:text-foreground disabled:cursor-default disabled:opacity-50'
+                                        disabled={connecting}
+                                        onClick={() => void connect(item)}
+                                    >
                                         {item}
                                     </button>
                                 </li>
@@ -102,8 +124,9 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
                     </div>
                 )}
 
-                <button type='button' className='onb-local' onClick={onUseLocal}>
-                    Prefer to run it here? <span className='onb-local-strong'>Set up Volt on this machine</span>
+                {/* Local deployment: a quiet line under the input, the action segment highlighted. */}
+                <button type='button' className='group/local self-center cursor-pointer text-[0.8125rem] text-muted/75' onClick={onUseLocal}>
+                    Prefer to run it here? <span className='text-muted transition-colors duration-150 ease-out-fluid group-hover/local:text-foreground group-hover/local:underline group-hover/local:underline-offset-2'>Set up Volt on this machine</span>
                 </button>
             </div>
         </main>

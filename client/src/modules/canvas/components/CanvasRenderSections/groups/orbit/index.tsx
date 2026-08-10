@@ -1,10 +1,10 @@
-import { row, PRESETS, checkboxGrid, targetRows } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, checkboxGrid, targetRows, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useOrbitGroup = (): RenderGroup => {
@@ -18,7 +18,7 @@ const useOrbitGroup = (): RenderGroup => {
                 enabled: true,
                 rows: [],
                 extras: (
-                    <div className='canvas-render-grid'>
+                    <div className={RENDER_GRID_CLASS}>
                         {checkboxGrid([
                             {
                                 key: 'enabled',
@@ -57,7 +57,7 @@ const useOrbitGroup = (): RenderGroup => {
                                 onChange: (v: boolean) => s.set({ enablePan: v })
                             }
                         ])}
-                        <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="text-xs" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
+                        <Button variant='ghost' size='sm' className='self-start text-xs' onPress={() => s.reset()}>
                             Reset Orbit
                         </Button>
                     </div>

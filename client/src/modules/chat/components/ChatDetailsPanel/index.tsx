@@ -3,13 +3,13 @@ import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utils/chat
 import ChatAvatar from '../ChatAvatar';
 import SharedFilesList from '../SharedFilesList';
 import { MessagesSquare, Users } from 'lucide-react';
-import { Button, EmptyState } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { GROUP_MANAGEMENT_MODAL_ID } from '../GroupManagementModal';
 import { openModal } from '@/shared/ui/modal';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
-import './ChatDetailsPanel.css';
 
 interface ChatDetailsPanelProps {
     chat: Chat | null;
@@ -18,6 +18,19 @@ interface ChatDetailsPanelProps {
     presence?: PresenceStatus;
     onClose?: () => void;
 }
+
+/*
+ * `chat-details` stays on the root: MessagesPage's state flags still decide
+ * whether this pane is a 320px rail beside the thread or the whole viewport, and
+ * the two rules that used to do that from MessagesPage.css are the last variants
+ * below. Under 1024px the rail is hidden unless it is the open pane, in which case
+ * it takes the width.
+ */
+const PANEL_CLASS_NAMES = 'flex flex-col h-full w-[320px] min-w-[320px] border-l border-border bg-background chat-details max-[1024px]:hidden max-[1024px]:w-full max-[1024px]:min-w-0 max-[1024px]:border-l-0 max-[1024px]:[.messages-page--details-open_&]:flex';
+
+const SECTION_CLASS_NAMES = 'py-4 border-b border-border last:border-b-0';
+
+const SECTION_TITLE_CLASS_NAMES = 'block mb-3 text-xs font-semibold uppercase tracking-[0.05em] text-muted';
 
 const ChatDetailsPanel = ({
     chat,
@@ -28,10 +41,10 @@ const ChatDetailsPanel = ({
 }: ChatDetailsPanelProps) => {
     if (!chat) {
         return (
-            <div className='flex flex-col h-full chat-details'>
+            <div className={PANEL_CLASS_NAMES}>
                 <PanelHeader title='Details' />
                 <div className='flex flex-1 items-center justify-center'>
-                    <EmptyState
+                    <RecoveryState
                         icon={<MessagesSquare size={32} />}
                         title='No chat selected'
                         description='Select a conversation to view details'
@@ -46,15 +59,14 @@ const ChatDetailsPanel = ({
     const headerTitle = chat.isGroup ? 'Group Info' : 'Contact Info';
 
     return (
-        <div className='flex flex-col h-full chat-details'>
+        <div className={PANEL_CLASS_NAMES}>
             <PanelHeader
                 title={headerTitle}
                 onClose={onClose}
-                className='chat-details-header'
             />
 
-            <div className='flex flex-col overflow-y-auto flex-1 chat-details-content'>
-                <div className='flex flex-col items-center gap-3 text-center chat-details-section'>
+            <div className='flex flex-col overflow-y-auto flex-1 p-6'>
+                <div className={`flex flex-col items-center gap-3 text-center ${SECTION_CLASS_NAMES}`}>
                     <ChatAvatar
                         chat={chat}
                         currentUserId={currentUserId}
@@ -76,25 +88,24 @@ const ChatDetailsPanel = ({
                 </div>
 
                 {chat.isGroup && (
-                    <div className='chat-details-section'>
-                        <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted chat-details-section-title block mb-3'>
+                    <div className={SECTION_CLASS_NAMES}>
+                        <span className={SECTION_TITLE_CLASS_NAMES}>
                             Actions
                         </span>
                         <Button
                             variant='ghost'
-                            intent='neutral'
-                            leftIcon={<Users />}
-                            block
-                            align='start'
-                            onClick={() => openModal(GROUP_MANAGEMENT_MODAL_ID)}
+                            fullWidth
+                            className='justify-start'
+                            onPress={() => openModal(GROUP_MANAGEMENT_MODAL_ID)}
                         >
+                            <Users />
                             Manage Group
                         </Button>
                     </div>
                 )}
 
-                <div className='chat-details-section'>
-                    <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted chat-details-section-title block mb-3'>
+                <div className={SECTION_CLASS_NAMES}>
+                    <span className={SECTION_TITLE_CLASS_NAMES}>
                         Shared Files
                     </span>
                     <SharedFilesList messages={messages} />

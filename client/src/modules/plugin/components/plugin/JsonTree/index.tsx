@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { JsonView, darkStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { isRecord } from '@/shared/utils/type-guards';
-import './JsonTree.css';
 
 type JsonTreeData = Record<string, unknown> | unknown[];
 
@@ -45,23 +44,43 @@ const normalizeValue = (value: unknown): unknown => {
     return value;
 };
 
+/*
+ * `react-json-view-lite` takes a class name per slot, so `JsonTree.css` was only ever
+ * a lookup from slot to declarations — which makes it the one sheet in this module
+ * that converts by pasting utilities into the object it already had. The library's
+ * own `dist/index.css` still supplies the tree's layout and stays imported; it is a
+ * package stylesheet, not an app one.
+ *
+ * `--syntax-key` / `-string` / `-primitive` / `-null` / `-meta` came from bravais and
+ * are now declared per-theme in the global sheet, so naming them in an arbitrary
+ * value is safe. They are the only five colours here that are NOT HeroUI tokens: a
+ * JSON viewer's key/string/number hues are a syntax palette, not part of the UI's
+ * surface ladder, so they were never candidates for the §3a collapse.
+ */
+const JSON_TREE_KEY_CLASS = 'inline-flex items-center gap-[2px] select-none text-[var(--syntax-key)]';
+const JSON_TREE_CLICKABLE_KEY_CLASS = 'inline-flex items-center gap-[2px] select-none text-[var(--syntax-key)] cursor-pointer';
+const JSON_TREE_META_CLASS = 'text-[0.7rem] text-[var(--syntax-meta)]';
+const JSON_TREE_PRIMITIVE_CLASS = 'text-[var(--syntax-primitive)]';
+const JSON_TREE_NULL_CLASS = 'italic text-[var(--syntax-null)]';
+const JSON_TREE_TOGGLE_CLASS = 'inline-flex cursor-pointer select-none items-center';
+
 const JSON_TREE_STYLES = {
     ...darkStyles,
-    container: 'json-tree-container',
-    basicChildStyle: 'json-tree-child',
-    label: 'json-tree-key',
-    clickableLabel: 'json-tree-key cursor-pointer',
-    nullValue: 'json-tree-null',
-    undefinedValue: 'json-tree-null',
-    numberValue: 'json-tree-primitive',
-    stringValue: 'json-tree-string',
-    booleanValue: 'json-tree-primitive',
-    otherValue: 'json-tree-primitive',
-    punctuation: 'json-tree-meta',
-    collapsedContent: 'json-tree-meta',
-    expandIcon: 'json-tree-toggle',
-    collapseIcon: 'json-tree-toggle',
-    childFieldsContainer: 'json-tree-children'
+    container: 'font-[inherit] text-xs leading-normal',
+    basicChildStyle: 'pl-0',
+    label: JSON_TREE_KEY_CLASS,
+    clickableLabel: JSON_TREE_CLICKABLE_KEY_CLASS,
+    nullValue: JSON_TREE_NULL_CLASS,
+    undefinedValue: JSON_TREE_NULL_CLASS,
+    numberValue: JSON_TREE_PRIMITIVE_CLASS,
+    stringValue: 'break-all text-[var(--syntax-string)]',
+    booleanValue: JSON_TREE_PRIMITIVE_CLASS,
+    otherValue: JSON_TREE_PRIMITIVE_CLASS,
+    punctuation: JSON_TREE_META_CLASS,
+    collapsedContent: JSON_TREE_META_CLASS,
+    expandIcon: JSON_TREE_TOGGLE_CLASS,
+    collapseIcon: JSON_TREE_TOGGLE_CLASS,
+    childFieldsContainer: 'ml-[0.4rem] border-l border-border pl-4'
 };
 
 const JsonTree = ({ data, defaultExpanded = true }: JsonTreeProps) => {

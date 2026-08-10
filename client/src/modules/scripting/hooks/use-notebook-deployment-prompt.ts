@@ -1,5 +1,5 @@
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
-import { closeModal, openModal } from '@voltstack/bravais';
+import { closeModal, openModal } from '@/shared/ui/modal';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 import type {

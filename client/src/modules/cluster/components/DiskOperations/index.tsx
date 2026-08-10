@@ -93,9 +93,9 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
                             <stop offset='95%' stopColor={CHART_COLORS.write} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
+                    <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
                     <YAxis
-                        stroke='var(--color-text-muted)'
+                        stroke='var(--muted)'
                         style={{ fontSize: '12px' }}
                     />
                     <Tooltip content={renderTooltip} />

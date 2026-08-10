@@ -1,5 +1,5 @@
 import type { ClusterTransferJob, StoragePlacementScopeType, ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
-import type { StatusBadgeProps } from '@voltstack/bravais';
+import type { ClusterBadgeTone } from '@/modules/cluster/components/shared/ClusterStatusBadge';
 
 const OPEN_CLUSTER_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'queued',
@@ -37,7 +37,7 @@ export const getClusterTransferJobStateLabel = (state: ClusterTransferJobState):
     }
 };
 
-export const getClusterTransferJobStateBadgeVariant = (state: ClusterTransferJobState): StatusBadgeProps['variant'] => {
+export const getClusterTransferJobStateBadgeVariant = (state: ClusterTransferJobState): ClusterBadgeTone => {
     switch (state) {
         case 'completed':
             return 'success';

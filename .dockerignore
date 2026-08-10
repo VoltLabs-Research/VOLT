@@ -5,6 +5,16 @@
 # emptied it, which is why the client image could not be rebuilt.
 client/node_modules
 server/node_modules
+cluster/node_modules
+cluster/dist
+cluster/.runtime
+sdk/node_modules
+sdk/node/node_modules
+sdk/node/VoltClient/node_modules
+sdk/node/VoltClient/dist
+sdk/node/DaemonClusterClient/node_modules
+sdk/node/DaemonClusterClient/dist
+sdk/python3
 client/dist
 **/*.tsbuildinfo
 **/npm-debug.log

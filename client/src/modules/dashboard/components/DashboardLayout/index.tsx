@@ -33,7 +33,27 @@ import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import './DashboardLayout.css';
+
+/**
+ * `.dashboard-content-wrapper`. The 280px / 64px pair is duplicated from
+ * `DashboardSidebar`'s own width — it always was, as a numeric rather than a
+ * selector coupling — so the two have to move together.
+ *
+ * `.sidebar-is-collapsed .dashboard-content-wrapper` was an ancestor rule on
+ * `<main>`; this component owns the flag, so it is a ternary and the flag class is
+ * gone. Below 1024px the rail becomes an overlay drawer and the offset collapses to
+ * zero for both states.
+ */
+const CONTENT_WRAPPER = 'flex h-dvh flex-1 flex-col overflow-hidden transition-[margin-left] duration-150 ease-out-fluid max-[1024px]:ml-0';
+const CONTENT_WRAPPER_EXPANDED = 'ml-[280px]';
+const CONTENT_WRAPPER_COLLAPSED = 'ml-16';
+
+/**
+ * `.sidebar-overlay`. `--color-overlay` is HeroUI's `--overlay`; the blur and
+ * saturation are the sheet's own literals, not tokens.
+ */
+const SIDEBAR_OVERLAY = 'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]';
+const SIDEBAR_OVERLAY_OPEN = 'max-[1024px]:block';
 
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
     /^\/dashboard\/containers\/[^/]+/,
@@ -133,12 +153,12 @@ const DashboardLayout = () => {
     return (
         <AIChatProvider>
             <AIPageExitWidgetBridge />
-            <main className={cn('flex h-dvh', `dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`)}>
+            <main className='flex h-dvh flex-row bg-background'>
                 <TeamCreatorModal isRequired={teams.length === 0} />
                 <JoinTeamModal />
 
                 {/* Sidebar Overlay for Mobile */}
-                <div className={cn('fixed inset-0', `sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`)} onClick={() => setSidebarOpen(false)} />
+                <div className={cn(SIDEBAR_OVERLAY, sidebarOpen && SIDEBAR_OVERLAY_OPEN)} onClick={() => setSidebarOpen(false)} />
 
                 <DashboardSidebar
                     sidebarOpen={sidebarOpen}
@@ -148,7 +168,7 @@ const DashboardLayout = () => {
                     onExpandSidebar={expandSidebar}
                 />
 
-                <div className='dashboard-content-wrapper'>
+                <div className={cn(CONTENT_WRAPPER, sidebarCollapsed ? CONTENT_WRAPPER_COLLAPSED : CONTENT_WRAPPER_EXPANDED)}>
                     <DemoExpirationBanner />
                     {!headerHidden && (
                         <DashboardHeader
@@ -157,7 +177,7 @@ const DashboardLayout = () => {
                         />
                     )}
 
-                    <div className='overflow-y-auto flex-1 min-h-0 dashboard-content-main'>
+                    <div className='relative overflow-y-auto flex-1 min-h-0'>
                         <TrajectoryUploaderContainer>
                             <motion.div
                                 key={getOutletTransitionKey(location.pathname)}

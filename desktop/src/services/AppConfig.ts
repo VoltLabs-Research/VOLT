@@ -19,7 +19,8 @@ export interface BootstrapState{
 export interface DevModeState{
     enabled: boolean;
     voltPath: string;
-    clusterDaemonPath: string;
+    /** @deprecated the daemon lives at `<voltPath>/cluster` now; kept for old configs */
+    clusterDaemonPath?: string;
 }
 
 export interface DeploymentState{
@@ -125,7 +126,7 @@ export default class AppConfig{
 
     async getActiveDevMode(): Promise<DevModeState | null>{
         const dev = await this.getPersistedDevMode();
-        if(!dev?.enabled || !dev.voltPath || !dev.clusterDaemonPath) return null;
+        if(!dev?.enabled || !dev.voltPath) return null;
         return dev as DevModeState;
     }
 

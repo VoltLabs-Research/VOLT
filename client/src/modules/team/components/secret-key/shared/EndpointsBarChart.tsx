@@ -29,17 +29,17 @@ const EndpointsBarChart = ({
             left: 0,
             bottom: 0
         }} layout='vertical'>
-            <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
+            <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
             <XAxis
                 type='number'
-                stroke='var(--color-text-muted)'
+                stroke='var(--muted)'
                 style={{ fontSize: '12px' }}
                 allowDecimals={xAxisAllowDecimals}
             />
             <YAxis
                 type='category'
                 dataKey='endpoint'
-                stroke='var(--color-text-muted)'
+                stroke='var(--muted)'
                 style={{ fontSize: '11px' }}
                 width={150}
                 tickLine={yAxisTickLine}

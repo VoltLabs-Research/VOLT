@@ -6,7 +6,9 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
-import { IconButton, Loader, Popover, PopoverMenu, PopoverMenuItem, openModal } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import { openModal } from '@/shared/ui/modal';
+import { Spinner } from '@heroui/react';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
@@ -15,10 +17,28 @@ import { formatDistanceToNow } from 'date-fns';
 import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Play, ScanSearch, Trash2 } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useCallback, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { MenuOption } from '@/shared/contracts/menu';
 import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
-import './SimulationCardFooter.css';
 import { useNavigate } from 'react-router-dom';
+
+const FOOTER = 'simulation-card-footer absolute bottom-0 left-0 right-0 z-10 flex w-full flex-row items-center gap-2 p-4';
+
+/**
+ * The scrim `.simulation-card-footer::before` painted: a gradient that deliberately extends
+ * 3rem ABOVE the footer's own box and sits behind the content on a negative z-index, so the
+ * title stays readable over any preview image. Expressed with `before:` utilities — the
+ * negative inset is `-top-12` and `rounded-[inherit]` keeps it inside the card's corner.
+ */
+const FOOTER_SCRIM = "before:pointer-events-none before:absolute before:-top-12 before:right-0 before:bottom-0 before:left-0 before:-z-[1] before:rounded-[inherit] before:content-[''] before:bg-[linear-gradient(to_top,color-mix(in_srgb,var(--background)_100%,transparent)_0%,color-mix(in_srgb,var(--background)_72%,transparent)_40%,transparent_100%)]";
+
+/**
+ * `.footer-options-btn` MUST keep its class name: `SimulationCard`'s
+ * `NON_NAVIGABLE_CARD_TARGET_SELECTOR` uses it (with `data-popover-trigger`) to decide that
+ * a click on the actions button is not a click on the card. It stays a plain `<button>`
+ * because `ContextMenuPopover` clones its trigger to attach the floating-ui ref and because
+ * HeroUI's `Button` has a closed prop interface with no `title`.
+ */
+const OPTIONS_BUTTON = 'footer-options-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground';
 
 interface SimulationCardFooterProps {
     trajectoryId: string;
@@ -30,15 +50,6 @@ interface SimulationCardFooterProps {
     onMoveToFolder?: () => void;
     onDelete?: (_id: string) => void;
     readOnly?: boolean;
-}
-
-interface SimulationCardActionItem {
-    icon: ReactNode;
-    label: string;
-    onClick: () => void;
-    isDanger?: boolean;
-    isLoading?: boolean;
-    disabled?: boolean;
 }
 
 interface RasterizeTrajectoryToastResult {
@@ -239,74 +250,79 @@ export default function SimulationCardFooter({
         );
     }, [hasPendingRasterization, hasRequestedRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
 
-    const popoverItems: SimulationCardActionItem[] = readOnly ? [] : [{
+    /**
+     * `MenuOption.icon` is the icon *component*, not an element, and `MenuOption` has no
+     * `isLoading`: `ContextMenuPopover`'s items await an async `onClick` and show their own
+     * spinner for its duration, which is what the per-item flags used to do. `isDeleting`
+     * still gates the Delete row so a second click cannot start a second confirm.
+     */
+    const popoverItems: MenuOption[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
-        icon: <Crosshair />,
+        icon: Crosshair,
         disabled: !isNavigable
     }, {
         onClick: handleViewRaster,
         label: 'Open raster workspace',
-        icon: <ScanSearch />,
+        icon: ScanSearch,
         disabled: !isNavigable
     }, {
         onClick: handleOpenComputeJobs,
         label: 'Compute jobs',
-        icon: <ListChecks />
+        icon: ListChecks
     }, {
         onClick: handleExport,
         label: 'Export',
-        icon: <Download />,
-        isLoading: isExporting,
+        icon: Download,
         disabled: isExporting
     }, ...(onMoveToFolder ? [{
         onClick: onMoveToFolder,
         label: 'Move to folder',
-        icon: <FolderInput />
+        icon: FolderInput
     }] : []), {
         onClick: handleRasterizeTrajectory,
         label: 'Rasterize trajectory',
-        icon: <Play />,
-        isLoading: isRasterizing,
+        icon: Play,
         disabled: isRasterizeDisabled
     }, {
         onClick: handleDelete,
         label: 'Delete',
-        icon: <Trash2 />,
-        isDanger: true,
-        isLoading: isDeleting
+        icon: Trash2,
+        destructive: true,
+        disabled: isDeleting
     }];
 
     const popoverTrigger = (
-        <IconButton
-            className='footer-options-btn'
+        <button
+            type='button'
+            className={OPTIONS_BUTTON}
             title={`Open actions for ${name}`}
             aria-label={`Open actions for ${name}`}
         >
-            <EllipsisVertical />
-        </IconButton>
+            <EllipsisVertical size={20} />
+        </button>
     );
 
     return (
-        <div className='flex flex-row items-center gap-2 p-6 absolute left-0 bottom-0 right-0 z-10 simulation-card-footer w-full'>
+        <div className={`${FOOTER} ${FOOTER_SCRIM}`}>
             <div className='flex flex-col gap-2 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
-                    className='simulation-card-title text-base text-foreground font-medium truncate'
+                    className='truncate text-base font-medium leading-[1.2] text-foreground'
                     allowSingleClickPropagation
                     readOnly={readOnly}
                 />
-                <div className='flex flex-row items-center gap-3 simulation-card-status text-muted text-sm'>
+                <div className='flex flex-row flex-wrap items-center gap-3 text-sm text-muted'>
                     {isProcessing ? (
                         <>
-                            <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader shrink-0' />
-                            <p className='simulation-card-status-text' title={processingMessage}>
+                            <Spinner size='sm' className='ml-2 shrink-0 pr-2' />
+                            <p className='m-0 leading-[1.35]' title={processingMessage}>
                                 {processingMessage}
                             </p>
                         </>
                     ) : (
-                        <p className='simulation-card-status-text' title={updatedLabel}>
+                        <p className='m-0 leading-[1.35]' title={updatedLabel}>
                             {updatedLabel}
                         </p>
                     )}
@@ -314,23 +330,15 @@ export default function SimulationCardFooter({
             </div>
 
             {!readOnly && (
-                <Popover
+                <ContextMenuPopover
                     id={`simulation-card-popover-${trajectoryId}`}
                     trigger={popoverTrigger}
-                >
-                    <PopoverMenu>
-                        {popoverItems.map(({ icon, onClick, label, isDanger, ...props }, index) => (
-                            <PopoverMenuItem
-                                icon={icon}
-                                label={label}
-                                onClick={onClick}
-                                key={index}
-                                variant={isDanger ? 'danger' : undefined}
-                                {...props}
-                            />
-                        ))}
-                    </PopoverMenu>
-                </Popover>
+                    options={popoverItems}
+                    triggerAction='click'
+                    placement='bottom-end'
+                    ariaLabel={`Actions for ${name}`}
+                    menuLabel={`Actions for ${name}`}
+                />
             )}
         </div>
     );

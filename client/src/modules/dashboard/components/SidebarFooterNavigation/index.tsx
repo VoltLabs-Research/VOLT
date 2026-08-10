@@ -6,7 +6,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
-import { Tooltip } from '@voltstack/bravais';
+import { Tooltip } from '@heroui/react';
+import {
+    RAIL_FOOTER_NAV,
+    RAIL_FOOTER_NAV_COLLAPSED,
+    RAIL_TOOLTIP_TRIGGER
+} from '@/modules/dashboard/components/collapsed-rail-chrome';
+
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
     settingsExpanded: boolean;
@@ -36,29 +42,35 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
 
     if (collapsed) {
         return (
-            <div className='sidebar-footer-nav'>
-                <Tooltip content='Settings' placement='right'>
-                    <SidebarNavItem
-                        label='Settings'
-                        icon={Settings}
-                        isSelected={settingsActive}
-                        onClick={() => navigate(defaultSettingsPath)}
-                    />
+            <div className={RAIL_FOOTER_NAV_COLLAPSED}>
+                <Tooltip>
+                    <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                        <SidebarNavItem
+                            label='Settings'
+                            icon={Settings}
+                            isSelected={settingsActive}
+                            onClick={() => navigate(defaultSettingsPath)}
+                        />
+                    </Tooltip.Trigger>
+                    <Tooltip.Content placement='right'>Settings</Tooltip.Content>
                 </Tooltip>
 
-                <Tooltip content='Read the docs' placement='right'>
-                    <SidebarNavItem
-                        label='Read the docs'
-                        icon={BookOpen}
-                        onClick={handleOpenDocs}
-                    />
+                <Tooltip>
+                    <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                        <SidebarNavItem
+                            label='Read the docs'
+                            icon={BookOpen}
+                            onClick={handleOpenDocs}
+                        />
+                    </Tooltip.Trigger>
+                    <Tooltip.Content placement='right'>Read the docs</Tooltip.Content>
                 </Tooltip>
             </div>
         );
     }
 
     return (
-        <div className='sidebar-footer-nav'>
+        <div className={RAIL_FOOTER_NAV}>
             <SidebarExpandableSection
                 label='Settings'
                 icon={Settings}

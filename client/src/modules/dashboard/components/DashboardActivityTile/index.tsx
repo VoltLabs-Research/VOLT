@@ -1,6 +1,16 @@
 import { cn } from '@heroui/react';
-import { Sparkline, IconFrame, openModal } from '@voltstack/bravais';
+import { openModal } from '@/shared/ui/modal';
+import Sparkline from '@/modules/dashboard/components/Sparkline';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
+import {
+    STAT_CARD,
+    STAT_CARD_BUTTON,
+    STAT_CARD_ICON,
+    STAT_NAVIGATE,
+    STAT_SPARKLINE,
+    STAT_TREND,
+    STAT_VALUE
+} from '@/modules/dashboard/components/stat-tile-chrome';
 import { getTrendColor } from '@/modules/dashboard/utils/trend-color';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
@@ -70,24 +80,24 @@ const DashboardActivityTile = () => {
     const lineColor = getTrendColor(isPositiveTrend);
 
     return (
-        <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true}>
+        <DashboardCard className={STAT_CARD} isRelative={true} overflowHidden={true}>
             <button
                 type='button'
-                className='dashboard-stat-card-button'
+                className={STAT_CARD_BUTTON}
                 onClick={() => openModal(DASHBOARD_DRAWER_IDS.activity)}
                 aria-label='Open your activity'
             >
                 <div className='flex flex-col gap-4 relative z-[5]'>
                     <div className='flex flex-row items-center gap-3'>
-                        <IconFrame size='md' className='dashboard-stat-card-icon'>
+                        <span className={STAT_CARD_ICON} aria-hidden='true'>
                             <ActivityIcon size={16} strokeWidth={1.8} />
-                        </IconFrame>
+                        </span>
                         <span className='text-sm font-medium'>Activity</span>
                     </div>
 
                     <div className='flex flex-row items-end gap-3'>
-                        <span className='dashboard-stat-value'>{summary.todayActions}</span>
-                        <div className={cn('flex flex-row items-center gap-1', `dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`)} style={{ marginBottom: '0.3rem' }}>
+                        <span className={STAT_VALUE}>{summary.todayActions}</span>
+                        <div className={cn(STAT_TREND, isPositiveTrend ? 'text-success' : 'text-danger')}>
                             <TrendIcon size={10} />
                             <span>{Math.abs(summary.trendPercent)}%</span>
                         </div>
@@ -96,11 +106,11 @@ const DashboardActivityTile = () => {
                     <span className='text-xs text-muted'>actions today</span>
                 </div>
 
-                <div className='absolute top-4 right-4 dashboard-stat-navigate'>
+                <div className={STAT_NAVIGATE}>
                     <ArrowRight />
                 </div>
 
-                <div className='absolute bottom-0 right-0 dashboard-stat-sparkline'>
+                <div className={STAT_SPARKLINE}>
                     <Sparkline
                         color={lineColor}
                         values={summary.series}

@@ -2,7 +2,13 @@
  * All wire types exchanged over the reverse channel (`team-cluster-daemon:message`).
  * These are shared between the SDK and any consumer that needs to interop with the
  * Volt server control plane.
+ *
+ * Chunk-carrying frames travel as binary: socket.io transmits the `Uint8Array`
+ * as a binary attachment. (Older revisions of this contract declared base64
+ * strings; the transport moved to binary framing.)
  */
+
+import type { ProgressStageType } from './events';
 
 type ValueOf<T> = T[keyof T];
 
@@ -33,6 +39,16 @@ export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.Sessio
 export type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
 export type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;
 
+/** Socket planes a daemon registers on; presence of the lifecycle planes marks the cluster connected. */
+export const TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL = Object.freeze({
+    Heartbeat: 'heartbeat',
+    Control: 'control',
+    ObjectGateway: 'object-gateway',
+    Events: 'events'
+});
+
+export type TeamClusterDaemonSocketChannel = ValueOf<typeof TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL>;
+
 export interface TeamClusterDaemonSocketHeaders {
     [key: string]: string;
 };
@@ -40,6 +56,7 @@ export interface TeamClusterDaemonSocketHeaders {
 export interface TeamClusterDaemonRegisterPayload {
     teamClusterId: string;
     daemonPassword: string;
+    channel?: TeamClusterDaemonSocketChannel;
 };
 
 export interface TeamClusterDaemonCommandMessage {
@@ -47,7 +64,23 @@ export interface TeamClusterDaemonCommandMessage {
     requestId: string;
     command: string;
     responseType?: TeamClusterDaemonResponseType;
-    payload?: object;
+    payload?: unknown;
+};
+
+/**
+ * Every JSON reply on the reverse channel wraps the handler result one level in:
+ * `data` is the envelope and the handler result sits inside it. The handler result
+ * itself may be an error report, which is why it is a declared union member.
+ */
+export interface TeamClusterDaemonSuccessEnvelope<T> {
+    status: 'success';
+    data: T;
+};
+
+export interface TeamClusterDaemonErrorResult {
+    status: 'error';
+    code: string;
+    message: string;
 };
 
 export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
@@ -55,8 +88,7 @@ export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
     requestId: string;
     ok: boolean;
     status: number;
-    data?: T;
-    bodyBase64?: string;
+    data?: TeamClusterDaemonSuccessEnvelope<T | TeamClusterDaemonErrorResult>;
     headers?: TeamClusterDaemonSocketHeaders;
     message?: string;
     streamId?: string;
@@ -66,7 +98,7 @@ export interface TeamClusterDaemonSocketStreamPayload {
     type: 'stream';
     requestId: string;
     streamId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
 };
 
 export interface TeamClusterDaemonSocketStreamStatePayload {
@@ -91,10 +123,15 @@ export interface TeamClusterDaemonSessionAttachPayload {
     protocols?: string[];
 };
 
+export interface TeamClusterDaemonSessionAttachResult {
+    attached: boolean;
+    selectedProtocol?: string;
+};
+
 export interface TeamClusterDaemonSessionInputPayload {
     type: 'session-input';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
 };
 
@@ -113,7 +150,7 @@ export interface TeamClusterDaemonSessionDetachPayload {
 export interface TeamClusterDaemonSessionDataPayload {
     type: 'session-data';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
 };
 
@@ -144,12 +181,28 @@ export interface TeamClusterDaemonExposureRemovePayload {
 };
 
 /** Opens a generic tunnel session against a persistent exposure. */
-export interface TeamClusterDaemonTunnelOpenPayload {
+export interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
     accessMode: string;
 };
+
+/**
+ * The object gateway connection opens tunnels straight at a host:port instead of
+ * naming a published exposure, so `tunnel-open` has two legitimate shapes.
+ */
+export interface TeamClusterDaemonDirectTunnelOpenPayload {
+    type: 'tunnel-open';
+    sessionId: string;
+    targetHost: string;
+    targetPort: number;
+    accessMode: string;
+};
+
+export type TeamClusterDaemonTunnelOpenPayload =
+    | TeamClusterDaemonExposureTunnelOpenPayload
+    | TeamClusterDaemonDirectTunnelOpenPayload;
 
 /** Acknowledges the final state of a tunnel session transition. */
 export interface TeamClusterDaemonTunnelStatePayload {
@@ -164,8 +217,17 @@ export interface TeamClusterDaemonTunnelStatePayload {
 export interface TeamClusterDaemonTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
+    sequence?: number;
+    requiresAck?: boolean;
+};
+
+/** Acknowledges tunnel bytes up to a sequence number so the sender can release them. */
+export interface TeamClusterDaemonTunnelDrainPayload {
+    type: 'tunnel-drain';
+    sessionId: string;
+    sequence: number;
 };
 
 /** Closes a generic tunnel session on either side of the reverse channel. */
@@ -181,6 +243,28 @@ export interface TeamClusterDaemonTunnelHeartbeatPayload {
     type: 'tunnel-heartbeat';
     sessionId: string;
     occurredAt: string;
+};
+
+/**
+ * The documented shape of the `payload` carried by container-create
+ * `runtime-progress` frames. The field itself is open (`Record<string, unknown>`)
+ * because other actions (e.g. analysis dispatch) carry different payloads such as
+ * trace context.
+ */
+export interface TeamClusterDaemonContainerCreateProgress {
+    operationId: string;
+    step?: string;
+    image?: string;
+    containerName?: string;
+    containerId?: string;
+};
+
+export interface TeamClusterDaemonRuntimeProgressPayload {
+    type: 'runtime-progress';
+    action: string;
+    stage: ProgressStageType;
+    timestamp: string;
+    payload?: Record<string, unknown>;
 };
 
 export type TeamClusterDaemonMessage =
@@ -199,5 +283,7 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelOpenPayload
     | TeamClusterDaemonTunnelStatePayload
     | TeamClusterDaemonTunnelDataPayload
+    | TeamClusterDaemonTunnelDrainPayload
     | TeamClusterDaemonTunnelClosePayload
-    | TeamClusterDaemonTunnelHeartbeatPayload;
+    | TeamClusterDaemonTunnelHeartbeatPayload
+    | TeamClusterDaemonRuntimeProgressPayload;

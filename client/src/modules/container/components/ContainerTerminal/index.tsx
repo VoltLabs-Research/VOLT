@@ -1,14 +1,30 @@
-import { cn } from '@heroui/react';
 import { useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-terminal-session';
 import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { Button, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@heroui/react';
 import Terminal from '@/shared/ui/components/Terminal';
 import type { TerminalHandle } from '@/shared/ui/components/Terminal';
 import type { Container } from '@volt/contracts/modules/container/domain';
-import './ContainerTerminal.css';
+
+/**
+ * `ContainerTerminal.css`, converted.
+ *
+ * Two rules in it were already inert and are not carried over. The overlay's
+ * `backdrop-filter: var(--glass-blur)` resolves to `none` — glass was flattened
+ * onto solid surfaces before this migration and the token has been `none` ever
+ * since. And the 768px arm's `border-radius: 0` had no radius to reset: the window
+ * never declared one.
+ *
+ * `box-shadow: var(--shadow-elevated)` is HeroUI's `--overlay-shadow`, which is a
+ * real custom property in `:root` (not folded into a utility), so it can be read
+ * directly by an arbitrary shadow.
+ */
+const OVERLAY_CLASS_NAMES = 'fixed inset-0 z-[1000] flex items-center justify-center bg-overlay';
+const WINDOW_CLASS_NAMES = 'flex flex-col overflow-hidden border border-border shadow-[var(--overlay-shadow)] w-[90vw] h-[80vh] max-[768px]:w-screen max-[768px]:h-[100dvh]';
+const WINDOW_EMBEDDED_CLASS_NAMES = 'flex flex-col overflow-hidden w-full h-full border-none shadow-none';
+const HEADER_CLASS_NAMES = 'flex flex-row items-center justify-between border border-border px-4 py-3';
 
 interface ContainerTerminalProps {
     container: Pick<Container, '_id' | 'name'>;
@@ -60,20 +76,25 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     });
 
     const content = (
-        <div className={cn('flex flex-col overflow-hidden', `container-terminal-window ${embedded ? 'embedded' : ''}`)}>
+        <div className={embedded ? WINDOW_EMBEDDED_CLASS_NAMES : WINDOW_CLASS_NAMES}>
             {!embedded && (
-                <div className='flex flex-row items-center justify-between container-terminal-header'>
-                    <div className='flex flex-row items-center gap-2 container-terminal-title'>
+                <div className={HEADER_CLASS_NAMES}>
+                    <div className='flex flex-row items-center gap-2 text-[0.9rem] text-foreground'>
                         <span>root@{container.name}:~</span>
                     </div>
-                    <Tooltip content='Close Terminal' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Close terminal' title='Close terminal' onClick={onClose}>
+                    {/*
+                      * HeroUI's `Button` takes no `title`; the native tooltip that
+                      * mirrored the aria-label is carried by the surrounding `Tooltip`.
+                      */}
+                    <Tooltip>
+                        <Button variant='ghost' isIconOnly size='sm' aria-label='Close terminal' onPress={onClose}>
                             <X size={20} />
                         </Button>
+                        <Tooltip.Content placement='bottom'>Close Terminal</Tooltip.Content>
                     </Tooltip>
                 </div>
             )}
-            <div className='overflow-hidden flex-1 container-terminal-body relative'>
+            <div className='relative flex-1 overflow-hidden'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} onResize={handleTerminalResize} />
             </div>
         </div>
@@ -82,7 +103,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     if (embedded) return content;
 
     return (
-        <div className='flex items-center justify-center inset-0 container-terminal-overlay fixed' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
+        <div className={OVERLAY_CLASS_NAMES} role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
         </div>
     );

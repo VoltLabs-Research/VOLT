@@ -1,5 +1,4 @@
-import { Button, LiquidToggle, Select } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { Button, Description, Label, ListBox, Select, Spinner, Switch } from '@heroui/react';
 import { Modal, closeModal } from '@/shared/ui/modal';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IntegrationModelList from './IntegrationModelList';
@@ -7,10 +6,21 @@ import { OLLAMA_DEFAULT_BASE_URL, TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules
 import type { IntegrationDraft } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import { useId } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
+import type { Key } from 'react-aria-components';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { TeamAIIntegration, TeamAIModelMetadata, TeamAIProviderCatalogItem } from '@volt/contracts/modules/team/domain';
 
 const TEAM_AI_INTEGRATION_FORM_ID = 'team-ai-integration-form';
+
+/**
+ * bravais's `SelectOption`, kept locally now that the design system is gone. The
+ * shape is unchanged, so the two lists below still read the same.
+ */
+interface IntegrationSelectOption {
+    value: string;
+    title: string;
+    description?: string;
+}
 
 interface IntegrationFormModalProps {
     draft: IntegrationDraft;
@@ -33,16 +43,17 @@ const IntegrationFormModal = ({
 }: IntegrationFormModalProps) => {
     const providerLabelId = useId();
     const defaultModelLabelId = useId();
+    const enabledLabelId = useId();
 
     const { editingProvider, provider } = draft;
 
-    const providerSelectOptions: SelectOption[] = availableProviders.map((catalogItem) => ({
+    const providerSelectOptions: IntegrationSelectOption[] = availableProviders.map((catalogItem) => ({
         value: catalogItem.id,
         title: catalogItem.name,
         description: catalogItem.description
     }));
 
-    const modelOptions: SelectOption[] = draft.enabledModels.map((model) => ({
+    const modelOptions: IntegrationSelectOption[] = draft.enabledModels.map((model) => ({
         value: model.id,
         title: model.name
     }));
@@ -68,6 +79,26 @@ const IntegrationFormModal = ({
         }));
     };
 
+    /*
+     * bravais's `Select.onChange` only ever fired with a value; React Aria's
+     * `onSelectionChange` is typed `Key | null` because a clearable select can
+     * deselect. Neither of these can, so `null` is ignored rather than written back.
+     */
+    const handleProviderSelectionChange = (key: Key | null) => {
+        if (key === null) return;
+
+        onProviderChange(String(key));
+    };
+
+    const handleDefaultModelSelectionChange = (key: Key | null) => {
+        if (key === null) return;
+
+        setDraft((current) => ({
+            ...current,
+            defaultModel: String(key)
+        }));
+    };
+
     return (
         <Modal
             id={TEAM_AI_INTEGRATION_MODAL_ID}
@@ -79,20 +110,19 @@ const IntegrationFormModal = ({
                 <>
                     <Button
                         variant='outline'
-                        intent='neutral'
-                        onClick={() => closeModal(TEAM_AI_INTEGRATION_MODAL_ID)}
-                        disabled={isSaving}
+                        onPress={() => closeModal(TEAM_AI_INTEGRATION_MODAL_ID)}
+                        isDisabled={isSaving}
                     >
                         Cancel
                     </Button>
                     <Button
-                        variant='solid'
-                        intent='brand'
+                        variant='primary'
                         form={TEAM_AI_INTEGRATION_FORM_ID}
                         type='submit'
-                        isLoading={isSaving}
-                        disabled={isSaving || !provider}
+                        isPending={isSaving}
+                        isDisabled={isSaving || !provider}
                     >
+                        {isSaving && <Spinner size='sm' color='current' />}
                         Save
                     </Button>
                 </>
@@ -104,13 +134,38 @@ const IntegrationFormModal = ({
                         <div className='flex flex-col gap-2'>
                             <label className='text-sm font-medium text-muted' id={providerLabelId}>Provider</label>
                             <Select
-                                options={providerSelectOptions}
-                                value={provider}
-                                onChange={onProviderChange}
-                                disabled={providerSelectOptions.length === 0}
+                                selectedKey={provider}
+                                onSelectionChange={handleProviderSelectionChange}
                                 placeholder='Select provider'
+                                isDisabled={providerSelectOptions.length === 0}
+                                fullWidth
                                 aria-labelledby={providerLabelId}
-                            />
+                            >
+                                <Select.Trigger>
+                                    {/*
+                                      * bravais's trigger showed the selected option's
+                                      * `title` only; RAC's default children render the
+                                      * whole item, so a `description` would leak in.
+                                      */}
+                                    <Select.Value>
+                                        {({ isPlaceholder, selectedText, defaultChildren }) => (
+                                            isPlaceholder ? defaultChildren : selectedText
+                                        )}
+                                    </Select.Value>
+                                    <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                    <ListBox>
+                                        {providerSelectOptions.map((option) => (
+                                            <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
+                                                <ListBox.ItemIndicator />
+                                                <Label>{option.title}</Label>
+                                                {option.description && <Description>{option.description}</Description>}
+                                            </ListBox.Item>
+                                        ))}
+                                    </ListBox>
+                                </Select.Popover>
+                            </Select>
                         </div>
                     ) : (
                         <div className='flex flex-col gap-1'>
@@ -160,27 +215,51 @@ const IntegrationFormModal = ({
                     <div className='flex flex-col gap-2'>
                         <label className='text-sm font-medium text-muted' id={defaultModelLabelId}>Default model</label>
                         <Select
-                            options={modelOptions}
-                            value={draft.defaultModel}
-                            onChange={(defaultModel) => setDraft((current) => ({
-                                ...current,
-                                defaultModel
-                            }))}
-                            disabled={modelOptions.length === 0}
+                            selectedKey={draft.defaultModel}
+                            onSelectionChange={handleDefaultModelSelectionChange}
                             placeholder={modelOptions.length > 0 ? 'Select model' : 'No models available'}
+                            isDisabled={modelOptions.length === 0}
+                            fullWidth
                             aria-labelledby={defaultModelLabelId}
-                        />
+                        >
+                            <Select.Trigger>
+                                <Select.Value>
+                                    {({ isPlaceholder, selectedText, defaultChildren }) => (
+                                        isPlaceholder ? defaultChildren : selectedText
+                                    )}
+                                </Select.Value>
+                                <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                                <ListBox>
+                                    {modelOptions.map((option) => (
+                                        <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
+                                            <ListBox.ItemIndicator />
+                                            <Label>{option.title}</Label>
+                                        </ListBox.Item>
+                                    ))}
+                                </ListBox>
+                            </Select.Popover>
+                        </Select>
                     </div>
 
-                    <div className='flex flex-row items-center justify-between gap-2 integrations-modal-toggle'>
-                        <p className='text-sm text-muted'>Enabled</p>
-                        <LiquidToggle
-                            pressed={draft.isEnabled}
+                    {/* `.integrations-modal-toggle` */}
+                    <div className='flex flex-row items-center justify-between gap-2 border-t border-border pt-3 mt-1'>
+                        <p className='text-sm text-muted' id={enabledLabelId}>Enabled</p>
+                        <Switch
+                            isSelected={draft.isEnabled}
                             onChange={(isEnabled) => setDraft((current) => ({
                                 ...current,
                                 isEnabled
                             }))}
-                        />
+                            aria-labelledby={enabledLabelId}
+                        >
+                            <Switch.Content>
+                                <Switch.Control>
+                                    <Switch.Thumb />
+                                </Switch.Control>
+                            </Switch.Content>
+                        </Switch>
                     </div>
                 </div>
             </form>

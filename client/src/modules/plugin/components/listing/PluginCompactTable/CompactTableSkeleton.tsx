@@ -1,4 +1,11 @@
-import { Skeleton } from '@voltstack/bravais';
+import { Skeleton } from '@heroui/react';
+import {
+    TABLE_CELL_CLASS,
+    TABLE_FRAME_CLASS,
+    TABLE_HEADER_CELL_CLASS,
+    TABLE_HEADER_CLASS,
+    TABLE_ROW_CLASS
+} from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 import type { CSSProperties } from 'react';
 
 const SKELETON_COLUMNS = [0, 1, 2, 3];
@@ -24,26 +31,39 @@ const skeletonCellStyle: CSSProperties = {
     flex: '1 1 140px'
 };
 
+/*
+ * bravais's Skeleton took `variant` / `width` / `height` / `animation`; HeroUI's
+ * takes `animationType` and is sized entirely by className. `variant='text'` was a
+ * pill with the small radius, so the height that used to be a prop is now `h-*` and
+ * the radius is `rounded-md` (bravais's 6px `--radius-xs`, spec §3b). `animation`
+ * was `wave`, which is HeroUI's default `shimmer`, so it is simply omitted.
+ *
+ * The staggered per-cell widths stay an inline `style` — a computed percentage is
+ * exactly what Tailwind's scanner cannot follow, and it is where bravais's `width`
+ * prop put them anyway. Three literals replace the old `55 + n * 15`% arithmetic.
+ */
+const CELL_SKELETON_WIDTHS = ['55%', '70%', '85%'] as const;
+
 /** Placeholder shown while the first page is in flight. */
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
-    <div className='plugin-exposure-table-compact w-full h-full overflow-hidden'>
+    <div className={TABLE_FRAME_CLASS}>
         <div style={skeletonFrameStyle}>
-            <div className='sticky plugin-compact-table-header'>
+            <div className={TABLE_HEADER_CLASS}>
                 {SKELETON_COLUMNS.map((index) => (
                     <div
                         key={`skeleton-header-${index}`}
-                        className='plugin-compact-table-header-cell overflow-hidden font-medium'
+                        className={TABLE_HEADER_CELL_CLASS}
                         style={skeletonCellStyle}
                     >
-                        <Skeleton variant='text' width='70%' height={18} animation='wave' />
+                        <Skeleton className='h-[18px] rounded-md' style={{ width: '70%' }} />
                     </div>
                 ))}
             </div>
-            <div className='plugin-compact-table-list-container' style={skeletonListStyle}>
+            <div style={skeletonListStyle}>
                 {SKELETON_ROWS.map((rowIndex) => (
                     <div
                         key={`skeleton-row-${rowIndex}`}
-                        className='plugin-compact-table-row'
+                        className={TABLE_ROW_CLASS}
                         style={{
                             height: rowHeight,
                             width: '100%'
@@ -52,10 +72,13 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                         {SKELETON_COLUMNS.map((cellIndex) => (
                             <div
                                 key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                                className='plugin-compact-table-cell overflow-hidden text-xs'
+                                className={TABLE_CELL_CLASS}
                                 style={skeletonCellStyle}
                             >
-                                <Skeleton variant='text' width={`${55 + ((rowIndex + cellIndex) % 3) * 15}%`} height={16} animation='wave' />
+                                <Skeleton
+                                    className='h-4 rounded-md'
+                                    style={{ width: CELL_SKELETON_WIDTHS[(rowIndex + cellIndex) % 3] }}
+                                />
                             </div>
                         ))}
                     </div>

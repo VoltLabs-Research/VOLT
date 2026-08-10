@@ -1,73 +1,51 @@
 import { cn } from '@heroui/react';
-import './ThemeCard.css';
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import type { VisualTheme } from '@/shared/ui/hooks/use-theme';
-import themeTokensStylesheet from '@voltstack/bravais/styles.css?raw';
-import { SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
-
-type PreviewStyles = CSSProperties & Record<`--${string}`, string>;
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 /*
- * A preview shows both themes at once, so the values cannot be read off the
- * document: only the active theme is computed. They are parsed out of the token
- * sheet instead. bravais's published sheet normalises the attribute selector's
- * quotes away, so the pattern accepts the token block either way.
+ * A preview shows a theme that is NOT the active one, so its colours cannot be
+ * read off the document — only the active theme is computed there. bravais solved
+ * that by parsing its own token sheet as raw text and re-emitting the values as
+ * `--theme-preview-*` custom properties from JS.
+ *
+ * None of that is needed now: `.light` and `.dark` are ordinary class selectors
+ * in the app's stylesheet (and in HeroUI's, which owns the light values VOLT does
+ * not override), so putting one of them on a subtree gives that subtree the whole
+ * opposite palette. The preview is then drawn with ordinary token utilities,
+ * which resolve against the scoped theme rather than the active one. No parsing,
+ * no duplicated colour values, and a token edited in one place moves the previews
+ * with it.
  */
-const extractThemeTokens = (theme: VisualTheme): Record<string, string> => {
-    const blockPattern = new RegExp(`:root\\[data-theme=['"]?${theme}['"]?\\]\\s*\\{([\\s\\S]*?)\\}`, 'm');
-    const blockMatch = themeTokensStylesheet.match(blockPattern);
+const PREVIEW_FRAME = 'relative h-[140px] w-full overflow-hidden border-b border-border/70';
+const PREVIEW_BODY = 'flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,var(--background)_0%,var(--surface-secondary)_100%)] text-foreground';
+const PREVIEW_TITLEBAR = 'absolute top-[18px] right-5 left-5 flex h-[18px] items-center gap-1.5 rounded-t-[7px] px-[7px] bg-[linear-gradient(180deg,var(--surface)_0%,var(--surface-tertiary)_100%)] shadow-[inset_0_0_0_1px_var(--border),0_1px_0_0_color-mix(in_srgb,var(--border)_60%,transparent)]';
+const PREVIEW_PANEL = 'absolute top-9 right-5 bottom-[18px] left-5 rounded-b-[7px] bg-[linear-gradient(135deg,var(--info-soft)_0%,color-mix(in_srgb,var(--info)_20%,transparent)_100%)] shadow-[inset_0_0_0_1px_var(--border)]';
+const PREVIEW_ICON = 'relative mt-[18px] opacity-[0.72] [filter:drop-shadow(0_3px_10px_color-mix(in_srgb,currentColor_30%,transparent))]';
 
-    if (!blockMatch) {
-        throw new Error(`Missing token block for theme: ${theme}`);
-    }
+/*
+ * The system preview is a hard-edged 45° split — light above-left, dark
+ * below-right — which was one `linear-gradient(135deg, …)` carrying colour stops
+ * from two different themes at once. Two clipped layers replace it so each half
+ * can carry its own theme class and read its own `--background`. The 70px offsets
+ * are half the frame's 140px height: that is where a 45° line through the centre
+ * meets the top and bottom edges.
+ */
+const SYSTEM_LIGHT_HALF = 'light absolute inset-0 bg-background [clip-path:polygon(0_0,calc(50%_+_70px)_0,calc(50%_-_70px)_100%,0_100%)]';
+const SYSTEM_DARK_HALF = 'dark absolute inset-0 bg-background [clip-path:polygon(calc(50%_+_70px)_0,100%_0,100%_100%,calc(50%_-_70px)_100%)]';
+const SYSTEM_SEAM = 'dark absolute top-1/2 left-1/2 h-px w-[220px] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-[color-mix(in_srgb,var(--foreground)_22%,transparent)]';
+const SYSTEM_ICON = 'dark relative flex h-full items-center justify-center text-[#a0a0a0] [filter:drop-shadow(0_0_14px_color-mix(in_srgb,var(--background)_70%,transparent))_drop-shadow(0_2px_4px_rgba(0,0,0,0.35))]';
 
-    const declarations = blockMatch[1].matchAll(/(--[\w-]+):\s*([^;]+);/g);
-    const tokens: Record<string, string> = {};
-
-    for (const declaration of declarations) {
-        const [, tokenName, tokenValue] = declaration;
-        tokens[tokenName] = tokenValue.trim();
-    }
-
-    return tokens;
-};
-
-const THEME_TOKENS: Record<VisualTheme, Record<string, string>> = {
-    [Theme.Light]: extractThemeTokens(Theme.Light),
-    [Theme.Dark]: extractThemeTokens(Theme.Dark)
-};
-
-const getPreviewStyles = (theme: Theme): PreviewStyles => {
-    if (theme === Theme.System) {
-        return {
-            '--theme-preview-light-bg': THEME_TOKENS[Theme.Light]['--color-bg'],
-            '--theme-preview-dark-bg': THEME_TOKENS[Theme.Dark]['--color-bg'],
-            '--theme-preview-dark-fg': THEME_TOKENS[Theme.Dark]['--color-text-primary']
-        };
-    }
-
-    const tokens = THEME_TOKENS[theme];
-
-    return {
-        '--theme-preview-bg-start': tokens['--color-bg'],
-        '--theme-preview-bg-end': tokens['--color-surface-1'],
-        '--theme-preview-fg': tokens['--color-text-primary'],
-        '--theme-preview-header-start': tokens['--color-content-bg'],
-        '--theme-preview-header-end': tokens['--color-surface-2'],
-        '--theme-preview-header-border': tokens['--color-border-soft'],
-        '--theme-preview-panel-start': tokens['--status-info-bg'],
-        '--theme-preview-panel-end': `color-mix(in srgb, ${tokens['--accent-indigo']} 20%, transparent)`
-    };
-};
+const CARD = 'relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-2xl border bg-surface-secondary text-center transition-[border-color,box-shadow,background-color] duration-150 ease-out-fluid';
+const CARD_SELECTED = 'border-accent shadow-[0_0_0_1px_var(--accent)]';
+const CARD_IDLE = 'border-border hover:border-border-secondary hover:bg-surface-tertiary';
+const BADGE = 'absolute top-2 right-2 rounded-full bg-accent px-2 py-[2px] text-accent-foreground';
 
 interface ThemeCardProps {
     theme: Theme;
     label: string;
     icon: ReactNode;
-    previewClassName: string;
     isSelected: boolean;
     onClick: () => void;
     onKeyDown: ButtonHTMLAttributes<HTMLButtonElement>['onKeyDown'];
@@ -78,30 +56,57 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
     theme,
     label,
     icon,
-    previewClassName,
     isSelected,
     onClick,
     onKeyDown,
     tabIndex
 }, ref) => {
+    let preview = (
+        <div className={PREVIEW_FRAME}>
+            <div className={SYSTEM_LIGHT_HALF} />
+            <div className={SYSTEM_DARK_HALF} />
+            <div className={SYSTEM_SEAM} />
+            <div className={SYSTEM_ICON}>{icon}</div>
+        </div>
+    );
+
+    if (theme !== Theme.System) {
+        preview = (
+            <div className={PREVIEW_FRAME}>
+                <div className={cn(PREVIEW_BODY, theme === Theme.Dark ? 'dark' : 'light')}>
+                    <div className={PREVIEW_TITLEBAR}>
+                        <span className='size-1.5 rounded-full bg-[#ff5f57]' />
+                        <span className='size-1.5 rounded-full bg-[#febc2e]' />
+                        <span className='size-1.5 rounded-full bg-[#28c840]' />
+                    </div>
+                    <div className={PREVIEW_PANEL} />
+                    <div className={PREVIEW_ICON}>{icon}</div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <SelectableCard
+        <button
             ref={ref}
-            className='theme-card'
-            selected={isSelected}
-            selectionRole='radio'
-            title={label}
-            badge={isSelected ? <Check size={14} aria-hidden='true' /> : undefined}
-            onSelect={onClick}
-            onKeyDown={onKeyDown}
+            type='button'
+            role='radio'
+            aria-checked={isSelected}
             aria-label={`${label} theme`}
             data-theme-preview={theme}
             tabIndex={tabIndex}
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+            className={cn(CARD, isSelected ? CARD_SELECTED : CARD_IDLE)}
         >
-            <div className={cn('flex flex-row items-center justify-center relative', `theme-preview ${previewClassName}`)} style={getPreviewStyles(theme)}>
-                {icon}
-            </div>
-        </SelectableCard>
+            {isSelected && (
+                <span className={BADGE}>
+                    <Check size={14} aria-hidden='true' />
+                </span>
+            )}
+            <h3 className='text-sm font-[550] text-foreground'>{label}</h3>
+            {preview}
+        </button>
     );
 });
 

@@ -1,7 +1,7 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { format } from 'date-fns';
 import { Activity, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
@@ -54,11 +54,11 @@ const AuthenticationSettings = () => {
                         description={passwordDescription}
                         rightContent={(
                             <Button
-                                variant="soft"
-                                rightIcon={isPasswordFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                onClick={() => setIsPasswordFormOpen(!isPasswordFormOpen)}
+                                variant="secondary"
+                                onPress={() => setIsPasswordFormOpen(!isPasswordFormOpen)}
                             >
                                 {passwordInfo?.hasPassword ? 'Change' : 'Set Password'}
+                                {isPasswordFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                             </Button>
                         )} />
 
@@ -79,7 +79,7 @@ const AuthenticationSettings = () => {
                     icon={<Activity size={20} />}
                     title="Recent Sessions"
                     description="View your login history and active sessions"
-                    rightContent={<Button variant="soft" onClick={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
+                    rightContent={<Button variant="secondary" onPress={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
                 />
             </div>
         </SettingsPage>

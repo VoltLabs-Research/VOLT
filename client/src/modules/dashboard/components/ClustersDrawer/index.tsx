@@ -1,5 +1,5 @@
-import './ClustersDrawer.css';
-import { AsyncBoundary, Loader, Modal } from '@voltstack/bravais';
+import { Spinner } from '@heroui/react';
+import { Modal } from '@/shared/ui/modal';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
@@ -15,6 +15,16 @@ const ROLE_PRIORITY: Record<TeamClusterRole, number> = {
     'compute-node': 1,
     cluster: 2
 };
+
+/** `.dashboard-clusters-drawer`. */
+const DRAWER = 'flex h-full min-h-0 flex-col p-6';
+
+/** `.dashboard-operations-panel`, and the list that fills it. */
+const PANEL = 'min-h-0 flex-1';
+const CLUSTER_LIST = 'flex flex-col min-h-0 flex-1 overflow-y-auto gap-2.5 pr-1';
+
+/** `.dashboard-card-state`. */
+const CARD_STATE = 'min-h-full';
 
 const ClustersDrawer = () => {
     const clusterManagement = useClusterManagement();
@@ -36,9 +46,17 @@ const ClustersDrawer = () => {
         return new Map(clusters.map((cluster) => [resolveClusterMetricId(cluster), cluster]));
     }, [clusters]);
 
+    /*
+     * bravais's `Loader` defaulted `isFixed` to TRUE, so `<Loader scale={0.4} />`
+     * emitted `fixed inset-0` — a full-viewport overlay centred on the *window*,
+     * inside a right-hand drawer, in spite of the centring wrapper written around it.
+     * The wrapper is the author's intent; the overlay was a default nobody asked for.
+     * This is a deliberate fix rather than a preserved behaviour: the spinner now
+     * centres in the panel it is loading.
+     */
     const clustersLoadingState = (
-        <div className='flex dashboard-operations-panel items-center justify-center'>
-            <Loader scale={0.4} />
+        <div className={`flex items-center justify-center ${PANEL}`}>
+            <Spinner size='md' aria-label='Loading clusters' />
         </div>
     );
 
@@ -47,7 +65,7 @@ const ClustersDrawer = () => {
             title='No clusters connected yet'
             description='Connect a storage server or compute node to monitor runtime health and live workload activity here.'
             tone={RecoveryStateTone.Info}
-            className='dashboard-card-state'
+            className={CARD_STATE}
         />
     );
 
@@ -56,9 +74,40 @@ const ClustersDrawer = () => {
             title='Unable to load clusters'
             description={err instanceof Error ? err.message : 'We could not load the team clusters right now.'}
             tone={RecoveryStateTone.Error}
-            className='dashboard-card-state'
+            className={CARD_STATE}
         />
     );
+
+    /*
+     * bravais's `AsyncBoundary`, inlined — it has no VOLT-owned replacement yet and
+     * was only ever a five-way switch. Its precedence is fixed and load-bearing:
+     * accessDenied → error → loading → empty → children. An errored request that is
+     * also still `isLoading` shows the error, not the spinner, so the order is
+     * reproduced exactly rather than rearranged into what reads more naturally.
+     */
+    const hasBlockingError = clusterManagement.error && teamClusters.length === 0;
+    const isBlockingLoading = clusterManagement.isLoading && teamClusters.length === 0;
+
+    let clustersContent: ReactNode = (
+        <div className={CLUSTER_LIST}>
+            {orderedClusters.map((teamCluster) => (
+                <ClusterMetricsCard
+                    key={teamCluster._id}
+                    teamCluster={teamCluster}
+                    liveMetrics={metricsByClusterId.get(teamCluster._id) ?? null}
+                    isMetricsConnected={isConnected}
+                />
+            ))}
+        </div>
+    );
+
+    if (hasBlockingError) {
+        clustersContent = renderClustersError(clusterManagement.error);
+    } else if (isBlockingLoading) {
+        clustersContent = clustersLoadingState;
+    } else if (orderedClusters.length === 0) {
+        clustersContent = clustersEmptyState;
+    }
 
     return (
         <Modal
@@ -68,28 +117,8 @@ const ClustersDrawer = () => {
             description={`${orderedClusters.length} cluster${orderedClusters.length === 1 ? '' : 's'}${!isConnected && orderedClusters.length > 0 ? ' · live metrics offline' : ''}`}
             lazyMount
         >
-            <div className='dashboard-clusters-drawer'>
-                <AsyncBoundary
-                    state={{
-                        loading: clusterManagement.isLoading && teamClusters.length === 0,
-                        error: clusterManagement.error && teamClusters.length === 0 ? clusterManagement.error : undefined,
-                        empty: orderedClusters.length === 0
-                    }}
-                    loading={clustersLoadingState}
-                    error={renderClustersError}
-                    empty={clustersEmptyState}
-                >
-                    <div className='flex flex-col overflow-y-auto dashboard-operations-panel dashboard-operations-cluster-list'>
-                        {orderedClusters.map((teamCluster) => (
-                            <ClusterMetricsCard
-                                key={teamCluster._id}
-                                teamCluster={teamCluster}
-                                liveMetrics={metricsByClusterId.get(teamCluster._id) ?? null}
-                                isMetricsConnected={isConnected}
-                            />
-                        ))}
-                    </div>
-                </AsyncBoundary>
+            <div className={DRAWER}>
+                {clustersContent}
             </div>
         </Modal>
     );

@@ -2,7 +2,6 @@ import { InviteButton } from '../InviteButton';
 import type { InviteButtonState } from '../InviteButton';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import type { ChangeEvent, FormEvent } from 'react';
-import './InvitationEmailInput.css';
 
 interface InvitationEmailInputProps {
     value: string;
@@ -31,7 +30,7 @@ export const InvitationEmailInput = ({
     };
 
     return (
-        <form className='invitation-email-input flex items-end gap-2' onSubmit={handleFormSubmit}>
+        <form className='flex items-end gap-2 p-4 border-b border-border' onSubmit={handleFormSubmit}>
             <FormFieldRHF
                 autoFocus
                 type='email'
@@ -42,7 +41,6 @@ export const InvitationEmailInput = ({
                 onBlur={onBlur}
                 error={error}
                 disabled={isSubmitting || disabled}
-                className='invitation-email-input-field'
             />
             <InviteButton
                 state={buttonState}

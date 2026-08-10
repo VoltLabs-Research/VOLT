@@ -53,8 +53,17 @@ RUN apt-get update \
         libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package*.json ./
-RUN npm ci
-COPY . .
+# The daemon consumes @voltstack/daemon-cluster-client from the repository
+# (file: link), so the SDK package must exist before `npm ci` can link it, and
+# its dist must be built before the daemon runs against it.
+COPY cluster/package.json cluster/package-lock.json ./cluster/
+COPY sdk/node/DaemonClusterClient/package.json ./sdk/node/DaemonClusterClient/
+RUN cd cluster && npm ci
 
+COPY sdk/node/DaemonClusterClient ./sdk/node/DaemonClusterClient
+RUN cd sdk/node/DaemonClusterClient && npm install --no-audit --no-fund && npm run build
+
+COPY cluster ./cluster
+
+WORKDIR /app/cluster
 CMD ["npm", "run", "dev"]

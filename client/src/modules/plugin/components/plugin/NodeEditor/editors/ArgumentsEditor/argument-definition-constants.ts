@@ -1,6 +1,6 @@
 import { ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 
 export const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map((option) => ({
     value: option.value,

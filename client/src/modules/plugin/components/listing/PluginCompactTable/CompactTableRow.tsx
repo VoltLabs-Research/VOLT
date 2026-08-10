@@ -1,9 +1,15 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@heroui/react';
 import { formatUnknownValue } from '@/shared/utils/format';
 import { getColumnKey } from '@/shared/ui/components/DocumentListingTable';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import { resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
+import {
+    TABLE_CELL_CLASS,
+    TABLE_ROW_CLASS,
+    TABLE_ROW_INTERACTIVE_CLASS,
+    TABLE_ROW_SELECTED_CLASS
+} from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 import type { InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
@@ -66,9 +72,9 @@ const CompactTableRow = ({
         <div
             style={style}
             className={cn(
-                'plugin-compact-table-row',
-                isClickable ? 'plugin-compact-table-row--interactive' : null,
-                isSelected ? 'plugin-compact-table-row--selected' : null
+                TABLE_ROW_CLASS,
+                isClickable ? TABLE_ROW_INTERACTIVE_CLASS : null,
+                isSelected ? TABLE_ROW_SELECTED_CLASS : null
             )}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
@@ -98,7 +104,7 @@ const CompactTableRow = ({
                 return (
                     <div
                         key={columnKey}
-                        className='plugin-compact-table-cell overflow-hidden text-xs'
+                        className={TABLE_CELL_CLASS}
                         style={resolveColumnStyle(col, columnWidthScale)}
                         title={titleAttribute}
                     >

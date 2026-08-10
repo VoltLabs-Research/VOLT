@@ -1,5 +1,9 @@
-import { Button, CollapsibleSection, Select, getMultiSelectTriggerLabel } from '@voltstack/bravais';
-import type { SelectOption } from '@voltstack/bravais';
+import { Button, cn } from '@heroui/react';
+import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
+import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
+import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import { CANVAS_FIELD, CANVAS_FIELD_CLASS, CANVAS_LABEL_CLASS, CANVAS_SELECT_SLOT_CLASS } from '@/modules/plugin/components/plugin/canvas-field-styles';
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import {
     coerceArgumentInputValue,
@@ -19,7 +23,14 @@ import { useState } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
-import './ArgumentFieldsRenderer.css';
+
+/**
+ * `.canvas-argument-list-add.button.size-sm` — the one rule in
+ * `ArgumentFieldsRenderer.css` that was not reaching into a bravais component's
+ * private DOM. All six others sized `CollapsibleSection`'s internals, which is now
+ * the `isCompact` prop on this module's own CollapsibleSection.
+ */
+const ARGUMENT_LIST_ADD_CLASS = 'h-6 min-h-6 px-2 text-[0.7rem]';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];
@@ -89,7 +100,7 @@ const ArgumentFieldsRenderer = ({
                     onDelete={() => onChange(argument.argument, items.filter((_, index) => index !== itemIndex))}
                     deleteActionLabel={`Remove ${argument.label || argument.argument} item ${itemIndex + 1}`}
                     noSpacing
-                    className='canvas-argument-list-item'
+                    isCompact
                     bodyClassName='mt-2'
                 >
                     <ArgumentFieldsRenderer
@@ -132,7 +143,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className='canvas-form-label'>
+                    <p className={CANVAS_LABEL_CLASS}>
                         {argumentLabel}
                     </p>
                     <ArgumentFieldsRenderer
@@ -158,7 +169,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className='canvas-form-label'>
+                    <p className={CANVAS_LABEL_CLASS}>
                         {argumentLabel}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
@@ -166,15 +177,15 @@ const ArgumentFieldsRenderer = ({
                     )}
                     <Button
                         variant='outline'
-                        intent='neutral'
                         size='sm'
-                        className='w-full canvas-argument-list-add'
-                        leftIcon={<Plus size={12} />}
-                        onClick={() => {
+                        fullWidth
+                        className={ARGUMENT_LIST_ADD_CLASS}
+                        onPress={() => {
                             onChange(argument.argument, [...items, createDefaultListItem(argument.listArguments)]);
                             setSectionExpanded(`${fieldKey}.${items.length}`, true);
                         }}
                     >
+                        <Plus size={12} aria-hidden='true' />
                         Add New
                     </Button>
                 </div>
@@ -188,20 +199,21 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <div className='flex flex-row items-center justify-between gap-4 form-field-canvas' key={fieldKey}>
-                    <p className='canvas-form-label'>
+                <div className={CANVAS_FIELD_CLASS} key={fieldKey}>
+                    <p className={CANVAS_LABEL_CLASS}>
                         {argumentLabel}
                     </p>
-                    <div className='flex flex-row items-center justify-end relative w-full render-input-container'>
-                        <Select
+                    <div className={CANVAS_SELECT_SLOT_CLASS}>
+                        <PluginMultiSelect
                             id={`${fieldKey}-multi-select`}
                             options={selectOptions}
-                            isMulti
                             selectedValues={selectValues}
                             onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
                             placeholder='Select options'
-                            className='form-field-canvas-select labeled-input'
-                            aria-label={argumentLabel}
+                            className={cn('form-field-canvas-select labeled-input', CANVAS_FIELD.selectRoot)}
+                            triggerClassName={CANVAS_FIELD.selectTrigger}
+                            valueClassName={CANVAS_FIELD.selectValue}
+                            ariaLabel={argumentLabel}
                             renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                 selectedCount,
                                 selectValues,

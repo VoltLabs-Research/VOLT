@@ -1,9 +1,8 @@
-import { cn } from '@heroui/react';
+import { Button, Spinner, cn } from '@heroui/react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { JOB_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
+import JobStatusBadge from '@/modules/jobs/components/JobStatusBadge';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import { Button, Loader, StatusBadge } from '@voltstack/bravais';
-import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
 import { Check, Clock, Redo2, TriangleAlert, X } from 'lucide-react';
@@ -17,16 +16,58 @@ interface JobQueueProps {
 
 interface StatusConfigEntry {
     icon: ReactNode;
+    /**
+     * What `.job-container.<status> path { stroke: … }` and
+     * `.job-container.<status> .job-message { color: … }` used to do from a
+     * stylesheet: one tone, applied to the glyph and to the message line.
+     *
+     * The nested-`<path>` selector existed because there was no way to reach inside
+     * an icon from a class on the wrapper. There is now: every lucide icon strokes
+     * with `currentColor`, so colouring the wrapper colours the glyph, and the
+     * running spinner takes `color='current'` for the same reason.
+     */
+    toneClassName: string;
 };
 
 const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
-    [JobStatus.Completed]: { icon: <Check /> },
-    [JobStatus.Running]: { icon: <Loader scale={0.3} isFixed={false} /> },
-    [JobStatus.Queued]: { icon: <Clock /> },
-    [JobStatus.Retrying]: { icon: <Redo2 /> },
-    [JobStatus.QueuedAfterFailure]: { icon: <TriangleAlert /> },
-    [JobStatus.Failed]: { icon: <X /> }
+    [JobStatus.Completed]: {
+        icon: <Check />,
+        toneClassName: 'text-success'
+    },
+    [JobStatus.Running]: {
+        icon: <Spinner size='sm' color='current' />,
+        toneClassName: 'text-info'
+    },
+    [JobStatus.Queued]: {
+        icon: <Clock />,
+        toneClassName: 'text-warning'
+    },
+    [JobStatus.Retrying]: {
+        icon: <Redo2 />,
+        toneClassName: 'text-warning'
+    },
+    [JobStatus.QueuedAfterFailure]: {
+        icon: <TriangleAlert />,
+        toneClassName: 'text-danger'
+    },
+    [JobStatus.Failed]: {
+        icon: <X />,
+        toneClassName: 'text-danger'
+    }
 };
+
+const CONTAINER_CLASS_NAMES = [
+    'flex flex-row items-center justify-between gap-3 min-h-[3.25rem] p-3 rounded-2xl',
+    'focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_28%,transparent)]'
+].join(' ');
+
+/**
+ * `.job-group-children .job-container` — the one parent contract in this module.
+ * Every `JobQueue` is rendered by `FrameGroup`, which only ever renders inside that
+ * container, so the ancestor selector and `isChild` selected exactly the same rows;
+ * the rule moves onto the row itself rather than becoming an arbitrary variant.
+ */
+const CHILD_CLASS_NAMES = 'ml-3 border-l border-border rounded-none';
 
 const queueTypeNames: Record<string, string> = {
     'analysis_processing': 'Analysis',
@@ -58,7 +99,6 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const statusEntry = statusConfig[job.status];
     if (!statusEntry) return null;
 
-    const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
     const hasFrameTimestep = job.timestep !== undefined && job.timestep >= 0;
@@ -78,39 +118,40 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
 
     return (
-        <div className={cn('flex flex-row items-center justify-between gap-3', containerClass)}>
-            <span className='job-status-icon text-base' aria-hidden='true'>{statusEntry.icon}</span>
+        <div className={cn(CONTAINER_CLASS_NAMES, isChild && CHILD_CLASS_NAMES)}>
+            <span className={cn('inline-flex items-center justify-center shrink-0 text-base', statusEntry.toneClassName)} aria-hidden='true'>
+                {statusEntry.icon}
+            </span>
             <div className='flex flex-col gap-1 flex-1 min-w-0'>
                 <div className='flex flex-row items-center justify-between flex-wrap gap-2'>
-                    <h3 className='text-xs font-semibold text-foreground job-name'>
+                    <h3 className='text-xs font-semibold text-foreground truncate tracking-[0.15px] leading-[1.2]'>
                         {getJobDisplayName(job)}
                     </h3>
-                    <StatusBadge status={job.status} size='compact'>{statusLabel}</StatusBadge>
+                    <JobStatusBadge status={job.status}>{statusLabel}</JobStatusBadge>
                 </div>
                 <div className='flex flex-row items-center flex-wrap gap-2'>
-                    <p className='text-xs text-muted job-message flex items-center gap-2'>
+                    <p className={cn('flex items-center gap-2 text-xs leading-[1.3]', statusEntry.toneClassName)}>
                         {hasFrameTimestep && <span>Frame {job.timestep}</span>}
                         {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
                         {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
                     </p>
                     {job.processingTimeMs && job.status === JobStatus.Completed && (
-                        <span className='text-xs text-muted job-meta'>• {formatDuration(job.processingTimeMs)}</span>
+                        <span className='text-xs text-muted opacity-70 whitespace-nowrap'>• {formatDuration(job.processingTimeMs)}</span>
                     )}
                 </div>
                 {job.error && (
-                    <p className='text-xs job-error mt-1'>{job.error}</p>
+                    <p className='text-xs text-danger leading-[1.3] mt-1'>{job.error}</p>
                 )}
             </div>
             <div className='flex flex-row items-center gap-3'>
                 {showRetryAction && (
                     <Button
                         variant='outline'
-                        intent='neutral'
                         size='sm'
-                        onClick={handleRetry}
-                        leftIcon={<Redo2 />}
-                        className='job-retry-button'
+                        onPress={handleRetry}
+                        className='min-w-20'
                     >
+                        <Redo2 />
                         Retry
                     </Button>
                 )}

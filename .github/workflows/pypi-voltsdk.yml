@@ -1,4 +1,7 @@
-name: Publish to PyPI
+name: Publish VoltSDK to PyPI
+
+# The Python SDK now lives in this monorepo (sdk/python3), and releases here
+# cover other products too, so only releases tagged `voltsdk-py-*` publish.
 
 on:
   release:
@@ -14,6 +17,7 @@ on:
 jobs:
   build-voltsdk:
     name: Build ${{ matrix.name }} wheel
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'voltsdk-py-')
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -57,9 +61,9 @@ jobs:
         env:
           VOLTSDK_NATIVE_INDEX_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.native_index_url || vars.VOLTSDK_NATIVE_INDEX_URL || 'https://registry.voltcloud.dev' }}
         run: >
-          python .github/scripts/download_native_bundles.py
+          python sdk/.github/scripts/download_native_bundles.py
           --index-url "${VOLTSDK_NATIVE_INDEX_URL}"
-          --install-root build/plugin-install
+          --install-root sdk/build/plugin-install
           --os ${{ matrix.bundle_os }}
           --arch ${{ matrix.bundle_arch }}
 
@@ -69,8 +73,8 @@ jobs:
           from pathlib import Path
           import shutil
 
-          source = Path("build/plugin-install")
-          destination = Path("python3/voltsdk/native")
+          source = Path("sdk/build/plugin-install")
+          destination = Path("sdk/python3/voltsdk/native")
           destination.mkdir(parents=True, exist_ok=True)
           for name in ("bin", "lib", "share"):
               staged = destination / name
@@ -83,7 +87,7 @@ jobs:
       - name: Build VoltSDK platform wheel
         env:
           VOLTSDK_PLATFORM_TAG: ${{ matrix.platform_tag }}
-        working-directory: python3
+        working-directory: sdk/python3
         run: python -m build --wheel --outdir ../build/wheelhouse
 
       - name: Install built wheel
@@ -93,21 +97,22 @@ jobs:
           import subprocess
           import sys
 
-          wheel = next(Path("build/wheelhouse").glob("voltsdk-*.whl"))
+          wheel = next(Path("sdk/build/wheelhouse").glob("voltsdk-*.whl"))
           subprocess.run([sys.executable, "-m", "pip", "install", str(wheel)], check=True)
 
       - name: Smoke-test native runtime
-        run: python .github/scripts/smoke_native_plugins.py --timeout 20
+        run: python sdk/.github/scripts/smoke_native_plugins.py --timeout 20
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
           name: voltsdk-${{ matrix.name }}
-          path: build/wheelhouse/*.whl
+          path: sdk/build/wheelhouse/*.whl
           if-no-files-found: error
 
   publish:
     name: Publish wheels to PyPI
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'voltsdk-py-')
     runs-on: ubuntu-24.04
     needs:
       - build-voltsdk

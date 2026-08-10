@@ -1,7 +1,7 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GoogleIcon from '@/modules/auth/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/modules/auth/components/icons/MicrosoftIcon';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
@@ -48,26 +48,28 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                         <Button
                             key={key}
                             variant='outline'
-                            intent='neutral'
-                            block
-                            leftIcon={icon}
-                            onClick={() => onOAuth(key)}>
+                            fullWidth
+                            onPress={() => onOAuth(key)}>
+                            {icon}
                             Continue with {label}
                         </Button>
                     ))}
                 </div>
 
-                <div className='flex flex-row items-center sign-in-divider text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
-                    <span>Or continue with email</span>
+                {/*
+                  * The two flexible hairlines either side of the label were
+                  * `.sign-in-divider::before/::after`. Generated content cannot be a
+                  * utility, so they are real spans now — same DOM effect, no stylesheet.
+                  */}
+                <div className='mt-5 mb-1 flex flex-row items-center text-xs font-semibold tracking-[0.05em] text-muted uppercase'>
+                    <span className='h-px flex-1 bg-border' aria-hidden='true' />
+                    <span className='px-4'>Or continue with email</span>
+                    <span className='h-px flex-1 bg-border' aria-hidden='true' />
                 </div>
             </>
         )}
 
-        <Stack
-            as='form'
-            gap='1'
-            {...({ onSubmit } as React.FormHTMLAttributes<HTMLFormElement>)}
-        >
+        <form className='flex flex-col gap-4' onSubmit={onSubmit}>
             <FormFieldRHF
                 name='email'
                 control={control}
@@ -88,14 +90,13 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
 
             <Button
                 type='submit'
-                isLoading={isLoading}
-                variant='solid'
-                intent='brand'
-                block
+                isPending={isLoading}
+                variant='primary'
+                fullWidth
             >
                 Continue with Email
             </Button>
-        </Stack>
+        </form>
     </div>
     );
 };

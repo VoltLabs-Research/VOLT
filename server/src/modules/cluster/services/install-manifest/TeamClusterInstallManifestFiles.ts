@@ -31,10 +31,16 @@ export const sanitizeComposeProjectName = (teamClusterId: string): string => {
 };
 
 const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): string => {
+    /*
+     * The build context is the install directory itself: it mirrors the repository
+     * layout (cluster/ + sdk/) that the daemon's Dockerfile expects, because the
+     * daemon links @voltstack/daemon-cluster-client from the repository.
+     */
     const daemonBuildConfiguration = daemonDistributionMode === DaemonDistributionMode.Build
         ? [
             '    build:',
-            '      context: ./cluster-daemon',
+            '      context: .',
+            '      dockerfile: cluster/Dockerfile',
             '    pull_policy: build'
         ]
         : [];

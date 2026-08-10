@@ -4,14 +4,22 @@ import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button } from '@voltstack/bravais';
-import './TransportControls.css';
+import { Button, Tooltip } from '@heroui/react';
 
 interface TransportControlsProps {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     availableTimesteps: number[];
 }
+
+/**
+ * `.canvas-transport-mobile-step-controls` / `-play-control` shrank every button to
+ * 30px under 768px, and the step group additionally picked up the canvas floating
+ * surface (12px radius over `--surface-secondary`) from `CanvasPage.css`. Both are
+ * expressed here as descendant variants on the group so the shared `renderButton`
+ * stays a single function.
+ */
+const MOBILE_GROUP_CLASS = 'max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-[1.875rem] max-md:[&_button]:min-h-[1.875rem]';
 
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
@@ -81,65 +89,71 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             action: 'start',
             Icon: SkipBack,
             label: 'Jump to start',
-            onClick: jumpToStart
+            onPress: jumpToStart
         },
         {
             action: 'back-10',
             Icon: Rewind,
             label: 'Back 10 timesteps',
-            onClick: jumpBack10
+            onPress: jumpBack10
         },
         {
             action: 'previous',
             Icon: ChevronLeft,
             label: 'Previous timestep',
-            onClick: prevTimestep
+            onPress: prevTimestep
         },
         {
             action: 'play',
             Icon: isPlaying ? Pause : Play,
             label: isPlaying ? 'Pause' : 'Play',
-            onClick: handleTogglePlay
+            onPress: handleTogglePlay
         },
         {
             action: 'next',
             Icon: ChevronRight,
             label: 'Next timestep',
-            onClick: nextTimestep
+            onPress: nextTimestep
         },
         {
             action: 'forward-10',
             Icon: FastForward,
             label: 'Forward 10 timesteps',
-            onClick: jumpForward10
+            onPress: jumpForward10
         },
         {
             action: 'end',
             Icon: SkipForward,
             label: 'Jump to end',
-            onClick: jumpToEnd
+            onPress: jumpToEnd
         }
     ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
+    /*
+     * The `title` these buttons carried becomes a `Tooltip`, because HeroUI's `Button`
+     * has a closed prop interface with no `title` (spec §5b.8). The Button is the
+     * Tooltip's direct child rather than being wrapped in `Tooltip.Trigger` — the
+     * idiom `ThemeToggleButton` established — so no extra `role='button'` element and
+     * no extra tab stop appears in a seven-control transport bar.
+     */
     const renderButton = (btn: typeof buttons[number]) => (
-        <Button
-            key={btn.action}
-            variant="ghost"
-            intent="canvas"
-            size="sm"
-            shape="circle"
-            className="canvas-btn-compact"
-            iconOnly
-            aria-label={btn.label}
-            title={btn.label}
-            data-transport-action={btn.action}
-            onClick={btn.onClick}
-        >
-            <btn.Icon style={{
-                width: 13,
-                height: 13
-            }} />
-        </Button>
+        <Tooltip key={btn.action}>
+            <Button
+                variant='ghost'
+                size='sm'
+                className='rounded-full'
+                isIconOnly
+                aria-label={btn.label}
+                data-transport-action={btn.action}
+                onPress={btn.onPress}
+            >
+                <btn.Icon style={{
+                    width: 13,
+                    height: 13
+                }} />
+            </Button>
+            <Tooltip.Content placement='top'>{btn.label}</Tooltip.Content>
+        </Tooltip>
     );
 
     const previousButton = buttons[2];
@@ -148,15 +162,15 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
 
     return (
         <>
-            <div className='flex flex-row items-center canvas-transport-controls canvas-transport-controls--full'>
+            <div className='flex flex-row items-center gap-0.5 max-md:hidden'>
                 {buttons.map(renderButton)}
             </div>
-            <div className='flex flex-row items-center canvas-transport-controls-mobile'>
-                <div className='flex flex-row items-center canvas-transport-mobile-step-controls'>
+            <div className='hidden max-md:contents'>
+                <div className={`canvas-transport-mobile-step-controls flex flex-row items-center max-md:rounded-xl max-md:bg-surface-secondary ${MOBILE_GROUP_CLASS}`}>
                     {renderButton(previousButton)}
                     {renderButton(nextButton)}
                 </div>
-                <div className='flex flex-row items-center canvas-transport-mobile-play-control'>
+                <div className={`flex flex-row items-center ${MOBILE_GROUP_CLASS}`}>
                     {renderButton(playButton)}
                 </div>
             </div>

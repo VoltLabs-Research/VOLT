@@ -1,14 +1,16 @@
-import './PresenceDrawer.css';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
-import { AsyncBoundary, Avatar, Button, Modal, Skeleton, EmptyState, closeModal } from '@voltstack/bravais';
+import { Button, Skeleton } from '@heroui/react';
+import { Modal, closeModal } from '@/shared/ui/modal';
+import UserAvatar from '@/modules/auth/components/UserAvatar';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useMemo } from 'react';
 import { ArrowRight, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +19,17 @@ interface TeamPresenceMember {
     memberId: string;
     isOnline: boolean;
 }
+
+/** `.dashboard-presence-drawer` and `.dashboard-presence-grid`. */
+const DRAWER = 'flex h-full min-h-0 flex-col p-6';
+const PRESENCE_GRID = 'flex min-h-0 flex-1 flex-wrap content-start gap-3 overflow-y-auto';
+
+/** `.dashboard-presence-member` / `.dashboard-presence-name` — a 52px column per member. */
+const PRESENCE_MEMBER = 'flex w-[52px] flex-col items-center gap-1';
+const PRESENCE_NAME = 'max-w-[52px] truncate text-center text-xs leading-[1.2]';
+
+/** `.dashboard-card-state`. */
+const CARD_STATE = 'min-h-full';
 
 const PresenceDrawer = () => {
     const navigate = useNavigate();
@@ -60,7 +73,7 @@ const PresenceDrawer = () => {
             tone={RecoveryStateTone.AccessDenied}
             requiredPermissions={toPermissionLabels(['team-member:read'])}
             contactHint={getTeamOwnerContactHint(selectedTeam)}
-            className='dashboard-card-state'
+            className={CARD_STATE}
         />
     );
 
@@ -72,21 +85,26 @@ const PresenceDrawer = () => {
             onRetry={() => {
                 refresh().catch(() => undefined);
             }}
-            className='dashboard-card-state'
+            className={CARD_STATE}
         />
     );
 
     const loadingState = (
-        <div className='flex flex-row items-center gap-2' style={{ flexWrap: 'wrap' }}>
+        <div className='flex flex-row flex-wrap items-center gap-2'>
             {Array.from({ length: 8 }, (_, i) => (
-                <Skeleton key={i} variant='circular' width={32} height={32} />
+                <Skeleton key={i} className='size-8 shrink-0 rounded-full' aria-hidden='true' />
             ))}
         </div>
     );
 
+    /*
+     * `.dashboard-presence-empty` set `flex-direction: column; gap: .5rem` on the empty
+     * state's root, which was already a centred flex column with its own gap — both
+     * declarations were inert, so neither is ported (spec §5b.4).
+     */
     const emptyState = (
-        <EmptyState
-            className='dashboard-presence-empty flex-1'
+        <RecoveryState
+            className='flex-1'
             icon={<Users size={20} strokeWidth={1.5} className='text-muted' />}
             title='No members yet'
             description='Invite teammates to start seeing who is active and available across your workspace.'
@@ -95,6 +113,43 @@ const PresenceDrawer = () => {
 
     if (!selectedTeam) {
         return null;
+    }
+
+    /*
+     * bravais's `AsyncBoundary`, inlined at its exact precedence — accessDenied →
+     * error → loading → empty → children.
+     */
+    let presenceContent: ReactNode = (
+        <div className={PRESENCE_GRID}>
+            {sortedMembers.map(({ user, memberId, isOnline }) => {
+                const title = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
+                const displayName = user.firstName ?? user.email?.split('@')[0] ?? '?';
+
+                return (
+                    <div className={PRESENCE_MEMBER} key={memberId} title={title}>
+                        <UserAvatar
+                            user={user}
+                            size='sm'
+                            showStatus
+                            isOnline={isOnline}
+                        />
+                        <span className={`${PRESENCE_NAME} ${isOnline ? 'text-foreground' : 'text-muted'}`}>
+                            {displayName}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+
+    if (accessDenied) {
+        presenceContent = accessDeniedState;
+    } else if (error) {
+        presenceContent = renderErrorState(error);
+    } else if (isLoading) {
+        presenceContent = loadingState;
+    } else if (totalCount === 0) {
+        presenceContent = emptyState;
     }
 
     return (
@@ -107,49 +162,16 @@ const PresenceDrawer = () => {
             footer={(
                 <Button
                     variant='ghost'
-                    intent='neutral'
                     size='sm'
-                    onClick={goToTeam}
-                    rightIcon={<ArrowRight size={12} />}
+                    onPress={goToTeam}
                 >
                     Manage team
+                    <ArrowRight size={12} aria-hidden='true' />
                 </Button>
             )}
         >
-            <div className='dashboard-presence-drawer'>
-                <AsyncBoundary
-                    state={{
-                        loading: isLoading,
-                        error: error || undefined,
-                        accessDenied,
-                        empty: totalCount === 0
-                    }}
-                    loading={loadingState}
-                    error={renderErrorState}
-                    accessDenied={accessDeniedState}
-                    empty={emptyState}
-                >
-                    <div className='dashboard-presence-grid'>
-                        {sortedMembers.map(({ user, memberId, isOnline }) => {
-                            const title = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
-                            const displayName = user.firstName ?? user.email?.split('@')[0] ?? '?';
-
-                            return (
-                                <div className='flex flex-col items-center gap-1 dashboard-presence-member' key={memberId} title={title}>
-                                    <Avatar
-                                        user={user}
-                                        size='sm'
-                                        showStatus
-                                        isOnline={isOnline}
-                                    />
-                                    <span className={`text-xs truncate dashboard-presence-name ${isOnline ? 'text-foreground' : 'text-muted'}`}>
-                                        {displayName}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </AsyncBoundary>
+            <div className={DRAWER}>
+                {presenceContent}
             </div>
         </Modal>
     );

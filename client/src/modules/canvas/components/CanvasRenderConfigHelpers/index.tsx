@@ -1,7 +1,46 @@
+import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Select } from '@voltstack/bravais';
 
 import type { ReactNode } from 'react';
+import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+
+/**
+ * `CanvasRenderSections.css` reached into `FormFieldRHF`'s stacked renderer to lay a
+ * checkbox or colour field out as label-left / control-right on a 24px canvas row,
+ * and to shrink the colour swatch to 32×22.
+ *
+ * Those elements belong to a shared component, so the rules stay descendant
+ * selectors — written as arbitrary variants on this wrapper, which is what keeps them
+ * above the base utilities the shared renderer now carries (spec §5b.3). The old
+ * selector was `.context-menu-submenu-panel .canvas-form-section
+ * .form-field-container.d-flex.column`; `.d-flex.column` was a bravais utility pair
+ * that no longer exists, and the panel scope is redundant because these helpers only
+ * ever render inside a render/camera submenu.
+ */
+const CANVAS_FIELD_ROW_CLASS = [
+    '[&_.form-field-container]:min-h-6',
+    '[&_.form-field-container]:w-full',
+    '[&_.form-field-container]:flex-row',
+    '[&_.form-field-container]:items-center',
+    '[&_.form-field-container]:justify-between',
+    '[&_.form-field-container]:gap-2',
+    '[&_.form-field-container>label]:min-w-0',
+    '[&_.form-field-container>label]:flex-auto',
+    '[&_.form-field-container>label]:text-[0.7rem]',
+    '[&_.form-field-container>label]:text-muted',
+    '[&_.form-field-container>.relative]:flex-none',
+    '[&_.labeled-input-color]:h-[22px]',
+    '[&_.labeled-input-color]:w-8',
+    '[&_.labeled-input-color]:cursor-pointer',
+    '[&_.labeled-input-color]:rounded-lg',
+    '[&_.labeled-input-color]:border',
+    '[&_.labeled-input-color]:border-border',
+    '[&_.labeled-input-color]:bg-transparent',
+    '[&_.labeled-input-color]:p-0'
+].join(' ');
+
+/** `.context-menu-submenu-panel .canvas-render-grid` */
+export const RENDER_GRID_CLASS = 'flex flex-col items-stretch gap-2';
 
 type RowDef = {
     label: string;
@@ -223,7 +262,7 @@ export const checkbox = (
     value: boolean,
     onChange: (value: boolean) => void
 ): ReactNode => (
-    <div className='flex flex-col gap-2 canvas-form-section' key={key}>
+    <div className={`canvas-form-section flex flex-col gap-2 ${CANVAS_FIELD_ROW_CLASS}`} key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="checkbox"
@@ -247,7 +286,7 @@ export const colorField = (
     onChange: (value: string) => void,
     description?: string
 ): ReactNode => (
-    <div className='flex flex-col gap-2 canvas-form-section' key={key}>
+    <div className={`canvas-form-section flex flex-col gap-2 ${CANVAS_FIELD_ROW_CLASS}`} key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="color"
@@ -273,24 +312,21 @@ export const colorExtras = (
     </div>
 );
 
-interface SelectFieldOption {
-    title: string;
-    value: string;
-}
-
 export const selectField = (
     key: string,
     value: string,
     onChange: (value: string) => void,
     placeholder: string,
-    options: SelectFieldOption[]
+    options: SelectOption[]
 ): ReactNode => (
     <div className='flex flex-col gap-1' key={key}>
-        <Select
+        <CanvasOptionSelect
+            ariaLabel={placeholder}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
             options={options}
+            size='compact'
         />
     </div>
 );

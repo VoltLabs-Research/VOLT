@@ -1,4 +1,3 @@
-import './OAuthCallback.css';
 import { fetchCurrentUser } from '@/modules/auth/hooks/queries';
 import {
     clearPostAuthDestination,
@@ -8,7 +7,7 @@ import {
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Loader } from '@voltstack/bravais';
+import { Spinner } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -83,10 +82,16 @@ const OAuthCallbackTemplate = () => {
     }, [markAuthenticated, navigate]);
 
     return (
-        <div className='flex flex-row items-center justify-center relative overflow-hidden h-dvh oauth-callback-container'>
+        <div className='flex flex-row items-center justify-center relative overflow-hidden h-dvh bg-background'>
+            {/*
+              * Two decorative blurred blobs. They were `--accent-blue` and
+              * `--accent-purple` at 10%; §3a collapses the blue accent onto the
+              * monochrome `--accent`, and purple has no successor token, so both now
+              * read the one accent.
+              */}
             <div className='absolute overflow-hidden inset-0'>
-                <div className='rounded-full absolute w-1/2 oauth-background-blob oauth-blob-blue' />
-                <div className='rounded-full absolute oauth-background-blob oauth-blob-purple' />
+                <div className='rounded-full absolute -top-[20%] -left-[10%] w-1/2 h-1/2 bg-accent/10 blur-[120px] opacity-50' />
+                <div className='rounded-full absolute top-[20%] -right-[10%] w-2/5 h-2/5 bg-accent/10 blur-[120px] opacity-50' />
             </div>
 
             {status === 'error' ? (
@@ -107,11 +112,11 @@ const OAuthCallbackTemplate = () => {
                         opacity: 1,
                         scale: 1
                     }}
-                    className='oauth-card bg-surface border border-border rounded-3xl relative w-full text-center p-8'
+                    className='z-10 max-w-[28rem] bg-surface border border-border rounded-3xl relative w-full text-center p-8'
                 >
-                    <div className='flex flex-row items-center justify-center mb-6 oauth-status-icon'>
+                    <div className='flex flex-row items-center justify-center mb-6'>
                         {status === 'loading' && (
-                            <Loader scale={0.6} isFixed={false} />
+                            <Spinner size='lg' color='current' />
                         )}
 
                         {status === 'success' && (
@@ -124,7 +129,7 @@ const OAuthCallbackTemplate = () => {
                                     damping: 10
                                 }}
                             >
-                                <CheckCircle size={48} className='oauth-icon-success' />
+                                <CheckCircle size={48} className='text-success' />
                             </motion.div>
                         )}
                     </div>
@@ -140,7 +145,7 @@ const OAuthCallbackTemplate = () => {
                             y: 0
                         }}
                     >
-                        <h3 className='text-2xl font-semibold text-foreground oauth-title'>
+                        <h3 className='mb-2 text-2xl font-bold text-foreground'>
                             {status === 'loading' && 'Authenticating...'}
                             {status === 'success' && 'Successfully Authenticated!'}
                         </h3>

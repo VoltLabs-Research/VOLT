@@ -1,4 +1,3 @@
-import './SidebarNavigation.css';
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
@@ -7,7 +6,12 @@ import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
-import { Tooltip } from '@voltstack/bravais';
+import { Tooltip, cn } from '@heroui/react';
+import {
+    RAIL_NAV,
+    RAIL_NAV_COLLAPSED,
+    RAIL_TOOLTIP_TRIGGER
+} from '@/modules/dashboard/components/collapsed-rail-chrome';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
@@ -149,31 +153,23 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         const selected = isSelected(item.path);
         const Icon = selected ? iconPair.active : iconPair.inactive;
 
-        const content = (
-            <div className='sidebar-nav-item-wrapper'>
-                <SidebarNavItem
-                    label={item.label}
-                    icon={Icon}
-                    isSelected={selected}
-                    onClick={isAllowed ? () => handleNavigate(item.path) : undefined}
-                    disabled={!isAllowed}
-                />
-            </div>
-        );
-
         const tooltipContent = isAllowed
             ? item.label
             : (item.disabledReason ?? 'You do not have permission to access this section.');
         const tooltipDisabled = isAllowed && !collapsed;
 
         return (
-            <Tooltip
-                key={item.path}
-                content={tooltipContent}
-                placement='right'
-                disabled={tooltipDisabled}
-            >
-                {content}
+            <Tooltip key={item.path} isDisabled={tooltipDisabled}>
+                <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                    <SidebarNavItem
+                        label={item.label}
+                        icon={Icon}
+                        isSelected={selected}
+                        onClick={isAllowed ? () => handleNavigate(item.path) : undefined}
+                        disabled={!isAllowed}
+                    />
+                </Tooltip.Trigger>
+                <Tooltip.Content placement='right'>{tooltipContent}</Tooltip.Content>
             </Tooltip>
         );
     };
@@ -183,51 +179,52 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const clustersActive = pathname.includes('/dashboard/clusters');
 
     return (
-        <nav className='sidebar-nav overflow-y-auto'>
+        <nav className={cn(RAIL_NAV, collapsed && RAIL_NAV_COLLAPSED)}>
             {visibleNavigationItems(MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
-            <Tooltip
-                content={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
-                placement='right'
-                disabled={canAccessTrajectories && !collapsed}
-            >
-                <SidebarExpandableSection
-                    label='Trajectories'
-                    icon={CubeIcon}
-                    isActive={trajectoriesActive}
-                    subItems={trajectoriesSubItems}
-                    disabled={!canAccessTrajectories}
-                    onRequestSidebarExpand={onExpandSidebar}
-                />
+            <Tooltip isDisabled={canAccessTrajectories && !collapsed}>
+                <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                    <SidebarExpandableSection
+                        label='Trajectories'
+                        icon={CubeIcon}
+                        isActive={trajectoriesActive}
+                        subItems={trajectoriesSubItems}
+                        disabled={!canAccessTrajectories}
+                        onRequestSidebarExpand={onExpandSidebar}
+                    />
+                </Tooltip.Trigger>
+                <Tooltip.Content placement='right'>
+                    {canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
+                </Tooltip.Content>
             </Tooltip>
 
-            <Tooltip
-                content={canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.'}
-                placement='right'
-                disabled={canAccessAnalysis && !collapsed}
-            >
-                <SidebarExpandableSection
-                    label='Analysis'
-                    icon={BarChart3}
-                    isActive={analysisActive}
-                    subItems={analysisSubItems}
-                    disabled={!canAccessAnalysis}
-                    onRequestSidebarExpand={onExpandSidebar}
-                />
+            <Tooltip isDisabled={canAccessAnalysis && !collapsed}>
+                <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                    <SidebarExpandableSection
+                        label='Analysis'
+                        icon={BarChart3}
+                        isActive={analysisActive}
+                        subItems={analysisSubItems}
+                        disabled={!canAccessAnalysis}
+                        onRequestSidebarExpand={onExpandSidebar}
+                    />
+                </Tooltip.Trigger>
+                <Tooltip.Content placement='right'>
+                    {canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.'}
+                </Tooltip.Content>
             </Tooltip>
 
-            <Tooltip
-                content='Clusters'
-                placement='right'
-                disabled={!collapsed}
-            >
-                <SidebarExpandableSection
-                    label='Clusters'
-                    icon={Server}
-                    isActive={clustersActive}
-                    subItems={clustersSubItems}
-                    onRequestSidebarExpand={onExpandSidebar}
-                />
+            <Tooltip isDisabled={!collapsed}>
+                <Tooltip.Trigger className={RAIL_TOOLTIP_TRIGGER} role='presentation' tabIndex={-1}>
+                    <SidebarExpandableSection
+                        label='Clusters'
+                        icon={Server}
+                        isActive={clustersActive}
+                        subItems={clustersSubItems}
+                        onRequestSidebarExpand={onExpandSidebar}
+                    />
+                </Tooltip.Trigger>
+                <Tooltip.Content placement='right'>Clusters</Tooltip.Content>
             </Tooltip>
 
             {visibleNavigationItems(SECONDARY_NAVIGATION_ITEMS).map(renderNavItem)}

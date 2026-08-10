@@ -1,44 +1,51 @@
 import { getOtherParticipant } from '@/modules/chat/utils/chat/chat-display';
 import { Users } from 'lucide-react';
-import { cn } from '@/shared/utils/cn';
-import { Avatar } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import UserAvatar from '../UserAvatar';
+import type { UserAvatarSize } from '../UserAvatar';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
-import './ChatAvatar.css';
-
-type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface ChatAvatarProps {
     chat: Chat;
     currentUserId?: string;
-    size?: AvatarSize;
+    size?: UserAvatarSize;
     showStatus?: boolean;
     isOnline?: boolean;
     className?: string;
-}
+};
 
-const GROUP_ICON_SIZES: Record<AvatarSize, number> = {
+const GROUP_ICON_SIZES: Record<UserAvatarSize, number> = {
     xs: 14,
     sm: 18,
     md: 24,
     lg: 32
 };
 
-const ChatAvatar = ({ 
-    chat, 
-    currentUserId, 
-    size = 'sm', 
-    showStatus, 
-    isOnline, 
-    className 
+/*
+ * A group chat has no participant to take an avatar from, so it gets the raised
+ * surface plus a hairline instead — which is what `.chat-avatar-group` was
+ * reaching for. Its `background: var(--color-surface-elevated)` never resolved:
+ * that token is declared nowhere in bravais or in the app, so the whole
+ * declaration was invalid and the tile rendered transparent.
+ */
+const GROUP_CLASS_NAMES = 'bg-surface-secondary border border-border';
+
+const ChatAvatar = ({
+    chat,
+    currentUserId,
+    size = 'sm',
+    showStatus,
+    isOnline,
+    className
 }: ChatAvatarProps) => {
     return (
-        <Avatar
+        <UserAvatar
             user={chat.isGroup ? undefined : getOtherParticipant(chat, currentUserId)}
             icon={chat.isGroup ? <Users size={GROUP_ICON_SIZES[size]} /> : undefined}
             size={size}
             showStatus={showStatus}
             isOnline={isOnline}
-            className={cn(chat.isGroup && 'chat-avatar-group', className)}
+            className={cn(chat.isGroup && GROUP_CLASS_NAMES, className)}
         />
     );
 };

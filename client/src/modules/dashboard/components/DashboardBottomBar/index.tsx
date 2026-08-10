@@ -1,6 +1,5 @@
-import { cn } from '@heroui/react';
-import './DashboardBottomBar.css';
-import { Divider, openModal } from '@voltstack/bravais';
+import { Separator, cn } from '@heroui/react';
+import { openModal } from '@/shared/ui/modal';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
@@ -19,6 +18,40 @@ import type { ReactNode } from 'react';
 
 const CRITICAL_CPU_THRESHOLD = 85;
 
+/**
+ * `.dashboard-bottom-bar` composed with the `.glass-bg` it used to sit under.
+ *
+ * The sheet's `.dashboard-bottom-bar.glass-bg { background: var(--color-bg);
+ * border: 0; box-shadow: none }` was a deliberate double-class specificity hack —
+ * its own comment said so — to cancel the glass surface and pin the bar to the app
+ * background so it read as a flush extension of the chrome. With `.glass-bg` gone
+ * the hack has nothing to beat, and the intent is just `bg-background` with no
+ * border. So the `bg-surface border border-border` the codemod left on the element
+ * is dropped rather than kept: keeping it would newly draw a border the bar has
+ * never had.
+ */
+const BOTTOM_BAR = 'shrink-0 bg-background';
+
+/**
+ * `.dashboard-bottom-bar-segment`. `--radius-sm` is 8px → `rounded-lg` (spec §3b),
+ * and `--accent-blue` is the monochrome accent, which `--focus` already resolves to.
+ */
+const SEGMENT = 'inline-flex h-full cursor-pointer items-center gap-[0.85rem] whitespace-nowrap rounded-lg border-0 bg-transparent px-3 text-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--focus)]';
+
+const SEGMENT_ICON = 'inline-flex items-center text-muted';
+
+/**
+ * `.dashboard-bottom-bar-divider`. bravais's Divider painted a 1px box with a
+ * BACKGROUND rather than a border, and its vertical variant carried no
+ * `flex-shrink: 0` — inside this scrolling row it was compressible to nothing.
+ * HeroUI's `Separator` is a real `role='separator'` hairline, so the height is all
+ * that has to be restated.
+ */
+const DIVIDER = 'h-[18px] self-center';
+
+/** `.dashboard-bottom-bar-presence-dot`. */
+const PRESENCE_DOT = 'inline-block size-1.5 rounded-full mr-[0.35rem] align-middle';
+
 interface BottomBarSegmentProps {
     label: string;
     icon?: ReactNode;
@@ -29,11 +62,11 @@ interface BottomBarSegmentProps {
 const BottomBarSegment = ({ label, icon, onClick, children }: BottomBarSegmentProps) => (
     <button
         type='button'
-        className='dashboard-bottom-bar-segment'
+        className={SEGMENT}
         onClick={onClick}
         aria-label={`Open ${label}`}
     >
-        {icon && <span className='dashboard-bottom-bar-segment-icon' aria-hidden='true'>{icon}</span>}
+        {icon && <span className={SEGMENT_ICON} aria-hidden='true'>{icon}</span>}
         {children}
     </button>
 );
@@ -46,8 +79,10 @@ interface BottomBarMetricProps {
 
 const BottomBarMetric = ({ icon, value, critical }: BottomBarMetricProps) => (
     <span className='flex flex-row items-center gap-1'>
-        <span className='dashboard-bottom-bar-metric-icon' aria-hidden='true'>{icon}</span>
-        <span className={cn('text-xs text-muted', critical ? 'dashboard-bottom-bar-critical' : undefined)}>
+        <span className={SEGMENT_ICON} aria-hidden='true'>{icon}</span>
+        {/* The sheet needed `!important` to beat `.text-muted`; `cn` is tailwind-merge
+            aware, so the later colour simply wins. */}
+        <span className={cn('text-xs text-muted', critical && 'text-danger')}>
             {value}
         </span>
     </span>
@@ -132,8 +167,8 @@ const DashboardBottomBar = () => {
     };
 
     return (
-        <footer className='dashboard-bottom-bar bg-surface border border-border' aria-label='Workspace status'>
-            <div className='flex flex-row items-center gap-2 dashboard-bottom-bar-inner'>
+        <footer className={BOTTOM_BAR} aria-label='Workspace status'>
+            <div className='flex flex-row items-center gap-2 h-9 overflow-x-auto overscroll-x-contain px-3'>
                 <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
                     <StatusCounts
                         queued={jobCounts.queued}
@@ -143,7 +178,7 @@ const DashboardBottomBar = () => {
                     />
                 </BottomBarSegment>
 
-                {showClusters && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
+                {showClusters && <Separator orientation='vertical' className={DIVIDER} />}
 
                 {showClusters && (
                     <BottomBarSegment label='clusters' onClick={() => openModal(DASHBOARD_DRAWER_IDS.clusters)}>
@@ -159,12 +194,12 @@ const DashboardBottomBar = () => {
                     </BottomBarSegment>
                 )}
 
-                {showPresence && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
+                {showPresence && <Separator orientation='vertical' className={DIVIDER} />}
 
                 {showPresence && (
                     <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => openModal(DASHBOARD_DRAWER_IDS.presence)}>
                         <span className='text-xs text-muted'>
-                            <span className={`dashboard-bottom-bar-presence-dot ${presenceCounts.online > 0 ? 'is-online' : 'is-offline'}`} aria-hidden='true' />
+                            <span className={cn(PRESENCE_DOT, presenceCounts.online > 0 ? 'bg-success' : 'bg-muted')} aria-hidden='true' />
                             {presenceCounts.online} / {presenceCounts.total} online
                         </span>
                     </BottomBarSegment>

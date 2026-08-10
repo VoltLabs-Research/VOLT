@@ -1,5 +1,4 @@
-import './DashboardCard.css';
-import { Box } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
@@ -8,6 +7,14 @@ interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
     overflowHidden?: boolean;
 }
 
+/**
+ * `.dashboard-card` was `1px solid var(--color-border-soft)` at
+ * `var(--radius-xl)`. That radius is 20px on bravais's scale, a full step away
+ * from HeroUI's same-named `rounded-xl` (12px) — hence the arbitrary value
+ * (spec §3b).
+ */
+const CARD = 'border border-border rounded-[1.25rem]';
+
 const DashboardCard = ({
     children,
     className = '',
@@ -15,24 +22,18 @@ const DashboardCard = ({
     overflowHidden = false,
     ...props
 }: DashboardCardProps) => {
-    const classNames = ['dashboard-card'];
-
-    if (className) {
-        classNames.push(className);
-    }
-
-    if (isRelative) {
-        classNames.push('dashboard-card--relative');
-    }
-
-    if (overflowHidden) {
-        classNames.push('dashboard-card--overflow-hidden');
-    }
-
     return (
-        <Box className={classNames.join(' ')} {...props}>
+        <div
+            className={cn(
+                CARD,
+                isRelative && 'relative',
+                overflowHidden && 'overflow-hidden',
+                className
+            )}
+            {...props}
+        >
             {children}
-        </Box>
+        </div>
     );
 };
 

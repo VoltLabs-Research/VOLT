@@ -1,26 +1,33 @@
-import { Skeleton } from '@voltstack/bravais';
+import { Skeleton } from '@heroui/react';
+import {
+    SECRET_KEY_PAGE_CARDS_CLASS,
+    SECRET_KEY_PAGE_CARD_CLASS,
+    SECRET_KEY_PAGE_CHARTS_CLASS,
+    SECRET_KEY_PAGE_CLASS,
+    SECRET_KEY_PAGE_MAIN_CLASS
+} from '@/modules/team/components/secret-key/shared/secret-key-page-styles';
+
+const CHART_SKELETON_KEYS = ['hourly', 'endpoints', 'status-codes', 'recent'];
+const CARD_SKELETON_KEYS = ['requests', 'response-time', 'success-rate', 'last-used'];
 
 const UsageSkeleton = () => (
-    <div className='h-dvh secret-key-page text-foreground'>
-        <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+    <div className={SECRET_KEY_PAGE_CLASS}>
+        <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
             <div className='flex flex-row items-center gap-4'>
-                <Skeleton variant='circular' width={24} height={24} />
-                <Skeleton variant='text' width={300} height={32} />
+                <Skeleton className='size-6 rounded-full' />
+                <Skeleton className='h-8 w-[300px] rounded-md' />
             </div>
-            <div className='gap-4 secret-key-page-cards'>
-                {[...Array(4)].map((_, index) => (
-                    <div className='rounded-2xl transition-[all] duration-200 ease-out-fluid secret-key-page-card' key={index}>
-                        <Skeleton variant='text' width={100} height={16} />
-                        <Skeleton variant='rectangular' width={80} height={40} style={{
-                            borderRadius: 4,
-                            marginTop: '0.5rem'
-                        }} />
+            <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
+                {CARD_SKELETON_KEYS.map((key) => (
+                    <div className={SECRET_KEY_PAGE_CARD_CLASS} key={key}>
+                        <Skeleton className='h-4 w-[100px] rounded-md' />
+                        <Skeleton className='mt-2 h-10 w-20 rounded-sm' />
                     </div>
                 ))}
             </div>
-            <div className='secret-key-page-charts'>
-                {[...Array(4)].map((_, index) => (
-                    <Skeleton key={index} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
+            <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
+                {CHART_SKELETON_KEYS.map((key) => (
+                    <Skeleton key={key} className='h-[300px] w-full rounded-lg' />
                 ))}
             </div>
         </div>

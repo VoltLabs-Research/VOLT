@@ -9,7 +9,8 @@ import type {
 import {
     DaemonDistributionMode,
     getTeamClusterDaemonDistributionMode,
-    readTeamClusterDaemonManifestFiles
+    readTeamClusterDaemonManifestFiles,
+    readTeamClusterSdkManifestFiles
 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonManifestSource';
 import {
     buildTeamClusterInstallManifestFiles,
@@ -25,7 +26,14 @@ import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 
-const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
+/*
+ * The build context extracted on the host mirrors the repository layout the
+ * daemon's Dockerfiles expect: `cluster/` (the daemon) plus `sdk/` (the
+ * DaemonClusterClient package it links).
+ */
+const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster/';
+const SDK_BUILD_CONTEXT_PREFIX = 'sdk/';
+const BUILD_CONTEXT_PREFIXES = [DAEMON_BUILD_CONTEXT_PREFIX, SDK_BUILD_CONTEXT_PREFIX];
 
 const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     files: TeamClusterInstallManifestFileView[]
@@ -39,12 +47,12 @@ const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     archive.pipe(output);
 
     for (const file of files) {
-        if (!file.path.startsWith(DAEMON_BUILD_CONTEXT_PREFIX)) {
+        if (!BUILD_CONTEXT_PREFIXES.some((prefix) => file.path.startsWith(prefix))) {
             continue;
         }
 
         archive.append(`${file.contents}\n`, {
-            name: file.path.slice(DAEMON_BUILD_CONTEXT_PREFIX.length),
+            name: file.path,
             mode: parseInt(file.mode, 8)
         });
     }
@@ -74,12 +82,20 @@ class TeamClusterInstallManifestService {
 
         let daemonFiles: TeamClusterInstallManifestFileView[] = [];
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
+            const toBuildContextFile = (prefix: string) => {
+                return (file: { relativePath: string; contents: string }): TeamClusterInstallManifestFileView => ({
+                    path: path.posix.join(prefix, file.relativePath.split(path.sep).join(path.posix.sep)),
+                    contents: file.contents,
+                    mode: '0644'
+                });
+            };
+
             const daemonManifestFiles = await readTeamClusterDaemonManifestFiles();
-            daemonFiles = daemonManifestFiles.map((file): TeamClusterInstallManifestFileView => ({
-                path: path.posix.join('cluster-daemon', file.relativePath.split(path.sep).join(path.posix.sep)),
-                contents: file.contents,
-                mode: '0644'
-            }));
+            const sdkManifestFiles = await readTeamClusterSdkManifestFiles();
+            daemonFiles = [
+                ...daemonManifestFiles.map(toBuildContextFile('cluster')),
+                ...sdkManifestFiles.map(toBuildContextFile(path.posix.join('sdk', 'node', 'DaemonClusterClient')))
+            ];
         }
 
         const files = buildTeamClusterInstallManifestFiles({

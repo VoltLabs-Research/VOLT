@@ -1,11 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
-import { Button } from '@voltstack/bravais';
-import './DemoWelcomeModal.css';
+import { Button } from '@heroui/react';
+
 interface DemoLocationState {
     justProvisionedDemo?: boolean;
 }
+
+/**
+ * The deleted sheet's two rules.
+ *
+ * This overlay is hand-rolled — a `role='dialog'` div with its own backdrop, its own
+ * `useState`, and no Escape or outside-press handling — and is left that way rather
+ * than moved onto `@/shared/ui/modal`: it never went through bravais's modal, so
+ * there is no bravais call site to convert, and adopting the store would add a focus
+ * trap, a portal, and two dismissal paths that have to run `close()` (localStorage +
+ * a `navigate` that clears the router state) to stay correct. That is a redesign,
+ * not a re-skin.
+ *
+ * One live bug is fixed rather than preserved: the card's fill was
+ * `var(--surface-1, #ffffff)`, and `--surface-1` has never been a declared token —
+ * only `--color-surface-1` ever was — so the card fell through to literal white
+ * while its text stayed `var(--foreground)`. In dark mode that was near-white on
+ * white. `bg-surface` is the value the CSS inventory assigns it, and it themes.
+ *
+ * `border-radius: 16px` is bravais's `rounded-lg`, which is HeroUI's `rounded-2xl`
+ * (spec §3b) — the one mapping that must never be left alone.
+ */
+const OVERLAY_CLASS = 'fixed inset-0 z-[2000] flex items-center justify-center bg-black/55 p-4';
+
+const CARD_CLASS = 'w-full max-w-[480px] rounded-2xl bg-surface p-7 text-foreground shadow-[0_30px_60px_rgba(0,0,0,0.2)]';
 
 const STORAGE_KEY = 'demo-welcome-seen';
 
@@ -92,8 +116,8 @@ const DemoWelcomeModal = () => {
     };
 
     return (
-        <div className='demo-welcome-modal-overlay' role='dialog' aria-modal='true' aria-labelledby='demo-welcome-title'>
-            <div className='demo-welcome-modal-card'>
+        <div className={OVERLAY_CLASS} role='dialog' aria-modal='true' aria-labelledby='demo-welcome-title'>
+            <div className={CARD_CLASS}>
                 <div className='flex flex-col gap-6'>
                     <div className='flex flex-col gap-2'>
                         <span className='text-xs text-muted'>Step {stepIndex + 1} of {steps.length}</span>
@@ -106,12 +130,12 @@ const DemoWelcomeModal = () => {
                     </div>
 
                     <div className='flex flex-row items-center justify-between'>
-                        <Button variant='ghost' intent='neutral' onClick={close}>Skip</Button>
+                        <Button variant='ghost' onPress={close}>Skip</Button>
                         <div className='flex flex-row items-center gap-2'>
                             {stepIndex > 0 && (
-                                <Button variant='outline' intent='neutral' onClick={goPrev}>Back</Button>
+                                <Button variant='outline' onPress={goPrev}>Back</Button>
                             )}
-                            <Button variant='solid' intent='brand' onClick={goNext}>
+                            <Button variant='primary' onPress={goNext}>
                                 {isLastStep ? 'Got it' : 'Next'}
                             </Button>
                         </div>

@@ -2,7 +2,7 @@ import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentF
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import FormSection from '@/shared/ui/components/FormSection';
-import type { SelectOption } from '@voltstack/bravais';
+import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { ReactNode } from 'react';
 import type { ArgumentReferenceCandidate } from './argument-reference-candidates';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';

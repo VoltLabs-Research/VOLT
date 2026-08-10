@@ -1,9 +1,11 @@
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS
 } from '@/shared/rendering/performance';
-import { Button, Popover, Tooltip, PopoverMenu } from '@voltstack/bravais';
+import { VIEWPORT_FLOATING_BUTTON_CLASS } from '../ViewportFloatingControls/floating-button';
+import { Button, Tooltip } from '@heroui/react';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -20,51 +22,42 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
     const presetLabel = getPerformancePresetLabel(performancePreset);
 
     return (
-        <Popover
-            id="viewport-performance"
-            noPadding
+        <ContextMenuPopover
+            id='viewport-performance'
+            triggerAction='click'
+            ariaLabel='Performance preset'
+            size='sm'
             trigger={compact ? (
                 <span className='inline-flex items-center justify-center'>
-                    <Tooltip content={`Performance: ${presetLabel}`} placement="bottom">
+                    <Tooltip>
                         <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            iconOnly
-                            className="canvas-viewport-floating-btn"
+                            variant='ghost'
+                            size='sm'
+                            isIconOnly
+                            className={VIEWPORT_FLOATING_BUTTON_CLASS}
                             aria-label={`Performance: ${presetLabel}`}
                         >
                             <Gauge size={14} />
                         </Button>
+                        <Tooltip.Content placement='bottom'>{`Performance: ${presetLabel}`}</Tooltip.Content>
                     </Tooltip>
                 </span>
             ) : (
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    className="text-xs canvas-btn-compact"
-                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Gauge size={12} /></span>}
-                >
+                <Button variant='ghost' size='sm' className='text-xs'>
+                    <Gauge size={12} className='shrink-0' />
                     {presetLabel}
                 </Button>
             )}
-        >
-            {(close) => (
-                <PopoverMenu>
+            content={(close) => (
+                <div className='flex flex-col gap-0.5' role='group' aria-label='Performance preset'>
                     {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
                         <Button
                             key={preset.value}
-                            variant={preset.value === performancePreset ? 'solid' : 'ghost'}
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            className="text-xs"
-                            block
-                            align="start"
-                            onClick={() => {
+                            variant={preset.value === performancePreset ? 'secondary' : 'ghost'}
+                            size='sm'
+                            fullWidth
+                            className='justify-start text-xs'
+                            onPress={() => {
                                 setPerformancePreset(preset.value);
                                 close();
                             }}
@@ -72,9 +65,9 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
                             {preset.title}
                         </Button>
                     ))}
-                </PopoverMenu>
+                </div>
             )}
-        </Popover>
+        />
     );
 };
 

@@ -82,6 +82,89 @@ jobs:
             exit 1
           fi
 
+  cluster:
+    name: Cluster daemon
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cluster/package-lock.json
+
+      # `npm ci` builds native modules (duckdb, canvas), so the toolchain has to be
+      # present before install rather than after.
+      - name: Install build toolchain for native modules
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev \
+            zstd
+
+      # The daemon links @voltstack/daemon-cluster-client from the repository, and
+      # the link's package.json exports point at dist/, so build the SDK first.
+      - name: Build cluster SDK
+        working-directory: sdk/node/DaemonClusterClient
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install dependencies
+        working-directory: cluster
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: cluster
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: cluster
+        run: npm run lint
+
+      # Fails only on an `error`-severity rule; `no-cross-module-imports` and
+      # `no-circular` are `warn` with known debt, which the ratchet below bounds.
+      - name: Layering rules
+        working-directory: cluster
+        run: npm run depcruise
+
+      - name: Layering debt ratchet
+        working-directory: cluster
+        env:
+          # Baseline measured on the commit that introduced this workflow. Lower it
+          # when you remove violations; raising it needs a reason in the PR.
+          MAX_VIOLATIONS: 65
+        run: |
+          set -uo pipefail
+          output="$(npm run --silent depcruise 2>&1 || true)"
+          count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
+            | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
+
+          if [ -z "$count" ]; then
+            echo "Could not read the violation count from depcruise output:"
+            printf '%s\n' "$output" | tail -20
+            exit 1
+          fi
+
+          echo "dependency violations: $count (max $MAX_VIOLATIONS)"
+          if [ "$count" -gt "$MAX_VIOLATIONS" ]; then
+            echo "::error::Layering debt grew from $MAX_VIOLATIONS to $count. Route the new edge through @shared/contracts instead of adding to the debt."
+            exit 1
+          fi
+
+      - name: Build
+        working-directory: cluster
+        run: npm run build
+
   client:
     name: Client
     runs-on: ubuntu-latest
@@ -95,6 +178,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: client/package-lock.json
+
+      # The client links @voltstack/voltclient from the repository, and the link's
+      # package.json exports point at dist/, so build the SDK first.
+      - name: Build VoltClient SDK
+        working-directory: sdk/node/VoltClient
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
 
       - name: Install dependencies
         working-directory: client
@@ -162,17 +253,15 @@ jobs:
         working-directory: desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
-          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
           TEAM_CLUSTER_ID: validation
         run: |
-          mkdir -p "$VOLT_SOURCE_DIR" "$CLUSTER_DAEMON_SOURCE_DIR"
+          mkdir -p "$VOLT_SOURCE_DIR"
           docker compose -f compose.yml --profile enrolled config > /dev/null
 
       - name: Validate compose (prebuilt images)
         working-directory: desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
-          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
           TEAM_CLUSTER_ID: validation
         run: |
           docker compose -f compose.yml -f compose.images.yml --profile enrolled config > /dev/null
@@ -182,7 +271,6 @@ jobs:
         working-directory: desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
-          CLUSTER_DAEMON_SOURCE_DIR: /tmp/cluster-daemon-source
           TEAM_CLUSTER_ID: validation
         run: |
           set -uo pipefail

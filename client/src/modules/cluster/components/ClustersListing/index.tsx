@@ -1,4 +1,4 @@
-import { cn } from '@heroui/react';
+import { buttonVariants, cn } from '@heroui/react';
 import ClusterQueueConcurrencyModal, {
     CLUSTER_QUEUE_CONCURRENCY_MODAL_ID
 } from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
@@ -6,7 +6,8 @@ import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/compo
 import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/ClusterTransferModal';
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
-import { Button, openModal, StatusBadge } from '@voltstack/bravais';
+import { openModal } from '@/shared/ui/modal';
+import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
@@ -32,8 +33,29 @@ import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentLi
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ServerRow } from '@/modules/cluster/utils/transform-cluster-row';
-import '@/modules/cluster/components/ClustersListing/ServerTable.css';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+/**
+ * `.server-table-bar` from the deleted ServerTable.css: a 4px×1.25rem segment whose
+ * fill is the only thing that changes with the metric. bravais's `--radius-xs` is
+ * 6px, which is HeroUI's `rounded-md` (spec §3b), and `--color-brand-primary` is the
+ * accent. The sheet's `prefers-reduced-motion` `transition: none` is now global in
+ * `index.css`.
+ */
+const METRIC_BAR_CLASS = 'w-[4px] h-5 rounded-md transition-colors duration-200 ease-out';
+
+const METRIC_BAR_FILL_CLASS: Record<'active' | 'idle', string> = {
+    active: 'bg-accent',
+    idle: 'bg-border'
+};
+
+/**
+ * `.clusters-empty-state`, which lived in ClusterMonitoringPage.css and was reached
+ * from here by class name across a file that never imported it. See the note beside
+ * the same literal in ClusterMonitoringPage for why it is duplicated rather than
+ * shared.
+ */
+const EMPTY_STATE_CLASS = 'flex flex-col items-start gap-4 p-6 rounded-2xl border border-border bg-surface-secondary';
 
 const renderMetricBars = (percentage: number, label: string): ReactNode => {
     const activeBars = Math.floor(percentage / 20);
@@ -41,7 +63,7 @@ const renderMetricBars = (percentage: number, label: string): ReactNode => {
         <div className='flex flex-row items-center gap-2'>
             <div className='flex gap-[0.1rem]'>
                 {[0, 1, 2, 3, 4].map((i) => (
-                    <div key={i} className={`server-table-bar ${i < activeBars ? 'server-table-bar-active' : ''}`} />
+                    <div key={i} className={cn(METRIC_BAR_CLASS, METRIC_BAR_FILL_CLASS[i < activeBars ? 'active' : 'idle'])} />
                 ))}
             </div>
             <p className='text-xs text-muted'>{label}</p>
@@ -89,9 +111,9 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         sortable: true,
         width: 180,
         render: (_, row) => (
-            <StatusBadge variant={getTeamClusterStatusVariant(row.lifecycleStatus)} size='compact'>
+            <ClusterStatusBadge tone={getTeamClusterStatusVariant(row.lifecycleStatus)}>
                 {getTeamClusterStatusLabel(row.lifecycleStatus)}
-            </StatusBadge>
+            </ClusterStatusBadge>
         )
     },
     {
@@ -105,9 +127,9 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
 
             return (
                 <div className='flex flex-col gap-1'>
-                    <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
+                    <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(row.desiredRole)}>
                         {getTeamClusterRoleLabel(row.desiredRole)}
-                    </StatusBadge>
+                    </ClusterStatusBadge>
                     <p className={cn('text-xs', isTransitionPending ? 'text-warning' : 'text-muted')}>
                         {isTransitionPending
                             ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
@@ -123,9 +145,9 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         sortable: true,
         width: 220,
         render: (_, row) => (
-            <StatusBadge variant={row.statusVariant} size='compact'>
+            <ClusterStatusBadge tone={row.statusVariant}>
                 {row.status}
-            </StatusBadge>
+            </ClusterStatusBadge>
         )
     },
     createMetricColumn('cpu', 'CPU'),
@@ -294,12 +316,17 @@ const ClustersListing = () => {
                 defaultLimit={20}
                 emptyMessage='No clusters found.'
                 emptyIcon={(
-                    <div className='flex flex-col items-start gap-4 p-6 rounded-2xl clusters-empty-state'>
+                    <div className={EMPTY_STATE_CLASS}>
                         <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
                         <p className='text-sm text-muted'>
                             Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
                         </p>
-                        <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
+                        <Link
+                            to='/onboarding/cluster/setup'
+                            className={buttonVariants({ variant: 'primary' })}
+                        >
+                            Add New Cluster
+                        </Link>
                     </div>
                 )}
                 createNew={{

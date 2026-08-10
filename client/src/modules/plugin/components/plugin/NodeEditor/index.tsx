@@ -1,4 +1,12 @@
-import { SegmentedTabs, Callout } from '@voltstack/bravais';
+import { Alert, Button } from '@heroui/react';
+import SectionTabs from '@/modules/plugin/components/plugin/NodeEditor/SectionTabs';
+import {
+    CALLOUT_DANGER_CLASS,
+    FLOATING_PANEL_BODY_CLASS,
+    FLOATING_PANEL_DESCRIPTION_CLASS,
+    FLOATING_PANEL_FOOTER_CLASS,
+    FLOATING_PANEL_TABS_CLASS
+} from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -62,24 +70,22 @@ const NodeEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <div className='floating-node-panel-tabs'>
-                <SegmentedTabs
+            <div className={FLOATING_PANEL_TABS_CLASS}>
+                <SectionTabs
                     tabs={SECTION_TABS}
                     activeTab={activeSection}
                     onChange={setActiveSection}
                     ariaLabel='Node configuration sections'
-                    size='sm'
-                    fullWidth
                     layoutId={`node-editor-${node.id}`}
                 />
             </div>
 
-            <div className='floating-node-panel-body'>
+            <div className={FLOATING_PANEL_BODY_CLASS}>
                 {activeSection === 'details' && (
                     EditorComponent ? (
                         <>
                             {nodeDescription && (
-                                <p className='text-xs text-muted floating-node-panel-description'>
+                                <p className={FLOATING_PANEL_DESCRIPTION_CLASS}>
                                     {nodeDescription}
                                 </p>
                             )}
@@ -97,17 +103,33 @@ const NodeEditor = ({ node }: EditorProps) => {
                 )}
             </div>
 
-            <div className='floating-node-panel-footer'>
-                <Callout
-                    tone='danger'
-                    title='Delete Node'
-                    description='Remove this node and its connections'
-                    action={{
-                        label: 'Delete',
-                        icon: <Trash2 size={14} />,
-                        onClick: handleDelete
-                    }}
-                />
+            <div className={FLOATING_PANEL_FOOTER_CLASS}>
+                {/*
+                  * bravais derived `role='region'` and `aria-label={title}` for a Callout
+                  * with a title, and rendered its `action` as an outline button in the
+                  * tone's intent. Spec §4d maps `outline` + `danger` to `ghost` plus
+                  * `text-danger`.
+                  */}
+                <Alert
+                    status='danger'
+                    role='region'
+                    aria-label='Delete Node'
+                    className={CALLOUT_DANGER_CLASS}
+                >
+                    <Alert.Content className='gap-1'>
+                        <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-sm font-semibold'>
+                            Delete Node
+                        </Alert.Title>
+                        <Alert.Description<'p'> render={(props) => <p {...props} />} className='text-xs text-muted'>
+                            Remove this node and its connections
+                        </Alert.Description>
+                    </Alert.Content>
+
+                    <Button variant='ghost' size='sm' className='shrink-0 text-danger' onPress={handleDelete}>
+                        <Trash2 size={14} aria-hidden='true' />
+                        Delete
+                    </Button>
+                </Alert>
             </div>
         </>
     );

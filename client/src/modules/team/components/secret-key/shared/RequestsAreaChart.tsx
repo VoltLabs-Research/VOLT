@@ -40,15 +40,15 @@ const RequestsAreaChart = ({
                     <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
                 </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
+            <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
             <XAxis
                 dataKey='date'
-                stroke='var(--color-text-muted)'
+                stroke='var(--muted)'
                 style={{ fontSize: '12px' }}
                 tickLine={xAxisTickLine}
             />
             <YAxis
-                stroke='var(--color-text-muted)'
+                stroke='var(--muted)'
                 style={{ fontSize: '12px' }}
                 allowDecimals={yAxisAllowDecimals}
             />

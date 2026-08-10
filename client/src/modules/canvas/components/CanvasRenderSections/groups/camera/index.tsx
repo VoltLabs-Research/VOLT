@@ -1,4 +1,4 @@
-import { row, vec3Rows } from '../../../CanvasRenderConfigHelpers';
+import { row, vec3Rows, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     CAMERA_SUBSECTION_TITLES,
@@ -10,7 +10,8 @@ import {
 import { useMemo } from 'react';
 import { Camera } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { Select, Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
+import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
 import { updateVec3Value } from '../../utils';
 
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
@@ -37,8 +38,9 @@ const useCameraGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <div className='canvas-render-grid'>
-                    <Select
+                <div className={RENDER_GRID_CLASS}>
+                    <CanvasOptionSelect
+                        ariaLabel='Projection'
                         value={type}
                         onChange={(value: string) => {
                             if (isCameraType(value)) {
@@ -47,8 +49,9 @@ const useCameraGroup = (): RenderGroup => {
                         }}
                         placeholder='Projection'
                         options={CAMERA_TYPE_OPTIONS}
+                        size='compact'
                     />
-                    <Button variant='ghost' intent='canvas' shape='rounded' size='sm' className='text-xs' onClick={reset} style={{ justifySelf: 'start' }}>
+                    <Button variant='ghost' size='sm' className='self-start text-xs' onPress={reset}>
                         Reset Camera
                     </Button>
                 </div>

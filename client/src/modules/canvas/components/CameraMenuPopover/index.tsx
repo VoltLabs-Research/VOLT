@@ -1,12 +1,11 @@
 import useCameraGroup from '../CanvasRenderSections/groups/camera';
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Tooltip } from '@voltstack/bravais';
+import { VIEWPORT_FLOATING_BUTTON_CLASS } from '../ViewportFloatingControls/floating-button';
+import { Button, Tooltip } from '@heroui/react';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
-
-import './CameraMenuPopover.css';
 
 interface CameraMenuPopoverProps {
     compact?: boolean;
@@ -21,7 +20,7 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
             .map((subsection) => ({
                 label: subsection.label,
                 submenuContent: (
-                    <div className='flex flex-col gap-2 canvas-camera-menu-submenu'>
+                    <div className='flex min-w-[260px] flex-col gap-2 px-2 py-1'>
                         <CanvasRenderSubsectionContent subsection={subsection} />
                     </div>
                 )
@@ -30,42 +29,46 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
 
     return (
         <ContextMenuPopover
-            id="viewport-camera-menu"
+            id='viewport-camera-menu'
             trigger={compact ? (
+                /*
+                 * The span is `ContextMenuPopover`'s trigger element — it takes the popover
+                 * ref, `data-popover-trigger` and the click handlers — so it stays outside
+                 * the Tooltip.
+                 */
                 <span className='inline-flex items-center justify-center'>
-                    <Tooltip content="Camera" placement="bottom">
+                    <Tooltip>
                         <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            iconOnly
-                            className="canvas-viewport-floating-btn"
-                            aria-label="Camera settings"
+                            variant='ghost'
+                            size='sm'
+                            isIconOnly
+                            className={VIEWPORT_FLOATING_BUTTON_CLASS}
+                            aria-label='Camera settings'
                         >
                             <Settings size={14} />
                         </Button>
+                        <Tooltip.Content placement='bottom'>Camera</Tooltip.Content>
                     </Tooltip>
                 </span>
             ) : (
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    className="text-xs canvas-btn-compact"
-                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Settings size={12} /></span>}
-                    aria-label="Camera settings"
-                    title="Camera settings"
-                >
-                    Camera
-                </Button>
+                <Tooltip>
+                    <Button
+                        variant='ghost'
+                        size='sm'
+                        className='text-xs'
+                        aria-label='Camera settings'
+                    >
+                        <Settings size={12} className='shrink-0' />
+                        Camera
+                    </Button>
+                    <Tooltip.Content placement='bottom'>Camera settings</Tooltip.Content>
+                </Tooltip>
             )}
             options={options}
-            triggerAction="click"
-            ariaLabel="Camera settings"
-            menuLabel="Camera settings"
-            size="sm"
+            triggerAction='click'
+            ariaLabel='Camera settings'
+            menuLabel='Camera settings'
+            size='sm'
         />
     );
 };

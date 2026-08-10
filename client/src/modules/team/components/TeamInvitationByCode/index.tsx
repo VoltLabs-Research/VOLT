@@ -1,12 +1,12 @@
-import { Button, Tag, Loader } from '@voltstack/bravais';
+import { Button, Chip, Spinner, cn } from '@heroui/react';
 import {
+    TEAM_INVITATION_ACTIONS_CLASS,
+    TEAM_INVITATION_ICON_ERROR_CLASS,
     TeamInvitationCard,
     TeamInvitationDetailItem,
     TeamInvitationDetails,
     TeamInvitationStateCard
 } from '@/modules/team/components/TeamInvitationShared';
-import './TeamInvitationByCode.css';
-import '../TeamInvitation/TeamInvitation.css';
 import {
     clearPostAuthDestination,
     getOnboardingRedirectPath,
@@ -19,6 +19,15 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { AlertCircle, CheckCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
+
+/**
+ * `.team-invitation-by-code-icon` and its two tones. `--color-brand-primary` is
+ * HeroUI's `--accent`, so the 10% `color-mix` fill is `bg-accent/10`; the ready tone's
+ * `--status-success` / `--status-success-bg` pair is `text-success bg-success-soft`.
+ */
+const BY_CODE_ICON_CLASS = 'flex size-16 items-center justify-center rounded-full';
+const BY_CODE_ICON_LOADING_CLASS = 'text-accent bg-accent/10';
+const BY_CODE_ICON_READY_CLASS = 'text-success bg-success-soft';
 
 const isAlreadyMemberError = (message: string): boolean => {
     return message.toLowerCase().includes('already a member');
@@ -103,8 +112,8 @@ const TeamInvitationByCodeTemplate = () => {
         return (
             <TeamInvitationStateCard
                 icon={(
-                    <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
-                        <Loader scale={1} isFixed={false} />
+                    <div className={cn(BY_CODE_ICON_CLASS, BY_CODE_ICON_LOADING_CLASS)}>
+                        <Spinner size='lg' color='current' />
                     </div>
                 )}
                 title={isJoining ? 'Joining team...' : 'Reviewing invite...'}
@@ -118,9 +127,10 @@ const TeamInvitationByCodeTemplate = () => {
     if (isAlreadyMember) {
         return (
             <TeamInvitationCard>
-                <Tag tone='success' variant='soft' size='md' leftIcon={<Users size={20} />}>
-                    Already joined
-                </Tag>
+                <Chip color='success' variant='soft' size='md'>
+                    <Users size={20} aria-hidden='true' />
+                    <Chip.Label>Already joined</Chip.Label>
+                </Chip>
                 <h3 className='text-xl font-semibold text-foreground'>You are already in this team</h3>
                 {preview && (
                     <TeamInvitationDetails>
@@ -132,11 +142,10 @@ const TeamInvitationByCodeTemplate = () => {
                     {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
                 </p>
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    leftIcon={<CheckCircle size={18} />}
-                    onClick={handleNavigateToNextDestination}
+                    variant='primary'
+                    onPress={handleNavigateToNextDestination}
                 >
+                    <CheckCircle size={18} aria-hidden='true' />
                     Go to Dashboard
                 </Button>
             </TeamInvitationCard>
@@ -147,7 +156,7 @@ const TeamInvitationByCodeTemplate = () => {
         return (
             <TeamInvitationStateCard
                 icon={(
-                    <div className='team-invitation-icon-error'>
+                    <div className={TEAM_INVITATION_ICON_ERROR_CLASS}>
                         <XCircle size={48} />
                     </div>
                 )}
@@ -155,24 +164,24 @@ const TeamInvitationByCodeTemplate = () => {
                 description={joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'}
                 action={(
                     <Button
-                        variant='solid'
-                        intent='brand'
-                        onClick={handleNavigateToNextDestination}
+                        variant='primary'
+                        onPress={handleNavigateToNextDestination}
                     >
                         Back to Dashboard
                     </Button>
                 )}
             >
-                <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
-                    Please ask for a new invite link or try again later.
-                </Tag>
+                <Chip color='danger' variant='soft' size='md'>
+                    <AlertCircle size={16} aria-hidden='true' />
+                    <Chip.Label>Please ask for a new invite link or try again later.</Chip.Label>
+                </Chip>
             </TeamInvitationStateCard>
         );
     }
 
     return (
         <TeamInvitationCard>
-            <div className='team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
+            <div className={cn(BY_CODE_ICON_CLASS, BY_CODE_ICON_READY_CLASS)}>
                 <ShieldCheck size={40} />
             </div>
             <h3 className='text-xl font-semibold text-foreground'>Join this team?</h3>
@@ -186,16 +195,15 @@ const TeamInvitationByCodeTemplate = () => {
                     <TeamInvitationDetailItem label='Invite code' value={normalizedCode} />
                 </TeamInvitationDetails>
             )}
-            <div className='flex flex-row items-center gap-3 team-invitation-actions'>
-                <Button variant='ghost' intent='neutral' onClick={handleNavigateToNextDestination}>
+            <div className={cn('flex flex-row items-center gap-3', TEAM_INVITATION_ACTIONS_CLASS)}>
+                <Button variant='ghost' onPress={handleNavigateToNextDestination}>
                     Cancel
                 </Button>
                 <Button
-                    variant='solid'
-                    intent='brand'
-                    leftIcon={<CheckCircle size={18} />}
-                    onClick={handleJoinTeam}
+                    variant='primary'
+                    onPress={handleJoinTeam}
                 >
+                    <CheckCircle size={18} aria-hidden='true' />
                     Join Team
                 </Button>
             </div>

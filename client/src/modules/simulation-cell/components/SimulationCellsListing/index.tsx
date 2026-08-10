@@ -3,7 +3,7 @@ import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { Tag } from '@voltstack/bravais';
+import { Chip } from '@heroui/react';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
@@ -21,14 +21,17 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
     return (
         <div className='flex flex-row items-center flex-wrap gap-2'>
             {([['X', pbc.x], ['Y', pbc.y], ['Z', pbc.z]] as const).map(([axis, enabled]) => (
-                <Tag
+                <Chip
                     key={axis}
-                    tone={enabled ? 'success' : 'neutral'}
+                    color={enabled ? 'success' : 'default'}
                     variant='soft'
-                    size='xs'
+                    size='sm'
+                    className='rounded-full'
                 >
-                    {axis}: {enabled ? 'Periodic' : 'Open'}
-                </Tag>
+                    <Chip.Label>
+                        {axis}: {enabled ? 'Periodic' : 'Open'}
+                    </Chip.Label>
+                </Chip>
             ))}
         </div>
     );

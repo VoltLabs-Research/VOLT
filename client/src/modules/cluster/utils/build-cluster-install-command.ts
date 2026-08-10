@@ -26,7 +26,17 @@ export const CLUSTER_INSTALL_PLATFORM_OPTIONS: ReadonlyArray<ClusterInstallPlatf
     }
 ];
 
-const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/clusterdaemon/main/scripts';
+/**
+ * Narrows a toggle group's emitted key back to the enum. bravais's `SegmentedTabs`
+ * was generic over its own id union and handed the value back already typed;
+ * React Aria's selection is a `Set<Key>`, so the check happens against the option
+ * list itself rather than through an assertion.
+ */
+export const isClusterInstallPlatform = (value: string): value is ClusterInstallPlatform => {
+    return CLUSTER_INSTALL_PLATFORM_OPTIONS.some((option) => option.id === value);
+};
+
+const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/VOLT/main/cluster/scripts';
 
 const escapePowerShellSingleQuotedString = (value: string): string => {
     return value.replace(/'/g, "''");
