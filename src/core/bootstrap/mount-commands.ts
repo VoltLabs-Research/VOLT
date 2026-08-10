@@ -1,5 +1,5 @@
+import { COMMAND_GROUPS } from '@core/bootstrap/command-groups';
 import { getCommandRegistry } from '@shared/commands/CommandRegistry';
-import { getRegisteredCommandGroups } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { CommandTransport } from '@shared/contracts/channel/command-transport';
 
@@ -14,7 +14,7 @@ import type { CommandTransport } from '@shared/contracts/channel/command-transpo
  */
 const mountCommands = (transport: CommandTransport): void => {
     const startedAt = Date.now();
-    const factories = getRegisteredCommandGroups();
+    const factories = COMMAND_GROUPS;
 
     getCommandRegistry().registerGroups(factories, transport);
 

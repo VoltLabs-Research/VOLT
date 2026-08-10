@@ -1,5 +1,5 @@
 import type { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
-import { registerEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
+import { defineEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
 import { registerStatusTriple } from '@shared/infrastructure/events/register-status-triple';
 import {
     createAnalysisJobCompletionDedupeKey,
@@ -25,7 +25,7 @@ import {
 
 type AnalysisLifecycleStatus = 'started' | 'completed' | 'failed';
 
-export const registerAnalysisEventMappers = registerEventMapperSet((bridge: DomainEventBridge): void => {
+export const registerAnalysisEventMappers = defineEventMapperSet((bridge: DomainEventBridge): void => {
     registerStatusTriple<BaseAnalysisEventData, AnalysisLifecycleStatus>({
         bridge,
         events: {

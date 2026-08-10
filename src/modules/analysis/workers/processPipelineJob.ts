@@ -254,11 +254,28 @@ const runComputeStage = async (
     await withJobLifecycle(
         {
             reportStatus: (status, error) => {
-                if (status === 'started') return;
                 if (status === 'failed') {
                     logger.error(`Pipeline compute stage failed for jobId=${stageJobId}: ${error ?? 'Unknown error'}`);
                 }
-                run.reportedAnalysisIds.add(analysisId);
+
+                /*
+                 * `started` used to return here, which meant a frame being computed was
+                 * never reported as running: the control plane's projection went straight
+                 * from `queued` to `completed`, so the timeline could only ever show a
+                 * frame as pending or finished while the analysis row beside it already
+                 * said running. `AnalysisStartedEvent` maps to a per-frame
+                 * `analysis-job-status` message whose dedupe key includes the timestep,
+                 * so this reports one `running` per frame rather than re-announcing the
+                 * analysis.
+                 *
+                 * Only terminal reports may enter `reportedAnalysisIds` — the outer catch
+                 * uses it to avoid double-reporting a failure, and marking an analysis on
+                 * `started` would suppress the real one.
+                 */
+                if (status !== 'started') {
+                    run.reportedAnalysisIds.add(analysisId);
+                }
+
                 reportAnalysisStatus(status, error);
             },
             cleanup: async () => {

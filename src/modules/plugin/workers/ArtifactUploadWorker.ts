@@ -1,5 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { getDaemonArtifactReporter } from '@modules/analysis/services/DaemonArtifactReporter';
@@ -188,7 +188,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 }
 
-export const getArtifactUploadWorker = registerDaemonWorker({
+export const artifactUploadWorker = defineDaemonWorker({
     name: 'artifact-upload',
     scope: 'compute',
     concurrencyKey: 'artifactUpload',

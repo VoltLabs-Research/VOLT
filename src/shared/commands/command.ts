@@ -61,21 +61,6 @@ export const getCommandGroupMetadata = (group: CommandGroupClass): CommandGroupM
     };
 };
 
-const registeredGroups: CommandGroupFactory[] = [];
-
-/**
- * Every command group the process has loaded.
- *
- * Groups enter this list as their file is imported, and the daemon imports every
- * file under `modules/` before it wires anything, so the bootstrap reads a
- * complete list without naming a single module. Adding a command group is
- * creating its file — there is no registry to edit.
- *
- * Order is import order, which does not matter: dispatch is by name and
- * `CommandRegistry` rejects a duplicate name outright.
- */
-export const getRegisteredCommandGroups = (): readonly CommandGroupFactory[] => registeredGroups;
-
 export const commandGroupFactory = <TGroup extends object>(
     group: new (...args: never[]) => TGroup,
     create: () => TGroup
@@ -89,8 +74,5 @@ export const commandGroupFactory = <TGroup extends object>(
         return instance as unknown as CommandHandlerMap;
     };
 
-    const registered = Object.assign(factory, { group: group as CommandGroupClass });
-    registeredGroups.push(registered);
-
-    return registered;
+    return Object.assign(factory, { group: group as CommandGroupClass });
 };

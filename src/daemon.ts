@@ -1,4 +1,3 @@
-import { loadAllModules } from '@core/bootstrap/load-modules';
 import { getDaemonLifecycle } from '@core/bootstrap/DaemonLifecycle';
 import { logger } from '@shared/infrastructure/logger';
 
@@ -24,8 +23,6 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startDaemon = async (): Promise<void> => {
-    await loadAllModules();
-
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
 

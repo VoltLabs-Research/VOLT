@@ -1,5 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
@@ -74,7 +74,7 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 }
 
-export const getTrajectoryRasterWorker = registerDaemonWorker({
+export const trajectoryRasterWorker = defineDaemonWorker({
     name: 'trajectory-raster',
     scope: 'always',
     concurrencyKey: 'rasterizer',

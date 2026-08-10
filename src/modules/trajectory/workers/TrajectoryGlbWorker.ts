@@ -1,5 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -52,7 +52,7 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
     }
 }
 
-export const getTrajectoryGlbWorker = registerDaemonWorker({
+export const trajectoryGlbWorker = defineDaemonWorker({
     name: 'trajectory-glb',
     scope: 'compute',
     concurrencyKey: 'glbPreprocessing',

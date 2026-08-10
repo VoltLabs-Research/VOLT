@@ -1,5 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
@@ -212,7 +212,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 }
 
-export const getTrajectoryFrameProcessingWorker = registerDaemonWorker({
+export const trajectoryFrameProcessingWorker = defineDaemonWorker({
     name: 'trajectory-frame-processing',
     scope: 'always',
     concurrencyKey: 'glbPreprocessing',

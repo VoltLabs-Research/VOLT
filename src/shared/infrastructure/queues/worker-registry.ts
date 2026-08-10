@@ -30,33 +30,41 @@ export interface WorkerBinding extends WorkerRegistration {
     resolve: () => ManagedWorker;
 }
 
-const registered: WorkerBinding[] = [];
-
 /**
- * Declares a worker and its runtime policy, returning the accessor unchanged.
+ * Pairs a worker's runtime policy with the accessor that builds it.
  *
  * The policy sits next to the worker it governs rather than in a table the
  * bootstrap owns: `scope` and `concurrencyKey` are facts about that queue, and
  * splitting them from the class meant every new worker needed an edit in two
  * places — with nothing to catch the second one being forgotten.
  *
- * Wrapping the accessor's declaration is what makes registration unmissable; a
- * worker that is written but never registered would simply never start.
+ * This used to push into a module-level array, so a worker joined the daemon as a
+ * side effect of its file being imported — and the only thing importing those
+ * files was an autoloader that walked `shared/` and `modules/` at boot. When the
+ * autoloader went away the array was simply empty: every queue still accepted
+ * jobs, nothing drained them, and the sole hint was a log line reading
+ * `started 0 compute workers`.
+ *
+ * Returning a value instead makes the wiring a reference. `DAEMON_WORKERS` in
+ * `@core/bootstrap/workers` names all of them, so `tsc`, the bundler and "find
+ * references" can each see which workers are live, and one left out of that list
+ * reads as dead code rather than as a silently idle queue.
  */
-export const registerDaemonWorker = <TWorker extends ManagedWorker>(
+export const defineDaemonWorker = <TWorker extends ManagedWorker>(
     registration: WorkerRegistration,
     resolve: () => TWorker
-): (() => TWorker) => {
-    registered.push({
-        ...registration,
-        resolve
-    });
+): WorkerBinding => ({
+    ...registration,
+    resolve
+});
 
-    return resolve;
-};
+export const workersForScope = (
+    workers: readonly WorkerBinding[],
+    scope: WorkerStartScope
+): readonly WorkerBinding[] =>
+    workers.filter((worker) => worker.scope === scope);
 
-export const workersForScope = (scope: WorkerStartScope): readonly WorkerBinding[] =>
-    registered.filter((worker) => worker.scope === scope);
-
-export const concurrencyTrackedWorkers = (): readonly WorkerBinding[] =>
-    registered.filter((worker) => worker.tracksConcurrencyWhileRunning);
+export const concurrencyTrackedWorkers = (
+    workers: readonly WorkerBinding[]
+): readonly WorkerBinding[] =>
+    workers.filter((worker) => worker.tracksConcurrencyWhileRunning);

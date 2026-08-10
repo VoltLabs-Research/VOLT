@@ -2,6 +2,7 @@ import { withDefaults, withNestedDefaults } from '@shared/application/utilities/
 import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { concurrencyTrackedWorkers, workersForScope } from '@shared/infrastructure/queues/worker-registry';
+import { DAEMON_WORKERS } from '@core/bootstrap/workers';
 import { logger } from '@shared/infrastructure/logger';
 import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, createDefaultTeamClusterRuntimeRoleConfig } from '@shared/contracts/types/team-cluster-runtime';
 import type {
@@ -36,6 +37,16 @@ export class RuntimeRoleCoordinator {
     private roleOperationQueue: Promise<unknown> = Promise.resolve();
 
     async initialize(runtimeConfig: TeamClusterDaemonRuntimeConfig): Promise<TeamClusterDaemonRuntimeConfig> {
+        /*
+         * A daemon with no workers still accepts jobs and drains none of them,
+         * which is indistinguishable from a slow cluster until somebody reads the
+         * queue table by hand. Refusing to boot is the cheap way to keep that
+         * failure from being silent.
+         */
+        if (DAEMON_WORKERS.length === 0) {
+            throw new Error('No daemon workers are declared: check DAEMON_WORKERS in @core/bootstrap/workers');
+        }
+
         return this.runRoleOperation(async () => {
             this.snapshot = {
                 queueConcurrency: withDefaults(DEFAULT_QUEUE_CONCURRENCY, runtimeConfig.queueConcurrency),
@@ -45,9 +56,12 @@ export class RuntimeRoleCoordinator {
 
             getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
-            for (const worker of workersForScope('always')) {
+            const alwaysWorkers = workersForScope(DAEMON_WORKERS, 'always');
+            for (const worker of alwaysWorkers) {
                 worker.resolve().start(this.snapshot.queueConcurrency[worker.concurrencyKey]);
             }
+
+            logger.info(`@runtime-role: started ${alwaysWorkers.length} always workers`);
 
             await this.applyRoleConfigInternal(this.snapshot.roleConfig);
 
@@ -67,7 +81,7 @@ export class RuntimeRoleCoordinator {
         this.snapshot.queueScopeLimits = withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, queueScopeLimits);
         getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
-        for (const worker of workersForScope('always')) {
+        for (const worker of workersForScope(DAEMON_WORKERS, 'always')) {
             worker.resolve().setConcurrency(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
 
@@ -126,7 +140,7 @@ export class RuntimeRoleCoordinator {
     }
 
     private applyQueueConcurrency(): void {
-        for (const worker of concurrencyTrackedWorkers()) {
+        for (const worker of concurrencyTrackedWorkers(DAEMON_WORKERS)) {
             worker.resolve().setConcurrency(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
     }
@@ -137,7 +151,7 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        const workers = workersForScope('compute');
+        const workers = workersForScope(DAEMON_WORKERS, 'compute');
         for (const worker of workers) {
             worker.resolve().start(this.snapshot.queueConcurrency[worker.concurrencyKey]);
         }
@@ -150,7 +164,7 @@ export class RuntimeRoleCoordinator {
     async stopComputeWorkers(): Promise<void> {
         if (!this.computeWorkersRunning) return;
 
-        await Promise.all(workersForScope('compute').map((worker) => worker.resolve().stop()));
+        await Promise.all(workersForScope(DAEMON_WORKERS, 'compute').map((worker) => worker.resolve().stop()));
 
         this.computeWorkersRunning = false;
     }

@@ -1,5 +1,5 @@
 import type { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
-import { registerEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
+import { defineEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
 import { registerStatusTriple } from '@shared/infrastructure/events/register-status-triple';
 import {
     createGlbJobStatusDedupeKey,
@@ -16,7 +16,7 @@ import {
     RasterStartedEvent
 } from '@modules/trajectory/events/trajectory-events';
 
-export const registerTrajectoryEventMappers = registerEventMapperSet((bridge: DomainEventBridge): void => {
+export const registerTrajectoryEventMappers = defineEventMapperSet((bridge: DomainEventBridge): void => {
     registerStatusTriple({
         bridge,
         events: {

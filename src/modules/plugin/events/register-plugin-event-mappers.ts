@@ -1,5 +1,5 @@
 import type { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
-import { registerEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
+import { defineEventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
 import { registerStatusTriple } from '@shared/infrastructure/events/register-status-triple';
 import {
     createArtifactUploadJobStatusDedupeKey,
@@ -15,7 +15,7 @@ import {
 
 type ArtifactUploadStatus = 'running' | 'completed' | 'failed';
 
-export const registerPluginEventMappers = registerEventMapperSet((bridge: DomainEventBridge): void => {
+export const registerPluginEventMappers = defineEventMapperSet((bridge: DomainEventBridge): void => {
     registerStatusTriple<Parameters<typeof createArtifactUploadJobStatusMessage>[1], ArtifactUploadStatus>({
         bridge,
         events: {

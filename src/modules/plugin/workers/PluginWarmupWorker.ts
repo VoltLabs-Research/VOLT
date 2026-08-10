@@ -1,5 +1,5 @@
 import { toError } from '@shared/application/utilities/error-message';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { logger } from '@shared/infrastructure/logger';
@@ -69,7 +69,7 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
     }
 }
 
-export const getPluginWarmupWorker = registerDaemonWorker({
+export const pluginWarmupWorker = defineDaemonWorker({
     name: 'plugin-warmup',
     scope: 'compute',
     concurrencyKey: 'pluginWarmup',

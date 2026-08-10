@@ -1,5 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
-import { registerDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
+import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
@@ -57,7 +57,7 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
     }
 }
 
-export const getAnalysisWorker = registerDaemonWorker({
+export const analysisWorker = defineDaemonWorker({
     name: 'analysis',
     scope: 'compute',
     concurrencyKey: 'analysis',
