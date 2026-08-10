@@ -22,6 +22,8 @@ interface CanvasOptionSelectProps {
     size?: 'compact' | 'default';
     /** Forwarded to the Select root, last, so a caller can still override. */
     className?: string;
+    /** Forwarded to the trigger, last, for call sites that resized it directly. */
+    triggerClassName?: string;
     /** bravais's `showSelectionIcon`: the checkmark beside the chosen option. */
     showSelectionIcon?: boolean;
 }
@@ -57,6 +59,7 @@ const CanvasOptionSelect = ({
     isDisabled = false,
     size = 'default',
     className,
+    triggerClassName,
     showSelectionIcon = true
 }: CanvasOptionSelectProps) => (
     <Select
@@ -74,7 +77,7 @@ const CanvasOptionSelect = ({
         fullWidth
         className={cn('min-w-0', className)}
     >
-        <Select.Trigger className={TRIGGER_CLASS[size]}>
+        <Select.Trigger className={cn(TRIGGER_CLASS[size], triggerClassName)}>
             <Select.Value className={VALUE_CLASS[size]}>
                 {({ isPlaceholder, selectedText, defaultChildren }) => (
                     isPlaceholder ? defaultChildren : selectedText
