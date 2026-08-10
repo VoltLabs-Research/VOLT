@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=70.1", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voltsdk"
+dynamic = ["version"]
+description = "Python SDK for the Volt scientific computing platform"
+readme = "voltsdk/README.md"
+requires-python = ">=3.10"
+license = "MIT"
+
+dependencies = [
+    "msgpack>=1.0.0",
+    "pandas>=2.0.0",
+    "pyarrow>=15.0.0",
+    "requests>=2.31.0",
+    "zstandard>=0.22.0",
+    "semver>=3.0.0",
+    "volt-spatial-assembler>=1.0.0",
+]
+
+[project.optional-dependencies]
+ovito = ["ovito>=3.9.0"]
+all = ["ovito>=3.9.0"]
+
+[tool.setuptools.dynamic]
+version = { attr = "voltsdk.__version__" }
+
+[tool.setuptools]
+include-package-data = true
+packages = [
+    "voltsdk",
+    "voltsdk.native",
+    "voltsdk.plugins",
+    "voltsdk.resources",
+    "voltsdk.io",
+    "voltsdk.integrations",
+    "voltsdk.spatial",
+]
+
+[tool.setuptools.package-data]
+"voltsdk.native" = [
+    "bin/*",
+    "bin/**/*",
+    "lib/*",
+    "lib/**/*",
+    "share/*",
+    "share/**/*",
+]

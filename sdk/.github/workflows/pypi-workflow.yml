@@ -1,0 +1,128 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      native_index_url:
+        description: "Base URL of the Volt-Registry API (e.g. https://registry.voltcloud.dev)"
+        required: false
+        default: "https://registry.voltcloud.dev"
+
+jobs:
+  build-voltsdk:
+    name: Build ${{ matrix.name }} wheel
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            platform_tag: linux_x86_64
+            bundle_os: linux
+            bundle_arch: x86_64
+          - name: macos-arm64
+            os: macos-14
+            platform_tag: macosx_14_0_arm64
+            bundle_os: darwin
+            bundle_arch: arm64
+          - name: windows-amd64
+            os: windows-2022
+            platform_tag: win_amd64
+            bundle_os: windows
+            bundle_arch: x86_64
+
+    steps:
+      - name: Check out VoltSDK
+        uses: actions/checkout@v4
+
+      - name: Configure git on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build wheel zstandard
+
+      - name: Download published native bundles
+        env:
+          VOLTSDK_NATIVE_INDEX_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.native_index_url || vars.VOLTSDK_NATIVE_INDEX_URL || 'https://registry.voltcloud.dev' }}
+        run: >
+          python .github/scripts/download_native_bundles.py
+          --index-url "${VOLTSDK_NATIVE_INDEX_URL}"
+          --install-root build/plugin-install
+          --os ${{ matrix.bundle_os }}
+          --arch ${{ matrix.bundle_arch }}
+
+      - name: Stage native files into VoltSDK
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil
+
+          source = Path("build/plugin-install")
+          destination = Path("python3/voltsdk/native")
+          destination.mkdir(parents=True, exist_ok=True)
+          for name in ("bin", "lib", "share"):
+              staged = destination / name
+              if staged.exists():
+                  shutil.rmtree(staged)
+              item = source / name
+              if item.exists():
+                  shutil.copytree(item, staged, symlinks=True)
+
+      - name: Build VoltSDK platform wheel
+        env:
+          VOLTSDK_PLATFORM_TAG: ${{ matrix.platform_tag }}
+        working-directory: python3
+        run: python -m build --wheel --outdir ../build/wheelhouse
+
+      - name: Install built wheel
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          wheel = next(Path("build/wheelhouse").glob("voltsdk-*.whl"))
+          subprocess.run([sys.executable, "-m", "pip", "install", str(wheel)], check=True)
+
+      - name: Smoke-test native runtime
+        run: python .github/scripts/smoke_native_plugins.py --timeout 20
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: voltsdk-${{ matrix.name }}
+          path: build/wheelhouse/*.whl
+          if-no-files-found: error
+
+  publish:
+    name: Publish wheels to PyPI
+    runs-on: ubuntu-24.04
+    needs:
+      - build-voltsdk
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-to-publish
+          merge-multiple: true
+
+      - name: Publish wheels to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-to-publish/

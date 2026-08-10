@@ -1,0 +1,43 @@
+{
+    "name": "@voltstack/voltclient",
+    "version": "1.0.2",
+    "description": "Standalone HTTP client SDK for VoltLabs - Node.js 18+ and browser compatible",
+    "author": "VoltLabs",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "node --import tsx/esm --test tests/*.test.ts"
+    },
+    "peerDependencies": {
+        "axios": ">=1.0.0"
+    },
+    "peerDependenciesMeta": {
+        "axios": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "axios": "^1.9.0",
+        "axios-mock-adapter": "^2.1.0",
+        "tsup": "^8.0.0",
+        "tsx": "^4.21.0",
+        "typescript": "~5.8.3"
+    }
+}

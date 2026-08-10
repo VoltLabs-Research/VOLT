@@ -1,0 +1,37 @@
+{
+    "name": "@voltstack/daemon-cluster-client",
+    "version": "1.0.1",
+    "description": "Standalone Node.js SDK for cluster-daemon + Volt server communication, enrollment, control socket, heartbeat and reverse-channel dispatch",
+    "author": "VoltLabs",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "node --import tsx/esm --test tests/*.test.ts"
+    },
+    "peerDependencies": {
+        "socket.io-client": ">=4.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "socket.io-client": "^4.8.1",
+        "tsup": "^8.0.0",
+        "tsx": "^4.21.0",
+        "typescript": "~5.8.3"
+    }
+}
