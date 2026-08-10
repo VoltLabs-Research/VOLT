@@ -3,13 +3,12 @@ import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data'
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
-import { AsyncBoundary, Avatar, Box, Button, Modal, Row, Skeleton, Stack, EmptyState, closeModal } from '@voltstack/bravais';
+import { AsyncBoundary, Avatar, Button, Modal, Skeleton, EmptyState, closeModal } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useMemo } from 'react';
-import { Users } from 'lucide-react';
-import { GoArrowRight } from 'react-icons/go';
+import { ArrowRight, Users } from 'lucide-react';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import { useNavigate } from 'react-router-dom';
 
@@ -78,11 +77,11 @@ const PresenceDrawer = () => {
     );
 
     const loadingState = (
-        <Row gap='05' style={{ flexWrap: 'wrap' }}>
+        <div className='flex flex-row items-center gap-2' style={{ flexWrap: 'wrap' }}>
             {Array.from({ length: 8 }, (_, i) => (
                 <Skeleton key={i} variant='circular' width={32} height={32} />
             ))}
-        </Row>
+        </div>
     );
 
     const emptyState = (
@@ -111,13 +110,13 @@ const PresenceDrawer = () => {
                     intent='neutral'
                     size='sm'
                     onClick={goToTeam}
-                    rightIcon={<GoArrowRight size={12} />}
+                    rightIcon={<ArrowRight size={12} />}
                 >
                     Manage team
                 </Button>
             )}
         >
-            <Box className='dashboard-presence-drawer'>
+            <div className='dashboard-presence-drawer'>
                 <AsyncBoundary
                     state={{
                         loading: isLoading,
@@ -130,28 +129,28 @@ const PresenceDrawer = () => {
                     accessDenied={accessDeniedState}
                     empty={emptyState}
                 >
-                    <Box className='dashboard-presence-grid'>
+                    <div className='dashboard-presence-grid'>
                         {sortedMembers.map(({ user, memberId, isOnline }) => {
                             const title = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email;
                             const displayName = user.firstName ?? user.email?.split('@')[0] ?? '?';
 
                             return (
-                                <Stack key={memberId} align='center' gap='025' className='dashboard-presence-member' title={title}>
+                                <div className='flex flex-col items-center gap-1 dashboard-presence-member' key={memberId} title={title}>
                                     <Avatar
                                         user={user}
                                         size='sm'
                                         showStatus
                                         isOnline={isOnline}
                                     />
-                                    <span className={`text-sm truncate dashboard-presence-name ${isOnline ? 'text-primary' : 'text-muted'}`}>
+                                    <span className={`text-xs truncate dashboard-presence-name ${isOnline ? 'text-foreground' : 'text-muted'}`}>
                                         {displayName}
                                     </span>
-                                </Stack>
+                                </div>
                             );
                         })}
-                    </Box>
+                    </div>
                 </AsyncBoundary>
-            </Box>
+            </div>
         </Modal>
     );
 };

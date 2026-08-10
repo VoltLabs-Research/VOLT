@@ -15,9 +15,9 @@ import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { Heading, Stack, Stepper, Text, Button } from '@voltstack/bravais';
+import { Stepper, Button } from '@voltstack/bravais';
 import type { StepTitles } from '@voltstack/bravais';
-import { useStepper } from '@voltstack/bravais';
+import { useStepper } from '@/shared/ui/hooks/use-stepper';
 import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utils/backend-origin';
 import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';
 import { sileo } from 'sileo';
@@ -239,22 +239,22 @@ const SignInTemplate = () => {
 
     return (
         <main className='sign-in-page screen-vh'>
-            <Stack as='section' justify='center' p='1-5' className='sign-in-form-shell screen-vh' aria-labelledby='sign-in-form-title'>
-                <Stack gap='2' width='max' className='sign-in-form-section'>
-                    <Stack as='header' gap='05'>
-                        <Heading level={1} id='sign-in-form-title' className='sign-in-form-title'>{title}</Heading>
-                        <Text as='p'>{subtitle}</Text>
-                    </Stack>
+            <section className='flex flex-col justify-center p-6 sign-in-form-shell screen-vh' aria-labelledby='sign-in-form-title'>
+                <div className='flex flex-col gap-8 w-full sign-in-form-section'>
+                    <header className='flex flex-col gap-2'>
+                        <h1 className='text-base font-medium text-foreground sign-in-form-title' id='sign-in-form-title'>{title}</h1>
+                        <p>{subtitle}</p>
+                    </header>
 
                     <Stepper
                         steps={signInSteps}
                         activeStep={step} />
 
-                    <Text as='p' align='center' className='sign-in-consent'>
+                    <p className='text-center sign-in-consent'>
                         By continuing with email or a social provider, you agree to our{' '}
-                        <Text as='span' className='sign-in-legal-text'>Terms</Text> and{' '}
-                        <Text as='span' className='sign-in-legal-text'>Privacy Policy</Text>.
-                    </Text>
+                        <span className='sign-in-legal-text'>Terms</span> and{' '}
+                        <span className='sign-in-legal-text'>Privacy Policy</span>.
+                    </p>
 
                     {!isEndpointPinnedByEnv() && (
                         <Button
@@ -267,8 +267,8 @@ const SignInTemplate = () => {
                             Change server
                         </Button>
                     )}
-                </Stack>
-            </Stack>
+                </div>
+            </section>
         </main>
     );
 };

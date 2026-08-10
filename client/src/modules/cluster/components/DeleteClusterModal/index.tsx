@@ -1,5 +1,5 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Box, Modal, closeModal, Stack, Text } from '@voltstack/bravais';
+import { Modal, closeModal } from '@voltstack/bravais';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
@@ -66,19 +66,19 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 <ModalFooterActions
                     secondary={{
                         label: result ? 'Done' : 'Cancel',
-                        onClick: handleClose,
-                        disabled: isSubmitting
+                        onPress: handleClose,
+                        isDisabled: isSubmitting
                     }}
                     primary={result ? undefined : {
                         label: 'Delete cluster',
-                        intent: 'danger',
-                        onClick: handleSubmit,
-                        isLoading: isSubmitting
+                        variant: 'danger',
+                        onPress: handleSubmit,
+                        isPending: isSubmitting
                     }}
                 />
             )}
         >
-            <Stack gap='1' p='1-5'>
+            <div className='flex flex-col gap-4 p-6'>
                 {!result && (
                     <PasswordConfirmationPrompt
                         description='Confirm your password to continue with the uninstall and delete flow.'
@@ -94,17 +94,17 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 )}
                 {result?.manualUninstallRequired && (
                     <>
-                        <Text as='p' size='md' tone='secondary'>
+                        <p className='text-sm text-muted'>
                             {result.message}
-                        </Text>
+                        </p>
                         {result.manualUninstallCommand && (
-                            <Box p='1' radius='md' overflow='auto' className='bg-page font-family-mono text-sm'>
+                            <div className='p-4 rounded-xl overflow-auto bg-background font-family-mono text-xs'>
                                 {result.manualUninstallCommand}
-                            </Box>
+                            </div>
                         )}
                     </>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

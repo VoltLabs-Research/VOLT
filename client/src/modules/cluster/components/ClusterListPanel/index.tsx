@@ -4,7 +4,7 @@ import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/clust
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Box, Button, IconButton, openModal, Row, Stack, StatusDot, Text, Tooltip } from '@voltstack/bravais';
+import { Button, IconButton, openModal, StatusDot, Tooltip } from '@voltstack/bravais';
 import type { StatusDotTone } from '@voltstack/bravais';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -47,22 +47,22 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
         const canConnect = isTeamClusterWaiting(cluster.status);
 
         return (
-            <Row key={cluster._id} gap='05' className='cluster-list-panel-row'>
-                <Stack gap='025' flex='1' minW='0'>
-                    <Text as='p' size='md' tone='primary' weight='medium' truncate className='cluster-list-panel-name' title={cluster.name}>
+            <div className='flex flex-row items-center gap-2 cluster-list-panel-row' key={cluster._id}>
+                <div className='flex flex-col gap-1 flex-1 min-w-0'>
+                    <p className='text-sm font-medium text-foreground truncate cluster-list-panel-name' title={cluster.name}>
                         {cluster.name}
-                    </Text>
-                    <Row gap='05'>
+                    </p>
+                    <div className='flex flex-row items-center gap-2'>
                         <StatusDot
                             tone={variant === 'inactive' ? 'neutral' : (variant as StatusDotTone)}
                             pulse={variant !== 'inactive'}
                             glow={variant !== 'inactive'}
                         />
-                        <Text as='p' size='sm' tone='secondary'>{label}</Text>
-                    </Row>
-                </Stack>
+                        <p className='text-xs text-muted'>{label}</p>
+                    </div>
+                </div>
 
-                <Row gap='025' className='flex-shrink-0'>
+                <div className='flex flex-row items-center gap-1 flex-shrink-0'>
                     {canConnect && (
                         <Button
                             variant='ghost'
@@ -84,25 +84,25 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                             <Trash2 size={14} />
                         </IconButton>
                     </Tooltip>
-                </Row>
-            </Row>
+                </div>
+            </div>
         );
     };
 
     return (
-        <Box className='cluster-list-panel'>
-            <Box className='cluster-list-panel-header'>
-                <Text as='p' size='md' weight='bold' tone='primary'>Your clusters</Text>
-            </Box>
-            <Box className='cluster-list-panel-list'>
+        <div className='cluster-list-panel'>
+            <div className='cluster-list-panel-header'>
+                <p className='text-sm font-semibold text-foreground'>Your clusters</p>
+            </div>
+            <div className='cluster-list-panel-list'>
                 {clusters.map(renderRow)}
-            </Box>
+            </div>
 
             <ClusterInstallCommandModal
                 clusterId={installClusterId}
                 enrollmentToken={installToken}
             />
-        </Box>
+        </div>
     );
 };
 

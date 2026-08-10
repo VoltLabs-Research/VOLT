@@ -1,4 +1,4 @@
-import { Button, Divider, Loader, Row, Stack, StatusDot, Text, Tooltip, Select } from '@voltstack/bravais';
+import { Button, Divider, Loader, StatusDot, Tooltip, Select } from '@voltstack/bravais';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -96,12 +96,12 @@ const DebugToolbar = () => {
     }
 
     return (
-        <Stack align='center' position='absolute' zIndex='10' top='1' className='center-x debug-toolbar-wrapper'>
-            <Row gap='05' className='panel-floating rounded-full debug-toolbar glass-bg'>
-                <Row gap='05'>
-                    <Bug size={14} className='text-secondary' />
-                    <Text as='p' size='sm' tone='muted' weight='bold'>Debug</Text>
-                </Row>
+        <div className='flex flex-col items-center absolute top-4 z-10 center-x debug-toolbar-wrapper'>
+            <div className='flex flex-row items-center gap-2 panel-floating rounded-full debug-toolbar bg-surface border border-border'>
+                <div className='flex flex-row items-center gap-2'>
+                    <Bug size={14} className='text-muted' />
+                    <p className='text-xs font-semibold text-muted'>Debug</p>
+                </div>
 
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
@@ -132,7 +132,7 @@ const DebugToolbar = () => {
 
                 <Divider orientation='vertical' className='debug-toolbar-divider' />
 
-                <Row gap='025'>
+                <div className='flex flex-row items-center gap-1'>
                     <DebugControlButton tooltip={startTooltip} onClick={handlePlayClick} disabled={!canStart}>
                         {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
                     </DebugControlButton>
@@ -148,50 +148,50 @@ const DebugToolbar = () => {
                     <DebugControlButton tooltip='Stop debug session' onClick={stop} disabled={!canStop}>
                         <Square size={14} />
                     </DebugControlButton>
-                </Row>
-            </Row>
+                </div>
+            </div>
 
             {isDebugging && (
                 <>
                     <Divider orientation='vertical' className='debug-toolbar-divider' />
-                    <Row gap='05' className='debug-toolbar-status'>
+                    <div className='flex flex-row items-center gap-2 debug-toolbar-status'>
                         {isPaused && currentNodeLabel && (
                             <>
                                 <StatusDot tone='warning' pulse />
-                                <Text as='p' size='sm'>
+                                <p className='text-xs'>
                                     Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
-                                </Text>
+                                </p>
                             </>
                         )}
                         {!isPaused && (
                             <>
                                 <StatusDot tone='info' pulse />
-                                <Text as='p' size='sm' tone='muted'>
+                                <p className='text-xs text-muted'>
                                     Running... {completedCount}/{totalNodes}
-                                </Text>
+                                </p>
                             </>
                         )}
-                    </Row>
+                    </div>
                 </>
             )}
 
             <DebugArgumentsPanel onStart={startDebug} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
-                <Stack mt='1' textAlign='center' className='debug-toolbar-below-status'>
+                <div className='flex flex-col mt-4 text-center debug-toolbar-below-status'>
                     {totalDuration !== null && totalDuration >= 0 && (
-                        <Text as='p' size='sm' className='debug-toolbar-status--completed'>
+                        <p className='text-xs debug-toolbar-status--completed'>
                             Completed in {formatDuration(totalDuration)}
-                        </Text>
+                        </p>
                     )}
                     {sessionError && (
-                        <Text as='p' size='sm' className='debug-toolbar-status--error'>
+                        <p className='text-xs debug-toolbar-status--error'>
                             {sessionError}
-                        </Text>
+                        </p>
                     )}
-                </Stack>
+                </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

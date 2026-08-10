@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import { Box, Button, Checkbox, NumberInput, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, Checkbox, NumberInput } from '@voltstack/bravais';
 import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
 import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 import { hasValidCellVectors } from '@/modules/fractal/utils/cell-wireframe';
@@ -64,11 +64,11 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
 
     if (isLoading || !cell) {
         return (
-            <Row justify='center' p='1'>
-                <Text size='sm' tone='muted'>
+            <div className='flex flex-row items-center justify-center p-4'>
+                <span className='text-xs text-muted'>
                     {isLoading ? 'Loading simulation cell...' : 'No simulation cell data available'}
-                </Text>
-            </Row>
+                </span>
+            </div>
         );
     }
 
@@ -135,22 +135,22 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
     };
 
     return (
-        <Box p='1'>
-            <Row align='start' justify='between' gap='1'>
-                <Row align='start' gap='1-5'>
+        <div className='p-4'>
+            <div className='flex flex-row items-start justify-between gap-4'>
+                <div className='flex flex-row items-start gap-6'>
                     {columns.filter((col) => col.visible !== false).map((col) => (
-                        <Stack key={col.title} style={{ minWidth: 140 }}>
-                            <Text size='xs' tone='muted'>{col.title}</Text>
+                        <div className='flex flex-col' key={col.title} style={{ minWidth: 140 }}>
+                            <span className='text-xs text-muted'>{col.title}</span>
                             {col.rows.map(([label, value, valueClass]) => (
-                                <Row key={label} justify='between' gap='1' className="text-sm text-secondary">
-                                    <Text tone='muted'>{label}</Text>
+                                <div className='flex flex-row items-center justify-between gap-4 text-xs text-muted' key={label}>
+                                    <span className='text-muted'>{label}</span>
                                     <span className={valueClass}>{value}</span>
-                                </Row>
+                                </div>
                             ))}
-                        </Stack>
+                        </div>
                     ))}
-                </Row>
-                <Stack gap='05' style={{ minWidth: 150 }}>
+                </div>
+                <div className='flex flex-col gap-2' style={{ minWidth: 150 }}>
                     <Checkbox
                         checked={showPbcImages}
                         label='Show PBC images'
@@ -166,15 +166,15 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                             Reset Cell
                         </Button>
                     )}
-                </Stack>
-            </Row>
+                </div>
+            </div>
 
             {isEditing && (
-                <Stack gap='1' style={{ marginTop: 12 }}>
-                    <Text size='xs' tone='muted'>Edit a/b/c edge vectors (Ångströms)</Text>
+                <div className='flex flex-col gap-4' style={{ marginTop: 12 }}>
+                    <span className='text-xs text-muted'>Edit a/b/c edge vectors (Ångströms)</span>
                     {draftVectors.map((vector, vectorIndex) => (
-                        <Row key={AXIS_LABELS[vectorIndex] ?? vectorIndex} align='center' gap='05'>
-                            <Text size='sm' style={{ width: 16 }}>{AXIS_LABELS[vectorIndex] ?? `v${vectorIndex + 1}`}</Text>
+                        <div className='flex flex-row items-center gap-2' key={AXIS_LABELS[vectorIndex] ?? vectorIndex}>
+                            <span className='text-xs' style={{ width: 16 }}>{AXIS_LABELS[vectorIndex] ?? `v${vectorIndex + 1}`}</span>
                             {vector.map((component, componentIndex) => (
                                 <NumberInput
                                     key={componentIndex}
@@ -184,10 +184,10 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                                     aria-label={`${AXIS_LABELS[vectorIndex] ?? vectorIndex} component ${componentIndex + 1}`}
                                 />
                             ))}
-                        </Row>
+                        </div>
                     ))}
-                    <Text size='xs' tone='muted'>Periodic boundary conditions</Text>
-                    <Row gap='1'>
+                    <span className='text-xs text-muted'>Periodic boundary conditions</span>
+                    <div className='flex flex-row items-center gap-4'>
                         {PBC_AXES.map((axis) => (
                             <Checkbox
                                 key={axis}
@@ -199,14 +199,14 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
                                 }))}
                             />
                         ))}
-                    </Row>
-                    <Row gap='05'>
+                    </div>
+                    <div className='flex flex-row items-center gap-2'>
                         <Button size='sm' onClick={applyEdit}>Apply</Button>
                         <Button size='sm' variant='ghost' intent='neutral' onClick={() => setIsEditing(false)}>Cancel</Button>
-                    </Row>
-                </Stack>
+                    </div>
+                </div>
             )}
-        </Box>
+        </div>
     );
 };
 

@@ -1,12 +1,13 @@
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
-const FOLDER_LIST_LIMIT = 500;
-const ROOT_FOLDER_ID = 'root';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import type { FolderedListingContext } from '@/shared/ui/hooks/use-foldered-listing';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
+
+const FOLDER_LIST_LIMIT = 500;
+const ROOT_FOLDER_ID = 'root';
 
 interface FolderedItemListQueryParams {
     page: number;

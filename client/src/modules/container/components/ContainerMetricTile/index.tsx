@@ -1,4 +1,4 @@
-import { Box, Row, Sparkline, StatCard, Text } from '@voltstack/bravais';
+import { Sparkline, StatCard } from '@voltstack/bravais';
 import './ContainerMetricTile.css';
 
 interface MetricSecondaryStat {
@@ -35,7 +35,7 @@ const ContainerMetricTile = ({
 
     const footer = (
         <>
-            <Box className='container-metric-tile-sparkline' aria-hidden='true'>
+            <div className='container-metric-tile-sparkline' aria-hidden='true'>
                 <Sparkline
                     color={color}
                     values={history}
@@ -47,19 +47,19 @@ const ContainerMetricTile = ({
                     animate={false}
                     minDataMax={1}
                 />
-            </Box>
+            </div>
 
             {secondary && secondary.length > 0 && (
-                <Row className='container-metric-tile-secondary' wrap>
+                <div className='flex flex-row items-center flex-wrap container-metric-tile-secondary'>
                     {secondary.map((stat, index) => (
-                        <Row key={stat.label} as='span' align='center'>
-                            {index > 0 && <Text as='span' className='container-metric-tile-secondary-dot' aria-hidden='true'>·</Text>}
-                            <Text as='span'>
-                                {stat.label} <Text as='span' tone='secondary'>{stat.value}</Text>
-                            </Text>
-                        </Row>
+                        <span className='flex flex-row items-center' key={stat.label}>
+                            {index > 0 && <span className='container-metric-tile-secondary-dot' aria-hidden='true'>·</span>}
+                            <span>
+                                {stat.label} <span className='text-muted'>{stat.value}</span>
+                            </span>
+                        </span>
                     ))}
-                </Row>
+                </div>
             )}
         </>
     );
@@ -68,8 +68,8 @@ const ContainerMetricTile = ({
         <StatCard
             className={`container-metric-tile ${stateClass}`}
             label={label}
-            value={<Text as='span' aria-label={`${label} ${displayValue}`}>{displayValue}</Text>}
-            trend={badge ? <Text as='span' className='container-metric-tile-badge'>{badge}</Text> : undefined}
+            value={<span aria-label={`${label} ${displayValue}`}>{displayValue}</span>}
+            trend={badge ? <span className='container-metric-tile-badge'>{badge}</span> : undefined}
             footer={footer}
             surface='soft'
             tabular

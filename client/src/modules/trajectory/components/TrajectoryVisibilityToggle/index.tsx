@@ -1,4 +1,4 @@
-import { Heading, LiquidToggle, Row, Stack, Text } from '@voltstack/bravais';
+import { LiquidToggle } from '@voltstack/bravais';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -69,15 +69,15 @@ const TrajectoryVisibilityToggle = ({
     const descriptionId = `trajectory-visibility-description-${trajectoryId}`;
 
     return (
-        <Row justify='between' gap='1'>
-            <Stack gap='025' flex='1'>
-                <Heading level={4} id={labelId} size='sm' weight='medium' tone='primary'>
+        <div className='flex flex-row items-center justify-between gap-4'>
+            <div className='flex flex-col gap-1 flex-1'>
+                <h4 className='text-xs font-medium text-foreground' id={labelId}>
                     Public visibility
-                </Heading>
-                <Text as='p' id={descriptionId} size='xs' className='text-tertiary'>
+                </h4>
+                <p className='text-xs text-muted' id={descriptionId}>
                     Anyone with the link can view this trajectory.
-                </Text>
-            </Stack>
+                </p>
+            </div>
             <LiquidToggle
                 pressed={effectivePublic}
                 onChange={handleChange}
@@ -85,7 +85,7 @@ const TrajectoryVisibilityToggle = ({
                 aria-labelledby={labelId}
                 aria-describedby={descriptionId}
             />
-        </Row>
+        </div>
     );
 };
 

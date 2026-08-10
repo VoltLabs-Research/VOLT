@@ -1,6 +1,4 @@
-import './SettingsSectionHeader.css';
-import { cn } from '@/shared/utils/cn';
-import { Box, Heading, Stack, Text } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 interface SettingsSectionHeaderProps {
@@ -18,26 +16,26 @@ const SettingsSectionHeader = ({
     className = '',
     headingAs = 'h2'
 }: SettingsSectionHeaderProps) => {
-    const level = Number(headingAs.slice(1)) as 2 | 3 | 4 | 5 | 6;
+    const HeadingTag = headingAs;
 
     return (
-        <Box as='header' display='flex' align='start' justify='between' gap='1' className={cn('settings-section-header', className)}>
-            <Stack flex='1' gap='025'>
-                <Heading level={level} size='lg' weight='bold'>
+        <header className={cn('flex items-start justify-between gap-4 max-sm:flex-col', className)}>
+            <div className='flex flex-col gap-1 flex-1'>
+                <HeadingTag className='text-base font-semibold text-foreground'>
                     {title}
-                </Heading>
+                </HeadingTag>
                 {description && (
-                    <Text as='p' tone='muted' size='md'>
+                    <p className='text-sm text-muted'>
                         {description}
-                    </Text>
+                    </p>
                 )}
-            </Stack>
+            </div>
             {action && (
-                <Box shrink='0'>
+                <div className='shrink-0'>
                     {action}
-                </Box>
+                </div>
             )}
-        </Box>
+        </header>
     );
 };
 

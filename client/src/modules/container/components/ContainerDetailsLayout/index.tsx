@@ -5,12 +5,11 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import useContainerPageTitle from '../../hooks/use-container-page-title';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box, Stack } from '@voltstack/bravais';
 import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ContainerAction } from '../../api/service';
@@ -154,7 +153,7 @@ const ContainerDetailsLayout = () => {
 
     if(!container || !outletContext){
         return (
-            <Box className='items-center justify-center' display='flex' height='max'>
+            <div className='flex h-full items-center justify-center'>
                 <RecoveryState
                     title='Container not found'
                     description={error?.message ?? 'The requested container could not be loaded.'}
@@ -162,12 +161,12 @@ const ContainerDetailsLayout = () => {
                     retryLabel='Go back'
                     onRetry={() => navigate('/dashboard/containers')}
                 />
-            </Box>
+            </div>
         );
     }
 
     return (
-        <Stack height='max' minH='0'>
+        <div className='flex flex-col h-full min-h-0'>
             <ContainerDetailsHeader
                 container={container}
                 onBack={handleBack}
@@ -176,7 +175,7 @@ const ContainerDetailsLayout = () => {
                 contextualActions={headerActions}
             />
 
-            <Stack flex='1' minW='0' minH='0' overflow='auto'>
+            <div className='flex flex-col overflow-auto flex-1 min-h-0 min-w-0'>
                 <motion.div
                     key={pathname}
                     initial={prefersReducedMotion ? false : { opacity: 0 }}
@@ -189,8 +188,8 @@ const ContainerDetailsLayout = () => {
                 >
                     <Outlet context={outletContext} />
                 </motion.div>
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

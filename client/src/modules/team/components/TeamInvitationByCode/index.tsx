@@ -1,4 +1,4 @@
-import { Button, Tag, Loader, Row, Heading, Text } from '@voltstack/bravais';
+import { Button, Tag, Loader } from '@voltstack/bravais';
 import {
     TeamInvitationCard,
     TeamInvitationDetailItem,
@@ -121,16 +121,16 @@ const TeamInvitationByCodeTemplate = () => {
                 <Tag tone='success' variant='soft' size='md' leftIcon={<Users size={20} />}>
                     Already joined
                 </Tag>
-                <Heading level={3} size='xl' weight='bold'>You are already in this team</Heading>
+                <h3 className='text-xl font-semibold text-foreground'>You are already in this team</h3>
                 {preview && (
                     <TeamInvitationDetails>
                         <TeamInvitationDetailItem label='Team' value={preview.teamName} />
                         <TeamInvitationDetailItem label='Owner' value={preview.ownerName} />
                     </TeamInvitationDetails>
                 )}
-                <Text as='p' tone='secondary'>
+                <p className='text-muted'>
                     {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
-                </Text>
+                </p>
                 <Button
                     variant='solid'
                     intent='brand'
@@ -175,10 +175,10 @@ const TeamInvitationByCodeTemplate = () => {
             <div className='team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
                 <ShieldCheck size={40} />
             </div>
-            <Heading level={3} size='xl' weight='bold'>Join this team?</Heading>
-            <Text as='p' tone='secondary'>
+            <h3 className='text-xl font-semibold text-foreground'>Join this team?</h3>
+            <p className='text-muted'>
                 Review the invite details below, then confirm to join this workspace.
-            </Text>
+            </p>
             {preview && (
                 <TeamInvitationDetails>
                     <TeamInvitationDetailItem label='Team' value={preview.teamName} />
@@ -186,7 +186,7 @@ const TeamInvitationByCodeTemplate = () => {
                     <TeamInvitationDetailItem label='Invite code' value={normalizedCode} />
                 </TeamInvitationDetails>
             )}
-            <Row gap='075' className='team-invitation-actions'>
+            <div className='flex flex-row items-center gap-3 team-invitation-actions'>
                 <Button variant='ghost' intent='neutral' onClick={handleNavigateToNextDestination}>
                     Cancel
                 </Button>
@@ -198,7 +198,7 @@ const TeamInvitationByCodeTemplate = () => {
                 >
                     Join Team
                 </Button>
-            </Row>
+            </div>
         </TeamInvitationCard>
     );
 };

@@ -1,5 +1,6 @@
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
-import { Heading, KeyValueList, KeyValueRow, Stack } from '@voltstack/bravais';
+import { KeyValueList, KeyValueRow } from '@voltstack/bravais';
 
 export interface InspectorRow {
     label: string;
@@ -19,11 +20,11 @@ const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspec
     }
 
     return (
-        <Stack className={`container-inspector-list ${className}`}>
+        <div className={cn('flex flex-col', `container-inspector-list ${className}`)}>
             {title && (
-                <Heading level={3} className='container-inspector-list-title'>
+                <h3 className='text-base font-medium text-foreground container-inspector-list-title'>
                     {title}
-                </Heading>
+                </h3>
             )}
             <KeyValueList>
                 {rows.map((row) => (
@@ -35,7 +36,7 @@ const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspec
                     />
                 ))}
             </KeyValueList>
-        </Stack>
+        </div>
     );
 };
 

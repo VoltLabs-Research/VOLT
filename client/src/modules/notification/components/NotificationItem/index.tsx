@@ -1,4 +1,4 @@
-import { Button, Row, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import './NotificationItem.css';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 import { useNavigate } from 'react-router-dom';
@@ -24,17 +24,17 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                 variant='ghost'
                 block
                 align='start'
-                className={`notification-item list-item-hoverable p-3 rounded-sm ${notification.read ? 'is-read' : 'is-unread'}`}
+                className={`notification-item list-item-hoverable p-3 rounded-lg ${notification.read ? 'is-read' : 'is-unread'}`}
                 onClick={handleClick}
             >
-                <Row as='span' justify='between' gap='05' className='notification-item-header'>
-                    <Text as='span' size='md' weight='bold' className='notification-item-title'>
+                <span className='flex flex-row items-center justify-between gap-2 notification-item-header'>
+                    <span className='text-sm font-semibold notification-item-title'>
                         {notification.title}
-                    </Text>
-                </Row>
-                <Text as='span' size='sm' tone='secondary' className='notification-item-content mt-1'>
+                    </span>
+                </span>
+                <span className='text-xs text-muted notification-item-content mt-1'>
                     {notification.content}
-                </Text>
+                </span>
             </Button>
         </li>
     );

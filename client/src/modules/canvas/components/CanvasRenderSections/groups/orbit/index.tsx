@@ -2,9 +2,9 @@ import { row, PRESETS, checkboxGrid, targetRows } from '../../../CanvasRenderCon
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
-import { MdRotateLeft } from 'react-icons/md';
+import { RotateCcw } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { Box, Button } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 const useOrbitGroup = (): RenderGroup => {
@@ -18,7 +18,7 @@ const useOrbitGroup = (): RenderGroup => {
                 enabled: true,
                 rows: [],
                 extras: (
-                    <Box className="canvas-render-grid">
+                    <div className='canvas-render-grid'>
                         {checkboxGrid([
                             {
                                 key: 'enabled',
@@ -60,7 +60,7 @@ const useOrbitGroup = (): RenderGroup => {
                         <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="text-xs" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
                             Reset Orbit
                         </Button>
-                    </Box>
+                    </div>
                 )
             },
             speeds: {
@@ -107,7 +107,7 @@ const useOrbitGroup = (): RenderGroup => {
         return {
             id: 'orbit',
             title: 'Orbit Controls',
-            icon: <MdRotateLeft size={12} />,
+            icon: <RotateCcw size={12} />,
             subsections: [
                 {
                     label: 'Controls',

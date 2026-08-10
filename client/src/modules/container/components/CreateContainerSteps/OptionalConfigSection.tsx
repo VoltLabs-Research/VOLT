@@ -1,4 +1,4 @@
-import { CollapsibleSection, Stack, Tag, Text } from '@voltstack/bravais';
+import { CollapsibleSection, Tag } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -22,7 +22,7 @@ const OptionalConfigSection = ({
     const [isExpanded, setIsExpanded] = useState(defaultExpanded || hasError);
 
     return (
-        <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
+        <div className='flex flex-col gap-4 p-6 rounded-xl create-container-config-card full-width'>
             <CollapsibleSection
                 title={title}
                 expanded={isExpanded || hasError}
@@ -37,12 +37,12 @@ const OptionalConfigSection = ({
                     : undefined}
                 bodyClassName='mt-3'
             >
-                <Stack gap='1'>
-                    <Text as='p' size='md' tone='muted'>{description}</Text>
+                <div className='flex flex-col gap-4'>
+                    <p className='text-sm text-muted'>{description}</p>
                     {children}
-                </Stack>
+                </div>
             </CollapsibleSection>
-        </Stack>
+        </div>
     );
 };
 

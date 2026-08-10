@@ -1,7 +1,7 @@
 import { getMemberRole } from '@/modules/chat/utils/chat/chat-display';
 import TeamMemberList from '../../TeamMemberList';
 import { MemberListItem } from '../../MemberListItem';
-import { Button, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 
@@ -26,11 +26,11 @@ const MembersTab = ({
     onToggleSelected,
     onAddMembers
 }: MembersTabProps) => (
-    <Stack gap='1'>
-        <Text as='p' size='lg' weight='bold'>
+    <div className='flex flex-col gap-4'>
+        <p className='text-base font-semibold'>
             Current Members ({chat.participants.length})
-        </Text>
-        <Stack gap='025'>
+        </p>
+        <div className='flex flex-col gap-1'>
             {chat.participants.map((member) => (
                 <MemberListItem
                     key={member._id}
@@ -38,13 +38,13 @@ const MembersTab = ({
                     role={getMemberRole(chat, member._id)}
                 />
             ))}
-        </Stack>
+        </div>
 
         {canEdit && availableMembers.length > 0 && (
             <>
-                <Text as='p' size='lg' weight='bold' className='mt-4'>
+                <p className='text-base font-semibold mt-4'>
                     Add Members
-                </Text>
+                </p>
                 <TeamMemberList
                     members={availableMembers}
                     selectedIds={selectedMembers}
@@ -63,7 +63,7 @@ const MembersTab = ({
                 )}
             </>
         )}
-    </Stack>
+    </div>
 );
 
 export default MembersTab;

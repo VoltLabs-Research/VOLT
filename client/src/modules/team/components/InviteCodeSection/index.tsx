@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Row, Stack, Text, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { Button, IconButton, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
 import './InviteCodeSection.css';
 
@@ -28,16 +28,16 @@ export const InviteCodeSection = ({
     }
 
     return (
-        <Stack gap='075' p='1-5' className='invite-code-section'>
-            <Text as='p' size='md' weight='medium' tone='secondary'>
+        <div className='flex flex-col gap-3 p-6 invite-code-section'>
+            <p className='text-sm font-medium text-muted'>
                 Invite Code
-            </Text>
+            </p>
 
             {inviteCode ? (
-                <Row gap='05' className='invite-code-display'>
-                    <Box radius='sm' flex='1' className='invite-code-badge text-xl font-semibold font-mono'>
+                <div className='flex flex-row items-center gap-2 invite-code-display'>
+                    <div className='rounded-lg flex-1 invite-code-badge text-xl font-semibold font-mono'>
                         {inviteCode}
-                    </Box>
+                    </div>
                     <Popover
                         id='invite-code-actions-menu'
                         placement='bottom-end'
@@ -96,13 +96,13 @@ export const InviteCodeSection = ({
                             </PopoverMenu>
                         )}
                     </Popover>
-                </Row>
+                </div>
             ) : (
                 canManageCode && (
-                    <Stack gap='1'>
-                        <Text as='p' size='md' className='text-tertiary'>
+                    <div className='flex flex-col gap-4'>
+                        <p className='text-sm text-muted'>
                             Generate a code so anyone with it can join this team.
-                        </Text>
+                        </p>
                         <Button
                             variant='outline'
                             intent='neutral'
@@ -114,9 +114,9 @@ export const InviteCodeSection = ({
                         >
                             Generate Invite Code
                         </Button>
-                    </Stack>
+                    </div>
                 )
             )}
-        </Stack>
+        </div>
     );
 };

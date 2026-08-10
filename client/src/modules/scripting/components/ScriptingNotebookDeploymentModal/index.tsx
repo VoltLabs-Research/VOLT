@@ -1,6 +1,6 @@
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
-import { Modal, closeModal, Text } from '@voltstack/bravais';
+import { Modal, closeModal } from '@voltstack/bravais';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { getNotebookTeamClusterId } from '@/modules/scripting/utils/notebooks';
 import { useCallback, useEffect, useState } from 'react';
@@ -79,14 +79,14 @@ const ScriptingNotebookDeploymentModal = ({
 
     const primaryAction: ModalFooterAction = {
         label: isSubmitting ? 'Saving...' : request?.confirmLabel ?? 'Save',
-        onClick: handleSubmit,
-        disabled: isSubmitting || !selectedTeamClusterId
+        onPress: handleSubmit,
+        isDisabled: isSubmitting || !selectedTeamClusterId
     };
 
     const secondaryAction: ModalFooterAction = {
         label: 'Cancel',
-        onClick: handleClose,
-        disabled: isSubmitting
+        onPress: handleClose,
+        isDisabled: isSubmitting
     };
 
     return (
@@ -101,9 +101,9 @@ const ScriptingNotebookDeploymentModal = ({
         >
             <div className='p-6 flex flex-col gap-4'>
                 {request?.notebook && (
-                    <Text as='p' size='md' tone='secondary'>
+                    <p className='text-sm text-muted'>
                         Notebook: {request.notebook.title || 'Untitled Notebook'}
-                    </Text>
+                    </p>
                 )}
                 <ClusterResourceSelectionPanel
                     teamClusters={teamClusters}

@@ -4,7 +4,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, resetModal, Text } from '@voltstack/bravais';
+import { Modal, resetModal } from '@voltstack/bravais';
 import { useForm } from 'react-hook-form';
 import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
 import type { JoinTeamForm } from './validation-schema';
@@ -69,15 +69,15 @@ export const JoinTeamModal = ({
                 <ModalFooterActions
                     secondary={{
                         label: 'Cancel',
-                        onClick: closeJoinTeamModal,
-                        disabled: form.formState.isSubmitting
+                        onPress: closeJoinTeamModal,
+                        isDisabled: form.formState.isSubmitting
                     }}
                     primary={{
                         label: 'Join Team',
                         type: 'submit',
                         form: JOIN_TEAM_FORM_ID,
-                        isLoading: form.formState.isSubmitting,
-                        disabled: codeValue.length !== 5 || form.formState.isSubmitting
+                        isPending: form.formState.isSubmitting,
+                        isDisabled: codeValue.length !== 5 || form.formState.isSubmitting
                     }}
                 />
             )}
@@ -97,9 +97,9 @@ export const JoinTeamModal = ({
                 />
 
                 {apiError && (
-                    <Text as='p' size='md' className='team-creator-error rounded-sm'>
+                    <p className='text-sm team-creator-error rounded-lg'>
                         {apiError}
-                    </Text>
+                    </p>
                 )}
             </form>
         </Modal>

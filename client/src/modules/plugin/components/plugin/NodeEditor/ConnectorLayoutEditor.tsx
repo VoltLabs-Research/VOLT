@@ -1,4 +1,4 @@
-import { Box, Button, Row, CollapsibleSection } from '@voltstack/bravais';
+import { Button, CollapsibleSection } from '@voltstack/bravais';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -82,11 +82,11 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                 const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
                 return (
-                    <Box key={handleDefinition.id} border='soft' radius='sm' style={{
+                    <div className='rounded-lg border border-border' key={handleDefinition.id} style={{
                             padding: '0.75rem',
                             marginTop: index === 0 ? 0 : '0.75rem'
                         }}>
-                        <Row justify='between' gap='05' style={{ marginBottom: '0.75rem' }}>
+                        <div className='flex flex-row items-center justify-between gap-2' style={{ marginBottom: '0.75rem' }}>
                             <strong>{handleDefinition.label}</strong>
                             <Button
                                 variant='outline'
@@ -96,7 +96,7 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                             >
                                 Reset
                             </Button>
-                        </Row>
+                        </div>
 
                         <FormFieldRHF
                             variant='inline'
@@ -133,7 +133,7 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                                 });
                             }}
                         />
-                    </Box>
+                    </div>
                 );
             })}
         </CollapsibleSection>

@@ -1,7 +1,6 @@
 import { useCanvasBridgeStore } from '@/modules/canvas/store/use-canvas-bridge-store';
-import { Row, Text } from '@voltstack/bravais';
 import { useEffect, useState } from 'react';
-import { IoSparklesOutline } from 'react-icons/io5';
+import { Sparkles } from 'lucide-react';
 import './AIViewerActivityBadge.css';
 
 const AIViewerActivityBadge = () => {
@@ -25,18 +24,14 @@ const AIViewerActivityBadge = () => {
     }
 
     return (
-        <Row
-            gap='025'
-            align='center'
-            position='absolute'
-            className='ai-viewer-activity-badge'
+        <div className='flex flex-row items-center gap-1 absolute ai-viewer-activity-badge'
             aria-live='polite'
         >
-            <IoSparklesOutline size={14} />
-            <Text as='span' size='sm' weight='medium'>
+            <Sparkles size={14} />
+            <span className='text-xs font-medium'>
                 Volt AI is adjusting the view
-            </Text>
-        </Row>
+            </span>
+        </div>
     );
 };
 

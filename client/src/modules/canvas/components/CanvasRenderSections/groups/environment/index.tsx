@@ -3,7 +3,7 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { ENVIRONMENT_SUBSECTION_TITLES } from '@/shared/rendering/environment';
 
 import { useMemo } from 'react';
-import { MdNature } from 'react-icons/md';
+import { Trees } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
@@ -56,7 +56,7 @@ const useEnvironmentGroup = (): RenderGroup => {
         return {
             id: 'environment',
             title: 'Environment',
-            icon: <MdNature size={12} />,
+            icon: <Trees size={12} />,
             subsections: [
                 {
                     label: ENVIRONMENT_SUBSECTION_TITLES.background,

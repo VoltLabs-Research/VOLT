@@ -1,5 +1,6 @@
-import { formatSize } from '@voltstack/bravais';
-import { Divider, Row, Text } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import { formatSize } from '@/shared/utils/format';
+import { Divider } from '@voltstack/bravais';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
 
@@ -19,16 +20,16 @@ interface StatusBarProps {
 }
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
-    <Row gap='05' className="canvas-status-group">
+    <div className='flex flex-row items-center gap-2 canvas-status-group'>
         {items.map(({ key, label, value, title, className }, i) => (
-            <Row key={key} gap='05' className="canvas-status-item">
+            <div className='flex flex-row items-center gap-2 canvas-status-item' key={key}>
                 {i > 0 && <Divider orientation='vertical' className="canvas-status-divider" />}
-                <Text as='span' size='sm' tone='muted' className={className} title={title}>
+                <span className={cn('text-xs text-muted', className)} title={title}>
                     {label}{label && ': '}{value}
-                </Text>
-            </Row>
+                </span>
+            </div>
         ))}
-    </Row>
+    </div>
 );
 
 const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
@@ -73,12 +74,12 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     ];
 
     return (
-        <Row justify='between' className="canvas-status-bar">
-            <Row gap='05' className="canvas-status-main">
+        <div className='flex flex-row items-center justify-between canvas-status-bar'>
+            <div className='flex flex-row items-center gap-2 canvas-status-main'>
                 <StatusGroup items={left} />
-            </Row>
+            </div>
             <StatusGroup items={right} />
-        </Row>
+        </div>
     );
 };
 

@@ -1,7 +1,6 @@
 import './HeaderBreadcrumbs.css';
-import { Row } from '@voltstack/bravais';
 import { useMemo } from 'react';
-import { IoChevronForward } from 'react-icons/io5';
+import { ChevronRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 interface BreadcrumbItem {
     label: string;
@@ -44,7 +43,7 @@ const HeaderBreadcrumbs = () => {
     const renderBreadcrumb = (breadcrumb: BreadcrumbItem) => {
         if (breadcrumb.path) {
             return (
-                <Link to={breadcrumb.path} className='breadcrumb-item breadcrumb-link text-secondary'>
+                <Link to={breadcrumb.path} className='breadcrumb-item breadcrumb-link text-muted'>
                     {breadcrumb.label}
                 </Link>
             );
@@ -61,18 +60,18 @@ const HeaderBreadcrumbs = () => {
     };
 
     return (
-        <Row as='nav' gap='05' className='breadcrumb-nav text-md' aria-label='Dashboard breadcrumbs'>
-            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link text-secondary'>
+        <nav className='flex flex-row items-center gap-2 breadcrumb-nav text-sm' aria-label='Dashboard breadcrumbs'>
+            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link text-muted'>
                 Dashboard
             </Link>
 
             {breadcrumbs.map((breadcrumb, index) => (
-                <Row key={`${breadcrumb.label}-${index}`} gap='05'>
-                    <IoChevronForward className='breadcrumb-separator text-muted' size={14} />
+                <div className='flex flex-row items-center gap-2' key={`${breadcrumb.label}-${index}`}>
+                    <ChevronRight className='breadcrumb-separator text-muted' size={14} />
                     {renderBreadcrumb(breadcrumb)}
-                </Row>
+                </div>
             ))}
-        </Row>
+        </nav>
     );
 };
 

@@ -1,4 +1,4 @@
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 
 import type { ResolvedLocalGlbManifest, ResolvedLocalGlbManifestFrame } from '@/modules/canvas/utils/local-glb-manifest';
 
@@ -23,7 +23,7 @@ const LocalViewerFrameControls = ({
     const lastFrameIndex = manifest.frames.length - 1;
 
     return (
-        <Stack id='canvas-center-timeline' className='canvas-center-timeline canvas-center-timeline--local'>
+        <div className='flex flex-col canvas-center-timeline canvas-center-timeline--local' id='canvas-center-timeline'>
             <div className='canvas-local-viewer-controls'>
                 <div className='canvas-local-viewer-controls__meta'>
                     <div className='canvas-local-viewer-controls__title'>
@@ -72,7 +72,7 @@ const LocalViewerFrameControls = ({
                     {frameIndex + 1} / {manifest.frames.length}
                 </div>
             </div>
-        </Stack>
+        </div>
     );
 };
 

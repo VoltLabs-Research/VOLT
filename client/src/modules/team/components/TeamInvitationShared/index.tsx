@@ -1,4 +1,3 @@
-import { Heading, Row, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
 type TeamInvitationCardProps = {
@@ -24,11 +23,11 @@ type TeamInvitationDetailItemProps = {
 
 export const TeamInvitationCard = ({ children }: TeamInvitationCardProps) => {
     return (
-        <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-            <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+        <div className='flex flex-col items-center justify-center w-full h-dvh team-invitation-page'>
+            <div className='flex flex-col items-center gap-6 rounded-2xl text-center team-invitation-card'>
                 {children}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 
@@ -42,11 +41,11 @@ export const TeamInvitationStateCard = ({
     return (
         <TeamInvitationCard>
             {icon}
-            <Heading level={3} size='xl' weight='bold'>{title}</Heading>
+            <h3 className='text-xl font-semibold text-foreground'>{title}</h3>
             {description && (
-                <Text as='p' tone='secondary'>
+                <p className='text-muted'>
                     {description}
-                </Text>
+                </p>
             )}
             {children}
             {action}
@@ -56,17 +55,17 @@ export const TeamInvitationStateCard = ({
 
 export const TeamInvitationDetails = ({ children }: TeamInvitationDetailsProps) => {
     return (
-        <Row align='start' gap='1' wrap radius='md' className='team-invitation-details'>
+        <div className='flex flex-row items-start flex-wrap gap-4 rounded-xl team-invitation-details'>
             {children}
-        </Row>
+        </div>
     );
 };
 
 export const TeamInvitationDetailItem = ({ label, value }: TeamInvitationDetailItemProps) => {
     return (
-        <Stack className='team-invitation-detail'>
-            <Text as='span' className='team-invitation-detail-label'>{label}</Text>
-            <Text as='span' className='team-invitation-detail-value'>{value}</Text>
-        </Stack>
+        <div className='flex flex-col team-invitation-detail'>
+            <span className='team-invitation-detail-label'>{label}</span>
+            <span className='team-invitation-detail-value'>{value}</span>
+        </div>
     );
 };

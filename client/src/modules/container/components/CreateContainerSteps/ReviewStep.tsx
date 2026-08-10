@@ -1,5 +1,5 @@
 import ProcessingLoader from '@/shared/ui/components/ProcessingLoader';
-import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, KeyValueList, KeyValueRow } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -85,13 +85,13 @@ const ReviewStep = ({
     const leftIcon = !isLoading ? <BoxIcon size={18} /> : undefined;
 
     return (
-        <Stack className='create-container-step' gap='2'>
-            <Stack gap='05'>
-                <Heading level={3} size='xl' weight='bold'>Review & Deploy</Heading>
-                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Confirm the deployment details before creating the container.</Text>
-            </Stack>
+        <div className='flex flex-col gap-8 create-container-step'>
+            <div className='flex flex-col gap-2'>
+                <h3 className='text-xl font-semibold text-foreground'>Review & Deploy</h3>
+                <p className='text-base text-muted create-container-step-copy'>Confirm the deployment details before creating the container.</p>
+            </div>
 
-            <Box className='create-container-review-card' radius='md' overflow='hidden' p='1'>
+            <div className='p-4 rounded-xl overflow-hidden create-container-review-card'>
                 <KeyValueList>
                     <KeyValueRow label='Name' value={config.name} />
                     <KeyValueRow label='Team' value={selectedTeamName} />
@@ -105,7 +105,7 @@ const ReviewStep = ({
                     <KeyValueRow label='Docker access' value={dockerAccessLabel} />
                     {draftLastSavedAt ? <KeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
                 </KeyValueList>
-            </Box>
+            </div>
 
             <ProcessingLoader
                 isVisible={isLoading && !!deployProgressMessage}
@@ -116,12 +116,12 @@ const ReviewStep = ({
             />
 
             {isLoading && deployStartedAt && (
-                <Text as='p' size='md' tone='muted' className='mt-2' aria-live='polite'>
+                <p className='text-sm text-muted mt-2' aria-live='polite'>
                     {formatElapsed(elapsedSeconds)}
-                </Text>
+                </p>
             )}
 
-            <Row className='create-container-step-actions' justify='end' gap='1' mt='3'>
+            <div className='flex flex-row items-center justify-end gap-4 mt-12 create-container-step-actions'>
                 <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
                 <Button
                     variant='solid'
@@ -132,8 +132,8 @@ const ReviewStep = ({
                 >
                     {!isLoading && 'Deploy container'}
                 </Button>
-            </Row>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

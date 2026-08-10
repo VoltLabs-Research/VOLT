@@ -2,16 +2,22 @@ import getListingDisplayState from '@/shared/ui/components/DocumentListing/listi
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import TableRow from '@/shared/ui/components/TableRow';
-import { cn } from '@/shared/utils/cn';
-import { Skeleton } from '@voltstack/bravais';
-import { useInfiniteScroll } from '@voltstack/bravais';
-import './DocumentListingTable.css';
+import {
+    LISTING_CELL_CLASS_NAMES,
+    LISTING_CELL_NUMERIC,
+    LISTING_ROUNDED_SKELETON,
+    LISTING_ROW_CLASS_NAMES,
+    LISTING_TEXT_SKELETON
+} from '@/shared/ui/components/DocumentListingTable/listing-chrome';
+import { Skeleton, cn } from '@heroui/react';
+import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
 import { DndContext } from '@dnd-kit/core';
 import { FileText } from 'lucide-react';
 import { useMemo, useState, useCallback } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
+import type { ListingDensity } from '@/shared/ui/components/DocumentListingTable/listing-chrome';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Identifiable } from '@/shared/contracts/entity';
 
@@ -25,20 +31,46 @@ const DRAG_ACTIVATION_DISTANCE = 6;
 
 const INITIAL_SKELETON_ROWS_COUNT = 20;
 
+const CONTAINER_CLASS_NAMES = 'flex h-full flex-col max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]';
+
+/**
+ * The compact header grows a background and a border because it doubles as a panel
+ * toolbar (canvas' plugin results view), where the rows scroll under it.
+ */
+const HEADER_CLASS_NAMES: Record<ListingDensity, string> = {
+    default: 'sticky top-0 z-[2] flex p-8 max-md:px-4 max-md:py-3',
+    compact: 'sticky top-0 z-10 flex border-b border-border bg-surface-secondary px-2 py-1'
+};
+
+const HEADER_CELL_CLASS_NAMES = 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs font-medium text-muted';
+
+const BODY_CLASS_NAMES: Record<ListingDensity, string> = {
+    default: 'relative flex flex-1 flex-col min-h-[400px]',
+    compact: 'relative flex flex-1 flex-col min-h-0'
+};
+
+const FOOTER_CLASS_NAMES: Record<ListingDensity, string> = {
+    default: 'py-4 max-md:px-4 max-md:py-3',
+    compact: 'py-1'
+};
+
+/** `group` is what lets the sort indicator brighten on hover of the whole button. */
+const SORT_BUTTON_CLASS_NAMES = 'group flex w-full min-w-0 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-muted';
+
 export interface ColumnConfig<TRow = unknown> {
     key?: string;
     title?: string;
     path?: string;
     label?: string;
-    
+
     width?: number;
-    
+
     minWidth?: number;
-    
+
     flex?: number;
-    
+
     numeric?: boolean;
-    
+
     defaultHidden?: boolean;
     headerTitleClassName?: string;
     render?: (value: unknown, row: TRow) => React.ReactNode;
@@ -114,22 +146,34 @@ interface SkeletonRowsProps<T> {
     columns: ColumnConfig<T>[];
     columnStyles: CSSProperties[];
     columnGap: number;
+    density: ListingDensity;
 };
 
-const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap }: SkeletonRowsProps<T>) => (
+const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, density }: SkeletonRowsProps<T>) => (
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
-            <div key={`${keyPrefix}-${rowIndex}`} className='document-listing-table-row-container skeleton-row flex shrink-0' role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
-                {columns.map((col, colIdx) => (
-                    <div className={`document-listing-cell overflow-hidden flex items-center text-md text-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
-                        <span className='document-listing-cell-value'>
-                            <Skeleton {...(col.skeleton ?? {
-                                variant: 'text',
-                                width: 100
-                            })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
-                        </span>
-                    </div>
-                ))}
+            <div key={`${keyPrefix}-${rowIndex}`} className={cn(LISTING_ROW_CLASS_NAMES[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
+                {columns.map((col, colIdx) => {
+                    const skeleton = col.skeleton ?? {
+                        variant: 'text' as const,
+                        width: 100
+                    };
+
+                    return (
+                        <div className={cn(LISTING_CELL_CLASS_NAMES[density], col.numeric && LISTING_CELL_NUMERIC)} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
+                            <span>
+                                <Skeleton
+                                    aria-hidden='true'
+                                    className={skeleton.variant === 'rounded' ? LISTING_ROUNDED_SKELETON : cn(LISTING_TEXT_SKELETON, 'h-[1em]')}
+                                    style={{
+                                        width: skeleton.width,
+                                        height: skeleton.height
+                                    }}
+                                />
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
         ))}
     </>
@@ -170,6 +214,7 @@ const DocumentListingTable = <T extends Identifiable>({
         dispatchDragEnd
     } = useListingDragAndDrop(data, dragAndDrop, DRAG_ACTIVATION_DISTANCE);
 
+    const density: ListingDensity = compact ? 'compact' : 'default';
     const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : DEFAULT_MIN_COLUMN_WIDTH;
     const resolvedGap = compact ? COMPACT_COLUMN_GAP : DEFAULT_COLUMN_GAP;
 
@@ -254,30 +299,25 @@ const DocumentListingTable = <T extends Identifiable>({
             columnGap={resolvedGap}
             draggableId={draggableIdByItemId.get(item._id) ?? null}
             droppableId={droppableIdByItemId.get(item._id) ?? null}
+            compact={compact}
         />
     ));
 
     return (
-        <div className={`flex flex-col document-listing-table-container h-full ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className={CONTAINER_CLASS_NAMES} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <div className='document-listing-table-header-container sticky top-0 flex' role='row' style={{
+                <div className={HEADER_CLASS_NAMES[density]} role='row' style={{
                     minWidth: `${minContentWidth}px`,
                     gap: `${resolvedGap}px`
                 }}>
                     {columns.map((col, colIdx) => {
                         const columnTitle = getColumnTitle(col);
                         const cellClassName = cn(
-                            'document-listing-cell',
-                            'header-cell',
-                            'overflow-hidden',
-                            'flex',
-                            'items-center',
-                            'text-secondary',
-                            getAriaSort(col) !== 'none' ? 'is-sorted' : '',
-                            col.numeric ? 'is-numeric' : ''
+                            HEADER_CELL_CLASS_NAMES,
+                            col.numeric && LISTING_CELL_NUMERIC
                         );
                         const heading = (
-                            <h3 className={`text-[0.95rem] text-secondary ${col.headerTitleClassName ?? 'font-medium'}`}>
+                            <h3 className={cn('text-[0.95rem] text-muted', col.headerTitleClassName ?? 'font-medium')}>
                                 {getCellTitle(col)}
                             </h3>
                         );
@@ -286,7 +326,7 @@ const DocumentListingTable = <T extends Identifiable>({
                                 {col.sortable ? (
                                     <button
                                         type='button'
-                                        className='document-listing-sort-button flex items-center text-secondary'
+                                        className={cn(SORT_BUTTON_CLASS_NAMES, col.numeric && 'justify-end')}
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${columnTitle}`}
                                     >
@@ -299,7 +339,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div className='flex flex-col relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
+            <div className={BODY_CLASS_NAMES[density]} role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
                         {rows}
@@ -315,6 +355,7 @@ const DocumentListingTable = <T extends Identifiable>({
                         columns={columns}
                         columnStyles={columnStyles}
                         columnGap={resolvedGap}
+                        density={density}
                     />
                 )}
 
@@ -348,21 +389,22 @@ const DocumentListingTable = <T extends Identifiable>({
                 )}
 
                 {isInitialLoading && (
-                    <div className='document-listing-overlay-blur absolute inset-0'>
-                        <div className='document-listing-infinite-skeleton-loader absolute inset-0 overflow-hidden flex flex-col'>
+                    <div className='absolute inset-0 z-[100] h-[calc(100dvh-320px)]'>
+                        <div className='absolute inset-0 flex flex-col overflow-hidden'>
                             <SkeletonRows
                                 count={INITIAL_SKELETON_ROWS_COUNT}
                                 keyPrefix='loading-skeleton'
                                 columns={columns}
                                 columnStyles={columnStyles}
                                 columnGap={resolvedGap}
+                                density={density}
                             />
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className='document-listing-table-footer-container' />
+            <div className={FOOTER_CLASS_NAMES[density]} />
         </div>
     );
 };

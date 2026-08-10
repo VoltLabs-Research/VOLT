@@ -1,4 +1,4 @@
-import { Box, Row, Tag, Text } from '@voltstack/bravais';
+import { Tag } from '@voltstack/bravais';
 import { Terminal } from 'lucide-react';
 import type { DebugExecutionLogSegment } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { ReactNode } from 'react';
@@ -35,10 +35,10 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
     const stderr = renderOutputStream(output?.stderr);
 
     return (
-        <Box position='absolute' overflow='hidden' zIndex='5' className='center-x workflow-node-exec-log nowheel' onClick={(event) => event.stopPropagation()}>
-            <Row gap='025' className='text-secondary workflow-node-exec-log-header'>
+        <div className='absolute overflow-hidden z-[5] center-x workflow-node-exec-log nowheel' onClick={(event) => event.stopPropagation()}>
+            <div className='flex flex-row items-center gap-1 text-muted workflow-node-exec-log-header'>
                 <Terminal size={10} />
-                <Text as='p' size='sm' weight='bold'>Execution Log</Text>
+                <p className='text-xs font-semibold'>Execution Log</p>
                 {exitCode !== undefined && (
                     <Tag
                         size='xs'
@@ -48,7 +48,7 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                         exit {exitCode}
                     </Tag>
                 )}
-            </Row>
+            </div>
             <pre className='m-0 p-2 overflow-y-auto workflow-node-exec-log-content'>
                 {logSegments.length > 0 ? (
                     logSegments.map((segment, index) => (
@@ -73,7 +73,7 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                     </>
                 )}
             </pre>
-        </Box>
+        </div>
     );
 };
 

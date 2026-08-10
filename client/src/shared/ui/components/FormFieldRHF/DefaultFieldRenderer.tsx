@@ -1,8 +1,25 @@
-import { LiquidToggle, Select, TextInput, Textarea } from '@voltstack/bravais';
+import {
+    Description,
+    Input,
+    InputGroup,
+    Label,
+    ListBox,
+    Select,
+    Switch,
+    TextArea,
+    TextField,
+    cn
+} from '@heroui/react';
 import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
+import {
+    FIELD_ERROR_CLASS,
+    SELECT_ROOT_CLASS,
+    STACKED_CONTAINER_CLASS,
+    STACKED_LABEL_CLASS
+} from './field-styles';
 
 const DefaultFieldRenderer = ({
     field,
@@ -37,31 +54,80 @@ const DefaultFieldRenderer = ({
         inputProps
     });
 
+    /*
+     * `aria-invalid` is not part of any HeroUI/React-Aria field's prop surface —
+     * react-aria's `filterDOMProps` drops unknown `aria-*` — so the boolean is
+     * handed over as `isInvalid`, which is what puts `aria-invalid` on the real
+     * control. `aria-describedby` and `aria-errormessage` are typed props and
+     * pass straight through, so the wiring to the error node below is unchanged.
+     */
+    const isInvalid = Boolean(error);
+    const describedBy = fieldStatusAriaProps['aria-describedby'];
+    const errorMessageId = fieldStatusAriaProps['aria-errormessage'];
+
     const renderField = () => {
         if (fieldType === 'select') {
             return (
                 <Select
                     id={fieldId}
-                    options={options}
-                    value={String(field.value ?? '')}
-                    onChange={(value) => field.onChange(value)}
+                    className={SELECT_ROOT_CLASS}
+                    selectedKey={String(field.value ?? '') || null}
+                    onSelectionChange={(key) => field.onChange(key === null ? '' : String(key))}
                     placeholder={placeholder}
-                    disabled={disabled}
+                    isDisabled={disabled}
+                    isInvalid={isInvalid}
+                    validationBehavior='aria'
+                    fullWidth
                     aria-labelledby={ariaLabelledBy}
-                    {...fieldStatusAriaProps}
-                />
+                    aria-describedby={describedBy}
+                    aria-errormessage={errorMessageId}
+                >
+                    <Select.Trigger>
+                        {/*
+                          * bravais's trigger showed the selected option's `title`
+                          * only; RAC's default children render the whole item, so
+                          * a `description` would leak into the trigger.
+                          */}
+                        <Select.Value>
+                            {({ isPlaceholder, selectedText, defaultChildren }) => (
+                                isPlaceholder ? defaultChildren : selectedText
+                            )}
+                        </Select.Value>
+                        <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                        <ListBox>
+                            {options.map((option) => (
+                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
+                                    <ListBox.ItemIndicator />
+                                    <Label>{option.title}</Label>
+                                    {option.description && <Description>{option.description}</Description>}
+                                </ListBox.Item>
+                            ))}
+                        </ListBox>
+                    </Select.Popover>
+                </Select>
             );
         }
 
         if (fieldType === 'checkbox') {
             return (
-                <LiquidToggle
+                <Switch
                     id={fieldId}
-                    pressed={Boolean(field.value)}
+                    isSelected={Boolean(field.value)}
                     onChange={(next) => field.onChange(next)}
+                    isInvalid={isInvalid}
+                    validationBehavior='aria'
                     aria-labelledby={ariaLabelledBy}
-                    {...fieldStatusAriaProps}
-                />
+                    aria-describedby={describedBy}
+                    aria-errormessage={errorMessageId}
+                >
+                    <Switch.Content>
+                        <Switch.Control>
+                            <Switch.Thumb />
+                        </Switch.Control>
+                    </Switch.Content>
+                </Switch>
             );
         }
 
@@ -83,56 +149,93 @@ const DefaultFieldRenderer = ({
 
         if (fieldType === 'textarea') {
             return (
-                <Textarea
-                    ref={field.ref}
+                <TextField
                     id={fieldId}
                     name={fieldName}
                     value={String(field.value ?? '')}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    placeholder={placeholder}
-                    minRows={rows}
-                    autoComplete={inputProps?.autoComplete}
-                    inputMode={inputProps?.inputMode}
-                    spellCheck={inputProps?.spellCheck}
-                    disabled={disabled}
-                    hasError={!!error}
-                    className={className}
-                    {...fieldStatusAriaProps}
-                />
+                    isDisabled={disabled}
+                    isInvalid={isInvalid}
+                    validationBehavior='aria'
+                    fullWidth
+                    aria-labelledby={ariaLabelledBy}
+                    aria-describedby={describedBy}
+                    aria-errormessage={errorMessageId}
+                >
+                    <TextArea
+                        ref={field.ref}
+                        rows={rows}
+                        placeholder={placeholder}
+                        autoComplete={inputProps?.autoComplete}
+                        inputMode={inputProps?.inputMode}
+                        spellCheck={inputProps?.spellCheck}
+                        className={cn('resize-y', className)}
+                    />
+                </TextField>
             );
         }
 
         const { size: _size, ...restInputProps } = inputProps ?? {};
+        /*
+         * `type` stays on the control rather than on `TextField`, and after the
+         * `inputProps` spread, to keep bravais's precedence: a call site passing
+         * `inputProps={{ type: 'number' }}` to the stacked renderer was overridden
+         * by the explicit `type` prop, and still is.
+         *
+         * `leftIcon` becomes an `InputGroup.Prefix`, which is HeroUI's affix slot;
+         * the plain `Input` is kept for the iconless case so a field without an
+         * adornment does not grow an extra wrapper element.
+         */
         return (
-            <TextInput
-                ref={field.ref}
+            <TextField
                 id={fieldId}
                 name={fieldName}
-                {...restInputProps}
-                type={type ?? 'text'}
                 value={String(field.value ?? '')}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                placeholder={placeholder}
-                disabled={disabled}
-                autoFocus={autoFocus}
-                hasError={!!error}
+                isDisabled={disabled}
+                isInvalid={isInvalid}
+                validationBehavior='aria'
                 fullWidth
-                leftIcon={icon}
-                className={className}
-                {...fieldStatusAriaProps}
-            />
+                aria-labelledby={ariaLabelledBy}
+                aria-describedby={describedBy}
+                aria-errormessage={errorMessageId}
+            >
+                {icon ? (
+                    <InputGroup fullWidth>
+                        {/* bravais rendered its adornments inside an aria-hidden span. */}
+                        <InputGroup.Prefix aria-hidden='true'>{icon}</InputGroup.Prefix>
+                        <InputGroup.Input
+                            ref={field.ref}
+                            {...restInputProps}
+                            type={type ?? 'text'}
+                            placeholder={placeholder}
+                            autoFocus={autoFocus}
+                            className={className}
+                        />
+                    </InputGroup>
+                ) : (
+                    <Input
+                        ref={field.ref}
+                        {...restInputProps}
+                        type={type ?? 'text'}
+                        placeholder={placeholder}
+                        autoFocus={autoFocus}
+                        className={className}
+                    />
+                )}
+            </TextField>
         );
     };
 
     return (
-        <div className='form-field-container flex flex-col gap-2 w-full'>
+        <div className={cn('form-field-container', STACKED_CONTAINER_CLASS)}>
             {label && (
                 <label
                     id={labelId}
                     htmlFor={labelTargetId}
-                    className='text-md font-medium text-secondary'
+                    className={STACKED_LABEL_CLASS}
                 >
                     {label}
                 </label>
@@ -143,7 +246,7 @@ const DefaultFieldRenderer = ({
             </div>
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='flex items-center gap-1 form-field-error text-sm'>
+                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className={cn('form-field-error', FIELD_ERROR_CLASS)}>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

@@ -1,4 +1,4 @@
-import { Row, SegmentedTabs, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { SegmentedTabs, StatusBadge } from '@voltstack/bravais';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import { formatNetworkSpeed } from '@/modules/cluster/utils/format-network';
 import { useState } from 'react';
@@ -111,27 +111,27 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
     });
 
     return (
-        <Stack className='dashboard-operations-cluster-item'>
-            <Row justify='between' gap='1' className='dashboard-operations-cluster-head'>
-                <Stack gap='025' minW='0'>
-                    <Text size='md' tone='primary' weight='bold' truncate>
+        <div className='flex flex-col dashboard-operations-cluster-item'>
+            <div className='flex flex-row items-center justify-between gap-4 dashboard-operations-cluster-head'>
+                <div className='flex flex-col gap-1 min-w-0'>
+                    <span className='text-sm font-semibold text-foreground truncate'>
                         {teamCluster.name}
-                    </Text>
-                    <Text size='sm' tone='muted'>
+                    </span>
+                    <span className='text-xs text-muted'>
                         {CLUSTER_ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}
-                    </Text>
-                </Stack>
+                    </span>
+                </div>
 
                 <StatusBadge variant={liveMetricsStatus.variant} size='compact'>
                     {liveMetricsStatus.label}
                 </StatusBadge>
-            </Row>
+            </div>
 
             {liveMetrics === null
                 ? (
-                    <Text size='sm' tone='muted' className='dashboard-operations-cluster-unavailable'>
+                    <span className='text-xs text-muted dashboard-operations-cluster-unavailable'>
                         {liveMetricsStatus.label}
-                    </Text>
+                    </span>
                 )
                 : (
                     <>
@@ -144,7 +144,7 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
                             size='sm'
                         />
 
-                        <Stack className='dashboard-operations-cluster-tab-panel'>
+                        <div className='flex flex-col dashboard-operations-cluster-tab-panel'>
                             {activeMetric === 'cpu' && (
                                 <>
                                     <ClusterProgressMetric
@@ -185,10 +185,10 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
                                     </span>
                                 </div>
                             )}
-                        </Stack>
+                        </div>
                     </>
                 )}
-        </Stack>
+        </div>
     );
 };
 

@@ -1,7 +1,7 @@
 import useCameraGroup from '../CanvasRenderSections/groups/camera';
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Row, Stack, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -21,9 +21,9 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
             .map((subsection) => ({
                 label: subsection.label,
                 submenuContent: (
-                    <Stack gap='05' className="canvas-camera-menu-submenu">
+                    <div className='flex flex-col gap-2 canvas-camera-menu-submenu'>
                         <CanvasRenderSubsectionContent subsection={subsection} />
-                    </Stack>
+                    </div>
                 )
             }));
     }, [cameraGroup.subsections]);
@@ -54,7 +54,7 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
                     shape="rounded"
                     size="sm"
                     className="text-xs canvas-btn-compact"
-                    leftIcon={<Row as='span' justify='center' shrink='0'><Settings size={12} /></Row>}
+                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Settings size={12} /></span>}
                     aria-label="Camera settings"
                     title="Camera settings"
                 >

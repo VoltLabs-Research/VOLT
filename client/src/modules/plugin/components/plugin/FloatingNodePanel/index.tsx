@@ -1,4 +1,4 @@
-import { CloseButton, Heading, Row } from '@voltstack/bravais';
+import { CloseButton } from '@voltstack/bravais';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -102,7 +102,7 @@ const FloatingNodePanel = () => {
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
                 <motion.div
-                    className='floating-node-panel absolute overflow-hidden glass-bg flex flex-col'
+                    className='floating-node-panel absolute overflow-hidden bg-surface border border-border flex flex-col'
                     style={{
                         top: position.top,
                         right: position.right,
@@ -119,12 +119,12 @@ const FloatingNodePanel = () => {
                     key={liveSelectedNode.id}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <Row gap='075' p='1' className='floating-node-panel-header'>
-                        <Heading level={3} size='lg' weight='bold' className='flex-1'>
+                    <div className='flex flex-row items-center gap-3 p-4 floating-node-panel-header'>
+                        <h3 className='text-base font-semibold text-foreground flex-1'>
                             {config.label}
-                        </Heading>
+                        </h3>
                         <CloseButton onClick={() => selectNode(null)} />
-                    </Row>
+                    </div>
 
                     <NodeEditor node={liveSelectedNode} />
                 </motion.div>

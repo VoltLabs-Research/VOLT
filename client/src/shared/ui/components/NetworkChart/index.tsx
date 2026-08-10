@@ -47,11 +47,11 @@ interface ChartStats {
 
 const MAX_HISTORY_POINTS = 60;
 const CHART_COLORS: ChartColors = {
-    rx: 'var(--accent-blue)',
-    tx: 'var(--accent-green)',
-    grid: 'var(--color-border-soft)',
-    axis: 'var(--color-text-muted)',
-    legend: 'var(--color-text-primary)'
+    rx: 'var(--info)',
+    tx: 'var(--success)',
+    grid: 'var(--border)',
+    axis: 'var(--muted)',
+    legend: 'var(--foreground)'
 };
 const EMPTY_DATA: NetworkDataPoint[] = [{
     time: '',

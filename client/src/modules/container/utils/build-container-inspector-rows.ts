@@ -1,5 +1,5 @@
 import { format, formatDistanceStrict } from 'date-fns';
-import { formatSize } from '@voltstack/bravais';
+import { formatSize } from '@/shared/utils/format';
 import type { Container } from '@volt/contracts/modules/container/domain';
 import type { InspectorRow } from '../components/ContainerInspectorList';
 

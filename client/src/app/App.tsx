@@ -166,7 +166,7 @@ export default function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <BrowserRouter unstable_useTransitions={false}>
+            <BrowserRouter useTransitions={false}>
                 <AppChrome />
             </BrowserRouter>
         </QueryClientProvider>

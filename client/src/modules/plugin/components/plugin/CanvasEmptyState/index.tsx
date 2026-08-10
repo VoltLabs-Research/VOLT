@@ -1,6 +1,6 @@
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
 
 const WORKFLOW_STEPS = ['Modifier', 'Arguments', 'Context', 'ForEach', 'Entrypoint', 'Exposure'];
@@ -9,20 +9,20 @@ const CanvasEmptyState = () => {
     const addNode = usePluginBuilderStore((state) => state.addNode);
 
     return (
-        <Box position='absolute' inset='0' display='flex' zIndex='10' className='items-center justify-center canvas-empty-state'>
-            <Stack align='center' gap='1' textAlign='center' className='canvas-empty-state-card glass-bg'>
-                <Box display='flex' radius='md' className='items-center justify-center canvas-empty-state-icon-wrapper'>
+        <div className='flex absolute inset-0 z-10 items-center justify-center canvas-empty-state'>
+            <div className='flex flex-col items-center gap-4 text-center canvas-empty-state-card bg-surface border border-border'>
+                <div className='flex rounded-xl items-center justify-center canvas-empty-state-icon-wrapper'>
                     <PlugZap size={28} />
-                </Box>
+                </div>
 
-                <Stack gap='05' align='center'>
-                    <Heading level={3} size='xl' weight='bold'>
+                <div className='flex flex-col items-center gap-2'>
+                    <h3 className='text-xl font-semibold text-foreground'>
                         Start building your plugin
-                    </Heading>
-                    <Text as='p' size='sm' tone='muted' lineHeight='5' className='canvas-empty-state-description'>
+                    </h3>
+                    <p className='text-xs text-muted leading-normal canvas-empty-state-description'>
                         Drag nodes from the palette on the left, or add a Modifier node to get started with the plugin workflow.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
 
                 <Button
                     intent='brand'
@@ -37,16 +37,16 @@ const CanvasEmptyState = () => {
                     Add Modifier Node
                 </Button>
 
-                <Row wrap justify='center' gap='025' width='max' className='canvas-empty-state-flow'>
+                <div className='flex flex-row items-center justify-center flex-wrap gap-1 w-full canvas-empty-state-flow'>
                     {WORKFLOW_STEPS.map((step, i, arr) => (
-                        <Row as='span' key={step} gap='025' className='text-muted text-sm'>
+                        <span className='flex flex-row items-center gap-1 text-muted text-xs' key={step}>
                             {step}
                             {i < arr.length - 1 && <ChevronRight size={10} />}
-                        </Row>
+                        </span>
                     ))}
-                </Row>
-            </Stack>
-        </Box>
+                </div>
+            </div>
+        </div>
     );
 };
 

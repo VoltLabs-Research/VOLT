@@ -1,11 +1,10 @@
-import { Sparkline, Box, IconFrame, Row, Stack, Text, openModal } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import { Sparkline, IconFrame, openModal } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
 import { getTrendColor } from '@/modules/dashboard/utils/trend-color';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
-import { Activity as ActivityIcon } from 'lucide-react';
-import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
-import { GoArrowRight } from 'react-icons/go';
+import { Activity as ActivityIcon, ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import { useMemo } from 'react';
 import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 
@@ -67,7 +66,7 @@ const DashboardActivityTile = () => {
 
     const summary = useMemo(() => buildActivityTileSummary(activityData), [activityData]);
     const isPositiveTrend = summary.trendPercent >= 0;
-    const TrendIcon = isPositiveTrend ? FaArrowUpLong : FaArrowDownLong;
+    const TrendIcon = isPositiveTrend ? ArrowUp : ArrowDown;
     const lineColor = getTrendColor(isPositiveTrend);
 
     return (
@@ -78,30 +77,30 @@ const DashboardActivityTile = () => {
                 onClick={() => openModal(DASHBOARD_DRAWER_IDS.activity)}
                 aria-label='Open your activity'
             >
-                <Stack gap='1' position='relative' zIndex='5'>
-                    <Row gap='075'>
+                <div className='flex flex-col gap-4 relative z-[5]'>
+                    <div className='flex flex-row items-center gap-3'>
                         <IconFrame size='md' className='dashboard-stat-card-icon'>
                             <ActivityIcon size={16} strokeWidth={1.8} />
                         </IconFrame>
-                        <Text size='md' weight='medium'>Activity</Text>
-                    </Row>
+                        <span className='text-sm font-medium'>Activity</span>
+                    </div>
 
-                    <Row align='end' gap='075'>
-                        <Text as='span' className='dashboard-stat-value'>{summary.todayActions}</Text>
-                        <Row gap='025' className={`dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                    <div className='flex flex-row items-end gap-3'>
+                        <span className='dashboard-stat-value'>{summary.todayActions}</span>
+                        <div className={cn('flex flex-row items-center gap-1', `dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`)} style={{ marginBottom: '0.3rem' }}>
                             <TrendIcon size={10} />
-                            <Text as='span'>{Math.abs(summary.trendPercent)}%</Text>
-                        </Row>
-                    </Row>
+                            <span>{Math.abs(summary.trendPercent)}%</span>
+                        </div>
+                    </div>
 
-                    <Text size='sm' tone='muted'>actions today</Text>
-                </Stack>
+                    <span className='text-xs text-muted'>actions today</span>
+                </div>
 
-                <Box position='absolute' top='1' right='1' className='dashboard-stat-navigate'>
-                    <GoArrowRight />
-                </Box>
+                <div className='absolute top-4 right-4 dashboard-stat-navigate'>
+                    <ArrowRight />
+                </div>
 
-                <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
+                <div className='absolute bottom-0 right-0 dashboard-stat-sparkline'>
                     <Sparkline
                         color={lineColor}
                         values={summary.series}
@@ -109,7 +108,7 @@ const DashboardActivityTile = () => {
                         width={160}
                         height={60}
                     />
-                </Box>
+                </div>
             </button>
         </DashboardCard>
     );

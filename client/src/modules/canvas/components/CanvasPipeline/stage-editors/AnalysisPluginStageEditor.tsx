@@ -3,7 +3,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import { extractTrajectoryTimesteps } from '../../../utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import { Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -36,9 +36,9 @@ const AnalysisPluginStageEditor = ({
 
     if (!config?.pluginId) {
         return (
-            <Row justify='center'>
-                <Text size='sm' tone='muted'>This analysis stage is misconfigured.</Text>
-            </Row>
+            <div className='flex flex-row items-center justify-center'>
+                <span className='text-xs text-muted'>This analysis stage is misconfigured.</span>
+            </div>
         );
     }
 
@@ -46,14 +46,14 @@ const AnalysisPluginStageEditor = ({
 
     if (!modifiers.some((m) => m.pluginId === pluginId)) {
         return (
-            <Row justify='center'>
-                <Text size='sm' tone='muted'>Plugin “{pluginId}” is not available in this team.</Text>
-            </Row>
+            <div className='flex flex-row items-center justify-center'>
+                <span className='text-xs text-muted'>Plugin “{pluginId}” is not available in this team.</span>
+            </div>
         );
     }
 
     return (
-        <Stack gap='075'>
+        <div className='flex flex-col gap-3'>
             <ArgumentFieldsRenderer
                 arguments={getUserConfigurableArguments(getPluginArguments(pluginId))}
                 values={argValues}
@@ -76,7 +76,7 @@ const AnalysisPluginStageEditor = ({
             >
                 Save
             </Button>
-        </Stack>
+        </div>
     );
 };
 

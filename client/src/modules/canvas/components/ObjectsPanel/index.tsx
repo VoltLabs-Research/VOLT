@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import ArtifactTreeSection from './ArtifactTreeSection';
 import RightCollapsible, { PANEL_ICON_STYLE } from './RightCollapsible';
 import useArtifactSections from './use-artifact-sections';
@@ -12,7 +13,7 @@ import SceneCollection from '../SceneCollection';
 import { Layers } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
@@ -259,7 +260,7 @@ const ObjectsPanel = ({
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
 
     return (
-        <Stack minH='0' className={`canvas-objects-panel${isAnalysisCompact ? ' canvas-objects-panel--analysis-compact' : ''}`}>
+        <div className={cn('flex flex-col min-h-0', `canvas-objects-panel${isAnalysisCompact ? ' canvas-objects-panel--analysis-compact' : ''}`)}>
             <div className="canvas-objects-panel__top">
                 {showSceneCollection && (
                     <RightCollapsible
@@ -271,9 +272,9 @@ const ObjectsPanel = ({
                         tourId="canvas-analyses-section"
                     >
                         {isRasterWorkspace && !isAnalysisCompact ? (
-                            <Stack gap='05' className="canvas-raster-container-panels">
+                            <div className='flex flex-col gap-2 canvas-raster-container-panels'>
                                 {rasterContainerSelections.map(renderRasterContainerPanel)}
-                            </Stack>
+                            </div>
                         ) : (
                             <SceneCollection
                                 {...sharedSceneCollectionProps}
@@ -298,7 +299,7 @@ const ObjectsPanel = ({
                     {artifactSections.map(renderArtifactSection)}
                 </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

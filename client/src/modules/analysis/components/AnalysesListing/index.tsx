@@ -13,8 +13,7 @@ import { Button, StatusBadge } from '@voltstack/bravais';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { useMemo } from 'react';
-import { RiRefreshLine } from 'react-icons/ri';
-import { FlaskConical, ExternalLink } from 'lucide-react';
+import { ExternalLink, FlaskConical, RefreshCw } from 'lucide-react';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
@@ -154,7 +153,7 @@ const AnalysesListing = () => {
             },
             retry: {
                 label: 'Retry Failed Frames',
-                icon: RiRefreshLine,
+                icon: RefreshCw,
                 handler: async ({ item: analysis }) => {
                     await retryFailedFrames(analysis._id);
                 },

@@ -1,7 +1,7 @@
 import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
 import { useEffect, useRef } from 'react';
-import { Box, Skeleton, Stack, EmptyState } from '@voltstack/bravais';
+import { Skeleton, EmptyState } from '@voltstack/bravais';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 interface NotificationListProps {
@@ -48,13 +48,13 @@ const NotificationList = ({
 
     if (isLoading && notifications.length === 0) {
         return (
-            <Stack gap='05' p='05'>
+            <div className='flex flex-col gap-2 p-2'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Box key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-3 rounded-sm'>
+                    <div className='notification-item list-item-hoverable p-3 rounded-lg' key={`notif-skel-${i}`}>
                         {skeletonLines}
-                    </Box>
+                    </div>
                 ))}
-            </Stack>
+            </div>
         );
     }
 
@@ -77,9 +77,9 @@ const NotificationList = ({
             ))}
             {isLoading && (
                 <li className='notification-row'>
-                    <Box className='notification-item list-item-hoverable p-3 rounded-sm'>
+                    <div className='notification-item list-item-hoverable p-3 rounded-lg'>
                         {skeletonLines}
-                    </Box>
+                    </div>
                 </li>
             )}
         </ul>

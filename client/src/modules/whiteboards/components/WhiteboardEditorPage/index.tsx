@@ -1,4 +1,4 @@
-import { Button, Row } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import WhiteboardEditorSkeleton from './WhiteboardEditorSkeleton';
 import useWhiteboardCanvasBridge from '@/modules/whiteboards/hooks/use-whiteboard-canvas-bridge';
 import useWhiteboardImageInsertion from '@/modules/whiteboards/hooks/use-whiteboard-image-insertion';
@@ -122,7 +122,7 @@ const WhiteboardEditorPage = () => {
         );
 
         return (
-            <Row gap='05' className='whiteboard-presence-indicator'>
+            <div className='flex flex-row items-center gap-2 whiteboard-presence-indicator'>
                 {users.length > 0 && (
                     <div className='whiteboard-presence-count' aria-label={collaboratorsLabel}>
                         {collaboratorsLabel}
@@ -130,7 +130,7 @@ const WhiteboardEditorPage = () => {
                 )}
                 {insertImageControl}
                 {aiAssistantControl}
-            </Row>
+            </div>
         );
     }, [aiAssistantControl, handleOpenImagePicker, users]);
 

@@ -24,7 +24,7 @@ import {
     isMultiValueVisibilityOperator
 } from './argument-definition-helpers';
 import FormSection from '@/shared/ui/components/FormSection';
-import { Select, Stack, Tag, getMultiSelectTriggerLabel } from '@voltstack/bravais';
+import { Select, Tag, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ChevronRight, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -299,7 +299,7 @@ const ArgumentDefinitionRow = ({
 
                     {argument.type === ArgumentType.SELECT && (
                         <>
-                            <h4 className='argument-row-subheading text-eyebrow'>Options</h4>
+                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Options</h4>
                             <div className='argument-row-subblock'>
                                 <ArgumentOptionsEditor
                                     options={argument.options ?? []}
@@ -311,7 +311,7 @@ const ArgumentDefinitionRow = ({
 
                     {isListLike && (
                         <>
-                            <h4 className='argument-row-subheading text-eyebrow'>
+                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
                                 {argument.type === ArgumentType.TUPLE ? 'Tuple Components' : 'Nested Arguments'}
                             </h4>
                             <div className='argument-row-subblock argument-row-nested'>
@@ -322,9 +322,9 @@ const ArgumentDefinitionRow = ({
 
                     {isPluginReference && (
                         <>
-                            <h4 className='argument-row-subheading text-eyebrow'>Allowed Plugins</h4>
+                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Allowed Plugins</h4>
                             <div className='argument-row-subblock'>
-                                <Stack gap='05'>
+                                <div className='flex flex-col gap-2'>
                                     <Select
                                         id={`plugin-reference-filter-${fieldPrefix}`}
                                         options={pluginOptions}
@@ -357,7 +357,7 @@ const ArgumentDefinitionRow = ({
                                             'keys selected'
                                         )}
                                     />
-                                </Stack>
+                                </div>
                             </div>
                             <FormSection title='Plugin Reference'>
                                 <ArgumentField
@@ -375,7 +375,7 @@ const ArgumentDefinitionRow = ({
                                     onChange={(event) => editField('showPluginConfiguration', event.target.value)}
                                 />
                             </FormSection>
-                            <h4 className='argument-row-subheading text-eyebrow'>Argument Mappings</h4>
+                            <h4 className='argument-row-subheading text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Argument Mappings</h4>
                             <div className='argument-row-subblock'>
                                 <PluginReferenceMappingsEditor
                                     mappings={argument.pluginReferenceMappings ?? []}

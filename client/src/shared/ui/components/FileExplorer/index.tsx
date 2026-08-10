@@ -1,7 +1,6 @@
-import { Skeleton } from '@voltstack/bravais';
+import { Skeleton } from '@heroui/react';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import './FileExplorer.css';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -66,18 +65,18 @@ const FileExplorer = ({
                 <AccessDenied
                     description={accessDeniedMessage}
                     showBack={false}
-                    className='file-explorer-state'
+                    className='min-h-[240px]'
                 />
             );
         }
 
         if(isLoading){
             return Array.from({ length: skeletonCount }).map((_, i) => (
-                <div key={i} className='file-explorer-row'>
-                        <Skeleton variant='circular' width={18} height={18} />
-                        <Skeleton variant='text' width='60%' height={20} />
-                        <Skeleton variant='text' width={60} height={18} />
-                        <Skeleton variant='text' width={80} height={18} />
+                <div key={i} className='grid w-full grid-cols-[1fr_100px_100px_120px] items-center border-b border-border px-4 py-2.5 max-[900px]:grid-cols-[1fr] max-[900px]:items-start max-[900px]:gap-1 max-[900px]:py-3'>
+                        <Skeleton className='size-[18px] rounded-full' />
+                        <Skeleton className='h-5 w-3/5 rounded-md' />
+                        <Skeleton className='h-[18px] w-[60px] rounded-md' />
+                        <Skeleton className='h-[18px] w-20 rounded-md' />
                     </div>
             ));
         }
@@ -91,7 +90,7 @@ const FileExplorer = ({
                     onRetry={onRetry}
                     retryLabel='Try again'
                     isRetrying={isRetrying}
-                    className='file-explorer-state'
+                    className='min-h-[240px]'
                 />
             );
         }
@@ -101,7 +100,7 @@ const FileExplorer = ({
                 <RecoveryState
                     title='Nothing here yet'
                     description={emptyMessage}
-                    className='file-explorer-state'
+                    className='min-h-[240px]'
                 />
             );
         }
@@ -110,33 +109,33 @@ const FileExplorer = ({
     };
 
     return (
-        <div className='file-explorer flex flex-col h-full overflow-hidden'>
+        <div className='flex flex-col h-full overflow-hidden'>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {stateMessage}
             </span>
             {hasHeader && (
-                <div className='file-explorer-header flex justify-between items-center gap-4 p-3'>
-                    <div className='file-explorer-header-left flex items-center gap-2'>
+                <div className='flex justify-between items-center gap-4 p-3 border-b border-border max-[900px]:flex-wrap'>
+                    <div className='flex items-center gap-2'>
                         {headerLeft}
                     </div>
 
-                    <div className='file-explorer-breadcrumb flex items-center flex-1'>
+                    <div className='flex items-center flex-1 min-w-0 max-[900px]:order-3 max-[900px]:basis-full'>
                         {breadcrumb}
                     </div>
 
-                    <div className='file-explorer-header-right flex items-center gap-2'>
+                    <div className='flex items-center gap-2'>
                         {headerRight}
                     </div>
                 </div>
             )}
 
             {columns && (
-                <div className='file-explorer-columns'>
+                <div className='grid grid-cols-[1fr_100px_100px_120px] border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-[0.05em] text-muted max-[900px]:hidden'>
                     {columns}
                 </div>
             )}
 
-            <div className='file-explorer-list flex-1 overflow-y-auto' role='list' aria-busy={isLoading || isRetrying}>
+            <div className='flex-1 overflow-y-auto' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
             </div>
         </div>

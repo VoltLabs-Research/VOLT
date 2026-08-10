@@ -1,5 +1,16 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { cn } from '@/shared/utils/cn';
+import {
+    LISTING_CELL_CLASS_NAMES,
+    LISTING_CELL_CONTENT,
+    LISTING_CELL_NUMERIC,
+    LISTING_CELL_VALUE_IN_CONTENT,
+    LISTING_DRAG_HANDLE_CLASS_NAMES,
+    LISTING_ROW_CLASS_NAMES,
+    LISTING_ROW_DRAGGING,
+    LISTING_ROW_DRAG_OVER,
+    LISTING_ROW_SELECTED
+} from '@/shared/ui/components/DocumentListingTable/listing-chrome';
+import { cn } from '@heroui/react';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
@@ -7,7 +18,7 @@ import { GripVertical } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
-import { formatUnknownValue } from '@voltstack/bravais';
+import { formatUnknownValue } from '@/shared/utils/format';
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 
 interface TableRowProps<T extends Identifiable> {
@@ -23,6 +34,12 @@ interface TableRowProps<T extends Identifiable> {
     columnGap?: number;
     draggableId?: string | null;
     droppableId?: string | null;
+
+    /**
+     * Density used to come from `.document-listing-table-container.is-compact`
+     * matching every descendant; without a stylesheet the row has to be told.
+     */
+    compact?: boolean;
 };
 
 const TableRow = <T extends Identifiable>({
@@ -37,7 +54,8 @@ const TableRow = <T extends Identifiable>({
     onContextMenu,
     columnGap = 16,
     draggableId = null,
-    droppableId = null
+    droppableId = null,
+    compact = false
 }: TableRowProps<T>) => {
     const isInteractiveTarget = (event: MouseEvent<HTMLDivElement>): boolean => {
         const target = event.target;
@@ -62,6 +80,7 @@ const TableRow = <T extends Identifiable>({
             && !event.altKey;
     };
 
+    const density = compact ? 'compact' : 'default';
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
     const getColumnKey = (col: ColumnConfig<T>): string => col.key ?? col.path ?? '';
@@ -99,13 +118,10 @@ const TableRow = <T extends Identifiable>({
     };
 
     const rowClassName = cn(
-        'document-listing-table-row-container',
-        'cursor-pointer',
-        isSelected ? 'is-selected' : '',
-        draggableId ? 'has-drag-handle' : '',
-        droppableId ? 'is-droppable' : '',
-        isDragging ? 'is-dragging' : '',
-        isOver ? 'is-drag-over' : ''
+        LISTING_ROW_CLASS_NAMES[density],
+        isSelected && LISTING_ROW_SELECTED,
+        isDragging && LISTING_ROW_DRAGGING,
+        isOver && LISTING_ROW_DRAG_OVER
     );
 
     const dragListeners = draggableId ? listeners : undefined;
@@ -120,7 +136,7 @@ const TableRow = <T extends Identifiable>({
             <button
                 type='button'
                 ref={setActivatorNodeRef}
-                className='document-listing-row-drag-handle'
+                className={LISTING_DRAG_HANDLE_CLASS_NAMES[density]}
                 aria-label='Drag flex-row'
                 data-row-click-ignore='true'
                 {...dragAttributes}
@@ -177,25 +193,20 @@ const TableRow = <T extends Identifiable>({
                 const columnTitle = getColumnTitle(col);
 
                 const cellClassName = cn(
-                    'document-listing-cell',
-                    'overflow-hidden',
-                    'flex',
-                    'items-center',
-                    'text-md',
-                    'text-secondary',
-                    col.numeric ? 'is-numeric' : ''
+                    LISTING_CELL_CLASS_NAMES[density],
+                    col.numeric && LISTING_CELL_NUMERIC
                 );
                 return (
-                    <div className={`${cellClassName}`} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
+                    <div className={cellClassName} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
                         {colIdx === 0 && draggableId ? (
-                            <span className='document-listing-cell-content'>
+                            <span className={LISTING_CELL_CONTENT}>
                                 {renderDragHandle()}
-                                <span className='document-listing-cell-value'>
+                                <span className={LISTING_CELL_VALUE_IN_CONTENT}>
                                     {renderCellContent(col, cellValue)}
                                 </span>
                             </span>
                         ) : (
-                            <span className='document-listing-cell-value'>
+                            <span>
                                 {renderCellContent(col, cellValue)}
                             </span>
                         )}

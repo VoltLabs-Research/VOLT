@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Text } from '@voltstack/bravais';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter,
@@ -75,9 +74,9 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
 
     if (rows.length === 0 || numericCols.length === 0) {
         return (
-            <Text size='xs' tone='muted' style={{ padding: '8px' }}>
+            <span className='text-xs text-muted' style={{ padding: '8px' }}>
                 No numeric data available for chart.
-            </Text>
+            </span>
         );
     }
 

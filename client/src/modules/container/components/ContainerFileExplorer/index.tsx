@@ -1,11 +1,11 @@
 import { useContainerFilesQuery, useContainerFileContentQuery } from '../../hooks/queries';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
+import { ArrowLeft, FileText, Folder } from 'lucide-react';
 import FileExplorer from '@/shared/ui/components/FileExplorer';
 import FileExplorerRow from '@/shared/ui/components/FileExplorer/FileExplorerRow';
 import RefreshButton from '@/shared/ui/components/RefreshButton';
-import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import { useSearchParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { ContainerFile } from '@volt/contracts/modules/container/domain';
@@ -83,15 +83,15 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     };
 
     const renderFileViewer = (body: ReactNode) => (
-        <Stack height='max' gap='1'>
-            <Row className='container-file-viewer-header' gap='1'>
-                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={() => updateViewingFile(null)}>
+        <div className='flex flex-col gap-4 h-full'>
+            <div className='flex flex-row items-center gap-4 container-file-viewer-header'>
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<ArrowLeft />} onClick={() => updateViewingFile(null)}>
                     Back
                 </Button>
                 <span>{viewingFile}</span>
-            </Row>
+            </div>
             {body}
-        </Stack>
+        </div>
     );
 
     if(viewingFile && fileContent !== undefined){
@@ -104,20 +104,20 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             fallbackTitle: 'Failed to open file'
         }).title;
 
-        return renderFileViewer(<Text as='p' className='container-file-empty-folder'>{message}</Text>);
+        return renderFileViewer(<p className='container-file-empty-folder'>{message}</p>);
     }
 
     return (
         <FileExplorer
             headerLeft={
-                <Row gap='1' flex='1'>
+                <div className='flex flex-row items-center gap-4 flex-1'>
                     <Tooltip content='Go to Parent Directory' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Go to parent directory' title='Go to parent directory' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
-                            <IoArrowBack />
+                            <ArrowLeft />
                         </Button>
                     </Tooltip>
                     <span className='container-file-current-path'>{explorer.cwd}</span>
-                </Row>
+                </div>
             }
             headerRight={
                 <RefreshButton
@@ -153,7 +153,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 return (
                     <FileExplorerRow
                         key={`${file.name}-${file.isDirectory ? 'dir' : 'file'}`}
-                        icon={file.isDirectory ? <IoFolderOutline /> : <IoDocumentOutline />}
+                        icon={file.isDirectory ? <Folder /> : <FileText />}
                         name={file.name}
                         type={file.isDirectory ? 'Folder' : 'File'}
                         size={file.size || undefined}

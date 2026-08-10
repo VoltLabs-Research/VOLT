@@ -1,6 +1,6 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { LiquidToggle, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
+import { LiquidToggle, Modal, closeModal } from '@voltstack/bravais';
 import './AnalysisListingDownloadModal.css';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -166,10 +166,10 @@ const AnalysisListingDownloadModal = ({
         value: boolean,
         onChange: (nextValue: boolean) => void
     ) => (
-        <Row key={rowKey} justify='between' gap='1' className='analysis-listing-download-modal__option-row'>
-            <Text as='p' id={`${fieldKey}-label`} size='sm' tone='primary' className='analysis-listing-download-modal__option-label'>
+        <div className='flex flex-row items-center justify-between gap-4 analysis-listing-download-modal__option-row' key={rowKey}>
+            <p className='text-xs text-foreground analysis-listing-download-modal__option-label' id={`${fieldKey}-label`}>
                 {label}
-            </Text>
+            </p>
             <div className='analysis-listing-download-modal__option-toggle'>
                 <LiquidToggle
                     id={`${fieldKey}-toggle`}
@@ -178,7 +178,7 @@ const AnalysisListingDownloadModal = ({
                     aria-labelledby={`${fieldKey}-label`}
                 />
             </div>
-        </Row>
+        </div>
     );
 
     const isLoading = optionsQuery.isLoading && !optionsQuery.data;
@@ -200,38 +200,38 @@ const AnalysisListingDownloadModal = ({
                 <ModalFooterActions
                     secondary={{
                         label: 'Cancel',
-                        onClick: handleClose
+                        onPress: handleClose
                     }}
                     primary={{
                         label: 'Download',
-                        isLoading: isDownloading,
-                        disabled: isLoading || hasError || !analysisId || !hasSelections,
-                        onClick: handleDownload
+                        isPending: isDownloading,
+                        isDisabled: isLoading || hasError || !analysisId || !hasSelections,
+                        onPress: handleDownload
                     }}
                 />
             )}
         >
-            <Stack gap='1' p='1-5' className='analysis-listing-download-modal'>
+            <div className='flex flex-col gap-4 p-6 analysis-listing-download-modal'>
                 {isLoading && (
-                    <Text as='p' size='sm' tone='secondary'>
+                    <p className='text-xs text-muted'>
                         Loading available listings and sublistings...
-                    </Text>
+                    </p>
                 )}
 
                 {hasError && (
-                    <Text as='p' size='sm' className='text-danger'>
+                    <p className='text-xs text-danger'>
                         Failed to load export options for this analysis.
-                    </Text>
+                    </p>
                 )}
 
                 {!isLoading && !hasError && optionsData && (
                     <>
                         {!hasAvailableOptions ? (
-                            <Text as='p' size='sm' tone='muted' className='analysis-listing-download-modal__empty'>
+                            <p className='text-xs text-muted analysis-listing-download-modal__empty'>
                                 This analysis does not expose downloadable CSV files.
-                            </Text>
+                            </p>
                         ) : (
-                            <Stack gap='05' className='analysis-listing-download-modal__options'>
+                            <div className='flex flex-col gap-2 analysis-listing-download-modal__options'>
                                 {optionsData.hasConfig && renderOptionRow(
                                     'analysis-download-config',
                                     'analysis-download-config',
@@ -257,11 +257,11 @@ const AnalysisListingDownloadModal = ({
                                         (next) => toggleSubListing(subListing.name, next)
                                     )
                                 ))}
-                            </Stack>
+                            </div>
                         )}
                     </>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

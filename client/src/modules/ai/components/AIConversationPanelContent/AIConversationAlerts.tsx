@@ -1,5 +1,4 @@
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Box } from '@voltstack/bravais';
 
 interface AIConversationAlertsProps {
     className: string;
@@ -21,7 +20,7 @@ const AIConversationAlerts = ({
             ['Unable to load AI providers', providerCatalogError, loadProviderCatalog],
             ['Unable to load conversations', conversationsError, loadConversations]
         ] as const).map(([title, description, retry]) => description && (
-            <Box key={title} className={className}>
+            <div className={className} key={title}>
                 <RecoveryState
                     title={title}
                     description={description}
@@ -30,7 +29,7 @@ const AIConversationAlerts = ({
                         retry().catch(() => undefined);
                     }}
                 />
-            </Box>
+            </div>
         ))}
     </>
 );

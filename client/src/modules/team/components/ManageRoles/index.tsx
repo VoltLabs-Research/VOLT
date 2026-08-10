@@ -1,4 +1,4 @@
-import { Box, StatusBadge, Text } from '@voltstack/bravais';
+import { StatusBadge } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleListingActions from '@/modules/team/hooks/role/use-team-role-listing-actions';
@@ -37,7 +37,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'name',
         title: 'Role Name',
         render: (_value, role) => (
-            <Text weight='medium' tone='secondary'>{role.name}</Text>
+            <span className='font-medium text-muted'>{role.name}</span>
         )
     },
     {
@@ -58,9 +58,9 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
             }
             const count = role.permissions.length;
             return (
-                <Text tone='secondary' size='md'>
+                <span className='text-sm text-muted'>
                     {count} permission{count !== 1 ? 's' : ''}
-                </Text>
+                </span>
             );
         }
     },
@@ -134,7 +134,7 @@ export default function ManageRolesTemplate() {
     }, [canDelete, canRead, canUpdate, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <Box height='max' className='manage-roles-page'>
+        <div className='h-full manage-roles-page'>
             <DocumentListing<TeamRole>
                 title='Manage Roles'
                 queryKey={queryKey}
@@ -156,6 +156,6 @@ export default function ManageRolesTemplate() {
                 onSave={handleSaveRole}
                 isSaving={isSaving}
             />
-        </Box>
+        </div>
     );
 };

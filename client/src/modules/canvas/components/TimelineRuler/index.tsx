@@ -1,4 +1,3 @@
-import { Box } from '@voltstack/bravais';
 import { memo } from 'react';
 import type { TimelineTickTone } from '@/modules/canvas/utils/analysis-status-selectors';
 import type { RefObject } from 'react';
@@ -15,7 +14,7 @@ const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => (
         {ticks.map((tick) => (
             <div key={tick.frame} className={`canvas-ruler-tick flex flex-col items-center${tick.tone ? ` is-${tick.tone}` : ''}${tick.dimmed ? ' canvas-ruler-tick--dimmed' : ''}`}>
                 {tick.major && (
-                    <span className={`canvas-ruler-tick-label text-sm${tick.tone ? ` canvas-ruler-tick-label--${tick.tone}` : ''}`}>
+                    <span className={`canvas-ruler-tick-label text-xs${tick.tone ? ` canvas-ruler-tick-label--${tick.tone}` : ''}`}>
                         {tick.frame}
                     </span>
                 )}
@@ -56,15 +55,15 @@ const TimelineRuler = ({
     onWheel,
     onKeyDown
 }: TimelineRulerProps) => (
-    <Box flex='1' position='relative' minH='0' className="canvas-timeline-body">
-        <Box display='flex' align='end' className="canvas-timeline-ruler scrollbar-none" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
+    <div className='relative flex-1 min-h-0 canvas-timeline-body'>
+        <div className='flex items-end canvas-timeline-ruler scrollbar-none' ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
             <TimelineRulerTicks ticks={ticks} />
-        </Box>
+        </div>
 
-        <Box position='absolute' top='0' bottom='0' className="canvas-playhead" style={{ left: `${playheadLeft}px` }}>
-            <Box position='absolute' className="canvas-playhead-head" />
-        </Box>
-    </Box>
+        <div className='absolute top-0 bottom-0 canvas-playhead' style={{ left: `${playheadLeft}px` }}>
+            <div className='absolute canvas-playhead-head' />
+        </div>
+    </div>
 );
 
 export default TimelineRuler;

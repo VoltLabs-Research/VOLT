@@ -1,6 +1,6 @@
 import { getChatDisplayName } from '@/modules/chat/utils/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
-import { ListRow, Row, Stack, Text } from '@voltstack/bravais';
+import { ListRow } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
@@ -17,30 +17,30 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
     const displayName = getChatDisplayName(chat, currentUserId);
 
     const content = (
-        <Stack gap='025' flex='1' overflow='hidden'>
-            <Row justify='between' gap='05'>
-                <Text as='p' size='lg' weight='bold' truncate className='chat-list-item-name'>
+        <div className='flex flex-col gap-1 overflow-hidden flex-1'>
+            <div className='flex flex-row items-center justify-between gap-2'>
+                <p className='text-base font-semibold truncate chat-list-item-name'>
                     {displayName}
-                </Text>
+                </p>
                 {chat.lastMessageAt && (
-                    <Text as='p' size='md' tone='muted' className='chat-list-item-time'>
+                    <p className='text-sm text-muted chat-list-item-time'>
                         {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: false })}
-                    </Text>
+                    </p>
                 )}
-            </Row>
+            </div>
 
             {chat.lastMessage && (
-                <Text as='p' size='md' tone='secondary' truncate className='chat-list-item-preview'>
+                <p className='text-sm text-muted truncate chat-list-item-preview'>
                     {chat.lastMessage.content}
-                </Text>
+                </p>
             )}
 
             {chat.isGroup && (
-                <Text as='p' size='md' tone='muted'>
+                <p className='text-sm text-muted'>
                     {chat.participants.length} members
-                </Text>
+                </p>
             )}
-        </Stack>
+        </div>
     );
 
     return (

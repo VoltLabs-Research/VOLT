@@ -1,6 +1,6 @@
 import CopyableField from '@/shared/ui/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
-import { CloseButton, Divider, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { CloseButton, Divider } from '@voltstack/bravais';
 
 import './TrajectorySharePanel.css';
 
@@ -24,44 +24,44 @@ const TrajectorySharePanel = ({
     const shareUrl = buildCanvasUrl(trajectoryId);
 
     return (
-        <Stack className='trajectory-share-panel'>
-            <Row justify='between' shrink='0' className='trajectory-share-panel-header'>
-                <Heading level={4} size='sm' weight='medium'>
+        <div className='flex flex-col trajectory-share-panel'>
+            <div className='flex flex-row items-center justify-between shrink-0 trajectory-share-panel-header'>
+                <h4 className='text-xs font-medium text-foreground'>
                     Share trajectory
-                </Heading>
+                </h4>
                 {onClose && <CloseButton onClick={onClose} />}
-            </Row>
+            </div>
 
-            <Stack gap='075' className='trajectory-share-panel-body'>
+            <div className='flex flex-col gap-3 trajectory-share-panel-body'>
                 {canManageVisibility ? (
                     <TrajectoryVisibilityToggle
                         trajectoryId={trajectoryId}
                         isPublic={isPublic}
                     />
                 ) : (
-                    <Stack gap='025'>
-                        <Text as='p' size='sm' weight='medium' tone='primary'>
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs font-medium text-foreground'>
                             {isPublic ? 'Public trajectory' : 'Private trajectory'}
-                        </Text>
-                        <Text as='p' size='xs' className='text-tertiary'>
+                        </p>
+                        <p className='text-xs text-muted'>
                             {isPublic
                                 ? 'Anyone with the link can view this trajectory.'
                                 : 'Only team members can view this trajectory.'}
-                        </Text>
-                    </Stack>
+                        </p>
+                    </div>
                 )}
 
                 <Divider />
 
-                <Stack gap='05'>
+                <div className='flex flex-col gap-2'>
                     <CopyableField
                         value={shareUrl}
                         successMessage='Canvas link copied'
                         className='trajectory-share-link-field'
                     />
-                </Stack>
-            </Stack>
-        </Stack>
+                </div>
+            </div>
+        </div>
     );
 };
 

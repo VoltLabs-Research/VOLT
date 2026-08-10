@@ -1,7 +1,7 @@
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
-import { Callout, Stack, Text } from '@voltstack/bravais';
+import { Callout } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
@@ -52,9 +52,9 @@ const PluginExecutionConfigFields = ({
     const hasPreflightIssues = Boolean(preflight && preflight.issues.length > 0);
 
     let clusterField = (
-        <Text as='p' size='sm' tone='muted'>
+        <p className='text-xs text-muted'>
             {noClustersMessage}
-        </Text>
+        </p>
     );
 
     if (hasTeamClusterOptions) {
@@ -72,7 +72,7 @@ const PluginExecutionConfigFields = ({
     }
 
     return (
-        <Stack gap='05'>
+        <div className='flex flex-col gap-2'>
             {hasPreflightIssues && (
                 <Callout
                     tone='warning'
@@ -81,13 +81,13 @@ const PluginExecutionConfigFields = ({
                     ariaLive='polite'
                     action={preflight!.action}
                 >
-                    <Stack as='ul' gap='025' className='plugin-execution-preflight-list'>
+                    <ul className='flex flex-col gap-1 plugin-execution-preflight-list'>
                         {preflight!.issues.map((issue, index) => (
-                            <Text key={index} as='li' size='sm'>
+                            <li className='text-xs' key={index}>
                                 {issue}
-                            </Text>
+                            </li>
                         ))}
-                    </Stack>
+                    </ul>
                 </Callout>
             )}
             <ArgumentFieldsRenderer
@@ -104,7 +104,7 @@ const PluginExecutionConfigFields = ({
                 selectedTimesteps={selectedTimesteps}
                 onChange={onSelectedTimestepsChange}
             />
-        </Stack>
+        </div>
     );
 };
 

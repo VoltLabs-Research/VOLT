@@ -1,4 +1,4 @@
-import { Button, Row, Stack, Heading, Text } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
@@ -49,34 +49,34 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     render() {
         if (this.state.hasError) {
             return (
-                <Row justify='center' width='max' height='max' p='2'>
-                    <Stack align='center' textAlign='center' gap='1-5' role='alert' aria-live='assertive'>
-                        <Row justify='center'>
+                <div className='flex flex-row items-center justify-center p-8 w-full h-full'>
+                    <div className='flex flex-col items-center gap-6 text-center' role='alert' aria-live='assertive'>
+                        <div className='flex flex-row items-center justify-center'>
                             <AlertTriangle size={28} aria-hidden='true' />
-                        </Row>
-                        <Stack gap='05' align='center'>
-                            <Heading level={2} size='lg' weight='bold'>
+                        </div>
+                        <div className='flex flex-col items-center gap-2'>
+                            <h2 className='text-base font-semibold text-foreground'>
                                 {this.props.fallbackTitle ?? 'Something went wrong'}
-                            </Heading>
-                            <Text as='p' size='md' tone='secondary' lineHeight='5'>
+                            </h2>
+                            <p className='text-sm text-muted leading-normal'>
                                 {this.props.fallbackDescription ?? 'The interface hit an unexpected issue. Try again or reload the page.'}
-                            </Text>
+                            </p>
                             {this.state.error?.message && (
-                                <Text as='p' size='sm' tone='muted' lineHeight='5'>
+                                <p className='text-xs text-muted leading-normal'>
                                     {this.state.error.message}
-                                </Text>
+                                </p>
                             )}
-                        </Stack>
-                        <Row gap='075'>
-                            <Button variant='ghost' intent='neutral' size='sm' onClick={this.handleReset}>
+                        </div>
+                        <div className='flex flex-row items-center gap-3'>
+                            <Button variant='ghost' size='sm' onPress={this.handleReset}>
                                 Try again
                             </Button>
-                            <Button variant='solid' intent='brand' size='sm' onClick={this.handleReload}>
+                            <Button variant='primary' size='sm' onPress={this.handleReload}>
                                 Reload page
                             </Button>
-                        </Row>
-                    </Stack>
-                </Row>
+                        </div>
+                    </div>
+                </div>
             );
         }
 

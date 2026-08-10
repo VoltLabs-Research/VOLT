@@ -1,8 +1,7 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal, openModal, Stack, Text } from '@voltstack/bravais';
+import { Modal, closeModal, openModal } from '@/shared/ui/modal';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/ui/hooks/use-confirm';
-import './ConfirmActionModal.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import type { ConfirmActionOptions } from '@/shared/ui/hooks/use-confirm';
@@ -14,6 +13,18 @@ interface ConfirmActionModalState extends ConfirmActionOptions {
 };
 
 const CONFIRM_ACTION_MODAL_ID = 'shared-confirm-action-modal';
+
+/**
+ * The deleted `.confirm-action-modal { width: min(100%, 28rem) }`, carried as a
+ * value instead of a class — `width` on the modal sets max-width on the dialog.
+ *
+ * It is numerically HeroUI's own default (`ModalContainer` size `md` →
+ * `max-w-md` → 28rem), so this restates rather than overrides. It is stated
+ * anyway: the 28rem was a deliberate choice for a confirmation prompt, and
+ * leaving it implicit would make the prompt's width follow a change to the
+ * default size of every modal in the app.
+ */
+const CONFIRM_ACTION_MODAL_WIDTH = 'min(100%, 28rem)';
 
 const ConfirmActionModal = () => {
     const [modalState, setModalState] = useState<ConfirmActionModalState | null>(null);
@@ -71,13 +82,19 @@ const ConfirmActionModal = () => {
     }, [resolvePendingRequest]);
 
     const isTypedConfirmationValid = !modalState?.requireTypedText || typedText === modalState.requireTypedText;
-    const confirmIntent = modalState?.tone === ConfirmActionTone.Danger ? 'danger' : 'brand';
+    const confirmVariant = modalState?.tone === ConfirmActionTone.Danger ? 'danger' : 'primary';
     const typedConfirmationLabel = modalState?.requireTypedText
         ? `Type ${modalState.requireTypedText} to confirm`
         : '';
     const typedConfirmationDescription = modalState?.requireTypedText
         ? `This action requires an exact confirmation phrase: ${modalState.requireTypedText}`
         : '';
+    /*
+     * `data-modal-initial-focus` is how this component asks for focus to land on
+     * the typed-confirmation field rather than on the first focusable node (which
+     * would be the close button). The new modal still honours it — see
+     * `shared/ui/modal/initial-focus.ts` — so the attribute stays exactly here.
+     */
     const typedConfirmationInputProps: InputHTMLAttributes<HTMLInputElement> & {
         'data-modal-initial-focus'?: string;
     } = {
@@ -88,13 +105,13 @@ const ConfirmActionModal = () => {
         <ModalFooterActions
             secondary={{
                 label: modalState?.cancelText ?? 'Cancel',
-                onClick: handleCancel
+                onPress: handleCancel
             }}
             primary={{
                 label: modalState?.confirmText ?? 'Confirm',
-                intent: confirmIntent,
-                onClick: handleConfirm,
-                disabled: !isTypedConfirmationValid
+                variant: confirmVariant,
+                onPress: handleConfirm,
+                isDisabled: !isTypedConfirmationValid
             }}
         />
     );
@@ -104,16 +121,16 @@ const ConfirmActionModal = () => {
             id={CONFIRM_ACTION_MODAL_ID}
             title={modalState?.title}
             description={modalState?.description}
-            className='confirm-action-modal'
+            width={CONFIRM_ACTION_MODAL_WIDTH}
             onClose={handleModalClose}
             footer={footer}
         >
-            <Stack gap='1'>
+            <div className='flex flex-col gap-4'>
                 {modalState?.requireTypedText && (
                     <>
-                        <Text as='p' id={typedConfirmationDescriptionId} size='md' tone='secondary'>
+                        <p className='text-sm text-muted' id={typedConfirmationDescriptionId}>
                             {typedConfirmationDescription}
-                        </Text>
+                        </p>
                         <FormFieldRHF
                             label={typedConfirmationLabel}
                             value={typedText}
@@ -122,7 +139,7 @@ const ConfirmActionModal = () => {
                         />
                     </>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

@@ -2,7 +2,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import { Box, Heading, SelectableCard, Stack, Text } from '@voltstack/bravais';
+import { SelectableCard } from '@voltstack/bravais';
 import { Plug, Zap } from 'lucide-react';
 import './OnboardingChoicePage.css';
 
@@ -16,17 +16,17 @@ const OnboardingChoicePage = () => {
 
     return (
         <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
-            <Stack gap='2' align='center' justify='center' textAlign='center' className='min-h-screen'>
-                <Stack gap='1' align='center' textAlign='center'>
-                    <Heading level={1} size='3xl' weight='bold'>
+            <div className='flex flex-col items-center justify-center gap-8 text-center min-h-screen'>
+                <div className='flex flex-col items-center gap-4 text-center'>
+                    <h1 className='text-3xl font-semibold text-foreground'>
                         How would you like to start?
-                    </Heading>
-                    <Text tone='secondary'>
+                    </h1>
+                    <span className='text-muted'>
                         You can spin up a temporary demo environment instantly, or connect your own machine for a full setup.
-                    </Text>
-                </Stack>
+                    </span>
+                </div>
 
-                <Box className='onboarding-choice-options'>
+                <div className='onboarding-choice-options'>
                     <SelectableCard
                         title='Try Demo'
                         description='Spin up a ready-made environment in under a minute. 30-minute session. Some advanced options are limited.'
@@ -42,8 +42,8 @@ const OnboardingChoicePage = () => {
                         iconTone='neutral'
                         onSelect={() => navigate('/onboarding/cluster/setup')}
                     />
-                </Box>
-            </Stack>
+                </div>
+            </div>
         </OnboardingLayout>
     );
 };

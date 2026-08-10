@@ -1,5 +1,5 @@
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
-import { Modal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
+import { Modal, StatusDot } from '@voltstack/bravais';
 
 export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
 
@@ -15,19 +15,19 @@ const ClusterInstallCommandModal = ({ clusterId, enrollmentToken }: ClusterInsta
             title='Install command'
             description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
         >
-            <Stack gap='1' p='1'>
+            <div className='flex flex-col gap-4 p-4'>
                 <ClusterInstallCommandPicker
                     clusterId={clusterId}
                     enrollmentToken={enrollmentToken}
                 />
 
-                <Row gap='05'>
+                <div className='flex flex-row items-center gap-2'>
                     <StatusDot tone='warning' pulse glow />
-                    <Text as='p' size='md' tone='secondary'>
+                    <p className='text-sm text-muted'>
                         Waiting for connection
-                    </Text>
-                </Row>
-            </Stack>
+                    </p>
+                </div>
+            </div>
         </Modal>
     );
 };

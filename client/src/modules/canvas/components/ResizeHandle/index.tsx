@@ -1,5 +1,3 @@
-import '@/shared/ui/assets/stylesheets/resize-handle.css';
-
 import type { ResizeDirectionValue } from '../../hooks/use-resizable';
 
 import './ResizeHandle.css';

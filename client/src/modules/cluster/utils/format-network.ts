@@ -1,4 +1,4 @@
-import { formatSize } from '@voltstack/bravais';
+import { formatSize } from '@/shared/utils/format';
 
 const BYTES_PER_KB = 1024;
 

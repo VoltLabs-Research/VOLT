@@ -10,7 +10,7 @@ import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
 import { RoutePermissionMode } from '@/app/routes/types';
 import { Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import type { ComponentType, ElementType, LazyExoticComponent, ReactNode } from 'react';
+import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import type { RouteConfig, RouteLoader } from '@/app/routes/types';
 
 interface RoutePermissionGuardProps {
@@ -24,7 +24,7 @@ const dashboardProtectedRoutes = protectedRoutes.filter((route) => route.path.st
 const nonDashboardProtectedRoutes = protectedRoutes.filter((route) => !route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
 const LazyDashboardLayout = lazy(() => import('@/modules/dashboard/components/DashboardLayout'));
 
-const resolveRouteComponent = (route: RouteConfig): ElementType => {
+const resolveRouteComponent = (route: RouteConfig): ComponentType => {
     if (route.component) {
         return route.component;
     }

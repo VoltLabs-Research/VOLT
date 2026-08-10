@@ -1,10 +1,10 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal, openModal, Stack, Box, Callout, Heading } from '@voltstack/bravais';
+import { Modal, closeModal, openModal, Callout } from '@voltstack/bravais';
 import { runAction } from '@/shared/ui/actions/run-action';
 import type { TeamRole } from '@volt/contracts/modules/team/domain';
 import type { RbacEntry } from '@volt/contracts/modules/system/domain';
-import { IoWarningOutline } from 'react-icons/io5';
+import { TriangleAlert } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
 
@@ -102,14 +102,14 @@ export const RoleEditorModal = ({
         <ModalFooterActions
             secondary={{
                 label: isSystemRole ? 'Close' : 'Cancel',
-                onClick: () => closeModal(MODAL_ID),
-                disabled: isSaving
+                onPress: () => closeModal(MODAL_ID),
+                isDisabled: isSaving
             }}
             primary={isSystemRole ? undefined : {
                 label: isEditing ? 'Save Changes' : 'Create Role',
-                onClick: handleSubmit,
-                disabled: isSaving || !name.trim(),
-                isLoading: isSaving
+                onPress: handleSubmit,
+                isDisabled: isSaving || !name.trim(),
+                isPending: isSaving
             }}
         />
     );
@@ -122,11 +122,11 @@ export const RoleEditorModal = ({
             className='role-editor-modal'
             footer={footer}
         >
-            <Stack gap='2' p='2'>
+            <div className='flex flex-col gap-8 p-8'>
                 {isSystemRole && (
                     <Callout
                         tone='warning'
-                        icon={<IoWarningOutline size={18} />}
+                        icon={<TriangleAlert size={18} />}
                         message='System roles cannot be modified. You can only view their permissions.'
                     />
                 )}
@@ -142,15 +142,15 @@ export const RoleEditorModal = ({
 
                 <fieldset className='role-editor-fieldset flex flex-col gap-4'>
                     <legend className='role-editor-legend'>
-                        <Heading level={3} tone='secondary' weight='bold'>Permissions</Heading>
+                        <h3 className='text-base font-semibold text-muted'>Permissions</h3>
                     </legend>
 
                     <div className='role-editor-permissions-grid'>
                         <div className='role-editor-grid-header'>Resource</div>
                         {actions.map((action) => (
-                            <Box key={action.key} textAlign='center' className='role-editor-grid-header'>
+                            <div className='text-center role-editor-grid-header' key={action.key}>
                                 {action.label}
-                            </Box>
+                            </div>
                         ))}
 
                         {resources.map((resource) => {
@@ -161,7 +161,7 @@ export const RoleEditorModal = ({
                                 <Fragment key={resource.key}>
                                     <button
                                         type='button'
-                                        className='role-editor-grid-resource text-md font-medium text-primary'
+                                        className='role-editor-grid-resource text-sm font-medium text-foreground'
                                         onClick={() => handleToggleResourceAll(resource.key)}
                                         disabled={isSystemRole}
                                         aria-pressed={areAllPermissionsChecked}
@@ -186,7 +186,7 @@ export const RoleEditorModal = ({
                         })}
                     </div>
                 </fieldset>
-            </Stack>
+            </div>
         </Modal>
     );
 };

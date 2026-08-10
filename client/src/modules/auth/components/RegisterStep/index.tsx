@@ -21,7 +21,7 @@ const RegisterStep = ({
     onSubmit,
     onBack
 }: RegisterStepProps) => (
-    <Stack gap='1'>
+    <div className='flex flex-col gap-4'>
         <UserBadge
             label='Signing up as'
             email={email}
@@ -90,7 +90,7 @@ const RegisterStep = ({
                 Back
             </Button>
         </Stack>
-    </Stack>
+    </div>
 );
 
 export default RegisterStep;

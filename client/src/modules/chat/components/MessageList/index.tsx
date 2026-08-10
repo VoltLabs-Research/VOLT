@@ -1,5 +1,6 @@
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
-import { EmptyState, Skeleton, Stack, Box, Text } from '@voltstack/bravais';
+import { EmptyState, Skeleton } from '@voltstack/bravais';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import '../MessageListSkeleton/MessageListSkeleton.css';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
@@ -18,9 +19,9 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
 
     if (hasMore && isLoading) {
         loadMoreIndicator = (
-            <Box display='flex' p='1' className='items-center justify-center'>
-                <Text as='p' size='md' tone='muted'>Loading more...</Text>
-            </Box>
+            <div className='flex p-4 items-center justify-center'>
+                <p className='text-sm text-muted'>Loading more...</p>
+            </div>
         );
     }
 
@@ -35,14 +36,14 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
             className='message-list'
             preserveScrollOnPrepend
             renderLoading={(
-                <Stack gap='1'>
+                <div className='flex flex-col gap-4'>
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <Stack key={i} gap='025' className={`message-skeleton ${i % 3 === 0 ? 'sent' : 'received'}`}>
+                        <div className={cn('flex flex-col gap-1', `message-skeleton ${i % 3 === 0 ? 'sent' : 'received'}`)} key={i}>
                             <Skeleton variant='rounded' width='80%' height='1rem' />
                             <Skeleton variant='rounded' width='60%' height='1rem' />
-                        </Stack>
+                        </div>
                     ))}
-                </Stack>
+                </div>
             )}
             renderEmpty={<EmptyState title='No messages yet' description='Start the conversation!' />}
             loadMoreIndicator={loadMoreIndicator}

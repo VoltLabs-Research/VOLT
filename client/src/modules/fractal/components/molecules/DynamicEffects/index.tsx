@@ -47,6 +47,14 @@ const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsPr
         chromaticAberration.offset[0],
         chromaticAberration.offset[1]
     ), [chromaticAberration.offset[0], chromaticAberration.offset[1]]);
+    // @react-three/postprocessing 3.0.5 types ChromaticAberration's props as
+    // Omit<Partial<CtorOptions | undefined>, 'offset'>, which collapses to {} and hides every
+    // constructor option. They are still forwarded to the effect at runtime, so pass them by spread.
+    const caEffectOptions = {
+        blendFunction: chromaticAberration.blendFunction,
+        radialModulation: false,
+        modulationOffset: 0
+    };
 
     return (
         <>
@@ -84,10 +92,8 @@ const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsPr
                     {chromaticAberration.enabled && (
                         <ChromaticAberration
                             key={`chromatic-${chromaticAberration.offset.join(',')}`}
-                            blendFunction={chromaticAberration.blendFunction}
+                            {...caEffectOptions}
                             offset={caOffsetVec}
-                            radialModulation={false}
-                            modulationOffset={0}
                         />
                     )}
                     {darkTheme && vignette.enabled && (

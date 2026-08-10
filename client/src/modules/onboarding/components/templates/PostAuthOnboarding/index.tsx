@@ -14,7 +14,7 @@ import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';
+import { Button, Loader } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -98,22 +98,22 @@ const PostAuthOnboarding = () => {
             isSigningOut={isSigningOut}
         >
             {isLoading ? (
-                <Stack align='center' justify='center' gap='1' className='post-auth-onboarding-loading'>
+                <div className='flex flex-col items-center justify-center gap-4 post-auth-onboarding-loading'>
                     <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
-                </Stack>
+                </div>
             ) : (
-                <Stack gap='2' className='post-auth-onboarding-shell'>
+                <div className='flex flex-col gap-8 post-auth-onboarding-shell'>
                     <form className='post-auth-onboarding-content flex flex-col gap-8' onSubmit={handleSubmit}>
-                        <Stack gap='1' textAlign='center'>
-                            <Heading level={1} size='3xl' weight='bold'>
+                        <div className='flex flex-col gap-4 text-center'>
+                            <h1 className='text-3xl font-semibold text-foreground'>
                                 Let&apos;s create a team for you!
-                            </Heading>
-                            <Text as='p' tone='secondary' className='post-auth-onboarding-description'>
+                            </h1>
+                            <p className='text-muted post-auth-onboarding-description'>
                                 Invite other users to collaborate or join existing teams. You&apos;ll have the option to create new teams later.
-                            </Text>
-                        </Stack>
+                            </p>
+                        </div>
 
-                        <Stack gap='1'>
+                        <div className='flex flex-col gap-4'>
                             <FormFieldRHF
                                 label='Team name'
                                 placeholder='e.g., Research Lab'
@@ -126,7 +126,7 @@ const PostAuthOnboarding = () => {
                                     }
                                 }}
                             />
-                        </Stack>
+                        </div>
 
                         <Button
                             variant='solid'
@@ -140,7 +140,7 @@ const PostAuthOnboarding = () => {
                             Create Team & Continue
                         </Button>
                     </form>
-                </Stack>
+                </div>
             )}
         </OnboardingLayout>
     );

@@ -8,7 +8,7 @@ import {
     SESSION_ACTION_LABELS
 } from '@/modules/session/utils/session-display';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
-import { Stack, EmptyState, Button, Modal, Skeleton, Text } from '@voltstack/bravais';
+import { EmptyState, Button, Modal, Skeleton } from '@voltstack/bravais';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
@@ -158,22 +158,22 @@ const SessionSettings = () => {
 
     return (
         <SettingsPage title='Session Management'>
-            <Stack border='soft' gap='1' p='1-5' radius='md'>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
                 <SettingsSectionHeader
                     title='Active Sessions'
                     description='Devices currently signed in to your account'
                     action={activeSessionsAction}
                 />
                 {renderList(sessionsContent, !loadingSessions && sessions.length === 0)}
-            </Stack>
+            </div>
 
-            <Stack border='soft' gap='1' p='1-5' radius='md'>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
                 <SettingsSectionHeader
                     title='Login Activity'
                     description='Recent login attempts on your account'
                 />
                 {renderList(activityContent, !loadingActivity && activities.length === 0)}
-            </Stack>
+            </div>
 
             <Modal
                 id={REVOKE_ALL_MODAL_ID}
@@ -200,10 +200,10 @@ const SessionSettings = () => {
                     </>
                 }
             >
-                <Text as='p' size='md' tone='muted' className='p-6'>
+                <p className='text-sm text-muted p-6'>
                     Are you sure you want to revoke {otherSessionsCount} other{' '}
                     {otherSessionsCount === 1 ? 'session' : 'sessions'}? This action cannot be undone.
-                </Text>
+                </p>
             </Modal>
         </SettingsPage>
     );

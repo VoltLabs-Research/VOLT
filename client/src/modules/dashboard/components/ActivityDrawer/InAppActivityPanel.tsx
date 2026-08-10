@@ -1,4 +1,5 @@
-import { Box, Stack, Text, EmptyState, formatDuration } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
+import { formatDuration } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import { Activity as ActivityIcon } from 'lucide-react';
 import {
@@ -130,8 +131,8 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
     }
 
     return (
-        <Stack gap='05' flex='1' minH='0' className='dashboard-activity-panel'>
-            <Box className='dashboard-activity-chart-surface'>
+        <div className='flex flex-col gap-2 flex-1 min-h-0 dashboard-activity-panel'>
+            <div className='dashboard-activity-chart-surface'>
                 <ResponsiveContainer width='100%' height={250}>
                     <RadarChart
                         data={inAppActivity.radarData}
@@ -170,23 +171,23 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
                         />
                     </RadarChart>
                 </ResponsiveContainer>
-            </Box>
+            </div>
 
-            <Box className='dashboard-activity-summary'>
-                <Box className='dashboard-activity-summary-item'>
-                    <Text size='lg' tone='primary' weight='bold'>{formatDuration(inAppActivity.totalMinutes)}</Text>
-                    <Text size='sm' tone='muted'>Total time</Text>
-                </Box>
-                <Box className='dashboard-activity-summary-item'>
-                    <Text size='lg' tone='primary' weight='bold'>{inAppActivity.totalActions}</Text>
-                    <Text size='sm' tone='muted'>Actions</Text>
-                </Box>
-                <Box className='dashboard-activity-summary-item dashboard-activity-summary-item-end'>
-                    <Text size='md' tone='primary' weight='medium'>{inAppActivity.peakDay}</Text>
-                    <Text size='sm' tone='muted'>Peak day</Text>
-                </Box>
-            </Box>
-        </Stack>
+            <div className='dashboard-activity-summary'>
+                <div className='dashboard-activity-summary-item'>
+                    <span className='text-base font-semibold text-foreground'>{formatDuration(inAppActivity.totalMinutes)}</span>
+                    <span className='text-xs text-muted'>Total time</span>
+                </div>
+                <div className='dashboard-activity-summary-item'>
+                    <span className='text-base font-semibold text-foreground'>{inAppActivity.totalActions}</span>
+                    <span className='text-xs text-muted'>Actions</span>
+                </div>
+                <div className='dashboard-activity-summary-item dashboard-activity-summary-item-end'>
+                    <span className='text-sm font-medium text-foreground'>{inAppActivity.peakDay}</span>
+                    <span className='text-xs text-muted'>Peak day</span>
+                </div>
+            </div>
+        </div>
     );
 };
 

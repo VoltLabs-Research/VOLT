@@ -1,11 +1,23 @@
-import { IconButton, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@heroui/react';
 import { Theme, useTheme } from '@/shared/ui/hooks/use-theme';
 import { Moon, Sun } from 'lucide-react';
+import type { ButtonVariants } from '@heroui/react';
 
 interface ThemeToggleButtonProps {
     className?: string;
     size?: 'sm' | 'md' | 'lg';
     variant?: 'default' | 'ghost';
+};
+
+/**
+ * bravais's `IconButton` had two variants that painted identically —
+ * `--ghost` only restated the transparent background and the hover fill the base
+ * rule already declared — so both resolve to HeroUI's `ghost`. The prop stays in
+ * the public shape because callers pass it; dropping it would be a rename.
+ */
+const BUTTON_VARIANTS: Record<'default' | 'ghost', NonNullable<ButtonVariants['variant']>> = {
+    default: 'ghost',
+    ghost: 'ghost'
 };
 
 const ThemeToggleButton = ({
@@ -19,17 +31,18 @@ const ThemeToggleButton = ({
     const label = isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode';
 
     return (
-        <Tooltip content={label} placement='bottom'>
-            <IconButton
+        <Tooltip>
+            <Button
                 className={className}
                 size={size}
-                variant={variant}
+                variant={BUTTON_VARIANTS[variant]}
+                isIconOnly
                 aria-label={label}
-                title={label}
-                onClick={() => setTheme(nextTheme)}
+                onPress={() => setTheme(nextTheme)}
             >
                 {isDarkTheme ? <Sun size={16} /> : <Moon size={16} />}
-            </IconButton>
+            </Button>
+            <Tooltip.Content placement='bottom'>{label}</Tooltip.Content>
         </Tooltip>
     );
 };

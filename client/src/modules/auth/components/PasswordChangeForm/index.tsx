@@ -1,6 +1,6 @@
 import './PasswordChangeForm.css';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Callout, Box, Button } from '@voltstack/bravais';
+import { Callout, Button } from '@voltstack/bravais';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -75,7 +75,7 @@ const PasswordChangeForm = ({
     };
 
     return (
-        <form className='password-form flex flex-col gap-12 border border-soft rounded-md p-6' onSubmit={onFormSubmit} noValidate>
+        <form className='password-form flex flex-col gap-12 border border-border rounded-xl p-6' onSubmit={onFormSubmit} noValidate>
             {passwordInfo?.hasPassword && (
                 <FormFieldRHF
                     name='currentPassword'
@@ -138,7 +138,7 @@ const PasswordChangeForm = ({
                 />
             )}
 
-            <Box display='flex' gap='075' wrap>
+            <div className='flex flex-wrap gap-3'>
                 <Button
                     type='submit'
                     intent='brand'
@@ -154,7 +154,7 @@ const PasswordChangeForm = ({
                 >
                     Cancel
                 </Button>
-            </Box>
+            </div>
         </form>
     );
 };

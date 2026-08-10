@@ -1,7 +1,7 @@
-import { IconButton, Select, VisuallyHidden, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { IconButton, Select, Tooltip } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useId } from 'react';
-import { IoArrowUpOutline, IoStopOutline } from 'react-icons/io5';
+import { ArrowUp, Square } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import './AIComposer.css';
 
@@ -62,22 +62,22 @@ const AIComposer = ({
     }
 
     return (
-        <Stack gap='05' className='ai-composer'>
+        <div className='flex flex-col gap-2 ai-composer'>
             {error && (
-                <Text as='p' size='sm' className='text-danger' role='alert' aria-live='assertive'>
+                <p className='text-xs text-danger' role='alert' aria-live='assertive'>
                     {error}
-                </Text>
+                </p>
             )}
 
             <label id={inputLabelId} htmlFor={inputId} className='sr-only'>
                 Message to Volt AI
             </label>
 
-            <VisuallyHidden id={statusId} aria-live='polite' aria-atomic='true'>
+            <span className='sr-only' id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
-            </VisuallyHidden>
+            </span>
 
-            <Row gap='05' className='ai-composer-input-wrapper'>
+            <div className='flex flex-row items-center gap-2 ai-composer-input-wrapper'>
                 <input
                     id={inputId}
                     value={value}
@@ -111,7 +111,7 @@ const AIComposer = ({
                             aria-label='Stop generating'
                             title='Stop generating'
                         >
-                            <IoStopOutline size={18} />
+                            <Square size={18} />
                         </IconButton>
                     </Tooltip>
                 ) : (
@@ -123,12 +123,12 @@ const AIComposer = ({
                             aria-label='Send message'
                             title='Send message'
                         >
-                            <IoArrowUpOutline size={18} />
+                            <ArrowUp size={18} />
                         </IconButton>
                     </Tooltip>
                 )}
-            </Row>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

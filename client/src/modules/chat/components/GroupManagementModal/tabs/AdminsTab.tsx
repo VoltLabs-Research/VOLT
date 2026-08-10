@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { MemberListItem } from '../../MemberListItem';
-import { Button, Stack, Tag, Text } from '@voltstack/bravais';
+import { Button, Tag } from '@voltstack/bravais';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 
 interface AdminsTabProps {
@@ -38,14 +38,14 @@ const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) 
     };
 
     return (
-        <Stack gap='1'>
-            <Text as='p' size='lg' weight='bold'>
+        <div className='flex flex-col gap-4'>
+            <p className='text-base font-semibold'>
                 Administrators
-            </Text>
-            <Stack gap='025'>
+            </p>
+            <div className='flex flex-col gap-1'>
                 {chat.participants.map(renderMember)}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

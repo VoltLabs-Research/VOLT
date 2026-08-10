@@ -1,7 +1,7 @@
 import { COMMON_REACTIONS } from '@/modules/chat/utils/reactions';
-import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
+import { EllipsisVertical, Smile, SquarePen, Trash2 } from 'lucide-react';
 import EmojiPicker from '@/shared/ui/components/EmojiPicker';
-import { Box, IconButton, Popover, PopoverMenuItem, PopoverMenu } from '@voltstack/bravais';
+import { IconButton, Popover, PopoverMenuItem, PopoverMenu } from '@voltstack/bravais';
 import './MessageControls.css';
 
 interface MessageControlsProps {
@@ -26,7 +26,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
     const renderOptionsMenu = (close: () => void) => (
         <PopoverMenu>
             <PopoverMenuItem
-                icon={<IoCreateOutline />}
+                icon={<SquarePen />}
                 label='Edit'
                 onClick={() => {
                     onEdit();
@@ -34,7 +34,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
                 }}
             />
             <PopoverMenuItem
-                icon={<IoTrashOutline />}
+                icon={<Trash2 />}
                 label='Delete'
                 variant='danger'
                 onClick={() => {
@@ -46,12 +46,12 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
     );
 
     return (
-        <Box display='flex' gap='025' className='message-controls'>
+        <div className='flex gap-1 message-controls'>
             <Popover
                 id={`reactions-${messageId}`}
                 trigger={
                     <IconButton size='sm' variant='ghost' title='Add reaction' aria-label='Add reaction'>
-                        <IoHappyOutline size={16} />
+                        <Smile size={16} />
                     </IconButton>
                 }
             >
@@ -63,14 +63,14 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
                     id={`options-${messageId}`}
                     trigger={
                         <IconButton size='sm' variant='ghost' title='Open message actions' aria-label='Open message actions'>
-                            <IoEllipsisVerticalOutline size={16} />
+                            <EllipsisVertical size={16} />
                         </IconButton>
                     }
                 >
                     {renderOptionsMenu}
                 </Popover>
             )}
-        </Box>
+        </div>
     );
 };
 

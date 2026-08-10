@@ -1,4 +1,4 @@
-import { PopoverMenuItem } from '@voltstack/bravais';
+import ContextMenuItem from './ContextMenuItem';
 import FloatingRootContext, {
     FloatingOwnerIdsContext,
     appendFloatingOwnerIds,
@@ -34,7 +34,36 @@ const FOCUSABLE_SELECTOR = [
     'textarea:not([disabled])',
     '[tabindex]:not([tabindex="-1"])'
 ].join(', ');
-const NESTED_FLOATING_SELECTOR = '.select-dropdown, .form-field-autocomplete-menu';
+
+/**
+ * A submenu must not close when focus moves into a listbox or autocomplete menu
+ * that one of its own fields portalled elsewhere in the DOM. `.select-dropdown`
+ * and `.form-field-autocomplete-menu` were bravais's Select and FormField
+ * panels; HeroUI's overlays put `.popover` on their root, so all three are
+ * matched while both vocabularies are still on the page. `hasFloatingOwnerId`
+ * below is what keeps the match scoped to *this* submenu's own overlays.
+ */
+const NESTED_FLOATING_SELECTOR = '.popover, .select-dropdown, .form-field-autocomplete-menu';
+
+/**
+ * The panel `ContextMenuPopover` renders. `SubmenuItemWrapper` portals into it
+ * rather than into the page so a submenu is clipped and dismissed with its
+ * parent menu; this used to be found with `closest('.popover')`, bravais's
+ * Popover root class.
+ */
+const CONTEXT_MENU_PANEL_SELECTOR = "[data-context-menu-panel='true']";
+
+/**
+ * `context-menu-submenu-panel` carries no rules of its own any more — every
+ * declaration it had is in the utility list beside it. It stays because it is
+ * the scoping hook that all 25 rules of
+ * modules/canvas/components/CanvasRenderSections/CanvasRenderSections.css hang
+ * off (`.context-menu-submenu-panel .canvas-form-row`, `… .canvas-form-control
+ * .slider`, …), deliberately, so those compact overrides never leak to other
+ * Selects and Sliders. Removing the class silently unstyles every render and
+ * camera submenu in the viewport.
+ */
+const SUBMENU_PANEL_CLASS_NAMES = 'context-menu-submenu-panel z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-border bg-overlay p-1 shadow-lg';
 
 const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperProps) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -162,14 +191,14 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
         : undefined;
 
     const suffix = <ChevronRight size={14} aria-hidden='true' />;
-    const portalRoot = wrapperRef.current?.closest<HTMLElement>('.popover') ?? floatingRoot;
+    const portalRoot = wrapperRef.current?.closest<HTMLElement>(CONTEXT_MENU_PANEL_SELECTOR) ?? floatingRoot;
 
     return (
         <div
             ref={wrapperRef}
-            className='context-menu-submenu-wrapper'
+            className='relative'
         >
-            <PopoverMenuItem
+            <ContextMenuItem
                 ref={composeRefs(triggerRef, refs.setReference)}
                 icon={menuIcon}
                 size={size}
@@ -183,14 +212,14 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
                 rightAdornment={suffix}
             >
                 {option.label}
-            </PopoverMenuItem>
+            </ContextMenuItem>
 
             {isOpen && portalRoot && (
                 <FloatingPortal root={portalRoot}>
                     <div
                         ref={composeRefs(submenuPanelRef, refs.setFloating)}
                         id={submenuId}
-                        className='context-menu-submenu-panel'
+                        className={SUBMENU_PANEL_CLASS_NAMES}
                         data-floating-submenu-panel='true'
                         data-side={placement.startsWith('left') ? 'left' : 'right'}
                         role='dialog'

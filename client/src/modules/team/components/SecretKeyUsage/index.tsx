@@ -1,4 +1,4 @@
-import { Box, Button, Heading, Row, Stack, StatCard, Text } from '@voltstack/bravais';
+import { Button, StatCard } from '@voltstack/bravais';
 import EndpointsBarChart from '@/modules/team/components/secret-key/shared/EndpointsBarChart';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
@@ -64,10 +64,10 @@ export default function SecretKeyUsage() {
         return (
             <SecretKeyAsyncState
                 header={(
-                    <Row gap='1'>
+                    <div className='flex flex-row items-center gap-4'>
                         {backButton}
-                        <Heading level={3} size='2xl' weight='bold'>Key Usage</Heading>
-                    </Row>
+                        <h3 className='text-2xl font-semibold text-foreground'>Key Usage</h3>
+                    </div>
                 )}
                 isLoading={isLoading}
                 error={error}
@@ -107,29 +107,29 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <Box height='vh-max' className='secret-key-page text-primary'>
-            <Stack gap='2' width='max' className='secret-key-page-main'>
-                <Stack gap='05'>
-                    <Row gap='1'>
+        <div className='h-dvh secret-key-page text-foreground'>
+            <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+                <div className='flex flex-col gap-2'>
+                    <div className='flex flex-row items-center gap-4'>
                         {backButton}
-                        <Heading level={3} size='2xl' weight='bold'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</Heading>
-                    </Row>
-                    <Text as='p' tone='muted' size='md' style={{ marginLeft: '2rem' }}>
+                        <h3 className='text-2xl font-semibold text-foreground'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</h3>
+                    </div>
+                    <p className='text-sm text-muted' style={{ marginLeft: '2rem' }}>
                         {usage.stats.totalRequests.toLocaleString()} total requests
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
 
-                <Box gap='1' className='secret-key-page-cards'>
+                <div className='gap-4 secret-key-page-cards'>
                     {cards.map((card) => (
                         <StatCard
                             key={card.title}
                             icon={<card.icon size={16} />}
                             label={card.title}
                             value={card.value}
-                            className={`glass-bg${card.smallText ? ' secret-key-page-card--small' : ''}`}
+                            className={`bg-surface border border-border${card.smallText ? ' secret-key-page-card--small' : ''}`}
                         />
                     ))}
-                </Box>
+                </div>
 
                 <div className='secret-key-page-charts'>
                     <ChartContainer
@@ -204,7 +204,7 @@ export default function SecretKeyUsage() {
                         <RecentRequestsTable requests={usage.recentRequests.slice(0, 20)} />
                     </ChartContainer>
                 </div>
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 }

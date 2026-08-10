@@ -3,11 +3,11 @@ import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { Row, Tag } from '@voltstack/bravais';
+import { Tag } from '@voltstack/bravais';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import { formatNumber } from '@voltstack/bravais';
+import { formatNumber } from '@/shared/utils/format';
 
 const LENGTH_UNIT = 'Å';
 
@@ -19,7 +19,7 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
     const pbc = row.geometry.periodic_boundary_conditions;
 
     return (
-        <Row gap='05' wrap>
+        <div className='flex flex-row items-center flex-wrap gap-2'>
             {([['X', pbc.x], ['Y', pbc.y], ['Z', pbc.z]] as const).map(([axis, enabled]) => (
                 <Tag
                     key={axis}
@@ -30,7 +30,7 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
                     {axis}: {enabled ? 'Periodic' : 'Open'}
                 </Tag>
             ))}
-        </Row>
+        </div>
     );
 };
 

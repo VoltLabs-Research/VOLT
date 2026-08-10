@@ -6,9 +6,9 @@ import {
     PERFORMANCE_PRESET_OPTIONS,
     POWER_PREFERENCE_OPTIONS
 } from '@/shared/rendering/performance';
-import { Select, Box } from '@voltstack/bravais';
+import { Select } from '@voltstack/bravais';
 import { useMemo } from 'react';
-import { MdSpeed } from 'react-icons/md';
+import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
@@ -22,7 +22,7 @@ const usePerformanceGroup = (): RenderGroup => {
     return useMemo(() => ({
         id: 'performance',
         title: 'Performance',
-        icon: <MdSpeed size={12} />,
+        icon: <Gauge size={12} />,
         subsections: [
             {
                 label: 'Performance Preset',
@@ -32,7 +32,7 @@ const usePerformanceGroup = (): RenderGroup => {
                     enabled: true,
                     rows: [],
                     extras: (
-                        <Box className='canvas-render-grid'>
+                        <div className='canvas-render-grid'>
                             <Select
                                 value={performanceSettings.preset}
                                 onChange={(value: string) => {
@@ -48,7 +48,7 @@ const usePerformanceGroup = (): RenderGroup => {
                                     rendererSettings.setCreate({ powerPreference: value });
                                 }
                             }, 'GPU Power', POWER_PREFERENCE_OPTIONS)}
-                        </Box>
+                        </div>
                     )
                 }]
             }

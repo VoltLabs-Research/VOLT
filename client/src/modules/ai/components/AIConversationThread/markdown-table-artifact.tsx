@@ -1,7 +1,7 @@
 import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
 import { parseTableFromChildren } from '@/modules/ai/utils/message-content';
 import { Button } from '@voltstack/bravais';
-import { IoExpandOutline } from 'react-icons/io5';
+import { Expand } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { ComponentPropsWithoutRef } from 'react';
 
@@ -53,7 +53,7 @@ export const createTableArtifactComponents = (
                             block
                             align='start'
                             className='ai-open-spreadsheet-btn'
-                            leftIcon={<IoExpandOutline size={13} />}
+                            leftIcon={<Expand size={13} />}
                             onClick={handleOpen}
                         >
                             Open spreadsheet

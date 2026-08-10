@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import Brand from '@/modules/dashboard/components/Brand';
 import SidebarFooterNavigation from '@/modules/dashboard/components/SidebarFooterNavigation';
 import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation';
@@ -5,11 +6,10 @@ import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import TeamSelector from '@/modules/team/components/TeamSelector';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { Box, IconButton, Popover, openModal, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { IconButton, Popover, openModal, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import './DashboardSidebar.css';
 import { useState } from 'react';
-import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';
-import { PiUserPlus } from 'react-icons/pi';
+import { Plus, UserPlus, X } from 'lucide-react';
 interface DashboardSidebarProps {
     sidebarOpen: boolean;
     setSidebarOpen: (status: boolean) => void;
@@ -24,20 +24,20 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
     const singleTenant = useSingleTenant();
 
     return (
-        <Box as='aside' position='fixed' height='vh-max' className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`}>
+        <aside className={cn('fixed h-dvh', `dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`)}>
             <IconButton
                 className='sidebar-close-btn absolute'
                 onClick={() => setSidebarOpen(false)}
                 title='Close sidebar'
                 aria-label='Close sidebar'
             >
-                <IoCloseOutline size={20} />
+                <X size={20} />
             </IconButton>
 
             <Brand collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
 
             {!singleTenant && (
-            <Box className='sidebar-workspace'>
+            <div className='sidebar-workspace'>
                 <TeamSelector className='sidebar-workspace-selector' />
                 <Popover
                     id='sidebar-workspace-actions'
@@ -54,14 +54,14 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                             title='Team actions'
                             aria-label='Team actions'
                         >
-                            <IoAddOutline size={18} />
+                            <Plus size={18} />
                         </IconButton>
                     }
                 >
                     {(close) => (
                         <PopoverMenu label='Team actions' onClose={close}>
                             <PopoverMenuItem
-                                icon={<IoAddOutline size={16} />}
+                                icon={<Plus size={16} />}
                                 label='Create team'
                                 onClick={() => {
                                     close();
@@ -69,7 +69,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                                 }}
                             />
                             <PopoverMenuItem
-                                icon={<PiUserPlus size={16} />}
+                                icon={<UserPlus size={16} />}
                                 label='Join existing team'
                                 onClick={() => {
                                     close();
@@ -79,7 +79,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                         </PopoverMenu>
                     )}
                 </Popover>
-            </Box>
+            </div>
             )}
 
             <SidebarNavigation
@@ -88,7 +88,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                 onExpandSidebar={onExpandSidebar}
             />
 
-            <Box className='sidebar-footer'>
+            <div className='sidebar-footer'>
                 <SidebarFooterNavigation
                     setSettingsExpanded={setSettingsExpanded}
                     settingsExpanded={settingsExpanded}
@@ -106,8 +106,8 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                     isSigningOut={isSigningOut}
                     collapsed={collapsed}
                 />
-            </Box>
-        </Box>
+            </div>
+        </aside>
     );
 };
 

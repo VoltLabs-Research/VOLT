@@ -177,7 +177,7 @@ const ScreenshotCapture = ({
             gl.setPixelRatio(pending.originalDpr);
             gl.setSize(pending.originalSize.width, pending.originalSize.height, false);
             setDpr(pending.originalDpr);
-            setSize(pending.originalSize.width, pending.originalSize.height, false);
+            setSize(pending.originalSize.width, pending.originalSize.height);
             pendingRef.current = null;
             useScreenshotStore.getState().setIsCapturing(false);
             invalidate();
@@ -205,7 +205,7 @@ const ScreenshotCapture = ({
         useScreenshotStore.getState().setIsCapturing(true);
 
         setDpr(1);
-        setSize(outputSize.width, outputSize.height, false);
+        setSize(outputSize.width, outputSize.height);
         if (camera instanceof PerspectiveCamera) {
             camera.aspect = outputSize.width / outputSize.height;
             camera.updateProjectionMatrix();

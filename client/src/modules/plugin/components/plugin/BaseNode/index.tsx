@@ -1,7 +1,8 @@
+import { cn } from '@heroui/react';
 import NodeDebugOutput from '@/modules/plugin/components/plugin/BaseNode/NodeDebugOutput';
 import NodeExecutionLog from '@/modules/plugin/components/plugin/BaseNode/NodeExecutionLog';
 import useNodeDebugView from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
-import { Box, Button, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
+import { Button, Tag } from '@voltstack/bravais';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import {
     createReactFlowHandleStyle,
@@ -38,7 +39,7 @@ const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionBut
         size='sm'
         shape='pill'
         leftIcon={icon}
-        className={`border border-soft workflow-node-data-btn ${isActive ? 'workflow-node-data-btn--active' : ''}`}
+        className={`border border-border workflow-node-data-btn ${isActive ? 'workflow-node-data-btn--active' : ''}`}
         onClick={(event) => {
             event.stopPropagation();
             onClick();
@@ -84,7 +85,7 @@ const BaseNode = ({
     }, [connectorLayoutSignature, id, updateNodeInternals]);
 
     return (
-        <Box position='relative' className={`workflow-node-wrapper ${overheadBadge ? 'workflow-node-wrapper--has-badge' : ''}`}>
+        <div className={cn('relative', `workflow-node-wrapper ${overheadBadge ? 'workflow-node-wrapper--has-badge' : ''}`)}>
             {overheadBadge && (
                 <Tag
                     size='xs'
@@ -95,7 +96,7 @@ const BaseNode = ({
                 </Tag>
             )}
 
-            <Box position='relative' border='soft' radius='sm' className={`workflow-node glass-bg ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
+            <div className={cn('rounded-lg border border-border relative', `workflow-node bg-surface border border-border ${selected ? 'workflow-node--selected' : ''} ${debugClass}`)}>
                 {getNodeHandleDefinitions(nodeType).map((handleDefinition) => {
                     const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
@@ -111,22 +112,22 @@ const BaseNode = ({
                     );
                 })}
 
-                <Row gap='1'>
-                    <Stack gap='02' className='f-1'>
-                        <Heading level={3}>{nodeTitle ?? config.label}</Heading>
+                <div className='flex flex-row items-center gap-4'>
+                    <div className='flex flex-col gap-[0.2rem] f-1'>
+                        <h3 className='text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
                         {description && (
-                            <Text as='p' tone='muted' className='overflow-hidden workflow-node-description'>
+                            <p className='text-muted overflow-hidden workflow-node-description'>
                                 {description}
-                            </Text>
+                            </p>
                         )}
-                    </Stack>
-                </Row>
+                    </div>
+                </div>
 
                 {children}
-            </Box>
+            </div>
 
             {(hasInspectableOutput || hasLog) && (
-                <Box position='absolute' className='center-x items-center workflow-node-btn-group'>
+                <div className='absolute center-x items-center workflow-node-btn-group'>
                     {hasInspectableOutput && (
                         <DebugActionButton
                             icon={<Database size={11} />}
@@ -146,7 +147,7 @@ const BaseNode = ({
                             Execution Log
                         </DebugActionButton>
                     )}
-                </Box>
+                </div>
             )}
 
             {isInspectingOutput && debugState && (
@@ -160,7 +161,7 @@ const BaseNode = ({
             {isShowingLog && (
                 <NodeExecutionLog logSegments={logSegments} output={debugState?.output} />
             )}
-        </Box>
+        </div>
     );
 };
 

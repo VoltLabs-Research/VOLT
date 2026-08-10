@@ -1,4 +1,4 @@
-import { Button, Row, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import { Download } from 'lucide-react';
 
 interface CanvasToolbarActionsProps {
@@ -18,7 +18,7 @@ const CanvasToolbarActions = ({
     }
 
     return (
-        <Row gap='05'>
+        <div className='flex flex-row items-center gap-2'>
             <Tooltip content='Download analysis listings'>
                 <Button
                     variant='ghost'
@@ -33,7 +33,7 @@ const CanvasToolbarActions = ({
                     Download Analysis
                 </Button>
             </Tooltip>
-        </Row>
+        </div>
     );
 };
 

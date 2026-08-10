@@ -2,7 +2,6 @@ import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentF
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import FormSection from '@/shared/ui/components/FormSection';
-import { Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 import type { ArgumentReferenceCandidate } from './argument-reference-candidates';
@@ -31,9 +30,9 @@ const ArgumentReferenceConfiguration = ({
 
     if (!candidate) {
         return (
-            <Text as='p' size='sm' tone='muted'>
+            <p className='text-xs text-muted'>
                 Select a plugin reference argument to configure runtime execution.
-            </Text>
+            </p>
         );
     }
 
@@ -43,28 +42,28 @@ const ArgumentReferenceConfiguration = ({
 
     if (usesSelectionConfig) {
         return (
-            <Stack gap='05'>
-                <Text as='p' size='sm' tone='muted'>
+            <div className='flex flex-col gap-2'>
+                <p className='text-xs text-muted'>
                     Runtime execution will use the plugin configuration provided by the user through the selected argument.
-                </Text>
+                </p>
                 {executionFields}
-            </Stack>
+            </div>
         );
     }
 
     if (referencedPluginIds.length === 0) {
         return (
-            <Text as='p' size='sm' tone='muted'>
+            <p className='text-xs text-muted'>
                 This argument does not expose any candidate plugins for manual configuration.
-            </Text>
+            </p>
         );
     }
 
     return (
-        <Stack gap='05'>
-            <Text as='p' size='sm' tone='muted'>
+        <div className='flex flex-col gap-2'>
+            <p className='text-xs text-muted'>
                 Manual fallback configuration will be used for whichever referenced plugin the user selects.
-            </Text>
+            </p>
             {referencedPluginIds.map((pluginId) => (
                 <FormSection
                     key={pluginId}
@@ -82,7 +81,7 @@ const ArgumentReferenceConfiguration = ({
                 </FormSection>
             ))}
             {executionFields}
-        </Stack>
+        </div>
     );
 };
 

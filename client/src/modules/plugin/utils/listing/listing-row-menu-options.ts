@@ -1,4 +1,4 @@
-import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
+import { Eye, Table, Trash2 } from 'lucide-react';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
@@ -42,7 +42,7 @@ export const buildListingRowMenuOptions = ({
     if(allowRowNavigation && trajectoryId && analysisId && timestep !== undefined){
         options.push({
             label: 'Inspect Atoms',
-            icon: RiEyeLine,
+            icon: Eye,
             onClick: () => navigate(buildAtomsViewerPath({
                 trajectoryId,
                 analysisId,
@@ -53,7 +53,7 @@ export const buildListingRowMenuOptions = ({
         for(const subListingName of subListingNames){
             options.push({
                 label: `View ${formatSnakeCaseToTitle(subListingName)}`,
-                icon: RiTableLine,
+                icon: Table,
                 onClick: () => {
                     if(!exposureId) return;
                     if(onViewSubListing){
@@ -81,7 +81,7 @@ export const buildListingRowMenuOptions = ({
     if(analysisId && onDelete){
         options.push({
             label: 'Delete',
-            icon: RiDeleteBin6Line,
+            icon: Trash2,
             onClick: onDelete,
             destructive: true
         });

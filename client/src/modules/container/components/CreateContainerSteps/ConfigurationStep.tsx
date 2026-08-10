@@ -3,7 +3,7 @@ import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import OptionalConfigSection from './OptionalConfigSection';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { normalizePortMapping } from '../../utils/port-mapping';
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
@@ -106,21 +106,21 @@ const ConfigurationStep = ({
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
 
     return (
-        <Stack className='create-container-step' gap='2'>
-            <Stack gap='05'>
-                <Heading level={3} size='xl' weight='bold'>Configuration</Heading>
-                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</Text>
-            </Stack>
+        <div className='flex flex-col gap-8 create-container-step'>
+            <div className='flex flex-col gap-2'>
+                <h3 className='text-xl font-semibold text-foreground'>Configuration</h3>
+                <p className='text-base text-muted create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</p>
+            </div>
 
-            <Box className='create-container-config-grid gap-6 mt-6'>
-                <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
+            <div className='create-container-config-grid gap-6 mt-6'>
+                <div className='flex flex-col gap-4 p-6 rounded-xl create-container-config-card full-width'>
                     <SettingsSectionHeader
                         title='Deployment details'
                         description='These fields are required before you can continue to review.'
                         className='create-container-config-section-header mb-4 pb-075'
                     />
-                    <Box className='create-container-deployment-fields'>
-                        <Box className='create-container-deployment-name'>
+                    <div className='create-container-deployment-fields'>
+                        <div className='create-container-deployment-name'>
                             <FormFieldRHF
                                 label='Container Name'
                                 placeholder='my-container-app'
@@ -129,8 +129,8 @@ const ConfigurationStep = ({
                                 error={!config.name.trim() ? 'A container name is required before review.' : undefined}
                                 className='w-full'
                             />
-                        </Box>
-                        <Stack className='create-container-deployment-selects' gap='1'>
+                        </div>
+                        <div className='flex flex-col gap-4 create-container-deployment-selects'>
                             <FormFieldRHF
                                 fieldType='select'
                                 label='Team'
@@ -142,9 +142,9 @@ const ConfigurationStep = ({
                                 error={teamFieldError}
                                 disabled={teams.length === 0}
                             />
-                        </Stack>
-                    </Box>
-                </Stack>
+                        </div>
+                    </div>
+                </div>
 
                 <ClusterResourceSelectionPanel
                     teamClusters={teamClusters}
@@ -210,24 +210,24 @@ const ConfigurationStep = ({
                             onConfigChange('mountDockerSocket', event.target.value === 'true');
                         }}
                     />
-                    <Text as='p' size='md' tone='muted'>
+                    <p className='text-sm text-muted'>
                         {isDemoCluster
                             ? 'Disabled in demo mode — connect your own cluster to enable this option.'
                             : 'Mounts /var/run/docker.sock inside the container.'}
-                    </Text>
+                    </p>
                 </OptionalConfigSection>
-            </Box>
+            </div>
 
-            <Row className='create-container-step-actions mt-8' justify='between' gap='1'>
-                <Text as='p' size='md' tone='secondary'>
+            <div className='flex flex-row items-center justify-between gap-4 create-container-step-actions mt-8'>
+                <p className='text-sm text-muted'>
                     {canProceed ? 'Required fields complete. Continue when you are ready.' : remainingItemsLabel}
-                </Text>
-                <Row className='create-container-step-actions-buttons' gap='1'>
+                </p>
+                <div className='flex flex-row items-center gap-4 create-container-step-actions-buttons'>
                     <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
                     <Button variant='solid' intent='brand' onClick={onNext} disabled={!canProceed}>Continue to review</Button>
-                </Row>
-            </Row>
-        </Stack>
+                </div>
+            </div>
+        </div>
     );
 };
 

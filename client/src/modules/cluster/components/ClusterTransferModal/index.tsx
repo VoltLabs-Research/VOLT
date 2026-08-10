@@ -1,6 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useTeamClusterTransferJobsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { Heading, Modal, closeModal, Row, Stack, StatusBadge, Text, Select } from '@voltstack/bravais';
+import { Modal, closeModal, StatusBadge, Select } from '@voltstack/bravais';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-timestamp';
 import {
@@ -117,13 +117,13 @@ const ClusterTransferModal = ({
 
     return (
         <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative object store data and purges the source daemon listing tables after verify and switch complete.' footer={footer} onClose={handleClose}>
-            <Stack gap='1' p='1-5'>
-                <Stack gap='05'>
-                    <Heading level={3} size='md' weight='medium' tone='secondary'>Destination cluster</Heading>
-                    <Text as='p' size='md' tone='secondary'>
+            <div className='flex flex-col gap-4 p-6'>
+                <div className='flex flex-col gap-2'>
+                    <h3 className='text-sm font-medium text-muted'>Destination cluster</h3>
+                    <p className='text-sm text-muted'>
                         Volt creates one transfer job per authoritative placement currently owned by the source cluster.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
                 {destinationOptions.length > 0 ? (
                     <Select
                         options={destinationOptions}
@@ -138,54 +138,54 @@ const ClusterTransferModal = ({
                         disabled={isSubmitting}
                     />
                 ) : (
-                    <Text as='p' size='md' className='text-warning'>
+                    <p className='text-sm text-warning'>
                         No connected destination clusters can currently accept storage writes.
-                    </Text>
+                    </p>
                 )}
-                <Stack gap='05' p='1' radius='md' className='bg-page'>
-                    <Text as='p' size='sm' tone='muted'>
+                <div className='flex flex-col gap-2 p-4 rounded-xl bg-background'>
+                    <p className='text-xs text-muted'>
                         Source cluster must stay connected during copy and verify. After the destination becomes authoritative, Volt removes the source objects and purges the related daemon listing tables automatically.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
                 {queuedMessage && (
-                    <Text as='p' size='md' className='text-success'>{queuedMessage}</Text>
+                    <p className='text-sm text-success'>{queuedMessage}</p>
                 )}
                 {error && (
-                    <Text as='p' size='md' className='text-danger'>{error}</Text>
+                    <p className='text-sm text-danger'>{error}</p>
                 )}
-                <Stack gap='075'>
-                    <Heading level={3} size='md' weight='medium' tone='secondary'>Recent transfer jobs</Heading>
+                <div className='flex flex-col gap-3'>
+                    <h3 className='text-sm font-medium text-muted'>Recent transfer jobs</h3>
                     {transferJobsQuery.isLoading ? (
-                        <Text as='p' size='sm' tone='muted'>Loading transfer jobs...</Text>
+                        <p className='text-xs text-muted'>Loading transfer jobs...</p>
                     ) : transferJobs.length > 0 ? (
                         transferJobs.map((job) => (
-                            <Stack key={job._id} gap='05' p='1' radius='md' className='bg-page'>
-                                <Row gap='05' wrap>
+                            <div className='flex flex-col gap-2 p-4 rounded-xl bg-background' key={job._id}>
+                                <div className='flex flex-row items-center flex-wrap gap-2'>
                                     <StatusBadge variant={getClusterTransferJobStateBadgeVariant(job.state)} size='compact'>
                                         {getClusterTransferJobStateLabel(job.state)}
                                     </StatusBadge>
-                                    <Text as='p' size='sm' tone='muted'>
+                                    <p className='text-xs text-muted'>
                                         {getClusterTransferScopeLabel(job.scopeType)} {job.scopeId}
-                                    </Text>
-                                </Row>
-                                <Text as='p' size='sm' tone='secondary'>
+                                    </p>
+                                </div>
+                                <p className='text-xs text-muted'>
                                     {clusterNameById.get(job.sourceClusterId) ?? job.sourceClusterId}
                                     {' -> '}
                                     {clusterNameById.get(job.destinationClusterId) ?? job.destinationClusterId}
-                                </Text>
-                                <Text as='p' size='sm' tone='muted'>
+                                </p>
+                                <p className='text-xs text-muted'>
                                     Copied {job.stats.copiedObjects} objects | Verified {job.stats.verifiedObjects} objects | Updated {formatClusterTimestamp(job.updatedAt)}
-                                </Text>
+                                </p>
                                 {job.errorMessage && (
-                                    <Text as='p' size='sm' className='text-danger'>{job.errorMessage}</Text>
+                                    <p className='text-xs text-danger'>{job.errorMessage}</p>
                                 )}
-                            </Stack>
+                            </div>
                         ))
                     ) : (
-                        <Text as='p' size='sm' tone='muted'>No transfer jobs have been requested for this cluster yet.</Text>
+                        <p className='text-xs text-muted'>No transfer jobs have been requested for this cluster yet.</p>
                     )}
-                </Stack>
-            </Stack>
+                </div>
+            </div>
         </Modal>
     );
 };

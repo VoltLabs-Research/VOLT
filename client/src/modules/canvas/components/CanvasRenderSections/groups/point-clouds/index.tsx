@@ -1,11 +1,11 @@
 import { valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Select, Box, Stack, Text } from '@voltstack/bravais';
+import { Select } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 
 import { useMemo } from 'react';
-import { MdGrain } from 'react-icons/md';
+import { Grip } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { isEnumValue } from '../../utils';
@@ -62,7 +62,7 @@ const usePointCloudGroup = (): RenderGroup => {
     return useMemo(() => ({
         id: 'point-clouds',
         title: 'Point Clouds',
-        icon: <MdGrain size={12} />,
+        icon: <Grip size={12} />,
         subsections: [
             {
                 label: 'Sizing',
@@ -82,7 +82,7 @@ const usePointCloudGroup = (): RenderGroup => {
                         })
                     ],
                     extras: (
-                        <Text size='xs' tone='muted'>Applies scene-wide to detected point clouds.</Text>
+                        <span className='text-xs text-muted'>Applies scene-wide to detected point clouds.</span>
                     )
                 }]
             },
@@ -95,8 +95,8 @@ const usePointCloudGroup = (): RenderGroup => {
                     onToggle: (enabled: boolean) => setPointCloudSettings({ overridesEnabled: enabled }),
                     rows: [],
                     extras: (
-                        <Stack gap='05'>
-                            <Box className='canvas-render-grid'>
+                        <div className='flex flex-col gap-2'>
+                            <div className='canvas-render-grid'>
                                 <Select
                                     value={pointCloudSettings.detailLevel}
                                     onChange={(value: string) => {
@@ -119,7 +119,7 @@ const usePointCloudGroup = (): RenderGroup => {
                                     options={STYLE_OPTIONS}
                                     disabled={!pointCloudSettings.overridesEnabled}
                                 />
-                            </Box>
+                            </div>
                             <FormFieldRHF
                                 fieldKey='point-cloud-scene-opacity'
                                 fieldType='checkbox'
@@ -128,8 +128,8 @@ const usePointCloudGroup = (): RenderGroup => {
                                 onFieldChange={(_, next) => setPointCloudSettings({ useSceneOpacity: Boolean(next) })}
                                 disabled={!pointCloudSettings.overridesEnabled}
                             />
-                            <Text size='xs' tone='muted'>Detail and style overrides apply consistently to every point cloud in the scene.</Text>
-                        </Stack>
+                            <span className='text-xs text-muted'>Detail and style overrides apply consistently to every point cloud in the scene.</span>
+                        </div>
                     )
                 }]
             }

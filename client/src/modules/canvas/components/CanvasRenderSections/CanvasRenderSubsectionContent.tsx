@@ -1,4 +1,5 @@
-import { Slider, Box, Row, Stack, Text } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import { Slider } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import type { Subsection } from '@/modules/canvas/contracts/render-sections';
 
@@ -23,25 +24,25 @@ const CanvasRenderSubsectionContent = ({
     return (
         <>
             {isSubDisabled && subDisabledReason && (
-                <Text as='div' size='xs' className="canvas-render-disabled-reason">
+                <div className='text-xs canvas-render-disabled-reason'>
                     {subDisabledReason}
-                </Text>
+                </div>
             )}
-            <Box className={contentClassName || undefined}>
+            <div className={contentClassName || undefined}>
                 {subsection.sections.map((section) => {
                     const isSectionDisabled = isSubDisabled || section.disabled === true;
                     const sectionDisabledReason = !isSubDisabled ? section.disabledReason : undefined;
 
                     return (
-                        <Stack key={section.key} gap='05' className={`canvas-form-section${isSectionDisabled ? ' canvas-render-disabled' : ''}`}>
+                        <div className={cn('flex flex-col gap-2', `canvas-form-section${isSectionDisabled ? ' canvas-render-disabled' : ''}`)} key={section.key}>
                             {sectionDisabledReason && (
-                                <Text as='div' size='xs' className="canvas-render-disabled-reason">
+                                <div className='text-xs canvas-render-disabled-reason'>
                                     {sectionDisabledReason}
-                                </Text>
+                                </div>
                             )}
                             {section.onToggle && (
-                                <Row justify='between' className="canvas-form-section-header" role="group" aria-label={`${section.key} toggle`}>
-                                    <Text size='sm' weight='medium' className="canvas-form-section-title">Enabled</Text>
+                                <div className='flex flex-row items-center justify-between canvas-form-section-header' role="group" aria-label={`${section.key} toggle`}>
+                                    <span className='text-xs font-medium canvas-form-section-title'>Enabled</span>
                                     <FormFieldRHF
                                         fieldValue={section.enabled}
                                         fieldKey={`${section.key}-enabled`}
@@ -49,17 +50,17 @@ const CanvasRenderSubsectionContent = ({
                                         onFieldChange={(_, next) => section.onToggle?.(Boolean(next))}
                                         variant="inline"
                                     />
-                                </Row>
+                                </div>
                             )}
-                            <Stack gap='05' className={isSectionDisabled ? 'canvas-render-disabled-content' : undefined}>
+                            <div className={cn('flex flex-col gap-2', isSectionDisabled ? 'canvas-render-disabled-content' : undefined)}>
                                 {section.rows.map((row) => {
                                     const value = 'get' in row ? row.get() : row.value;
                                     const onChange = 'set' in row ? row.set : row.onChange;
 
                                     return (
-                                        <Row key={`${section.key}-${row.label}`} justify='between' gap='05' className={`canvas-form-row ${row.className ?? ''}`} role="group" aria-label={row.label}>
-                                            <Text size='sm' className="canvas-form-label">{row.label}</Text>
-                                            <Row gap='02' className="canvas-form-control">
+                                        <div className={cn('flex flex-row items-center justify-between gap-2', `canvas-form-row ${row.className ?? ''}`)} key={`${section.key}-${row.label}`} role="group" aria-label={row.label}>
+                                            <span className='text-xs canvas-form-label'>{row.label}</span>
+                                            <div className='flex flex-row items-center gap-[0.2rem] canvas-form-control'>
                                                 <Slider
                                                     min={row.min}
                                                     max={row.max}
@@ -67,19 +68,19 @@ const CanvasRenderSubsectionContent = ({
                                                     value={value}
                                                     onChange={onChange}
                                                 />
-                                                <Text size='sm' className="canvas-form-value">
+                                                <span className='text-xs canvas-form-value'>
                                                     {row.format?.(value) ?? value}
-                                                </Text>
-                                            </Row>
-                                        </Row>
+                                                </span>
+                                            </div>
+                                        </div>
                                     );
                                 })}
                                 {section.extras}
-                            </Stack>
-                        </Stack>
+                            </div>
+                        </div>
                     );
                 })}
-            </Box>
+            </div>
         </>
     );
 };

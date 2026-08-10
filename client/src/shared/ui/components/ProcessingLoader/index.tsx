@@ -1,6 +1,5 @@
-import { Loader, Row, Stack, Text } from '@voltstack/bravais';
-import './ProcessingLoader.css';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { Spinner, cn } from '@heroui/react';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 
 interface ProcessingLoaderProps {
     message?: string;
@@ -27,20 +26,21 @@ const ProcessingLoader = ({
         : message;
 
     return (
-        <Row gap='075' className={`processing-loader-container ${className}`} role='status' aria-live='polite' aria-atomic='true'>
-            <Loader scale={0.6} isFixed={false} className='shrink-0' reducedMotionLabel={statusMessage} />
-            <Stack gap='035' flex='1'>
-                <Text as='p' tone='secondary' className='processing-loader-text overflow-hidden' title={message}>{message}</Text>
+        <div className={cn('flex flex-row items-center gap-3 py-2 animate-in fade-in-0 duration-300 ease-in', className)} role='status' aria-live='polite' aria-atomic='true'>
+            <Spinner size='sm' color='current' className='shrink-0' />
+            <div className='flex flex-col gap-[0.35rem] flex-1'>
+                <p className='text-muted text-[0.85rem] whitespace-nowrap text-ellipsis overflow-hidden' title={message}>{message}</p>
+                <span className='sr-only hidden motion-reduce:inline'>{statusMessage}</span>
                 {showProgress && completionRate > 0 && (
-                    <div className='w-full overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
-                        <div className='processing-loader-progress-fill h-full' style={{
+                    <div className='w-full overflow-hidden h-[3px] rounded-[2px] bg-border' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
+                        <div className='h-full bg-accent transition-[width] duration-300 ease-out' style={{
                             width: `${progressPercentage}%`,
                             transition: prefersReducedMotion ? 'none' : undefined
                         }} />
                     </div>
                 )}
-            </Stack>
-        </Row>
+            </div>
+        </div>
     );
 };
 

@@ -1,10 +1,9 @@
 import { SOURCE_LABELS } from '@/shared/utils/error-routing';
-import { Button, Row, Stack, Heading, Text } from '@voltstack/bravais';
-import './ErrorPage.css';
+import { Button, buttonVariants } from '@heroui/react';
 import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const ErrorPage = () => {
     const [params] = useSearchParams();
@@ -18,70 +17,67 @@ const ErrorPage = () => {
     const errorTimestamp = timestamp ? new Date(Number(timestamp)) : null;
 
     return (
-        <Row as='main' justify='center' width='max' className='error-page'>
-            <Stack align='center' gap='1-5' textAlign='center' className='error-page-content' role='alert' aria-live='assertive'>
-                <Row justify='center' className='error-page-icon'>
+        <main className='flex flex-row items-center justify-center w-full min-h-dvh bg-background'>
+            <div className='flex flex-col items-center gap-6 text-center max-w-[560px] max-md:max-w-[90%]' role='alert' aria-live='assertive'>
+                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-danger-soft text-danger'>
                     <AlertTriangle size={24} aria-hidden='true' />
-                </Row>
+                </div>
 
-                <Stack gap='05' textAlign='center'>
-                    <Heading level={1} size='lg' weight='medium' className='error-page-title'>
+                <div className='flex flex-col gap-2 text-center'>
+                    <h1 className='text-base font-medium text-foreground'>
                         Something went wrong
-                    </Heading>
-                    <Text as='p' size='md' tone='secondary' lineHeight='5' className='error-page-description'>
+                    </h1>
+                    <p className='text-sm text-muted leading-normal'>
                         {description}
-                    </Text>
-                    <Text as='p' size='md' tone='muted' className='error-page-description'>
+                    </p>
+                    <p className='text-sm text-muted'>
                         Head back to the dashboard to continue.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
 
                 {source && (
-                    <Stack as='section' gap='1' align='center' width='max' aria-label='Error details'>
-                        <Row gap='1'>
-                            <span className='error-page-source'>
+                    <section className='flex flex-col items-center gap-4 w-full' aria-label='Error details'>
+                        <div className='flex flex-row items-center gap-4'>
+                            <span className='inline-flex px-2.5 py-0.5 rounded-full bg-surface-tertiary text-xs text-muted'>
                                 {SOURCE_LABELS[source] ?? source}
                             </span>
                             {errorTimestamp && isValid(errorTimestamp) && (
-                                <span className='error-page-timestamp'>
+                                <span className='text-xs text-muted'>
                                     {format(errorTimestamp, 'p')}
                                 </span>
                             )}
-                        </Row>
+                        </div>
 
                         {stack && (
-                            <Stack gap='05' width='max'>
+                            <div className='flex flex-col gap-2 w-full'>
                                 <Button
                                     variant='ghost'
-                                    intent='neutral'
                                     size='sm'
-                                    onClick={() => setShowStack((v) => !v)}
-                                    rightIcon={showStack ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    onPress={() => setShowStack((v) => !v)}
                                     aria-expanded={showStack}
                                 >
                                     {showStack ? 'Hide' : 'Show'} details
+                                    {showStack ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </Button>
 
                                 {showStack && (
-                                    <pre className='error-page-stack'>
+                                    <pre className='max-h-60 max-md:max-h-[180px] overflow-y-auto px-4 py-3 rounded-xl bg-surface-secondary border border-border font-mono text-xs leading-[1.6] text-muted text-left whitespace-pre-wrap break-words'>
                                         {stack}
                                     </pre>
                                 )}
-                            </Stack>
+                            </div>
                         )}
-                    </Stack>
+                    </section>
                 )}
 
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='sm'
+                <Link
                     to='/dashboard'
+                    className={buttonVariants({ variant: 'primary', size: 'sm' })}
                 >
                     Back to dashboard
-                </Button>
-            </Stack>
-        </Row>
+                </Link>
+            </div>
+        </main>
     );
 };
 

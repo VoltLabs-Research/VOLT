@@ -1,6 +1,5 @@
-import { usePrefersReducedMotion } from '@voltstack/bravais';
-import { cn } from '@/shared/utils/cn';
-import './AutoScrollList.css';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import { cn } from '@heroui/react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';
 
@@ -158,7 +157,7 @@ const AutoScrollList = <T,>({
         }
     };
 
-    const listClassName = cn('auto-scroll-list flex flex-col gap-2 flex-1 overflow-y-auto', className);
+    const listClassName = cn('flex flex-col gap-2 flex-1 overflow-y-auto overscroll-contain', className);
 
     if (isLoading && items.length === 0) {
         return (
@@ -185,7 +184,7 @@ const AutoScrollList = <T,>({
                 </Fragment>
             ))}
             {renderAfter}
-            <div className='auto-scroll-list-anchor' aria-hidden={hasItems} />
+            <div className='min-h-px' aria-hidden={hasItems} />
         </div>
     );
 };

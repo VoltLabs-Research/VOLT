@@ -6,17 +6,14 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
-import { IconButton, Loader, Popover, Row, Stack, Text, PopoverMenu, PopoverMenuItem, openModal } from '@voltstack/bravais';
+import { IconButton, Loader, Popover, PopoverMenu, PopoverMenuItem, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { formatDistanceToNow } from 'date-fns';
-import { Download, FolderInput, ListChecks, Play, ScanSearch } from 'lucide-react';
+import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Play, ScanSearch, Trash2 } from 'lucide-react';
 import { sileo } from 'sileo';
-import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
-import { PiDotsThreeVerticalBold } from 'react-icons/pi';
-import { RxTrash } from 'react-icons/rx';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
@@ -245,7 +242,7 @@ export default function SimulationCardFooter({
     const popoverItems: SimulationCardActionItem[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
-        icon: <HiOutlineViewfinderCircle />,
+        icon: <Crosshair />,
         disabled: !isNavigable
     }, {
         onClick: handleViewRaster,
@@ -275,7 +272,7 @@ export default function SimulationCardFooter({
     }, {
         onClick: handleDelete,
         label: 'Delete',
-        icon: <RxTrash />,
+        icon: <Trash2 />,
         isDanger: true,
         isLoading: isDeleting
     }];
@@ -286,35 +283,35 @@ export default function SimulationCardFooter({
             title={`Open actions for ${name}`}
             aria-label={`Open actions for ${name}`}
         >
-            <PiDotsThreeVerticalBold />
+            <EllipsisVertical />
         </IconButton>
     );
 
     return (
-        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer w-full'>
-            <Stack gap='05' flex='1'>
+        <div className='flex flex-row items-center gap-2 p-6 absolute left-0 bottom-0 right-0 z-10 simulation-card-footer w-full'>
+            <div className='flex flex-col gap-2 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
-                    className='simulation-card-title text-lg text-primary font-medium truncate'
+                    className='simulation-card-title text-base text-foreground font-medium truncate'
                     allowSingleClickPropagation
                     readOnly={readOnly}
                 />
-                <Row gap='075' className='simulation-card-status text-secondary text-md'>
+                <div className='flex flex-row items-center gap-3 simulation-card-status text-muted text-sm'>
                     {isProcessing ? (
                         <>
                             <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader shrink-0' />
-                            <Text as='p' className='simulation-card-status-text' title={processingMessage}>
+                            <p className='simulation-card-status-text' title={processingMessage}>
                                 {processingMessage}
-                            </Text>
+                            </p>
                         </>
                     ) : (
-                        <Text as='p' className='simulation-card-status-text' title={updatedLabel}>
+                        <p className='simulation-card-status-text' title={updatedLabel}>
                             {updatedLabel}
-                        </Text>
+                        </p>
                     )}
-                </Row>
-            </Stack>
+                </div>
+            </div>
 
             {!readOnly && (
                 <Popover
@@ -335,6 +332,6 @@ export default function SimulationCardFooter({
                     </PopoverMenu>
                 </Popover>
             )}
-        </Row>
+        </div>
     );
 }

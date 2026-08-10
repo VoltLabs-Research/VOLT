@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
@@ -42,7 +43,6 @@ import ErrorBoundary from '@/shared/ui/components/ErrorBoundary';
 import NotFoundState from '@/shared/ui/components/NotFoundState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
-import { Box, Stack } from '@voltstack/bravais';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -275,7 +275,7 @@ const CanvasPage = () => {
 
     if (accessDenied || trajectoryMissing) {
         return (
-            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
+            <div className='flex w-screen h-dvh canvas-editor-root'>
                 {accessDenied
                     ? (
                         <AccessDenied
@@ -284,20 +284,14 @@ const CanvasPage = () => {
                         />
                     )
                     : <NotFoundState />}
-            </Box>
+            </div>
         );
     }
 
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
 
     return (
-        <Box
-            display='flex'
-            height='vh-max'
-            width='vw-max'
-            overflow='hidden'
-            position='relative'
-            className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`}
+        <div className={cn('flex relative overflow-hidden w-screen h-dvh', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
             style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as CSSProperties}
         >
             <PreloadingOverlay
@@ -315,7 +309,7 @@ const CanvasPage = () => {
                 />
             )}
 
-            <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-main">
+            <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-main'>
                 <TopToolbar
                     trajectory={trajectory}
                     canDownloadAnalyses={canDownloadTrajectoryAnalyses}
@@ -337,8 +331,8 @@ const CanvasPage = () => {
                     />
                 )}
 
-                <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-stage">
-                    <Box display='flex' direction='column' position='absolute' inset='0' overflow='hidden' className="canvas-center-viewport" ref={viewportContainerRef as RefObject<HTMLDivElement>}>
+                <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-stage'>
+                    <div className='flex flex-col absolute overflow-hidden inset-0 canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -366,7 +360,7 @@ const CanvasPage = () => {
                             cursors={workspaceCursors}
                             containerRef={viewportContainerRef}
                         />
-                    </Box>
+                    </div>
 
                     {!isLocalGlbViewer && (
                         <CanvasTimelineDock
@@ -390,7 +384,7 @@ const CanvasPage = () => {
                             onSelectFrame={localGlbViewer.setFrameIndex}
                         />
                     )}
-                </Stack>
+                </div>
 
                 {!isLocalGlbViewer && showStatusBar && (
                     <StatusBar
@@ -398,7 +392,7 @@ const CanvasPage = () => {
                         currentTimestep={currentTimestep}
                     />
                 )}
-            </Stack>
+            </div>
 
             {!isLocalGlbViewer && (
                 <CanvasRightPanelRegion
@@ -444,7 +438,7 @@ const CanvasPage = () => {
                 onComplete={closeRightDrawer}
             />
 
-        </Box>
+        </div>
     );
 };
 

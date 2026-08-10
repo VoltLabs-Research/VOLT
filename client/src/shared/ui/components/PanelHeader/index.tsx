@@ -1,6 +1,4 @@
-import { cn } from '@/shared/utils/cn';
-import { Button, CloseButton, Heading, Row, Text } from '@voltstack/bravais';
-import './PanelHeader.css';
+import { Button, CloseButton, cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 interface PanelHeaderProps {
@@ -30,13 +28,15 @@ const PanelHeader = ({
     className
 }: PanelHeaderProps) => {
     const rootClasses = cn(
-        'shared-panel-header',
-        'panel-header-bordered',
         'flex',
         'items-center',
         'justify-between',
         'shrink-0',
-        variant === 'compact' && 'shared-panel-header--compact',
+        'px-4',
+        'py-3',
+        'border-b',
+        'border-border',
+        variant === 'compact' && 'h-10',
         className
     );
 
@@ -52,38 +52,37 @@ const PanelHeader = ({
         return (
             <>
                 {showCompactIconTitle && (
-                    <Row gap='05'>
+                    <div className='flex flex-row items-center gap-2'>
                         {icon && (
-                            <Row as='span' className='shared-panel-header-icon'>{icon}</Row>
+                            <span className='flex flex-row items-center'>{icon}</span>
                         )}
                         {title && (
-                            <Text as='p' size='xs' tone='muted' className={cn('shared-panel-header-title', variant === 'compact' && 'text-eyebrow')}>
+                            <p className={cn('text-xs text-muted', variant === 'compact' && 'text-xs font-semibold uppercase tracking-[0.05em] text-muted')}>
                                 {title}
-                            </Text>
+                            </p>
                         )}
-                    </Row>
+                    </div>
                 )}
                 {showFullTitle && (
-                    <Heading level={3} size='xl' weight='bold' className='flex-1'>
+                    <h3 className='text-xl font-semibold text-foreground flex-1'>
                         {title}
-                    </Heading>
+                    </h3>
                 )}
                 {showTabs && (
-                    <Row flex='1' gap='025'>
+                    <div className='flex flex-row items-center gap-1 flex-1'>
                         {tabs!.map((tab, index) => (
                             <Button
                                 key={index}
-                                variant="ghost"
-                                intent={tab.active ? 'brand' : 'neutral'}
-                                size="sm"
-                                onClick={tab.onClick}
-                                disabled={tab.disabled}
-                                style={tab.disabled ? { opacity: 0.5 } : undefined}
+                                variant='ghost'
+                                size='sm'
+                                onPress={tab.onClick}
+                                isDisabled={tab.disabled}
+                                className={tab.active ? 'text-foreground' : 'text-muted'}
                             >
                                 {tab.label}
                             </Button>
                         ))}
-                    </Row>
+                    </div>
                 )}
             </>
         );
@@ -92,10 +91,10 @@ const PanelHeader = ({
     return (
         <div className={rootClasses}>
             {renderLeft()}
-            <Row gap='05'>
+            <div className='flex flex-row items-center gap-2'>
                 {actions}
-                {onClose && <CloseButton onClick={onClose} />}
-            </Row>
+                {onClose && <CloseButton onPress={onClose} />}
+            </div>
         </div>
     );
 };

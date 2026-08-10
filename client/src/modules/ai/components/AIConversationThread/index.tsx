@@ -4,7 +4,7 @@ import ThinkingBubble from '@/modules/ai/components/AIConversationThread/Thinkin
 import useNormalizedMessages from '@/modules/ai/components/AIConversationThread/use-normalized-messages';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { Box, Skeleton, Stack, Text, VisuallyHidden } from '@voltstack/bravais';
+import { Skeleton } from '@voltstack/bravais';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { NormalizedConversationMessage } from '@/modules/ai/utils/message-segments';
 import type { UIMessage } from 'ai';
@@ -24,11 +24,11 @@ interface AIConversationThreadProps {
 }
 
 const renderPromptStarter = () => (
-    <Stack flex='1' align='center' justify='center' gap='1' className='ai-thread-starter'>
-        <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
+    <div className='flex flex-col items-center justify-center gap-4 flex-1 ai-thread-starter'>
+        <p className='text-3xl font-medium text-foreground ai-thread-starter-title'>
             Ready when you are.
-        </Text>
-    </Stack>
+        </p>
+    </div>
 );
 
 const AIConversationThread = ({
@@ -61,14 +61,14 @@ const AIConversationThread = ({
 
     if (error) {
         return (
-            <Box display='flex' flex='1' className='items-center justify-center ai-thread-empty'>
+            <div className='flex flex-1 items-center justify-center ai-thread-empty'>
                 <RecoveryState
                     title='Failed to load conversation'
                     description={error}
                     retryLabel={onRetry ? 'Retry' : undefined}
                     onRetry={onRetry}
                 />
-            </Box>
+            </div>
         );
     }
 
@@ -76,9 +76,9 @@ const AIConversationThread = ({
     let autoScrollDependency = '';
     if (showStandaloneTyping) {
         renderAfter = (
-            <Stack gap='025' className='ai-message-row is-assistant'>
+            <div className='flex flex-col gap-1 ai-message-row is-assistant'>
                 <ThinkingBubble />
-            </Stack>
+            </div>
         );
         autoScrollDependency = 'typing';
     } else if (lastMessage) {
@@ -106,18 +106,18 @@ const AIConversationThread = ({
     }
 
     return (
-        <Stack as='section' flex='1' className='ai-thread-region' aria-label='Conversation messages'>
+        <section className='flex flex-col flex-1 ai-thread-region' aria-label='Conversation messages'>
             {threadContent}
 
-            <VisuallyHidden
+            <span className='sr-only'
                 role='log'
                 aria-live='polite'
                 aria-relevant='additions text'
                 aria-atomic='false'
             >
                 {isResponding ? 'Assistant is responding.' : `Loaded ${normalizedMessages.length} messages.`}
-            </VisuallyHidden>
-        </Stack>
+            </span>
+        </section>
     );
 };
 

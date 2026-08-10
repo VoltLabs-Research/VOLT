@@ -8,7 +8,6 @@ import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import { Text } from '@voltstack/bravais';
 import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
@@ -44,7 +43,7 @@ const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['rend
 
     return (
         <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
-            <span className='text-md text-secondary font-mono'>{trajectory?.name?.trim() || ''}</span>
+            <span className='text-sm text-muted font-mono'>{trajectory?.name?.trim() || ''}</span>
         </PopulatedCellPopover>
     );
 };
@@ -53,7 +52,7 @@ const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'title',
     title: 'Title',
     sortable: true,
-    render: (_value, row) => <span className='font-semibold text-secondary truncate'>{row.title || 'Untitled Notebook'}</span>,
+    render: (_value, row) => <span className='font-semibold text-muted truncate'>{row.title || 'Untitled Notebook'}</span>,
     skeleton: {
         variant: 'text',
         width: 180
@@ -182,11 +181,11 @@ const NotebooksListing = () => {
                 isSubmitDisabled={isNotebookRenameUnchanged}
                 inputProps={NOTEBOOK_RENAME_INPUT_PROPS}
                 leadingContent={renamingNotebook && (
-                    <Text as='p' size='sm' tone='secondary' truncate>
+                    <p className='text-xs text-muted truncate'>
                         Current name: {renamingNotebook.title || 'Untitled notebook'}
-                    </Text>
+                    </p>
                 )}
-                helperText={<Text as='p' size='sm' tone='muted'>Use up to 120 characters.</Text>}
+                helperText={<p className='text-xs text-muted'>Use up to 120 characters.</p>}
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
             />

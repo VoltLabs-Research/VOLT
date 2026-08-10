@@ -1,8 +1,8 @@
+import { cn } from '@heroui/react';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import FolderNameModal from '@/shared/ui/components/FolderNameModal';
 import MoveToFolderModal from '@/shared/ui/components/MoveToFolderModal';
-import { Box, Row } from '@voltstack/bravais';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import { dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import { Folder } from 'lucide-react';
@@ -90,7 +90,7 @@ export const createFolderedTitleColumn = <TRow,>({
     resolveTitle,
     skeletonWidth,
     wrapperClassName,
-    titleClassName = 'font-semibold text-secondary',
+    titleClassName = 'font-semibold text-muted',
     getAriaLabel,
     showTitleAttribute = false
 }: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {
@@ -100,18 +100,18 @@ export const createFolderedTitleColumn = <TRow,>({
             : resolveTitle(row);
 
         return (
-            <Row gap='075' className={wrapperClassName} aria-label={getAriaLabel?.(row)}>
+            <div className={cn('flex flex-row items-center gap-3', wrapperClassName)} aria-label={getAriaLabel?.(row)}>
                 {isFolder(row) && (
-                    <Box display='flex' className='items-center justify-center text-secondary'>
+                    <div className='flex items-center justify-center text-muted'>
                         <Folder size={16} />
-                    </Box>
+                    </div>
                 )}
-                <Box overflow='hidden' minW='0'>
+                <div className='overflow-hidden min-w-0'>
                     <span className={titleClassName} title={showTitleAttribute ? resolvedTitle : undefined}>
                         {resolvedTitle}
                     </span>
-                </Box>
-            </Row>
+                </div>
+            </div>
         );
     };
 

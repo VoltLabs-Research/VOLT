@@ -1,5 +1,4 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
-import { Box, VisuallyHidden } from '@voltstack/bravais';
 import { resolveCanvasRuntimeProps } from '@/shared/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { Canvas } from '@react-three/fiber';
@@ -264,14 +263,14 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     }, [config.orbitControls]);
 
     return (
-        <Box as='section' position='relative' width='max' height='max' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
-            <VisuallyHidden as='h2' id={titleId}>3D model viewer</VisuallyHidden>
-            <VisuallyHidden as='p' id={descriptionId}>
+        <section className='relative w-full h-full' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
+            <h2 className='sr-only' id={titleId}>3D model viewer</h2>
+            <p className='sr-only' id={descriptionId}>
                 Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. On desktop, hold Control or Command while dragging a model to move it. On touch devices, double tap and drag to move the model. When a model is selected, extra rotation controls appear in the viewer.
-            </VisuallyHidden>
-            <VisuallyHidden as='div' aria-live='polite' aria-atomic='true'>
+            </p>
+            <div className='sr-only' aria-live='polite' aria-atomic='true'>
                 {screenshotAnnouncement}
-            </VisuallyHidden>
+            </div>
             <Canvas
                 gl={glProps}
                 dpr={canvasRuntimeProps.dpr}
@@ -337,7 +336,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     {children}
                 </FractalScenePipeline>
             </Canvas>
-        </Box>
+        </section>
     );
 });
 

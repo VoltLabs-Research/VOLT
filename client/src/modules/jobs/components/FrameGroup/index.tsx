@@ -1,10 +1,10 @@
 import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
-import { Box, Row, StatusBadge, Text } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import { StatusBadge } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
-import { IoChevronForward } from 'react-icons/io5';
+import { ChevronRight } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, Job } from '@volt/contracts/modules/jobs/domain';
 
@@ -36,7 +36,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
     }, [containsTransferJobs]);
 
     return (
-        <Box className='frame-job-group'>
+        <div className='frame-job-group'>
             <button
                 type='button'
                 className='frame-job-group-header frame-job-group-toggle select-none'
@@ -44,25 +44,25 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                 aria-expanded={isExpanded}
                 aria-controls={contentId}
             >
-                <Row justify='between' width='max'>
-                    <Text as='p' size='sm' tone='secondary'>{label}</Text>
-                    <Row gap='05'>
+                <div className='flex flex-row items-center justify-between w-full'>
+                    <p className='text-xs text-muted'>{label}</p>
+                    <div className='flex flex-row items-center gap-2'>
                         <StatusBadge status={frame.overallStatus} size='compact'>{statusLabel}</StatusBadge>
                         <motion.i
-                            className='chevron-icon text-sm text-secondary'
+                            className='chevron-icon text-xs text-muted'
                             animate={{ rotate: isExpanded ? 90 : 0 }}
                             transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
                             aria-hidden='true'
                         >
-                            <IoChevronForward />
+                            <ChevronRight />
                         </motion.i>
-                    </Row>
-                </Row>
+                    </div>
+                </div>
             </button>
             <CollapsibleJobContent id={contentId} isExpanded={isExpanded}>
                 {jobs}
             </CollapsibleJobContent>
-        </Box>
+        </div>
     );
 };
 

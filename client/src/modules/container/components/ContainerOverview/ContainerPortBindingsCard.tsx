@@ -1,5 +1,5 @@
 import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
-import { Button, KeyValueList, KeyValueRow, Row, Text } from '@voltstack/bravais';
+import { Button, KeyValueList, KeyValueRow } from '@voltstack/bravais';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { isBrowserAccessiblePort } from '@/modules/container/utils/get-primary-accessible-port';
 import { normalizePortMapping } from '@/modules/container/utils/port-mapping';
@@ -39,7 +39,7 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
         const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
 
         const portLabel = (
-            <Row gap='05'>
+            <div className='flex flex-row items-center gap-2'>
                 <span className='tabular-nums'>{item.private}/tcp</span>
                 {publicPort !== undefined && (
                     <>
@@ -47,10 +47,10 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
                         <span className='tabular-nums text-muted'>{publicPort}</span>
                     </>
                 )}
-            </Row>
+            </div>
         );
 
-        let portAction: ReactNode = <Text size='sm' tone='muted'>TCP only</Text>;
+        let portAction: ReactNode = <span className='text-xs text-muted'>TCP only</span>;
 
         if (isBrowserAccessiblePort(accessiblePort)) {
             portAction = (
@@ -65,7 +65,7 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
                 </Button>
             );
         } else if (accessiblePort?.status === 'unavailable') {
-            portAction = <Text size='sm' tone='muted'>Unavailable</Text>;
+            portAction = <span className='text-xs text-muted'>Unavailable</span>;
         }
 
         return (

@@ -9,7 +9,6 @@ import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
-import { Box } from '@voltstack/bravais';
 import type { SaveStatus } from '@voltstack/bravais';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -112,7 +111,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     });
 
     return (
-        <Box height='max' width='max' position='relative' className='plugin-builder-canvas' ref={reactFlowWrapper}>
+        <div className='relative w-full h-full plugin-builder-canvas' ref={reactFlowWrapper}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -157,7 +156,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
             <DebugContextPanel />
 
             <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
-        </Box>
+        </div>
     );
 };
 

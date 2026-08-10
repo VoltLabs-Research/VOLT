@@ -1,4 +1,4 @@
-import './FileUploaderContainer.css';
+import { cn } from '@heroui/react';
 import { describeSkippedEntries, processFileSystemEntry } from '@/shared/utils/file';
 import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -21,6 +21,13 @@ interface ProcessedDropEntry {
     skippedPaths: string[];
     isDirectory: boolean;
 };
+
+/**
+ * A full-window overlay that is invisible and inert until a drag carrying files
+ * enters the window, then fades in a tinted, blurred sheet with an accent edge.
+ */
+const DROP_ZONE_CLASSES = 'absolute w-full h-full top-0 left-0 z-[100] border border-transparent bg-transparent backdrop-blur-[0px] opacity-0 pointer-events-none transition-[opacity,background-color,backdrop-filter,border-color] duration-300 ease-out';
+const DROP_ZONE_ACTIVE_CLASSES = 'opacity-100 pointer-events-auto border-accent bg-accent/10 backdrop-blur-[3px]';
 
 const createFallbackUploadName = (timestamp: number, index: number): string => {
     return index === 0 ? `upload_${timestamp}` : `upload_${timestamp}_${index}`;
@@ -155,16 +162,14 @@ const FileUploaderContainer = ({
     }, [handleWindowDragEnter]);
 
     const containerClasses = useMemo(() => {
-        const classes = ['file-uploader-container', 'absolute', 'w-full', 'h-full'];
-        if (isDraggingOver) classes.push('is-dragging-over');
-        return classes.join(' ');
+        return cn(DROP_ZONE_CLASSES, isDraggingOver && DROP_ZONE_ACTIVE_CLASSES);
     }, [isDraggingOver]);
 
     const dragMessage = isDraggingOver ? 'Drop files to upload them.' : '';
 
     const dropZone = (
         <div ref={dropRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDropZoneDragLeave} className={containerClasses} aria-label='File upload drop zone' role='region' aria-live='polite' aria-atomic='true'>
-            <span className='file-uploader-live-region'>{dragMessage}</span>
+            <span className='sr-only'>{dragMessage}</span>
         </div>
     );
 

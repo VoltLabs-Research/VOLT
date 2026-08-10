@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import ClusterQueueConcurrencyModal, {
     CLUSTER_QUEUE_CONCURRENCY_MODAL_ID
 } from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
@@ -5,7 +6,7 @@ import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/compo
 import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/ClusterTransferModal';
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
-import { Button, Heading, Box, openModal, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { Button, openModal, StatusBadge } from '@voltstack/bravais';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
@@ -37,26 +38,26 @@ import { useNavigate } from 'react-router-dom';
 const renderMetricBars = (percentage: number, label: string): ReactNode => {
     const activeBars = Math.floor(percentage / 20);
     return (
-        <Row gap='05'>
-            <Box display='flex' className='gap-[0.1rem]'>
+        <div className='flex flex-row items-center gap-2'>
+            <div className='flex gap-[0.1rem]'>
                 {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className={`server-table-bar ${i < activeBars ? 'server-table-bar-active' : ''}`} />
                 ))}
-            </Box>
-            <Text as='p' size='sm' tone='muted'>{label}</Text>
-        </Row>
+            </div>
+            <p className='text-xs text-muted'>{label}</p>
+        </div>
     );
 };
 
 const renderMetricValue = (value: number | null): ReactNode => {
     return value === null
-        ? <Text as='p' size='sm' tone='muted'>--</Text>
+        ? <p className='text-xs text-muted'>--</p>
         : renderMetricBars(value, `${value}%`);
 };
 
 const renderDiskValue = (row: ServerRow): ReactNode => {
     if (row.diskUsagePercent === null || row.diskFree === null) {
-        return <Text as='p' size='sm' tone='muted'>--</Text>;
+        return <p className='text-xs text-muted'>--</p>;
     }
 
     return renderMetricBars(row.diskUsagePercent, `${row.diskFree.toFixed(1)}GB Available`);
@@ -77,9 +78,9 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         sortable: true,
         width: 240,
         render: (_, row) => (
-            <Row gap='05'>
-                <Text as='p' size='md' tone='secondary'>{row.name}</Text>
-            </Row>
+            <div className='flex flex-row items-center gap-2'>
+                <p className='text-sm text-muted'>{row.name}</p>
+            </div>
         )
     },
     {
@@ -103,16 +104,16 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
             const drainingSummary = describeTeamClusterDraining(row.teamCluster);
 
             return (
-                <Stack gap='025'>
+                <div className='flex flex-col gap-1'>
                     <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
                         {getTeamClusterRoleLabel(row.desiredRole)}
                     </StatusBadge>
-                    <Text as='p' size='sm' className={isTransitionPending ? 'text-warning' : 'text-muted'}>
+                    <p className={cn('text-xs', isTransitionPending ? 'text-warning' : 'text-muted')}>
                         {isTransitionPending
                             ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
                             : getTeamClusterRoleSummary(row.desiredRole)}
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
             );
         }
     },
@@ -141,7 +142,7 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         title: 'Last Heartbeat',
         sortable: true,
         width: 180,
-        render: (_, row) => <Text as='p' size='sm' tone='secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Text>
+        render: (_, row) => <p className='text-xs text-muted'>{formatClusterTimestamp(row.lastHeartbeatAt)}</p>
     }
 ];
 
@@ -293,13 +294,13 @@ const ClustersListing = () => {
                 defaultLimit={20}
                 emptyMessage='No clusters found.'
                 emptyIcon={(
-                    <Stack align='start' gap='1' p='1-5' radius='lg' className='clusters-empty-state'>
-                        <Heading level={3} size='xl' weight='bold'>No clusters connected yet</Heading>
-                        <Text as='p' size='md' tone='secondary'>
+                    <div className='flex flex-col items-start gap-4 p-6 rounded-2xl clusters-empty-state'>
+                        <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
+                        <p className='text-sm text-muted'>
                             Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
-                        </Text>
+                        </p>
                         <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
-                    </Stack>
+                    </div>
                 )}
                 createNew={{
                     buttonTitle: 'Add new Cluster',

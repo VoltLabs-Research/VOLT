@@ -63,15 +63,15 @@ export const createEntityCacheResource = <TEntity extends { _id: string }>(confi
                     ...updates
                 } : entity);
             });
-            activeQueryClient.setQueryData<TEntity | undefined>(config.detailKey(id), (current) => {
+            activeQueryClient.setQueryData<TEntity | undefined>(config.detailKey(id), (current): TEntity | undefined => {
                 if (!current) {
                     return current;
                 }
 
-                return {
-                    ...current,
-                    ...updates
-                };
+                const merged: TEntity = { ...current };
+                Object.assign(merged, updates);
+
+                return merged;
             });
         },
         remove: (id: string, client?: QueryClient): void => {

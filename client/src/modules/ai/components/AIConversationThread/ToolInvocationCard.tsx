@@ -1,6 +1,6 @@
 import { presentToolCall, resolveToolActionPhase } from '@/modules/ai/utils/tool-presentation';
 import { resolveImagePayload } from '@/modules/ai/utils/message-artifacts';
-import { Box, Button, Row, StatusDot, Text } from '@voltstack/bravais';
+import { Button, StatusDot } from '@voltstack/bravais';
 import type { ToolActionPhase } from '@/modules/ai/utils/tool-presentation';
 import type { ToolInvocation } from '@/modules/ai/utils/message-segments';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
@@ -45,16 +45,16 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
     };
 
     return (
-        <Box className='ai-action-request-card'>
-            <Row gap='05' className='ai-action-request-header'>
+        <div className='ai-action-request-card'>
+            <div className='flex flex-row items-center gap-2 ai-action-request-header'>
                 <StatusDot tone={PHASE_TONE[phase]} size='sm' />
-                <Text as='p' size='sm' tone='muted'>
+                <p className='text-xs text-muted'>
                     {presentToolCall(invocation.toolName, phase, invocation.result)}
-                </Text>
-            </Row>
+                </p>
+            </div>
 
             {phase === 'requested' && addToolApprovalResponse && (
-                <Row gap='025' className='ai-action-request-controls'>
+                <div className='flex flex-row items-center gap-1 ai-action-request-controls'>
                     <Button
                         variant='solid'
                         intent='success'
@@ -71,15 +71,15 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
                     >
                         Reject
                     </Button>
-                </Row>
+                </div>
             )}
 
             {phase === 'running' && (
-                <Row gap='025' className='ai-action-request-controls'>
-                    <Text as='p' size='sm' tone='muted'>
+                <div className='flex flex-row items-center gap-1 ai-action-request-controls'>
+                    <p className='text-xs text-muted'>
                         Running...
-                    </Text>
-                </Row>
+                    </p>
+                </div>
             )}
 
             {image && (
@@ -97,7 +97,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
                     />
                 </a>
             )}
-        </Box>
+        </div>
     );
 };
 

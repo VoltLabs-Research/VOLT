@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, EmptyState, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, IconButton, EmptyState } from '@voltstack/bravais';
 import { Plus, Trash2 } from 'lucide-react';
 
 import type { IArgumentOption } from '@volt/contracts/modules/plugin/workflow';
@@ -49,7 +49,7 @@ const OptionRow = ({
                 value={option.key}
                 onChange={(event) => onOptionChange({ key: event.currentTarget.value })}
                 placeholder={KEY_PLACEHOLDER}
-                className={`argument-options-input argument-options-input--key font-mono text-md flex-1${hasError ? ' has-error' : ''}`}
+                className={`argument-options-input argument-options-input--key font-mono text-sm flex-1${hasError ? ' has-error' : ''}`}
                 aria-label={`Option ${index + 1} key`}
                 aria-invalid={hasError}
                 title={errorTitle}
@@ -61,7 +61,7 @@ const OptionRow = ({
                 value={option.label}
                 onChange={(event) => onOptionChange({ label: event.currentTarget.value })}
                 placeholder={LABEL_PLACEHOLDER}
-                className='argument-options-input argument-options-input--label text-md flex-1'
+                className='argument-options-input argument-options-input--label text-sm flex-1'
                 aria-label={`Option ${index + 1} label`}
                 onKeyDown={handleLabelKeyDown}
             />
@@ -124,12 +124,12 @@ const ArgumentOptionsEditor = ({
 
     if (options.length === 0) {
         return (
-            <Stack gap='075' className='argument-options-editor'>
+            <div className='flex flex-col gap-3 argument-options-editor'>
                 <EmptyState
                     title='No options defined'
                     description='Add options to populate the select.'
                 />
-                <Row justify='center' gap='05'>
+                <div className='flex flex-row items-center justify-center gap-2'>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -139,21 +139,21 @@ const ArgumentOptionsEditor = ({
                     >
                         Add first option
                     </Button>
-                </Row>
-            </Stack>
+                </div>
+            </div>
         );
     }
 
     return (
-        <Stack gap='075' className='argument-options-editor'>
-            <Row className='argument-options-grid' aria-hidden='true'>
-                <Box as='span' flex='1' className='argument-options-grid__header text-eyebrow'>Key</Box>
+        <div className='flex flex-col gap-3 argument-options-editor'>
+            <div className='flex flex-row items-center argument-options-grid' aria-hidden='true'>
+                <span className='flex-1 argument-options-grid__header text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Key</span>
                 <span className='argument-options-grid__gap' />
-                <Box as='span' flex='1' className='argument-options-grid__header text-eyebrow'>Label</Box>
+                <span className='flex-1 argument-options-grid__header text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Label</span>
                 <span className='argument-options-grid__spacer--action' />
-            </Row>
+            </div>
 
-            <Stack as='ul' gap='025' role='list' className='argument-options-list'>
+            <ul className='flex flex-col gap-1 argument-options-list' role='list'>
                 {options.map((option, index) => {
                     const trimmedKey = option.key.trim();
 
@@ -174,9 +174,9 @@ const ArgumentOptionsEditor = ({
                         />
                     );
                 })}
-            </Stack>
+            </ul>
 
-            <Stack gap='05' className='argument-options-footer'>
+            <div className='flex flex-col gap-2 argument-options-footer'>
                 <Button
                     variant='outline'
                     intent='neutral'
@@ -188,12 +188,12 @@ const ArgumentOptionsEditor = ({
                     Add option
                 </Button>
                 {duplicateKeys.size > 0 && (
-                    <Text as='span' size='xs' role='status' className='argument-options-error-hint'>
+                    <span className='text-xs argument-options-error-hint' role='status'>
                         Duplicate keys must be unique
-                    </Text>
+                    </span>
                 )}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

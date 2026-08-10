@@ -5,7 +5,6 @@ import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTab
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
-import { Box } from '@voltstack/bravais';
 import type { ComponentProps, ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -21,9 +20,9 @@ interface TimelineTabContentProps {
 }
 
 const TabBody = ({ children }: { children: ReactNode }) => (
-    <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
+    <div className='relative overflow-hidden flex-1 min-h-0 canvas-timeline-body'>
         {children}
-    </Box>
+    </div>
 );
 
 /** Body of the timeline for every tab except the ruler, which owns its own region. */

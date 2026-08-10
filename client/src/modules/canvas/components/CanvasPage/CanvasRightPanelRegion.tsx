@@ -1,7 +1,7 @@
 import ResizeHandle from '../ResizeHandle';
 import RightPanel from '../RightPanel';
 import { ResizeDirection } from '../../hooks/use-resizable';
-import { Box, Stack, useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { PanelRight } from 'lucide-react';
 
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
@@ -44,9 +44,7 @@ const CanvasRightPanelRegion = ({
                 </button>
             )}
             {!isNarrowViewport && (
-                <Box
-                    position='absolute'
-                    className='canvas-resize-rail canvas-resize-rail--right'
+                <div className='absolute canvas-resize-rail canvas-resize-rail--right'
                     style={{
                         top: 0,
                         bottom: 0,
@@ -60,17 +58,15 @@ const CanvasRightPanelRegion = ({
                         controls='canvas-right-panel'
                         {...panel.handleProps}
                     />
-                </Box>
+                </div>
             )}
-            <Stack
+            <div className='flex flex-col absolute canvas-right-panel-container canvas-overlay-glass'
                 id='canvas-right-panel'
-                position='absolute'
-                className='canvas-right-panel-container canvas-overlay-glass'
                 style={{ width: panel.size }}
                 data-drawer-open={isNarrowViewport ? (isDrawerOpen ? 'true' : 'false') : undefined}
             >
                 <RightPanel {...panelProps} compactAnalysisOnly={isCompactAnalysis} />
-            </Stack>
+            </div>
         </>
     );
 };

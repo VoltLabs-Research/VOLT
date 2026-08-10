@@ -2,8 +2,8 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import { createTableArtifactComponents } from '@/modules/ai/components/AIConversationThread/markdown-table-artifact';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
 import ToolInvocationCard from '@/modules/ai/components/AIConversationThread/ToolInvocationCard';
-import { Box, IconButton, Row, SectionLabel, Stack, Text, Tooltip, VisuallyHidden } from '@voltstack/bravais';
-import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
+import { IconButton, Tooltip } from '@voltstack/bravais';
+import { Check, Copy } from 'lucide-react';
 import { memo, useState } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
@@ -41,7 +41,7 @@ const CopyMessageButton = ({ text }: CopyMessageButtonProps) => {
                 aria-label='Copy message'
                 onClick={handleCopy}
             >
-                {copied ? <IoCheckmarkOutline size={13} /> : <IoCopyOutline size={13} />}
+                {copied ? <Check size={13} /> : <Copy size={13} />}
             </IconButton>
         </Tooltip>
     );
@@ -79,16 +79,16 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'reasoning') {
             segmentElements.push(
-                <Box key={`seg-${segmentIndex}`} className='ai-message-reasoning'>
-                    <SectionLabel className='ai-message-reasoning-label block'>
+                <div className='ai-message-reasoning' key={`seg-${segmentIndex}`}>
+                    <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted ai-message-reasoning-label block'>
                         Thinking
-                    </SectionLabel>
-                    <Text as='div' size='sm' className='ai-message-text ai-message-markdown'>
+                    </span>
+                    <div className='text-xs ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
                             {segment.content}
                         </ReactMarkdown>
-                    </Text>
-                </Box>
+                    </div>
+                </div>
             );
             segmentIndex += 1;
             continue;
@@ -96,13 +96,13 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'text') {
             segmentElements.push(
-                <Box key={`seg-${segmentIndex}`} className={`ai-message-bubble ${bubbleVariant}`}>
-                    <Box className='text-[0.95rem] ai-message-text ai-message-markdown'>
+                <div className={`ai-message-bubble ${bubbleVariant}`} key={`seg-${segmentIndex}`}>
+                    <div className='text-[0.95rem] ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={markdownComponents}>
                             {segment.content}
                         </ReactMarkdown>
-                    </Box>
-                </Box>
+                    </div>
+                </div>
             );
             segmentIndex += 1;
             continue;
@@ -119,7 +119,7 @@ const AIMessageItem = memo(({
         }
 
         segmentElements.push(
-            <Stack key={`seg-${groupStart}`} gap='05' className='ai-action-request-list'>
+            <div className='flex flex-col gap-2 ai-action-request-list' key={`seg-${groupStart}`}>
                 {invocations.map((invocation, index) => (
                     <ToolInvocationCard
                         key={`${invocation.toolCallId}-${index}`}
@@ -127,7 +127,7 @@ const AIMessageItem = memo(({
                         addToolApprovalResponse={addToolApprovalResponse}
                     />
                 ))}
-            </Stack>
+            </div>
         );
     }
 
@@ -136,15 +136,15 @@ const AIMessageItem = memo(({
             className={`flex flex-col gap-4 ai-message-row ${bubbleVariant}`}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
         >
-            <VisuallyHidden>
+            <span className='sr-only'>
                 {messageLabel}
-            </VisuallyHidden>
+            </span>
             {segmentElements}
             {!isUser && message.segments.length === 0 && <ThinkingBubble />}
             {!isUser && message.preview.trim().length > 0 && (
-                <Row gap='025' className='ai-message-actions'>
+                <div className='flex flex-row items-center gap-1 ai-message-actions'>
                     <CopyMessageButton text={message.preview} />
-                </Row>
+                </div>
             )}
         </article>
     );

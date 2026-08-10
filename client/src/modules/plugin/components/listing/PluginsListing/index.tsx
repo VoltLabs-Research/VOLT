@@ -1,5 +1,5 @@
-import { Button, Text, openModal, closeModal } from '@voltstack/bravais';
-import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine, RiStore2Line } from 'react-icons/ri';
+import { Button, openModal, closeModal } from '@voltstack/bravais';
+import { Ban, Check, Copy, Download, FilePen, Pencil, Store, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
 import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
@@ -58,21 +58,21 @@ const PLUGIN_STATUS_ACTIONS: PluginStatusAction[] = [
     {
         status: PluginStatus.PUBLISHED,
         label: 'Publish',
-        icon: RiCheckLine,
+        icon: Check,
         loading: 'Publishing...',
         success: 'Plugin published'
     },
     {
         status: PluginStatus.DRAFT,
         label: 'Set as Draft',
-        icon: RiDraftLine,
+        icon: FilePen,
         loading: 'Setting as draft...',
         success: 'Plugin set as draft'
     },
     {
         status: PluginStatus.DISABLED,
         label: 'Disable',
-        icon: RiForbidLine,
+        icon: Ban,
         loading: 'Disabling...',
         success: 'Plugin disabled'
     }
@@ -84,9 +84,9 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         title: 'Name',
         sortable: true,
         render: (_, plugin) => (
-            <Text as='span' size='md' weight='medium' className='plugin-name-link'>
+            <span className='text-sm font-medium plugin-name-link'>
                 {plugin.modifier?.name}
-            </Text>
+            </span>
         ),
         skeleton: {
             variant: 'text',
@@ -111,9 +111,9 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         key: 'exposures',
         title: 'Exposures',
         render: (_, plugin) => (
-            <Text as='span' size='sm' weight='bold' className='exposure-count'>
+            <span className='text-xs font-semibold exposure-count'>
                 {(plugin.exposures ?? []).length}
-            </Text>
+            </span>
         ),
         skeleton: {
             variant: 'text',
@@ -172,13 +172,13 @@ const PluginsListing = () => {
         actions: {
             edit: {
                 label: 'Edit',
-                icon: RiEditLine,
+                icon: Pencil,
                 handler: ({ item }) => navigate(`/plugins/builder?id=${item._id}`),
                 requiredPermission: 'plugin:update'
             },
             clone: {
                 label: 'Clone',
-                icon: RiFileCopyLine,
+                icon: Copy,
                 handler: async ({ item }) => {
                     await runAction({
                         action: () => clonePluginMutation.mutateAsync({
@@ -193,7 +193,7 @@ const PluginsListing = () => {
             },
             export: {
                 label: 'Export',
-                icon: RiDownloadLine,
+                icon: Download,
                 handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`),
                 requiredPermission: 'plugin:read'
             },
@@ -265,23 +265,23 @@ const PluginsListing = () => {
                         <Button
                             variant='toggle'
                             intent='neutral'
-                            className='import-plugin-btn transition-fast'
+                            className='import-plugin-btn transition-[all] duration-150 ease-out-fluid'
                             onClick={() => importInputRef.current?.click()}
                             disabled={importPluginMutation.isPending}
                             isLoading={importPluginMutation.isPending}
-                            leftIcon={<RiUploadLine size={18} />}
+                            leftIcon={<Upload size={18} />}
                         >
                             Import
                         </Button>
                         <Button
                             variant='toggle'
                             intent='neutral'
-                            className='transition-fast'
+                            className='transition-[all] duration-150 ease-out-fluid'
                             onClick={() => {
                                 setIsRegistryOpen(true);
                                 openModal(REGISTRY_BROWSER_MODAL_ID);
                             }}
-                            leftIcon={<RiStore2Line size={18} />}
+                            leftIcon={<Store size={18} />}
                         >
                             Browse registry
                         </Button>

@@ -1,4 +1,4 @@
-import { Button, Callout, Divider, FloatingToolbar, Row, SaveStatusIndicator, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { Button, Callout, Divider, FloatingToolbar, SaveStatusIndicator, Tooltip } from '@voltstack/bravais';
 import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
@@ -27,13 +27,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     ariaLive='polite'
                     className='canvas-toolbar-validation'
                 >
-                    <Stack as='ul' gap='025' className='canvas-toolbar-validation-list'>
+                    <ul className='flex flex-col gap-1 canvas-toolbar-validation-list'>
                         {errors.map((error, index) => (
-                            <Text key={index} as='li' size='sm'>
+                            <li className='text-xs' key={index}>
                                 {error}
-                            </Text>
+                            </li>
                         ))}
-                    </Stack>
+                    </ul>
                 </Callout>
             )}
 
@@ -45,24 +45,24 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         content={errors.join(' · ')}
                         placement='top'
                     >
-                        <Row gap='05' cursor='pointer' className='canvas-toolbar-status canvas-toolbar-status--error'>
+                        <div className='flex flex-row items-center gap-2 cursor-pointer canvas-toolbar-status canvas-toolbar-status--error'>
                             <AlertTriangle size={14} />
-                            <Text as='p' size='sm'>
+                            <p className='text-xs'>
                                 {issueSummary}
-                            </Text>
-                        </Row>
+                            </p>
+                        </div>
                     </Tooltip>
                 )}
 
-                <Row gap='025'>
+                <div className='flex flex-row items-center gap-1'>
                     <Tooltip content='Zoom out' placement='top'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => zoomOut()}>
                             <ZoomOut size={16} />
                         </Button>
                     </Tooltip>
-                    <Text as='p' size='sm' tone='secondary' align='center' className='select-none canvas-toolbar-zoom-label tabular-nums'>
+                    <p className='text-xs text-muted text-center select-none canvas-toolbar-zoom-label tabular-nums'>
                         {Math.round(zoom * 100)}%
-                    </Text>
+                    </p>
                     <Tooltip content='Zoom in' placement='top'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => zoomIn()}>
                             <ZoomIn size={16} />
@@ -74,7 +74,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                             <Maximize size={16} />
                         </Button>
                     </Tooltip>
-                </Row>
+                </div>
 
                 <Tooltip content='Save (Ctrl+S)' placement='top'>
                     <Button

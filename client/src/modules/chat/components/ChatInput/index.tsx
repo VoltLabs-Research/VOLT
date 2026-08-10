@@ -1,8 +1,8 @@
-import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline, IoCloseOutline } from 'react-icons/io5';
+import { FileText, Paperclip, Send, Smile, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
-import { formatSize } from '@voltstack/bravais';
-import { Box, Button, IconButton, Popover, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { formatSize } from '@/shared/utils/format';
+import { Button, IconButton, Popover, Tooltip } from '@voltstack/bravais';
 import EmojiPicker from '@/shared/ui/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
@@ -63,52 +63,52 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
     };
 
     const renderFilePreview = (item: typeof previews[number], index: number) => (
-        <Row key={index} gap='075' className='chat-file-preview-item'>
+        <div className='flex flex-row items-center gap-3 chat-file-preview-item' key={index}>
             {item.preview ? (
                 <img src={item.preview} alt={item.file.name} className='chat-file-preview-thumbnail shrink-0' />
             ) : (
-                <Box display='flex' shrink='0' className='items-center justify-center chat-file-preview-icon'>
-                    <IoDocumentOutline size={20} className='text-muted' />
-                </Box>
+                <div className='flex shrink-0 items-center justify-center chat-file-preview-icon'>
+                    <FileText size={20} className='text-muted' />
+                </div>
             )}
-            <Stack flex='1' overflow='hidden'>
-                <Text as='p' size='md' weight='medium' className='chat-file-preview-name'>
+            <div className='flex flex-col overflow-hidden flex-1'>
+                <p className='text-sm font-medium chat-file-preview-name'>
                     {item.file.name}
-                </Text>
-                <Text as='p' size='md' tone='muted'>
+                </p>
+                <p className='text-sm text-muted'>
                     {formatSize(item.file.size)}
-                </Text>
-            </Stack>
+                </p>
+            </div>
             <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title={`Remove ${item.file.name}`} aria-label={`Remove ${item.file.name}`}>
-                <IoCloseOutline size={16} />
+                <X size={16} />
             </IconButton>
-        </Row>
+        </div>
     );
 
     return (
         <form onSubmit={handleSend} className='chat-input-container'>
             {previews.length > 0 && (
-                <Stack gap='05' overflow='y-auto' className='chat-file-previews'>
+                <div className='flex flex-col gap-2 overflow-y-auto chat-file-previews'>
                     {previews.map(renderFilePreview)}
-                </Stack>
+                </div>
             )}
 
             <label htmlFor={textareaId} className='sr-only'>
                 Message
             </label>
 
-            <Row gap='05' className='chat-input-wrapper'>
+            <div className='flex flex-row items-center gap-2 chat-input-wrapper'>
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
                 <Tooltip content='Attach file'>
                     <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={isPending} title='Attach file' aria-label='Attach file'>
-                        <IoAttachOutline size={20} />
+                        <Paperclip size={20} />
                     </IconButton>
                 </Tooltip>
 
                 <textarea
                     id={textareaId}
-                    className='flex-1 chat-input-textarea text-md text-primary'
+                    className='flex-1 chat-input-textarea text-sm text-foreground'
                     placeholder='Type a message...'
                     rows={1}
                     value={message}
@@ -122,7 +122,7 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                     id='chat-emoji-picker'
                     trigger={
                         <IconButton size='sm' variant='ghost' disabled={isPending} title='Open emoji picker' aria-label='Open emoji picker'>
-                            <IoHappyOutline size={20} />
+                            <Smile size={20} />
                         </IconButton>
                     }
                 >
@@ -146,14 +146,14 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                         aria-label='Send message'
                         aria-describedby={isPending ? statusId : undefined}
                     >
-                        <IoPaperPlaneOutline size={18} />
+                        <Send size={18} />
                     </Button>
                 </Tooltip>
-            </Row>
+            </div>
 
-            <Text as='p' id={statusId} size='md' tone='muted' className='chat-input-status' role='status' aria-live='polite'>
+            <p className='text-sm text-muted chat-input-status' id={statusId} role='status' aria-live='polite'>
                 {isPending ? 'Sending message…' : ''}
-            </Text>
+            </p>
         </form>
     );
 };

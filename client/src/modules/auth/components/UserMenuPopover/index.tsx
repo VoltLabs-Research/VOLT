@@ -2,8 +2,7 @@ import './UserMenuPopover.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/UserInfo';
 import { Button, IconButton, PopoverMenuItem, Avatar, Popover } from '@voltstack/bravais';
-import { HiOutlineDotsVertical } from 'react-icons/hi';
-import { IoCloseOutline, IoSettingsOutline } from 'react-icons/io5';
+import { EllipsisVertical, Settings, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface UserMenuPopoverProps {
@@ -33,7 +32,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
             block
             align='start'
             className='user-menu-trigger'
-            rightIcon={<HiOutlineDotsVertical size={16} />}
+            rightIcon={<EllipsisVertical size={16} />}
             aria-label='Open user menu'
         >
             <UserInfo user={user} className='f-grow-1' />
@@ -48,11 +47,11 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
             className='gap-4 p-2'
             trigger={activeTrigger}
         >
-            <PopoverMenuItem icon={<IoSettingsOutline />} onClick={onSettingsClick}>
+            <PopoverMenuItem icon={<Settings />} onClick={onSettingsClick}>
                 Account Settings
             </PopoverMenuItem>
             <PopoverMenuItem
-                icon={<IoCloseOutline />}
+                icon={<X />}
                 onClick={onSignOut}
                 isLoading={isSigningOut}
             >

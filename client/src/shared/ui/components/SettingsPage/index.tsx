@@ -1,5 +1,3 @@
-import { Heading, Stack } from '@voltstack/bravais';
-import './SettingsPage.css';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 
@@ -12,14 +10,14 @@ const SettingsPage = ({ title, children }: SettingsPageProps) => {
     const titleId = useId();
 
     return (
-        <Stack as='section' gap='3' p='2' className='settings-page-container' aria-labelledby={titleId}>
-            <Heading level={1} size='2xl' weight='bold' id={titleId}>
+        <section className='flex flex-col gap-12 p-8 max-w-[800px] mx-auto' aria-labelledby={titleId}>
+            <h1 className='text-2xl font-semibold text-foreground' id={titleId}>
                 {title}
-            </Heading>
-            <Stack gap='3' className='settings-page-content'>
+            </h1>
+            <div className='flex flex-col gap-12 min-w-0'>
                 {children}
-            </Stack>
-        </Stack>
+            </div>
+        </section>
     );
 };
 

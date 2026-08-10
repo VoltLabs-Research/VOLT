@@ -1,38 +1,57 @@
-import { Box, Button, Stack } from '@voltstack/bravais';
-import { LuPanelRight } from 'react-icons/lu';
+import { Button } from '@heroui/react';
+import { PanelRight } from 'lucide-react';
 
 interface SidebarHeaderProps {
     collapsed?: boolean;
+    /**
+     * Set by Sidebar when the viewport is under the mobile breakpoint. The collapsed
+     * header used to tighten its padding and drop its content through a
+     * `@media (max-width: 768px)` block; that condition is the same one Sidebar
+     * already resolves with `useMedia`, so it is passed down rather than measured twice.
+     */
+    isMobile?: boolean;
     onToggle?: () => void;
     controlsId?: string;
     children: React.ReactNode;
 };
 
-const SidebarHeader = ({ collapsed, onToggle, controlsId, children }: SidebarHeaderProps) => {
+const HEADER = 'flex';
+const HEADER_EXPANDED = 'justify-between p-6';
+const HEADER_COLLAPSED = 'justify-start border-b border-border p-4 text-center';
+const HEADER_COLLAPSED_MOBILE = 'justify-start border-b border-border p-3 text-center';
+
+const TOGGLE = 'z-[5] min-h-11 min-w-11 shrink-0 rounded-full bg-surface-tertiary text-muted hover:border-border-secondary hover:bg-surface-hover hover:text-foreground focus-visible:bg-surface-hover focus-visible:text-foreground';
+const TOGGLE_ICON = 'size-5 transition-transform duration-200 ease-smooth';
+
+const collapsedHeaderClass = (isMobile: boolean): string => (
+    isMobile ? HEADER_COLLAPSED_MOBILE : HEADER_COLLAPSED
+);
+
+const SidebarHeader = ({ collapsed, isMobile = false, onToggle, controlsId, children }: SidebarHeaderProps) => {
+    const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+
     return (
-        <Box as='header' display='flex' justify='between' p='1-5' className='sm:p-1 editor-sidebar-header-container'>
-            <Stack gap='05' className='editor-sidebar-header-content'>
+        <header className={`${HEADER} ${collapsed ? collapsedHeaderClass(isMobile) : HEADER_EXPANDED}`}>
+            <div className={collapsed && isMobile ? 'hidden' : 'flex flex-col gap-2'}>
                 {children}
-            </Stack>
+            </div>
 
             <Button
-                variant='ghost'
-                intent='neutral'
-                iconOnly
+                variant='outline'
+                isIconOnly
                 size='sm'
-                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={label}
                 aria-controls={controlsId}
                 aria-expanded={collapsed === undefined ? undefined : !collapsed}
-                onClick={onToggle}
-                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className='editor-sidebar-toggle-btn'
+                onPress={onToggle}
+                className={TOGGLE}
             >
-                <LuPanelRight
-                    className={`editor-sidebar-toggle-icon ${collapsed ? 'rotated' : ''}`}
+                <PanelRight
+                    className={collapsed ? `${TOGGLE_ICON} rotate-180` : TOGGLE_ICON}
                     aria-hidden='true'
                 />
             </Button>
-        </Box>
+        </header>
     );
 };
 

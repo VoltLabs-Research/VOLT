@@ -2,7 +2,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import ArgumentField from './ArgumentField';
 import { ANY_PLUGIN_KEY_OPTION, ANY_PLUGIN_OPTION } from './argument-definition-constants';
 import { isRecord } from '@/shared/utils/type-guards';
-import { DashedActionBox, Row, Stack, Text } from '@voltstack/bravais';
+import { DashedActionBox } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { Plus, Trash2 } from 'lucide-react';
 import type { IPluginReferenceArgumentMapping } from '@volt/contracts/modules/plugin/workflow';
@@ -102,7 +102,7 @@ const PluginReferenceMappingsEditor = ({
     };
 
     return (
-        <Stack gap='05'>
+        <div className='flex flex-col gap-2'>
             {mappings.map((mapping, mappingIndex) => {
                 const targetArgumentOptions = getTargetArgumentOptions(mapping);
                 const hasCurrentTargetArgument = targetArgumentOptions.some((option) => option.value === mapping.targetArgument);
@@ -116,8 +116,8 @@ const PluginReferenceMappingsEditor = ({
 
                 return (
                     <div key={`${fieldPrefix}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
-                        <Row justify='between' gap='05' className='mb-2'>
-                            <Text as='span' size='sm' tone='muted'>Mapping {mappingIndex + 1}</Text>
+                        <div className='flex flex-row items-center justify-between gap-2 mb-2'>
+                            <span className='text-xs text-muted'>Mapping {mappingIndex + 1}</span>
                             <button
                                 type='button'
                                 className='argument-row-delete'
@@ -127,7 +127,7 @@ const PluginReferenceMappingsEditor = ({
                             >
                                 <Trash2 size={14} aria-hidden='true' />
                             </button>
-                        </Row>
+                        </div>
                         <ArgumentField
                             label='Source'
                             name={`plugin-reference-mapping-source-${fieldPrefix}-${mappingIndex}`}
@@ -180,7 +180,7 @@ const PluginReferenceMappingsEditor = ({
                 block
                 onClick={addMapping}
             />
-        </Stack>
+        </div>
     );
 };
 

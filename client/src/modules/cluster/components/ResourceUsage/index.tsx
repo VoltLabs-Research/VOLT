@@ -1,7 +1,7 @@
 import MetricBar from '../MetricBar';
 import './ResourceUsage.css';
 import { getClusterCpuUsage } from '@/modules/cluster/utils/cluster-cpu-usage';
-import { Box, Heading, Row, Skeleton, Stack, Text } from '@voltstack/bravais';
+import { Skeleton } from '@voltstack/bravais';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 interface ResourceUsageProps {
@@ -60,44 +60,44 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
         const color = getResourceColor(resource);
 
         return (
-            <Stack key={resource.name} className='resource-usage-item'>
-                <Row justify='between' className='mb-2'>
-                    <Text size='sm' tone='secondary'>{resource.name}</Text>
-                    <Text size='md' weight='bold' style={{ color }}>
+            <div className='flex flex-col resource-usage-item' key={resource.name}>
+                <div className='flex flex-row items-center justify-between mb-2'>
+                    <span className='text-xs text-muted'>{resource.name}</span>
+                    <span className='text-sm font-semibold' style={{ color }}>
                         {resource.value}%
-                    </Text>
-                </Row>
+                    </span>
+                </div>
                 <MetricBar value={resource.value} color={color} glow={buildResourceGlow(color)} />
-            </Stack>
+            </div>
         );
     };
 
     const content = (
-        <Stack gap='1-5' flex='1' className='resource-usage-list'>
+        <div className='flex flex-col gap-6 flex-1 resource-usage-list'>
             {metrics
                 ? resources.map(renderResourceItem)
                 : [...Array(4)].map((_, i) => (
-                    <Box key={i} className='resource-usage-item'>
-                        <Row justify='between' className='resource-usage-item-header'>
+                    <div className='resource-usage-item' key={i}>
+                        <div className='flex flex-row items-center justify-between resource-usage-item-header'>
                             <Skeleton variant='text' width={80} height={20} />
                             <Skeleton variant='text' width={40} height={20} />
-                        </Row>
+                        </div>
                         <Skeleton variant='rectangular' width='100%' height={8} style={{
                             borderRadius: 4,
                             marginTop: 8
                         }} />
-                    </Box>
+                    </div>
                 ))}
-        </Stack>
+        </div>
     );
 
     return (
-        <Stack height='max' p='1-5' radius='lg' className='resource-usage'>
-            <Row align='start' justify='between' shrink='0' className='resource-usage-header mb-6'>
-                <Heading level={3} size='lg' weight='bold'>Resource Usage</Heading>
-            </Row>
+        <div className='flex flex-col p-6 rounded-2xl h-full resource-usage'>
+            <div className='flex flex-row items-start justify-between shrink-0 resource-usage-header mb-6'>
+                <h3 className='text-base font-semibold text-foreground'>Resource Usage</h3>
+            </div>
             {content}
-        </Stack>
+        </div>
     );
 };
 

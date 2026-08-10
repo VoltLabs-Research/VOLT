@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
-import { Box, Tooltip } from '@voltstack/bravais';
+import { Tooltip } from '@voltstack/bravais';
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
     settingsExpanded: boolean;
@@ -36,7 +36,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
 
     if (collapsed) {
         return (
-            <Box className='sidebar-footer-nav'>
+            <div className='sidebar-footer-nav'>
                 <Tooltip content='Settings' placement='right'>
                     <SidebarNavItem
                         label='Settings'
@@ -53,12 +53,12 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                         onClick={handleOpenDocs}
                     />
                 </Tooltip>
-            </Box>
+            </div>
         );
     }
 
     return (
-        <Box className='sidebar-footer-nav'>
+        <div className='sidebar-footer-nav'>
             <SidebarExpandableSection
                 label='Settings'
                 icon={Settings}
@@ -73,7 +73,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 icon={BookOpen}
                 onClick={handleOpenDocs}
             />
-        </Box>
+        </div>
     );
 };
 

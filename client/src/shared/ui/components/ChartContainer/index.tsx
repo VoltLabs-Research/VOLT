@@ -1,5 +1,4 @@
-import './ChartContainer.css';
-import { Box, Row, Stack, Heading, Text, Skeleton } from '@voltstack/bravais';
+import { Skeleton } from '@heroui/react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -18,6 +17,16 @@ interface ChartContainerProps {
     children: ReactNode;
     stats?: ChartStat[];
     statsLoading?: boolean;
+};
+
+const STAT_VALUE_CLASS_NAMES: Record<ChartStatEmphasis, string> = {
+    primary: 'tabular-nums lining-nums text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground',
+    secondary: 'tabular-nums lining-nums text-sm font-medium leading-[1.2] text-muted'
+};
+
+const STAT_SKELETON_CLASS_NAMES: Record<ChartStatEmphasis, string> = {
+    primary: 'h-7 w-20 rounded-md',
+    secondary: 'h-[18px] w-[50px] rounded-md'
 };
 
 const ChartContainer = ({
@@ -41,55 +50,45 @@ const ChartContainer = ({
 
     const renderStat = (stat: ChartStat) => {
         const emphasis: ChartStatEmphasis = stat.emphasis ?? 'secondary';
-        const valueClassName = emphasis === 'primary'
-            ? 'chart-stat-value chart-stat-value-primary'
-            : 'chart-stat-value chart-stat-value-secondary';
-        const skeletonWidth = emphasis === 'primary' ? 80 : 50;
-        const skeletonHeight = emphasis === 'primary' ? 28 : 18;
 
         return (
-            <Stack key={stat.label} gap='025'>
-                <Text size='sm' className='chart-stat-label text-eyebrow'>
+            <div className='flex flex-col gap-1' key={stat.label}>
+                <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
                     {stat.label}
-                </Text>
+                </span>
                 {statsLoading ? (
-                    <Skeleton variant='text' width={skeletonWidth} height={skeletonHeight} />
+                    <Skeleton className={STAT_SKELETON_CLASS_NAMES[emphasis]} />
                 ) : (
-                    <span className={valueClassName}>
+                    <span className={STAT_VALUE_CLASS_NAMES[emphasis]}>
                         {stat.value}
                     </span>
                 )}
-            </Stack>
+            </div>
         );
     };
 
     return (
-        <Stack height='max' p='1-5' radius='lg' className='chart-container sm:p-1'>
-            <Box display='flex' justify='between' mb='1-5' className='sm:column sm:gap-1'>
-                <Row gap='075'>
+        <div className='flex flex-col p-6 rounded-2xl h-full max-h-[400px] border border-border bg-surface sm:p-1'>
+            <div className='flex justify-between mb-6 sm:gap-1'>
+                <div className='flex flex-row items-center gap-3'>
                     {renderIcon()}
-                    <Heading level={3} size='lg' weight='bold' className='chart-title'>
+                    <h3 className='text-base font-semibold text-foreground'>
                         {title}
-                    </Heading>
-                </Row>
+                    </h3>
+                </div>
                 {stats && (
-                    <Row align='end' gap='1-5' wrap className='sm:w-max sm:gap-1'>
+                    <div className='flex flex-row items-end flex-wrap gap-6 sm:w-max sm:gap-1'>
                         {stats.map(renderStat)}
-                    </Row>
+                    </div>
                 )}
-            </Box>
+            </div>
 
             {isLoading ? (
-                <Skeleton
-                    variant='rectangular'
-                    width='100%'
-                    height={280}
-                    style={{ borderRadius: 8 }}
-                />
+                <Skeleton className='h-[280px] w-full rounded-lg' />
             ) : (
                 children
             )}
-        </Stack>
+        </div>
     );
 };
 

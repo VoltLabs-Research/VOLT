@@ -1,4 +1,4 @@
-import { Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { X } from 'lucide-react';
 import { useState } from 'react';
@@ -45,11 +45,11 @@ const IntegrationModelList = ({
     };
 
     return (
-        <Stack gap='05'>
-            <Text as='p' size='md' weight='medium' tone='secondary'>
+        <div className='flex flex-col gap-2'>
+            <p className='text-sm font-medium text-muted'>
                 Models
-            </Text>
-            <Row gap='05' className='integrations-add-model-row'>
+            </p>
+            <div className='flex flex-row items-center gap-2 integrations-add-model-row'>
                 <FormFieldRHF
                     label='Model ID'
                     placeholder='Model ID (e.g. gpt-4o)'
@@ -73,22 +73,22 @@ const IntegrationModelList = ({
                 >
                     Add
                 </Button>
-            </Row>
+            </div>
             {models.length > 0 && (
                 <div className='integrations-model-checklist'>
                     {models.map((model) => {
                         const modelSummary = defaultModel === model.id ? `${model.id} · default` : model.id;
 
                         return (
-                            <Row key={model.id} gap='05' justify='between' align='center' className='integrations-model-item'>
-                                <Stack style={{ minWidth: 0 }}>
-                                    <Text as='p' size='md' tone='primary' truncate title={model.name}>
+                            <div className='flex flex-row items-center justify-between gap-2 integrations-model-item' key={model.id}>
+                                <div className='flex flex-col' style={{ minWidth: 0 }}>
+                                    <p className='text-sm text-foreground truncate' title={model.name}>
                                         {model.name}
-                                    </Text>
-                                    <Text as='p' size='sm' tone='muted' truncate title={modelSummary}>
+                                    </p>
+                                    <p className='text-xs text-muted truncate' title={modelSummary}>
                                         {modelSummary}
-                                    </Text>
-                                </Stack>
+                                    </p>
+                                </div>
                                 <Button
                                     size='sm'
                                     variant='ghost'
@@ -98,12 +98,12 @@ const IntegrationModelList = ({
                                     title={`Remove ${model.name}`}
                                     aria-label={`Remove ${model.name}`}
                                 />
-                            </Row>
+                            </div>
                         );
                     })}
                 </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

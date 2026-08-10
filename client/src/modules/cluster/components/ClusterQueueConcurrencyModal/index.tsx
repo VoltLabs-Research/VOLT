@@ -1,6 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import { CollapsibleSection, Modal, closeModal, Stack, Table, Text } from '@voltstack/bravais';
+import { CollapsibleSection, Modal, closeModal, Table } from '@voltstack/bravais';
 import type { Column } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
@@ -233,7 +233,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         {
             key: 'label',
             header: 'Queue',
-            render: (row) => <Text as='span' size='sm' weight='medium'>{row.label}</Text>
+            render: (row) => <span className='text-xs font-medium'>{row.label}</span>
         },
         {
             key: 'maxPerTrajectory',
@@ -244,7 +244,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                     min={MIN_SCOPE_LIMIT}
                     step={1}
                     inputMode='numeric'
-                    className='form-field-input rounded-sm'
+                    className='form-field-input rounded-lg'
                     style={{ width: '5rem' }}
                     value={scopeValues[row.key].maxRunningPerTrajectory}
                     onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
@@ -264,10 +264,10 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
 
     return (
         <Modal id={CLUSTER_QUEUE_CONCURRENCY_MODAL_ID} title={`Queue settings for ${clusterName}`} description='Configure worker concurrency for runtime queues.' footer={footer} onClose={handleClose}>
-            <Stack gap='1' p='1-5'>
-                <Stack gap='1'>
+            <div className='flex flex-col gap-4 p-6'>
+                <div className='flex flex-col gap-4'>
                     {QUEUE_FIELDS.map((field) => (
-                        <Stack key={field.key} gap='025'>
+                        <div className='flex flex-col gap-1' key={field.key}>
                             <FormFieldRHF
                                 label={field.label}
                                 type='number'
@@ -279,28 +279,28 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                                     inputMode: 'numeric'
                                 }}
                             />
-                            <Text as='p' size='sm' tone='muted'>{field.description}</Text>
-                        </Stack>
+                            <p className='text-xs text-muted'>{field.description}</p>
+                        </div>
                     ))}
-                </Stack>
+                </div>
                 <CollapsibleSection
                     title='Execution scope limits'
                     titleAs='h3'
                     noSpacing
                 >
-                    <Stack gap='05' mt='05'>
-                        <Text as='p' size='sm' tone='muted'>Per-trajectory limits. Use 0 for no limit.</Text>
+                    <div className='flex flex-col gap-2 mt-2'>
+                        <p className='text-xs text-muted'>Per-trajectory limits. Use 0 for no limit.</p>
                         <Table
                             columns={scopeColumns}
                             data={QUEUE_SCOPE_FIELDS}
                             getRowKey={(row) => row.key}
                         />
-                    </Stack>
+                    </div>
                 </CollapsibleSection>
                 {error && (
-                    <Text as='p' size='md' className='text-danger'>{error}</Text>
+                    <p className='text-sm text-danger'>{error}</p>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

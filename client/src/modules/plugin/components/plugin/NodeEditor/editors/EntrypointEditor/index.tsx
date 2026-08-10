@@ -1,4 +1,4 @@
-import { Box, Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
@@ -93,7 +93,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     return (
         <>
             <FormSection title={binarySectionTitle}>
-                <Stack gap='05' className='binary-upload-container'>
+                <div className='flex flex-col gap-2 binary-upload-container'>
                     <input
                         ref={fileInputRef}
                         type='file'
@@ -102,14 +102,14 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <Row justify='between' className='binary-uploaded'>
-                            <Row gap='05' className='binary-file-info'>
+                        <div className='flex flex-row items-center justify-between binary-uploaded'>
+                            <div className='flex flex-row items-center gap-2 binary-file-info'>
                                 <File size={20} />
-                                <Text as='span' size='md' weight='medium' className='binary-filename overflow-hidden'>
+                                <span className='text-sm font-medium binary-filename overflow-hidden'>
                                     {watchedBinaryFileName || watchedBinary}
-                                </Text>
+                                </span>
                                 <Check size={16} className='binary-check-icon' />
-                            </Row>
+                            </div>
                             <Button
                                 variant='ghost'
                                 intent='danger'
@@ -118,7 +118,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             >
                                 <Trash2 size={16} />
                             </Button>
-                        </Row>
+                        </div>
                     ) : (
                         <Button
                             variant='outline'
@@ -133,25 +133,23 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     )}
 
                     {!currentPluginId && (
-                        <Text as='p' size='sm' className='binary-upload-hint'>
+                        <p className='text-xs binary-upload-hint'>
                             Save the plugin first (Ctrl+S) to enable binary upload
-                        </Text>
+                        </p>
                     )}
 
                     {uploadError && (
-                        <Text as='p' size='sm' className='binary-upload-error'>{uploadError}</Text>
+                        <p className='text-xs binary-upload-error'>{uploadError}</p>
                     )}
 
                     {isUploading && (
-                        <Box width='max' className='binary-upload-progress overflow-hidden'>
-                            <Box
-                                height='max'
-                                className='binary-upload-progress-bar'
+                        <div className='w-full binary-upload-progress overflow-hidden'>
+                            <div className='h-full binary-upload-progress-bar'
                                 style={{ width: `${uploadProgress}%` }}
                             />
-                        </Box>
+                        </div>
                     )}
-                </Stack>
+                </div>
             </FormSection>
 
             <FormSection title='Execution'>
@@ -187,24 +185,24 @@ const EntrypointEditor = ({ node }: EditorProps) => {
 
             {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
                 <FormSection title='Requirements File'>
-                    <Stack gap='05'>
-                        <Text as='p' size='sm' tone='secondary' className='entrypoint-requirements-hint'>
+                    <div className='flex flex-col gap-2'>
+                        <p className='text-xs text-muted entrypoint-requirements-hint'>
                             Define the Python dependencies to install into the cached virtual environment.
-                        </Text>
+                        </p>
                         <div className='entrypoint-requirements-editor'>
                             <Editor
                                 height='180px'
                                 language='plaintext'
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
-                                loading={<Box p='1' className='text-secondary'>Loading editor...</Box>}
+                                loading={<div className='p-4 text-muted'>Loading editor...</div>}
                                 options={MONACO_OPTIONS}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });
                                 }}
                             />
                         </div>
-                    </Stack>
+                    </div>
                 </FormSection>
             )}
 

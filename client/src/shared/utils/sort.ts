@@ -1,4 +1,4 @@
-import { getValueByPath } from '@voltstack/bravais';
+import { getValueByPath } from '@/shared/utils/format';
 
 export type SortDirection = 'asc' | 'desc';
 

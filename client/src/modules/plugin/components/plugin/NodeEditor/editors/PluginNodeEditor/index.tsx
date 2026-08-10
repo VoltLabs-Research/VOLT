@@ -18,7 +18,6 @@ import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argu
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
 import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-team-clusters';
@@ -171,9 +170,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             })}
                         />
                         {selectedPlugin && (
-                            <Text as='p' size='sm' tone='muted'>
+                            <p className='text-xs text-muted'>
                                 {selectedPlugin.modifier?.description?.trim() || 'Published plugin selected for inline execution.'}
-                            </Text>
+                            </p>
                         )}
                     </>
                 ) : (
@@ -193,11 +192,11 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             })}
                         />
                         {selectedArgumentCandidate && (
-                            <Text as='p' size='sm' tone='muted'>
+                            <p className='text-xs text-muted'>
                                 {selectedArgumentCandidate.supportsMultipleExecutions
                                     ? 'This argument can resolve one or more plugins at runtime.'
                                     : 'This argument resolves a single plugin at runtime.'}
-                            </Text>
+                            </p>
                         )}
                     </>
                 )}
@@ -240,9 +239,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             allowTemplateReferenceMode
                         />
                     ) : (
-                        <Text as='p' size='sm' tone='muted'>
+                        <p className='text-xs text-muted'>
                             Select a published plugin to configure inline execution.
-                        </Text>
+                        </p>
                     )
                 ) : (
                     <ArgumentReferenceConfiguration

@@ -1,6 +1,6 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
-import { Box, Button, Heading, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, Modal, closeModal } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useState } from 'react';
 import './ClusterCredentialsModal.css';
@@ -92,21 +92,21 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                 <ModalFooterActions
                     secondary={credentials ? undefined : {
                         label: 'Cancel',
-                        onClick: handleClose,
-                        disabled: isSubmitting
+                        onPress: handleClose,
+                        isDisabled: isSubmitting
                     }}
                     primary={credentials ? {
                         label: 'Done',
-                        onClick: handleClose
+                        onPress: handleClose
                     } : {
                         label: 'Reveal credentials',
-                        onClick: handleSubmit,
-                        isLoading: isSubmitting
+                        onPress: handleSubmit,
+                        isPending: isSubmitting
                     }}
                 />
             )}
         >
-            <Stack gap='1' p='1-5'>
+            <div className='flex flex-col gap-4 p-6'>
                 {!credentials && (
                     <PasswordConfirmationPrompt
                         description='Only reveal credentials when you need to inspect or repair the cluster services directly.'
@@ -123,28 +123,28 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
 
                 {credentials && (
                     <>
-                        <Stack gap='05' p='1' radius='md' className='cluster-credentials-warning' role='status' aria-live='polite'>
-                            <Heading level={3} size='md' weight='bold'>Sensitive credentials</Heading>
-                            <Text as='p' size='md' tone='secondary'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</Text>
-                            <Box as='label' display='flex' align='start' gap='05' className='cluster-credentials-acknowledgement'>
+                        <div className='flex flex-col gap-2 p-4 rounded-xl cluster-credentials-warning' role='status' aria-live='polite'>
+                            <h3 className='text-sm font-semibold text-foreground'>Sensitive credentials</h3>
+                            <p className='text-sm text-muted'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</p>
+                            <label className='flex items-start gap-2 cluster-credentials-acknowledgement'>
                                 <input
                                     type='checkbox'
                                     checked={hasAcknowledgedSensitiveCopy}
                                     onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
                                 />
-                                <Text size='md' tone='secondary'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</Text>
-                            </Box>
-                        </Stack>
+                                <span className='text-sm text-muted'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</span>
+                            </label>
+                        </div>
 
                         {services.map((service) => (
-                            <Stack key={service.label} gap='025' p='1' radius='md' className='cluster-credentials-card'>
-                                <Heading level={3} size='md' weight='bold'>{service.label}</Heading>
-                                <Text as='p' size='sm' tone='secondary'>Port: {service.port ?? 'Not assigned'}</Text>
+                            <div className='flex flex-col gap-1 p-4 rounded-xl cluster-credentials-card' key={service.label}>
+                                <h3 className='text-sm font-semibold text-foreground'>{service.label}</h3>
+                                <p className='text-xs text-muted'>Port: {service.port ?? 'Not assigned'}</p>
                                 {service.username && (
-                                    <Text as='p' size='sm' tone='secondary'>Username: {service.username}</Text>
+                                    <p className='text-xs text-muted'>Username: {service.username}</p>
                                 )}
-                                <Row justify='between' gap='05'>
-                                    <Text as='p' size='sm' tone='primary' className='font-family-mono'>Password: {service.password}</Text>
+                                <div className='flex flex-row items-center justify-between gap-2'>
+                                    <p className='text-xs text-foreground font-family-mono'>Password: {service.password}</p>
                                     <Button
                                         variant='ghost'
                                         intent='neutral'
@@ -154,12 +154,12 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                                     >
                                         Copy
                                     </Button>
-                                </Row>
-                            </Stack>
+                                </div>
+                            </div>
                         ))}
                     </>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

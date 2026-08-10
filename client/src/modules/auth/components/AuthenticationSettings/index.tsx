@@ -1,7 +1,7 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { format } from 'date-fns';
 import { Activity, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
@@ -42,12 +42,12 @@ const AuthenticationSettings = () => {
 
     return (
         <SettingsPage title="Authentication Settings">
-            <Stack border='soft' gap='1' p='1-5' radius='md'>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
                 <SettingsSectionHeader
                     title="Password"
                     description="Manage your password and security settings" />
 
-                <Stack gap='1'>
+                <div className='flex flex-col gap-4'>
                     <SettingsRow
                         icon={<Lock size={20} />}
                         title="Password"
@@ -67,10 +67,10 @@ const AuthenticationSettings = () => {
                         isOpen={isPasswordFormOpen}
                         onSubmit={handleChangePassword}
                         onCancel={() => setIsPasswordFormOpen(false)} />
-                </Stack>
-            </Stack>
+                </div>
+            </div>
 
-            <Stack border='soft' gap='1' p='1-5' radius='md'>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
                 <SettingsSectionHeader
                     title="Login Activity"
                     description="Monitor recent login sessions and devices" />
@@ -81,7 +81,7 @@ const AuthenticationSettings = () => {
                     description="View your login history and active sessions"
                     rightContent={<Button variant="soft" onClick={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
                 />
-            </Stack>
+            </div>
         </SettingsPage>
     );
 };

@@ -1,8 +1,9 @@
+import { cn } from '@heroui/react';
 import './ThemeCard.css';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import type { VisualTheme } from '@/shared/ui/hooks/use-theme';
 import themeTokensStylesheet from '@voltstack/bravais/styles.css?raw';
-import { Row, SelectableCard } from '@voltstack/bravais';
+import { SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
@@ -97,9 +98,9 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
             data-theme-preview={theme}
             tabIndex={tabIndex}
         >
-            <Row justify='center' position='relative' className={`theme-preview ${previewClassName}`} style={getPreviewStyles(theme)}>
+            <div className={cn('flex flex-row items-center justify-center relative', `theme-preview ${previewClassName}`)} style={getPreviewStyles(theme)}>
                 {icon}
-            </Row>
+            </div>
         </SelectableCard>
     );
 });

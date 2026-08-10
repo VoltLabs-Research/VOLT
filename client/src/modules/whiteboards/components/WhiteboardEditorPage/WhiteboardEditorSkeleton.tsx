@@ -1,4 +1,3 @@
-import { Box, Row, Stack } from '@voltstack/bravais';
 import type { CSSProperties } from 'react';
 
 const styles = {
@@ -67,39 +66,39 @@ const line = (width: string, extra?: CSSProperties): CSSProperties => ({
 });
 
 const WhiteboardEditorSkeleton = () => (
-    <Row p='1' className='whiteboard-editor-loading justify-center'>
+    <div className='flex flex-row items-center p-4 whiteboard-editor-loading justify-center'>
         <div style={styles.root} role='status' aria-live='polite' aria-label='Loading whiteboard workspace'>
-            <Stack gap='1' height='max'>
-                <Row gap='1' className='justify-between' style={styles.toolbar}>
-                    <Row gap='05' flex='1'>
+            <div className='flex flex-col gap-4 h-full'>
+                <div className='flex flex-row items-center gap-4 justify-between' style={styles.toolbar}>
+                    <div className='flex flex-row items-center gap-2 flex-1'>
                         <div style={chip('8rem')} />
                         <div style={chip('5rem')} />
-                    </Row>
-                    <Row gap='05'>
+                    </div>
+                    <div className='flex flex-row items-center gap-2'>
                         <div style={chip('2.5rem')} />
                         <div style={chip('2.5rem')} />
                         <div style={chip('2.5rem')} />
-                    </Row>
-                </Row>
+                    </div>
+                </div>
 
-                <Box display='flex' gap='1' flex='1' style={{ flexWrap: 'wrap' }}>
-                    <Stack gap='075' style={styles.sidebar}>
+                <div className='flex gap-4 flex-1' style={{ flexWrap: 'wrap' }}>
+                    <div className='flex flex-col gap-3' style={styles.sidebar}>
                         <div style={line('70%')} />
                         <div style={line('100%')} />
                         <div style={line('88%')} />
                         <div style={line('92%')} />
                         <div style={line('74%')} />
-                    </Stack>
+                    </div>
 
-                    <Stack gap='1' className='justify-between' style={styles.canvas}>
-                        <Box display='flex' gap='05'>
+                    <div className='flex flex-col gap-4 justify-between' style={styles.canvas}>
+                        <div className='flex gap-2'>
                             <div style={chip('6rem')} />
                             <div style={chip('4rem')} />
-                        </Box>
-                        <Box display='flex' className='justify-center'>
+                        </div>
+                        <div className='flex justify-center'>
                             <div style={line('72%', { height: '1rem' })} />
-                        </Box>
-                        <Box display='flex' align='end' gap='1' className='justify-between'>
+                        </div>
+                        <div className='flex items-end gap-4 justify-between'>
                             <div style={line('28%', {
                                 height: '9rem',
                                 borderRadius: '1rem'
@@ -112,20 +111,20 @@ const WhiteboardEditorSkeleton = () => (
                                 height: '7rem',
                                 borderRadius: '1rem'
                             })} />
-                        </Box>
-                    </Stack>
-                </Box>
+                        </div>
+                    </div>
+                </div>
 
-                <Box display='flex' className='justify-end'>
-                    <Stack gap='05' style={styles.floatingPanel}>
+                <div className='flex justify-end'>
+                    <div className='flex flex-col gap-2' style={styles.floatingPanel}>
                         <div style={line('45%')} />
                         <div style={line('100%')} />
                         <div style={line('82%')} />
-                    </Stack>
-                </Box>
-            </Stack>
+                    </div>
+                </div>
+            </div>
         </div>
-    </Row>
+    </div>
 );
 
 export default WhiteboardEditorSkeleton;

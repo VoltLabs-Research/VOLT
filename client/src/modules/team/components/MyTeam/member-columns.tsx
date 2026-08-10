@@ -1,9 +1,9 @@
-import { Select, StatusBadge, Stack, Text } from '@voltstack/bravais';
+import { Select, StatusBadge } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import ListingUserCell from '@/shared/ui/components/ListingUserCell';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { dateColumn } from '@/shared/ui/utils/column-presets';
-import { formatDuration } from '@voltstack/bravais';
+import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
@@ -74,14 +74,14 @@ export const createTeamMemberColumns = ({
             }
 
             return (
-                <Stack>
+                <div className='flex flex-col'>
                     <StatusBadge status='offline' size='compact'>Offline</StatusBadge>
-                    <Text size='md' tone='muted'>
+                    <span className='text-sm text-muted'>
                         {lastSeenAt
                             ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`
                             : 'Last seen unavailable'}
-                    </Text>
-                </Stack>
+                    </span>
+                </div>
             );
         }
     },
@@ -89,9 +89,9 @@ export const createTeamMemberColumns = ({
         key: 'timeSpentLast7Days',
         title: 'Time (7d)',
         render: (_value, member) => (
-            <Text tone='secondary' size='md'>
+            <span className='text-sm text-muted'>
                 {formatDuration(timeSpentByUser.get(member.user._id) ?? 0)}
-            </Text>
+            </span>
         )
     },
     dateColumn<TeamMemberStats>('joinedAt', 'Joined At', {

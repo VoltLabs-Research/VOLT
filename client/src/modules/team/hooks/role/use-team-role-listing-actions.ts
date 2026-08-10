@@ -3,7 +3,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import type { TeamRole } from '@volt/contracts/modules/team/domain';
 import type { RoleEditorPayload } from '@/modules/team/components/RoleEditorModal';
@@ -92,19 +92,19 @@ export default function useTeamRoleListingActions({
         actions: {
             view: {
                 label: 'View',
-                icon: RiEyeLine,
+                icon: Eye,
                 handler: ({ item: role }) => onEditRole(role),
                 requiredPermission: 'team-role:read'
             },
             edit: {
                 label: 'Edit',
-                icon: RiEditLine,
+                icon: Pencil,
                 handler: ({ item: role }) => onEditRole(role),
                 requiredPermission: 'team-role:update'
             },
             delete: {
                 label: 'Delete',
-                icon: RiDeleteBin6Line,
+                icon: Trash2,
                 variant: 'danger',
                 handler: ({ item, selectedItems }) => {
                     const targets = selectedItems.length > 1 ? selectedItems : [item];

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GradientPreview from '../../GradientPreview';
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
@@ -150,7 +150,7 @@ const ColorCodingStageEditor = ({
     };
 
     return (
-        <Stack gap='05'>
+        <div className='flex flex-col gap-2'>
             <FormFieldRHF
                 fieldKey='color-coding-property'
                 fieldType='select'
@@ -162,9 +162,9 @@ const ColorCodingStageEditor = ({
             />
 
             {propertyType === 'string' ? (
-                <Text size='xs' tone='muted'>
+                <span className='text-xs text-muted'>
                     Categorical property — baked with a discrete palette.
-                </Text>
+                </span>
             ) : (
                 <>
                     <FormFieldRHF
@@ -179,9 +179,9 @@ const ColorCodingStageEditor = ({
 
                     <GradientPreview gradient={gradient} startValue={0} endValue={1} />
 
-                    <Text size='xs' tone='muted'>
+                    <span className='text-xs text-muted'>
                         Range (leave blank to auto-compute on the cluster)
-                    </Text>
+                    </span>
                     <FormFieldRHF
                         fieldKey='color-coding-min'
                         fieldType='input'
@@ -216,7 +216,7 @@ const ColorCodingStageEditor = ({
             >
                 Apply (bake)
             </Button>
-        </Stack>
+        </div>
     );
 };
 

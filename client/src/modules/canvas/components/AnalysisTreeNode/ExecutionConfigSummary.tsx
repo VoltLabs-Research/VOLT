@@ -1,4 +1,3 @@
-import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import { buildConfigColumns } from './config-columns';
 import { useMemo } from 'react';
 
@@ -17,28 +16,28 @@ const ExecutionConfigSummary = ({ config, plugin, pluginsById }: ExecutionConfig
 
     if (columns.length === 0) {
         return (
-            <Box p='1'>
-                <Text size='sm' tone='muted'>No parameters configured.</Text>
-            </Box>
+            <div className='p-4'>
+                <span className='text-xs text-muted'>No parameters configured.</span>
+            </div>
         );
     }
 
     return (
-        <Box p='1'>
-            <Row align='start' gap='1-5' wrap>
+        <div className='p-4'>
+            <div className='flex flex-row items-start flex-wrap gap-6'>
                 {columns.map((column) => (
-                    <Stack key={column.key} gap='05' style={{ minWidth: 140 }}>
-                        <Text size='xs' tone='muted'>{column.title}</Text>
+                    <div className='flex flex-col gap-2' key={column.key} style={{ minWidth: 140 }}>
+                        <span className='text-xs text-muted'>{column.title}</span>
                         {column.rows.map((row, rowIndex) => (
-                            <Row key={`${row.label}:${rowIndex}`} justify='between' gap='1' className='text-sm text-secondary'>
-                                <Text tone='muted'>{row.label}</Text>
+                            <div className='flex flex-row items-center justify-between gap-4 text-xs text-muted' key={`${row.label}:${rowIndex}`}>
+                                <span className='text-muted'>{row.label}</span>
                                 {row.value}
-                            </Row>
+                            </div>
                         ))}
-                    </Stack>
+                    </div>
                 ))}
-            </Row>
-        </Box>
+            </div>
+        </div>
     );
 };
 

@@ -1,4 +1,4 @@
-import { Box, Stack, Row, Modal, resetModal, Callout } from '@voltstack/bravais';
+import { Modal, resetModal, Callout } from '@voltstack/bravais';
 import { runAction } from '@/shared/ui/actions/run-action';
 import CopyableField from '@/shared/ui/components/CopyableField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -109,25 +109,25 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                 <ModalFooterActions
                     secondary={generatedKey ? undefined : {
                         label: 'Cancel',
-                        onClick: handleClose,
-                        disabled: createSecretKeyMutation.isPending
+                        onPress: handleClose,
+                        isDisabled: createSecretKeyMutation.isPending
                     }}
                     primary={generatedKey ? {
                         label: 'Done',
-                        onClick: handleClose,
-                        disabled: !hasConfirmedCopy
+                        onPress: handleClose,
+                        isDisabled: !hasConfirmedCopy
                     } : {
                         label: 'Create Key',
                         type: 'submit',
                         form: SECRET_KEY_CREATION_FORM_ID,
-                        isLoading: createSecretKeyMutation.isPending
+                        isPending: createSecretKeyMutation.isPending
                     }}
                 />
             }
         >
-            <Box p='1-5'>
+            <div className='p-6'>
                 <form id={SECRET_KEY_CREATION_FORM_ID} onSubmit={handleFormSubmit}>
-                    <Stack gap='1-5'>
+                    <div className='flex flex-col gap-6'>
                     {generatedKey ? (
                         <>
                             <Callout
@@ -141,14 +141,14 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                                 value={generatedKey}
                                 successMessage='Secret key copied to clipboard'
                             />
-                            <Row as='label' gap='075' cursor='pointer' className='text-secondary text-md'>
+                            <label className='flex flex-row items-center gap-3 cursor-pointer text-muted text-sm'>
                                 <input
                                     type='checkbox'
                                     checked={hasConfirmedCopy}
                                     onChange={(event) => setHasConfirmedCopy(event.target.checked)}
                                 />
                                 <span>I copied or stored this secret key somewhere safe.</span>
-                            </Row>
+                            </label>
                         </>
                     ) : (
                         <>
@@ -184,9 +184,9 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                             />
                         </>
                     )}
-                    </Stack>
+                    </div>
                 </form>
-            </Box>
+            </div>
         </Modal>
     );
 };

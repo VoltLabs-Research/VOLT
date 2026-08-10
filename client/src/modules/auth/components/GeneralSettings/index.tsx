@@ -4,7 +4,7 @@ import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
-import { Callout, Stack } from '@voltstack/bravais';
+import { Callout } from '@voltstack/bravais';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -74,12 +74,12 @@ const GeneralSettings = () => {
 
     return (
         <SettingsPage title="General Settings">
-            <Stack border='soft' gap='1' p='1-5' radius='md'>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
                 <SettingsSectionHeader
                     title="Profile"
                     description="Update your personal information and profile picture" />
 
-                <Stack gap='1'>
+                <div className='flex flex-col gap-4'>
                     <AvatarUpload
                         avatarUrl={user?.avatar || null}
                         isUploading={isUploadingAvatar}
@@ -88,8 +88,8 @@ const GeneralSettings = () => {
                     <ProfileForm
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
-                </Stack>
-            </Stack>
+                </div>
+            </div>
 
             <Callout
                 tone='danger'

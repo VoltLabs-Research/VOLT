@@ -1,6 +1,6 @@
 import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
-import { Box, Divider, KeyValueList, KeyValueRow, Stack } from '@voltstack/bravais';
-import { formatSize } from '@voltstack/bravais';
+import { Divider, KeyValueList, KeyValueRow } from '@voltstack/bravais';
+import { formatSize } from '@/shared/utils/format';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
 import ContainerPortBindingsCard from './ContainerPortBindingsCard';
@@ -37,8 +37,8 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
     }));
 
     return (
-        <Stack className='container-overview'>
-            <Box className='container-overview-metrics'>
+        <div className='flex flex-col container-overview'>
+            <div className='container-overview-metrics'>
                 <ContainerMetricTile
                     label='CPU'
                     value={stats.cpu ? `${stats.cpu.usage.toFixed(1)}%` : '—'}
@@ -94,14 +94,14 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         }
                     ]}
                 />
-            </Box>
+            </div>
 
             <Divider className='mt-8 mb-8' />
 
-            <Box className='container-overview-inspector'>
+            <div className='container-overview-inspector'>
                 <ContainerInspectorList title='Information' rows={buildContainerInspectorRows(container)} />
 
-                <Box className='container-overview-inspector-side'>
+                <div className='container-overview-inspector-side'>
                     <EditableKeyValueCard<EnvVariableFormItem>
                         title='Environment Variables'
                         titleClassName='container-overview-section-title'
@@ -132,9 +132,9 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                     />
 
                     <ContainerPortBindingsCard container={container} onUpdatePorts={onUpdatePorts} />
-                </Box>
-            </Box>
-        </Stack>
+                </div>
+            </div>
+        </div>
     );
 };
 

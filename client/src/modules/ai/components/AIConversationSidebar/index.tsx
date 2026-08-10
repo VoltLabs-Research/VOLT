@@ -1,11 +1,10 @@
 import { matchesQuery } from '@/shared/utils/matches-query';
-import { EmptyState, IconButton, Row, SearchInput, Skeleton, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { EmptyState, IconButton, SearchInput, Skeleton, Tooltip } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { useMemo, useState } from 'react';
-import { CiChat1 } from 'react-icons/ci';
-import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
+import { MessageCircle, Pencil, Trash2 } from 'lucide-react';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import './AIConversationSidebar.css';
@@ -104,9 +103,9 @@ const AIConversationSidebar = ({
 
     const renderConversationTitle = (conversation: AIConversation) => {
         let content: ReactNode = (
-            <Text as='p' size='md' weight='medium' tone='primary' className='ai-conversation-title'>
+            <p className='text-sm font-medium text-foreground ai-conversation-title'>
                 {conversation.title || 'Untitled conversation'}
-            </Text>
+            </p>
         );
 
         if (editingConversationId === conversation._id) {
@@ -164,10 +163,10 @@ const AIConversationSidebar = ({
                 className={itemClassName}
                 {...interactiveProps}
             >
-                <Row justify='between' gap='05'>
+                <div className='flex flex-row items-center justify-between gap-2'>
                     {renderConversationTitle(conversation)}
 
-                    <Row gap='025' className='ai-conversation-item-actions'>
+                    <div className='flex flex-row items-center gap-1 ai-conversation-item-actions'>
                         <Tooltip content={renameTooltip}>
                             <IconButton
                                 aria-label={`Rename conversation ${conversation.title}`}
@@ -176,7 +175,7 @@ const AIConversationSidebar = ({
                                 disabled={!canUpdate}
                                 onClick={createRenameClickHandler(conversation)}
                             >
-                                <IoPencilOutline size={14} />
+                                <Pencil size={14} />
                             </IconButton>
                         </Tooltip>
 
@@ -188,19 +187,19 @@ const AIConversationSidebar = ({
                                 disabled={!canDelete}
                                 onClick={createDeleteClickHandler(conversation._id)}
                             >
-                                <IoTrashOutline size={14} />
+                                <Trash2 size={14} />
                             </IconButton>
                         </Tooltip>
-                    </Row>
-                </Row>
+                    </div>
+                </div>
             </div>
         );
     };
 
     let listContent: ReactNode = (
-        <Stack gap='025'>
+        <div className='flex flex-col gap-1'>
             {filteredConversations.map(renderConversationItem)}
-        </Stack>
+        </div>
     );
 
     if (isLoading) {
@@ -232,8 +231,8 @@ const AIConversationSidebar = ({
     }
 
     return (
-        <Stack height='max' className='ai-conversation-sidebar'>
-            <Stack gap='075' className='ai-conversation-sidebar-header panel-header-bordered'>
+        <div className='flex flex-col h-full ai-conversation-sidebar'>
+            <div className='flex flex-col gap-3 ai-conversation-sidebar-header panel-header-bordered'>
                 <SearchInput
                     placeholder='Search conversations...'
                     value={query}
@@ -246,7 +245,7 @@ const AIConversationSidebar = ({
                 >
                     <SidebarNavItem
                         label='Chat'
-                        icon={CiChat1}
+                        icon={MessageCircle}
                         onClick={createConversationClick}
                         disabled={!canCreate}
                     />
@@ -259,12 +258,12 @@ const AIConversationSidebar = ({
                         tone={RecoveryStateTone.Error}
                     />
                 )}
-            </Stack>
+            </div>
 
-            <Stack flex='1' overflow='y-auto' className='ai-conversation-sidebar-list'>
+            <div className='flex flex-col overflow-y-auto flex-1 ai-conversation-sidebar-list'>
                 {listContent}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

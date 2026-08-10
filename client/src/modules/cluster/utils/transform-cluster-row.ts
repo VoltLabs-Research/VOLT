@@ -1,7 +1,7 @@
 import { formatNetworkSpeed } from './format-network';
 import { getClusterCpuUsage } from './cluster-cpu-usage';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utils/cluster-live-metrics-status';
-import { formatDuration } from '@voltstack/bravais';
+import { formatDuration } from '@/shared/utils/format';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 import type { ClusterTransferJob } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster, TeamClusterRole, TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';

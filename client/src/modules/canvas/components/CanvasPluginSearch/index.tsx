@@ -1,5 +1,5 @@
 import { useCanvasPipelineStore } from '../../store/canvas-pipeline';
-import { EmptyState, Row, SearchInput, Stack, Surface, Text } from '@voltstack/bravais';
+import { EmptyState, SearchInput, Surface } from '@voltstack/bravais';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
@@ -164,22 +164,19 @@ const CanvasPluginSearch = () => {
                         {...getFloatingProps()}
                     >
                         {results.length === 0 ? (
-                            <Row justify='center' className='canvas-plugin-search-empty'>
+                            <div className='flex flex-row items-center justify-center canvas-plugin-search-empty'>
                                 <EmptyState
                                     title={query ? 'No plugins match' : 'No plugins available'}
                                     description={query
                                         ? `Nothing matches "${query.trim()}". Try a different name.`
                                         : 'Install or publish a plugin to see it listed here.'}
                                 />
-                            </Row>
+                            </div>
                         ) : (
-                            <Stack
+                            <div className='flex flex-col gap-1 p-2 canvas-plugin-search-list'
                                 id={resultsListId}
                                 role='listbox'
                                 aria-label='Plugin search results'
-                                className='canvas-plugin-search-list'
-                                gap='025'
-                                p='05'
                             >
                                 {results.map((modifier, index) => {
                                     const isActive = index === activeIndex;
@@ -191,16 +188,16 @@ const CanvasPluginSearch = () => {
                                             type='button'
                                             role='option'
                                             aria-selected={isActive}
-                                            className={`canvas-plugin-search-item flex items-center gap-2 p-2 rounded-sm ${isActive ? 'canvas-plugin-search-item--active' : ''}`}
+                                            className={`canvas-plugin-search-item flex items-center gap-2 p-2 rounded-lg ${isActive ? 'canvas-plugin-search-item--active' : ''}`}
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
                                         >
-                                            <Text size='md' tone='secondary' truncate>{modifier.name}</Text>
+                                            <span className='text-sm text-muted truncate'>{modifier.name}</span>
                                         </button>
                                     );
                                 })}
-                            </Stack>
+                            </div>
                         )}
                     </Surface>
                 </FloatingPortal>

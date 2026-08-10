@@ -2,7 +2,7 @@ import { InvitationEmailInput } from '../InvitationEmailInput';
 import { InvitationsList } from '../InvitationsList';
 import { InviteCodeSection } from '../InviteCodeSection';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
-import { Box, Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -83,13 +83,13 @@ export const TeamInvitePanel = ({
     ];
 
     return (
-        <Stack className='team-invite-panel'>
+        <div className='flex flex-col team-invite-panel'>
             <PanelHeader
                 tabs={tabs}
                 onClose={onClose}
             />
 
-            <Stack flex='1' overflow='y-auto' className='team-invite-content'>
+            <div className='flex flex-col overflow-y-auto flex-1 team-invite-content'>
                 {activeTab === InviteTab.Share && (
                     <>
                         <InvitationEmailInput
@@ -109,14 +109,14 @@ export const TeamInvitePanel = ({
                             onCancelInvitation={handleCancelInvitation}
                         />
 
-                        <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
+                        <div className='flex flex-row items-center justify-between gap-2 shrink-0 panel-footer-bordered' style={{ marginTop: 'auto' }}>
                             <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Copy size={16} />} onClick={handleCopy} disabled={!inviteCode}>
                                 Copy link
                             </Button>
                             <Button variant='ghost' intent='neutral' size='sm' leftIcon={<BookOpen size={16} />} disabled>
                                 Learn more
                             </Button>
-                        </Row>
+                        </div>
                     </>
                 )}
 
@@ -134,16 +134,16 @@ export const TeamInvitePanel = ({
 
                 {activeTab === InviteTab.PublicTrajectories && (
                     <>
-                        <Stack gap='075' className='team-public-trajectories-section'>
-                            <Text weight='medium' size='md' tone='primary'>Public Trajectories</Text>
-                            <Box className='team-public-trajectories-link'>
-                                <Text as='span' size='sm' tone='secondary' className='team-public-trajectories-link-value'>
+                        <div className='flex flex-col gap-3 team-public-trajectories-section'>
+                            <span className='text-sm font-medium text-foreground'>Public Trajectories</span>
+                            <div className='team-public-trajectories-link'>
+                                <span className='text-xs text-muted team-public-trajectories-link-value'>
                                     {publicTrajectoriesLink || 'No team selected'}
-                                </Text>
-                            </Box>
-                        </Stack>
+                                </span>
+                            </div>
+                        </div>
 
-                        <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
+                        <div className='flex flex-row items-center justify-between gap-2 shrink-0 panel-footer-bordered' style={{ marginTop: 'auto' }}>
                             <Button
                                 variant='ghost'
                                 intent='neutral'
@@ -154,10 +154,10 @@ export const TeamInvitePanel = ({
                             >
                                 Copy link
                             </Button>
-                        </Row>
+                        </div>
                     </>
                 )}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };

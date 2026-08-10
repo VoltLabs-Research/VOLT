@@ -1,4 +1,3 @@
-import './FormField.css';
 import { Controller } from 'react-hook-form';
 import DefaultFieldRenderer from './DefaultFieldRenderer';
 import InlineCanvasFieldRenderer from './InlineCanvasFieldRenderer';

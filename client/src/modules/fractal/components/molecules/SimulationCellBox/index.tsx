@@ -11,7 +11,7 @@ import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 import { FLOOR_AXIS_LOCK, useKeyboardDragModifiers } from '@/modules/fractal/components/molecules/SimulationCellBox/use-keyboard-drag-modifiers';
 import { useTouchDragArming } from '@/modules/fractal/components/molecules/SimulationCellBox/use-touch-drag-arming';
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import { useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';

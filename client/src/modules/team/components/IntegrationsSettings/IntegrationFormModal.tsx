@@ -1,5 +1,6 @@
-import { Button, LiquidToggle, Modal, Row, Select, Stack, Text } from '@voltstack/bravais';
+import { Button, LiquidToggle, Select } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IntegrationModelList from './IntegrationModelList';
 import { OLLAMA_DEFAULT_BASE_URL, TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
@@ -79,8 +80,7 @@ const IntegrationFormModal = ({
                     <Button
                         variant='outline'
                         intent='neutral'
-                        command='close'
-                        commandfor={TEAM_AI_INTEGRATION_MODAL_ID}
+                        onClick={() => closeModal(TEAM_AI_INTEGRATION_MODAL_ID)}
                         disabled={isSaving}
                     >
                         Cancel
@@ -99,10 +99,10 @@ const IntegrationFormModal = ({
             )}
         >
             <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-6' onSubmit={handleSubmit}>
-                <Stack gap='1'>
+                <div className='flex flex-col gap-4'>
                     {!editingProvider ? (
-                        <Stack gap='05'>
-                            <Text as='label' id={providerLabelId} size='md' weight='medium' tone='secondary'>Provider</Text>
+                        <div className='flex flex-col gap-2'>
+                            <label className='text-sm font-medium text-muted' id={providerLabelId}>Provider</label>
                             <Select
                                 options={providerSelectOptions}
                                 value={provider}
@@ -111,14 +111,14 @@ const IntegrationFormModal = ({
                                 placeholder='Select provider'
                                 aria-labelledby={providerLabelId}
                             />
-                        </Stack>
+                        </div>
                     ) : (
-                        <Stack gap='025'>
-                            <Text as='p' size='sm' tone='muted'>Provider</Text>
-                            <Text as='p' size='lg' weight='medium' tone='primary'>
+                        <div className='flex flex-col gap-1'>
+                            <p className='text-xs text-muted'>Provider</p>
+                            <p className='text-base font-medium text-foreground'>
                                 {integrationsByProvider.get(editingProvider)?.providerName || editingProvider}
-                            </Text>
-                        </Stack>
+                            </p>
+                        </div>
                     )}
 
                     {provider !== 'ollama' && (
@@ -157,8 +157,8 @@ const IntegrationFormModal = ({
                         onRemoveModel={handleRemoveModel}
                     />
 
-                    <Stack gap='05'>
-                        <Text as='label' id={defaultModelLabelId} size='md' weight='medium' tone='secondary'>Default model</Text>
+                    <div className='flex flex-col gap-2'>
+                        <label className='text-sm font-medium text-muted' id={defaultModelLabelId}>Default model</label>
                         <Select
                             options={modelOptions}
                             value={draft.defaultModel}
@@ -170,10 +170,10 @@ const IntegrationFormModal = ({
                             placeholder={modelOptions.length > 0 ? 'Select model' : 'No models available'}
                             aria-labelledby={defaultModelLabelId}
                         />
-                    </Stack>
+                    </div>
 
-                    <Row gap='05' justify='between' align='center' className='integrations-modal-toggle'>
-                        <Text as='p' size='md' tone='muted'>Enabled</Text>
+                    <div className='flex flex-row items-center justify-between gap-2 integrations-modal-toggle'>
+                        <p className='text-sm text-muted'>Enabled</p>
                         <LiquidToggle
                             pressed={draft.isEnabled}
                             onChange={(isEnabled) => setDraft((current) => ({
@@ -181,8 +181,8 @@ const IntegrationFormModal = ({
                                 isEnabled
                             }))}
                         />
-                    </Row>
-                </Stack>
+                    </div>
+                </div>
             </form>
         </Modal>
     );

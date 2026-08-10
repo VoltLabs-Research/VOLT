@@ -1,5 +1,4 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Text } from '@voltstack/bravais';
 
 interface PasswordConfirmationPromptProps {
     description: string;
@@ -15,9 +14,9 @@ const PasswordConfirmationPrompt = ({
     onPasswordChange
 }: PasswordConfirmationPromptProps) => (
     <>
-        <Text as='p' size='md' tone='secondary'>
+        <p className='text-sm text-muted'>
             {description}
-        </Text>
+        </p>
         <FormFieldRHF
             label='Password'
             type='password'

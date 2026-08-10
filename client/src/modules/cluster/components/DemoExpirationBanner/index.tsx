@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Row, Text } from '@voltstack/bravais';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 import { useDemoClusterCountdown } from '@/modules/cluster/hooks/use-demo-cluster-countdown';
 import { useDemoSessionActions } from '@/modules/cluster/hooks/use-demo-session-actions';
@@ -32,17 +31,13 @@ const DemoExpirationBanner = () => {
     if (!isDemo || !expiresAt) return null;
 
     return (
-        <Row
-            justify='center'
-            align='center'
-            gap='075'
-            className='demo-expiration-banner'
+        <div className='flex flex-row items-center justify-center gap-3 demo-expiration-banner'
             role='status'
             aria-live='polite'
         >
-            <Text className='demo-expiration-banner-text'>
+            <span className='demo-expiration-banner-text'>
                 You&apos;re using a temporal container that expires in {pad(minutes)}:{pad(seconds)}
-            </Text>
+            </span>
             <Link
                 to='/onboarding/cluster/setup'
                 className='demo-expiration-banner-cta'
@@ -60,7 +55,7 @@ const DemoExpirationBanner = () => {
             >
                 {isEndingSession ? 'Ending session...' : 'End session'}
             </button>
-        </Row>
+        </div>
     );
 };
 

@@ -1,7 +1,6 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { Text } from '@voltstack/bravais';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
@@ -10,7 +9,7 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback } from 'react';
 
-const renderSecondaryText = (value: unknown) => <Text size='md' tone='secondary'>{String(value)}</Text>;
+const renderSecondaryText = (value: unknown) => <span className='text-sm text-muted'>{String(value)}</span>;
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     {

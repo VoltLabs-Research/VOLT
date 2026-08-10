@@ -1,5 +1,5 @@
 import composeRefs from '@/shared/ui/utils/compose-refs';
-import './EditableTag.css';
+import { cn } from '@heroui/react';
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 
 interface EditableTagProps {
@@ -12,6 +12,9 @@ interface EditableTagProps {
     editing?: boolean;
     onEditingChange?: (isEditing: boolean) => void;
 };
+
+const INTERACTIVE_CLASSES = 'cursor-text transition-[background-color,box-shadow] duration-200 hover:bg-surface-hover/[0.92] focus-visible:bg-surface-hover/[0.92] focus-visible:ring-2 focus-visible:ring-focus';
+const EDITING_CLASSES = 'cursor-text w-fit min-w-[2ch] bg-surface-secondary ring-2 ring-focus';
 
 const getTextValue = (children: React.ReactNode): string => {
     if (typeof children === 'string' || typeof children === 'number') {
@@ -127,7 +130,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         Tag,
         {
             ref: combinedRef,
-            className: `editable-tag ${className || ''} ${isEditing ? 'is-editing rounded-xs' : 'editable-tag--interactive rounded-xs'}`.trim(),
+            className: cn('rounded-md', isEditing ? EDITING_CLASSES : INTERACTIVE_CLASSES, className),
             contentEditable: isEditing,
             tabIndex: isEditing ? -1 : 0,
             onClick: handleClick,

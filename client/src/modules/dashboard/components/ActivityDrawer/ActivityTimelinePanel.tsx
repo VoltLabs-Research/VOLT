@@ -1,8 +1,8 @@
-import { Skeleton, Text, Timeline, TimelineItem, EmptyState } from '@voltstack/bravais';
+import { Skeleton, Timeline, TimelineItem, EmptyState } from '@voltstack/bravais';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utils/activity-mappings';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { useMemo } from 'react';
-import { GoBeaker } from 'react-icons/go';
+import { Beaker } from 'lucide-react';
 import type { ActivityItem, DailyActivity, DailyActivityUserSummary } from '@volt/contracts/modules/daily-activity/domain';
 
 interface ActivityTimelinePanelProps {
@@ -83,7 +83,7 @@ const ActivityTimelinePanel = ({ activityData, lookbackDays }: ActivityTimelineP
     if (entries.length === 0) {
         return (
             <EmptyState
-                icon={<GoBeaker size={20} />}
+                icon={<Beaker size={20} />}
                 title='No activity this week'
                 description='Your activity from the last 7 days will appear here.'
                 className='flex-1'
@@ -102,16 +102,16 @@ const ActivityTimelinePanel = ({ activityData, lookbackDays }: ActivityTimelineP
                         display: 'inline-flex'
                     }}>{ACTIVITY_ICON[entry.type]}</span>}
                 >
-                    <Text size='md' tone='primary'>
-                        <Text as='strong' weight='medium' style={{ textTransform: 'capitalize' }}>
+                    <span className='text-sm text-foreground'>
+                        <strong className='font-medium' style={{ textTransform: 'capitalize' }}>
                             {entry.userName}
-                        </Text>
+                        </strong>
                         {' '}
-                        <Text tone='secondary'>{entry.description}</Text>
-                    </Text>
-                    <Text size='sm' tone='muted'>
+                        <span className='text-muted'>{entry.description}</span>
+                    </span>
+                    <span className='text-xs text-muted'>
                         {formatCompactRelativeTime(entry.timestamp)}
-                    </Text>
+                    </span>
                 </TimelineItem>
             ))}
         </Timeline>

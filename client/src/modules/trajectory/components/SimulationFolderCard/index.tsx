@@ -1,5 +1,5 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/contracts/listing';
-import { IconButton, Popover, PopoverMenu, PopoverMenuItem, Heading, Row, Stack } from '@voltstack/bravais';
+import { IconButton, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
 import { useCallback, useRef } from 'react';
@@ -78,7 +78,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
 
     return (
         <article
-            className='simulation-folder-card rounded-md border border-soft relative cursor-pointer'
+            className='simulation-folder-card rounded-xl border border-border relative cursor-pointer'
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -127,22 +127,22 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                     </Popover>
                 </div>
             ) : null}
-            <Stack gap='1-5' height='max' className='simulation-folder-card__content'>
-                <Row className='simulation-folder-card__icon items-center justify-center'>
+            <div className='flex flex-col gap-6 h-full simulation-folder-card__content'>
+                <div className='flex flex-row items-center simulation-folder-card__icon justify-center'>
                     <Folder size={30} strokeWidth={1.75} />
-                </Row>
+                </div>
 
-                <Stack gap='05' flex='1'>
-                    <Heading level={3} size='xl' weight='medium' truncate>
+                <div className='flex flex-col gap-2 flex-1'>
+                    <h3 className='text-xl font-medium text-foreground truncate'>
                         {folder.title}
-                    </Heading>
-                </Stack>
+                    </h3>
+                </div>
 
-                <Row gap='05' className='simulation-folder-card__footer text-secondary text-md'>
+                <div className='flex flex-row items-center gap-2 simulation-folder-card__footer text-muted text-sm'>
                     <span>Open folder</span>
                     <ChevronRight size={14} strokeWidth={2} />
-                </Row>
-            </Stack>
+                </div>
+            </div>
         </article>
     );
 }

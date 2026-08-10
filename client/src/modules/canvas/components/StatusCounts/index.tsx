@@ -1,5 +1,5 @@
 import { Clock, Play, Check, X } from 'lucide-react';
-import { Row, StatusBadge } from '@voltstack/bravais';
+import { StatusBadge } from '@voltstack/bravais';
 
 import type { ComponentType } from 'react';
 
@@ -47,7 +47,7 @@ const BADGES: { key: string; variant: 'warning' | 'active' | 'success' | 'danger
 ];
 
 const StatusCounts = ({ hideZero = false, ...counts }: StatusCountsProps) => (
-    <Row gap='05'>
+    <div className='flex flex-row items-center gap-2'>
         {BADGES.map(({ key, variant, Icon, countKey }) => {
             const count = counts[countKey] ?? 0;
             if (hideZero && count === 0) {
@@ -61,7 +61,7 @@ const StatusCounts = ({ hideZero = false, ...counts }: StatusCountsProps) => (
                 </StatusBadge>
             );
         })}
-    </Row>
+    </div>
 );
 
 export default StatusCounts;

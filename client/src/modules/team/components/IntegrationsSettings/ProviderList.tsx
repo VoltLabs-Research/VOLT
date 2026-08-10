@@ -1,4 +1,4 @@
-import { Button, Row, Skeleton, Stack, Text } from '@voltstack/bravais';
+import { Button, Skeleton } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Settings2, Trash2 } from 'lucide-react';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
@@ -27,13 +27,13 @@ const ProviderList = ({
         return (
             <div className='integrations-provider-list'>
                 {Array.from({ length: 3 }).map((_, index) => (
-                    <Row key={index} gap='1' justify='between' align='center' className='integrations-provider-row'>
+                    <div className='flex flex-row items-center justify-between gap-4 integrations-provider-row' key={index}>
                         <Skeleton variant='text' width={100} height={20} />
-                        <Row gap='025'>
+                        <div className='flex flex-row items-center gap-1'>
                             <Skeleton variant='circular' width={24} height={24} />
                             <Skeleton variant='circular' width={24} height={24} />
-                        </Row>
-                    </Row>
+                        </div>
+                    </div>
                 ))}
             </div>
         );
@@ -54,9 +54,9 @@ const ProviderList = ({
     if (integrations.length === 0) {
         return (
             <div className='integrations-empty-state'>
-                <Text as='p' size='md' tone='muted'>
+                <p className='text-sm text-muted'>
                     No providers configured yet.
-                </Text>
+                </p>
             </div>
         );
     }
@@ -64,19 +64,19 @@ const ProviderList = ({
     return (
         <div className='integrations-provider-list'>
             {integrations.map((integration) => (
-                <Row key={integration.provider} gap='1' justify='between' align='center' className='integrations-provider-row'>
-                    <Stack gap='025' style={{ minWidth: 0 }}>
-                        <Text as='p' size='md' weight='medium' tone='primary'>
+                <div className='flex flex-row items-center justify-between gap-4 integrations-provider-row' key={integration.provider}>
+                    <div className='flex flex-col gap-1' style={{ minWidth: 0 }}>
+                        <p className='text-sm font-medium text-foreground'>
                             {integration.providerName}
-                        </Text>
-                        <Text as='p' size='sm' tone='muted' truncate title={integration.defaultModel ?? 'No default model selected'}>
+                        </p>
+                        <p className='text-xs text-muted truncate' title={integration.defaultModel ?? 'No default model selected'}>
                             {integration.defaultModel
                                 ? `Default model: ${integration.defaultModel}`
                                 : 'No default model selected'}
-                        </Text>
-                    </Stack>
+                        </p>
+                    </div>
 
-                    <Row gap='025' className='integrations-provider-row-actions'>
+                    <div className='flex flex-row items-center gap-1 integrations-provider-row-actions'>
                         <Button
                             size='sm'
                             variant='ghost'
@@ -96,8 +96,8 @@ const ProviderList = ({
                             title={`Remove ${integration.providerName}`}
                             aria-label={`Remove ${integration.providerName}`}
                         />
-                    </Row>
-                </Row>
+                    </div>
+                </div>
             ))}
         </div>
     );

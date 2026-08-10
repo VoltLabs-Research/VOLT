@@ -1,7 +1,6 @@
-import './CopyableField.css';
+import { Button, cn } from '@heroui/react';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
-import { Button, Row, Text } from '@voltstack/bravais';
-import { MdCheck, MdContentCopy } from 'react-icons/md';
+import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 
 interface CopyableFieldProps {
@@ -9,6 +8,17 @@ interface CopyableFieldProps {
     successMessage?: string;
     className?: string;
 };
+
+/**
+ * `copyable-field` and `copyable-field-value` carry no rules of their own any
+ * more — both are hooks two other modules reach in by name:
+ * `.cluster-install-command-picker .copyable-field { min-width: 0 }` and
+ * `.trajectory-share-link-field .copyable-field-value { font-size: 0.7rem }`.
+ * They stay until those two call sites express the same thing on their own
+ * elements; dropping them here would silently unstyle both.
+ */
+const FIELD_CLASS_NAMES = 'copyable-field flex flex-row items-center justify-between gap-4 rounded-xl border border-border bg-surface-tertiary/55 p-4';
+const VALUE_CLASS_NAMES = 'copyable-field-value break-all font-mono text-sm text-foreground';
 
 const CopyableField = ({ value, successMessage = 'Copied to clipboard', className = '' }: CopyableFieldProps) => {
     const [copied, setCopied] = useState(false);
@@ -25,18 +35,19 @@ const CopyableField = ({ value, successMessage = 'Copied to clipboard', classNam
     };
 
     return (
-        <Row p='1' justify='between' gap='1' className={`copyable-field ${className}`}>
-            <Text as='p' tone='primary' size='md' className='copyable-field-value'>
+        <div className={cn(FIELD_CLASS_NAMES, className)}>
+            <p className={VALUE_CLASS_NAMES}>
                 {value}
-            </Text>
+            </p>
             <Button
                 variant='ghost'
-                intent='neutral'
-                onClick={handleCopy}
-                leftIcon={copied ? <MdCheck className='copyable-field-copy-success' /> : <MdContentCopy />}
+                isIconOnly
+                onPress={() => void handleCopy()}
                 aria-label='Copy to clipboard'
-            />
-        </Row>
+            >
+                {copied ? <Check className='text-success' /> : <Copy />}
+            </Button>
+        </div>
     );
 };
 

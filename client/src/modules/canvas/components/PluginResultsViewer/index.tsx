@@ -4,7 +4,7 @@ import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTab
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import ExposureChart from './ExposureChart';
 import { usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
-import { Box, Button, Heading, IconButton, Row, Surface, Text, Tooltip } from '@voltstack/bravais';
+import { Button, IconButton, Tooltip } from '@voltstack/bravais';
 
 import './PluginResultsViewer.css';
 
@@ -33,12 +33,12 @@ const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
     );
     const rows = listingQuery.data?.data ?? [];
     if (listingQuery.isLoading) {
-        return <Text size='xs' tone='muted' style={{ padding: '8px' }}>Loading chart data...</Text>;
+        return <span className='text-xs text-muted' style={{ padding: '8px' }}>Loading chart data...</span>;
     }
     if (rows.length === 0) {
         return (
             <figure className="canvas-results-chart">
-                <Text size='xs' tone='muted' style={{ padding: '8px' }}>No row data available for chart.</Text>
+                <span className='text-xs text-muted' style={{ padding: '8px' }}>No row data available for chart.</span>
                 <figcaption>{artifact.displayName}</figcaption>
             </figure>
         );
@@ -59,10 +59,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
     const resolvedTeamId = teamId ?? undefined;
 
     return (
-        <Surface variant='glass' display='flex' direction='column' position='absolute' right='1' bottom='1' width='max' overflow='hidden' className="canvas-results-viewer">
-            <Row justify='between' className="canvas-results-header panel-header-bordered">
-                <Heading level={3} size='sm'>{title}</Heading>
-                <Row gap='05'>
+        <div className='bg-surface border border-border flex flex-col absolute overflow-hidden w-full bottom-4 right-4 canvas-results-viewer'>
+            <div className='flex flex-row items-center justify-between canvas-results-header panel-header-bordered'>
+                <h3 className='text-xs font-medium text-foreground'>{title}</h3>
+                <div className='flex flex-row items-center gap-2'>
                     {!isEmpty && (
                         <Tooltip content="Download as XLSX">
                             <Button
@@ -81,16 +81,16 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                     <IconButton variant="ghost" size="sm" onClick={close} aria-label="Close results">
                         ×
                     </IconButton>
-                </Row>
-            </Row>
+                </div>
+            </div>
 
             {isEmpty ? (
-                <Row justify='center' p='05'>
-                    <Text size='sm' tone='muted'>No listings available for this analysis</Text>
-                </Row>
+                <div className='flex flex-row items-center justify-center p-2'>
+                    <span className='text-xs text-muted'>No listings available for this analysis</span>
+                </div>
             ) : (
                 <>
-                    <Row overflow='auto' className="canvas-results-tabs" role="tablist">
+                    <div className='flex flex-row items-center overflow-auto canvas-results-tabs' role="tablist">
                         {tabs.map((tab, index) => (
                             <Button
                                 key={tab.key}
@@ -106,9 +106,9 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 {tab.label}
                             </Button>
                         ))}
-                    </Row>
+                    </div>
 
-                    <Box overflow='auto' className="canvas-results-content">
+                    <div className='overflow-auto canvas-results-content'>
                         {activeExposureName && (
                             <PluginExposureTable
                                 key={`${activeExposureName}-${analysisId}`}
@@ -138,10 +138,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 />
                             </div>
                         )}
-                    </Box>
+                    </div>
                 </>
             )}
-        </Surface>
+        </div>
     );
 };
 

@@ -2,7 +2,6 @@ import { frameGroupStatusClassNames } from '@/modules/jobs/utils/frame-group-sta
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import { Box } from '@voltstack/bravais';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';
@@ -43,7 +42,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
     ));
 
     return (
-        <Box className='job-group' role='listitem'>
+        <div className='job-group' role='listitem'>
             <JobGroupMenu
                 trajectoryId={group.trajectoryId}
                 loadingAction={loadingAction}
@@ -64,7 +63,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
             <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='job-group-children' duration={0.25} ease='easeInOut'>
                 {content}
             </CollapsibleJobContent>
-        </Box>
+        </div>
     );
 };
 

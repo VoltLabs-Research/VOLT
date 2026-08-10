@@ -1,5 +1,5 @@
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import { PopoverMenuItem } from '@voltstack/bravais';
+import ContextMenuItem from '@/shared/ui/components/ContextMenuPopover/ContextMenuItem';
 import { useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
@@ -44,7 +44,7 @@ const AsyncMenuItemWrapper = ({ option, onSuccess, size = 'md' }: AsyncMenuItemW
         : undefined;
 
     return (
-        <PopoverMenuItem
+        <ContextMenuItem
             icon={menuIcon}
             onClick={handleClick}
             variant={option.destructive ? 'danger' : 'default'}
@@ -53,7 +53,7 @@ const AsyncMenuItemWrapper = ({ option, onSuccess, size = 'md' }: AsyncMenuItemW
             isLoading={isLoading}
         >
             {option.label}
-        </PopoverMenuItem>
+        </ContextMenuItem>
     );
 };
 

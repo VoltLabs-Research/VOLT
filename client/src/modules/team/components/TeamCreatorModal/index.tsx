@@ -4,7 +4,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/ui/actions/run-action';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, resetModal, Text } from '@voltstack/bravais';
+import { Modal, resetModal } from '@voltstack/bravais';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -91,15 +91,15 @@ export const TeamCreatorModal = ({
                 <ModalFooterActions
                     secondary={!isRequired ? {
                         label: 'Cancel',
-                        onClick: handleClose,
-                        disabled: form.formState.isSubmitting
+                        onPress: handleClose,
+                        isDisabled: form.formState.isSubmitting
                     } : undefined}
                     primary={{
                         label: 'Create Team',
                         type: 'submit',
                         form: TEAM_CREATOR_FORM_ID,
-                        isLoading: form.formState.isSubmitting,
-                        disabled: !nameValue.trim() || form.formState.isSubmitting
+                        isPending: form.formState.isSubmitting,
+                        isDisabled: !nameValue.trim() || form.formState.isSubmitting
                     }}
                 />
             )}
@@ -123,9 +123,9 @@ export const TeamCreatorModal = ({
                 />
 
                 {apiError && (
-                    <Text as='p' size='md' className='team-creator-error rounded-sm'>
+                    <p className='text-sm team-creator-error rounded-lg'>
                         {apiError}
-                    </Text>
+                    </p>
                 )}
             </form>
         </Modal>

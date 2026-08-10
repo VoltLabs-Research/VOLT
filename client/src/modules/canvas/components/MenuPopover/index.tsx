@@ -1,4 +1,4 @@
-import { Button, Divider, Popover, PopoverMenu, Row, Text } from '@voltstack/bravais';
+import { Button, Divider, Popover, PopoverMenu } from '@voltstack/bravais';
 import type { MenuConfig, MenuItem } from '../TopToolbarMenus';
 
 import { MenuItemType } from '../TopToolbarMenus';
@@ -15,7 +15,7 @@ const renderMenuItemIcon = (item: MenuItem) => {
         return undefined;
     }
 
-    return <Row as='span' justify='center' shrink='0' className="text-lg">{item.icon}</Row>;
+    return <span className='flex flex-row items-center justify-center shrink-0 text-base'>{item.icon}</span>;
 };
 
 const renderMenuItemShortcut = (item: MenuItem) => {
@@ -23,7 +23,7 @@ const renderMenuItemShortcut = (item: MenuItem) => {
         return undefined;
     }
 
-    return <Text as='span' size='xs' tone='muted'>{item.shortcut}</Text>;
+    return <span className='text-xs text-muted'>{item.shortcut}</span>;
 };
 
 const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: number) => {

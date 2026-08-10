@@ -1,8 +1,8 @@
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utils/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
-import { IoArrowBackOutline, IoInformationCircleOutline } from 'react-icons/io5';
-import { IconButton, Row, Stack, StatusDot, Text, Tooltip } from '@voltstack/bravais';
+import { ArrowLeft, Info } from 'lucide-react';
+import { IconButton, StatusDot, Tooltip } from '@voltstack/bravais';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './ChatHeader.css';
 
@@ -28,8 +28,8 @@ const ChatHeader = ({
     const infoLabel = isDetailsOpen ? 'Hide chat details' : 'Show chat details';
 
     return (
-        <Row justify='between' className='chat-header'>
-            <Row gap='1'>
+        <div className='flex flex-row items-center justify-between chat-header'>
+            <div className='flex flex-row items-center gap-4'>
                 {onBackClick && (
                     <Tooltip content='Back to conversations'>
                         <IconButton
@@ -40,29 +40,29 @@ const ChatHeader = ({
                             title='Back to conversations'
                             aria-label='Back to conversations'
                         >
-                            <IoArrowBackOutline size={20} />
+                            <ArrowLeft size={20} />
                         </IconButton>
                     </Tooltip>
                 )}
 
                 <ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' />
 
-                <Stack>
-                    <Text as='p' size='lg' weight='bold'>
+                <div className='flex flex-col'>
+                    <p className='text-base font-semibold'>
                         {displayName}
-                    </Text>
+                    </p>
                     {statusText && (
-                        <Row gap='05' className='chat-header-status'>
+                        <div className='flex flex-row items-center gap-2 chat-header-status'>
                             {!chat.isGroup && (
                                 <StatusDot tone={presence === PresenceStatus.Online ? 'success' : 'neutral'} />
                             )}
-                            <Text as='p' size='md' tone='muted'>{statusText}</Text>
-                        </Row>
+                            <p className='text-sm text-muted'>{statusText}</p>
+                        </div>
                     )}
-                </Stack>
-            </Row>
+                </div>
+            </div>
 
-            <Row gap='05'>
+            <div className='flex flex-row items-center gap-2'>
                 {onInfoClick && (
                     <Tooltip content={infoLabel}>
                         <IconButton
@@ -73,12 +73,12 @@ const ChatHeader = ({
                             aria-label={infoLabel}
                             aria-pressed={isDetailsOpen}
                         >
-                            <IoInformationCircleOutline size={20} />
+                            <Info size={20} />
                         </IconButton>
                     </Tooltip>
                 )}
-            </Row>
-        </Row>
+            </div>
+        </div>
     );
 };
 

@@ -1,5 +1,5 @@
 import './UserBadge.css';
-import { Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { CheckCircle2 } from 'lucide-react';
 
 interface UserBadgeProps{
@@ -9,14 +9,14 @@ interface UserBadgeProps{
 }
 
 const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
-    <Row radius='md' p='1' justify='between' gap='1' className='user-badge'>
-        <Row gap='075' flex='1' className='min-w-0'>
+    <div className='flex flex-row items-center justify-between gap-4 p-4 rounded-xl user-badge'>
+        <div className='flex flex-row items-center gap-3 flex-1 min-w-0'>
             <CheckCircle2 size={18} className='shrink-0 user-badge-status-icon' />
-            <Stack>
-                <Text size='sm' className='user-badge-label'>{label}</Text>
-                <Text size='md' weight='medium' truncate className='user-badge-email'>{email}</Text>
-            </Stack>
-        </Row>
+            <div className='flex flex-col'>
+                <span className='text-xs user-badge-label'>{label}</span>
+                <span className='text-sm font-medium truncate user-badge-email'>{email}</span>
+            </div>
+        </div>
 
         <Button
             variant='ghost'
@@ -24,7 +24,7 @@ const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
             onClick={onChangeClick}>
             Change
         </Button>
-    </Row>
+    </div>
 );
 
 export default UserBadge;

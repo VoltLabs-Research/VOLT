@@ -2,9 +2,11 @@ import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utils/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import SharedFilesList from '../SharedFilesList';
-import { IoChatbubblesOutline, IoPeopleOutline } from 'react-icons/io5';
-import { Box, Button, SectionLabel, Stack, Text, EmptyState } from '@voltstack/bravais';
+import { MessagesSquare, Users } from 'lucide-react';
+import { Button, EmptyState } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
+import { GROUP_MANAGEMENT_MODAL_ID } from '../GroupManagementModal';
+import { openModal } from '@/shared/ui/modal';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import './ChatDetailsPanel.css';
@@ -26,16 +28,16 @@ const ChatDetailsPanel = ({
 }: ChatDetailsPanelProps) => {
     if (!chat) {
         return (
-            <Stack height='max' className='chat-details'>
+            <div className='flex flex-col h-full chat-details'>
                 <PanelHeader title='Details' />
-                <Box display='flex' flex='1' className='items-center justify-center'>
+                <div className='flex flex-1 items-center justify-center'>
                     <EmptyState
-                        icon={<IoChatbubblesOutline size={32} />}
+                        icon={<MessagesSquare size={32} />}
                         title='No chat selected'
                         description='Select a conversation to view details'
                     />
-                </Box>
-            </Stack>
+                </div>
+            </div>
         );
     }
 
@@ -44,15 +46,15 @@ const ChatDetailsPanel = ({
     const headerTitle = chat.isGroup ? 'Group Info' : 'Contact Info';
 
     return (
-        <Stack height='max' className='chat-details'>
+        <div className='flex flex-col h-full chat-details'>
             <PanelHeader
                 title={headerTitle}
                 onClose={onClose}
                 className='chat-details-header'
             />
 
-            <Stack flex='1' overflow='y-auto' className='chat-details-content'>
-                <Stack align='center' gap='075' textAlign='center' className='chat-details-section'>
+            <div className='flex flex-col overflow-y-auto flex-1 chat-details-content'>
+                <div className='flex flex-col items-center gap-3 text-center chat-details-section'>
                     <ChatAvatar
                         chat={chat}
                         currentUserId={currentUserId}
@@ -60,46 +62,45 @@ const ChatDetailsPanel = ({
                         showStatus={!chat.isGroup}
                         isOnline={presence === PresenceStatus.Online}
                     />
-                    <Text as='p' size='xl' weight='bold'>
+                    <p className='text-xl font-semibold'>
                         {displayName}
-                    </Text>
+                    </p>
                     {statusText && (
-                        <Text as='p' size='md' tone='muted'>{statusText}</Text>
+                        <p className='text-sm text-muted'>{statusText}</p>
                     )}
                     {chat.isGroup && chat.groupDescription && (
-                        <Text as='p' size='md' tone='secondary'>
+                        <p className='text-sm text-muted'>
                             {chat.groupDescription}
-                        </Text>
+                        </p>
                     )}
-                </Stack>
+                </div>
 
                 {chat.isGroup && (
-                    <Box className='chat-details-section'>
-                        <SectionLabel className='chat-details-section-title block mb-3'>
+                    <div className='chat-details-section'>
+                        <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted chat-details-section-title block mb-3'>
                             Actions
-                        </SectionLabel>
+                        </span>
                         <Button
                             variant='ghost'
                             intent='neutral'
-                            leftIcon={<IoPeopleOutline />}
+                            leftIcon={<Users />}
                             block
                             align='start'
-                            commandfor='group-management-modal'
-                            command='show-modal'
+                            onClick={() => openModal(GROUP_MANAGEMENT_MODAL_ID)}
                         >
                             Manage Group
                         </Button>
-                    </Box>
+                    </div>
                 )}
 
-                <Box className='chat-details-section'>
-                    <SectionLabel className='chat-details-section-title block mb-3'>
+                <div className='chat-details-section'>
+                    <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted chat-details-section-title block mb-3'>
                         Shared Files
-                    </SectionLabel>
+                    </span>
                     <SharedFilesList messages={messages} />
-                </Box>
-            </Stack>
-        </Stack>
+                </div>
+            </div>
+        </div>
     );
 };
 

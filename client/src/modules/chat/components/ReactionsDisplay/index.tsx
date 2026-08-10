@@ -1,4 +1,4 @@
-import { Box, Button } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
 import { hasUserReacted } from '@/modules/chat/utils/reactions';
 import type { ChatReaction } from '@volt/contracts/modules/chat/domain';
@@ -14,7 +14,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
     if (reactions.length === 0) return null;
 
     return (
-        <Box display='flex' wrap gap='025' className='chat-reactions-display'>
+        <div className='flex flex-wrap gap-1 chat-reactions-display'>
             {reactions.map((reaction) => (
                 <Button
                     key={reaction.emoji}
@@ -22,7 +22,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     size='sm'
                     shape='pill'
                     className={cn(
-                        'text-md chat-reaction',
+                        'text-sm chat-reaction',
                         hasUserReacted(reaction, currentUserId) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}
@@ -32,7 +32,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     {reaction.emoji} {reaction.users.length}
                 </Button>
             ))}
-        </Box>
+        </div>
     );
 };
 

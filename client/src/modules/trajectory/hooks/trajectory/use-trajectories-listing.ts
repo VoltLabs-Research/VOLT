@@ -22,9 +22,8 @@ import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resour
 import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import type { MenuOption } from '@/shared/contracts/menu';
-import { Download, FolderInput, Trash2 } from 'lucide-react';
+import { Download, FolderInput, Table, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
-import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
 import useDownloadTrajectory from './use-download-trajectory';
 import {
@@ -137,7 +136,7 @@ const useTrajectoriesListing = () => {
         },
         viewAtoms: {
             label: 'Inspect Atoms',
-            icon: RiTableLine,
+            icon: Table,
             handler: ({ item: trajectory }) => {
                 const firstTimestep = trajectory.firstTimestep ?? extractTrajectoryTimesteps(trajectory)[0];
                 if (firstTimestep === undefined) {

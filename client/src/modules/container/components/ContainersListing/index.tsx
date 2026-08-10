@@ -11,10 +11,9 @@ import {
     FolderedListingModals,
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
-import { Heading, Text } from '@voltstack/bravais';
 import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
 import useTip from '@/shared/tips/use-tip';
-import { formatSize } from '@voltstack/bravais';
+import { formatSize } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -36,7 +35,7 @@ const ContainersListing = () => {
             key: 'image',
             title: 'Image',
             sortable: true,
-            render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
+            render: (value, row) => <span className='text-sm text-muted'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
             skeleton: {
                 variant: 'text',
                 width: 150
@@ -47,7 +46,7 @@ const ContainersListing = () => {
             key: 'cpus',
             title: 'Cores',
             sortable: true,
-            render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
+            render: (value, row) => <span className='text-sm text-muted'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
             skeleton: {
                 variant: 'text',
                 width: 70
@@ -59,10 +58,10 @@ const ContainersListing = () => {
             sortable: true,
             render: (value, row) => {
                 if (isContainerFolderRow(row)) {
-                    return <Text as='span' size='md' tone='muted'>-</Text>;
+                    return <span className='text-sm text-muted'>-</span>;
                 }
 
-                return <Text as='span' size='md' tone='secondary'>{formatSize(Number(value) * 1024 * 1024)}</Text>;
+                return <span className='text-sm text-muted'>{formatSize(Number(value) * 1024 * 1024)}</span>;
             },
             skeleton: {
                 variant: 'text',
@@ -101,7 +100,7 @@ const ContainersListing = () => {
     return (
         <>
             <FolderedDocumentListing<ContainerListingRow, { folderId: string | null }>
-                title={<Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>Containers</Heading>}
+                title={<h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Containers</h3>}
                 columns={columns}
                 listing={listing}
                 createButtonTitle={canCreate ? 'New Container' : undefined}

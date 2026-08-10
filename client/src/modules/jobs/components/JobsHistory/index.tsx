@@ -1,7 +1,7 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/JobGroup';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import { EmptyState, Stack } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
@@ -73,9 +73,9 @@ const JobsHistory = ({
     }
 
     return (
-        <Stack gap='05' height='max' role='list'>
+        <div className='flex flex-col gap-2 h-full' role='list'>
             {content}
-        </Stack>
+        </div>
     );
 };
 

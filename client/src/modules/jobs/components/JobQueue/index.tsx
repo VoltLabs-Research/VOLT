@@ -1,12 +1,12 @@
+import { cn } from '@heroui/react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { JOB_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import { Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { Button, Loader, StatusBadge } from '@voltstack/bravais';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
-import { CiRedo } from 'react-icons/ci';
-import { IoCheckmark, IoCloseOutline, IoTimeOutline, IoWarningOutline } from 'react-icons/io5';
+import { Check, Clock, Redo2, TriangleAlert, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Job } from '@volt/contracts/modules/jobs/domain';
 
@@ -20,12 +20,12 @@ interface StatusConfigEntry {
 };
 
 const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
-    [JobStatus.Completed]: { icon: <IoCheckmark /> },
+    [JobStatus.Completed]: { icon: <Check /> },
     [JobStatus.Running]: { icon: <Loader scale={0.3} isFixed={false} /> },
-    [JobStatus.Queued]: { icon: <IoTimeOutline /> },
-    [JobStatus.Retrying]: { icon: <CiRedo /> },
-    [JobStatus.QueuedAfterFailure]: { icon: <IoWarningOutline /> },
-    [JobStatus.Failed]: { icon: <IoCloseOutline /> }
+    [JobStatus.Queued]: { icon: <Clock /> },
+    [JobStatus.Retrying]: { icon: <Redo2 /> },
+    [JobStatus.QueuedAfterFailure]: { icon: <TriangleAlert /> },
+    [JobStatus.Failed]: { icon: <X /> }
 };
 
 const queueTypeNames: Record<string, string> = {
@@ -78,44 +78,44 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
 
     return (
-        <Row justify='between' gap='075' className={containerClass}>
-            <span className='job-status-icon text-lg' aria-hidden='true'>{statusEntry.icon}</span>
-            <Stack gap='025' flex='1' minW='0'>
-                <Row justify='between' gap='05' wrap>
-                    <Heading level={3} size='sm' weight='bold' className='job-name'>
+        <div className={cn('flex flex-row items-center justify-between gap-3', containerClass)}>
+            <span className='job-status-icon text-base' aria-hidden='true'>{statusEntry.icon}</span>
+            <div className='flex flex-col gap-1 flex-1 min-w-0'>
+                <div className='flex flex-row items-center justify-between flex-wrap gap-2'>
+                    <h3 className='text-xs font-semibold text-foreground job-name'>
                         {getJobDisplayName(job)}
-                    </Heading>
+                    </h3>
                     <StatusBadge status={job.status} size='compact'>{statusLabel}</StatusBadge>
-                </Row>
-                <Row gap='05' wrap>
-                    <Text as='p' size='sm' tone='secondary' className='job-message flex items-center gap-2'>
+                </div>
+                <div className='flex flex-row items-center flex-wrap gap-2'>
+                    <p className='text-xs text-muted job-message flex items-center gap-2'>
                         {hasFrameTimestep && <span>Frame {job.timestep}</span>}
                         {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
                         {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
-                    </Text>
+                    </p>
                     {job.processingTimeMs && job.status === JobStatus.Completed && (
-                        <Text size='sm' tone='muted' className='job-meta'>• {formatDuration(job.processingTimeMs)}</Text>
+                        <span className='text-xs text-muted job-meta'>• {formatDuration(job.processingTimeMs)}</span>
                     )}
-                </Row>
+                </div>
                 {job.error && (
-                    <Text as='p' size='sm' className='job-error mt-1'>{job.error}</Text>
+                    <p className='text-xs job-error mt-1'>{job.error}</p>
                 )}
-            </Stack>
-            <Row gap='075'>
+            </div>
+            <div className='flex flex-row items-center gap-3'>
                 {showRetryAction && (
                     <Button
                         variant='outline'
                         intent='neutral'
                         size='sm'
                         onClick={handleRetry}
-                        leftIcon={<CiRedo />}
+                        leftIcon={<Redo2 />}
                         className='job-retry-button'
                     >
                         Retry
                     </Button>
                 )}
-            </Row>
-        </Row>
+            </div>
+        </div>
     );
 };
 

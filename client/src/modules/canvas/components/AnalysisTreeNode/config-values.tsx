@@ -1,4 +1,3 @@
-import { Text } from '@voltstack/bravais';
 import { isRecord } from '@/shared/utils/type-guards';
 import { ANALYSIS_EXECUTION_METADATA_KEY } from '@/modules/canvas/utils/selected-timestep-analysis';
 import type { ReactNode } from 'react';
@@ -52,7 +51,7 @@ export const monoValue = (node: ReactNode): ReactNode => (
     <span className='font-mono tabular-nums'>{node}</span>
 );
 
-export const emptyValue = (): ReactNode => plainValue(<Text tone='muted'>—</Text>);
+export const emptyValue = (): ReactNode => plainValue(<span className='text-muted'>—</span>);
 
 /**
  * Renders an arbitrary plugin config value. Analysis config is declared as
@@ -66,7 +65,7 @@ const renderValue = (value: unknown): ReactNode => {
 
     if (typeof value === 'string') {
         if (value.length <= MAX_INLINE_STRING) return plainValue(value);
-        return plainValue(<Text truncate title={value}>{value}</Text>);
+        return plainValue(<span className='truncate' title={value}>{value}</span>);
     }
 
     if (Array.isArray(value)) {

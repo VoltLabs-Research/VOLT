@@ -1,5 +1,5 @@
 import './JobsDrawer.css';
-import { Box, Modal, Text } from '@voltstack/bravais';
+import { Modal } from '@voltstack/bravais';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
@@ -22,8 +22,8 @@ const JobsDrawer = () => {
             description={scopeLabel}
             lazyMount
         >
-            <Box className='dashboard-jobs-drawer'>
-                <Box className='dashboard-jobs-drawer-summary'>
+            <div className='dashboard-jobs-drawer'>
+                <div className='dashboard-jobs-drawer-summary'>
                     <StatusCounts
                         queued={counts.queued}
                         running={counts.running}
@@ -31,19 +31,19 @@ const JobsDrawer = () => {
                         failed={counts.failed}
                     />
                     {counts.queued + counts.running + counts.completed + counts.failed === 0 && (
-                        <Text size='sm' tone='muted'>No compute jobs yet.</Text>
+                        <span className='text-xs text-muted'>No compute jobs yet.</span>
                     )}
-                </Box>
+                </div>
 
-                <Box className='dashboard-jobs-drawer-body'>
+                <div className='dashboard-jobs-drawer-body'>
                     <JobsHistoryViewer
                         trajectoryId={trajectoryId ?? undefined}
                         displayMode='full'
                         groupStatusPresentation='trajectory-name'
                         autoSelectAnalysis={false}
                     />
-                </Box>
-            </Box>
+                </div>
+            </div>
         </Modal>
     );
 };

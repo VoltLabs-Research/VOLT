@@ -1,7 +1,7 @@
 import { confirm, confirmDelete } from './use-confirm';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCallback } from 'react';
-import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
@@ -32,9 +32,9 @@ interface UseListingActionsReturn<T = unknown> {
 };
 
 const ICON_PRESETS_REACT_ICONS: Record<string, ComponentType<MenuIconProps>> = {
-    delete: RiDeleteBin6Line,
-    edit: RiEditLine,
-    view: RiEyeLine
+    delete: Trash2,
+    edit: Pencil,
+    view: Eye
 };
 
 const capitalize = (str: string): string => {

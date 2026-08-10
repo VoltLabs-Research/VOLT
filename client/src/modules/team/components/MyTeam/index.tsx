@@ -1,4 +1,3 @@
-import { Box, Heading, Row } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
@@ -106,22 +105,22 @@ export default function MyTeamTemplate() {
     }), [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
 
     return (
-        <Box height='max' className='my-team-page'>
+        <div className='h-full my-team-page'>
             <DocumentListing<TeamMemberStats>
                 title={(
-                    <Row gap='1'>
+                    <div className='flex flex-row items-center gap-4'>
                         {canInvite ? (
                             <EditableTag
                                 as='h1'
-                                className='text-3xl font-medium sm:font-size-4 text-primary'
+                                className='text-3xl font-medium sm:font-size-4 text-foreground'
                                 onSave={handleSaveTeamName}
                             >
                                 {selectedTeam.name}
                             </EditableTag>
                         ) : (
-                            <Heading level={1} className='text-3xl font-medium sm:font-size-4 text-primary'>{selectedTeam.name}</Heading>
+                            <h1 className='text-base font-medium text-foreground text-3xl sm:font-size-4'>{selectedTeam.name}</h1>
                         )}
-                    </Row>
+                    </div>
                 )}
                 queryKey={queryKey}
                 columns={columns}
@@ -131,6 +130,6 @@ export default function MyTeamTemplate() {
                 headerActions={<ActivityHeatmap data={activityData} />}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
-        </Box>
+        </div>
     );
 };

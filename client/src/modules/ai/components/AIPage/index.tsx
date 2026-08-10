@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import AIArtifactSpreadsheetPanel from '@/modules/ai/components/AIArtifactSpreadsheetPanel';
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationSidebar from '@/modules/ai/components/AIConversationSidebar';
@@ -7,7 +8,7 @@ import useResizable from '@/modules/canvas/hooks/use-resizable';
 import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
 import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { EmptyState, Box, Row, Stack } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -147,8 +148,8 @@ const AIPage = () => {
     }
 
     let workspaceContent: ReactNode = (
-        <Row flex='1' className={workspaceClassName}>
-            <Stack flex='1' className='ai-page-chat-pane'>
+        <div className={cn('flex flex-row items-center flex-1', workspaceClassName)}>
+            <div className='flex flex-col flex-1 ai-page-chat-pane'>
                 <AIConversationThread
                     conversationId={conversationId}
                     messages={messages}
@@ -172,7 +173,7 @@ const AIPage = () => {
                     isSending={isSendingMessage}
                     error={sendMessageError}
                 />
-            </Stack>
+            </div>
 
             {openArtifact && (
                 <>
@@ -183,42 +184,42 @@ const AIPage = () => {
                         controls='ai-artifact-spreadsheet-panel'
                         {...spreadsheetPanel.handleProps}
                     />
-                    <Box id='ai-artifact-spreadsheet-panel' display='flex'>
+                    <div className='flex' id='ai-artifact-spreadsheet-panel'>
                         <AIArtifactSpreadsheetPanel
                             artifact={openArtifact}
                             onClose={handleCloseArtifactPanel}
                             width={spreadsheetPanel.size}
                         />
-                    </Box>
+                    </div>
                 </>
             )}
-        </Row>
+        </div>
     );
 
     if (!selectedTeam?._id) {
         workspaceContent = (
-            <Box display='flex' flex='1' className='items-center justify-center'>
+            <div className='flex flex-1 items-center justify-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to start an AI conversation.'
                 />
-            </Box>
+            </div>
         );
     } else if (noProviderConfigured) {
         workspaceContent = (
-            <Box display='flex' flex='1' className='items-center justify-center'>
+            <div className='flex flex-1 items-center justify-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations to start chatting.'
                     buttonText='Open integrations'
                     buttonOnClick={() => navigate('/dashboard/settings/integrations')}
                 />
-            </Box>
+            </div>
         );
     }
 
     return (
-        <Row height='max' className='ai-page'>
+        <div className='flex flex-row items-center h-full ai-page'>
             <AIConversationSidebar
                 conversations={conversations}
                 activeConversationId={conversationId}
@@ -233,9 +234,9 @@ const AIPage = () => {
                 canDelete={canDelete}
             />
 
-            <Stack height='max' flex='1' className='ai-page-main'>
+            <div className='flex flex-col h-full flex-1 ai-page-main'>
                 {providerCatalogError && (
-                    <Box className='ai-page-inline-alert'>
+                    <div className='ai-page-inline-alert'>
                         <RecoveryState
                             title='Unable to load AI providers'
                             description={providerCatalogError}
@@ -244,12 +245,12 @@ const AIPage = () => {
                                 loadProviderCatalog().catch(() => undefined);
                             }}
                         />
-                    </Box>
+                    </div>
                 )}
 
                 {workspaceContent}
-            </Stack>
-        </Row>
+            </div>
+        </div>
     );
 };
 

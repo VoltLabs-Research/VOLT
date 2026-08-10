@@ -1,5 +1,5 @@
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import { PopoverMenuItem } from '@voltstack/bravais';
+import ContextMenuItem from './ContextMenuItem';
 import { useCallback, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
@@ -53,7 +53,7 @@ const AsyncContextMenuItem = ({
         : undefined;
 
     return (
-        <PopoverMenuItem
+        <ContextMenuItem
             icon={menuIcon}
             onClick={handleClick}
             variant={option.destructive ? 'danger' : 'default'}
@@ -62,7 +62,7 @@ const AsyncContextMenuItem = ({
             isLoading={isLoading}
         >
             {option.label}
-        </PopoverMenuItem>
+        </ContextMenuItem>
     );
 };
 

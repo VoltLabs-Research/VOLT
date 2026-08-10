@@ -1,7 +1,7 @@
+import { cn } from '@heroui/react';
 import TemplateCard from '../TemplateCard';
 import { CONTAINER_TEMPLATES } from '../../services/container-templates';
 import { Server } from 'lucide-react';
-import { Box, Heading, Stack, Text } from '@voltstack/bravais';
 
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;
@@ -21,13 +21,13 @@ const ImageSelectionStep = ({
     const customImageDescription = customImage || 'Pull any image from Docker Hub.';
 
     return (
-        <Stack className='create-container-step' gap='2'>
-            <Stack gap='05'>
-                <Heading level={3} size='xl' weight='bold'>Choose an image</Heading>
-                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</Text>
-            </Stack>
+        <div className='flex flex-col gap-8 create-container-step'>
+            <div className='flex flex-col gap-2'>
+                <h3 className='text-xl font-semibold text-foreground'>Choose an image</h3>
+                <p className='text-base text-muted create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</p>
+            </div>
 
-            <Box className='create-container-templates-grid gap-4' role='radiogroup' aria-label='Container image templates'>
+            <div className='create-container-templates-grid gap-4' role='radiogroup' aria-label='Container image templates'>
                 {CONTAINER_TEMPLATES.map((template) => (
                     <TemplateCard
                         key={template.id}
@@ -46,18 +46,18 @@ const ImageSelectionStep = ({
                     onClick={onCustomImageClick}
                     variant='custom'
                 />
-            </Box>
+            </div>
 
             {customImage && (
-                <Stack className='create-container-image-preview' gap='025' p='1' radius='sm'>
-                    <Text as='p' size='md' tone='secondary'>Custom image preview</Text>
-                    <Text as='p' size='md' tone='primary' weight='medium'>{customImage}</Text>
-                    <Text as='p' size='md' className={customImageError ? 'text-danger' : 'text-secondary'}>
+                <div className='flex flex-col gap-1 p-4 rounded-lg create-container-image-preview'>
+                    <p className='text-sm text-muted'>Custom image preview</p>
+                    <p className='text-sm font-medium text-foreground'>{customImage}</p>
+                    <p className={cn('text-sm', customImageError ? 'text-danger' : 'text-muted')}>
                         {customImageError ?? 'Volt will pull this image directly from the registry when you deploy.'}
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

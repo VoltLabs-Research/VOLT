@@ -1,13 +1,19 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { IoSettingsOutline, IoPeopleOutline, IoShieldOutline } from 'react-icons/io5';
+import { Settings, Shield, Users } from 'lucide-react';
 import AdminsTab from './tabs/AdminsTab';
 import GeneralTab from './tabs/GeneralTab';
 import MembersTab from './tabs/MembersTab';
 import { cn } from '@/shared/utils/cn';
 import { toggleSelection } from '@/shared/utils/selection';
-import { Box, Button, Modal, Row, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
+import { Modal } from '@/shared/ui/modal';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
+
+/* Shared so ChatDetailsPanel's trigger and this modal cannot drift apart — the id
+   was a bare string in both, which only held together because the native <dialog>
+   matched them at runtime via `commandfor`. */
+export const GROUP_MANAGEMENT_MODAL_ID = 'group-management-modal';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
 import './GroupManagementModal.css';
@@ -38,17 +44,17 @@ const TABS: GroupManagementTab[] = [
     {
         id: Tab.General,
         label: 'General',
-        icon: <IoSettingsOutline />
+        icon: <Settings />
     },
     {
         id: Tab.Members,
         label: 'Members',
-        icon: <IoPeopleOutline />
+        icon: <Users />
     },
     {
         id: Tab.Admins,
         label: 'Admins',
-        icon: <IoShieldOutline />
+        icon: <Shield />
     }
 ];
 
@@ -156,8 +162,8 @@ const GroupManagementModal = ({
     };
 
     return (
-        <Modal id='group-management-modal' title='Group Settings' width='600px'>
-            <Row gap='05' className='group-management-tabs' role='tablist' aria-label='Group settings sections'>
+        <Modal id={GROUP_MANAGEMENT_MODAL_ID} title='Group Settings' width='600px'>
+            <div className='flex flex-row items-center gap-2 group-management-tabs' role='tablist' aria-label='Group settings sections'>
                 {TABS.map((tab, index) => (
                     <Button
                         key={tab.id}
@@ -172,19 +178,19 @@ const GroupManagementModal = ({
                         aria-controls={getTabPanelId(tab.id)}
                         tabIndex={activeTab === tab.id ? 0 : -1}
                         className={cn(
-                            'flex items-center gap-2 group-management-tab transition-normal cursor-pointer text-secondary',
+                            'flex items-center gap-2 group-management-tab transition-[all] duration-200 ease-out-fluid cursor-pointer text-muted',
                             activeTab === tab.id && 'active'
                         )}
                         onClick={() => setActiveTab(tab.id)}
                         onKeyDown={(event) => handleTabKeyDown(event, index)}
                     >
                         {tab.icon}
-                        <Text as='p' size='md'>{tab.label}</Text>
+                        <p className='text-sm'>{tab.label}</p>
                     </Button>
                 ))}
-            </Row>
+            </div>
 
-            <Box id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0} className='group-management-content'>
+            <div className='group-management-content' id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0}>
                 {activeTab === Tab.General && (
                     <GeneralTab
                         groupName={groupName}
@@ -219,7 +225,7 @@ const GroupManagementModal = ({
                         onToggleAdmin={handleToggleAdmin}
                     />
                 )}
-            </Box>
+            </div>
         </Modal>
     );
 };

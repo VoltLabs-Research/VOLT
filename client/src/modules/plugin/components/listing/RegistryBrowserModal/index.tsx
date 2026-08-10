@@ -1,5 +1,5 @@
 import './RegistryBrowserModal.css';
-import { Box, Button, EmptyState, Loader, Modal, SearchInput, Stack, Text } from '@voltstack/bravais';
+import { Button, EmptyState, Loader, Modal, SearchInput } from '@voltstack/bravais';
 import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -51,13 +51,13 @@ const RegistryResultCard = ({ item, installedVersion, isInstalling, isAnyInstall
                 <Package size={22} />
             </span>
             <div className='registry-card__body'>
-                <Text as='p' size='md' weight='medium' truncate>
+                <p className='text-sm font-medium truncate'>
                     {item.name}{item.latest ? ` v${item.latest}` : ''}
-                </Text>
+                </p>
                 {item.description && (
-                    <Text as='p' size='sm' tone='muted' className='registry-card__desc'>
+                    <p className='text-xs text-muted registry-card__desc'>
                         {item.description}
-                    </Text>
+                    </p>
                 )}
             </div>
             <Button
@@ -128,7 +128,7 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
             onClose={onClose}
             width='960px'
         >
-            <Stack gap='1' className='p-6'>
+            <div className='flex flex-col gap-4 p-6'>
                 <SearchInput
                     placeholder='Search plugins…'
                     value={search}
@@ -138,9 +138,9 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
 
                 <div className='registry-results'>
                     {isFetching && (
-                        <Box p='2'>
+                        <div className='p-8'>
                             <Loader scale={0.5} isFixed={false} announce />
-                        </Box>
+                        </div>
                     )}
 
                     {!isFetching && items.length === 0 && (
@@ -162,7 +162,7 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                         </div>
                     )}
                 </div>
-            </Stack>
+            </div>
         </Modal>
     );
 };

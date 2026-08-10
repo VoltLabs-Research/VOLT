@@ -8,9 +8,9 @@ import {
 } from '@/shared/rendering/camera';
 
 import { useMemo } from 'react';
-import { MdCameraAlt } from 'react-icons/md';
+import { Camera } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { Select, Box, Button } from '@voltstack/bravais';
+import { Select, Button } from '@voltstack/bravais';
 import { updateVec3Value } from '../../utils';
 
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
@@ -37,7 +37,7 @@ const useCameraGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <Box className='canvas-render-grid'>
+                <div className='canvas-render-grid'>
                     <Select
                         value={type}
                         onChange={(value: string) => {
@@ -51,7 +51,7 @@ const useCameraGroup = (): RenderGroup => {
                     <Button variant='ghost' intent='canvas' shape='rounded' size='sm' className='text-xs' onClick={reset} style={{ justifySelf: 'start' }}>
                         Reset Camera
                     </Button>
-                </Box>
+                </div>
             )
         };
 
@@ -147,7 +147,7 @@ const useCameraGroup = (): RenderGroup => {
         return {
             id: 'camera',
             title: 'Camera',
-            icon: <MdCameraAlt size={12} />,
+            icon: <Camera size={12} />,
             subsections: [
                 {
                     label: CAMERA_SUBSECTION_TITLES.projection,

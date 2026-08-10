@@ -1,4 +1,4 @@
-import { SegmentedTabs, Callout, Text } from '@voltstack/bravais';
+import { SegmentedTabs, Callout } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -79,16 +79,16 @@ const NodeEditor = ({ node }: EditorProps) => {
                     EditorComponent ? (
                         <>
                             {nodeDescription && (
-                                <Text as='p' size='sm' tone='muted' className='floating-node-panel-description'>
+                                <p className='text-xs text-muted floating-node-panel-description'>
                                     {nodeDescription}
-                                </Text>
+                                </p>
                             )}
                             <EditorComponent node={node} />
                         </>
                     ) : (
-                        <Text as='p' size='md' tone='muted'>
+                        <p className='text-sm text-muted'>
                             No editor available for this node type.
-                        </Text>
+                        </p>
                     )
                 )}
 

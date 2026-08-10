@@ -1,6 +1,6 @@
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Heading, SearchInput, Text } from '@voltstack/bravais';
+import { SearchInput } from '@voltstack/bravais';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import usePaginationParams from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback, useEffect, useState } from 'react';
@@ -51,23 +51,15 @@ export default function DiscoverTeamTrajectoriesPage() {
             <div className='discover-team-trajectories-page__inner'>
                 <section className='discover-team-trajectories-page__header' aria-labelledby='discover-team-trajectories-title'>
                     <div className='discover-team-trajectories-page__title-block'>
-                        <Heading
+                        <h1 className='text-3xl font-medium text-foreground discover-team-trajectories-page__title'
                             id='discover-team-trajectories-title'
-                            level={1}
-                            size='3xl'
-                            weight='medium'
-                            className='discover-team-trajectories-page__title'
                         >
                             Trajectories ({summary.total})
-                        </Heading>
-                        <Text
-                            as='p'
-                            size='sm'
-                            tone='muted'
-                            className='discover-team-trajectories-page__description'
+                        </h1>
+                        <p className='text-xs text-muted discover-team-trajectories-page__description'
                         >
                             {`Public trajectories from ${summary.team?.name ?? 'this team'}.`}
-                        </Text>
+                        </p>
                     </div>
                     <SearchInput
                         value={search}

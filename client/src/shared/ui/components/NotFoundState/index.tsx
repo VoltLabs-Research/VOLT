@@ -1,9 +1,8 @@
-import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, EmptyStateRoot, buttonVariants } from '@heroui/react';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
-import './NotFoundState.css';
 import { SearchX } from 'lucide-react';
 import { useId } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 const NotFoundState = () => {
     const navigate = useNavigate();
     const headingId = useId();
@@ -11,44 +10,45 @@ const NotFoundState = () => {
     usePageTitle('Page Not Found');
 
     return (
-        <section aria-labelledby={headingId} className='not-found-state flex items-center justify-center h-dvh w-full'>
-            <Stack align='center' gap='1-5' textAlign='center' className='not-found-state-content'>
-                <Row justify='center' className='not-found-state-icon'>
+        <EmptyStateRoot<'section'>
+            render={(props) => <section {...props} />}
+            aria-labelledby={headingId}
+            className='flex items-center justify-center h-dvh w-full min-h-full max-md:min-h-[300px]'
+        >
+            <div className='flex flex-col items-center gap-6 text-center max-w-96 max-md:max-w-[90%]'>
+                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-surface-tertiary text-muted'>
                     <SearchX size={24} />
-                </Row>
+                </div>
 
-                <Stack gap='05' textAlign='center'>
-                    <Heading level={1} id={headingId}>
+                <div className='flex flex-col gap-2 text-center'>
+                    <h1 className='text-base font-medium text-foreground' id={headingId}>
                         Page not found
-                    </Heading>
-                    <Text as='p' size='md' tone='secondary' lineHeight='5'>
+                    </h1>
+                    <p className='text-sm text-muted leading-normal'>
                         The page you were looking for is unavailable or may have moved.
-                    </Text>
-                    <Text as='p' size='md' tone='muted'>
+                    </p>
+                    <p className='text-sm text-muted'>
                         You can go back or return to the dashboard.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
 
-                <Row gap='075' mt='05'>
+                <div className='flex flex-row items-center gap-3 mt-2'>
                     <Button
                         variant='ghost'
-                        intent='neutral'
                         size='sm'
-                        onClick={() => navigate(-1)}
+                        onPress={() => navigate(-1)}
                     >
                         Back
                     </Button>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        size='sm'
+                    <Link
                         to='/dashboard'
+                        className={buttonVariants({ variant: 'primary', size: 'sm' })}
                     >
                         Go to dashboard
-                    </Button>
-                </Row>
-            </Stack>
-        </section>
+                    </Link>
+                </div>
+            </div>
+        </EmptyStateRoot>
     );
 };
 

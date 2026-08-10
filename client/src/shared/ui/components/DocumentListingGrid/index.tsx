@@ -2,8 +2,8 @@ import getListingDisplayState from '@/shared/ui/components/DocumentListing/listi
 import GridItem from '@/shared/ui/components/DocumentListingGrid/GridItem';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
-import { useInfiniteScroll } from '@voltstack/bravais';
-import './DocumentListingGrid.css';
+import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
+import { cn } from '@heroui/react';
 import { DndContext, DragOverlay, pointerWithin, rectIntersection } from '@dnd-kit/core';
 import { FileText, GripVertical } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -14,6 +14,18 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { ReactNode } from 'react';
 
 const DRAG_ACTIVATION_DISTANCE = 8;
+
+/**
+ * `document-listing-grid` carries no styling of its own any more, but it stays on the
+ * DOM: `modules/trajectory/components/DiscoverTeamTrajectoriesPage/DiscoverTeamTrajectoriesPage.css`
+ * still selects `.public-simulation-grid.document-listing-grid` to drop the grid's
+ * mobile padding, and that sheet is another agent's to migrate.
+ */
+const GRID_CLASS_NAMES = 'document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 overflow-y-auto max-md:grid-cols-1 max-md:p-4';
+
+const GRID_STATE_CLASS_NAMES = 'col-span-full min-h-[300px] items-center justify-center';
+
+const DRAG_OVERLAY_CLASS_NAMES = 'inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-[0.85rem] text-foreground bg-surface border border-border';
 
 interface DocumentListingGridProps<T extends Identifiable> {
     data: T[];
@@ -134,11 +146,11 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <div ref={containerRef} className={`document-listing-grid ${className}`}>
+        <div ref={containerRef} className={cn(GRID_CLASS_NAMES, className)}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className='document-listing-grid-empty items-center justify-center'>
+                <div className={GRID_STATE_CLASS_NAMES}>
                     <RecoveryState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
@@ -151,7 +163,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowErrorState && (
-                <div className='document-listing-grid-empty items-center justify-center'>
+                <div className={GRID_STATE_CLASS_NAMES}>
                     <RecoveryState
                         title="Couldn't load these items"
                         description={errorMessage ?? 'Try again in a moment.'}
@@ -164,7 +176,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className='document-listing-grid-empty items-center justify-center'>
+                <div className={GRID_STATE_CLASS_NAMES}>
                     <RecoveryState
                         title='Access denied'
                         description={errorMessage ?? "You don't have permission to view these items."}
@@ -190,7 +202,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
 
             {isFetchingMore && renderSkeleton?.()}
 
-            <div ref={sentinelRef} className='document-listing-grid-sentinel' aria-hidden='true' />
+            <div ref={sentinelRef} className='col-span-full h-px' aria-hidden='true' />
         </div>
     );
 
@@ -214,14 +226,14 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {gridContent}
             <DragOverlay>
                 {activeDragItem ? (
-                    <div className='document-listing-grid-drag-overlay glass-bg'>
+                    <div className={DRAG_OVERLAY_CLASS_NAMES}>
                         {showDragAffordance ? (
-                            <span className='document-listing-grid-drag-overlay__icon'>
+                            <span className='inline-flex size-8 items-center justify-center rounded-full text-foreground'>
                                 <GripVertical size={16} strokeWidth={1.8} />
                             </span>
                         ) : null}
-                        <span className='document-listing-grid-drag-overlay__content'>
-                            <span className='document-listing-grid-drag-overlay__title'>
+                        <span className='flex min-w-0 flex-col'>
+                            <span className='max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-semibold'>
                                 {getGridItemTitle(activeDragItem)}
                             </span>
                         </span>

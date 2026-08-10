@@ -1,6 +1,6 @@
-import './Terminal.css';
 import 'xterm/css/xterm.css';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
@@ -37,20 +37,58 @@ type PendingTerminalOperation =
     | { type: 'write'; data: string }
     | { type: 'clear' };
 
+/**
+ * `terminal-container` carries no rules of its own — everything below it is a
+ * utility. It stays as a selector hook because xterm.js builds `.xterm`,
+ * `.xterm-viewport`, `.xterm-screen` and `.xterm-helper-textarea` itself, out of
+ * reach of any className, so those four surfaces can only be reached from an
+ * ancestor selector in the global sheet.
+ *
+ * The focus affordance is a box-shadow rather than a ring because the element
+ * that actually takes focus is xterm's offscreen helper textarea, so the visible
+ * state has to be painted by the container on `:focus-within`.
+ */
+const CONTAINER_CLASS_NAMES = 'terminal-container h-full w-full rounded-lg bg-surface-secondary focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]';
+
+/**
+ * xterm.js parses colour strings itself and throws on anything it cannot read.
+ * VOLT's tokens are now `oklch()` and `color-mix()` values, so every token is
+ * round-tripped through a canvas context — which normalises whatever the theme
+ * declared into the `#rrggbb` / `rgba()` form xterm understands, and silently
+ * keeps the fallback when the token is missing or unparseable.
+ */
+const normalizeTerminalColor = (value: string, fallback: string): string => {
+    const declaredValue = value.trim();
+
+    if (declaredValue.length === 0) {
+        return fallback;
+    }
+
+    const context = document.createElement('canvas').getContext('2d');
+
+    if (!context) {
+        return fallback;
+    }
+
+    context.fillStyle = fallback;
+    context.fillStyle = declaredValue;
+
+    return typeof context.fillStyle === 'string' ? context.fillStyle : fallback;
+};
+
 const getTerminalTheme = (): TerminalTheme => {
     const styles = getComputedStyle(document.documentElement);
-    const background = styles.getPropertyValue('--color-surface-1').trim()
-        || styles.getPropertyValue('--color-bg').trim()
-        || '#171719';
-    const foreground = styles.getPropertyValue('--color-text-primary').trim() || '#f0f0f0';
-    const cursor = styles.getPropertyValue('--focus-ring').trim() || foreground;
-    const selectionBackground = styles.getPropertyValue('--hover-bg').trim() || 'rgba(255, 255, 255, 0.12)';
+    const readToken = (token: string, fallback: string): string => {
+        return normalizeTerminalColor(styles.getPropertyValue(token), fallback);
+    };
+
+    const foreground = readToken('--foreground', '#f0f0f0');
 
     return {
-        background,
-        cursor,
+        background: readToken('--surface-secondary', '#171719'),
+        cursor: readToken('--focus', foreground),
         foreground,
-        selectionBackground
+        selectionBackground: readToken('--surface-hover', 'rgba(255, 255, 255, 0.12)')
     };
 };
 
@@ -338,7 +376,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     return (
         <div
             ref={containerRef}
-            className={`terminal-container ${className}`}
+            className={cn(CONTAINER_CLASS_NAMES, className)}
             role='region'
             aria-label={ariaLabel}
         />

@@ -8,12 +8,11 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../SecretKeyCreationModal';
 import { useDeleteSecretKeyMutation, useRevokeSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
-import { useKeyboardShortcut } from '@voltstack/bravais';
+import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { PiKeyLight } from 'react-icons/pi';
-import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';
+import { ChartColumn, ChartLine, Copy, Key, ShieldCheck } from 'lucide-react';
 import { useCallback } from 'react';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -102,19 +101,19 @@ export default function SecretKeysListing() {
         actions: {
             viewUsage: {
                 label: 'View Usage',
-                icon: RiLineChartLine,
+                icon: ChartLine,
                 handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}`),
                 requiredPermission: 'team-secret-key:read'
             },
             copy: {
                 label: 'Copy Prefix',
-                icon: RiFileCopyLine,
+                icon: Copy,
                 handler: ({ item: key }) => copySecretKeyPrefix(key),
                 requiredPermission: 'team-secret-key:read'
             },
             revoke: {
                 label: 'Revoke Key',
-                icon: RiShieldKeyholeLine,
+                icon: ShieldCheck,
                 handler: async ({ item: key }) => {
                     if (!selectedTeam?._id) return;
                     await revokeSecretKeyMutation.mutateAsync({
@@ -191,7 +190,7 @@ export default function SecretKeysListing() {
                 }}
                 emptyTitle='No secret keys found'
                 emptyMessage='Create a secret key to authenticate your applications.'
-                emptyIcon={<PiKeyLight size={32} />}
+                emptyIcon={<Key size={32} />}
                 emptyButtonText='Create new'
                 onEmptyButtonClick={handleCreateKey}
                 createNew={canCreate ? {
@@ -203,7 +202,7 @@ export default function SecretKeysListing() {
                         variant='ghost'
                         intent='neutral'
                         onClick={handleOpenMetrics}
-                        leftIcon={<RiBarChartLine size={18} />}
+                        leftIcon={<ChartColumn size={18} />}
                     >
                         Metrics
                     </Button>

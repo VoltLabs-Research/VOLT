@@ -26,14 +26,14 @@ const TrajectorySharePanelPopover = ({
                     intent='canvas'
                     size='sm'
                     shape='rounded'
-                    className='text-sm canvas-btn-compact canvas-toolbar-share-trigger'
+                    className='text-xs canvas-btn-compact canvas-toolbar-share-trigger'
                     aria-label={triggerLabel}
                     title={triggerLabel}
                 >
                     Share
                 </Button>
             )}
-            className='trajectory-share-panel-popover glass-bg flex flex-col overflow-hidden'
+            className='trajectory-share-panel-popover bg-surface border border-border flex flex-col overflow-hidden'
             noPadding
         >
             {(close) => (

@@ -1,10 +1,10 @@
 import useNotificationData from '../../hooks/use-notification-data';
 import './NotificationBadge.css';
 import NotificationList from '../NotificationList';
-import { Button, IconButton, Popover, Row } from '@voltstack/bravais';
+import { Button, IconButton, Popover } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';
-import { IoNotificationsOutline } from 'react-icons/io5';
+import { Bell } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import './NotificationsPopover.css';
 
@@ -45,11 +45,11 @@ const NotificationsPopover = () => {
             aria-haspopup='dialog'
             aria-controls='notifications-popover'
         >
-            <IoNotificationsOutline size={18} />
+            <Bell size={18} />
             {unreadCount > 0 && (
-                <Row position='absolute' justify='center' radius='sm' className='notification-badge font-semibold' aria-hidden='true'>
+                <div className='flex flex-row items-center justify-center rounded-lg absolute notification-badge font-semibold' aria-hidden='true'>
                     {unreadCount > 99 ? '99+' : unreadCount}
-                </Row>
+                </div>
             )}
         </IconButton>
     );
@@ -59,7 +59,7 @@ const NotificationsPopover = () => {
             <PanelHeader
                 title='Notifications'
                 actions={unreadCount > 0 ? (
-                    <Row gap='025'>
+                    <div className='flex flex-row items-center gap-1'>
                         <Button
                             variant='ghost'
                             size='sm'
@@ -69,7 +69,7 @@ const NotificationsPopover = () => {
                         >
                             {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
                         </Button>
-                    </Row>
+                    </div>
                 ) : null}
                 onClose={closePopover}
                 className='notifications-header'
@@ -88,7 +88,7 @@ const NotificationsPopover = () => {
         <Popover
             id='notifications-popover'
             trigger={trigger}
-            className='notifications-popover-dropdown panel-floating rounded-md overflow-hidden'
+            className='notifications-popover-dropdown panel-floating rounded-xl overflow-hidden'
             noPadding
             onOpenChange={handleOpenChange}
         >

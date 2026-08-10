@@ -1,5 +1,5 @@
 import './ActivityDrawer.css';
-import { AsyncBoundary, Box, Modal, SegmentedTabs } from '@voltstack/bravais';
+import { AsyncBoundary, Modal, SegmentedTabs } from '@voltstack/bravais';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import ActivityTimelinePanel, { ActivityTimelineSkeleton } from '@/modules/dashboard/components/ActivityDrawer/ActivityTimelinePanel';
 import InAppActivityPanel from '@/modules/dashboard/components/ActivityDrawer/InAppActivityPanel';
@@ -37,7 +37,7 @@ const ActivityDrawer = () => {
     const isInAppTab = activeTab === 'in-app-activity';
 
     const loadingState: ReactNode = isInAppTab
-        ? <Box display='flex' className='dashboard-activity-chart-surface items-center justify-center' />
+        ? <div className='flex dashboard-activity-chart-surface items-center justify-center' />
         : <ActivityTimelineSkeleton />;
 
     const accessDeniedState: ReactNode = (
@@ -71,15 +71,15 @@ const ActivityDrawer = () => {
             description={isInAppTab ? 'Avg / day of week' : 'Last 7 days'}
             lazyMount
         >
-            <Box className='dashboard-activity-drawer'>
-                <Box className='dashboard-tabbed-card-header'>
+            <div className='dashboard-activity-drawer'>
+                <div className='dashboard-tabbed-card-header'>
                     <SegmentedTabs
                         tabs={DASHBOARD_ACTIVITY_TABS}
                         activeTab={activeTab}
                         onChange={setActiveTab}
                         ariaLabel='Dashboard activity views'
                     />
-                </Box>
+                </div>
 
                 <AsyncBoundary
                     state={{
@@ -95,7 +95,7 @@ const ActivityDrawer = () => {
                         ? <InAppActivityPanel activityData={activityData} />
                         : <ActivityTimelinePanel activityData={activityData} lookbackDays={ACTIVITY_LOOKBACK_DAYS} />}
                 </AsyncBoundary>
-            </Box>
+            </div>
         </Modal>
     );
 };

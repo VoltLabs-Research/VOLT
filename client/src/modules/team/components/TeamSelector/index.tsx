@@ -5,7 +5,7 @@ import useLeaveTeam from '@/modules/team/hooks/team/use-leave-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import useTip from '@/shared/tips/use-tip';
-import { IoExitOutline } from 'react-icons/io5';
+import { LogOut } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import './TeamSelector.css';
@@ -55,7 +55,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
             title='Leave team'
             aria-label={`Leave ${option.title}`}
         >
-            <IoExitOutline size={16} />
+            <LogOut size={16} />
         </IconButton>
     ), [handleLeaveTeam]);
 

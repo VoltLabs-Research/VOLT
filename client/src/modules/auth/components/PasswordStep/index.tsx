@@ -15,7 +15,7 @@ interface PasswordStepProps {
 }
 
 const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordStepProps) => (
-    <Stack gap='1'>
+    <div className='flex flex-col gap-4'>
         <UserBadge
             label='Logging in as'
             email={email}
@@ -64,7 +64,7 @@ const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordS
                 Back
             </Button>
         </Stack>
-    </Stack>
+    </div>
 );
 
 export default PasswordStep;

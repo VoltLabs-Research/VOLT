@@ -1,5 +1,5 @@
 import { Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
-import { CiRedo, CiStop1 } from 'react-icons/ci';
+import { Redo2, Square } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 interface JobGroupMenuProps {
@@ -29,7 +29,7 @@ const JobGroupMenu = ({
             {(close) => (
                 <PopoverMenu label='Job group actions' onClose={close}>
                     <PopoverMenuItem
-                        icon={<CiStop1 />}
+                        icon={<Square />}
                         onClick={() => {
                             onRemoveRunningJobs();
                             close();
@@ -41,7 +41,7 @@ const JobGroupMenu = ({
                         Remove Running Jobs
                     </PopoverMenuItem>
                     <PopoverMenuItem
-                        icon={<CiRedo />}
+                        icon={<Redo2 />}
                         onClick={() => {
                             onRetryFailedJobs();
                             close();

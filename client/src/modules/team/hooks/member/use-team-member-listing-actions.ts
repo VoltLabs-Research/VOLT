@@ -6,7 +6,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
+import { LogOut, MessageCircle, UserMinus } from 'lucide-react';
 import { useCallback } from 'react';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
 
@@ -97,14 +97,14 @@ export default function useTeamMemberListingActions({
         actions: {
             message: {
                 label: 'Message',
-                icon: IoChatbubbleOutline,
+                icon: MessageCircle,
                 handler: async ({ item: member }) => {
                     await chatActions.getOrCreateChat(selectedTeam._id, member.user._id);
                 }
             },
             delete: {
                 label: 'Remove from Team',
-                icon: IoPersonRemoveOutline,
+                icon: UserMinus,
                 variant: 'danger',
                 handler: ({ item, selectedItems }) => {
                     const targets = selectedItems.length > 1 ? selectedItems : [item];
@@ -114,7 +114,7 @@ export default function useTeamMemberListingActions({
             },
             leave: {
                 label: LEAVE_TEAM_LABEL,
-                icon: IoExitOutline,
+                icon: LogOut,
                 variant: 'danger',
                 scope: 'item',
                 handler: () => leaveTeam(selectedTeam._id, selectedTeam.name)

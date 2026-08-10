@@ -7,7 +7,7 @@ import {
     probeEndpointHealth
 } from '@/modules/auth/services/endpoint-health';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Heading, Stack, Text } from '@voltstack/bravais';
+import { Button, Stack } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { Server } from 'lucide-react';
 import { useState } from 'react';
@@ -56,12 +56,12 @@ const ConnectEndpointTemplate = () => {
 
     return (
         <main className='connect-page screen-vh'>
-            <Stack as='section' justify='center' p='1-5' className='connect-form-shell screen-vh' aria-labelledby='connect-form-title'>
-                <Stack gap='2' width='max' className='connect-form-section'>
-                    <Stack as='header' gap='05'>
-                        <Heading level={1} id='connect-form-title' className='connect-form-title'>Connect to a server</Heading>
-                        <Text as='p'>Enter the address of the VOLT deployment you want to work on.</Text>
-                    </Stack>
+            <section className='flex flex-col justify-center p-6 connect-form-shell screen-vh' aria-labelledby='connect-form-title'>
+                <div className='flex flex-col gap-8 w-full connect-form-section'>
+                    <header className='flex flex-col gap-2'>
+                        <h1 className='text-base font-medium text-foreground connect-form-title' id='connect-form-title'>Connect to a server</h1>
+                        <p>Enter the address of the VOLT deployment you want to work on.</p>
+                    </header>
 
                     <Stack
                         as='form'
@@ -97,11 +97,11 @@ const ConnectEndpointTemplate = () => {
                         </Button>
                     </Stack>
 
-                    <Text as='p' align='center' className='connect-hint'>
+                    <p className='text-center connect-hint'>
                         Need help? Read the <a href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.
-                    </Text>
-                </Stack>
-            </Stack>
+                    </p>
+                </div>
+            </section>
         </main>
     );
 };

@@ -1,7 +1,7 @@
-import { closeModal } from '@voltstack/bravais';
+import { closeModal } from '@/shared/ui/modal';
 import TextInputModal from '@/shared/ui/components/RenameEntityModal/TextInputModal';
 import useTextInputModalState from '@/shared/ui/components/RenameEntityModal/use-text-input-modal-state';
-import { useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { useCallback, useEffect } from 'react';
 
 interface FolderNameModalProps {

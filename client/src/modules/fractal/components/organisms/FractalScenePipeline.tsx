@@ -9,7 +9,7 @@ import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights'
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import { LightingPreset } from '@/shared/rendering/lights';
 import { Theme } from '@/shared/ui/hooks/use-theme';
-import { useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { DprMode } from '@/shared/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';

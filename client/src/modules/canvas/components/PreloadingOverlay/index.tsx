@@ -1,4 +1,4 @@
-import { ProgressBar, Row } from '@voltstack/bravais';
+import { ProgressBar } from '@voltstack/bravais';
 import './PreloadingOverlay.css';
 
 interface PreloadingOverlayProps {
@@ -19,7 +19,7 @@ const PreloadingOverlay = ({
     const hasProgress = progress !== undefined;
 
     return (
-        <Row justify='center' align='center' position='absolute' inset='0' className="canvas-preload-overlay">
+        <div className='flex flex-row items-center justify-center absolute inset-0 canvas-preload-overlay'>
             <ProgressBar
                 className="canvas-preload-card"
                 size='sm'
@@ -28,7 +28,7 @@ const PreloadingOverlay = ({
                 showValue={hasProgress}
                 indeterminate={!hasProgress}
             />
-        </Row>
+        </div>
     );
 };
 

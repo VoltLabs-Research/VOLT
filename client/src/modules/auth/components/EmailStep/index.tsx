@@ -1,7 +1,7 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GoogleIcon from '@/modules/auth/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/modules/auth/components/icons/MicrosoftIcon';
-import { Button, Row, Stack } from '@voltstack/bravais';
+import { Button, Stack } from '@voltstack/bravais';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
@@ -40,10 +40,10 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
     const visibleProviders = oauthProviders.filter((provider) => availableProviders.includes(provider.key));
 
     return (
-    <Stack gap='1'>
+    <div className='flex flex-col gap-4'>
         {visibleProviders.length > 0 && (
             <>
-                <Stack gap='1'>
+                <div className='flex flex-col gap-4'>
                     {visibleProviders.map(({ key, label, icon }) => (
                         <Button
                             key={key}
@@ -55,11 +55,11 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                             Continue with {label}
                         </Button>
                     ))}
-                </Stack>
+                </div>
 
-                <Row className='sign-in-divider text-eyebrow'>
+                <div className='flex flex-row items-center sign-in-divider text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
                     <span>Or continue with email</span>
-                </Row>
+                </div>
             </>
         )}
 
@@ -96,7 +96,7 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                 Continue with Email
             </Button>
         </Stack>
-    </Stack>
+    </div>
     );
 };
 

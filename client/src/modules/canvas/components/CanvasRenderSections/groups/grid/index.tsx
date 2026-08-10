@@ -1,9 +1,8 @@
 import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { Box } from '@voltstack/bravais';
 
 import { useMemo } from 'react';
-import { IoGridOutline } from 'react-icons/io5';
+import { LayoutGrid } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
@@ -25,10 +24,10 @@ const useGridGroup = (): RenderGroup => {
                     row(PRESETS.fadeStrength, () => s.fadeStrength, (v: number) => s.setGrid({ fadeStrength: v }))
                 ],
                 extras: (
-                    <Box className="canvas-render-grid">
+                    <div className='canvas-render-grid'>
                         {checkbox('enabled', 'Enabled', s.enabled, (v: boolean) => s.setGrid({ enabled: v }))}
                         {checkbox('infiniteGrid', 'Infinite Grid', s.infiniteGrid, (v: boolean) => s.setGrid({ infiniteGrid: v }))}
-                    </Box>
+                    </div>
                 )
             },
             appearance: {
@@ -37,10 +36,10 @@ const useGridGroup = (): RenderGroup => {
                 enabled: true,
                 rows: [],
                 extras: (
-                    <Box className="canvas-render-grid">
+                    <div className='canvas-render-grid'>
                         {colorField('sectionColor', 'Section Color', s.sectionColor, (v: string) => s.setGrid({ sectionColor: v }))}
                         {colorField('cellColor', 'Cell Color', s.cellColor, (v: string) => s.setGrid({ cellColor: v }))}
-                    </Box>
+                    </div>
                 )
             },
             transform: {
@@ -57,7 +56,7 @@ const useGridGroup = (): RenderGroup => {
         return {
             id: 'grid',
             title: 'Grid',
-            icon: <IoGridOutline size={12} />,
+            icon: <LayoutGrid size={12} />,
             subsections: [
                 {
                     label: 'Settings',

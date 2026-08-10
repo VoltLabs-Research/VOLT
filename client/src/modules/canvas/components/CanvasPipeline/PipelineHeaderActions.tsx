@@ -10,7 +10,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
+import { Button, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import { Filter, FlaskConical, Palette, Play, Plus, Scissors } from 'lucide-react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -38,7 +38,7 @@ const PipelineHeaderActions = ({
     };
 
     return (
-        <Row gap='025' onClick={(event) => event.stopPropagation()}>
+        <div className='flex flex-row items-center gap-1' onClick={(event) => event.stopPropagation()}>
             <ContextMenuPopover
                 id='canvas-pipeline-run'
                 triggerAction='click'
@@ -57,8 +57,8 @@ const PipelineHeaderActions = ({
                     />
                 }
                 content={(close) => (
-                    <Stack gap='05' className='canvas-plugin-popover-content'>
-                        <Text size='sm' tone='secondary' weight='medium'>Pipeline</Text>
+                    <div className='flex flex-col gap-2 canvas-plugin-popover-content'>
+                        <span className='text-xs font-medium text-muted'>Pipeline</span>
                         <PipelineRunControl
                             trajectory={trajectory}
                             trajectoryId={trajectoryId}
@@ -66,7 +66,7 @@ const PipelineHeaderActions = ({
                             canMutateCanvas={canMutateCanvas}
                             onClose={close}
                         />
-                    </Stack>
+                    </div>
                 )}
             />
 
@@ -90,7 +90,7 @@ const PipelineHeaderActions = ({
             >
                 {(close) => (
                     <PopoverMenu label='Add pipeline stage'>
-                        <SectionLabel className='canvas-pipeline__menu-group'>View</SectionLabel>
+                        <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted canvas-pipeline__menu-group'>View</span>
                         <PopoverMenuItem
                             icon={<Scissors size={13} aria-hidden='true' />}
                             label='Slice Plane'
@@ -110,7 +110,7 @@ const PipelineHeaderActions = ({
                             onClick={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); close(); }}
                         />
                         {modifiers.length > 0 && (
-                            <SectionLabel className='canvas-pipeline__menu-group'>Plugins</SectionLabel>
+                            <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted canvas-pipeline__menu-group'>Plugins</span>
                         )}
                         {modifiers.map((modifier) => (
                             <PopoverMenuItem
@@ -130,7 +130,7 @@ const PipelineHeaderActions = ({
                     </PopoverMenu>
                 )}
             </Popover>
-        </Row>
+        </div>
     );
 };
 

@@ -1,7 +1,7 @@
 import useCanvasRenderGroups from '../CanvasRenderSections/useCanvasRenderGroups';
 import RenderGroupSubmenuContent from './RenderGroupSubmenuContent';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Row, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -50,7 +50,7 @@ const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
                     shape="rounded"
                     size="sm"
                     className="text-xs canvas-btn-compact"
-                    leftIcon={<Row as='span' justify='center' shrink='0'><Monitor size={12} /></Row>}
+                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Monitor size={12} /></span>}
                     aria-label="Render settings"
                     title="Render settings"
                 >

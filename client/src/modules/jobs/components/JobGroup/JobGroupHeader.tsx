@@ -1,10 +1,11 @@
+import { cn } from '@heroui/react';
 import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
-import { Heading, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import { StatusBadge } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
-import { IoChevronForward } from 'react-icons/io5';
+import { ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
@@ -100,31 +101,31 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
             {...buttonProps}
         >
-            <Row width='max' justify='between' gap='05' p='1'>
-                <Stack gap='05'>
-                    <Heading level={3} size='sm' weight='bold' truncate className={`job-group-name ${nameToneClassName}`}>
+            <div className='flex flex-row items-center justify-between gap-2 p-4 w-full'>
+                <div className='flex flex-col gap-2'>
+                    <h3 className={cn('text-xs font-semibold text-foreground truncate', `job-group-name ${nameToneClassName}`)}>
                         {group.trajectoryName}
-                    </Heading>
-                    <Text as='p' size='sm' tone='secondary'>
+                    </h3>
+                    <p className='text-xs text-muted'>
                         {summaryLabel}
-                    </Text>
-                </Stack>
-                <Row gap='1'>
+                    </p>
+                </div>
+                <div className='flex flex-row items-center gap-4'>
                     {statusPresentation === 'badge' && (
                         <StatusBadge status={group.overallStatus} size='compact'>
                             {statusLabel}
                         </StatusBadge>
                     )}
                     <motion.i
-                        className='chevron-icon text-sm text-secondary'
+                        className='chevron-icon text-xs text-muted'
                         animate={{ rotate: isExpanded ? 90 : 0 }}
                         transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                         aria-hidden='true'
                     >
-                        <IoChevronForward />
+                        <ChevronRight />
                     </motion.i>
-                </Row>
-            </Row>
+                </div>
+            </div>
         </button>
     );
 });

@@ -1,6 +1,6 @@
 import './Brand.css';
-import { Box, Heading, IconButton, IconFrame } from '@voltstack/bravais';
-import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
+import { IconButton, IconFrame } from '@voltstack/bravais';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 interface BrandProps {
     collapsed?: boolean;
@@ -8,23 +8,23 @@ interface BrandProps {
 }
 
 const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
-    let brandContent = <Heading level={3} size='lg' weight='medium' tone='primary' className='sidebar-brand-title'>Volt</Heading>;
+    let brandContent = <h3 className='text-base font-medium text-foreground sidebar-brand-title'>Volt</h3>;
     if (collapsed) {
         brandContent = <IconFrame size='sm' shape='circle' className='sidebar-brand-icon'>V</IconFrame>;
     }
 
-    let collapseIcon = <GoSidebarCollapse size={16} />;
+    let collapseIcon = <PanelLeftClose size={16} />;
     if (collapsed) {
-        collapseIcon = <GoSidebarExpand size={16} />;
+        collapseIcon = <PanelLeftOpen size={16} />;
     }
 
     return (
-        <Box className={`sidebar-brand ${collapsed ? 'is-collapsed' : ''}`}>
+        <div className={`sidebar-brand ${collapsed ? 'is-collapsed' : ''}`}>
             {brandContent}
 
             {onToggleCollapse && (
                 <IconButton
-                    className='sidebar-collapse-toggle flex items-center justify-center rounded-xs transition-fast'
+                    className='sidebar-collapse-toggle flex items-center justify-center rounded-md transition-[all] duration-150 ease-out-fluid'
                     onClick={onToggleCollapse}
                     size='md'
                     title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -32,7 +32,7 @@ const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
                     {collapseIcon}
                 </IconButton>
             )}
-        </Box>
+        </div>
     );
 };
 

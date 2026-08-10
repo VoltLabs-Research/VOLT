@@ -1,4 +1,4 @@
-import { Button, CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
+import { Button, CollapsibleSection, Select, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import {
@@ -131,7 +131,7 @@ const ArgumentFieldsRenderer = ({
             const tupleValue = getTupleArgumentValue(argument, argumentValue);
 
             return (
-                <Stack key={fieldKey} gap='05'>
+                <div className='flex flex-col gap-2' key={fieldKey}>
                     <p className='canvas-form-label'>
                         {argumentLabel}
                     </p>
@@ -149,7 +149,7 @@ const ArgumentFieldsRenderer = ({
                         autocompleteOptions={autocompleteOptions}
                         allowTemplateReferenceMode={allowTemplateReferenceMode}
                     />
-                </Stack>
+                </div>
             );
         }
 
@@ -157,12 +157,12 @@ const ArgumentFieldsRenderer = ({
             const items = getListArgumentValue(argument, argumentValue);
 
             return (
-                <Stack key={fieldKey} gap='05'>
+                <div className='flex flex-col gap-2' key={fieldKey}>
                     <p className='canvas-form-label'>
                         {argumentLabel}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
-                        <Text as='p' size='sm' tone='muted'>No items added.</Text>
+                        <p className='text-xs text-muted'>No items added.</p>
                     )}
                     <Button
                         variant='outline'
@@ -177,7 +177,7 @@ const ArgumentFieldsRenderer = ({
                     >
                         Add New
                     </Button>
-                </Stack>
+                </div>
             );
         }
 
@@ -188,11 +188,11 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <Row key={fieldKey} justify='between' gap='1' className='form-field-canvas'>
+                <div className='flex flex-row items-center justify-between gap-4 form-field-canvas' key={fieldKey}>
                     <p className='canvas-form-label'>
                         {argumentLabel}
                     </p>
-                    <Row justify='end' width='max' position='relative' className='render-input-container'>
+                    <div className='flex flex-row items-center justify-end relative w-full render-input-container'>
                         <Select
                             id={`${fieldKey}-multi-select`}
                             options={selectOptions}
@@ -210,8 +210,8 @@ const ArgumentFieldsRenderer = ({
                                 'selected'
                             )}
                         />
-                    </Row>
-                </Row>
+                    </div>
+                </div>
             );
         }
 
@@ -232,16 +232,16 @@ const ArgumentFieldsRenderer = ({
 
     if (!visibleArgumentDefinitions.length) {
         return (
-            <Text as='p' size='sm' tone='muted'>
+            <p className='text-xs text-muted'>
                 {emptyMessage}
-            </Text>
+            </p>
         );
     }
 
     return (
-        <Stack gap='05'>
+        <div className='flex flex-col gap-2'>
             {visibleArgumentDefinitions.map(renderArgument)}
-        </Stack>
+        </div>
     );
 };
 

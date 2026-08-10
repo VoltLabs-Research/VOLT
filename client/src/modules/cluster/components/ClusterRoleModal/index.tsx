@@ -1,6 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import { Heading, Modal, closeModal, Row, Stack, StatusBadge, Text, Select } from '@voltstack/bravais';
+import { Modal, closeModal, StatusBadge, Select } from '@voltstack/bravais';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     describeTeamClusterDraining,
@@ -79,31 +79,31 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
 
     return (
         <Modal id={CLUSTER_ROLE_MODAL_ID} title={`Runtime role for ${clusterName}`} description='Control whether this cluster behaves as a combined node, storage authority, or compute-only worker.' footer={footer} onClose={handleClose}>
-            <Stack gap='1' p='1-5'>
-                <Stack gap='05'>
-                    <Heading level={3} size='md' weight='medium' tone='secondary'>Cluster scheduling role</Heading>
-                    <Text as='p' size='md' tone='secondary'>{saveMessage}</Text>
-                </Stack>
+            <div className='flex flex-col gap-4 p-6'>
+                <div className='flex flex-col gap-2'>
+                    <h3 className='text-sm font-medium text-muted'>Cluster scheduling role</h3>
+                    <p className='text-sm text-muted'>{saveMessage}</p>
+                </div>
                 {teamCluster && (
-                    <Stack gap='075' p='1' radius='md' className='bg-page'>
-                        <Row gap='05' wrap>
-                            <Text as='p' size='sm' tone='muted'>Desired</Text>
+                    <div className='flex flex-col gap-3 p-4 rounded-xl bg-background'>
+                        <div className='flex flex-row items-center flex-wrap gap-2'>
+                            <p className='text-xs text-muted'>Desired</p>
                             <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.desiredRole)} size='compact'>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.desiredRole)}
                             </StatusBadge>
-                            <Text as='p' size='sm' tone='muted'>Effective</Text>
+                            <p className='text-xs text-muted'>Effective</p>
                             <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.effectiveRole)} size='compact'>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.effectiveRole)}
                             </StatusBadge>
-                        </Row>
+                        </div>
                         {isTransitionPending && (
-                            <Text as='p' size='sm' className='text-warning'>
+                            <p className='text-xs text-warning'>
                                 {drainingSummary
                                     ? `${drainingSummary}. Effective role is still converging.`
                                     : 'The daemon is still converging to the desired role.'}
-                            </Text>
+                            </p>
                         )}
-                    </Stack>
+                    </div>
                 )}
                 <Select
                     options={TEAM_CLUSTER_ROLE_OPTIONS}
@@ -117,24 +117,24 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                     placeholder='Select a role...'
                     disabled={isSubmitting}
                 />
-                <Stack gap='05' p='1' radius='md' className='bg-page'>
-                    <Row gap='05' wrap>
-                        <Text as='p' size='sm' tone='muted'>Selected role</Text>
+                <div className='flex flex-col gap-2 p-4 rounded-xl bg-background'>
+                    <div className='flex flex-row items-center flex-wrap gap-2'>
+                        <p className='text-xs text-muted'>Selected role</p>
                         <StatusBadge variant={getTeamClusterRoleBadgeVariant(selectedRole)} size='compact'>
                             {getTeamClusterRoleLabel(selectedRole)}
                         </StatusBadge>
-                    </Row>
-                    <Text as='p' size='md' tone='secondary'>
+                    </div>
+                    <p className='text-sm text-muted'>
                         {getTeamClusterRoleDescription(selectedRole)}
-                    </Text>
-                    <Text as='p' size='sm' tone='muted'>
+                    </p>
+                    <p className='text-xs text-muted'>
                         {getTeamClusterRoleSummary(selectedRole)}
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
                 {error && (
-                    <Text as='p' size='md' className='text-danger'>{error}</Text>
+                    <p className='text-sm text-danger'>{error}</p>
                 )}
-            </Stack>
+            </div>
         </Modal>
     );
 };

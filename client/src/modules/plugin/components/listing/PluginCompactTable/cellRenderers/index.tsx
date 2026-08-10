@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { formatUnknownValue } from '@voltstack/bravais';
+import { formatUnknownValue } from '@/shared/utils/format';
 import {
     formatScientific,
     isNumberArray,

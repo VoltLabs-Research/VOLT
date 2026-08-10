@@ -4,7 +4,7 @@ import { TRAJECTORY_QUERY_KEYS, fetchTrajectoryAtoms, trajectoryAtomsQuery } fro
 import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { Select, Row, Text } from '@voltstack/bravais';
+import { Select } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -193,8 +193,8 @@ export default function PerAtomViewer() {
         }
 
         return (
-            <Row gap='075'>
-                <Text as='p' size='sm' tone='muted'>Timestep</Text>
+            <div className='flex flex-row items-center gap-3'>
+                <p className='text-xs text-muted'>Timestep</p>
                 <Select
                     isEditable
                     options={timestepOptions}
@@ -206,7 +206,7 @@ export default function PerAtomViewer() {
                     title='Select timestep'
                     aria-label='Select timestep'
                 />
-            </Row>
+            </div>
         );
     }, [handleTimestepChange, timestep, timestepOptions]);
 

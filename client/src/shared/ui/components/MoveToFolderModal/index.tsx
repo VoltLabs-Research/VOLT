@@ -1,6 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { Button, Modal, closeModal, Row, Stack, Text, Breadcrumbs } from '@voltstack/bravais';
-import type { BreadcrumbItem } from '@voltstack/bravais';
+import { BreadcrumbsItem, BreadcrumbsRoot, Button } from '@heroui/react';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/ui/hooks/use-folder-breadcrumbs';
@@ -8,6 +8,16 @@ import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
+
+/**
+ * A destination row — the Root shortcut and every folder in the current level.
+ *
+ * bravais's `block align='start'` became `fullWidth` plus `justify-start`, which is
+ * a utility rather than a prop because HeroUI's `.button` centres its content in
+ * the `components` layer and a `className` utility lands in the later `utilities`
+ * layer, so it wins without `!important`.
+ */
+const DESTINATION_ROW_CLASS_NAME = 'justify-start';
 
 interface MoveToFolderModalProps<TFolder extends FolderBreadcrumbEntity> {
     id: string;
@@ -119,14 +129,6 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
         return currentFolder?.title ?? 'Root';
     }, [currentFolder]);
 
-    const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
-        return breadcrumbs.map((crumb) => ({
-            id: crumb.id ?? 'root',
-            title: crumb.title,
-            onClick: () => setActiveFolderId(crumb.id)
-        }));
-    }, [breadcrumbs]);
-
     const isCurrentDestination = sourceFolderId === activeFolderId;
 
     const handleRequestClose = useCallback(() => {
@@ -163,15 +165,15 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
 
     const secondaryAction: ModalFooterAction = {
         label: 'Cancel',
-        onClick: handleRequestClose,
-        disabled: isSubmitting
+        onPress: handleRequestClose,
+        isDisabled: isSubmitting
     };
 
     const primaryAction: ModalFooterAction = {
         label: activeFolderId ? 'Move Here' : 'Move to Root',
-        onClick: handleMove,
-        disabled: isSubmitting || isCurrentDestination || !itemId,
-        isLoading: isSubmitting
+        onPress: handleMove,
+        isDisabled: isSubmitting || isCurrentDestination || !itemId,
+        isPending: isSubmitting
     };
 
     return (
@@ -182,39 +184,61 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <Stack gap='1' p='1-5'>
-                <Breadcrumbs items={breadcrumbItems} ariaLabel='Folder breadcrumbs' />
+            <div className='flex flex-col gap-4'>
+                {/*
+                  * The last crumb is the current one: React Aria marks it
+                  * `aria-current='page'` and disables it, so `onPress` never fires
+                  * there — which is what bravais got structurally by rendering the
+                  * last crumb as a span instead of a button.
+                  *
+                  * Each crumb carries a React `key` and deliberately NO `id`.
+                  * `BreadcrumbsItem` spreads its props onto the inner `Link` as well
+                  * as onto the collection item, and `id` is a real DOM attribute
+                  * there — so `id='root'` would emit `<span id='root'>` and pick up
+                  * the app shell's `#root { min-height: 100dvh }`. Nothing here needs
+                  * the collection key: navigation is per-item `onPress`, not the
+                  * root's `onAction`.
+                  */}
+                <BreadcrumbsRoot aria-label='Folder breadcrumbs'>
+                    {breadcrumbs.map((crumb) => (
+                        <BreadcrumbsItem
+                            key={crumb.id ?? 'root'}
+                            onPress={() => setActiveFolderId(crumb.id)}
+                        >
+                            {crumb.title}
+                        </BreadcrumbsItem>
+                    ))}
+                </BreadcrumbsRoot>
 
-                <Row gap='075'>
+                <div className='flex flex-row items-center gap-3'>
                     {activeFolderId ? <FolderOpen size={16} /> : <Home size={16} />}
-                    <Text as='p' size='md' tone='secondary'>Current destination: {locationLabel}</Text>
-                </Row>
+                    <p className='text-sm text-muted'>Current destination: {locationLabel}</p>
+                </div>
 
                 {isCurrentDestination && (
-                    <Text as='p' size='md' tone='muted'>This {itemLabel.toLowerCase()} is already in this location.</Text>
+                    <p className='text-sm text-muted'>This {itemLabel.toLowerCase()} is already in this location.</p>
                 )}
 
                 {submitError && (
-                    <Text as='p' size='md' className='text-danger' role='status' aria-live='polite' aria-atomic='true'>
+                    <p className='text-sm text-danger' role='status' aria-live='polite' aria-atomic='true'>
                         {submitError}
-                    </Text>
+                    </p>
                 )}
 
-                <Stack gap='075'>
+                <div className='flex flex-col gap-3'>
                     <Button
-                        variant='soft'
-                        intent='neutral'
-                        block
-                        align='start'
+                        variant='secondary'
+                        fullWidth
                         size='sm'
-                        leftIcon={<Home size={16} />}
-                        onClick={() => setActiveFolderId(null)}
+                        className={DESTINATION_ROW_CLASS_NAME}
+                        onPress={() => setActiveFolderId(null)}
                     >
+                        <Home size={16} aria-hidden='true' />
                         Root
                     </Button>
 
                     {isLoading && (
-                        <Text as='p' size='md' tone='muted'>Loading folders...</Text>
+                        <p className='text-sm text-muted'>Loading folders...</p>
                     )}
 
                     {!isLoading && error && (
@@ -228,25 +252,24 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     )}
 
                     {!isLoading && !error && folders.length === 0 && (
-                        <Text as='p' size='md' tone='muted'>No folders are available here.</Text>
+                        <p className='text-sm text-muted'>No folders are available here.</p>
                     )}
 
                     {!isLoading && !error && folders.map((folder) => (
                         <Button
                             key={folder._id}
                             variant='ghost'
-                            intent='neutral'
-                            block
-                            align='start'
+                            fullWidth
                             size='sm'
-                            leftIcon={<Folder size={16} />}
-                            onClick={() => setActiveFolderId(folder._id)}
+                            className={DESTINATION_ROW_CLASS_NAME}
+                            onPress={() => setActiveFolderId(folder._id)}
                         >
+                            <Folder size={16} aria-hidden='true' />
                             {folder.title}
                         </Button>
                     ))}
-                </Stack>
-            </Stack>
+                </div>
+            </div>
         </Modal>
     );
 }

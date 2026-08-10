@@ -1,5 +1,5 @@
 import { InvitationRow } from '../InvitationRow';
-import { Box, Stack, Text, EmptyState } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 import './InvitationsList.css';
 
@@ -18,11 +18,11 @@ export const InvitationsList = ({
 }: InvitationsListProps) => {
     if(isLoading) {
         return (
-            <Box display='flex' align='center' justify='center' className='invitations-list-loading'>
-                <Text as='p' tone='secondary' size='md' align='center' className='p-4'>
+            <div className='flex items-center justify-center invitations-list-loading'>
+                <p className='text-sm text-muted text-center p-4'>
                     Loading invitations...
-                </Text>
-            </Box>
+                </p>
+            </div>
         );
     }
 
@@ -37,8 +37,8 @@ export const InvitationsList = ({
     }
 
     return (
-        <Box overflow='y-auto' shrink='0' className='invitations-list'>
-            <Stack gap='05'>
+        <div className='overflow-y-auto shrink-0 invitations-list'>
+            <div className='flex flex-col gap-2'>
                 {invitations.map((invitation) => (
                     <InvitationRow
                         key={invitation._id}
@@ -48,7 +48,7 @@ export const InvitationsList = ({
                         isLoading={cancelingId === invitation._id}
                     />
                 ))}
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 };

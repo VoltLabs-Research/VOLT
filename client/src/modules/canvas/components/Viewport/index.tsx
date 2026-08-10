@@ -12,7 +12,6 @@ import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utils/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utils/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Box, Stack } from '@voltstack/bravais';
 import { useMemo, useCallback, useEffect, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -174,16 +173,16 @@ const Viewport = ({
     const resolvedTimestep = currentTimestep ?? 0;
 
     return (
-        <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-viewport">
-            <Box flex='1' position='relative' minH='0' className="canvas-viewport-body">
+        <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-viewport'>
+            <div className='relative flex-1 min-h-0 canvas-viewport-body'>
                 {bodyContent && (
-                    <Box display='flex' flex='1' minH='0' position='relative' width='max' height='max' className="canvas-viewport-body-content">
+                    <div className='flex relative w-full h-full flex-1 min-h-0 canvas-viewport-body-content'>
                         {bodyContent}
-                    </Box>
+                    </div>
                 )}
 
                 {renderScene && sceneConfig && (
-                    <Box position='relative' width='max' height='max' style={bodyContent ? { display: 'none' } : undefined}>
+                    <div className='relative w-full h-full' style={bodyContent ? { display: 'none' } : undefined}>
                         <FractalScene
                             ref={sceneRef}
                             config={sceneConfig}
@@ -225,18 +224,18 @@ const Viewport = ({
                                 />
                             )}
                         </FractalScene>
-                    </Box>
+                    </div>
                 )}
 
-                {!hideGradient && <Box position='absolute' inset='0' className="canvas-viewport-gradient" />}
+                {!hideGradient && <div className='absolute inset-0 canvas-viewport-gradient' />}
 
                 {analysisOverlay}
 
                 <AIViewerActivityBadge />
 
                 {showSceneActions && <ViewportFloatingControls />}
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

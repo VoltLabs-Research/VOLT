@@ -1,5 +1,5 @@
 import { Droplet, Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import { Button, Row, Slider } from '@voltstack/bravais';
+import { Button, Slider } from '@voltstack/bravais';
 
 import type { MenuOption } from '@/shared/contracts/menu';
 
@@ -88,7 +88,7 @@ interface ColorSubmenuProps {
 const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
     <div className="context-menu-transparency">
         <span className="context-menu-transparency__label">Color</span>
-        <Row gap='05' align='center'>
+        <div className='flex flex-row items-center gap-2'>
             <input
                 type='color'
                 value={value}
@@ -103,7 +103,7 @@ const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
             >
                 Reset
             </Button>
-        </Row>
+        </div>
     </div>
 );
 

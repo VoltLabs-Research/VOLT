@@ -5,7 +5,6 @@ import {
     getPrimitiveArgumentFieldValue
 } from '@/modules/plugin/utils/plugin/argument-values';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Stack } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
@@ -90,7 +89,7 @@ const PrimitiveArgumentField = ({
     const fieldConfig = getPrimitiveFieldConfig(argument, frameOptions, selectOptions);
 
     return (
-        <Stack gap='05'>
+        <div className='flex flex-col gap-2'>
             {allowTemplateReferenceMode && (
                 <FormFieldRHF
                     label='Use reference'
@@ -119,7 +118,7 @@ const PrimitiveArgumentField = ({
                 autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
                 placeholder={isTemplateReferenceMode ? '{{ arguments.some-value }}' : undefined}
             />
-        </Stack>
+        </div>
     );
 };
 

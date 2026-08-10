@@ -1,6 +1,7 @@
+import { cn } from '@heroui/react';
 import './ClusterInstallCommandPicker.css';
 import CopyableField from '@/shared/ui/components/CopyableField';
-import { SegmentedTabs, Stack } from '@voltstack/bravais';
+import { SegmentedTabs } from '@voltstack/bravais';
 import {
     CLUSTER_INSTALL_PLATFORM_OPTIONS,
     ClusterInstallPlatform,
@@ -31,7 +32,7 @@ const ClusterInstallCommandPicker = ({
     }, [activePlatform, clusterId, enrollmentToken]);
 
     return (
-        <Stack gap='075' className={`cluster-install-command-picker ${className}`}>
+        <div className={cn('flex flex-col gap-3', `cluster-install-command-picker ${className}`)}>
             <SegmentedTabs
                 tabs={CLUSTER_INSTALL_PLATFORM_OPTIONS}
                 activeTab={activePlatform}
@@ -45,7 +46,7 @@ const ClusterInstallCommandPicker = ({
                 value={installCommand}
                 successMessage='Install command copied'
             />
-        </Stack>
+        </div>
     );
 };
 

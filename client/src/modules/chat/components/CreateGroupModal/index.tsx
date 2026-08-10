@@ -2,9 +2,14 @@ import TeamMemberList from '../TeamMemberList';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, Stack, Text } from '@voltstack/bravais';
+import { Modal, closeModal } from '@/shared/ui/modal';
 import { toggleSelection } from '@/shared/utils/selection';
 import type { User } from '@volt/contracts/modules/auth/domain';
+
+/* Shared so ChatSidebar's trigger and this modal cannot drift apart. The id used
+   to be a bare string in both places, which was survivable only while the native
+   <dialog> matched them up by `commandfor` at runtime. */
+export const CREATE_GROUP_MODAL_ID = 'create-group-modal';
 
 interface CreateGroupModalProps {
     teamMembers: User[];
@@ -41,7 +46,7 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
 
     return (
         <Modal
-            id='create-group-modal'
+            id={CREATE_GROUP_MODAL_ID}
             title='Create New Group'
             description='Create a group chat with your team members'
             width='500px'
@@ -49,19 +54,18 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
                 <ModalFooterActions
                     secondary={{
                         label: 'Cancel',
-                        commandfor: 'create-group-modal',
-                        command: 'close'
+                        onPress: () => closeModal(CREATE_GROUP_MODAL_ID)
                     }}
                     primary={{
                         label: 'Create Group',
-                        onClick: handleCreate,
-                        disabled: !groupName.trim() || selectedMembers.length === 0,
-                        isLoading: isLoading
+                        onPress: handleCreate,
+                        isDisabled: !groupName.trim() || selectedMembers.length === 0,
+                        isPending: isLoading
                     }}
                 />
             )}
         >
-            <Stack gap='1' p='2'>
+            <div className='flex flex-col gap-4 p-8'>
                 <FormFieldRHF
                     label='Group Name'
                     value={groupName}
@@ -76,19 +80,19 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
                     placeholder='Enter description (optional)'
                 />
 
-                <Stack gap='05'>
-                    <Text as='p' size='md' weight='bold' tone='secondary'>
+                <div className='flex flex-col gap-2'>
+                    <p className='text-sm font-semibold text-muted'>
                         Select Members ({selectedMembers.length} selected)
-                    </Text>
+                    </p>
                     <TeamMemberList
                         members={teamMembers}
                         selectedIds={selectedMembers}
                         currentUserId={currentUserId}
                         onToggle={handleToggleMember}
                     />
-                </Stack>
+                </div>
 
-            </Stack>
+            </div>
         </Modal>
     );
 };

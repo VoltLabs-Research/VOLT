@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
-import { EmptyState, Skeleton, IconButton, Row, SearchInput, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { UserPlus, Users } from 'lucide-react';
+import { EmptyState, Skeleton, IconButton, SearchInput, Tooltip } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import '../ChatListSkeleton/ChatListSkeleton.css';
 import ChatListItem from '../ChatListItem';
 import TeamMemberList from '../TeamMemberList';
+import { CREATE_GROUP_MODAL_ID } from '../CreateGroupModal';
+import { openModal } from '@/shared/ui/modal';
 import { matchesQuery } from '@/shared/utils/matches-query';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
@@ -61,18 +63,18 @@ const ChatSidebar = ({
 
     if (isLoading) {
         chatListContent = (
-            <Stack gap='05'>
+            <div className='flex flex-col gap-2'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Row key={i} gap='075' className='chat-skeleton-item'>
+                    <div className='flex flex-row items-center gap-3 chat-skeleton-item' key={i}>
                         <Skeleton variant='circular' width={40} height={40} />
-                        <Stack gap='025' flex='1'>
+                        <div className='flex flex-col gap-1 flex-1'>
                             <Skeleton variant='rounded' width={120} height={14} />
                             <Skeleton variant='rounded' width={80} height={12} />
-                        </Stack>
+                        </div>
                         <Skeleton variant='circular' width={8} height={8} />
-                    </Row>
+                    </div>
                 ))}
-            </Stack>
+            </div>
         );
     } else if (error && filteredChats.length === 0) {
         chatListContent = (
@@ -109,11 +111,11 @@ const ChatSidebar = ({
     }
 
     return (
-        <Stack height='max' className='chat-sidebar'>
-            <Stack gap='075' className='chat-sidebar-header'>
-                <Row justify='between'>
-                    <Text as='p' size='2xl' weight='bold'>Messages</Text>
-                    <Row gap='025'>
+        <div className='flex flex-col h-full chat-sidebar'>
+            <div className='flex flex-col gap-3 chat-sidebar-header'>
+                <div className='flex flex-row items-center justify-between'>
+                    <p className='text-2xl font-semibold'>Messages</p>
+                    <div className='flex flex-row items-center gap-1'>
                         <Tooltip content={newChatTooltip}>
                             <IconButton
                                 size='sm'
@@ -123,49 +125,48 @@ const ChatSidebar = ({
                                 aria-label={newChatTooltip}
                                 disabled={teamMembers.length === 0}
                             >
-                                <IoPersonAddOutline size={18} />
+                                <UserPlus size={18} />
                             </IconButton>
                         </Tooltip>
                         <Tooltip content='Create Group'>
                             <IconButton
                                 size='sm'
                                 variant='ghost'
-                                commandfor='create-group-modal'
-                                command='show-modal'
+                                onClick={() => openModal(CREATE_GROUP_MODAL_ID)}
                                 title='Create Group'
                                 aria-label='Create Group'
                             >
-                                <IoPeopleOutline size={18} />
+                                <Users size={18} />
                             </IconButton>
                         </Tooltip>
-                    </Row>
-                </Row>
+                    </div>
+                </div>
 
                 <SearchInput
                     placeholder='Search conversations...'
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
-            </Stack>
+            </div>
 
             {showTeamMembers && teamMembers.length > 0 && (
-                <Stack p='1'>
-                    <Text as='p' size='md' weight='bold' tone='secondary' className='chat-sidebar-section-title'>
+                <div className='flex flex-col p-4'>
+                    <p className='text-sm font-semibold text-muted chat-sidebar-section-title'>
                         Team Members
-                    </Text>
+                    </p>
                     <TeamMemberList
                         members={teamMembers}
                         selectedIds={[]}
                         currentUserId={currentUserId}
                         onToggle={handleMemberSelect}
                     />
-                </Stack>
+                </div>
             )}
 
-            <Stack flex='1' overflow='y-auto' className='chat-sidebar-list'>
+            <div className='flex flex-col overflow-y-auto flex-1 chat-sidebar-list'>
                 {chatListContent}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

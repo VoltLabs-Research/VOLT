@@ -18,7 +18,7 @@ import {
 } from '../../utils/tree-menus';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
@@ -160,7 +160,7 @@ const ArtifactTreeSection = ({
             expanded={section.open}
             onExpandedChange={section.setOpen}
         >
-            <Stack gap='025' overflow='auto' className="canvas-tree-container" role="tree" aria-label={section.ariaLabel}>
+            <div className='flex flex-col gap-1 overflow-auto canvas-tree-container' role="tree" aria-label={section.ariaLabel}>
                 {timesteps.length === 0 ? (
                     <CanvasTreeEmptyRow label={isLoading ? 'Loading...' : 'No models generated'} />
                 ) : (
@@ -171,13 +171,13 @@ const ArtifactTreeSection = ({
                     <Button
                         variant='ghost'
                         size='sm'
-                        className='canvas-tree-show-more text-xs text-secondary'
+                        className='canvas-tree-show-more text-xs text-muted'
                         onClick={section.showMoreTimesteps}
                     >
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)
                     </Button>
                 )}
-            </Stack>
+            </div>
         </RightCollapsible>
     );
 };

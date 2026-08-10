@@ -1,4 +1,4 @@
-import { Box, Modal, closeModal } from '@voltstack/bravais';
+import { Modal, closeModal } from '@voltstack/bravais';
 import { useState, useEffect, useRef } from 'react';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import type { KeyboardEvent } from 'react';
@@ -68,32 +68,32 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
                 <ModalFooterActions
                     secondary={{
                         label: 'Cancel',
-                        onClick: handleCancel
+                        onPress: handleCancel
                     }}
                     primary={{
                         label: 'Save',
-                        onClick: handleSave,
-                        isLoading: isLoading,
-                        disabled: !content.trim() || content === initialContent
+                        onPress: handleSave,
+                        isPending: isLoading,
+                        isDisabled: !content.trim() || content === initialContent
                     }}
                 />
             }
         >
-            <Box className='edit-message-modal-content'>
+            <div className='edit-message-modal-content'>
                 <label htmlFor={EDIT_MESSAGE_TEXTAREA_ID} className='sr-only'>
                     Edit message
                 </label>
                 <textarea
                     ref={textareaRef}
                     id={EDIT_MESSAGE_TEXTAREA_ID}
-                    className='edit-message-textarea w-full rounded-sm'
+                    className='edit-message-textarea w-full rounded-lg'
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder='Enter your message...'
                     rows={3}
                 />
-            </Box>
+            </div>
         </Modal>
     );
 };

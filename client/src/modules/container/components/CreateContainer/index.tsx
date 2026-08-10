@@ -1,10 +1,10 @@
 import useCreateContainerForm from '../../hooks/use-create-container-form';
 import { getCustomImageValidationError } from '../../utils/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
-import { useStepper } from '@voltstack/bravais';
+import { useStepper } from '@/shared/ui/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Heading, Modal, closeModal, openModal, Row, Stack, Stepper, Text } from '@voltstack/bravais';
+import { Button, Modal, closeModal, openModal, Stepper } from '@voltstack/bravais';
 import type { StepIndicator } from '@voltstack/bravais';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
@@ -156,15 +156,15 @@ const CreateContainer = () => {
     ];
 
     return (
-        <Stack className='create-container-page' height='max' overflow='hidden'>
-            <Row className='create-container-header' gap='1-5' p='1-5' shrink='0'>
+        <div className='flex flex-col overflow-hidden h-full create-container-page'>
+            <div className='flex flex-row items-center gap-6 p-6 shrink-0 create-container-header'>
                 <Button variant='ghost' intent='neutral' iconOnly aria-label='Back to containers' title='Back to containers' onClick={() => navigate('/dashboard/containers')}>
                     <ArrowLeft size={20} />
                 </Button>
-                <Stack className='gap-[0.2rem]'>
-                    <Heading level={3} size='xl' weight='bold'>Create New Container</Heading>
-                </Stack>
-            </Row>
+                <div className='flex flex-col gap-[0.2rem]'>
+                    <h3 className='text-xl font-semibold text-foreground'>Create New Container</h3>
+                </div>
+            </div>
 
             <Stepper
                 steps={steps}
@@ -186,7 +186,7 @@ const CreateContainer = () => {
                     </>
                 }
             >
-                <Stack gap='075' p='1-5'>
+                <div className='flex flex-col gap-3 p-6'>
                     <FormFieldRHF
                         label='Docker image'
                         placeholder='e.g., nginx:latest, mysql:8.0'
@@ -195,10 +195,10 @@ const CreateContainer = () => {
                         error={tempCustomImageError ?? undefined}
                         autoFocus
                     />
-                    <Text as='p' size='md' tone='secondary'>Use a full Docker image reference. Tags are recommended so deployments stay predictable.</Text>
-                </Stack>
+                    <p className='text-sm text-muted'>Use a full Docker image reference. Tags are recommended so deployments stay predictable.</p>
+                </div>
             </Modal>
-        </Stack>
+        </div>
     );
 };
 

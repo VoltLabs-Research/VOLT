@@ -1,4 +1,4 @@
-import { Box, Skeleton } from '@voltstack/bravais';
+import { Skeleton } from '@voltstack/bravais';
 import type { CSSProperties } from 'react';
 
 const SKELETON_COLUMNS = [0, 1, 2, 3];
@@ -28,7 +28,7 @@ const skeletonCellStyle: CSSProperties = {
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
     <div className='plugin-exposure-table-compact w-full h-full overflow-hidden'>
         <div style={skeletonFrameStyle}>
-            <Box position='sticky' className='plugin-compact-table-header'>
+            <div className='sticky plugin-compact-table-header'>
                 {SKELETON_COLUMNS.map((index) => (
                     <div
                         key={`skeleton-header-${index}`}
@@ -38,7 +38,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                         <Skeleton variant='text' width='70%' height={18} animation='wave' />
                     </div>
                 ))}
-            </Box>
+            </div>
             <div className='plugin-compact-table-list-container' style={skeletonListStyle}>
                 {SKELETON_ROWS.map((rowIndex) => (
                     <div
@@ -52,7 +52,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                         {SKELETON_COLUMNS.map((cellIndex) => (
                             <div
                                 key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                                className='plugin-compact-table-cell overflow-hidden text-sm'
+                                className='plugin-compact-table-cell overflow-hidden text-xs'
                                 style={skeletonCellStyle}
                             >
                                 <Skeleton variant='text' width={`${55 + ((rowIndex + cellIndex) % 3) * 15}%`} height={16} animation='wave' />

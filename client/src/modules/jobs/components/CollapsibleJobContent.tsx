@@ -1,4 +1,4 @@
-import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 

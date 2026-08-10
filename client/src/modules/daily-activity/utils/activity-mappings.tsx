@@ -1,20 +1,20 @@
-import { GoBeaker, GoContainer, GoKey, GoPencil, GoShieldCheck, GoTrash, GoUpload } from 'react-icons/go';
+import { Beaker, Container, Key, Pencil, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import type { ActivityItem } from '@volt/contracts/modules/daily-activity/domain';
 import type { ReactNode } from 'react';
 
 export const ACTIVITY_ICON: Record<ActivityItem['type'], ReactNode> = {
-    'trajectory-upload': <GoUpload size={14} />,
-    'trajectory-deletion': <GoTrash size={14} />,
-    'analysis-performed': <GoBeaker size={14} />,
-    'analysis-deletion': <GoTrash size={14} />,
-    'container-creation': <GoContainer size={14} />,
-    'container-deletion': <GoTrash size={14} />,
-    'whiteboard-creation': <GoPencil size={14} />,
-    'whiteboard-deletion': <GoTrash size={14} />,
-    'role-creation': <GoShieldCheck size={14} />,
-    'role-deletion': <GoTrash size={14} />,
-    'secret-key-creation': <GoKey size={14} />,
-    'secret-key-deletion': <GoTrash size={14} />
+    'trajectory-upload': <Upload size={14} />,
+    'trajectory-deletion': <Trash2 size={14} />,
+    'analysis-performed': <Beaker size={14} />,
+    'analysis-deletion': <Trash2 size={14} />,
+    'container-creation': <Container size={14} />,
+    'container-deletion': <Trash2 size={14} />,
+    'whiteboard-creation': <Pencil size={14} />,
+    'whiteboard-deletion': <Trash2 size={14} />,
+    'role-creation': <ShieldCheck size={14} />,
+    'role-deletion': <Trash2 size={14} />,
+    'secret-key-creation': <Key size={14} />,
+    'secret-key-deletion': <Trash2 size={14} />
 };
 
 export const ACTIVITY_ACCENT: Record<ActivityItem['type'], string> = {

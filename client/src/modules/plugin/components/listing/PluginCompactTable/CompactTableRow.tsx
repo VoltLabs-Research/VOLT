@@ -1,6 +1,6 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { cn } from '@/shared/utils/cn';
-import { formatUnknownValue } from '@voltstack/bravais';
+import { formatUnknownValue } from '@/shared/utils/format';
 import { getColumnKey } from '@/shared/ui/components/DocumentListingTable';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import { resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
@@ -98,7 +98,7 @@ const CompactTableRow = ({
                 return (
                     <div
                         key={columnKey}
-                        className='plugin-compact-table-cell overflow-hidden text-sm'
+                        className='plugin-compact-table-cell overflow-hidden text-xs'
                         style={resolveColumnStyle(col, columnWidthScale)}
                         title={titleAttribute}
                     >

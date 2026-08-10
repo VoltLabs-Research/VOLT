@@ -1,5 +1,6 @@
+import { cn } from '@heroui/react';
 import './DashboardBottomBar.css';
-import { Box, Divider, Row, Text, openModal } from '@voltstack/bravais';
+import { Divider, openModal } from '@voltstack/bravais';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
@@ -44,12 +45,12 @@ interface BottomBarMetricProps {
 }
 
 const BottomBarMetric = ({ icon, value, critical }: BottomBarMetricProps) => (
-    <Row as='span' align='center' gap='025'>
+    <span className='flex flex-row items-center gap-1'>
         <span className='dashboard-bottom-bar-metric-icon' aria-hidden='true'>{icon}</span>
-        <Text as='span' size='sm' tone='secondary' className={critical ? 'dashboard-bottom-bar-critical' : undefined}>
+        <span className={cn('text-xs text-muted', critical ? 'dashboard-bottom-bar-critical' : undefined)}>
             {value}
-        </Text>
-    </Row>
+        </span>
+    </span>
 );
 
 const DashboardBottomBar = () => {
@@ -131,8 +132,8 @@ const DashboardBottomBar = () => {
     };
 
     return (
-        <Box as='footer' className='dashboard-bottom-bar glass-bg' aria-label='Workspace status'>
-            <Row gap='05' className='dashboard-bottom-bar-inner'>
+        <footer className='dashboard-bottom-bar bg-surface border border-border' aria-label='Workspace status'>
+            <div className='flex flex-row items-center gap-2 dashboard-bottom-bar-inner'>
                 <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
                     <StatusCounts
                         queued={jobCounts.queued}
@@ -162,14 +163,14 @@ const DashboardBottomBar = () => {
 
                 {showPresence && (
                     <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => openModal(DASHBOARD_DRAWER_IDS.presence)}>
-                        <Text as='span' size='sm' tone='secondary'>
+                        <span className='text-xs text-muted'>
                             <span className={`dashboard-bottom-bar-presence-dot ${presenceCounts.online > 0 ? 'is-online' : 'is-offline'}`} aria-hidden='true' />
                             {presenceCounts.online} / {presenceCounts.total} online
-                        </Text>
+                        </span>
                     </BottomBarSegment>
                 )}
-            </Row>
-        </Box>
+            </div>
+        </footer>
     );
 };
 

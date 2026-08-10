@@ -1,4 +1,3 @@
-import { Box, Stack, Text } from '@voltstack/bravais';
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utils/activity-mappings';
 import '@/modules/daily-activity/components/ActivityTooltipContent/ActivityEntry.css';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
@@ -18,35 +17,35 @@ const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
 const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: ActivityTooltipContentProps) => {
     if (!activity.length) {
         return (
-            <Stack gap='05' className='activity-tooltip-content'>
-                <Text size='md' weight='medium' tone='primary'>{dateLabel}</Text>
-                <Text tone='secondary' size='md'>No recorded activity for this day.</Text>
-            </Stack>
+            <div className='flex flex-col gap-2 activity-tooltip-content'>
+                <span className='text-sm font-medium text-foreground'>{dateLabel}</span>
+                <span className='text-sm text-muted'>No recorded activity for this day.</span>
+            </div>
         );
     }
 
     return (
-        <Stack gap='1' overflow='y-scroll' className='activity-tooltip-content'>
-            <Stack gap='025'>
-                <Text size='md' weight='medium' tone='primary'>{dateLabel}</Text>
-                <Text size='sm' tone='secondary'>
+        <div className='flex flex-col gap-4 overflow-y-scroll activity-tooltip-content'>
+            <div className='flex flex-col gap-1'>
+                <span className='text-sm font-medium text-foreground'>{dateLabel}</span>
+                <span className='text-xs text-muted'>
                     {activity.length.toLocaleString()} events · {minutesOnline.toLocaleString()} minutes online · score {score.toLocaleString()}
-                </Text>
-            </Stack>
+                </span>
+            </div>
             {activity.map((item, index) => (
-                <Box key={`${item.createdAt}-${index}`} className='activity-entry flex items-start gap-2'>
-                    <span className='activity-entry-dot flex items-center justify-center rounded-md shrink-0' style={{ color: ACTIVITY_ACCENT[item.type] }}>
+                <div className='activity-entry flex items-start gap-2' key={`${item.createdAt}-${index}`}>
+                    <span className='activity-entry-dot flex items-center justify-center rounded-xl shrink-0' style={{ color: ACTIVITY_ACCENT[item.type] }}>
                         {ACTIVITY_ICON[item.type]}
                     </span>
-                    <Box className='activity-entry-content flex flex-col min-w-0'>
-                        <Text size='sm' tone='secondary'>
+                    <div className='activity-entry-content flex flex-col min-w-0'>
+                        <span className='text-xs text-muted'>
                             {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
-                        </Text>
-                        <Text size='md' tone='primary'>{item.description}</Text>
-                    </Box>
-                </Box>
+                        </span>
+                        <span className='text-sm text-foreground'>{item.description}</span>
+                    </div>
+                </div>
             ))}
-        </Stack>
+        </div>
     );
 };
 

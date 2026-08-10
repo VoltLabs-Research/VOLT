@@ -1,4 +1,3 @@
-import { Heading } from '@voltstack/bravais';
 import useWhiteboardsListing, {
     RENAME_WHITEBOARD_MODAL_ID,
     whiteboardsListingResource
@@ -27,7 +26,7 @@ const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
     resolveTitle: (row) => row.title,
     skeletonWidth: 180,
     wrapperClassName: 'whiteboards-listing-title-cell',
-    titleClassName: 'whiteboards-listing-title font-semibold text-secondary',
+    titleClassName: 'whiteboards-listing-title font-semibold text-muted',
     getAriaLabel: (row) => row.hierarchyTitle,
     showTitleAttribute: true
 });
@@ -55,7 +54,7 @@ const WhiteboardsListing = () => {
 
     useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
 
-    const title = <Heading level={3} size='3xl' className='sm:font-size-4'>Whiteboards</Heading>;
+    const title = <h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Whiteboards</h3>;
 
     const headerActions = <NewFolderHeaderAction modalId={whiteboardsListingResource.modalIds.newFolder} />;
 

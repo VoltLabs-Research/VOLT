@@ -1,6 +1,5 @@
+import { Button, Tooltip, cn } from '@heroui/react';
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
-import './EditableKeyValueCard.css';
 import { Plus, Trash2, Settings } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 
@@ -26,6 +25,8 @@ interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
     addButtonPosition?: 'top' | 'bottom';
     className?: string;
 };
+
+const INPUT_CLASSES = 'w-full rounded-md border border-border bg-background px-3 py-[0.6rem] text-foreground transition-[border-color] duration-200 focus:border-accent';
 
 const EditableKeyValueCard = <T extends Record<string, unknown>>({
     title,
@@ -84,7 +85,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
             [field]: value
         };
         setLocalItems(updated);
-        
+
         if (alwaysEditing && onChange) {
             onChange(updated);
         }
@@ -93,7 +94,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     const handleRemove = (index: number) => {
         const updated = localItems.filter((_, i) => i !== index);
         setLocalItems(updated);
-        
+
         if (alwaysEditing && onChange) {
             onChange(updated);
         }
@@ -102,7 +103,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     const handleAdd = () => {
         const updated = [...localItems, createEmpty()];
         setLocalItems(updated);
-        
+
         if (alwaysEditing && onChange) {
             onChange(updated);
         }
@@ -117,43 +118,47 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
 
     const content = (
         <>
-            <span id={statusId} className='editable-kv-live-region' aria-live='polite' aria-atomic='true'>
+            <span id={statusId} className='sr-only' aria-live='polite' aria-atomic='true'>
                 {stateLabel}
             </span>
             {showHeader && (
-                <Row justify='between' className='mb-4'>
-                    {title && <Heading level={3} weight='bold' id={headingId} className={titleClassName}>{title}</Heading>}
-                    <Box display='flex' gap='05'>
+                <div className='flex flex-row items-center justify-between mb-4'>
+                    {title && <h3 className={cn('text-base font-semibold text-foreground', titleClassName)} id={headingId}>{title}</h3>}
+                    <div className='flex gap-2'>
                         {alwaysEditing && addButtonPosition === 'top' && (
-                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={handleAdd}>
+                            <Button variant='ghost' size='sm' onPress={handleAdd}>
+                                <Plus size={14} />
                                 Add
                             </Button>
                         )}
                         {!alwaysEditing && onSave && (
                             editing ? (
                                 <>
-                                    <Button variant='solid' intent='brand' size='sm' onClick={handleSave}>Save</Button>
-                                    <Button variant='ghost' intent='neutral' size='sm' onClick={handleCancel}>Cancel</Button>
+                                    <Button variant='primary' size='sm' onPress={() => { void handleSave(); }}>Save</Button>
+                                    <Button variant='ghost' size='sm' onPress={handleCancel}>Cancel</Button>
                                 </>
                             ) : (
-                                <Button variant='ghost' intent='neutral' size='sm' iconOnly aria-label='Edit items' title='Edit items' onClick={handleEdit}>
-                                    <Settings size={16} />
-                                </Button>
+                                <Tooltip>
+                                    <Button variant='ghost' size='sm' isIconOnly aria-label='Edit items' onPress={handleEdit}>
+                                        <Settings size={16} />
+                                    </Button>
+                                    <Tooltip.Content>Edit items</Tooltip.Content>
+                                </Tooltip>
                             )
                         )}
-                    </Box>
-                </Row>
+                    </div>
+                </div>
             )}
 
-            <Stack gap='075'>
+            <div className='flex flex-col gap-3'>
                 {isEditing ? (
                     <>
                         {localItems.map((item, i) => (
-                            <Row key={i} gap='075' className='editable-kv-row'>
+                            <div className='flex flex-row items-center gap-3 animate-in fade-in-0 duration-200 ease-out' key={i}>
                                 {fields.map((field) => (
-                                    <div key={field.key} className='editable-kv-field'>
+                                    <div key={field.key} className='flex-1'>
                                         {showLabels && field.label && (
-                                            <label className='text-sm text-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
+                                            <label className='block mb-1 text-xs text-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
                                         )}
                                         <input
                                             id={`editable-kv-${field.key}-${i}`}
@@ -161,7 +166,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                             placeholder={field.placeholder}
                                             aria-label={field.label ?? field.placeholder}
                                             value={String(item[field.key] ?? '')}
-                                            className='editable-kv-input text-md'
+                                            className={cn(INPUT_CLASSES, 'text-sm')}
                                             onChange={(e) => handleChange(
                                                 i,
                                                 field.key,
@@ -170,24 +175,26 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                         />
                                     </div>
                                 ))}
-                                <Button variant='ghost' intent='danger' size='sm' iconOnly aria-label={`Remove item ${i + 1}`} title={`Remove item ${i + 1}`} onClick={() => handleRemove(i)}>
-                                    <Trash2 size={16} />
-                                </Button>
-                            </Row>
+                                <Tooltip>
+                                    <Button variant='ghost' size='sm' isIconOnly className='text-danger' aria-label={`Remove item ${i + 1}`} onPress={() => handleRemove(i)}>
+                                        <Trash2 size={16} />
+                                    </Button>
+                                    <Tooltip.Content>{`Remove item ${i + 1}`}</Tooltip.Content>
+                                </Tooltip>
+                            </div>
                         ))}
                         {localItems.length === 0 && (
-                            <Text as='p' tone='muted' size='md' align='center' className='p-4'>{emptyMessage}</Text>
+                            <p className='text-sm text-muted text-center p-4'>{emptyMessage}</p>
                         )}
                         {addButtonPosition === 'bottom' && (
                             <Button
                                 variant='ghost'
-                                intent='neutral'
                                 size='sm'
-                                block
-                                leftIcon={<Plus size={16} />}
-                                className='editable-kv-add-btn'
-                                onClick={handleAdd}
+                                fullWidth
+                                className='border border-dashed border-border hover:border-accent'
+                                onPress={handleAdd}
                             >
+                                <Plus size={16} />
                                 Add
                             </Button>
                         )}
@@ -197,21 +204,21 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                         {items.length > 0 ? (
                             renderItem ? items.map((item, i) => renderItem(item, i)) : (
                                 items.map((item, i) => (
-                                    <Box key={i} display='flex' gap='1' className='editable-kv-display-row'>
+                                    <div className='flex gap-4 p-3.5 rounded-lg bg-surface-tertiary text-sm border border-transparent transition-colors duration-200 hover:border-border' key={i}>
                                         {fields.map((field) => (
-                                            <span key={field.key} className='text-secondary'>
+                                            <span key={field.key} className='text-muted'>
                                                 {String(item[field.key] ?? '')}
                                             </span>
                                         ))}
-                                    </Box>
+                                    </div>
                                 ))
                             )
                         ) : (
-                            <Text as='p' tone='muted' size='md'>{emptyMessage}</Text>
+                            <p className='text-sm text-muted'>{emptyMessage}</p>
                         )}
                     </>
                 )}
-            </Stack>
+            </div>
         </>
     );
 
@@ -220,7 +227,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     }
 
     return (
-        <div className={`editable-kv-card p-6 ${className}`} aria-labelledby={title ? headingId : undefined}>
+        <div className={cn('p-6 border border-border rounded-2xl shadow-sm', className)} aria-labelledby={title ? headingId : undefined}>
             {content}
         </div>
     );

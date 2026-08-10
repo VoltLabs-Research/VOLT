@@ -1,15 +1,10 @@
+/* The @font-face declarations stay their own file: their `url()`s resolve
+   relative to this file, so folding them into a sheet that Tailwind inlines
+   would move the base they resolve against. */
 import '@/shared/ui/assets/stylesheets/fonts.css';
-/* Design tokens and utility classes come from bravais, which owns them. The app
-   used to ship a copy of both sheets; the copy had already drifted behind. */
-import '@voltstack/bravais/styles.css';
-/* Rebases bravais's tokens into VOLT's identity. Must follow the sheet it rebases. */
-import '@/shared/ui/assets/stylesheets/identity.css';
-/* Stands exactly where bravais's own utility sheet used to, so a component's
-   CSS still wins over a utility passed through className. See the file header. */
-import '@/shared/ui/assets/stylesheets/tailwind.css';
-import '@/shared/ui/assets/stylesheets/base.css';
-import '@voltstack/bravais/components.css';
-import { initializeCustomScrollbars } from '@/shared/ui/utils/custom-scrollbars';
+/* Everything else — HeroUI, Tailwind, VOLT's tokens and the little chrome a
+   utility cannot express. One file; see its header for what may go in it. */
+import '@/shared/ui/assets/stylesheets/index.css';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import App from './App';
 
@@ -22,8 +17,6 @@ requestIdleCallbackHandle(() => {
     timeoutMs: 1200,
     fallbackDelayMs: 250
 });
-
-initializeCustomScrollbars();
 
 type VoltBridge = { on?: (channel: string, cb: (payload: { maximized: boolean }) => void) => () => void };
 const readVoltBridge = (): VoltBridge | undefined => (window as unknown as { volt?: VoltBridge }).volt;

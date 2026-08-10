@@ -1,5 +1,6 @@
+import { cn } from '@heroui/react';
 import './UserInfo.css';
-import { Avatar, Box, Row, Text } from '@voltstack/bravais';
+import { Avatar } from '@voltstack/bravais';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
 
@@ -19,23 +20,23 @@ const UserInfo = ({
     className 
 }: UserInfoProps) => {
     return (
-        <Row gap='075' width='max' justify='between' className={className}>
+        <div className={cn('flex flex-row items-center justify-between gap-3 w-full', className)}>
             <Avatar
                 user={user}
                 size='sm'
                 showStatus={showStatus}
                 isOnline={isOnline}
             />
-            <Box flex='1' minW='0' className='user-info-details'>
-                <Text as='p' size='md' weight='bold' tone='primary' className='user-info-name overflow-hidden'>
+            <div className='flex-1 min-w-0 user-info-details'>
+                <p className='text-sm font-semibold text-foreground user-info-name overflow-hidden'>
                     {user?.firstName} {user?.lastName}
                     {suffix}
-                </Text>
-                <Text as='p' size='sm' tone='muted' className='user-info-email overflow-hidden'>
+                </p>
+                <p className='text-xs text-muted user-info-email overflow-hidden'>
                     {user?.email}
-                </Text>
-            </Box>
-        </Row>
+                </p>
+            </div>
+        </div>
     );
 };
 

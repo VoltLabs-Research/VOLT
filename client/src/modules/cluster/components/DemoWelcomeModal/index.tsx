@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
-import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import './DemoWelcomeModal.css';
 interface DemoLocationState {
     justProvisionedDemo?: boolean;
@@ -94,29 +94,29 @@ const DemoWelcomeModal = () => {
     return (
         <div className='demo-welcome-modal-overlay' role='dialog' aria-modal='true' aria-labelledby='demo-welcome-title'>
             <div className='demo-welcome-modal-card'>
-                <Stack gap='1-5'>
-                    <Stack gap='05'>
-                        <Text size='sm' tone='muted'>Step {stepIndex + 1} of {steps.length}</Text>
-                        <Heading id='demo-welcome-title' level={2} size='xl' weight='bold'>
+                <div className='flex flex-col gap-6'>
+                    <div className='flex flex-col gap-2'>
+                        <span className='text-xs text-muted'>Step {stepIndex + 1} of {steps.length}</span>
+                        <h2 className='text-xl font-semibold text-foreground' id='demo-welcome-title'>
                             {currentStep.title}
-                        </Heading>
-                        <Text tone='secondary'>
+                        </h2>
+                        <span className='text-muted'>
                             {currentStep.description}
-                        </Text>
-                    </Stack>
+                        </span>
+                    </div>
 
-                    <Row justify='between' align='center'>
+                    <div className='flex flex-row items-center justify-between'>
                         <Button variant='ghost' intent='neutral' onClick={close}>Skip</Button>
-                        <Row gap='05'>
+                        <div className='flex flex-row items-center gap-2'>
                             {stepIndex > 0 && (
                                 <Button variant='outline' intent='neutral' onClick={goPrev}>Back</Button>
                             )}
                             <Button variant='solid' intent='brand' onClick={goNext}>
                                 {isLastStep ? 'Got it' : 'Next'}
                             </Button>
-                        </Row>
-                    </Row>
-                </Stack>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { Box, StatusBadge } from '@voltstack/bravais';
+import { StatusBadge } from '@voltstack/bravais';
 interface AtomTypeBadgeProps {
     type: number | string;
 }
@@ -26,9 +26,7 @@ export default function AtomTypeBadge({ type }: AtomTypeBadgeProps) {
 
     return (
         <StatusBadge variant='neutral'>
-            <Box
-                as='span'
-                radius='full'
+            <span className='rounded-full'
                 style={{
                     width: 9,
                     height: 9,

@@ -1,6 +1,6 @@
 import { useRasterWorkspace } from '@/modules/raster/hooks/use-raster-workspace';
 import { createDefaultRasterContainerSelection, createInitialRasterContainerSelections } from '@/modules/raster/contracts/container-selection';
-import { EmptyState, Loader, Row, Stack, Text } from '@voltstack/bravais';
+import { EmptyState, Loader } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { ImageOff } from 'lucide-react';
@@ -71,11 +71,11 @@ const RasterViewportPanel = ({
     }, [analysisId, onUpdateContainerSelection, selection.id, selection.model, vm.isModelUnavailable, vm.isSelectionUnavailable]);
 
     const headerActions = (
-        <Row gap='075' className='canvas-raster-viewport__header-actions'>
-            <Text as='p' size='xs' tone='secondary' truncate>
+        <div className='flex flex-row items-center gap-3 canvas-raster-viewport__header-actions'>
+            <p className='text-xs text-muted truncate'>
                 {selection.label}
-            </Text>
-        </Row>
+            </p>
+        </div>
     );
 
     const isShowingFallbackTimestep = currentTimestep !== undefined && vm.displayTimestep !== undefined && currentTimestep !== vm.displayTimestep;
@@ -85,59 +85,59 @@ const RasterViewportPanel = ({
         : 'This timestep does not have a rasterized trajectory frame yet.';
 
     return (
-        <Stack flex='1' minH='0' className='canvas-raster-viewport__panel'>
+        <div className='flex flex-col flex-1 min-h-0 canvas-raster-viewport__panel'>
             <PanelHeader title={selection.title} variant='compact' actions={headerActions} />
-            <Stack flex='1' minH='0' className='canvas-raster-viewport__body'>
+            <div className='flex flex-col flex-1 min-h-0 canvas-raster-viewport__body'>
                 {vm.sourceDescription && (
-                    <Text as='p' size='xs' tone='secondary' className='canvas-raster-viewport__hint'>
+                    <p className='text-xs text-muted canvas-raster-viewport__hint'>
                         {vm.sourceDescription}
-                    </Text>
+                    </p>
                 )}
                 {isShowingFallbackTimestep && (
-                    <Text as='p' size='xs' tone='secondary' className='canvas-raster-viewport__hint'>
+                    <p className='text-xs text-muted canvas-raster-viewport__hint'>
                         Showing frame {vm.displayTimestep} because the current timestep is not available for this selection.
-                    </Text>
+                    </p>
                 )}
                 {vm.isLoading ? (
-                    <Row justify='center' flex='1' minH='0' className='canvas-raster-viewport__frame'>
+                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-raster-viewport__frame'>
                         <Loader scale={0.45} isFixed={false} />
-                    </Row>
+                    </div>
                 ) : vm.error ? (
-                    <Row justify='center' flex='1' minH='0' className='canvas-raster-viewport__frame'>
+                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-raster-viewport__frame'>
                         <RecoveryState
                             title='Unable to load raster output'
                             description={vm.error.message}
                             tone={RecoveryStateTone.Error}
                             onRetry={() => vm.refetchMetadata()}
                         />
-                    </Row>
+                    </div>
                 ) : vm.isSelectionUnavailable ? (
-                    <Row justify='center' flex='1' minH='0' className='canvas-raster-viewport__frame'>
+                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-raster-viewport__frame'>
                         <EmptyState
                             icon={<ImageOff size={24} />}
                             title='No raster output for this analysis'
                             description='The selected analysis does not have raster output yet. Choose another source in Scene Collection or run rasterization.'
                         />
-                    </Row>
+                    </div>
                 ) : vm.isFrameMissing || !vm.imageUrl ? (
-                    <Row justify='center' flex='1' minH='0' className='canvas-raster-viewport__frame'>
+                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-raster-viewport__frame'>
                         <EmptyState
                             icon={<ImageOff size={24} />}
                             title='Raster frame unavailable'
                             description={frameUnavailableDescription}
                         />
-                    </Row>
+                    </div>
                 ) : (
-                    <Row justify='center' flex='1' minH='0' overflow='hidden' className='canvas-raster-viewport__frame'>
+                    <div className='flex flex-row items-center justify-center overflow-hidden flex-1 min-h-0 canvas-raster-viewport__frame'>
                         <img
                             className='canvas-raster-viewport__image'
                             src={vm.imageUrl}
                             alt={`${selection.title} raster timestep ${vm.displayTimestep ?? 0}`}
                         />
-                    </Row>
+                    </div>
                 )}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 
@@ -161,31 +161,31 @@ const CanvasRasterViewport = ({
 
     if (!metadataVm.hasRasterData && !metadataVm.isLoading) {
         return (
-            <Stack flex='1' minH='0' className='canvas-raster-viewport'>
+            <div className='flex flex-col flex-1 min-h-0 canvas-raster-viewport'>
                 <EmptyState
                     icon={<ImageOff size={24} />}
                     title='No rasterized frames available'
                     description='This trajectory does not have raster output yet. Run rasterization to populate the Raster workspace.'
                 />
-            </Stack>
+            </div>
         );
     }
 
     if (metadataVm.error) {
         return (
-            <Stack flex='1' minH='0' className='canvas-raster-viewport'>
+            <div className='flex flex-col flex-1 min-h-0 canvas-raster-viewport'>
                 <RecoveryState
                     title='Unable to load raster output'
                     description={metadataVm.error.message}
                     tone={RecoveryStateTone.Error}
                     onRetry={() => metadataVm.refetchMetadata()}
                 />
-            </Stack>
+            </div>
         );
     }
 
     return (
-        <Row flex='1' minH='0' className='canvas-raster-viewport canvas-raster-viewport--split'>
+        <div className='flex flex-row items-center flex-1 min-h-0 canvas-raster-viewport canvas-raster-viewport--split'>
             {orderedSelections.map((selection) => (
                 <RasterViewportPanel
                     key={selection.id}
@@ -195,7 +195,7 @@ const CanvasRasterViewport = ({
                     onUpdateContainerSelection={onUpdateContainerSelection}
                 />
             ))}
-        </Row>
+        </div>
     );
 };
 

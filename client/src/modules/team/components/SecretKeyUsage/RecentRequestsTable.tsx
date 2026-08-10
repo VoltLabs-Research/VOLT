@@ -59,7 +59,7 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                                     {request.method}
                                 </Tag>
                             </td>
-                            <td className='font-mono text-sm text-secondary truncate' style={{ maxWidth: 200 }} title={request.path}>
+                            <td className='font-mono text-xs text-muted truncate' style={{ maxWidth: 200 }} title={request.path}>
                                 {request.path}
                             </td>
                             <td>
@@ -67,10 +67,10 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                                     {request.statusCode}
                                 </span>
                             </td>
-                            <td className='font-mono text-sm text-muted'>
+                            <td className='font-mono text-xs text-muted'>
                                 {request.responseTime.toFixed(0)}ms
                             </td>
-                            <td className='text-sm text-muted'>
+                            <td className='text-xs text-muted'>
                                 {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                             </td>
                         </tr>

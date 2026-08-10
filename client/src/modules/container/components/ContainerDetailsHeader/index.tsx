@@ -1,4 +1,4 @@
-import { Box, Button, Heading, Row, SegmentedTabs, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import { Button, SegmentedTabs, StatusBadge } from '@voltstack/bravais';
 import type { SegmentedTabOption } from '@voltstack/bravais';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -80,8 +80,8 @@ const ContainerDetailsHeader = ({
     };
 
     return (
-        <Stack className='container-details-header'>
-            <Row gap='05'>
+        <div className='flex flex-col container-details-header'>
+            <div className='flex flex-row items-center gap-2'>
                 <Button
                     className='container-details-header-back'
                     variant='ghost'
@@ -92,24 +92,24 @@ const ContainerDetailsHeader = ({
                 >
                     Back
                 </Button>
-            </Row>
+            </div>
 
-            <Row className='container-details-header-top' align='start' justify='between' mt='05'>
-                <Stack className='container-details-header-identity' gap='025'>
-                    <Row gap='075' wrap>
-                        <Heading level={1} className='container-details-header-name' size='xl' weight='bold'>
+            <div className='flex flex-row items-start justify-between mt-2 container-details-header-top'>
+                <div className='flex flex-col gap-1 container-details-header-identity'>
+                    <div className='flex flex-row items-center flex-wrap gap-3'>
+                        <h1 className='text-xl font-semibold text-foreground container-details-header-name'>
                             {container.name}
-                        </Heading>
+                        </h1>
                         <StatusBadge status={container.status} />
-                    </Row>
-                    <Row className='container-details-header-meta' wrap>
-                        <Text as='span' className='container-details-header-meta-image'>{container.image}</Text>
-                        <Text as='span' className='container-details-header-meta-dot' aria-hidden='true'>·</Text>
-                        <Text as='span'>Created {createdRelative}</Text>
-                    </Row>
-                </Stack>
+                    </div>
+                    <div className='flex flex-row items-center flex-wrap container-details-header-meta'>
+                        <span className='container-details-header-meta-image'>{container.image}</span>
+                        <span className='container-details-header-meta-dot' aria-hidden='true'>·</span>
+                        <span>Created {createdRelative}</span>
+                    </div>
+                </div>
 
-                <Row className='container-details-header-actions' gap='05'>
+                <div className='flex flex-row items-center gap-2 container-details-header-actions'>
                     {contextualActions}
                     {canUpdate && isRunning && (
                         <>
@@ -159,10 +159,10 @@ const ContainerDetailsHeader = ({
                             Open :{primaryAccessiblePort.public}
                         </Button>
                     )}
-                </Row>
-            </Row>
+                </div>
+            </div>
 
-            <Box className='container-details-header-tabs-row' display='flex'>
+            <div className='flex container-details-header-tabs-row'>
                 <SegmentedTabs<ContainerDetailsTabId>
                     tabs={TABS}
                     activeTab={activeTab}
@@ -170,8 +170,8 @@ const ContainerDetailsHeader = ({
                     ariaLabel='Container sections'
                     size='sm'
                 />
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

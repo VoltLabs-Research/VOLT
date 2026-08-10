@@ -1,17 +1,15 @@
+import { cn } from '@heroui/react';
 import './GlobalSearch.css';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import { Box, Breadcrumbs, Loader, Row, SearchInput, Stack, Text, EmptyState } from '@voltstack/bravais';
+import { Box, Breadcrumbs, Loader, SearchInput, EmptyState } from '@voltstack/bravais';
 import type { BreadcrumbItem } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box as CubeIcon, ScanSearch } from 'lucide-react';
-import { CiChat1 } from 'react-icons/ci';
-import { GoWorkflow } from 'react-icons/go';
-import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
+import { Box as CubeIcon, MessageCircle, Package, ScanSearch, Users, Workflow } from 'lucide-react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 
 type SectionConfig = {
@@ -23,7 +21,7 @@ type SectionConfig = {
 const SECTIONS: SectionConfig[] = [
     {
         key: 'analyses',
-        icon: <GoWorkflow />,
+        icon: <Workflow />,
         title: 'Analyses'
     },
     {
@@ -33,7 +31,7 @@ const SECTIONS: SectionConfig[] = [
     },
     {
         key: 'containers',
-        icon: <IoCubeOutline />,
+        icon: <Package />,
         title: 'Containers'
     },
     {
@@ -43,12 +41,12 @@ const SECTIONS: SectionConfig[] = [
     },
     {
         key: 'teams',
-        icon: <IoPeopleOutline />,
+        icon: <Users />,
         title: 'Teams'
     },
     {
         key: 'chats',
-        icon: <CiChat1 />,
+        icon: <MessageCircle />,
         title: 'Chats'
     }
 ];
@@ -106,7 +104,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                 items={items}
                 variant='pill'
                 ariaLabel='Context breadcrumbs'
-                className='global-search-breadcrumb text-md'
+                className='global-search-breadcrumb text-sm'
             />
         );
     }, [contextBreadcrumb]);
@@ -118,12 +116,12 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         const optionId = `${resultsListId}-option-${itemIndex}`;
 
         return (
-            <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}${isDisabled ? ' global-search-item--disabled' : ''}`}>
-                <Text as='p' size='md' weight='medium' truncate className='w-full' title={item.title}>{item.title}</Text>
+            <div className={cn('flex flex-col items-start gap-1 rounded-lg w-full cursor-pointer', `global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}${isDisabled ? ' global-search-item--disabled' : ''}`)} key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}>
+                <p className='text-sm font-medium truncate w-full' title={item.title}>{item.title}</p>
                 {item.subtitle ? (
-                    <Text as='p' size='sm' tone='muted' truncate className='w-full' title={item.subtitle}>{item.subtitle}</Text>
+                    <p className='text-xs text-muted truncate w-full' title={item.subtitle}>{item.subtitle}</p>
                 ) : null}
-            </Stack>
+            </div>
         );
     };
 
@@ -136,15 +134,15 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         }
 
         return (
-            <Box key={key} className='global-search-section' role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
-                <Row gap='05' p='075' id={`${resultsListId}-${key}-label`} className='global-search-section-header text-lg text-muted'>
+            <div className='global-search-section' key={key} role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
+                <div className='flex flex-row items-center gap-2 p-3 global-search-section-header text-base text-muted' id={`${resultsListId}-${key}-label`}>
                     <span aria-hidden='true'>{icon}</span>
-                    <Text as='p' size='sm' weight='medium'>{title}</Text>
-                </Row>
-                <Stack gap='025' className='global-search-section-items'>
+                    <p className='text-xs font-medium'>{title}</p>
+                </div>
+                <div className='flex flex-col gap-1 global-search-section-items'>
                     {items.map(renderItem)}
-                </Stack>
-            </Box>
+                </div>
+            </div>
         );
     };
 
@@ -175,23 +173,23 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <Box radius='md' overflow='y-auto' ref={refs.setFloating} className='global-search-results glass-bg panel-floating' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
-                        <Text as='p' className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
+                    <Box radius='md' overflow='y-auto' ref={refs.setFloating} className='global-search-results bg-surface border border-border panel-floating' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                        <p className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
-                        </Text>
+                        </p>
 
                         {isLoading && (
-                            <Box p='2' className='global-search-loading'>
+                            <div className='p-8 global-search-loading'>
                                 <Loader scale={0.5} isFixed={false} announce />
-                            </Box>
+                            </div>
                         )}
 
                         {!isLoading && totalResults === 0 && <EmptyState title='No results found' description='' announce />}
 
                         {!isLoading && totalResults > 0 && (
-                            <Stack id={resultsListId} role='listbox' aria-label='Global search results' className='global-search-results-list'>
+                            <div className='flex flex-col global-search-results-list' id={resultsListId} role='listbox' aria-label='Global search results'>
                                 {SECTIONS.map(renderSection)}
-                            </Stack>
+                            </div>
                         )}
                     </Box>
                 </FloatingPortal>

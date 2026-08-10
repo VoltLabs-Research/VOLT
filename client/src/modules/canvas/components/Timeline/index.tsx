@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import TimelineHeader, { TimelineTab } from '../TimelineHeader';
 import TimelineRuler from '../TimelineRuler';
 import TimelineTabContent from './TimelineTabContent';
@@ -11,7 +12,6 @@ import useTip from '@/shared/tips/use-tip';
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Box, Stack } from '@voltstack/bravais';
 import type { CanvasExposureDownloadParams } from '../canvas-panel-props';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -148,10 +148,7 @@ const Timeline = ({
     }, [sceneRef]);
 
     return (
-        <Stack
-            overflow='hidden'
-            minH='0'
-            className={activeTab === TimelineTab.Timeline ? 'canvas-timeline canvas-timeline--timeline-active' : 'canvas-timeline'}
+        <div className={cn('flex flex-col overflow-hidden min-h-0', activeTab === TimelineTab.Timeline ? 'canvas-timeline canvas-timeline--timeline-active' : 'canvas-timeline')}
         >
             <TimelineHeader
                 activeTab={activeTab}
@@ -177,7 +174,7 @@ const Timeline = ({
             />
 
             {activeTab === TimelineTab.Timeline && (
-                <Box position='relative' className="canvas-timeline-ruler-region" data-tour-id="canvas-timeline-ruler">
+                <div className='relative canvas-timeline-ruler-region' data-tour-id="canvas-timeline-ruler">
                     <TimelineRuler
                         rulerRef={rulerRef}
                         ticks={ticks}
@@ -187,7 +184,7 @@ const Timeline = ({
                         currentFrame={currentFrame}
                         {...rulerHandlers}
                     />
-                </Box>
+                </div>
             )}
 
             <TimelineTabContent
@@ -200,7 +197,7 @@ const Timeline = ({
                 currentFrame={currentFrame}
                 analysisFrameStatus={analysisFrameStatus}
             />
-        </Stack>
+        </div>
     );
 };
 

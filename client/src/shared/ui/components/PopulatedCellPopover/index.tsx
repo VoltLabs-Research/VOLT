@@ -1,8 +1,7 @@
 import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
-import { Popover, Row, Stack, Text } from '@voltstack/bravais';
-import './PopulatedCellPopover.css';
-import { useMemo } from 'react';
+import { PopoverContent, PopoverDialog, PopoverRoot, PopoverTrigger } from '@heroui/react';
+import { useMemo, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { FC, MouseEvent, ReactNode } from 'react';
@@ -32,6 +31,16 @@ const EXCLUDED_FIELDS = new Set([
     'passwordChangedAt',
     '__t'
 ]);
+
+/**
+ * The trigger is a cell's own text, so it inherits everything and only grows an
+ * underline on hover. `render` swaps HeroUI's `role='button'` div for a real
+ * `<button>`: React Aria's `Pressable` adds press handling but neither semantics nor
+ * focusability, and this trigger has to stay keyboard reachable.
+ */
+const TRIGGER_CLASS_NAMES = 'inline-flex cursor-pointer rounded-sm border-0 bg-transparent text-inherit no-underline [font:inherit] transition-colors duration-150 hover:underline hover:decoration-muted hover:underline-offset-2';
+
+const LINK_CLASS_NAMES = 'flex items-center gap-1 whitespace-nowrap text-xs text-foreground no-underline transition-opacity duration-150 hover:opacity-80 [&_svg]:size-3.5';
 
 const resolveFieldValue = (value: unknown): string | null => {
     if (value === null || value === undefined) return null;
@@ -67,6 +76,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     displayFields,
     labelMap
 }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const listingRoute = getModelListingRoute(modelName);
     const documentRecord = useMemo<Record<string, unknown> | null>(() => {
         if (!isRecord(doc)) {
@@ -102,72 +112,63 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         return <>{children}</>;
     }
 
-    const popoverId = `populated-cell-${modelName}-${String(documentRecord._id ?? 'unknown')}`;
-
-    const trigger = (
-        <button
-            type='button'
-            className='populated-cell-trigger inline-flex cursor-pointer'
-            aria-haspopup='dialog'
-            aria-controls={popoverId}
-        >
-            {children}
-        </button>
-    );
-
     const handleStopPropagation = (event: MouseEvent<HTMLDivElement>) => {
         event.stopPropagation();
     };
 
-    const renderHeader = (close: () => void) => {
-        const handleNavigate = (event: MouseEvent<HTMLAnchorElement>) => {
-            event.stopPropagation();
-            close();
-        };
-
-        return (
-            <Row justify='between' p='05' gap='1' className='populated-cell-popover-header'>
-                <Text size='sm' tone='secondary'>{modelName}</Text>
-                {listingRoute && (
-                    <nav aria-label={`${modelName} links`}>
-                        <Link
-                            to={listingRoute}
-                            className='populated-cell-popover-link flex items-center gap-1'
-                            onClick={handleNavigate}
-                        >
-                            View in listing
-                            <ArrowUpRight />
-                        </Link>
-                    </nav>
-                )}
-            </Row>
-        );
+    const handleNavigate = (event: MouseEvent<HTMLAnchorElement>) => {
+        event.stopPropagation();
+        setIsOpen(false);
     };
 
     const renderField = (field: FieldEntry) => {
         return (
-            <Row key={field.key} align='start' gap='05' p='025' className='populated-cell-popover-field'>
-                <dt className='populated-cell-popover-field-label'>{field.label}</dt>
-                <dd className='populated-cell-popover-field-value' title={field.value}>{field.value}</dd>
-            </Row>
+            <div className='flex flex-row items-start gap-2 p-1 border-b border-border last:border-b-0' key={field.key}>
+                <dt className='min-w-20 whitespace-nowrap text-xs text-muted'>{field.label}</dt>
+                <dd className='m-0 flex-1 whitespace-normal wrap-anywhere text-xs text-foreground' title={field.value}>{field.value}</dd>
+            </div>
         );
     };
 
     return (
         <div className='inline-flex' onClick={handleStopPropagation}>
-            <Popover id={popoverId} trigger={trigger} placement='bottom-start'>
-                {(close: () => void) => (
-                    <Stack role='dialog' aria-label={`${modelName} details`}>
-                        {renderHeader(close)}
-                        <Stack className='populated-cell-popover-body'>
-                            {fields.length > 0
-                                ? <dl className='populated-cell-popover-fields m-0'>{fields.map(renderField)}</dl>
-                                : <Text size='sm' tone='muted' className='p-2'>No fields to display</Text>
-                            }
-                        </Stack>
-                    </Stack>
-                )}
-            </Popover>
+            <PopoverRoot isOpen={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger<'button'>
+                    type='button'
+                    className={TRIGGER_CLASS_NAMES}
+                    render={(triggerProps) => <button {...triggerProps} />}
+                >
+                    {children}
+                </PopoverTrigger>
+
+                <PopoverContent placement='bottom start' className='min-w-[180px] max-w-[320px]'>
+                    <PopoverDialog aria-label={`${modelName} details`} className='p-0'>
+                        <div className='flex flex-col'>
+                            <div className='flex flex-row items-center justify-between gap-4 p-2 border-b border-border'>
+                                <span className='text-xs text-muted'>{modelName}</span>
+                                {listingRoute && (
+                                    <nav aria-label={`${modelName} links`}>
+                                        <Link
+                                            to={listingRoute}
+                                            className={LINK_CLASS_NAMES}
+                                            onClick={handleNavigate}
+                                        >
+                                            View in listing
+                                            <ArrowUpRight />
+                                        </Link>
+                                    </nav>
+                                )}
+                            </div>
+                            <div className='flex flex-col max-h-[240px] overflow-y-auto overscroll-contain'>
+                                {fields.length > 0
+                                    ? <dl className='m-0'>{fields.map(renderField)}</dl>
+                                    : <span className='text-xs text-muted p-2'>No fields to display</span>
+                                }
+                            </div>
+                        </div>
+                    </PopoverDialog>
+                </PopoverContent>
+            </PopoverRoot>
         </div>
     );
 };

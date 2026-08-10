@@ -1,4 +1,4 @@
-import { Avatar, Box, IconButton, Row, Text, Tooltip } from '@voltstack/bravais';
+import { Avatar, IconButton, Tooltip } from '@voltstack/bravais';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { User } from '@volt/contracts/modules/auth/domain';
@@ -74,18 +74,18 @@ const WorkspacePeerAvatars = ({
     const overflow = peers.length - visible.length;
 
     return (
-        <Row gap='025' className='workspace-peer-avatars'>
+        <div className='flex flex-row items-center gap-1 workspace-peer-avatars'>
             {visible.map((peer) => renderAvatarButton(peer, {
                 isActive: peer.id === activeOwnerId,
                 isSelf: false,
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (
-                <Box display='flex' radius='full' className='workspace-peer-overflow avatar avatar-xs items-center justify-center'>
-                    <Text as='span' size='xs' weight='bold'>+{overflow}</Text>
-                </Box>
+                <div className='flex rounded-full workspace-peer-overflow avatar avatar-xs items-center justify-center'>
+                    <span className='text-xs font-semibold'>+{overflow}</span>
+                </div>
             )}
-        </Row>
+        </div>
     );
 };
 

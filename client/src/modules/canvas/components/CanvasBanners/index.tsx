@@ -1,5 +1,4 @@
 import { Users } from 'lucide-react';
-import { Row, Stack, Text } from '@voltstack/bravais';
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
 interface CanvasBannersProps {
@@ -32,18 +31,18 @@ const CanvasBanners = ({
     }
 
     return (
-        <Stack className='canvas-banner-stack' role='region' aria-label='Canvas notifications'>
+        <div className='flex flex-col canvas-banner-stack' role='region' aria-label='Canvas notifications'>
             {showCollabBanner && collaborationOwner && (
-                <Row className='canvas-banner canvas-banner--collab' role='status'>
-                    <Text as='span' className='canvas-banner__icon' aria-hidden='true'>
+                <div className='flex flex-row items-center canvas-banner canvas-banner--collab' role='status'>
+                    <span className='canvas-banner__icon' aria-hidden='true'>
                         <Users size={14} />
-                    </Text>
-                    <Text as='span' className='canvas-banner__message'>
+                    </span>
+                    <span className='canvas-banner__message'>
                         You are viewing <strong>{formatPeerName(collaborationOwner)}</strong>'s session.
                         Changes are broadcast live — scene edits go to their viewport.
-                    </Text>
+                    </span>
                     {onLeaveCollaboration && (
-                        <Text as='span' className='canvas-banner__actions'>
+                        <span className='canvas-banner__actions'>
                             <button
                                 type='button'
                                 className='canvas-banner__close'
@@ -53,11 +52,11 @@ const CanvasBanners = ({
                             >
                                 Leave
                             </button>
-                        </Text>
+                        </span>
                     )}
-                </Row>
+                </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

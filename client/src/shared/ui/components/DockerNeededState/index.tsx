@@ -1,7 +1,6 @@
-import { Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { EmptyStateRoot } from '@heroui/react';
 import { Container } from 'lucide-react';
 import { useId } from 'react';
-import './DockerNeededState.css';
 
 interface DockerNeededStateProps {
     /** What the user came here to do, named as the feature they clicked. */
@@ -21,26 +20,30 @@ const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
     const headingId = useId();
 
     return (
-        <Row as='section' aria-labelledby={headingId} justify='center' width='max' height='max' className='docker-needed-container'>
-            <Stack align='center' gap='1-5' textAlign='center' className='docker-needed-content'>
-                <Row justify='center' className='docker-needed-icon'>
+        <EmptyStateRoot<'section'>
+            render={(props) => <section {...props} />}
+            aria-labelledby={headingId}
+            className='flex flex-row items-center justify-center w-full h-full max-md:min-h-[300px]'
+        >
+            <div className='flex flex-col items-center gap-6 text-center max-w-[420px] max-md:max-w-[90%]'>
+                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-surface-tertiary text-muted'>
                     <Container size={24} />
-                </Row>
+                </div>
 
-                <Stack gap='05' textAlign='center'>
-                    <Heading level={2} id={headingId}>
+                <div className='flex flex-col gap-2 text-center'>
+                    <h2 className='text-base font-medium text-foreground' id={headingId}>
                         {`${feature} needs a container runtime`}
-                    </Heading>
-                    <Text size='md' tone='secondary' lineHeight='5'>
+                    </h2>
+                    <span className='text-sm text-muted leading-normal'>
                         This cluster&apos;s machine has no container runtime available, so Volt cannot start
                         containers on it. Install Docker there and this page works on the next heartbeat.
-                    </Text>
-                    <Text size='sm' tone='secondary' lineHeight='5'>
+                    </span>
+                    <span className='text-xs text-muted leading-normal'>
                         Nothing else is affected: trajectories, analyses and plugins do not use containers.
-                    </Text>
-                </Stack>
-            </Stack>
-        </Row>
+                    </span>
+                </div>
+            </div>
+        </EmptyStateRoot>
     );
 };
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useKeyboardShortcut } from '@voltstack/bravais';
+import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useSaveWorkflow from './use-save-workflow';

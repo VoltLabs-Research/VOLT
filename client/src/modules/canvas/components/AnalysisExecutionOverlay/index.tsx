@@ -4,7 +4,6 @@ import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import useCanvasAnalysisStatus from '@/modules/canvas/hooks/use-canvas-analysis-status';
 import { buildAnalysisExecutionRows } from './execution-rows';
-import { Text } from '@voltstack/bravais';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -111,13 +110,13 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             <div className="canvas-tree-execution-block" role="group" aria-label={`${analysis.pluginDisplayName} execution timeline`}>
                 {rows.map((row) => (
                     <div key={row.key} className={row.className}>
-                        <Text as='span' className={`canvas-tree-execution-icon canvas-tree-execution-icon--${row.status}`}>
+                        <span className={`canvas-tree-execution-icon canvas-tree-execution-icon--${row.status}`}>
                             {getStageIcon(row.iconSource)}
-                        </Text>
-                        <Text as='span' truncate className="canvas-tree-execution-label">{row.label}</Text>
-                        {row.cacheHit && <Text as='span' className="canvas-tree-execution-chip">cached</Text>}
+                        </span>
+                        <span className='truncate canvas-tree-execution-label'>{row.label}</span>
+                        {row.cacheHit && <span className='canvas-tree-execution-chip'>cached</span>}
                         {row.durationMs !== undefined && (
-                            <Text as='span' className="canvas-tree-execution-duration">{formatDuration(row.durationMs)}</Text>
+                            <span className='canvas-tree-execution-duration'>{formatDuration(row.durationMs)}</span>
                         )}
                     </div>
                 ))}

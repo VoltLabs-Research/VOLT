@@ -1,6 +1,6 @@
 import './SettingsRow.css';
 import { cn } from '@/shared/utils/cn';
-import { Row, Stack, Text } from '@voltstack/bravais';
+import { Row } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
 interface SettingsRowProps {
@@ -36,24 +36,24 @@ const SettingsRow = ({
             onClick={onClick}
         >
             {icon && (
-                <Row justify='center' shrink='0' className='text-xl text-muted'>
+                <div className='flex flex-row items-center justify-center shrink-0 text-xl text-muted'>
                     {icon}
-                </Row>
+                </div>
             )}
-            <Stack flex='1' gap='025' className='min-w-0'>
-                <Text as='p' weight='medium' size='md'>
+            <div className='flex flex-col gap-1 flex-1 min-w-0'>
+                <p className='text-sm font-medium'>
                     {title}
-                </Text>
+                </p>
                 {description && (
-                    <Text as='p' tone='muted' size='sm'>
+                    <p className='text-xs text-muted'>
                         {description}
-                    </Text>
+                    </p>
                 )}
-            </Stack>
+            </div>
             {rightContent && (
-                <Row shrink='0' className='settings-row-right'>
+                <div className='flex flex-row items-center shrink-0 settings-row-right'>
                     {rightContent}
-                </Row>
+                </div>
             )}
         </Row>
     );

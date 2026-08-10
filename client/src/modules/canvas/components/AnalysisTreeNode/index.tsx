@@ -5,7 +5,7 @@ import {
     CanvasTreeSkeletonRows,
     MaybeContextMenu
 } from '../CanvasTree';
-import { Box, Button, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
@@ -142,7 +142,7 @@ const AnalysisTreeNode = ({
     const nameClassName = [
         'canvas-tree-analysis-name',
         'truncate',
-        isSelectedAnalysis ? 'text-primary' : 'text-secondary',
+        isSelectedAnalysis ? 'text-foreground' : 'text-muted',
         tone ? `canvas-tree-analysis-name--${tone}` : ''
     ].filter(Boolean).join(' ');
 
@@ -154,7 +154,7 @@ const AnalysisTreeNode = ({
                 options={analysisMenuOptions}
             >
                 <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-                    <div className={`canvas-tree-item text-sm flex items-center gap-2 text-secondary select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
+                    <div className={`canvas-tree-item text-xs flex items-center gap-2 text-muted select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
                         <span className="canvas-tree-analysis-label-group">
                             <span className={nameClassName} title={analysis.pluginDisplayName}>
                                 {analysis.pluginDisplayName}
@@ -165,7 +165,7 @@ const AnalysisTreeNode = ({
                                 </span>
                             )}
                         </span>
-                        <Box as='span' flex='1' />
+                        <span className='flex-1' />
                         <Button
                             variant='ghost'
                             intent='neutral'

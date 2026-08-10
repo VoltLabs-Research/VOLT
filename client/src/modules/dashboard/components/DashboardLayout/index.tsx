@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
 import DashboardSidebar from '@/modules/dashboard/components/DashboardSidebar';
 import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
@@ -16,7 +17,6 @@ import {
 } from '@/modules/dashboard/utils/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
-import { Box } from '@voltstack/bravais';
 import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
 import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
 import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
@@ -25,7 +25,7 @@ import { isTeamClusterUsable } from '@/modules/cluster/utils/is-team-cluster-usa
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
-import { usePrefersReducedMotion } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -133,12 +133,12 @@ const DashboardLayout = () => {
     return (
         <AIChatProvider>
             <AIPageExitWidgetBridge />
-            <Box as='main' display='flex' height='vh-max' className={`dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+            <main className={cn('flex h-dvh', `dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`)}>
                 <TeamCreatorModal isRequired={teams.length === 0} />
                 <JoinTeamModal />
 
                 {/* Sidebar Overlay for Mobile */}
-                <Box position='fixed' inset='0' className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`} onClick={() => setSidebarOpen(false)} />
+                <div className={cn('fixed inset-0', `sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`)} onClick={() => setSidebarOpen(false)} />
 
                 <DashboardSidebar
                     sidebarOpen={sidebarOpen}
@@ -148,7 +148,7 @@ const DashboardLayout = () => {
                     onExpandSidebar={expandSidebar}
                 />
 
-                <Box className='dashboard-content-wrapper'>
+                <div className='dashboard-content-wrapper'>
                     <DemoExpirationBanner />
                     {!headerHidden && (
                         <DashboardHeader
@@ -157,7 +157,7 @@ const DashboardLayout = () => {
                         />
                     )}
 
-                    <Box flex='1' minH='0' overflow='y-auto' className='dashboard-content-main'>
+                    <div className='overflow-y-auto flex-1 min-h-0 dashboard-content-main'>
                         <TrajectoryUploaderContainer>
                             <motion.div
                                 key={getOutletTransitionKey(location.pathname)}
@@ -172,18 +172,18 @@ const DashboardLayout = () => {
                                 <Outlet context={outletContext} />
                             </motion.div>
                         </TrajectoryUploaderContainer>
-                    </Box>
+                    </div>
 
                     {!headerHidden && <DashboardBottomBar />}
 
                     <DemoWelcomeModal />
-                </Box>
+                </div>
 
                 <JobsDrawer />
                 <ClustersDrawer />
                 <ActivityDrawer />
                 <PresenceDrawer />
-            </Box>
+            </main>
         </AIChatProvider>
     );
 };

@@ -5,7 +5,7 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utils/screenshot';
-import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
@@ -46,8 +46,8 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
     };
 
     return (
-        <Stack gap='075' className='canvas-screenshot-popover'>
-            <Stack gap='05' className='canvas-screenshot-popover-fields'>
+        <div className='flex flex-col gap-3 canvas-screenshot-popover'>
+            <div className='flex flex-col gap-2 canvas-screenshot-popover-fields'>
                 <FormFieldRHF
                     fieldKey='resolutionPreset'
                     fieldType='select'
@@ -67,7 +67,7 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
                 />
 
                 {draft.resolutionPreset === 'custom' && (
-                    <Row gap='05' className='canvas-screenshot-popover-custom-size'>
+                    <div className='flex flex-row items-center gap-2 canvas-screenshot-popover-custom-size'>
                         <FormFieldRHF
                             fieldKey='customWidth'
                             fieldType='input'
@@ -86,7 +86,7 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
                             inputProps={{ inputMode: 'numeric' }}
                             variant='canvas'
                         />
-                    </Row>
+                    </div>
                 )}
 
                 <FormFieldRHF
@@ -106,16 +106,16 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
                     }))}
                     variant='canvas'
                 />
-            </Stack>
+            </div>
 
-            <Stack gap='025' className='canvas-screenshot-popover-summary'>
-                <Text as='p' size='sm' tone='secondary'>
+            <div className='flex flex-col gap-1 canvas-screenshot-popover-summary'>
+                <p className='text-xs text-muted'>
                     {resolutionCopy}
-                </Text>
-                <Text as='p' size='sm' tone='muted'>
+                </p>
+                <p className='text-xs text-muted'>
                     Ctrl+S captures using the last settings.
-                </Text>
-            </Stack>
+                </p>
+            </div>
 
             <Button
                 variant='solid'
@@ -129,7 +129,7 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
             >
                 {isCapturing ? 'Capturing...' : 'Capture screenshot'}
             </Button>
-        </Stack>
+        </div>
     );
 };
 
@@ -164,7 +164,7 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
                     shape='rounded'
                     size='sm'
                     className='text-xs canvas-btn-compact'
-                    leftIcon={<Row as='span' justify='center' shrink='0'><Camera size={12} /></Row>}
+                    leftIcon={<span className='flex flex-row items-center justify-center shrink-0'><Camera size={12} /></span>}
                     aria-label='Screenshot settings'
                     title='Screenshot settings'
                 >

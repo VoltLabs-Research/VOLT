@@ -18,7 +18,6 @@ import {
 } from '../../utils/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
-import { Stack } from '@voltstack/bravais';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
@@ -163,7 +162,7 @@ const SceneCollection = ({
     );
 
     return (
-        <Stack gap='025' overflow='auto' className="canvas-tree-container" role="tree" aria-label="Scene hierarchy">
+        <div className='flex flex-col gap-1 overflow-auto canvas-tree-container' role="tree" aria-label="Scene hierarchy">
             {showDefaultScene && (
                 <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}
@@ -212,7 +211,7 @@ const SceneCollection = ({
                     firstExposureTourTargetId={index === 0 ? firstExposureTourTargetId : undefined}
                 />
             ))}
-        </Stack>
+        </div>
     );
 };
 

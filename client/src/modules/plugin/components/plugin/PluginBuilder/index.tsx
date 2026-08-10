@@ -1,4 +1,4 @@
-import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
@@ -8,7 +8,7 @@ import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import Sidebar from '@/shared/ui/components/Sidebar';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
-import { useKeyboardShortcut } from '@voltstack/bravais';
+import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -119,23 +119,23 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <Stack gap='1-5' p='2' className='plugin-builder-palette-list-container'>
+                <div className='flex flex-col gap-6 p-8 plugin-builder-palette-list-container'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
-                </Stack>
+                </div>
             )
         }
     ], [onDragStart, handleAddNode]);
 
     return (
-        <Box width='vw-max' height='vh-max'>
+        <div className='w-screen h-dvh'>
             <Sidebar
                 tags={SIDEBAR_TAGS}
                 activeTag='Palette'
             >
                 <Sidebar.Header>
-                    <Row gap='075'>
+                    <div className='flex flex-row items-center gap-3'>
                         <Tooltip content='Back' placement='right'>
                             <Button
                                 variant='ghost'
@@ -155,7 +155,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                                 {pluginName}
                             </EditableTag>
                         </Tooltip>
-                    </Row>
+                    </div>
                 </Sidebar.Header>
 
                 <Sidebar.Bottom>
@@ -164,7 +164,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             </Sidebar>
 
             <PluginBuilderCanvas saveStatus={saveStatus} onSave={save} />
-        </Box>
+        </div>
     );
 };
 

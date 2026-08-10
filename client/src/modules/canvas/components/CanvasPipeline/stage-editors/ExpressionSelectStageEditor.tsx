@@ -2,7 +2,7 @@ import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Row, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { useState } from 'react';
 import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
@@ -75,8 +75,8 @@ const ExpressionSelectStageEditor = ({
     const hasExpression = draft.trim().length > 0;
 
     return (
-        <Stack gap='05' className='expression-select-chip'>
-            <Text size='xs' tone='muted'>Boolean expression over atom columns</Text>
+        <div className='flex flex-col gap-2 expression-select-chip'>
+            <span className='text-xs text-muted'>Boolean expression over atom columns</span>
             <textarea
                 className='expression-select-chip__input canvas-code-input'
                 rows={TEXTAREA_ROWS}
@@ -98,8 +98,8 @@ const ExpressionSelectStageEditor = ({
             />
 
             {action === 'color' && (
-                <Row gap='05' align='center'>
-                    <Text size='xs' tone='muted'>Highlight color</Text>
+                <div className='flex flex-row items-center gap-2'>
+                    <span className='text-xs text-muted'>Highlight color</span>
                     <input
                         type='color'
                         className='expression-select-chip__color'
@@ -107,29 +107,29 @@ const ExpressionSelectStageEditor = ({
                         onChange={(e) => patch({ color: e.target.value })}
                         aria-label='Selection highlight color'
                     />
-                </Row>
+                </div>
             )}
 
             {hasExpression && !autoRoute && (
-                <Row gap='05' align='center'>
+                <div className='flex flex-row items-center gap-2'>
                     {isValid && matchCount !== null && (
-                        <Text size='xs' tone='secondary' className='expression-select-chip__match-count'>
+                        <span className='text-xs text-muted expression-select-chip__match-count'>
                             {matchCount} atoms {action === 'delete' ? 'will be deleted' : 'selected'}
-                        </Text>
+                        </span>
                     )}
                     {!isValid && error && (
-                        <Text size='xs' tone='muted' className='expression-select-chip__error'>
+                        <span className='text-xs text-muted expression-select-chip__error'>
                             {error}
-                        </Text>
+                        </span>
                     )}
-                </Row>
+                </div>
             )}
             {autoRoute && (
-                <Text size='xs' tone='muted'>
+                <span className='text-xs text-muted'>
                     Large dataset — route to daemon on apply
-                </Text>
+                </span>
             )}
-            <Row gap='05'>
+            <div className='flex flex-row items-center gap-2'>
                 <Button
                     variant='solid'
                     intent='brand'
@@ -150,8 +150,8 @@ const ExpressionSelectStageEditor = ({
                         Clear
                     </Button>
                 )}
-            </Row>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

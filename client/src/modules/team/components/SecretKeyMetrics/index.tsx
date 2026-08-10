@@ -1,4 +1,4 @@
-import { Box, Heading, Row, Skeleton, Stack, StatCard, Text } from '@voltstack/bravais';
+import { Skeleton, StatCard } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
@@ -11,35 +11,35 @@ import PerKeyBreakdownTable from './PerKeyBreakdownTable';
 import '../secret-key/shared/SecretKeyShared.css';
 
 const metricsTitle = (
-    <Stack gap='05'>
-        <Heading level={3} size='2xl' weight='bold' tone='primary'>Secret Key Metrics</Heading>
-    </Stack>
+    <div className='flex flex-col gap-2'>
+        <h3 className='text-2xl font-semibold text-foreground'>Secret Key Metrics</h3>
+    </div>
 );
 
 const loadingView = (
-    <Box height='vh-max' className='secret-key-page text-primary'>
-        <Stack gap='2' width='max' className='secret-key-page-main'>
-            <Stack gap='05'>
+    <div className='h-dvh secret-key-page text-foreground'>
+        <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+            <div className='flex flex-col gap-2'>
                 <Skeleton variant='text' width={240} height={32} />
                 <Skeleton variant='text' width={160} height={20} />
-            </Stack>
-            <Box gap='1' className='secret-key-page-cards'>
+            </div>
+            <div className='gap-4 secret-key-page-cards'>
                 {[...Array(4)].map((_, i) => (
-                    <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
-                        <Row gap='05' className='mb-3'>
+                    <div className='rounded-2xl transition-[all] duration-200 ease-out-fluid secret-key-page-card' key={i}>
+                        <div className='flex flex-row items-center gap-2 mb-3'>
                             <Skeleton variant='circular' width={16} height={16} />
                             <Skeleton variant='text' width={120} height={20} />
-                        </Row>
+                        </div>
                         <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
-                    </Box>
+                    </div>
                 ))}
-            </Box>
+            </div>
             <div className='secret-key-page-charts'>
                 <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
                 <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
             </div>
-        </Stack>
-    </Box>
+        </div>
+    </div>
 );
 
 export default function SecretKeyMetrics() {
@@ -104,16 +104,16 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <Box height='vh-max' className='secret-key-page text-primary'>
-            <Stack gap='2' width='max' className='secret-key-page-main'>
-                <Stack gap='05'>
-                    <Heading level={3} size='2xl' weight='bold' tone='primary'>Secret Key Metrics</Heading>
-                    <Text as='p' size='md' tone='secondary'>
+        <div className='h-dvh secret-key-page text-foreground'>
+            <div className='flex flex-col gap-8 w-full secret-key-page-main'>
+                <div className='flex flex-col gap-2'>
+                    <h3 className='text-2xl font-semibold text-foreground'>Secret Key Metrics</h3>
+                    <p className='text-sm text-muted'>
                         {metrics.overview.totalRequests.toLocaleString()} total requests across {metrics.totalKeys} keys
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
 
-                <Box gap='1' className='secret-key-page-cards'>
+                <div className='gap-4 secret-key-page-cards'>
                     {cards.map((card) => (
                         <StatCard
                             key={card.title}
@@ -121,10 +121,10 @@ export default function SecretKeyMetrics() {
                             label={card.title}
                             value={card.value}
                             unit={card.unit}
-                            className='glass-bg'
+                            className='bg-surface border border-border'
                         />
                     ))}
-                </Box>
+                </div>
 
                 <div className='secret-key-page-charts'>
                     <ChartContainer
@@ -171,7 +171,7 @@ export default function SecretKeyMetrics() {
                 </div>
 
                 <PerKeyBreakdownTable perKey={metrics.perKey} />
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 }

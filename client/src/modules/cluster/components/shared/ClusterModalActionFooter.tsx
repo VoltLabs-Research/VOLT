@@ -22,15 +22,15 @@ const ClusterModalActionFooter = ({
     <ModalFooterActions
         secondary={{
             label: cancelLabel,
-            onClick: onCancel,
-            disabled: isSubmitting
+            onPress: onCancel,
+            isDisabled: isSubmitting
         }}
         primary={{
             label: confirmLabel,
-            intent: confirmIntent,
-            onClick: onConfirm,
-            isLoading: isSubmitting,
-            disabled: confirmDisabled
+            variant: confirmIntent,
+            onPress: onConfirm,
+            isPending: isSubmitting,
+            isDisabled: confirmDisabled
         }}
     />
 );

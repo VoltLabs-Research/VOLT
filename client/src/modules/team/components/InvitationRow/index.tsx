@@ -1,5 +1,5 @@
-import { Button, Box, ListRow } from '@voltstack/bravais';
-import { getInitialsFromEmail, getAvatarColorFromString } from '@voltstack/bravais';
+import { Button, ListRow } from '@voltstack/bravais';
+import { getAvatarColorFromString, getInitialsFromEmail } from '@/shared/utils/user';
 import { format } from 'date-fns';
 import './InvitationRow.css';
 
@@ -20,9 +20,9 @@ export const InvitationRow = ({
         <ListRow
             className='invitation-row'
             leading={
-                <Box display='flex' align='center' justify='center' radius='full' shrink='0' className='invitation-avatar font-medium' style={{ backgroundColor: getAvatarColorFromString(email) }}>
+                <div className='flex items-center justify-center rounded-full shrink-0 invitation-avatar font-medium' style={{ backgroundColor: getAvatarColorFromString(email) }}>
                     {getInitialsFromEmail(email)}
-                </Box>
+                </div>
             }
             title={email}
             subtitle={`Sent ${format(new Date(createdAt), 'MMM d, h:mm a')}`}

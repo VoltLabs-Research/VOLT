@@ -1,5 +1,4 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
-import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -100,12 +99,12 @@ const AnalysisLogPanel = ({
     }, [activityStatus, error, isLoading, live, segments.length]);
 
     return (
-        <Stack flex='1' minH='0' className='canvas-analysis-log-panel'>
-            <Box ref={scrollRef} overflow='y-auto' flex='1' minH='0' className='canvas-analysis-log-stream'>
+        <div className='flex flex-col flex-1 min-h-0 canvas-analysis-log-panel'>
+            <div className='overflow-y-auto flex-1 min-h-0 canvas-analysis-log-stream' ref={scrollRef}>
                 {helperText ? (
-                    <Row justify='center' flex='1' minH='0' className='canvas-analysis-log-empty'>
-                        <Text as='p' size='sm' tone='secondary'>{helperText}</Text>
-                    </Row>
+                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-analysis-log-empty'>
+                        <p className='text-xs text-muted'>{helperText}</p>
+                    </div>
                 ) : (
                     <pre className='canvas-analysis-log-terminal font-mono m-0'>
                         {segments.map((segment, index) => (
@@ -119,8 +118,8 @@ const AnalysisLogPanel = ({
                         ))}
                     </pre>
                 )}
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

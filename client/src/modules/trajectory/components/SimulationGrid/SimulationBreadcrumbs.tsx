@@ -1,6 +1,5 @@
 import { getTrajectoryListingFolderDroppableId } from '@/modules/trajectory/utils/listing';
 import { cn } from '@/shared/utils/cn';
-import { Box } from '@voltstack/bravais';
 import { ChevronRight } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 
@@ -75,7 +74,7 @@ const SimulationBreadcrumbs = ({ items, onOpen, droppable = false }: SimulationB
     const Link = droppable ? DroppableSimulationBreadcrumbLink : SimulationBreadcrumbLink;
 
     return (
-        <Box className='dashboard-simulations-breadcrumbs'>
+        <div className='dashboard-simulations-breadcrumbs'>
             <nav className='volt-breadcrumbs trajectory-breadcrumbs' aria-label='Folder breadcrumbs'>
                 <ol className='volt-breadcrumbs__list'>
                     {items.map((item, index) => (
@@ -92,7 +91,7 @@ const SimulationBreadcrumbs = ({ items, onOpen, droppable = false }: SimulationB
                     ))}
                 </ol>
             </nav>
-        </Box>
+        </div>
     );
 };
 

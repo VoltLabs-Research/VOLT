@@ -2,12 +2,11 @@ import { buildSheetBlob, buildSheetTsv } from '@/modules/ai/components/AIArtifac
 import { resolveTabularPayload } from '@/modules/ai/utils/message-artifacts';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import useSpreadsheetEditor from '@/modules/ai/components/AIArtifactSpreadsheetPanel/use-spreadsheet-editor';
-import { Box, Divider, IconButton, Row, Stack, Text, Tooltip, VisuallyHidden } from '@voltstack/bravais';
+import { Divider, IconButton, Tooltip } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useId, useRef, useState } from 'react';
-import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
-import { PiFileCsv, PiFileXls } from 'react-icons/pi';
+import { Check, Clipboard, FileSpreadsheet, FileText } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { SheetExportFormat } from '@/modules/ai/components/AIArtifactSpreadsheetPanel/spreadsheet-export';
 import type { CSSProperties } from 'react';
@@ -167,14 +166,14 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const toolbarActions = (
-        <Row gap='025' className='ai-artifact-spreadsheet-toolbar'>
+        <div className='flex flex-row items-center gap-1 ai-artifact-spreadsheet-toolbar'>
             <Tooltip content={copyFeedback ? 'Copied!' : 'Copy to clipboard'}>
                 <IconButton
                     aria-label='Copy table to clipboard'
                     onClick={handleCopyToClipboard}
                     className='ai-sheet-toolbar-btn'
                 >
-                    {copyFeedback ? <IoCheckmarkOutline size={15} /> : <IoClipboardOutline size={15} />}
+                    {copyFeedback ? <Check size={15} /> : <Clipboard size={15} />}
                 </IconButton>
             </Tooltip>
 
@@ -184,7 +183,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     onClick={createDownloadHandler('csv')}
                     className='ai-sheet-toolbar-btn'
                 >
-                    <PiFileCsv size={15} />
+                    <FileText size={15} />
                 </IconButton>
             </Tooltip>
 
@@ -194,42 +193,42 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     onClick={createDownloadHandler('xlsx')}
                     className='ai-sheet-toolbar-btn'
                 >
-                    <PiFileXls size={15} />
+                    <FileSpreadsheet size={15} />
                 </IconButton>
             </Tooltip>
 
             <Divider orientation='vertical' />
-        </Row>
+        </div>
     );
 
     return (
-        <Stack className='ai-artifact-spreadsheet-panel' style={panelStyle} aria-label={artifact.title}>
+        <div className='flex flex-col ai-artifact-spreadsheet-panel' style={panelStyle} aria-label={artifact.title}>
             <PanelHeader
                 title={artifact.title}
                 actions={toolbarActions}
                 onClose={onClose}
             />
 
-            <Stack gap='025' p='075' className='ai-artifact-spreadsheet-meta'>
-                <Text as='p' size='sm' tone='muted'>
+            <div className='flex flex-col gap-1 p-3 ai-artifact-spreadsheet-meta'>
+                <p className='text-xs text-muted'>
                     {rows.length} rows · {columns.length} columns
                     {hasEdits && ' · edited'}
-                </Text>
-                <Text as='p' id={instructionsId} size='sm' tone='muted'>
+                </p>
+                <p className='text-xs text-muted' id={instructionsId}>
                     Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
-                </Text>
+                </p>
                 {artifact.summary && (
-                    <Text as='p' size='sm' tone='muted' className='text-ellipsis'>
+                    <p className='text-xs text-muted text-ellipsis'>
                         {artifact.summary}
-                    </Text>
+                    </p>
                 )}
-            </Stack>
+            </div>
 
-            <VisuallyHidden id={statusId} aria-live='polite' aria-atomic='true'>
+            <span className='sr-only' id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
-            </VisuallyHidden>
+            </span>
 
-            <Box className='ai-artifact-spreadsheet-body overflow-x-auto overflow-y-auto'>
+            <div className='ai-artifact-spreadsheet-body overflow-x-auto overflow-y-auto'>
                 <table
                     className='ai-artifact-spreadsheet-table'
                     role='grid'
@@ -259,8 +258,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         ))}
                     </tbody>
                 </table>
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

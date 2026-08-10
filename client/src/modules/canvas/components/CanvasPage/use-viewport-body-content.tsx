@@ -1,6 +1,7 @@
+import { cn } from '@heroui/react';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { EmptyState, Row } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,9 +24,9 @@ interface ViewportBodyContentParams {
 }
 
 const centeredViewportState = (children: ReactNode, className?: string): ReactNode => (
-    <Row justify='center' width='max' height='max' className={className}>
+    <div className={cn('flex flex-row items-center justify-center w-full h-full', className)}>
         {children}
-    </Row>
+    </div>
 );
 
 const emptyViewportState = (title: string, description: string, className?: string): ReactNode => (

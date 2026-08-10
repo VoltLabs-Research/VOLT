@@ -1,4 +1,4 @@
-import { Button, Stack, Tag, Row, Heading, Text } from '@voltstack/bravais';
+import { Button, Tag } from '@voltstack/bravais';
 import { TeamInvitationCard, TeamInvitationStateCard } from '@/modules/team/components/TeamInvitationShared';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {
@@ -116,7 +116,7 @@ export default function TeamInvitationTemplate() {
     if(invitationQuery.isLoading){
         return (
             <TeamInvitationCard>
-                <Text as='p' tone='secondary'>Loading invitation...</Text>
+                <p className='text-muted'>Loading invitation...</p>
             </TeamInvitationCard>
         );
     }
@@ -145,44 +145,44 @@ export default function TeamInvitationTemplate() {
                 You've been invited!
             </Tag>
 
-            <Heading level={3} size='2xl' weight='bold'>{invitation.team.name}</Heading>
+            <h3 className='text-2xl font-semibold text-foreground'>{invitation.team.name}</h3>
 
-            <Text as='p' tone='secondary'>
+            <p className='text-muted'>
                 You've been invited to join this team
-            </Text>
+            </p>
 
-            <Text as='p' size='md' className='text-tertiary'>
+            <p className='text-sm text-muted'>
                 Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
-            </Text>
+            </p>
 
-            <Row gap='1' wrap justify='center' radius='md' className='team-invitation-details'>
-                <Stack className='team-invitation-detail' textAlign='center'>
-                    <Text as='span' className='team-invitation-detail-label'>Email</Text>
-                    <Row as='p' gap='025' className='team-invitation-detail-value'>
+            <div className='flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl team-invitation-details'>
+                <div className='flex flex-col text-center team-invitation-detail'>
+                    <span className='team-invitation-detail-label'>Email</span>
+                    <p className='flex flex-row items-center gap-1 team-invitation-detail-value'>
                         <Mail size={14} />
                         {invitation.email}
-                    </Row>
-                </Stack>
-                <Stack className='team-invitation-detail' textAlign='center'>
-                    <Text as='span' className='team-invitation-detail-label'>Invited</Text>
-                    <Row as='p' gap='025' className='team-invitation-detail-value'>
+                    </p>
+                </div>
+                <div className='flex flex-col text-center team-invitation-detail'>
+                    <span className='team-invitation-detail-label'>Invited</span>
+                    <p className='flex flex-row items-center gap-1 team-invitation-detail-value'>
                         <Clock size={14} />
                         {new Date(invitation.createdAt).toLocaleDateString()}
-                    </Row>
-                </Stack>
-                <Stack className='team-invitation-detail' textAlign='center'>
-                    <Text as='span' className='team-invitation-detail-label'>Expires</Text>
-                    <Text as='p' className='team-invitation-detail-value'>
+                    </p>
+                </div>
+                <div className='flex flex-col text-center team-invitation-detail'>
+                    <span className='team-invitation-detail-label'>Expires</span>
+                    <p className='team-invitation-detail-value'>
                         {expiresAt.toLocaleString(undefined, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                         })}
-                    </Text>
-                </Stack>
-            </Row>
+                    </p>
+                </div>
+            </div>
 
-            <Row gap='1' width='max' className='team-invitation-actions'>
+            <div className='flex flex-row items-center gap-4 w-full team-invitation-actions'>
                 <Button
                     variant='solid'
                     intent='brand'
@@ -204,7 +204,7 @@ export default function TeamInvitationTemplate() {
                 >
                     Reject Invitation
                 </Button>
-            </Row>
+            </div>
 
             {error && (
                 <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>

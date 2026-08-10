@@ -1,5 +1,4 @@
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
-import { SectionLabel, Stack } from '@voltstack/bravais';
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 
 interface RenderGroupSubmenuContentProps {
@@ -11,16 +10,16 @@ const RenderGroupSubmenuContent = ({ group }: RenderGroupSubmenuContentProps) =>
     const showSubsectionLabels = visibleSubsections.length > 1;
 
     return (
-        <Stack className="canvas-render-menu-submenu">
+        <div className='flex flex-col canvas-render-menu-submenu'>
             {visibleSubsections.map((subsection, index) => (
-                <Stack key={`${group.id}-${subsection.label}-${index}`} gap='05' className="canvas-render-menu-submenu-section">
+                <div className='flex flex-col gap-2 canvas-render-menu-submenu-section' key={`${group.id}-${subsection.label}-${index}`}>
                     {showSubsectionLabels && (
-                        <SectionLabel>{subsection.label}</SectionLabel>
+                        <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted'>{subsection.label}</span>
                     )}
                     <CanvasRenderSubsectionContent subsection={subsection} className="canvas-render-menu-submenu-body" />
-                </Stack>
+                </div>
             ))}
-        </Stack>
+        </div>
     );
 };
 

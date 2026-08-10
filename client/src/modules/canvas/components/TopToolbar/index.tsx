@@ -15,7 +15,7 @@ import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'reac
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { ChevronLeft } from 'lucide-react';
-import { IconButton, Row } from '@voltstack/bravais';
+import { IconButton } from '@voltstack/bravais';
 
 import './TopToolbar.css';
 
@@ -146,7 +146,7 @@ const TopToolbar = ({
         options: ToolbarOptionsRenderOptions = {}
     ) => (
         <div className={`canvas-toolbar-options ${className}`}>
-            <Row as='nav' px='1' gap='025' className="canvas-toolbar-menus" aria-label="Canvas primary navigation">
+            <nav className='flex flex-row items-center gap-1 px-4 canvas-toolbar-menus' aria-label="Canvas primary navigation">
                 {options.includeBackButton && renderBackButton('canvas-toolbar-mobile-back')}
                 {menus.map((menu) => (
                     <MenuPopover
@@ -157,7 +157,7 @@ const TopToolbar = ({
                         idPrefix={menuIdPrefix}
                     />
                 ))}
-            </Row>
+            </nav>
 
             <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
         </div>
@@ -175,11 +175,10 @@ const TopToolbar = ({
                     hidden
                     onChange={handlePickerChange}
                 />
-                <Row flex='1' className="canvas-toolbar-left">
+                <div className='flex flex-row items-center flex-1 canvas-toolbar-left'>
                     {renderBackButton('canvas-toolbar-back')}
                     {trajectory && (
-                        <Row
-                            className="canvas-toolbar-logo canvas-toolbar-trajectory"
+                        <div className='flex flex-row items-center canvas-toolbar-logo canvas-toolbar-trajectory'
                             title={trajectory.name}
                         >
                             <EditableTrajectoryName
@@ -187,17 +186,17 @@ const TopToolbar = ({
                                 name={trajectory.name}
                                 className="canvas-toolbar-trajectory-name"
                             />
-                        </Row>
+                        </div>
                     )}
 
                     {renderToolbarOptions('canvas-toolbar-options--desktop')}
-                </Row>
+                </div>
 
-                <Row justify='center' flex='1' className="canvas-toolbar-center">
+                <div className='flex flex-row items-center justify-center flex-1 canvas-toolbar-center'>
                     {canMutateCanvas && <CanvasPluginSearch />}
-                </Row>
+                </div>
 
-                <Row gap='025' flex='1' justify='end' className="canvas-toolbar-info">
+                <div className='flex flex-row items-center justify-end gap-1 flex-1 canvas-toolbar-info'>
                     {contextualActions}
                     {canShowPeers && onSelectWorkspacePeer && (
                         <WorkspacePeerAvatars
@@ -215,7 +214,7 @@ const TopToolbar = ({
                         />
                     )}
                     <WindowControls />
-                </Row>
+                </div>
             </div>
 
         </header>

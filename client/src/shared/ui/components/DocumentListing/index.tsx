@@ -8,12 +8,11 @@ import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { describeSortState, getColumnAriaSort, getColumnSortIndicator } from '@/shared/ui/components/DocumentListing/sort-affordances';
 import { isAccessDeniedCode } from '@/shared/errors/core';
 import { sortData } from '@/shared/utils/sort';
-import { Stack, usePrefersReducedMotion, VisuallyHidden } from '@voltstack/bravais';
+import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 
-import './DocumentListing.css';
 import { motion } from 'framer-motion';
 import { useCallback, useMemo, useRef } from 'react';
-import { RiFileCopyLine } from 'react-icons/ri';
+import { Copy } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { DocumentListingCreateNew, DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
@@ -160,7 +159,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
             ...menuOptions,
             {
                 label: COPY_DOCUMENT_ID_LABEL,
-                icon: RiFileCopyLine,
+                icon: Copy,
                 onClick: async () => {
                     await copyTextToClipboard(item._id, {
                         successMessage: 'Document ID copied to clipboard',
@@ -220,7 +219,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
         }
 
         return (
-            <div ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
+            <div ref={scrollContainerRef} className='flex-1 overflow-auto border-t border-border [overflow-anchor:none] max-md:overflow-visible'>
                 <motion.div
                     initial={prefersReducedMotion ? false : {
                         opacity: 0,
@@ -252,10 +251,10 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
     };
 
     return (
-        <Stack height='max' gap='1' className='document-listing-container text-secondary'>
-            <VisuallyHidden aria-live='polite' aria-atomic='true'>
+        <div className='flex flex-col gap-4 h-full isolate text-muted'>
+            <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {describeSortState(columns, sortConfig)}
-            </VisuallyHidden>
+            </span>
             {!hideHeader && (
                 <DocumentListingHeader
                     title={title}
@@ -273,7 +272,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
             )}
 
             {renderContent()}
-        </Stack>
+        </div>
     );
 };
 

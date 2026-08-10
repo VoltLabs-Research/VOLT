@@ -1,8 +1,6 @@
-import { cn } from '@/shared/utils/cn';
-import { formatSize } from '@voltstack/bravais';
-import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip, cn } from '@heroui/react';
+import { formatSize } from '@/shared/utils/format';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
-import './FileAttachment.css';
 import { Copy, Download, FileText, Image } from 'lucide-react';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
@@ -19,6 +17,16 @@ const IMAGE_FILE_EXTENSIONS = new Set([
     'heic',
     'heif'
 ]);
+
+const ICON_SIZE_CLASSES: Record<FileAttachmentVariant, string> = {
+    compact: 'size-10',
+    detailed: 'size-12'
+};
+
+const PREVIEW_SIZE_CLASSES: Record<FileAttachmentVariant, string> = {
+    compact: 'size-12',
+    detailed: 'size-14'
+};
 
 const getFileExtension = (value?: string): string => {
     if (!value) return '';
@@ -62,6 +70,7 @@ const FileAttachment = ({
 }: FileAttachmentProps) => {
     const isImage = isImageAttachment(fileType, fileName, fileUrl);
     const iconSize = variant === 'compact' ? 18 : 20;
+    const usePreviewTile = showPreview && isImage;
 
     const handleCopyName = () => {
         void copyTextToClipboard(fileName, {
@@ -69,15 +78,20 @@ const FileAttachment = ({
             errorMessage: 'Failed to copy file name'
         });
     };
-    
+
     return (
-        <Row gap='075' className={cn('file-attachment', `file-attachment--${variant}`, className)}>
-            <div className={cn('flex items-center justify-center shrink-0', showPreview && isImage ? 'file-attachment-preview' : 'file-attachment-icon')}>
-                {showPreview && isImage && fileUrl ? (
+        <div className={cn('group flex flex-row items-center gap-3 p-2 rounded-lg transition-colors duration-150 hover:bg-surface-hover', className)}>
+            <div className={cn(
+                'flex items-center justify-center shrink-0 rounded-lg',
+                usePreviewTile
+                    ? cn(PREVIEW_SIZE_CLASSES[variant], 'overflow-hidden')
+                    : cn(ICON_SIZE_CLASSES[variant], 'bg-surface-secondary')
+            )}>
+                {usePreviewTile && fileUrl ? (
                     <img
                         src={fileUrl}
                         alt={fileName}
-                        className='w-full h-full rounded-sm file-attachment-image'
+                        className='w-full h-full rounded-lg object-cover'
                     />
                 ) : isImage ? (
                     <Image size={iconSize} className='text-muted' />
@@ -86,27 +100,26 @@ const FileAttachment = ({
                 )}
             </div>
 
-            <Stack flex='1' overflow='hidden'>
-                <Row gap='05' flex='1' overflow='hidden'>
-                    <Text as='p' size='md' weight='medium' truncate className='file-attachment-name' title={fileName}>
+            <div className='flex flex-col overflow-hidden flex-1'>
+                <div className='flex flex-row items-center gap-2 overflow-hidden flex-1'>
+                    <p className='text-sm font-medium truncate' title={fileName}>
                         {fileName}
-                    </Text>
-                    <Tooltip content='Copy full file name'>
+                    </p>
+                    <Tooltip>
                         <Button
                             variant='ghost'
-                            intent='neutral'
                             size='sm'
-                            iconOnly
+                            isIconOnly
                             aria-label={`Copy full name for ${fileName}`}
-                            title='Copy full file name'
-                            className='file-attachment-copy'
-                            onClick={handleCopyName}
+                            className='opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100'
+                            onPress={handleCopyName}
                         >
                             <Copy size={14} aria-hidden='true' />
                         </Button>
+                        <Tooltip.Content>Copy full file name</Tooltip.Content>
                     </Tooltip>
-                </Row>
-                <Row gap='05' className='text-sm'>
+                </div>
+                <div className='flex flex-row items-center gap-2 text-xs'>
                     {fileSize !== undefined && <p>{formatSize(fileSize)}</p>}
                     {timestamp && (
                         <>
@@ -114,24 +127,22 @@ const FileAttachment = ({
                             <p>{timestamp}</p>
                         </>
                     )}
-                </Row>
-            </Stack>
+                </div>
+            </div>
 
             {showDownload && fileUrl && (
-                <Tooltip content='Download'>
-                    <a
-                        href={fileUrl}
-                        download={fileName}
-                        className='flex items-center justify-center file-attachment-download text-secondary'
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Download ${fileName}`}
-                        title={`Download ${fileName}`}
-                    >
-                        <Download size={18} aria-hidden='true' />
-                    </a>
-                </Tooltip>
+                <a
+                    href={fileUrl}
+                    download={fileName}
+                    className='flex items-center justify-center p-1.5 rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover'
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Download ${fileName}`}
+                    title={`Download ${fileName}`}
+                >
+                    <Download size={18} aria-hidden='true' />
+                </a>
             )}
-        </Row>
+        </div>
     );
 };
 

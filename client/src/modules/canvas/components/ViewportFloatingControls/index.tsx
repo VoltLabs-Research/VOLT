@@ -5,7 +5,7 @@ import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { FloatingToolbar, IconButton, Tooltip } from '@voltstack/bravais';
-import { useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { Sparkles } from 'lucide-react';
 import useTip from '@/shared/tips/use-tip';
 

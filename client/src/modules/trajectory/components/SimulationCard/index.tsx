@@ -4,8 +4,7 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
-import { Row } from '@voltstack/bravais';
-import { PiAtomThin } from 'react-icons/pi';
+import { Atom } from 'lucide-react';
 import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -92,7 +91,7 @@ export default function SimulationCard({
         : undefined;
 
     const containerClass = cn(
-        'simulation-card rounded-md border border-soft relative',
+        'simulation-card rounded-xl border border-border relative',
         canOpen && 'cursor-pointer',
         isProcessing && 'has-jobs',
         isSelected && 'is-selected'
@@ -131,7 +130,7 @@ export default function SimulationCard({
             aria-label={canOpen ? cardAriaLabel : undefined}
             aria-busy={isProcessing}
         >
-            <Row overflow='hidden' position='relative' width='max' radius='md' className='items-center justify-center cover-container'>
+            <div className='flex flex-row items-center rounded-xl relative overflow-hidden w-full justify-center cover-container'>
                 {previewBlobUrl ? (
                     <img
                         className='w-full h-full cover-image'
@@ -139,11 +138,11 @@ export default function SimulationCard({
                         alt={`Preview of ${trajectory.name}`}
                     />
                 ) : (
-                    <Row width='max' height='max' className='items-center justify-center text-muted text-[1.8rem]'>
-                        <PiAtomThin />
-                    </Row>
+                    <div className='flex flex-row items-center w-full h-full justify-center text-muted text-[1.8rem]'>
+                        <Atom />
+                    </div>
                 )}
-            </Row>
+            </div>
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}

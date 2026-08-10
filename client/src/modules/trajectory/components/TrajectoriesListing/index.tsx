@@ -8,10 +8,10 @@ import {
     FolderedListingModals,
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
-import { Heading, StatusBadge, Text } from '@voltstack/bravais';
+import { StatusBadge } from '@voltstack/bravais';
 import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
 import useTip from '@/shared/tips/use-tip';
-import { formatNumber, formatSize } from '@voltstack/bravais';
+import { formatNumber, formatSize } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -55,7 +55,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         key: 'status',
         title: 'Status',
         render: (value, row) => isTrajectoryFolderRow(row)
-            ? <Text size='md' tone='muted'>-</Text>
+            ? <span className='text-sm text-muted'>-</span>
             : <StatusBadge status={String(value)} />,
         skeleton: {
             variant: 'rounded',
@@ -103,7 +103,7 @@ export default function TrajectoriesListing() {
         <>
             <FolderedDocumentListing<TrajectoryListingRow, { folderId: string | null }>
                 title={(
-                    <Heading level={3} size='3xl' weight='medium' tone='primary' className='sm:font-size-4'>Trajectories</Heading>
+                    <h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Trajectories</h3>
                 )}
                 columns={COLUMNS}
                 listing={listing}

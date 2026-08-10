@@ -1,5 +1,4 @@
-import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
-import './AccessDenied.css';
+import { Button, EmptyStateRoot, cn } from '@heroui/react';
 import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,11 +9,11 @@ interface AccessDeniedProps {
     showBack?: boolean;
     className?: string;
     headingLevel?: 'h1' | 'h2' | 'h3';
-    
+
     requiredPermissions?: string[];
-    
+
     contactHint?: string;
-    
+
     actions?: ReactNode;
 };
 
@@ -30,46 +29,49 @@ const AccessDenied = ({
 }: AccessDeniedProps) => {
     const navigate = useNavigate();
     const headingId = useId();
-    const level = Number(headingLevel.slice(1)) as 1 | 2 | 3;
+    const HeadingTag = headingLevel;
     const hasPermissionHint = Boolean(requiredPermissions && requiredPermissions.length > 0);
 
     return (
-        <Row as='section' aria-labelledby={headingId} justify='center' width='max' height='max' className={`access-denied-container ${className || ''}`}>
-            <Stack align='center' gap='1-5' textAlign='center' className='access-denied-content'>
-                <Row justify='center' className='access-denied-icon'>
+        <EmptyStateRoot<'section'>
+            render={(props) => <section {...props} />}
+            aria-labelledby={headingId}
+            className={cn('flex flex-row items-center justify-center w-full h-full max-md:min-h-[300px]', className)}
+        >
+            <div className='flex flex-col items-center gap-6 text-center max-w-[360px] max-md:max-w-[90%]'>
+                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-danger-soft text-danger'>
                     <ShieldOff size={24} />
-                </Row>
+                </div>
 
-                <Stack gap='05' textAlign='center'>
-                    <Heading level={level} id={headingId}>
+                <div className='flex flex-col gap-2 text-center'>
+                    <HeadingTag className='text-base font-medium text-foreground' id={headingId}>
                         {title}
-                    </Heading>
-                    <Text size='md' tone='secondary' lineHeight='5'>{description}</Text>
+                    </HeadingTag>
+                    <span className='text-sm text-muted leading-normal'>{description}</span>
                     {hasPermissionHint && (
-                        <Text size='sm' tone='secondary' lineHeight='5' className='access-denied-permissions'>
+                        <span className='text-xs text-muted leading-normal px-4 py-3 rounded-xl bg-danger-soft'>
                             {`Permission${requiredPermissions!.length > 1 ? 's' : ''} needed: ${requiredPermissions!.join(', ')}.`}
                             {` Ask ${contactHint ?? 'a team administrator'} to grant access.`}
-                        </Text>
+                        </span>
                     )}
-                </Stack>
+                </div>
 
                 {(showBack || actions) && (
-                    <Row justify='center' gap='075' className='mt-2'>
+                    <div className='flex flex-row items-center justify-center gap-3 mt-2'>
                         {showBack && (
                             <Button
-                                variant='solid'
-                                intent='brand'
+                                variant='primary'
                                 size='sm'
-                                onClick={() => navigate(-1)}
+                                onPress={() => navigate(-1)}
                             >
                                 Go back
                             </Button>
                         )}
                         {actions}
-                    </Row>
+                    </div>
                 )}
-            </Stack>
-        </Row>
+            </div>
+        </EmptyStateRoot>
     );
 };
 

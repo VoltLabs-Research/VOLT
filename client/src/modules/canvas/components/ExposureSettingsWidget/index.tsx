@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import type { SceneKeyConfig } from '@/modules/fractal/utils/scene-utils';
@@ -7,7 +8,6 @@ import useSceneInteraction from '../../hooks/use-scene-interaction';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Stack, Surface } from '@voltstack/bravais';
 
 import './ExposureSettingsWidget.css';
 
@@ -45,13 +45,13 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <Surface variant='glass' style={{
+        <div className={cn('bg-surface border border-border', `canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`)} style={{
             bottom: '1rem',
             right: '1rem',
             top: 'auto',
             left: 'auto'
-        }} className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}>
-            <Stack gap='05'>
+        }}>
+            <div className='flex flex-col gap-2'>
                 <FormFieldRHF
                     fieldKey="sceneOpacity"
                     label="Opacity"
@@ -65,8 +65,8 @@ const ExposureSettingsWidget = () => {
                         step: 0.01
                     }}
                 />
-            </Stack>
-        </Surface>
+            </div>
+        </div>
     );
 };
 

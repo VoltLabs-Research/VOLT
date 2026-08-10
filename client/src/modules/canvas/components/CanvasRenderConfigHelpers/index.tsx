@@ -1,5 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Select, Stack, Text } from '@voltstack/bravais';
+import { Select } from '@voltstack/bravais';
 
 import type { ReactNode } from 'react';
 
@@ -223,7 +223,7 @@ export const checkbox = (
     value: boolean,
     onChange: (value: boolean) => void
 ): ReactNode => (
-    <Stack gap='05' className="canvas-form-section" key={key}>
+    <div className='flex flex-col gap-2 canvas-form-section' key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="checkbox"
@@ -231,13 +231,13 @@ export const checkbox = (
             fieldValue={value}
             onFieldChange={(_, next) => onChange(Boolean(next))}
         />
-    </Stack>
+    </div>
 );
 
 export const checkboxGrid = (items: Array<{ key: string; label: string; value: boolean; onChange: (value: boolean) => void }>): ReactNode => (
-    <Stack gap='05'>
+    <div className='flex flex-col gap-2'>
         {items.map((item) => checkbox(item.key, item.label, item.value, item.onChange))}
-    </Stack>
+    </div>
 );
 
 export const colorField = (
@@ -247,7 +247,7 @@ export const colorField = (
     onChange: (value: string) => void,
     description?: string
 ): ReactNode => (
-    <Stack gap='05' className="canvas-form-section" key={key}>
+    <div className='flex flex-col gap-2 canvas-form-section' key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="color"
@@ -256,21 +256,21 @@ export const colorField = (
             onFieldChange={(_, next) => onChange(String(next))}
         />
         {description && (
-            <Stack gap='05'>
-                <Text size='xs' tone='muted'>{description}</Text>
-            </Stack>
+            <div className='flex flex-col gap-2'>
+                <span className='text-xs text-muted'>{description}</span>
+            </div>
         )}
-    </Stack>
+    </div>
 );
 
 export const colorExtras = (
     color: { key: string; label: string; value: string; onChange: (value: string) => void },
     toggles: Array<{ key: string; label: string; value: boolean; onChange: (value: boolean) => void }>
 ): ReactNode => (
-    <Stack gap='05'>
+    <div className='flex flex-col gap-2'>
         {colorField(color.key, color.label, color.value, color.onChange)}
         {toggles.length > 0 && checkboxGrid(toggles)}
-    </Stack>
+    </div>
 );
 
 interface SelectFieldOption {
@@ -285,12 +285,12 @@ export const selectField = (
     placeholder: string,
     options: SelectFieldOption[]
 ): ReactNode => (
-    <Stack gap='025' key={key}>
+    <div className='flex flex-col gap-1' key={key}>
         <Select
             value={value}
             onChange={onChange}
             placeholder={placeholder}
             options={options}
         />
-    </Stack>
+    </div>
 );

@@ -9,7 +9,7 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-us
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Box, Button, Heading, Modal, closeModal, openModal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
+import { Button, Modal, closeModal, openModal, StatusDot } from '@voltstack/bravais';
 import type { StatusDotTone } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
@@ -171,7 +171,7 @@ const ClusterOnboardingPage = () => {
         <nav className='cluster-onboarding-breadcrumb' aria-label='Cluster onboarding breadcrumbs'>
             <Button
                 to='/dashboard'
-                className='cluster-onboarding-breadcrumb-link text-md'
+                className='cluster-onboarding-breadcrumb-link text-sm'
                 variant='ghost'
                 intent='neutral'
                 size='sm'
@@ -179,7 +179,7 @@ const ClusterOnboardingPage = () => {
                 Dashboard
             </Button>
             <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
-            <Text as='p' size='md' tone='secondary' aria-current='page'>Add new cluster</Text>
+            <p className='text-sm text-muted' aria-current='page'>Add new cluster</p>
         </nav>
     ) : undefined;
 
@@ -197,14 +197,14 @@ const ClusterOnboardingPage = () => {
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             >
-                <Stack align='center' justify='center' gap='1' className='cluster-onboarding-success-content' role='status' aria-live='polite' aria-atomic='true'>
-                    <Heading level={1} weight='bold' className='cluster-onboarding-success-title'>
+                <div className='flex flex-col items-center justify-center gap-4 cluster-onboarding-success-content' role='status' aria-live='polite' aria-atomic='true'>
+                    <h1 className='text-base font-semibold text-foreground cluster-onboarding-success-title'>
                         {successMessage}
-                    </Heading>
-                    <Text as='p' tone='secondary'>
+                    </h1>
+                    <p className='text-muted'>
                         Redirecting you to your workspace.
-                    </Text>
-                </Stack>
+                    </p>
+                </div>
             </OnboardingLayout>
         );
     }
@@ -218,16 +218,16 @@ const ClusterOnboardingPage = () => {
             overlay={overlay}
         >
             <>
-                <Box className='cluster-onboarding-center'>
-                    <Stack align='center' className='cluster-onboarding-form-shell gap-6'>
+                <div className='cluster-onboarding-center'>
+                    <div className='flex flex-col items-center cluster-onboarding-form-shell gap-6'>
                         <form className='cluster-onboarding-form flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
-                            <Stack align='center' gap='075'>
-                                <Heading level={3} size='2xl' weight='bold' className='cluster-onboarding-title'>
+                            <div className='flex flex-col items-center gap-3'>
+                                <h3 className='text-2xl font-semibold text-foreground cluster-onboarding-title'>
                                     Let's name your cluster
-                                </Heading>
-                            </Stack>
+                                </h3>
+                            </div>
 
-                            <Box className='cluster-onboarding-name-input'>
+                            <div className='cluster-onboarding-name-input'>
                                 <FormFieldRHF
                                     label='Cluster name'
                                     placeholder='e.g., Research Lab Cluster'
@@ -240,7 +240,7 @@ const ClusterOnboardingPage = () => {
                                         }
                                     }}
                                 />
-                            </Box>
+                            </div>
 
                             <Button
                                 className='cluster-onboarding-continue-btn'
@@ -254,15 +254,15 @@ const ClusterOnboardingPage = () => {
                                 Continue
                             </Button>
                         </form>
-                    </Stack>
-                </Box>
+                    </div>
+                </div>
 
                 <Modal
                     id={INSTALL_MODAL_ID}
                     title='Copy & Paste on your cluster host'
                     description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
                 >
-                    <Stack gap='1' p='1'>
+                    <div className='flex flex-col gap-4 p-4'>
                         <ClusterInstallCommandPicker
                             clusterId={createdCluster?._id ?? null}
                             enrollmentToken={enrollmentToken}
@@ -277,20 +277,20 @@ const ClusterOnboardingPage = () => {
                                 onRetry={handleRetryWait}
                             />
                         ) : (
-                            <Row gap='075' className='cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
-                                <Row gap='05'>
+                            <div className='flex flex-row items-center gap-3 cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
+                                <div className='flex flex-row items-center gap-2'>
                                     <StatusDot
                                         tone={statusVariant === 'inactive' ? 'neutral' : (statusVariant as StatusDotTone)}
                                         pulse={statusVariant !== 'inactive'}
                                         glow={statusVariant !== 'inactive'}
                                     />
-                                    <Text as='p' size='md' tone='secondary'>
+                                    <p className='text-sm text-muted'>
                                         {statusLabel}
-                                    </Text>
-                                </Row>
-                            </Row>
+                                    </p>
+                                </div>
+                            </div>
                         )}
-                    </Stack>
+                    </div>
                 </Modal>
 
                 <DeleteClusterModal

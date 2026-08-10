@@ -1,10 +1,10 @@
 import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-shared-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
-import { VisuallyHidden, IconButton, Row, Surface, Tooltip } from '@voltstack/bravais';
+import { IconButton, Tooltip } from '@voltstack/bravais';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { useCallback, useEffect, useId, useRef } from 'react';
-import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
+import { Expand, Plus, Sparkles } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import './AIFloatingAssistantPanel.css';
 interface AIFloatingAssistantPanelContentProps {
@@ -92,31 +92,31 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     }, [onClose]);
 
     const headerActions = (
-        <Row gap='025'>
+        <div className='flex flex-row items-center gap-1'>
             <Tooltip content='New conversation' placement='top'>
                 <IconButton
                     aria-label='Start new conversation'
                     onClick={() => handleCreateConversation().catch(console.warn)}
                     disabled={noProviderConfigured || isProviderCatalogLoading}
                 >
-                    <IoAddOutline size={16} />
+                    <Plus size={16} />
                 </IconButton>
             </Tooltip>
 
             <Tooltip content='Open full AI page' placement='top'>
                 <IconButton aria-label='Open full AI page' onClick={openAIPage}>
-                    <IoExpandOutline size={16} />
+                    <Expand size={16} />
                 </IconButton>
             </Tooltip>
-        </Row>
+        </div>
     );
 
     return (
-        <Surface ref={panelRef} variant='glass' display='flex' direction='column' position='fixed' bottom='1' right='1' zIndex='20' className='ai-floating-assistant' role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
-            <VisuallyHidden id={titleId}>Volt AI assistant</VisuallyHidden>
-            <VisuallyHidden id={descriptionId}>
+        <div className='bg-surface border border-border flex flex-col fixed bottom-4 right-4 z-20 ai-floating-assistant' ref={panelRef} role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
+            <span className='sr-only' id={titleId}>Volt AI assistant</span>
+            <span className='sr-only' id={descriptionId}>
                 Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.
-            </VisuallyHidden>
+            </span>
             <PanelHeader
                 actions={headerActions}
                 onClose={onClose}
@@ -132,7 +132,7 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
             />
 
             {conversationPanelContent}
-        </Surface>
+        </div>
     );
 };
 
@@ -166,7 +166,7 @@ const AIFloatingAssistantPanel = () => {
                     className={triggerClassName}
                     onClick={toggleWidget}
                 >
-                    <IoSparklesOutline size={18} />
+                    <Sparkles size={18} />
                 </IconButton>
             </Tooltip>
 

@@ -3,7 +3,7 @@ import PresetPopover from './PresetPopover';
 import TransportControls from '../TransportControls';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
-import { Button, Divider, Popover, Row, Select, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { Button, Divider, Popover, Select, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
@@ -162,11 +162,11 @@ const TimelineHeader = ({
     };
 
     return (
-        <Row width='max' className="canvas-timeline-header">
-            <Row className="canvas-timeline-tabs-region">
-                <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs" data-tour-id="canvas-timeline-tabs">
+        <div className='flex flex-row items-center w-full canvas-timeline-header'>
+            <div className='flex flex-row items-center canvas-timeline-tabs-region'>
+                <div className='flex flex-row items-center canvas-timeline-tabs scrollbar-none' role="tablist" aria-label="Timeline tabs" data-tour-id="canvas-timeline-tabs">
                     {tabs.map(renderTab)}
-                </Row>
+                </div>
                 <div className="canvas-timeline-tab-select-region" data-tour-id="canvas-timeline-tab-selector">
                     <Select
                         options={tabSelectOptions}
@@ -179,21 +179,21 @@ const TimelineHeader = ({
                         aria-label="Timeline tab"
                     />
                 </div>
-            </Row>
+            </div>
 
-            <Row className="canvas-timeline-mobile-actions">
-                <Row justify='center' className="canvas-timeline-controls-region">
-                    <Row justify='center' className="canvas-timeline-controls-center">
+            <div className='flex flex-row items-center canvas-timeline-mobile-actions'>
+                <div className='flex flex-row items-center justify-center canvas-timeline-controls-region'>
+                    <div className='flex flex-row items-center justify-center canvas-timeline-controls-center'>
                         <TransportControls
                             trajectoryId={trajectoryId}
                             currentTimestep={currentTimestep}
                             availableTimesteps={availableTimesteps}
                         />
-                    </Row>
-                </Row>
+                    </div>
+                </div>
 
-                <Row justify='end' className="canvas-timeline-frame-region">
-                    <Row gap='05' justify='end' className="canvas-timeline-frame-info">
+                <div className='flex flex-row items-center justify-end canvas-timeline-frame-region'>
+                    <div className='flex flex-row items-center justify-end gap-2 canvas-timeline-frame-info'>
                         <FrameCombobox
                             value={startFrame}
                             options={availableTimesteps}
@@ -226,10 +226,10 @@ const TimelineHeader = ({
                             suffix="%"
                             onSelect={onZoomPreset}
                         />
-                    </Row>
-                </Row>
-            </Row>
-        </Row>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 

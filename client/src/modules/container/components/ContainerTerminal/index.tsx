@@ -1,9 +1,10 @@
+import { cn } from '@heroui/react';
 import { useMemo, useRef } from 'react';
-import { IoClose } from 'react-icons/io5';
+import { X } from 'lucide-react';
 import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-terminal-session';
 import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
+import { Button, Tooltip } from '@voltstack/bravais';
 import Terminal from '@/shared/ui/components/Terminal';
 import type { TerminalHandle } from '@/shared/ui/components/Terminal';
 import type { Container } from '@volt/contracts/modules/container/domain';
@@ -59,31 +60,31 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     });
 
     const content = (
-        <Stack className={`container-terminal-window ${embedded ? 'embedded' : ''}`} overflow='hidden'>
+        <div className={cn('flex flex-col overflow-hidden', `container-terminal-window ${embedded ? 'embedded' : ''}`)}>
             {!embedded && (
-                <Row className='container-terminal-header' justify='between'>
-                    <Row className='container-terminal-title' gap='05'>
+                <div className='flex flex-row items-center justify-between container-terminal-header'>
+                    <div className='flex flex-row items-center gap-2 container-terminal-title'>
                         <span>root@{container.name}:~</span>
-                    </Row>
+                    </div>
                     <Tooltip content='Close Terminal' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Close terminal' title='Close terminal' onClick={onClose}>
-                            <IoClose size={20} />
+                            <X size={20} />
                         </Button>
                     </Tooltip>
-                </Row>
+                </div>
             )}
-            <Box className='container-terminal-body relative' flex='1' overflow='hidden'>
+            <div className='overflow-hidden flex-1 container-terminal-body relative'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} onResize={handleTerminalResize} />
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 
     if (embedded) return content;
 
     return (
-        <Box className='container-terminal-overlay fixed' display='flex' inset='0' align='center' justify='center' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
+        <div className='flex items-center justify-center inset-0 container-terminal-overlay fixed' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
-        </Box>
+        </div>
     );
 };
 

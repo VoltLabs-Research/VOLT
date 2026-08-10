@@ -1,7 +1,7 @@
 import CompactTableRow from '@/modules/plugin/components/listing/PluginCompactTable/CompactTableRow';
 import CompactTableSkeleton from '@/modules/plugin/components/listing/PluginCompactTable/CompactTableSkeleton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Box, useMedia } from '@voltstack/bravais';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { getColumnKey, getColumnTitle } from '@/shared/ui/components/DocumentListingTable';
 import { getTotalColumnsWidth, MOBILE_COLUMN_WIDTH_SCALE, resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
@@ -193,7 +193,7 @@ const PluginCompactTable = ({
                 ...compactTableInnerStyle,
                 minWidth: `${effectiveWidth}px`
             }}>
-                <Box position='sticky' className='plugin-compact-table-header'>
+                <div className='sticky plugin-compact-table-header'>
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
@@ -203,7 +203,7 @@ const PluginCompactTable = ({
                             {getColumnTitle(col)}
                         </div>
                     ))}
-                </Box>
+                </div>
                 <div className='plugin-compact-table-list-container' style={listContainerStyle}>
                     <List<CompactTableRowProps>
                         onScroll={handleScroll}

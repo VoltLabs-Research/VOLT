@@ -1,5 +1,5 @@
 import './AvatarUpload.css';
-import { Box, Button, Heading, Loader, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, Loader } from '@voltstack/bravais';
 import { Camera, User } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
@@ -49,9 +49,9 @@ const AvatarUpload = ({
     };
 
     let avatarContent = (
-        <Row width='max' height='max' justify='center' className='avatar-placeholder'>
+        <div className='flex flex-row items-center justify-center w-full h-full avatar-placeholder'>
             <User size={32} />
-        </Row>
+        </div>
     );
 
     if (preview) {
@@ -65,7 +65,7 @@ const AvatarUpload = ({
     }
 
     return (
-        <Row gap='1'>
+        <div className='flex flex-row items-center gap-4'>
             <Button
                 type='button'
                 variant='ghost'
@@ -76,21 +76,21 @@ const AvatarUpload = ({
                 aria-label={preview ? 'Change profile picture' : 'Upload profile picture'}
                 disabled={isUploading}
             >
-                <Box position='relative' radius='full' overflow='hidden' shrink='0' className='avatar-upload'>
+                <div className='rounded-full relative overflow-hidden shrink-0 avatar-upload'>
                     {avatarContent}
-                    <Row position='absolute' inset='0' className='avatar-overlay r'>
+                    <div className='flex flex-row items-center absolute inset-0 avatar-overlay r'>
                         {overlayContent}
-                    </Row>
-                </Box>
+                    </div>
+                </div>
 
-                <Stack gap='025' style={{ textAlign: 'left' }}>
-                    <Heading level={3} size='md' weight='bold'>
+                <div className='flex flex-col gap-1' style={{ textAlign: 'left' }}>
+                    <h3 className='text-sm font-semibold text-foreground'>
                         Profile Picture
-                    </Heading>
-                    <Text as='div' id={helperTextId} tone='muted' size='sm'>
+                    </h3>
+                    <div className='text-xs text-muted' id={helperTextId}>
                         Click to upload a new avatar (JPG, PNG, max 5MB)
-                    </Text>
-                </Stack>
+                    </div>
+                </div>
             </Button>
 
             <input
@@ -102,7 +102,7 @@ const AvatarUpload = ({
                 tabIndex={-1}
                 aria-hidden='true'
             />
-        </Row>
+        </div>
     );
 };
 

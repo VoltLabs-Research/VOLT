@@ -1,4 +1,3 @@
-import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
@@ -103,13 +102,13 @@ const DebugContextPanel = () => {
         const isExpanded = expandedKeys.has(nodeId);
         return (
             <div key={nodeId} className='debug-context-entry'>
-                <Row justify='between' gap='05' onClick={() => toggleKey(nodeId)} className='debug-context-row cursor-pointer'>
-                    <Stack>
+                <div className='flex flex-row items-center justify-between gap-2 debug-context-row cursor-pointer' onClick={() => toggleKey(nodeId)}>
+                    <div className='flex flex-col'>
                         <p className='debug-context-label'>{getNodeLabel(nodeId)}</p>
-                        <Text as='p' tone='muted' className='debug-context-id'>{nodeId}</Text>
-                    </Stack>
+                        <p className='text-muted debug-context-id'>{nodeId}</p>
+                    </div>
                     <Chevron expanded={isExpanded} />
-                </Row>
+                </div>
                 {isExpanded && (
                     <div className='debug-context-tree'>
                         <JsonTree data={output} defaultExpanded={true} />
@@ -124,42 +123,42 @@ const DebugContextPanel = () => {
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
 
     return (
-        <Stack position='absolute' zIndex='10' className='debug-context-panel glass-bg panel-floating top-4 right-4'>
-            <Row justify='between' gap='05' onClick={() => setIsOpen((v) => !v)} className='debug-context-row debug-context-panel-header cursor-pointer select-none'>
+        <div className='flex flex-col absolute z-10 debug-context-panel bg-surface border border-border panel-floating top-4 right-4'>
+            <div className='flex flex-row items-center justify-between gap-2 debug-context-row debug-context-panel-header cursor-pointer select-none' onClick={() => setIsOpen((v) => !v)}>
                 <Braces size={12} />
-                <Row as='p' gap='035' className='debug-context-panel-title f-1 text-xs font-semibold'>
+                <p className='flex flex-row items-center gap-[0.35rem] debug-context-panel-title f-1 text-xs font-semibold'>
                     Context
-                    <Text as='span' weight='bold' className='debug-context-panel-count rounded-full'>{entries.length}</Text>
-                </Row>
-                {isOpen ? <X size={12} className='text-secondary' /> : <ChevronRight size={12} />}
-            </Row>
+                    <span className='font-semibold debug-context-panel-count rounded-full'>{entries.length}</span>
+                </p>
+                {isOpen ? <X size={12} className='text-muted' /> : <ChevronRight size={12} />}
+            </div>
 
             {isOpen && (
-                <Box flex='1' minH='0' className='debug-context-panel-body nowheel overflow-y-auto'>
+                <div className='flex-1 min-h-0 debug-context-panel-body nowheel overflow-y-auto'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
                         <div className='debug-context-entry'>
-                            <Row justify='between' gap='05' onClick={() => toggleKey(forEachGroupKey)} className='debug-context-row cursor-pointer'>
-                                <Row gap='05'>
+                            <div className='flex flex-row items-center justify-between gap-2 debug-context-row cursor-pointer' onClick={() => toggleKey(forEachGroupKey)}>
+                                <div className='flex flex-row items-center gap-2'>
                                     <Repeat size={10} className='text-muted' />
-                                    <Stack>
+                                    <div className='flex flex-col'>
                                         <p className='debug-context-label'>{getNodeLabel(forEachEntry[0])}</p>
-                                        <Text as='p' tone='muted' className='debug-context-id'>
+                                        <p className='text-muted debug-context-id'>
                                             {iterationCount} iteration{iterationCount !== 1 ? 's' : ''}
-                                        </Text>
-                                    </Stack>
-                                </Row>
+                                        </p>
+                                    </div>
+                                </div>
                                 <Chevron expanded={expandedKeys.has(forEachGroupKey)} />
-                            </Row>
+                            </div>
 
                             {expandedKeys.has(forEachGroupKey) && (
                                 <div className='debug-context-nested'>
                                     <div className='debug-context-entry'>
-                                        <Row justify='between' gap='05' onClick={() => toggleKey(iterationKey)} className='debug-context-row cursor-pointer'>
+                                        <div className='flex flex-row items-center justify-between gap-2 debug-context-row cursor-pointer' onClick={() => toggleKey(iterationKey)}>
                                             <p className='debug-context-label'>Iteration {currentIndex}</p>
                                             <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
-                                        </Row>
+                                        </div>
 
                                         {expandedKeys.has(iterationKey) && (
                                             <div className='debug-context-nested'>
@@ -175,9 +174,9 @@ const DebugContextPanel = () => {
                     {!forEachEntry && postForEach.length === 0 && entries.length > preForEach.length &&
                         entries.slice(preForEach.length).map(([nodeId, output]) => renderEntry(nodeId, output))
                     }
-                </Box>
+                </div>
             )}
-        </Stack>
+        </div>
     );
 };
 

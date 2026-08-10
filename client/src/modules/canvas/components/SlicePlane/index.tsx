@@ -1,6 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useSlicePlane from '../../hooks/use-slice-plane';
-import { Row, Stack, Text } from '@voltstack/bravais';
 
 interface SlicePlaneProps {
     stageId: string;
@@ -20,11 +19,11 @@ const SlicePlane = ({ stageId, trajectoryId }: SlicePlaneProps) => {
     } = useSlicePlane(stageId, trajectoryId);
 
     return (
-        <Stack gap='05' className="canvas-slice-plane">
-            <Row justify='between' gap='05'>
-                <Text size='xs' tone='muted'>Coordinates</Text>
-                <Text size='xs' tone='secondary'>Cartesian Coordinates</Text>
-            </Row>
+        <div className='flex flex-col gap-2 canvas-slice-plane'>
+            <div className='flex flex-row items-center justify-between gap-2'>
+                <span className='text-xs text-muted'>Coordinates</span>
+                <span className='text-xs text-muted'>Cartesian Coordinates</span>
+            </div>
 
             <FormFieldRHF
                 fieldKey="slice-plane-distance"
@@ -83,7 +82,7 @@ const SlicePlane = ({ stageId, trajectoryId }: SlicePlaneProps) => {
                 onFieldChange={handleVisualizePlaneChange}
                 variant="canvas"
             />
-        </Stack>
+        </div>
     );
 };
 

@@ -4,7 +4,7 @@ import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button, Row } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import './TransportControls.css';
 
 interface TransportControlsProps {
@@ -148,18 +148,18 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
 
     return (
         <>
-            <Row className="canvas-transport-controls canvas-transport-controls--full">
+            <div className='flex flex-row items-center canvas-transport-controls canvas-transport-controls--full'>
                 {buttons.map(renderButton)}
-            </Row>
-            <Row className="canvas-transport-controls-mobile">
-                <Row className="canvas-transport-mobile-step-controls">
+            </div>
+            <div className='flex flex-row items-center canvas-transport-controls-mobile'>
+                <div className='flex flex-row items-center canvas-transport-mobile-step-controls'>
                     {renderButton(previousButton)}
                     {renderButton(nextButton)}
-                </Row>
-                <Row className="canvas-transport-mobile-play-control">
+                </div>
+                <div className='flex flex-row items-center canvas-transport-mobile-play-control'>
                     {renderButton(playButton)}
-                </Row>
-            </Row>
+                </div>
+            </div>
         </>
     );
 };

@@ -1,7 +1,6 @@
 import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import { formatDistanceToNow } from 'date-fns';
 import FileAttachment from '@/shared/ui/components/FileAttachment';
-import { Box, Stack, Text } from '@voltstack/bravais';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import './SharedFilesList.css';
 
@@ -16,14 +15,14 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
 
     if (fileMessages.length === 0) {
         return (
-            <Box display='flex' p='2' textAlign='center' className='items-center justify-center'>
-                <Text as='p' size='md' tone='muted'>No shared files yet</Text>
-            </Box>
+            <div className='flex p-8 text-center items-center justify-center'>
+                <p className='text-sm text-muted'>No shared files yet</p>
+            </div>
         );
     }
 
     return (
-        <Stack gap='025' overflow='y-auto' className='shared-files-list'>
+        <div className='flex flex-col gap-1 overflow-y-auto shared-files-list'>
             {fileMessages.map((message) => (
                 <FileAttachment
                     key={message._id}
@@ -38,7 +37,7 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
                     className='shared-file-item'
                 />
             ))}
-        </Stack>
+        </div>
     );
 };
 

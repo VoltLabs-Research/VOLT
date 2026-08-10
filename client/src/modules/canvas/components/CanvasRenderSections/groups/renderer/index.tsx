@@ -8,10 +8,9 @@ import {
     ToneMappingMode
 } from '@/shared/rendering/renderer';
 
-import { Box } from '@voltstack/bravais';
 
 import { useMemo } from 'react';
-import { MdTune } from 'react-icons/md';
+import { SlidersHorizontal } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { isEnumValue } from '../../utils';
 
@@ -28,7 +27,7 @@ const useRendererGroup = (): RenderGroup => {
             return {
                 id: 'renderer',
                 title: 'Renderer',
-                icon: <MdTune size={12} />,
+                icon: <SlidersHorizontal size={12} />,
                 subsections: []
             };
         }
@@ -49,13 +48,13 @@ const useRendererGroup = (): RenderGroup => {
                 })
             ],
             extras: (
-                <Box className='canvas-render-grid'>
+                <div className='canvas-render-grid'>
                     {selectField('toneMapping', runtime.toneMapping, (value) => {
                         if (isEnumValue(value, ToneMappingMode)) {
                             setRuntime({ toneMapping: value });
                         }
                     }, 'Tone Mapping', RENDERER_TONE_MAPPING_OPTIONS)}
-                </Box>
+                </div>
             )
         };
 
@@ -65,21 +64,21 @@ const useRendererGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <Box className='canvas-render-grid'>
+                <div className='canvas-render-grid'>
                     {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (value) => setRuntime({ shadowEnabled: value }))}
                     {selectField('shadowType', runtime.shadowType, (value) => {
                         if (isEnumValue(value, ShadowType)) {
                             setRuntime({ shadowType: value });
                         }
                     }, 'Shadow Type', RENDERER_SHADOW_TYPE_OPTIONS)}
-                </Box>
+                </div>
             )
         };
 
         return {
             id: 'renderer',
             title: 'Renderer',
-            icon: <MdTune size={12} />,
+            icon: <SlidersHorizontal size={12} />,
             subsections: [
                 {
                     label: RENDERER_SUBSECTION_TITLES.toneMapping,

@@ -7,7 +7,7 @@ import {
 } from '@/shared/rendering/effects';
 
 import { useMemo } from 'react';
-import { MdAutoFixHigh } from 'react-icons/md';
+import { WandSparkles } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
@@ -208,7 +208,7 @@ const useEffectsGroup = (): RenderGroup => {
         return {
             id: 'effects',
             title: 'Effects',
-            icon: <MdAutoFixHigh size={12} />,
+            icon: <WandSparkles size={12} />,
             subsections
         };
     }, [effects, isPointCloudScene]);

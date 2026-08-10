@@ -3,7 +3,7 @@ import { ChatMessageType } from '@volt/contracts/modules/chat/domain';
 import ReactionsDisplay from '../ReactionsDisplay';
 import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
-import { Avatar, Box, Row, Stack, Text } from '@voltstack/bravais';
+import { Avatar } from '@voltstack/bravais';
 import FileAttachment from '@/shared/ui/components/FileAttachment';
 import type { ChatMessage } from '@volt/contracts/modules/chat/domain';
 import './MessageBubble.css';
@@ -32,9 +32,9 @@ const MessageBubble = ({
 
     if (isDeleted) {
         messageContent = (
-            <Text as='p' size='md' tone='muted' className='message-bubble-text' style={{ fontStyle: 'italic' }}>
+            <p className='text-sm text-muted message-bubble-text' style={{ fontStyle: 'italic' }}>
                 This message was deleted
-            </Text>
+            </p>
         );
     } else if (isFile) {
         messageContent = (
@@ -49,39 +49,39 @@ const MessageBubble = ({
         );
     } else {
         messageContent = (
-            <Text as='p' size='md' className='message-bubble-text'>
+            <p className='text-sm message-bubble-text'>
                 {message.content}
-            </Text>
+            </p>
         );
     }
 
     return (
-        <Box display='flex' gap='075' className={cn(
+        <div className={cn('flex gap-3', cn(
             'message-bubble',
             isOwn ? 'sent' : 'received',
             isDeleted && 'deleted',
             showAvatar && 'with-avatar'
-        )}>
+        ))}>
             {showAvatar && (
                 <Avatar user={message.sender} size='xs' className='message-bubble-avatar rounded-full' />
             )}
 
-                <Stack width='max'>
+                <div className='flex flex-col w-full'>
                     {showAvatar && (
-                    <Text as='p' size='md' weight='bold' tone='secondary' className='message-bubble-sender mb-1'>
+                    <p className='text-sm font-semibold text-muted message-bubble-sender mb-1'>
                         {message.sender.firstName} {message.sender.lastName}
-                    </Text>
+                    </p>
                 )}
 
-                <Box position='relative' p='075' className='message-bubble-content'>
+                <div className='p-3 relative message-bubble-content'>
                     {messageContent}
 
                     {!isDeleted && children}
-                </Box>
+                </div>
 
-                <Row gap='05' className='message-bubble-time text-muted mt-2 text-md'>
-                    <Text as='p'>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</Text>
-                </Row>
+                <div className='flex flex-row items-center gap-2 message-bubble-time text-muted mt-2 text-sm'>
+                    <p>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</p>
+                </div>
 
                 {!isDeleted && message.reactions && message.reactions.length > 0 && (
                     <ReactionsDisplay
@@ -90,8 +90,8 @@ const MessageBubble = ({
                         onToggle={onToggleReaction ?? (() => undefined)}
                     />
                 )}
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 };
 

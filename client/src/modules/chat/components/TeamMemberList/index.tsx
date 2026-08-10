@@ -1,6 +1,6 @@
 import { cn } from '@/shared/utils/cn';
-import { IoCheckmark } from 'react-icons/io5';
-import { Avatar, Box, ListRow, Row, Stack, Text } from '@voltstack/bravais';
+import { Check } from 'lucide-react';
+import { Avatar, ListRow } from '@voltstack/bravais';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import './TeamMemberList.css';
 
@@ -18,12 +18,12 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
         const isSelected = selectedIds.includes(member._id);
 
         const leading = (
-            <Row gap='05'>
-                <Box display='flex' shrink='0' transition='normal' className='items-center justify-center team-member-item-checkbox'>
-                    {isSelected && <IoCheckmark size={14} style={{ color: 'var(--color-on-accent)' }} />}
-                </Box>
+            <div className='flex flex-row items-center gap-2'>
+                <div className='flex shrink-0 transition-[all] duration-200 ease-out-fluid items-center justify-center team-member-item-checkbox'>
+                    {isSelected && <Check size={14} style={{ color: 'var(--color-on-accent)' }} />}
+                </div>
                 <Avatar user={member} size='sm' />
-            </Row>
+            </div>
         );
 
         return (
@@ -43,16 +43,16 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
 
     if (filteredMembers.length === 0) {
         return (
-            <Box display='flex' p='2' textAlign='center' className='items-center justify-center'>
-                <Text as='p' size='md' tone='muted'>No team members available</Text>
-            </Box>
+            <div className='flex p-8 text-center items-center justify-center'>
+                <p className='text-sm text-muted'>No team members available</p>
+            </div>
         );
     }
 
     return (
-        <Stack gap='025' overflow='y-auto' className='team-member-list'>
+        <div className='flex flex-col gap-1 overflow-y-auto team-member-list'>
             {filteredMembers.map(renderMember)}
-        </Stack>
+        </div>
     );
 };
 

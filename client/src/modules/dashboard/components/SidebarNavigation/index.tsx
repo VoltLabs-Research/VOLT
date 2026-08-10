@@ -7,7 +7,7 @@ import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/ui/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
-import { Box, Tooltip } from '@voltstack/bravais';
+import { Tooltip } from '@voltstack/bravais';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
@@ -150,7 +150,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         const Icon = selected ? iconPair.active : iconPair.inactive;
 
         const content = (
-            <Box className='sidebar-nav-item-wrapper'>
+            <div className='sidebar-nav-item-wrapper'>
                 <SidebarNavItem
                     label={item.label}
                     icon={Icon}
@@ -158,7 +158,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     onClick={isAllowed ? () => handleNavigate(item.path) : undefined}
                     disabled={!isAllowed}
                 />
-            </Box>
+            </div>
         );
 
         const tooltipContent = isAllowed

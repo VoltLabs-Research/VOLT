@@ -7,8 +7,8 @@ import MessageList from '../MessageList';
 import TypingIndicator from '../TypingIndicator';
 import { PresenceStatus } from '@volt/contracts/modules/chat/domain';
 import { useState } from 'react';
-import { IoChatbubblesOutline } from 'react-icons/io5';
-import { EmptyState, Box, openModal, Stack } from '@voltstack/bravais';
+import { MessagesSquare } from 'lucide-react';
+import { EmptyState, openModal } from '@voltstack/bravais';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { hasUserReactedWith } from '@/modules/chat/utils/reactions';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
@@ -93,13 +93,13 @@ const ChatArea = ({
      */
     if (!chat) {
         return (
-            <Box display='flex' height='max' flex='1' minW='0' align='center' justify='center' className='chat-area'>
+            <div className='flex items-center justify-center h-full flex-1 min-w-0 chat-area'>
                 <EmptyState
-                    icon={<IoChatbubblesOutline size={32} />}
+                    icon={<MessagesSquare size={32} />}
                     title='Welcome to Messages'
                     description='Select a conversation or start a new chat'
                 />
-            </Box>
+            </div>
         );
     }
 
@@ -123,7 +123,7 @@ const ChatArea = ({
     );
 
     return (
-        <Stack height='max' flex='1' minW='0' className='chat-area'>
+        <div className='flex flex-col h-full flex-1 min-w-0 chat-area'>
             <ChatHeader
                 chat={chat}
                 currentUserId={currentUserId}
@@ -156,7 +156,7 @@ const ChatArea = ({
                 onSave={onEditMessage}
                 onClose={() => setEditingMessage(null)}
             />
-        </Stack>
+        </div>
     );
 };
 

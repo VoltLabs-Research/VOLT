@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Button, Stack } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -135,7 +135,7 @@ const DemoProvisioningPage = () => {
     if (failure) {
         return (
             <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
-                <Stack gap='1' align='center' justify='center' className='min-h-screen'>
+                <div className='flex flex-col items-center justify-center gap-4 min-h-screen'>
                     <RecoveryState
                         tone={RecoveryStateTone.Error}
                         title={failure === 'timeout' ? 'Demo provisioning timed out' : 'Demo provisioning failed'}
@@ -148,21 +148,21 @@ const DemoProvisioningPage = () => {
                     <Button variant='ghost' intent='neutral' onClick={() => navigate('/onboarding/cluster/setup')}>
                         Connect your own cluster instead
                     </Button>
-                </Stack>
+                </div>
             </OnboardingLayout>
         );
     }
 
     return (
         <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
-            <Stack align='center' justify='center' gap='1-5' className='min-h-screen'>
+            <div className='flex flex-col items-center justify-center gap-6 min-h-screen'>
                 <ProcessingLoader
                     isVisible
                     showProgress
                     completionRate={(POLL_TIMEOUT_MS - remainingMs) / POLL_TIMEOUT_MS}
                     message={`Provisioning your demo cluster… ${formatRemaining(remainingMs)} remaining`}
                 />
-            </Stack>
+            </div>
         </OnboardingLayout>
     );
 };

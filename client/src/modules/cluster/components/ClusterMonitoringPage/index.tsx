@@ -1,5 +1,5 @@
 import '@/modules/cluster/components/ClusterMonitoringPage/ClusterMonitoringPage.css';
-import { Button, Heading, Text, Box, Loader, Stack } from '@voltstack/bravais';
+import { Button, Loader } from '@voltstack/bravais';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
@@ -17,14 +17,14 @@ const NetworkChart = lazy(() => import('@/shared/ui/components/NetworkChart'));
 const DEFERRED_VISUALIZATIONS_IDLE_TIMEOUT_MS = 200;
 
 const renderDeferredVisualizationsFallback = () => (
-    <Box display='flex' align='center' justify='center' p='2' style={{ minHeight: '18rem' }}>
+    <div className='flex items-center justify-center p-8' style={{ minHeight: '18rem' }}>
         <Loader
             scale={0.35}
             isFixed={false}
             label='Loading live charts'
             announce
             reducedMotionLabel='Loading live charts' />
-    </Box>
+    </div>
 );
 
 const ClusterMonitoringPage = () => {
@@ -78,20 +78,20 @@ const ClusterMonitoringPage = () => {
     const shouldShowProgressiveVisualizationLoader = hasRenderableMetrics && !shouldRenderVisualizations;
 
     return (
-        <Box className='clusters-page h-dvh text-primary'>
-            <Stack gap='1-5' width='max' className='clusters-main'>
+        <div className='clusters-page h-dvh text-foreground'>
+            <div className='flex flex-col gap-6 w-full clusters-main'>
                 {vm.isLoading && !vm.hasClusters && (
                     <Loader scale={0.5} isFixed={false} />
                 )}
 
                 {!vm.isLoading && !vm.hasClusters && (
-                    <Stack align='start' gap='1' p='1-5' radius='lg' className='clusters-empty-state'>
-                        <Heading level={3} size='xl' weight='bold'>No clusters connected yet</Heading>
-                        <Text as='p' size='md' tone='secondary'>
+                    <div className='flex flex-col items-start gap-4 p-6 rounded-2xl clusters-empty-state'>
+                        <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
+                        <p className='text-sm text-muted'>
                             Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
-                        </Text>
+                        </p>
                         <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
-                    </Stack>
+                    </div>
                 )}
 
                 {metricsUnavailableState && (
@@ -110,28 +110,28 @@ const ClusterMonitoringPage = () => {
 
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
-                                <Box className='clusters-grid-equal'>
+                                <div className='clusters-grid-equal'>
                                     <ResourceUsage metrics={vm.metrics} />
                                     <CpuDistribution history={vm.history} metrics={vm.metrics} />
-                                </Box>
+                                </div>
 
-                                <Box className='clusters-grid'>
-                                    <Box className='clusters-grid-main'>
+                                <div className='clusters-grid'>
+                                    <div className='clusters-grid-main'>
                                         <NetworkChart
                                             data={networkData}
                                             isLoading={!vm.metrics}
                                             calculateDelta={false}
                                             title='Network Traffic'
                                             height={300} />
-                                    </Box>
+                                    </div>
                                     <DiskOperations history={vm.history} metrics={vm.metrics} />
-                                </Box>
+                                </div>
                             </Suspense>
                         )}
                     </>
                 )}
-            </Stack>
-        </Box>
+            </div>
+        </div>
     );
 };
 

@@ -2,7 +2,7 @@ import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../Canv
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
-import { MdLightbulb } from 'react-icons/md';
+import { Lightbulb } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { updateVec3Value } from '../../utils';
 
@@ -211,7 +211,7 @@ const useLightsGroup = (): RenderGroup => {
         return {
             id: 'lights',
             title: 'Lights',
-            icon: <MdLightbulb size={12} />,
+            icon: <Lightbulb size={12} />,
             visible: !isPointCloudScene,
             subsections: [
                 {

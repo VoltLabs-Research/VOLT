@@ -1,4 +1,4 @@
-import { Box, Button, Text, Skeleton } from '@voltstack/bravais';
+import { Button, Skeleton } from '@voltstack/bravais';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { RefreshCw } from 'lucide-react';
 
@@ -48,11 +48,11 @@ export const CanvasTreeRow = ({
             tabIndex={disabled ? -1 : 0}
             onClick={disabled ? undefined : onClick}
             data-tour-id={tourTargetId}
-            className={`canvas-tree-item text-sm flex items-center gap-2 text-secondary select-none ${INDENT_CLASSES[indent]} ${isActive ? 'selected' : ''} ${cursor} ${className}`}
+            className={`canvas-tree-item text-xs flex items-center gap-2 text-muted select-none ${INDENT_CLASSES[indent]} ${isActive ? 'selected' : ''} ${cursor} ${className}`}
         >
             {icon ?? <span className="canvas-tree-spacer" />}
-            <span className={isActive ? 'text-primary' : 'text-secondary'}>{label}</span>
-            {trailing !== undefined && <Box as='span' flex='1' />}
+            <span className={isActive ? 'text-foreground' : 'text-muted'}>{label}</span>
+            {trailing !== undefined && <span className='flex-1' />}
             {trailing}
         </button>
     );
@@ -81,7 +81,7 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
     return (
         <>
             {Array.from({ length: count }).map((_, i) => (
-                <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
+                <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item flex items-center gap-8 text-muted ${INDENT_CLASSES[indent]}`}>
                     <span className="canvas-tree-spacer" />
                     <Skeleton variant='text' width={compact ? 80 : 120} height={10} />
                 </div>
@@ -96,8 +96,8 @@ interface CanvasTreeEmptyRowProps {
 }
 
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
-    <div className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
-        <Text size='sm' tone='muted'>{label}</Text>
+    <div className={`canvas-tree-item flex items-center gap-8 text-muted ${INDENT_CLASSES[indent]}`}>
+        <span className='text-xs text-muted'>{label}</span>
     </div>
 );
 
@@ -107,9 +107,9 @@ interface AnalysisTreeRetryRowProps {
 }
 
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
-    <div className={`canvas-tree-item flex items-center gap-8 text-secondary ${INDENT_CLASSES[indent]}`}>
-        <Text size='sm' tone='muted'>Failed to load models</Text>
-        <Box as='span' flex='1' />
+    <div className={`canvas-tree-item flex items-center gap-8 text-muted ${INDENT_CLASSES[indent]}`}>
+        <span className='text-xs text-muted'>Failed to load models</span>
+        <span className='flex-1' />
         <Button variant='ghost' intent='neutral' size='sm' onClick={onRetry} aria-label='Retry loading models'>
             <RefreshCw style={{
                 width: 12,

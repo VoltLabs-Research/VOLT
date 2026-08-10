@@ -1,5 +1,5 @@
-import { Box, Button, Stack, Callout } from '@voltstack/bravais';
-import { IoExitOutline } from 'react-icons/io5';
+import { Button, Callout } from '@voltstack/bravais';
+import { LogOut } from 'lucide-react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
 interface GeneralTabProps {
@@ -23,7 +23,7 @@ const GeneralTab = ({
     onSave,
     onLeave
 }: GeneralTabProps) => (
-    <Stack gap='1'>
+    <div className='flex flex-col gap-4'>
         <FormFieldRHF
             label='Group Name'
             value={groupName}
@@ -39,7 +39,7 @@ const GeneralTab = ({
             disabled={!canEdit}
         />
         {canEdit && (
-            <Box display='flex' justify='end'>
+            <div className='flex justify-end'>
                 <Button
                     variant='solid'
                     intent='brand'
@@ -49,7 +49,7 @@ const GeneralTab = ({
                 >
                     Save Changes
                 </Button>
-            </Box>
+            </div>
         )}
 
         <Callout
@@ -58,11 +58,11 @@ const GeneralTab = ({
             description='You will no longer be able to see messages in this group.'
             action={{
                 label: 'Leave Group',
-                icon: <IoExitOutline />,
+                icon: <LogOut />,
                 onClick: onLeave
             }}
         />
-    </Stack>
+    </div>
 );
 
 export default GeneralTab;

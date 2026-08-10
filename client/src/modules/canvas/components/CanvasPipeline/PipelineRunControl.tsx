@@ -18,7 +18,7 @@ import {
 } from '../../utils/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Stack, Text } from '@voltstack/bravais';
+import { Button } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { useMemo, useState } from 'react';
 import type {
@@ -200,10 +200,10 @@ const PipelineRunControl = ({
     };
 
     return (
-        <Stack gap='075' className='canvas-pipeline-run'>
-            <Text size='xs' tone='muted'>
+        <div className='flex flex-col gap-3 canvas-pipeline-run'>
+            <span className='text-xs text-muted'>
                 Runs the {enabledOrderedStages.length} enabled stage{enabledOrderedStages.length === 1 ? '' : 's'} as one pipeline.
-            </Text>
+            </span>
 
             {hasTeamClusterOptions ? (
                 <FormFieldRHF
@@ -216,9 +216,9 @@ const PipelineRunControl = ({
                     onFieldChange={(_, value) => setSelectedClusterId(String(value))}
                 />
             ) : (
-                <Text as='p' size='sm' tone='muted'>
+                <p className='text-xs text-muted'>
                     No compute cluster is connected to this team. Set one up to run the pipeline.
-                </Text>
+                </p>
             )}
 
             <SelectedTimestepsField
@@ -239,7 +239,7 @@ const PipelineRunControl = ({
             >
                 Execute
             </Button>
-        </Stack>
+        </div>
     );
 };
 

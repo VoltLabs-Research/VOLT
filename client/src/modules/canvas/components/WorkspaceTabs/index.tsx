@@ -1,5 +1,4 @@
 import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
-import { Row } from '@voltstack/bravais';
 
 import './WorkspaceTabs.css';
 
@@ -29,10 +28,9 @@ const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => 
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
 
     return (
-        <Row
+        <div className='flex flex-row items-center canvas-workspace-tabs'
             role="tablist"
             aria-label="Canvas workspace"
-            className="canvas-workspace-tabs"
         >
             {TABS.map((tab) => {
                 const isActive = activeWorkspace === tab.id;
@@ -52,7 +50,7 @@ const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => 
                     </button>
                 );
             })}
-        </Row>
+        </div>
     );
 };
 

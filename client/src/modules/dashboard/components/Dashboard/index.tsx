@@ -9,19 +9,18 @@ import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
-import { Box, Button, Heading, Row, EmptyState, openModal } from '@voltstack/bravais';
+import { Button, EmptyState, openModal } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
-import { FlaskConical, FolderPlus, Upload } from 'lucide-react';
-import { HiOutlineServerStack } from 'react-icons/hi2';
+import { FlaskConical, FolderPlus, Server, Upload } from 'lucide-react';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/contracts/cards';
 import type { ReactNode } from 'react';
 
 const CARD_ICONS: Record<string, ReactNode> = {
-    trajectories: <HiOutlineServerStack size={16} />,
+    trajectories: <Server size={16} />,
     analysis: <FlaskConical size={16} strokeWidth={1.8} />
 };
 
@@ -81,28 +80,28 @@ const DashboardPage = () => {
 
     if (!selectedTeam) {
         return (
-            <Box className='dashboard-bento'>
-                <Box className='dashboard-bottom-row'>
+            <div className='dashboard-bento'>
+                <div className='dashboard-bottom-row'>
                     <EmptyState
-                        icon={<HiOutlineServerStack size={20} />}
+                        icon={<Server size={20} />}
                         title='Create your first team'
                         description='Use the team creation dialog to finish setup and unlock the dashboard.'
                         className='w-full'
                     />
-                </Box>
-            </Box>
+                </div>
+            </div>
         );
     }
 
     return (
-        <Box className='dashboard-bento'>
+        <div className='dashboard-bento'>
             {statCards}
 
-            <Box className='dashboard-simulations-section'>
-                <Row justify='between' gap='1' className='dashboard-simulations-header'>
-                    <Heading level={3} size='xl' weight='medium' tone='primary'>Trajectories</Heading>
+            <div className='dashboard-simulations-section'>
+                <div className='flex flex-row items-center justify-between gap-4 dashboard-simulations-header'>
+                    <h3 className='text-xl font-medium text-foreground'>Trajectories</h3>
                     {canCreateTrajectoryFolders && (
-                        <Row gap='05'>
+                        <div className='flex flex-row items-center gap-2'>
                             <input ref={fileInputRef} type='file' multiple hidden onChange={handlePickerChange} />
                             <Button
                                 variant='ghost'
@@ -127,12 +126,12 @@ const DashboardPage = () => {
                                 <FolderPlus size={14} />
                                 New folder
                             </Button>
-                        </Row>
+                        </div>
                     )}
-                </Row>
+                </div>
                 <SimulationGrid />
-            </Box>
-        </Box>
+            </div>
+        </div>
     );
 };
 

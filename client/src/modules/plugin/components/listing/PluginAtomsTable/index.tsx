@@ -1,7 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import PluginCompactTable, { type PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
-import { Row } from '@voltstack/bravais';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 
@@ -41,7 +40,7 @@ const BASE_ATOM_COLUMNS: PluginTableColumnConfig[] = [
         title: 'Type',
         width: 80,
         render: (value: unknown) => (
-            <Row gap='05'>
+            <div className='flex flex-row items-center gap-2'>
                 <div
                     style={{
                         width: 8,
@@ -51,7 +50,7 @@ const BASE_ATOM_COLUMNS: PluginTableColumnConfig[] = [
                     }}
                 />
                 {String(value)}
-            </Row>
+            </div>
         )
     },
     {

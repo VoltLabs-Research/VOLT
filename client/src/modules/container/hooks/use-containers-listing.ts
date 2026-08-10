@@ -28,9 +28,8 @@ import { showPromise } from '@/shared/ui/hooks/toast';
 import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { sileo } from 'sileo';
-import { Box, FolderInput, Play, RotateCcw, Square } from 'lucide-react';
+import { Box, FolderInput, Play, RotateCcw, Square, Terminal } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { RiTerminalLine } from 'react-icons/ri';
 import { ContainerAction } from '../api/service';
 import { useNavigate } from 'react-router-dom';
 
@@ -109,7 +108,7 @@ const useContainersListing = () => {
         },
         terminal: {
             label: 'Open Terminal',
-            icon: RiTerminalLine,
+            icon: Terminal,
             handler: ({ item: container }) => {
                 if (container.status === 'running') {
                     setTerminalContainer(container);

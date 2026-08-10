@@ -1,4 +1,4 @@
-import { AsyncBoundary, Box, Stack, Text } from '@voltstack/bravais';
+import { AsyncBoundary } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { ReactNode } from 'react';
 
@@ -31,12 +31,12 @@ interface SecretKeyAsyncStateProps {
 }
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
-    <Box height='vh-max' className='secret-key-page text-primary'>
-        <Stack gap='2' width='max' className='secret-key-page-main'>
+    <div className='h-dvh secret-key-page text-foreground'>
+        <div className='flex flex-col gap-8 w-full secret-key-page-main'>
             {header}
             {children}
-        </Stack>
-    </Box>
+        </div>
+    </div>
 );
 
 export const SecretKeyRecoveryView = ({
@@ -58,9 +58,9 @@ export const SecretKeyRecoveryView = ({
 
 export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps) => (
     <SecretKeyPageShell header={header}>
-        <Box display='flex' p='3' className='items-center justify-center'>
-            <Text as='p' size='lg' tone='muted'>{message}</Text>
-        </Box>
+        <div className='flex p-12 items-center justify-center'>
+            <p className='text-base text-muted'>{message}</p>
+        </div>
     </SecretKeyPageShell>
 );
 

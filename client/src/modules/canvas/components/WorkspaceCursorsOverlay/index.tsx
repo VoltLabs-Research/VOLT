@@ -1,5 +1,4 @@
 import { useLayoutEffect, useState } from 'react';
-import { Box } from '@voltstack/bravais';
 import type { WorkspaceCursor } from '@/modules/canvas/collaboration/use-workspace-cursors';
 import './WorkspaceCursorsOverlay.css';
 
@@ -68,7 +67,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
     }
 
     return (
-        <Box position='absolute' inset='0' selectNone className='workspace-cursors-overlay' aria-hidden='true'>
+        <div className='absolute inset-0 select-none workspace-cursors-overlay' aria-hidden='true'>
             {resolvedCursors.map((cursor) => {
                 const color = resolveColor(cursor.userId);
                 const name = resolveDisplayName(cursor);
@@ -100,7 +99,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
                     </div>
                 );
             })}
-        </Box>
+        </div>
     );
 };
 

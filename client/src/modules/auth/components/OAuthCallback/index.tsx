@@ -8,7 +8,7 @@ import {
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Box, Heading, Loader, Row, Text } from '@voltstack/bravais';
+import { Loader } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -83,11 +83,11 @@ const OAuthCallbackTemplate = () => {
     }, [markAuthenticated, navigate]);
 
     return (
-        <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
-            <Box position='absolute' inset='0' overflow='hidden'>
-                <Box position='absolute' radius='full' width='50' className='oauth-background-blob oauth-blob-blue' />
-                <Box position='absolute' radius='full' className='oauth-background-blob oauth-blob-purple' />
-            </Box>
+        <div className='flex flex-row items-center justify-center relative overflow-hidden h-dvh oauth-callback-container'>
+            <div className='absolute overflow-hidden inset-0'>
+                <div className='rounded-full absolute w-1/2 oauth-background-blob oauth-blob-blue' />
+                <div className='rounded-full absolute oauth-background-blob oauth-blob-purple' />
+            </div>
 
             {status === 'error' ? (
                 <RecoveryState
@@ -107,9 +107,9 @@ const OAuthCallbackTemplate = () => {
                         opacity: 1,
                         scale: 1
                     }}
-                    className='oauth-card glass-bg rounded-2xl relative w-full text-center p-8'
+                    className='oauth-card bg-surface border border-border rounded-3xl relative w-full text-center p-8'
                 >
-                    <Row justify='center' className='mb-6 oauth-status-icon'>
+                    <div className='flex flex-row items-center justify-center mb-6 oauth-status-icon'>
                         {status === 'loading' && (
                             <Loader scale={0.6} isFixed={false} />
                         )}
@@ -127,7 +127,7 @@ const OAuthCallbackTemplate = () => {
                                 <CheckCircle size={48} className='oauth-icon-success' />
                             </motion.div>
                         )}
-                    </Row>
+                    </div>
 
                     <motion.div
                         key={status}
@@ -140,10 +140,10 @@ const OAuthCallbackTemplate = () => {
                             y: 0
                         }}
                     >
-                        <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
+                        <h3 className='text-2xl font-semibold text-foreground oauth-title'>
                             {status === 'loading' && 'Authenticating...'}
                             {status === 'success' && 'Successfully Authenticated!'}
-                        </Heading>
+                        </h3>
                     </motion.div>
 
                     <motion.div
@@ -152,14 +152,14 @@ const OAuthCallbackTemplate = () => {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <Text as='p' tone='secondary'>
+                        <p className='text-muted'>
                             {status === 'loading' && 'Please wait while we verify your credentials.'}
                             {status === 'success' && 'Redirecting you to setup...'}
-                        </Text>
+                        </p>
                     </motion.div>
                 </motion.div>
             )}
-        </Row>
+        </div>
     );
 };
 

@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, IconButton } from '@voltstack/bravais';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -64,14 +64,14 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (configurableArgs.length === 0 || !showArgumentsPanel) return null;
 
     return (
-        <Stack position='absolute' zIndex='10' radius='md' className='center-x panel-floating overflow-hidden debug-arguments-panel glass-bg'>
-            <Row justify='between' shrink='0' className='debug-arguments-panel-header'>
-                <Row gap='05'>
+        <div className='flex flex-col rounded-xl absolute z-10 center-x panel-floating overflow-hidden debug-arguments-panel bg-surface border border-border'>
+            <div className='flex flex-row items-center justify-between shrink-0 debug-arguments-panel-header'>
+                <div className='flex flex-row items-center gap-2'>
                     <Settings2 size={14} />
-                    <Text as='p' size='md' weight='bold'>
+                    <p className='text-sm font-semibold'>
                         Debug Arguments
-                    </Text>
-                </Row>
+                    </p>
+                </div>
                 <IconButton
                     variant='ghost'
                     size='sm'
@@ -79,9 +79,9 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 >
                     <X size={14} />
                 </IconButton>
-            </Row>
+            </div>
 
-            <Stack gap='05' flex='1' minH='0' className='overflow-y-auto debug-arguments-panel-body'>
+            <div className='flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto debug-arguments-panel-body'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -91,9 +91,9 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                         title: `Frame ${index + 1} (t=${frame.timestep})`
                     }))}
                 />
-            </Stack>
+            </div>
 
-            <Box shrink='0' className='debug-arguments-panel-footer'>
+            <div className='shrink-0 debug-arguments-panel-footer'>
                 <Button
                     variant='outline'
                     intent='white'
@@ -105,8 +105,8 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     <Play size={12} />
                     Start Debug
                 </Button>
-            </Box>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

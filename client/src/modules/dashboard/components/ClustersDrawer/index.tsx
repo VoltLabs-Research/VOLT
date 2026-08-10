@@ -1,5 +1,5 @@
 import './ClustersDrawer.css';
-import { AsyncBoundary, Box, Loader, Modal, Stack } from '@voltstack/bravais';
+import { AsyncBoundary, Loader, Modal } from '@voltstack/bravais';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
@@ -37,9 +37,9 @@ const ClustersDrawer = () => {
     }, [clusters]);
 
     const clustersLoadingState = (
-        <Box display='flex' className='dashboard-operations-panel items-center justify-center'>
+        <div className='flex dashboard-operations-panel items-center justify-center'>
             <Loader scale={0.4} />
-        </Box>
+        </div>
     );
 
     const clustersEmptyState = (
@@ -68,7 +68,7 @@ const ClustersDrawer = () => {
             description={`${orderedClusters.length} cluster${orderedClusters.length === 1 ? '' : 's'}${!isConnected && orderedClusters.length > 0 ? ' · live metrics offline' : ''}`}
             lazyMount
         >
-            <Box className='dashboard-clusters-drawer'>
+            <div className='dashboard-clusters-drawer'>
                 <AsyncBoundary
                     state={{
                         loading: clusterManagement.isLoading && teamClusters.length === 0,
@@ -79,7 +79,7 @@ const ClustersDrawer = () => {
                     error={renderClustersError}
                     empty={clustersEmptyState}
                 >
-                    <Stack overflow='y-auto' className='dashboard-operations-panel dashboard-operations-cluster-list'>
+                    <div className='flex flex-col overflow-y-auto dashboard-operations-panel dashboard-operations-cluster-list'>
                         {orderedClusters.map((teamCluster) => (
                             <ClusterMetricsCard
                                 key={teamCluster._id}
@@ -88,9 +88,9 @@ const ClustersDrawer = () => {
                                 isMetricsConnected={isConnected}
                             />
                         ))}
-                    </Stack>
+                    </div>
                 </AsyncBoundary>
-            </Box>
+            </div>
         </Modal>
     );
 };

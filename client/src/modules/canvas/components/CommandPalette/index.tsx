@@ -4,7 +4,7 @@ import { triggerShortcutAction } from '../../utils/shortcut-actions';
 import formatKeyName from '../../utils/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, closeModal, openModal, Row, SearchInput, Stack, Text } from '@voltstack/bravais';
+import { Modal, closeModal, openModal, SearchInput } from '@voltstack/bravais';
 
 import type { Shortcut } from '../../store/use-keyboard-shortcuts-store';
 
@@ -121,7 +121,7 @@ const CommandPalette = () => {
             width='560px'
             onClose={() => useCommandPaletteStore.getState().close()}
         >
-            <Stack gap='05' p='075' onKeyDown={handleKeyDown}>
+            <div className='flex flex-col gap-2 p-3' onKeyDown={handleKeyDown}>
                 <SearchInput
                     ref={inputRef}
                     id='canvas-command-palette-input'
@@ -132,17 +132,14 @@ const CommandPalette = () => {
                     data-modal-initial-focus='true'
                 />
 
-                <Stack
-                    as='ul'
+                <ul className='flex flex-col gap-1 canvas-command-palette__list'
                     ref={listRef}
                     role='listbox'
                     aria-label='Available commands'
                     aria-activedescendant={filteredItems[activeIndex] ? `canvas-command-${filteredItems[activeIndex].id}` : undefined}
-                    className='canvas-command-palette__list'
-                    gap='025'
                 >
                     {filteredItems.length === 0 && (
-                        <Text as='li' size='md' tone='secondary' className='canvas-command-palette__empty'>No commands match "{query}"</Text>
+                        <li className='text-sm text-muted canvas-command-palette__empty'>No commands match "{query}"</li>
                     )}
                     {filteredItems.map((item, index) => (
                         <li
@@ -155,22 +152,22 @@ const CommandPalette = () => {
                             onMouseEnter={() => setActiveIndex(index)}
                             onClick={() => runCommand(item)}
                         >
-                            <Stack gap='025'>
-                                <Text size='md' tone='primary'>{item.label}</Text>
-                                <Text size='xs' tone='muted'>{item.category}</Text>
-                            </Stack>
-                            <Row gap='025'>
+                            <div className='flex flex-col gap-1'>
+                                <span className='text-sm text-foreground'>{item.label}</span>
+                                <span className='text-xs text-muted'>{item.category}</span>
+                            </div>
+                            <div className='flex flex-row items-center gap-1'>
                                 {item.keys.map((key, keyIndex) => (
-                                    <Row key={key} gap='025' as='span'>
-                                        {keyIndex > 0 && <Text size='xs' tone='secondary'>+</Text>}
+                                    <span className='flex flex-row items-center gap-1' key={key}>
+                                        {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
                                         <kbd className='canvas-command-palette__key font-mono text-xs'>{formatKeyName(key)}</kbd>
-                                    </Row>
+                                    </span>
                                 ))}
-                            </Row>
+                            </div>
                         </li>
                     ))}
-                </Stack>
-            </Stack>
+                </ul>
+            </div>
         </Modal>
     );
 };

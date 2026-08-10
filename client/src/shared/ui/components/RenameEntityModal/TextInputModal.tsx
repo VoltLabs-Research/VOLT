@@ -1,5 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Modal, Box } from '@voltstack/bravais';
+import { Modal } from '@/shared/ui/modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCallback } from 'react';
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
@@ -69,17 +69,22 @@ const TextInputModal = ({
 
     const secondaryAction: ModalFooterAction = {
         label: 'Cancel',
-        onClick: onCancel,
-        disabled: isSubmitting
+        onPress: onCancel,
+        isDisabled: isSubmitting
     };
 
     const primaryAction: ModalFooterAction = {
         label: primaryLabel,
-        onClick: onSubmit,
-        disabled: submitDisabled,
-        ...(primaryIsLoading === undefined ? {} : { isLoading: primaryIsLoading })
+        onPress: onSubmit,
+        isDisabled: submitDisabled,
+        ...(primaryIsLoading === undefined ? {} : { isPending: primaryIsLoading })
     };
 
+    /*
+     * No padding wrapper around the body any more: HeroUI's dialog is `p-6`, so the
+     * `p-6` div this used to carry would double it. The three children stacked as
+     * blocks inside it and stack the same way inside `ModalBody`.
+     */
     return (
         <Modal
             id={modalId}
@@ -88,19 +93,17 @@ const TextInputModal = ({
             onClose={onClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <Box p='1-5'>
-                {leadingContent}
-                <FormFieldRHF
-                    label={fieldLabel}
-                    placeholder={placeholder}
-                    autoFocus={autoFocus}
-                    value={value}
-                    onChange={handleValueChange}
-                    inputProps={mergedInputProps}
-                    error={error}
-                />
-                {helperText}
-            </Box>
+            {leadingContent}
+            <FormFieldRHF
+                label={fieldLabel}
+                placeholder={placeholder}
+                autoFocus={autoFocus}
+                value={value}
+                onChange={handleValueChange}
+                inputProps={mergedInputProps}
+                error={error}
+            />
+            {helperText}
         </Modal>
     );
 };

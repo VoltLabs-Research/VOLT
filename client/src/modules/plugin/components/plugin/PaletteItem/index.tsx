@@ -2,7 +2,6 @@ import type { DragEvent } from 'react';
 import type { NodeType } from '@volt/contracts/modules/plugin/enums';
 import type { NodeTypeConfig } from '@/modules/plugin/utils/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { Row, Stack, Text } from '@voltstack/bravais';
 interface PaletteItemProps {
     config: NodeTypeConfig;
     onDragStart: (event: DragEvent, nodeType: NodeType) => void;
@@ -21,15 +20,15 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     };
 
     return (
-        <Row gap='1-5' cursor='pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? {
+        <div className='flex flex-row items-center gap-6 cursor-pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? {
             opacity: 0.4,
             pointerEvents: 'none'
         } : undefined}>
-            <Stack gap='05'>
+            <div className='flex flex-col gap-2'>
                 <h3>{config.label}</h3>
-                <Text as='p' tone='muted'>{config.description}</Text>
-            </Stack>
-        </Row>
+                <p className='text-muted'>{config.description}</p>
+            </div>
+        </div>
     );
 };
 

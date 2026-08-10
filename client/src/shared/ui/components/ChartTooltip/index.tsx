@@ -1,5 +1,3 @@
-import './ChartTooltip.css';
-
 interface ChartTooltipItem {
     label: string;
     value: string | number;
@@ -12,17 +10,17 @@ interface ChartTooltipProps {
 };
 
 const ChartTooltip = ({ title, items }: ChartTooltipProps) => (
-    <div className='chart-tooltip' role='tooltip'>
+    <div className='rounded-xl border border-border bg-overlay p-3 shadow-lg' role='tooltip'>
         {title && (
-            <p className='chart-tooltip-title text-md font-semibold text-primary'>
+            <p className='mb-2 text-sm font-semibold text-foreground'>
                 {title}
             </p>
         )}
-        <ul className='chart-tooltip-list'>
+        <ul className='m-0 pl-4'>
             {items.map((item, index) => (
                 <li
                     key={`${item.label}-${index}`}
-                    className='chart-tooltip-item text-sm'
+                    className='my-1 text-xs text-muted'
                     style={item.color ? { color: item.color } : undefined}
                 >
                     {item.label}: <strong>{item.value}</strong>

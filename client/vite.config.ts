@@ -1,28 +1,21 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from './.local-deps/node_modules/@tailwindcss/vite/dist/index.mjs';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
 /*
- * ─── TEMPORARY LOCAL LINK ────────────────────────────────────────────────────
+ * ─── TRANSITIONAL BRAVAIS LINK ───────────────────────────────────────────────
  *
- * Everything in this block exists because `node_modules` here is owned by root,
- * so npm cannot write to it — install and `npm link` both fail with EACCES on
- * rename. Tailwind and bravais are therefore resolved out of band: Tailwind from
- * a side prefix at `.local-deps` (which npm *can* write), bravais from the
- * sibling checkout.
+ * bravais is being removed in favour of HeroUI. Until the last module is
+ * migrated it stays resolvable, so a half-migrated tree still typechecks and
+ * builds and each module's gate means something. It resolves to the sibling
+ * checkout (1.0.5) rather than to node_modules, where npm installs the older
+ * published 1.0.3 — the two are not interchangeable: 1.0.3 still ships
+ * `general.css`, whose `p-1` is 1rem against Tailwind's 0.25rem.
  *
- * To undo, once `sudo chown -R $USER:$USER node_modules` has been run and
- * bravais >= 1.0.5 is published:
- *
- *   npm i @voltstack/bravais@^1.0.5
- *   npm i -D tailwindcss@^4 @tailwindcss/vite@^4
- *   rm -rf .local-deps
- *
- * then change the import above to '@tailwindcss/vite' and delete LOCAL_LINK
- * below along with its spread into `resolve.alias`.
+ * Delete this block, the dependency, and `resolve.dedupe`'s bravais peers once
+ * `grep -r '@voltstack/bravais' src` is empty.
  */
-const LOCAL_DEPS = path.resolve(__dirname, '.local-deps/node_modules');
 const BRAVAIS_DIST = path.resolve(__dirname, '../../bravais/dist');
 
 /*
@@ -53,15 +46,6 @@ const LOCAL_LINK = [
     {
         find: '@voltstack/bravais',
         replacement: path.join(BRAVAIS_DIST, 'index.js')
-    },
-    // Tailwind's own entrypoints, imported by `tailwind.css`.
-    {
-        find: 'tailwindcss/theme.css',
-        replacement: path.join(LOCAL_DEPS, 'tailwindcss/theme.css')
-    },
-    {
-        find: 'tailwindcss/utilities.css',
-        replacement: path.join(LOCAL_DEPS, 'tailwindcss/utilities.css')
     }
 ];
 

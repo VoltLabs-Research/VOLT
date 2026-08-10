@@ -1,9 +1,9 @@
-import { Box, ThinkingDots } from '@voltstack/bravais';
+import { ThinkingDots } from '@voltstack/bravais';
 
 const ThinkingBubble = () => (
-    <Box className='ai-message-bubble is-assistant ai-thinking-bubble'>
+    <div className='ai-message-bubble is-assistant ai-thinking-bubble'>
         <ThinkingDots label='Assistant is thinking' />
-    </Box>
+    </div>
 );
 
 export default ThinkingBubble;

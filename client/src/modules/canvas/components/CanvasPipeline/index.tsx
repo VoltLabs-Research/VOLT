@@ -1,3 +1,4 @@
+import { cn } from '@heroui/react';
 import './CanvasPipeline.css';
 import { useCanvasPipelineStore, useStages } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -7,7 +8,7 @@ import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEd
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
+import { Checkbox, Text } from '@voltstack/bravais';
 import { memo, useEffect, useState } from 'react';
 import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -126,25 +127,22 @@ const CanvasPipeline = ({
     }
 
     return (
-        <Stack gap='05' className='canvas-pipeline'>
-            <Stack gap='025' className='canvas-pipeline__list'>
+        <div className='flex flex-col gap-2 canvas-pipeline'>
+            <div className='flex flex-col gap-1 canvas-pipeline__list'>
                 {stages.map((stage) => {
                     const label = stageLabel(stage, pluginNameById);
                     const canToggle = isLiveToggleStage(stage) || stage.executed;
 
                     return (
-                        <Box
+                        <div className={`canvas-pipeline-stage ${dragId === stage.id ? 'canvas-pipeline-stage--dragging' : ''}`}
                             key={stage.id}
-                            className={`canvas-pipeline-stage ${dragId === stage.id ? 'canvas-pipeline-stage--dragging' : ''}`}
                             draggable
                             onDragStart={() => setDragId(stage.id)}
                             onDragEnd={() => setDragId(null)}
                             onDragOver={(e) => { e.preventDefault(); }}
                             onDrop={() => handleDrop(stage.id)}
                         >
-                            <Row
-                                gap='05'
-                                className={`canvas-pipeline-stage__header ${!stage.enabled ? 'canvas-pipeline-stage__header--disabled' : ''}`}
+                            <div className={cn('flex flex-row items-center gap-2', `canvas-pipeline-stage__header ${!stage.enabled ? 'canvas-pipeline-stage__header--disabled' : ''}`)}
                             >
                                 <span className='canvas-pipeline-stage__grip' aria-hidden='true'>
                                     <GripVertical size={12} />
@@ -177,13 +175,13 @@ const CanvasPipeline = ({
                                         </button>
                                     }
                                     content={(close) => (
-                                        <Stack className='canvas-plugin-popover-content'>
+                                        <div className='flex flex-col canvas-plugin-popover-content'>
                                             {renderStageEditor(stage, close)}
-                                        </Stack>
+                                        </div>
                                     )}
                                 />
 
-                                <Row gap='025' shrink='0' className='canvas-pipeline-stage__actions'>
+                                <div className='flex flex-row items-center gap-1 shrink-0 canvas-pipeline-stage__actions'>
                                     <button
                                         type='button'
                                         className='canvas-pipeline-stage__action canvas-pipeline-stage__action--remove'
@@ -200,13 +198,13 @@ const CanvasPipeline = ({
                                         aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
                                         title={canToggle ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
                                     />
-                                </Row>
-                            </Row>
-                        </Box>
+                                </div>
+                            </div>
+                        </div>
                     );
                 })}
-            </Stack>
-        </Stack>
+            </div>
+        </div>
     );
 };
 

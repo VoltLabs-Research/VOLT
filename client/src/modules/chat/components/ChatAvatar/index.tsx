@@ -1,5 +1,5 @@
 import { getOtherParticipant } from '@/modules/chat/utils/chat/chat-display';
-import { IoPeopleOutline } from 'react-icons/io5';
+import { Users } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { Avatar } from '@voltstack/bravais';
 import type { Chat } from '@volt/contracts/modules/chat/domain';
@@ -34,7 +34,7 @@ const ChatAvatar = ({
     return (
         <Avatar
             user={chat.isGroup ? undefined : getOtherParticipant(chat, currentUserId)}
-            icon={chat.isGroup ? <IoPeopleOutline size={GROUP_ICON_SIZES[size]} /> : undefined}
+            icon={chat.isGroup ? <Users size={GROUP_ICON_SIZES[size]} /> : undefined}
             size={size}
             showStatus={showStatus}
             isOnline={isOnline}

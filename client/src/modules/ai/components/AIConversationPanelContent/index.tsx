@@ -1,6 +1,6 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
-import { EmptyState, Box } from '@voltstack/bravais';
+import { EmptyState } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
@@ -60,37 +60,37 @@ const AIConversationPanelContent = ({
 }: AIConversationPanelContentProps) => {
     if (accessDenied) {
         return (
-            <Box display='flex' flex='1' className='items-center justify-center'>
+            <div className='flex flex-1 items-center justify-center'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
                     tone={RecoveryStateTone.AccessDenied}
                 />
-            </Box>
+            </div>
         );
     }
 
     if (!selectedTeamId) {
         return (
-            <Box display='flex' flex='1' className='items-center justify-center'>
+            <div className='flex flex-1 items-center justify-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to use the AI assistant.'
                 />
-            </Box>
+            </div>
         );
     }
 
     if (noProviderConfigured) {
         return (
-            <Box display='flex' flex='1' className='items-center justify-center'>
+            <div className='flex flex-1 items-center justify-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations.'
                     buttonText='Open integrations'
                     buttonOnClick={onOpenIntegrations}
                 />
-            </Box>
+            </div>
         );
     }
 

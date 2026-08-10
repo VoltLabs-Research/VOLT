@@ -4,7 +4,7 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utils/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import { CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
+import { CollapsibleSection, Select, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type {
@@ -136,12 +136,12 @@ const PluginConfigField = ({
     };
 
     return (
-        <Stack gap='05'>
-            <Row justify='between' gap='1' className='form-field-canvas'>
+        <div className='flex flex-col gap-2'>
+            <div className='flex flex-row items-center justify-between gap-4 form-field-canvas'>
                 <p className='canvas-form-label'>
                     {argument.label || argument.argument}
                 </p>
-                <Row justify='end' width='max' position='relative' className='render-input-container'>
+                <div className='flex flex-row items-center justify-end relative w-full render-input-container'>
                     {argument.multipleSelection ? (
                         <Select
                             id={`${fieldKey}-plugins-select`}
@@ -172,17 +172,17 @@ const PluginConfigField = ({
                             aria-label={argument.label || argument.argument}
                         />
                     )}
-                </Row>
-            </Row>
+                </div>
+            </div>
 
             {argument.showPluginConfiguration && pluginReferenceValue.selections.map((selection, index) => {
                 const selectedPluginArguments = selectionArguments[selection.pluginId] ?? [];
 
                 if (selectedPluginArguments.length === 0) {
                     return (
-                        <Text as='p' key={`${selection.pluginId}-${index}`} size='sm' tone='muted'>
+                        <p className='text-xs text-muted' key={`${selection.pluginId}-${index}`}>
                             {getSelectionTitle(selection, pluginOptions)} has no configurable arguments.
-                        </Text>
+                        </p>
                     );
                 }
 
@@ -207,11 +207,11 @@ const PluginConfigField = ({
             })}
 
             {selectedPluginIds.length > 0 && !argument.showPluginConfiguration && (
-                <Text as='p' size='sm' tone='muted'>
+                <p className='text-xs text-muted'>
                     Plugin configuration will be resolved later by the plugin node or workflow runtime.
-                </Text>
+                </p>
             )}
-        </Stack>
+        </div>
     );
 };
 
