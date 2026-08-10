@@ -41,11 +41,6 @@ export interface ModelDragOffset {
     z: number;
 }
 
-export interface LineEntitySelection {
-    exposureId: string;
-    entityId: number;
-}
-
 export interface ModelState {
     activeScene: SceneObjectType;
     activeScenes: SceneObjectType[];
@@ -60,7 +55,6 @@ export interface ModelState {
     modelDragOffsets: Record<string, ModelDragOffset>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
-    lineEntitySelection: LineEntitySelection | null;
 }
 
 interface ModelActions {
@@ -91,7 +85,6 @@ interface ModelActions {
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
-    toggleLineEntitySelection: (selection: LineEntitySelection) => void;
 }
 
 export type ModelStore = ModelActions & ModelState;

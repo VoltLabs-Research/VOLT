@@ -1,5 +1,4 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
-import { useLineEntityHighlight } from '../../hooks/use-line-entity-selection';
 import AIViewerActivityBadge from './AIViewerActivityBadge';
 import PlaybackTicker from '../PlaybackTicker';
 import ViewportFloatingControls from '../ViewportFloatingControls';
@@ -102,7 +101,6 @@ const Viewport = ({
         setIsPointCloudScene: s.setIsPointCloudScene
     })));
 
-    const lineHighlight = useLineEntityHighlight(trajectory?._id, currentTimestep);
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -214,7 +212,6 @@ const Viewport = ({
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
                                     boxBounds={currentFrameBoxBounds}
                                     sceneVisualOverrides={sceneVisualOverrides}
-                                    lineHighlight={lineHighlight}
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}
                                     onModelBoundsChanged={setModelBounds}

@@ -1,5 +1,4 @@
 import usePluginResults from '../../hooks/use-plugin-results';
-import { useLineEntityRowSelection } from '../../hooks/use-line-entity-selection';
 
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
@@ -58,7 +57,6 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
         analysisId
     });
     const resolvedTeamId = teamId ?? undefined;
-    const lineRowSelection = useLineEntityRowSelection(activeExposureId);
 
     return (
         <Surface variant='glass' display='flex' direction='column' position='absolute' right='1' bottom='1' width='max' overflow='hidden' className="canvas-results-viewer">
@@ -122,8 +120,6 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 teamId={resolvedTeamId}
                                 compact={true}
                                 inlineSubListings={true}
-                                onRowClick={lineRowSelection.onRowClick}
-                                isRowSelected={lineRowSelection.isRowSelected}
                             />
                         )}
                         {isAtomsTab && trajectoryId && (

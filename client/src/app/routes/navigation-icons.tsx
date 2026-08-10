@@ -4,7 +4,6 @@ import {
     Box as CubeIcon,
     KeyRound,
     LayoutGrid,
-    Lock,
     MessageCircle,
     Paintbrush,
     Sparkles,
@@ -50,10 +49,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.Plugins]: {
         inactive: Workflow,
         active: Workflow
-    },
-    [DashboardNavigationIconKey.SecretKeys]: {
-        inactive: Lock,
-        active: Lock
     },
     [DashboardNavigationIconKey.Whiteboards]: {
         inactive: Paintbrush,

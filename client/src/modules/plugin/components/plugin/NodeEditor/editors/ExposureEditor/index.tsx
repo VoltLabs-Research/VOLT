@@ -1,7 +1,5 @@
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import IconPicker from '@/shared/ui/components/IconPicker';
-import { Controller } from 'react-hook-form';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 import { EXPOSURE_EDITOR_DEFAULT_VALUES } from './schema';
@@ -21,21 +19,6 @@ const ExposureEditor = ({ node }: EditorProps) => {
                     control={form.control}
                     placeholder='analysis_results'
                 />
-                <div className='form-field-inline'>
-                    <label className='form-field-inline-label'>Icon</label>
-                    <div className='render-input-container'>
-                        <Controller
-                            name='icon'
-                            control={form.control}
-                            render={({ field }) => (
-                                <IconPicker
-                                    value={field.value ?? ''}
-                                    onChange={field.onChange}
-                                />
-                            )}
-                        />
-                    </div>
-                </div>
             </FormSection>
 
             <FormSection title='Data'>

@@ -181,8 +181,6 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_DAEMON_REQUEST_FAILED: 'TeamCluster::DaemonRequestFailed',
     TEAM_CLUSTER_OBJECT_STORE_PROXY_METHOD_NOT_ALLOWED: 'TeamCluster::ObjectStoreProxyMethodNotAllowed',
     TEAM_CLUSTER_STORAGE_CAPABILITY_REQUIRED: 'TeamCluster::StorageCapabilityRequired',
-    LINE_ENTITY_ID_INVALID: 'Trajectory::LineEntity::IdInvalid',
-    LINE_ENTITY_NOT_FOUND: 'Trajectory::LineEntity::NotFound',
 
     // Codes that used to be written as bare string literals at the throw site.
     // Registering them here is what lets ApplicationError require an ErrorCode.

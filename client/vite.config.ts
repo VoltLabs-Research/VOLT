@@ -111,7 +111,25 @@ export default defineConfig(({ mode }) => {
                     replacement: path.resolve(__dirname, './src')
                 }
             ],
-            dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom']
+            /*
+             * Everything the aliased bravais dist imports must resolve from the
+             * client's node_modules: inside the Docker build the sibling checkout
+             * arrives as a bare dist with no node_modules of its own, so without
+             * dedupe Rollup fails on `lucide-react` the moment it enters
+             * /bravais/dist/index.js. Locally this also stops the bundle from
+             * carrying two copies of each peer.
+             */
+            dedupe: [
+                'react',
+                'react-dom',
+                'react-router',
+                'react-router-dom',
+                'lucide-react',
+                'framer-motion',
+                '@floating-ui/react',
+                'react-hotkeys-hook',
+                'recharts'
+            ]
         },
         optimizeDeps: {
             include: ['zod']

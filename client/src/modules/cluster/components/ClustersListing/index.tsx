@@ -9,7 +9,7 @@ import { Button, Heading, Box, openModal, Row, Stack, StatusBadge, Text } from '
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
-import { useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS, teamClusterListQueryKeys } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import {
@@ -201,7 +201,7 @@ const ClustersListing = () => {
         return [
             {
                 event: SOCKET_TEAM_CLUSTER_EVENTS.LIFECYCLE_UPDATED,
-                queryKeys: [TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId)]
+                queryKeys: teamClusterListQueryKeys(vm.selectedTeamId)
             }
         ];
     }, [vm.selectedTeamId]);
@@ -282,7 +282,7 @@ const ClustersListing = () => {
             />
             <DocumentListing<ServerRow>
                 title='Clusters'
-                queryKey={TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId ?? '')}
+                queryKey={TEAM_CLUSTER_QUERY_KEYS.listingByTeam(vm.selectedTeamId ?? '')}
                 columns={CLUSTER_COLUMNS}
                 fetchData={vm.fetchClusters}
                 getMenuOptions={getMenuOptions}

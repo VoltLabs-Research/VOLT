@@ -4,9 +4,6 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import type {
     AtomPageResult,
     FrameMetadata,
-    LineExportBaseOptions,
-    LineStyleParams,
-    TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
 } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
@@ -63,14 +60,6 @@ interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest 
     objectKey: string;
     action: 'delete' | 'highlight';
     mask: Uint8Array;
-}
-
-interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
-    objectKey: string;
-    analysisId: string;
-    exposureId: string;
-    baseOptions?: LineExportBaseOptions;
-    style?: LineStyleParams;
 }
 
 interface TrajectoryNativeFilterPreviewResponse {
@@ -183,17 +172,6 @@ class TrajectoryNativeDaemonService {
             objectKey: input.objectKey,
             action: input.action,
             mask: input.mask
-        });
-    }
-
-    async exportLineModel(input: TrajectoryNativeLineModelRequest): Promise<TrajectoryNativeLineModelResponse> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeLineModel, {
-            ...this.toBaseBody(input),
-            objectKey: input.objectKey,
-            analysisId: input.analysisId,
-            exposureId: input.exposureId,
-            ...(input.baseOptions ? { baseOptions: input.baseOptions } : {}),
-            ...(input.style ? { style: input.style } : {})
         });
     }
 

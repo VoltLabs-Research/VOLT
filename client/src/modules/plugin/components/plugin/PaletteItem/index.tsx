@@ -2,7 +2,6 @@ import type { DragEvent } from 'react';
 import type { NodeType } from '@volt/contracts/modules/plugin/enums';
 import type { NodeTypeConfig } from '@/modules/plugin/utils/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 import { Row, Stack, Text } from '@voltstack/bravais';
 interface PaletteItemProps {
     config: NodeTypeConfig;
@@ -26,9 +25,6 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
             opacity: 0.4,
             pointerEvents: 'none'
         } : undefined}>
-            <div>
-                <DynamicIcon iconName={config.icon} />
-            </div>
             <Stack gap='05'>
                 <h3>{config.label}</h3>
                 <Text as='p' tone='muted'>{config.description}</Text>

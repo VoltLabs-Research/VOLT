@@ -65,7 +65,3 @@ export interface ApplyParticleFilterActionInput{
     conditions: ParticleFilterConditionInput[];
 }
 
-export interface CreateLineStyledModelInput{
-    timestep: string;
-    style?: Record<string, unknown>;
-}

@@ -83,14 +83,12 @@ const ObjectsPanel = ({
     const {
         isLoading: sceneArtifactsLoading,
         colorCodingArtifacts,
-        particleFilterArtifacts,
-        lineStyleArtifacts
+        particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
 
     const artifactSections = useArtifactSections({
         'color-coding': colorCodingArtifacts,
-        'particle-filter': particleFilterArtifacts,
-        'line-style': lineStyleArtifacts
+        'particle-filter': particleFilterArtifacts
     });
 
     const {

@@ -7,6 +7,7 @@ import {
 } from '../CanvasTree';
 import { Box, Button, Tooltip } from '@voltstack/bravais';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
+import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
 import { hasPluginWorkflowNodes } from './config-columns';
 import { toInlineConfigSummary } from './config-values';
@@ -215,7 +216,7 @@ const AnalysisTreeNode = ({
                         analysis={analysis}
                         artifact={artifact}
                         exposure={exposure}
-                        pluginId={analysis.plugin}
+                        pluginId={resolveAnalysisPluginId(analysis)}
                         isRecentlyReady={isRecentlyReady}
                         isRasterSelectionMode={isRasterSelectionMode}
                         tourTargetId={key === firstExposureRowKey ? firstExposureTourTargetId : undefined}

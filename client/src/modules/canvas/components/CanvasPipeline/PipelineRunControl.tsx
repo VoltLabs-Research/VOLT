@@ -64,7 +64,7 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
 
     return {
         kind,
-        config: stage.config as Record<string, unknown>
+        config: stage.config as unknown as Record<string, unknown>
     };
 };
 

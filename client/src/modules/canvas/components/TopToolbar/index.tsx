@@ -159,10 +159,7 @@ const TopToolbar = ({
                 ))}
             </Row>
 
-            <WorkspaceTabs
-                disableAuxWorkspaces={localGlbMode}
-                showScriptingWorkspace={canMutateCanvas}
-            />
+            <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
         </div>
     );
 

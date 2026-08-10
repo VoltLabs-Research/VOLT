@@ -2,7 +2,7 @@ import {
     ParticleFilterSceneCombinator
 } from '@/modules/fractal/contracts/scene';
 
-import type { LineStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/contracts/scene';
+import type { SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/contracts/scene';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 
 interface MaybeParticleFilterCondition {
@@ -94,10 +94,6 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
             && normalizeParticleFilterSignature(left) === normalizeParticleFilterSignature(right);
     }
 
-    if (left.source === 'line-style' || right.source === 'line-style') {
-        return JSON.stringify(left.style ?? {}) === JSON.stringify(right.style ?? {});
-    }
-
     return true;
 };
 
@@ -107,8 +103,7 @@ export const isTimestepScopedScene = (scene?: MaybeScene | null): boolean => {
     }
 
     return scene.source === 'color-coding'
-        || scene.source === 'particle-filter'
-        || scene.source === 'line-style';
+        || scene.source === 'particle-filter';
 };
 
 export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectType | null => {
@@ -180,20 +175,6 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
             operator: firstPropertyCondition?.operator,
             value: firstPropertyCondition?.value,
             action: artifact.params.action
-        };
-    }
-
-    if (artifact.sourceType === 'line-style') {
-        if (!analysisId || !artifact.params.exposureId) {
-            return null;
-        }
-
-        return {
-            sceneType: 'line-style',
-            source: 'line-style',
-            analysisId,
-            exposureId: artifact.params.exposureId,
-            style: (artifact.params.style ?? {}) as LineStyleSpec
         };
     }
 

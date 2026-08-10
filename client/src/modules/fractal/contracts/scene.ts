@@ -79,32 +79,4 @@ export type ParticleFilterScene = {
     action?: string;
 };
 
-export interface LineStyleFilter {
-    property: string;
-    operator: 'gte' | 'lte' | 'eq' | 'neq';
-    value: number | string;
-}
-
-export interface LineStyleSpec {
-    lineWidth?: number;
-    tubularSegments?: number;
-    colorMode?: 'category' | 'uniform' | 'gradient';
-    colorProperty?: string;
-    categoryColors?: Record<string, [number, number, number, number]>;
-    categoryVisibility?: Record<string, boolean>;
-    uniformColor?: [number, number, number, number];
-    gradient?: string;
-    startValue?: number;
-    endValue?: number;
-    filters?: LineStyleFilter[];
-}
-
-export type LineStyleScene = {
-    sceneType: 'line-style';
-    source: 'line-style';
-    analysisId: string;
-    exposureId: string;
-    style: LineStyleSpec;
-};
-
-export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene | LineStyleScene;
+export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene;

@@ -17,11 +17,11 @@ import {
     applyPointCloudVisibilityMask
 } from '@/modules/fractal/utils/point-cloud-vertex-overrides';
 import { applyMeshColorOverride, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
-import { applyLineEntityHighlight, applyLineWidth } from '@/modules/fractal/utils/line-geometry-styling';
+import { applyLineWidth } from '@/modules/fractal/utils/line-geometry-styling';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
-import type { LineEntityHighlight, LineEntityRange, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
 import type { FractalSurface } from '@/modules/fractal/contracts/engine';
 
 interface TraversalCache {
@@ -42,7 +42,6 @@ export type FractalParams = {
     sceneKey?: string;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
-    lineHighlight?: LineEntityHighlight;
 };
 
 export type EngineCallbacks = {
@@ -127,14 +126,10 @@ export class FractalEngine {
     private lastColorValue: string | undefined = undefined;
     private lastBaseLineWidth: number | undefined = undefined;
     private lastLineWidth: number | undefined = undefined;
-    private lastLineHighlightEntityId: number | null | undefined = undefined;
-    private lastLineHighlightRanges: LineEntityRange[] | null | undefined = undefined;
 
     private lineUpdateRafHandle: number | null = null;
     private pendingLineWidthSettings: LineSceneSettings | undefined = undefined;
     private hasPendingLineWidth = false;
-    private pendingLineHighlight: LineEntityHighlight | undefined = undefined;
-    private hasPendingLineHighlight = false;
 
     constructor(
         private surface: FractalSurface,
@@ -256,13 +251,10 @@ export class FractalEngine {
             this.lastColorValue = undefined;
             this.lastBaseLineWidth = undefined;
             this.lastLineWidth = undefined;
-            this.lastLineHighlightEntityId = undefined;
-            this.lastLineHighlightRanges = undefined;
             this.mortonPermutation = null;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
             this.syncLineWidth(this.params.lineSettings);
-            this.syncLineHighlight(this.params.lineHighlight);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -373,11 +365,6 @@ export class FractalEngine {
         this.scheduleLineUpdate();
     }
 
-    updateLineHighlight(highlight?: LineEntityHighlight) {
-        this.pendingLineHighlight = highlight;
-        this.hasPendingLineHighlight = true;
-        this.scheduleLineUpdate();
-    }
 
     updateCameraPosition(cameraPosition: THREE.Vector3) {
         if (this.traversalCache.pointClouds.length === 0) return;
@@ -414,19 +401,6 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    private syncLineHighlight(highlight?: LineEntityHighlight) {
-        if (this.traversalCache.meshes.length === 0) return;
-        const entityId = highlight?.entityId ?? null;
-        const entityRanges = highlight?.entityRanges ?? null;
-        if (entityId === this.lastLineHighlightEntityId && entityRanges === this.lastLineHighlightRanges) {
-            return;
-        }
-        this.lastLineHighlightEntityId = entityId;
-        this.lastLineHighlightRanges = entityRanges;
-
-        applyLineEntityHighlight(this.traversalCache.meshes, highlight);
-        this.surface.invalidate();
-    }
 
     private scheduleLineUpdate() {
         if (this.lineUpdateRafHandle !== null) return;
@@ -435,10 +409,6 @@ export class FractalEngine {
             if (this.hasPendingLineWidth) {
                 this.hasPendingLineWidth = false;
                 this.syncLineWidth(this.pendingLineWidthSettings);
-            }
-            if (this.hasPendingLineHighlight) {
-                this.hasPendingLineHighlight = false;
-                this.syncLineHighlight(this.pendingLineHighlight);
             }
         });
     }

@@ -107,8 +107,7 @@ export const resolvePluginDisplayName = (workflow: Workflow): string => {
     return modifierNode?.data?.modifier?.name?.trim() ?? '';
 };
 /**
- * Deliberately NOT shared with the same-looking `stableStringify` in
- * `LineStyleService`. This one feeds `computePipelineStageHash` /
+ * This `stableStringify` feeds `computePipelineStageHash` /
  * `computeDumpStageHash`, persisted as the indexed `Analysis.pipelineStageHash`
  * and looked up to reuse a completed stage, so it is a cache key over stored
  * rows. The two copies already disagree: this one uses the default `.sort()`

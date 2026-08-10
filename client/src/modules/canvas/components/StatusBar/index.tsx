@@ -1,14 +1,6 @@
-import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
-import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
-import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
-import { normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
-import { formatAnalysisActivityLabels } from '../../utils/analysis-activity-labels';
 import { formatSize } from '@voltstack/bravais';
 import { Divider, Row, Text } from '@voltstack/bravais';
-import { useMemo } from 'react';
-import type { Analysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { ReactNode } from 'react';
 
 import './StatusBar.css';
@@ -24,13 +16,6 @@ interface StatusItem {
 interface StatusBarProps {
     trajectory: Trajectory | null | undefined;
     currentTimestep: number | undefined;
-    analysisId?: string;
-}
-
-interface AnalysisStatusValue {
-    label: string;
-    tone?: 'running' | 'queued' | 'ready' | 'failed';
-    title?: string;
 }
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
@@ -46,204 +31,11 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     </Row>
 );
 
-const getLatestRunningStage = (
-    analysis: Analysis | undefined,
-    resolvedStatus: CanvasAnalysisStatus | undefined
-): AnalysisStage | undefined => {
-    const analysisStatus = resolvedStatus ?? normalizeCanvasAnalysisStatus(analysis?.status);
-    return [...(analysis?.stages ?? [])].reverse().find((stage) => {
-        if (stage.status !== 'running') {
-            return false;
-        }
-
-        return analysisStatus !== 'completed' || stage.type === 'artifact-upload';
-    });
-};
-
-const resolveSelectedAnalysisStatusValue = (
-    analysis: Analysis | undefined,
-    resolvedStatus: CanvasAnalysisStatus | undefined
-): AnalysisStatusValue | null => {
-    if (!analysis) {
-        return null;
-    }
-
-    const runningStage = getLatestRunningStage(analysis, resolvedStatus);
-    if (runningStage) {
-        return {
-            label: runningStage.label,
-            tone: 'running',
-            title: `${analysis.pluginDisplayName}: ${runningStage.label}`
-        };
-    }
-
-    if (analysis.artifactStatus === 'generating') {
-        return {
-            label: 'Generating artifacts',
-            tone: 'running',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (analysis.artifactStatus === 'uploading') {
-        return {
-            label: 'Uploading artifacts',
-            tone: 'running',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (analysis.artifactStatus === 'ready') {
-        return {
-            label: 'Artifacts ready',
-            tone: 'ready',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (analysis.artifactStatus === 'failed') {
-        return {
-            label: 'Artifacts failed',
-            tone: 'failed',
-            title: analysis.pluginDisplayName
-        };
-    }
-
-    const status = resolvedStatus ?? normalizeCanvasAnalysisStatus(analysis.status);
-    if (status === 'running') {
-        return {
-            label: 'Running',
-            tone: 'running',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (status === 'pending') {
-        return {
-            label: 'Queued',
-            tone: 'queued',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (status === 'completed') {
-        return {
-            label: 'Completed',
-            tone: 'ready',
-            title: analysis.pluginDisplayName
-        };
-    }
-    if (status === 'failed') {
-        return {
-            label: 'Failed',
-            tone: 'failed',
-            title: analysis.pluginDisplayName
-        };
-    }
-
-    return null;
-};
-
-const renderAnalysisStatusValue = (value: AnalysisStatusValue) => (
-    <span
-        className={`canvas-status-activity ${value.tone ? `canvas-status-activity--${value.tone}` : ''}`.trim()}
-        title={value.title}
-    >
-        {value.label}
-    </span>
-);
-
-const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) => {
-    const trajectoryId = trajectory?._id;
-    const { activitySummary: rawActivitySummary, getAnalysisStatus } = useCanvasAnalysisStatus({
-        trajectoryId,
-        enabled: !!trajectoryId,
-        fallbackAnalyses: trajectory?.analysis
-    });
-    const activitySummary = useMemo(() => {
-        return formatAnalysisActivityLabels(rawActivitySummary);
-    }, [rawActivitySummary]);
-    const analysesQuery = useAnalysesByTrajectoryQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            page: 1,
-            limit: 100
-        },
-        { enabled: !!trajectoryId && !!analysisId }
-    );
-    const selectedAnalysis = useMemo(() => {
-        if (!analysisId) {
-            return undefined;
-        }
-
-        return findCachedAnalysisById({
-            analysisId,
-            trajectoryId,
-            fallbackAnalyses: [
-                ...((analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? []),
-                ...(trajectory?.analysis ?? [])
-            ]
-        });
-    }, [analysisId, analysesQuery.data, trajectory?.analysis, trajectoryId]);
-    /*
-     * The merged status, not `selectedAnalysis.status`: the row lags the jobs, so
-     * reading it directly showed "Queued" while the timeline had already gone live.
-     */
-    const selectedAnalysisStatus = analysisId ? getAnalysisStatus(analysisId) : undefined;
-    const selectedAnalysisStatusValue = resolveSelectedAnalysisStatusValue(
-        selectedAnalysis,
-        selectedAnalysisStatus
-    );
-
+const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     let teamName = '-';
     if (trajectory && typeof trajectory.team === 'object' && trajectory.team) {
         teamName = trajectory.team.name;
     }
-
-    const activityItem: StatusItem = selectedAnalysisStatusValue
-        ? {
-            key: 'analysis-activity',
-            label: 'Analysis',
-            title: selectedAnalysisStatusValue.title,
-            value: renderAnalysisStatusValue(selectedAnalysisStatusValue)
-        }
-        : activitySummary.runningCount > 0
-        ? {
-            key: 'analysis-activity',
-            label: 'Analysis',
-            title: [
-                activitySummary.runningTitle ? `Running: ${activitySummary.runningTitle}` : '',
-                activitySummary.queuedTitle ? `Queued: ${activitySummary.queuedTitle}` : ''
-            ].filter(Boolean).join(' • '),
-            value: (
-                <>
-                    <Text as='span' tone='muted'>Running: </Text>
-                    <span className="canvas-status-activity canvas-status-activity--running">
-                        {activitySummary.runningLabel}
-                    </span>
-                    {activitySummary.queuedCount > 0 && (
-                        <span className="canvas-status-activity-queued">
-                            {' '}(
-                            <Text as='span' tone='muted'>Queued: </Text>
-                            <span className="canvas-status-activity canvas-status-activity--queued">{activitySummary.queuedLabel}</span>
-                            )
-                        </span>
-                    )}
-                </>
-            )
-        }
-        : activitySummary.queuedCount > 0
-            ? {
-                key: 'analysis-activity',
-                label: 'Analysis',
-                title: activitySummary.queuedTitle,
-                value: (
-                    <>
-                        <Text as='span' tone='muted'>Queued: </Text>
-                        <span className="canvas-status-activity canvas-status-activity--queued">{activitySummary.queuedLabel}</span>
-                    </>
-                )
-            }
-            : {
-                key: 'analysis-activity',
-                label: 'Analysis',
-                value: <Text as='span' tone='secondary'>Idle</Text>
-            };
 
     const atoms = trajectory?.frames?.[0]?.natoms ?? 0;
     const frames = trajectory?.frames?.length ?? 0;
@@ -264,8 +56,7 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
             key: 'size',
             label: 'Size',
             value: size
-        },
-        activityItem
+        }
     ];
 
     const right: StatusItem[] = [

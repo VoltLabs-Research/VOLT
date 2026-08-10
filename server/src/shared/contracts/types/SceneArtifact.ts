@@ -14,8 +14,7 @@ import type {
 export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',
-    PluginExposure = 'plugin-exposure',
-    LineStyle = 'line-style'
+    PluginExposure = 'plugin-exposure'
 }
 
 assertWireMatch<Equal<`${SceneArtifactSourceType}`, WireSceneArtifactSourceType>>();

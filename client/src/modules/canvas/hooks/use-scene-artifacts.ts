@@ -42,16 +42,6 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         { enabled: !!trajectoryId }
     );
 
-    const lineStyleQuery = sceneArtifactsQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            sourceType: 'line-style',
-            page: 1,
-            limit: 200
-        },
-        { enabled: !!trajectoryId }
-    );
-
     const colorCodingArtifacts = useMemo(() => {
         if (!colorCodingQuery.data) return [];
         return colorCodingQuery.data.data.filter(isSceneArtifact);
@@ -64,37 +54,31 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             .filter(isSupportedParticleFilterArtifact);
     }, [particleFilterQuery.data]);
 
-    const lineStyleArtifacts = useMemo(() => {
-        if (!lineStyleQuery.data) return [];
-        return lineStyleQuery.data.data.filter(isSceneArtifact);
-    }, [lineStyleQuery.data]);
-
-    const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading || lineStyleQuery.isLoading;
+    const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading;
 
     const error = useMemo(() => {
-        const queryError = colorCodingQuery.error || particleFilterQuery.error || lineStyleQuery.error;
+        const queryError = colorCodingQuery.error || particleFilterQuery.error;
         if (!queryError) return null;
         return reportError(queryError, {
             surface: ErrorSurface.Silent,
             fallbackTitle: 'Failed to load scene artifacts'
         }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
+    }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDenied = useMemo(() => {
         return isAccessDeniedError(colorCodingQuery.error)
-            || isAccessDeniedError(particleFilterQuery.error)
-            || isAccessDeniedError(lineStyleQuery.error);
-    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
+            || isAccessDeniedError(particleFilterQuery.error);
+    }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     const accessDeniedMessage = useMemo(() => {
-        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]
+        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error]
             .find((queryError) => isAccessDeniedError(queryError));
         if (!firstAccessDeniedError) {
             return undefined;
         }
 
         return reportError(firstAccessDeniedError, { surface: ErrorSurface.Silent }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
+    }, [colorCodingQuery.error, particleFilterQuery.error]);
 
     useEffect(() => {
         const onArtifactsChanged = (event: Event) => {
@@ -110,8 +94,8 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     }, [trajectoryId]);
 
     const totalArtifacts = useMemo(
-        () => colorCodingArtifacts.length + particleFilterArtifacts.length + lineStyleArtifacts.length,
-        [colorCodingArtifacts.length, particleFilterArtifacts.length, lineStyleArtifacts.length]
+        () => colorCodingArtifacts.length + particleFilterArtifacts.length,
+        [colorCodingArtifacts.length, particleFilterArtifacts.length]
     );
 
     const reload = () => {
@@ -126,7 +110,6 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         totalArtifacts,
         colorCodingArtifacts,
         particleFilterArtifacts,
-        lineStyleArtifacts,
         reload
     };
 };

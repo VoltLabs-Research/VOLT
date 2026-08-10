@@ -47,11 +47,6 @@ export interface JobStatusCounts {
     failed: number;
 }
 
-export interface AnalysisActivitySummary {
-    runningAnalyses: Analysis[];
-    queuedAnalyses: Analysis[];
-}
-
 export interface FrameStatusIndex {
     /** Status of each frame taken as a whole, across every analysis on it. */
     aggregateByTimestep: Map<number, FrameJobGroupStatus>;
@@ -270,30 +265,3 @@ export const buildJobStatusCounts = (
     return counts;
 };
 
-/**
- * Splits analyses into the ones running and the ones waiting.
- *
- * Reads the merged status map rather than re-deriving from jobs. The version this
- * replaces used `jobsDerived ?? persisted`, the opposite precedence to
- * `mergeAnalysisStatus`, and skipped the artifact-upload filter — so the status bar
- * could call an analysis queued at the same moment the tree called it running.
- */
-export const buildActivitySummary = (
-    analyses: readonly Analysis[],
-    statusMap: Map<string, CanvasAnalysisStatusEntry>
-): AnalysisActivitySummary => {
-    const runningAnalyses: Analysis[] = [];
-    const queuedAnalyses: Analysis[] = [];
-
-    for (const analysis of analyses) {
-        const status = statusMap.get(analysis._id)?.status;
-
-        if (status === AnalysisStatus.Running) runningAnalyses.push(analysis);
-        else if (status === AnalysisStatus.Pending) queuedAnalyses.push(analysis);
-    }
-
-    return {
-        runningAnalyses,
-        queuedAnalyses
-    };
-};

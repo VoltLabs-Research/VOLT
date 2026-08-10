@@ -1,4 +1,4 @@
-import { Box, CloseButton, Heading, Row } from '@voltstack/bravais';
+import { CloseButton, Heading, Row } from '@voltstack/bravais';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -7,7 +7,6 @@ import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import NodeEditor from '@/modules/plugin/components/plugin/NodeEditor';
-import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 const PANEL_WIDTH = 400;
 const PANEL_MARGIN = 16;
 const PANEL_MIN_HEIGHT = 220;
@@ -121,9 +120,6 @@ const FloatingNodePanel = () => {
                     onClick={(event) => event.stopPropagation()}
                 >
                     <Row gap='075' p='1' className='floating-node-panel-header'>
-                        <Box display='flex' radius='sm' className='items-center justify-center floating-node-panel-icon text-secondary'>
-                            <DynamicIcon iconName={config.icon} />
-                        </Box>
                         <Heading level={3} size='lg' weight='bold' className='flex-1'>
                             {config.label}
                         </Heading>

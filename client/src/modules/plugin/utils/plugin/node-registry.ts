@@ -25,7 +25,6 @@ interface NodeOption<TValue> {
 export interface NodeTypeConfig {
     type: NodeType;
     label: string;
-    icon: string;
     description: string;
     inputs: number;
     outputs: number;
@@ -99,7 +98,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.MODIFIER]: {
         type: NodeType.MODIFIER,
         label: 'Modifier',
-        icon: 'TbPlugConnected',
         description: 'Plugin metadata and configuration',
         inputs: 0,
         outputs: 1,
@@ -122,7 +120,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.ARGUMENTS]: {
         type: NodeType.ARGUMENTS,
         label: 'Arguments',
-        icon: 'TbBrackets',
         description: 'CLI arguments definition',
         inputs: 1,
         outputs: 1,
@@ -139,7 +136,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.CONTEXT]: {
         type: NodeType.CONTEXT,
         label: 'Context',
-        icon: 'TbDatabase',
         description: 'Data source selection',
         inputs: 1,
         outputs: 1,
@@ -156,7 +152,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.FOREACH]: {
         type: NodeType.FOREACH,
         label: 'ForEach',
-        icon: 'TbRepeat',
         description: 'Iterate over data source',
         inputs: 1,
         outputs: 1,
@@ -173,7 +168,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.ENTRYPOINT]: {
         type: NodeType.ENTRYPOINT,
         label: 'Entrypoint',
-        icon: 'TbPlayerPlay',
         description: 'Binary execution',
         inputs: 1,
         outputs: -1,
@@ -193,7 +187,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.PLUGIN]: {
         type: NodeType.PLUGIN,
         label: 'Plugin Node',
-        icon: 'TbPlugConnectedX',
         description: 'Execute a published plugin inline',
         inputs: 1,
         outputs: -1,
@@ -217,7 +210,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.EXPOSURE]: {
         type: NodeType.EXPOSURE,
         label: 'Exposure',
-        icon: 'TbEye',
         description: 'Results exposure',
         inputs: 1,
         outputs: 1,
@@ -235,7 +227,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.EXPORT]: {
         type: NodeType.EXPORT,
         label: 'Export',
-        icon: 'TbFileExport',
         description: 'Export to GLB/other formats',
         inputs: 1,
         outputs: 0,
@@ -254,7 +245,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.IF_STATEMENT]: {
         type: NodeType.IF_STATEMENT,
         label: 'If Statement',
-        icon: 'TbGitBranch',
         description: 'Conditional branching',
         inputs: 1,
         outputs: 2,
@@ -271,7 +261,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.SWITCH_STATEMENT]: {
         type: NodeType.SWITCH_STATEMENT,
         label: 'Switch Statement',
-        icon: 'TbRouteSquare',
         description: 'Branch by resolved expression',
         inputs: 1,
         outputs: -1,
@@ -288,7 +277,6 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.SWITCH_CASE]: {
         type: NodeType.SWITCH_CASE,
         label: 'Switch Case',
-        icon: 'TbPoint',
         description: 'Case branch for a switch statement',
         inputs: 1,
         outputs: -1,

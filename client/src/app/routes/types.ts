@@ -16,7 +16,6 @@ export enum DashboardNavigationIconKey {
     MyTeam = 'my-team',
     Notebooks = 'notebooks',
     Plugins = 'plugins',
-    SecretKeys = 'secret-keys',
     ManageRoles = 'manage-roles',
     Whiteboards = 'whiteboards'
 };

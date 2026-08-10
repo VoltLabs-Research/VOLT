@@ -7,6 +7,7 @@ import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-fram
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { AnalysisStatus } from '@/modules/fractal/contracts';
+import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import { Button, StatusBadge } from '@voltstack/bravais';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
@@ -44,7 +45,7 @@ const resolveAnalysisListingPath = (analysis: Analysis, plugin: Plugin | undefin
     }
 
     const trajectoryId = analysis.trajectory?._id;
-    const pluginId = analysis.plugin;
+    const pluginId = resolveAnalysisPluginId(analysis);
     if (!trajectoryId || !pluginId) {
         return undefined;
     }
@@ -117,7 +118,7 @@ const AnalysesListing = () => {
             sortable: false,
             width: 140,
             render: (_value, analysis) => {
-                const listingPath = resolveAnalysisListingPath(analysis, pluginsById[analysis.plugin]);
+                const listingPath = resolveAnalysisListingPath(analysis, pluginsById[resolveAnalysisPluginId(analysis)]);
                 if (!listingPath) {
                     return '-';
                 }

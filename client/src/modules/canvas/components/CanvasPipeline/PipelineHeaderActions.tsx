@@ -4,7 +4,6 @@ import {
     isOrderedPipelineStage,
     DEFAULT_SLICE_PLANE_STAGE_CONFIG,
     DEFAULT_COLOR_CODING_STAGE_CONFIG,
-    DEFAULT_LINE_STYLE_STAGE_CONFIG,
     DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG
 } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -12,7 +11,7 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import PipelineRunControl from './PipelineRunControl';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
-import { Filter, FlaskConical, Palette, Play, Plus, Scissors, Spline } from 'lucide-react';
+import { Filter, FlaskConical, Palette, Play, Plus, Scissors } from 'lucide-react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -109,12 +108,6 @@ const PipelineHeaderActions = ({
                             label='Color Coding'
                             size='sm'
                             onClick={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); close(); }}
-                        />
-                        <PopoverMenuItem
-                            icon={<Spline size={13} aria-hidden='true' />}
-                            label='Line Style'
-                            size='sm'
-                            onClick={() => { handleAdd('line-style', { ...DEFAULT_LINE_STYLE_STAGE_CONFIG }); close(); }}
                         />
                         {modifiers.length > 0 && (
                             <SectionLabel className='canvas-pipeline__menu-group'>Plugins</SectionLabel>

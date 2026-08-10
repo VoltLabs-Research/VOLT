@@ -14,18 +14,6 @@ export interface LineSceneSettings {
     lineWidth: number;
 }
 
-export interface LineEntityRange {
-    id: number;
-    triangleStart: number;
-    triangleCount: number;
-}
-
-export interface LineEntityHighlight {
-    sceneKey: string;
-    entityId: number;
-    entityRanges: LineEntityRange[];
-}
-
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState;
     rendererRuntime: RendererRuntimeState;

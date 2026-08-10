@@ -75,7 +75,6 @@ const CanvasPage = () => {
 
     const {
         canCollaborate,
-        hasResolvedAccess,
         canMutateCanvas,
         isReadOnlyCanvas
     } = useCanvasAccessPublication({
@@ -149,7 +148,6 @@ const CanvasPage = () => {
     } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const isRasterWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Raster;
-    const isScriptingWorkspace = !isLocalGlbViewer && canMutateCanvas && activeWorkspace === CanvasWorkspace.Scripting;
 
     const localGlbViewer = useLocalGlbViewer(isLocalGlbViewer);
     const raster = useRasterContainerSelections();
@@ -168,31 +166,28 @@ const CanvasPage = () => {
         analysisId
     });
 
-    const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
     const [analysisDiscoveryTourActive, setAnalysisDiscoveryTourActive] = useState(false);
 
     useCanvasScrollLock(isNarrowViewport && !isLocalGlbViewer);
 
     useEffect(() => {
-        if (!isNarrowViewport || isScriptingWorkspace) {
+        if (!isNarrowViewport) {
             setRightDrawerOpen(false);
         }
-    }, [isNarrowViewport, isScriptingWorkspace]);
+    }, [isNarrowViewport]);
 
     useEffect(() => {
         if (activeWorkspace === CanvasWorkspace.Scene) {
             return;
         }
 
-        const isWorkspaceUnavailable = isLocalGlbViewer
-            || (activeWorkspace === CanvasWorkspace.Scripting && hasResolvedAccess && !canMutateCanvas);
-        if (!isWorkspaceUnavailable) {
+        if (!isLocalGlbViewer) {
             return;
         }
 
         setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
-    }, [activeWorkspace, canMutateCanvas, hasResolvedAccess, isLocalGlbViewer, setActiveWorkspace]);
+    }, [activeWorkspace, isLocalGlbViewer, setActiveWorkspace]);
 
     useEffect(() => {
         const editorState = useEditorStore.getState();
@@ -204,12 +199,11 @@ const CanvasPage = () => {
     const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
     const showNoFramesState = Boolean(
         !isLocalGlbViewer
-        && !isScriptingWorkspace
         && !isRasterWorkspace
         && trajectory
         && !hasFrames
     );
-    const isSceneSubstituted = isScriptingWorkspace || isRasterWorkspace || showNoFramesState;
+    const isSceneSubstituted = isRasterWorkspace || showNoFramesState;
     const showsTrajectoryScene = !isLocalGlbViewer && !isSceneSubstituted;
     const isTrajectoryLoading = trajectoryLoading
         || !trajectory
@@ -255,25 +249,22 @@ const CanvasPage = () => {
         <CanvasToolbarActions
             canDownloadAnalysis={canDownloadAnalysisListing}
             isDownloadingAnalysis={isDownloading}
-            jupyterUrl={isScriptingWorkspace ? scriptingJupyterUrl : null}
             onDownloadAnalysis={openAnalysisDownloadModal}
         />
-    ), [canDownloadAnalysisListing, isDownloading, isScriptingWorkspace, openAnalysisDownloadModal, scriptingJupyterUrl]);
+    ), [canDownloadAnalysisListing, isDownloading, openAnalysisDownloadModal]);
 
     const viewportBodyContent = useViewportBodyContent({
         trajectory,
         trajectoryId,
         currentTimestep,
         isRasterWorkspace,
-        isScriptingWorkspace,
         isLocalGlbViewer,
         isLocalManifestLoading: localGlbViewer.isManifestLoading,
         localManifestError: localGlbViewer.manifestError,
         forcedGlbUrl: localGlbViewer.forcedGlbUrl,
         showNoFramesState,
         rasterContainerSelections: raster.selections,
-        onUpdateRasterContainerSelection: raster.updateSelection,
-        onJupyterUrlChange: setScriptingJupyterUrl
+        onUpdateRasterContainerSelection: raster.updateSelection
     });
 
     const analysisOverlay = useMemo(() => (
@@ -297,7 +288,7 @@ const CanvasPage = () => {
         );
     }
 
-    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport && !isScriptingWorkspace ? rightPanel.size : 0;
+    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
 
     return (
         <Box
@@ -377,7 +368,7 @@ const CanvasPage = () => {
                         />
                     </Box>
 
-                    {!isLocalGlbViewer && !isScriptingWorkspace && (
+                    {!isLocalGlbViewer && (
                         <CanvasTimelineDock
                             panel={timelinePanel}
                             isNarrowViewport={isNarrowViewport}
@@ -405,12 +396,11 @@ const CanvasPage = () => {
                     <StatusBar
                         trajectory={trajectory}
                         currentTimestep={currentTimestep}
-                        analysisId={analysisId}
                     />
                 )}
             </Stack>
 
-            {!isLocalGlbViewer && !isScriptingWorkspace && (
+            {!isLocalGlbViewer && (
                 <CanvasRightPanelRegion
                     panel={rightPanel}
                     isNarrowViewport={isNarrowViewport}

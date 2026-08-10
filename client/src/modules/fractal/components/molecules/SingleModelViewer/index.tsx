@@ -7,22 +7,20 @@ import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-ce
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utils/model-world-bounds';
 import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
-import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utils/scene-utils';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access';
-import { useLineEntityPick } from '@/modules/canvas/hooks/use-line-entity-selection';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
 import { useThree } from '@react-three/fiber';
-import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import type { SimulationCellTransforms } from '@/modules/fractal/components/molecules/SimulationCellBox';
 import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
 import type { ModelLoadingState, Pos3D } from '@/modules/fractal/contracts/model';
 import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
-import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 import type { FC, RefObject } from 'react';
 
@@ -52,7 +50,6 @@ interface SingleModelViewerProps {
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
-    lineHighlight?: LineEntityHighlight;
     sceneVisualOverrides: SceneVisualOverrides;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
@@ -81,7 +78,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     pointSizeMultiplier,
     pointCloudSettings,
     lineSettings,
-    lineHighlight,
     sceneVisualOverrides,
     setModelWorldBounds,
     activeModelBounds,
@@ -188,13 +184,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const sceneKey = getSceneKey(sceneConfig);
 
-    const canPickLineEntities = canvasMode !== 'public' && resolveLineSceneSource(sceneConfig) !== null;
-    const pickLineEntity = useLineEntityPick(trajectoryId, currentTimestep);
-    const handleLineEntityClick = useCallback((event: ThreeEvent<MouseEvent>) => {
-        if (event.delta > 4 || typeof event.faceIndex !== 'number') return;
-        void pickLineEntity(sceneConfig, event.faceIndex);
-    }, [pickLineEntity, sceneConfig]);
-
     const {
         mask: expressionVisibilityMask,
         highlightMask: expressionHighlightMask,
@@ -257,8 +246,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         pointSizeMultiplier,
         pointCloudSettings,
         lineSettings,
-        lineHighlight,
-        sceneVisualOverrides,
+            sceneVisualOverrides,
         visibilityMask: expressionVisibilityMask,
         selectionHighlightMask: expressionHighlightMask,
         selectionHighlightColor: expressionHighlightColor,
@@ -351,7 +339,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             <group
                 ref={modelContainerRef}
                 userData={{ isScreenshotCaptureTarget: true }}
-                onClick={canPickLineEntities ? handleLineEntityClick : undefined}
             />
         </SimulationCellBox>
     );

@@ -7,7 +7,6 @@ export type { PipelineStageKind };
 export type StageType =
     | 'slice-plane'
     | 'color-coding'
-    | 'line-style'
     | 'expression-select'
     | 'analysis-plugin';
 
@@ -40,13 +39,6 @@ export interface ExpressionSelectStageConfig {
     color?: string;
 }
 
-export interface LineStyleStageConfig {
-    /* Sin lectores hoy, pero es el unico campo que le da forma a este miembro de la
-       union: sin el, StageConfig deja de rechazar el parcial de otro stage al mezclar
-       un patch. */
-    lastBakedKey?: string;
-}
-
 export interface AnalysisPluginStageConfig {
     pluginId: string;
     argValues: Record<string, unknown>;
@@ -57,7 +49,6 @@ export interface AnalysisPluginStageConfig {
 export type StageConfig =
     | SlicePlaneStageConfig
     | ColorCodingStageConfig
-    | LineStyleStageConfig
     | ExpressionSelectStageConfig
     | AnalysisPluginStageConfig;
 
@@ -75,8 +66,6 @@ export const DEFAULT_SLICE_PLANE_STAGE_CONFIG: SlicePlaneStageConfig = {
 export const DEFAULT_COLOR_CODING_STAGE_CONFIG: ColorCodingStageConfig = {
     gradient: 'Viridis'
 };
-
-export const DEFAULT_LINE_STYLE_STAGE_CONFIG: LineStyleStageConfig = {};
 
 export const DEFAULT_EXPRESSION_SELECT_COLOR = '#fbbf24';
 

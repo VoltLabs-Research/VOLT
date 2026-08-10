@@ -1,6 +1,6 @@
 import { pruneExpandedTimesteps } from './artifact-labels';
 
-import { Filter, Palette, Spline } from 'lucide-react';
+import { Filter, Palette } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { ComponentType, CSSProperties } from 'react';
@@ -43,30 +43,21 @@ const SECTION_DEFINITIONS: ArtifactSectionDefinition[] = [
         ariaLabel: 'Particle Filter hierarchy',
         icon: Filter
     },
-    {
-        id: 'line-style',
-        title: 'Line Styles',
-        ariaLabel: 'Line styles hierarchy',
-        icon: Spline
-    }
 ];
 
 const ALL_CLOSED: SectionRecord<boolean> = {
     'color-coding': false,
-    'particle-filter': false,
-    'line-style': false
+    'particle-filter': false
 };
 
 const FIRST_PAGE: SectionRecord<number> = {
     'color-coding': TIMESTEP_PAGE_SIZE,
-    'particle-filter': TIMESTEP_PAGE_SIZE,
-    'line-style': TIMESTEP_PAGE_SIZE
+    'particle-filter': TIMESTEP_PAGE_SIZE
 };
 
 const createEmptyExpanded = (): SectionRecord<Set<number>> => ({
     'color-coding': new Set(),
-    'particle-filter': new Set(),
-    'line-style': new Set()
+    'particle-filter': new Set()
 });
 
 const withSectionValue = <T>(current: SectionRecord<T>, id: ArtifactSectionId, value: T): SectionRecord<T> => {
@@ -104,13 +95,11 @@ const useArtifactSections = (artifacts: SectionRecord<SceneArtifact[]>): Artifac
 
     const colorCoding = useTimestepIndex(artifacts['color-coding']);
     const particleFilter = useTimestepIndex(artifacts['particle-filter']);
-    const lineStyle = useTimestepIndex(artifacts['line-style']);
 
     const indexById: SectionRecord<ReturnType<typeof useTimestepIndex>> = useMemo(() => ({
         'color-coding': colorCoding,
-        'particle-filter': particleFilter,
-        'line-style': lineStyle
-    }), [colorCoding, particleFilter, lineStyle]);
+        'particle-filter': particleFilter
+    }), [colorCoding, particleFilter]);
 
     useEffect(() => {
         setExpandedById((current) => {

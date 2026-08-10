@@ -4,21 +4,17 @@ import { useSearchParams } from 'react-router-dom';
 
 export enum CanvasWorkspace {
     Scene = 'scene',
-    Raster = 'raster',
-    Scripting = 'scripting'
+    Raster = 'raster'
 }
 
 interface UpdateOptions {
     replace?: boolean;
 }
 
+/* An unknown value — including the retired `scripting` — falls back to Scene. */
 const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     if (workspace === CanvasWorkspace.Raster) {
         return CanvasWorkspace.Raster;
-    }
-
-    if (workspace === CanvasWorkspace.Scripting) {
-        return CanvasWorkspace.Scripting;
     }
 
     return CanvasWorkspace.Scene;

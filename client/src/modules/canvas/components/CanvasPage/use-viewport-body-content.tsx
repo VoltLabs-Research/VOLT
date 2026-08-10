@@ -1,7 +1,5 @@
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
-import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { EmptyState, Row } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +13,6 @@ interface ViewportBodyContentParams {
     trajectoryId: string;
     currentTimestep: number | undefined;
     isRasterWorkspace: boolean;
-    isScriptingWorkspace: boolean;
     isLocalGlbViewer: boolean;
     isLocalManifestLoading: boolean;
     localManifestError: string | null;
@@ -23,7 +20,6 @@ interface ViewportBodyContentParams {
     showNoFramesState: boolean;
     rasterContainerSelections: RasterContainerSelection[];
     onUpdateRasterContainerSelection: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
-    onJupyterUrlChange: (url: string | null) => void;
 }
 
 const centeredViewportState = (children: ReactNode, className?: string): ReactNode => (
@@ -46,26 +42,15 @@ const useViewportBodyContent = ({
     trajectoryId,
     currentTimestep,
     isRasterWorkspace,
-    isScriptingWorkspace,
     isLocalGlbViewer,
     isLocalManifestLoading,
     localManifestError,
     forcedGlbUrl,
     showNoFramesState,
     rasterContainerSelections,
-    onUpdateRasterContainerSelection,
-    onJupyterUrlChange
+    onUpdateRasterContainerSelection
 }: ViewportBodyContentParams): ReactNode | undefined => {
     const navigate = useNavigate();
-    const { selectedNotebookId, setSelectedNotebookId } = useCanvasUrlState();
-
-    const handleNotebookIdChange = useCallback((resolvedNotebookId: string) => {
-        if (selectedNotebookId === resolvedNotebookId) {
-            return;
-        }
-
-        setSelectedNotebookId(resolvedNotebookId, { replace: true });
-    }, [selectedNotebookId, setSelectedNotebookId]);
 
     const backToTrajectories = useCallback(() => {
         navigate('/dashboard/trajectories/list');
@@ -80,17 +65,6 @@ const useViewportBodyContent = ({
                     currentTimestep={currentTimestep}
                     containerSelections={rasterContainerSelections}
                     onUpdateContainerSelection={onUpdateRasterContainerSelection}
-                />
-            );
-        }
-
-        if (isScriptingWorkspace) {
-            return (
-                <ScriptingWorkspace
-                    trajectoryId={trajectoryId}
-                    notebookId={selectedNotebookId}
-                    onJupyterUrlChange={onJupyterUrlChange}
-                    onNotebookIdChange={handleNotebookIdChange}
                 />
             );
         }
@@ -138,16 +112,12 @@ const useViewportBodyContent = ({
         backToTrajectories,
         currentTimestep,
         forcedGlbUrl,
-        handleNotebookIdChange,
         isLocalGlbViewer,
         isLocalManifestLoading,
         isRasterWorkspace,
-        isScriptingWorkspace,
         localManifestError,
-        onJupyterUrlChange,
         onUpdateRasterContainerSelection,
         rasterContainerSelections,
-        selectedNotebookId,
         showNoFramesState,
         trajectory,
         trajectoryId

@@ -1,6 +1,7 @@
 import { teamClusterService } from '@/modules/cluster/api/service';
 import { buildKeys, createMutation, createQuery, queryClient, withSuccess } from '@/shared/query';
 import type { MutationOptions, QueryOptions } from '@/shared/query';
+import type { QueryKey } from '@tanstack/react-query';
 import type {
     CreateTeamClusterParams,
     CreateTeamClusterTransferRequestParams,
@@ -22,6 +23,7 @@ import type { TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/mod
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
+    listingByTeam: string;
     transferJobs: ListTeamClusterTransferJobsParams;
 }
 
@@ -40,6 +42,21 @@ const getConsistentClusterPagination = (page: number, limit: number, total: numb
 };
 
 export const TEAM_CLUSTER_QUERY_KEYS = buildKeys<TeamClusterQueryKeyMap>('team-clusters');
+
+/**
+ * A team's clusters are cached twice under deliberately *sibling* namespaces:
+ * `byTeam` holds one flat `ListTeamClustersResponse`, while `listingByTeam` is the
+ * base of DocumentListing's infinite query and holds `InfiniteData` pages of rows.
+ *
+ * They must not nest, because `setQueriesData`/`invalidateQueries` match by prefix:
+ * a nested listing would be handed to updaters written for the flat shape and blow
+ * up on the mismatch. The cost of keeping them apart is that anything refreshing a
+ * team's clusters has to name both, which is what this helper is for.
+ */
+export const teamClusterListQueryKeys = (teamId: string): QueryKey[] => [
+    TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId),
+    TEAM_CLUSTER_QUERY_KEYS.listingByTeam(teamId)
+];
 
 const mergeTeamClusterTransferState = (current: TeamCluster | undefined, incoming: TeamCluster): TeamCluster => {
     if (incoming.activeTransfers !== undefined) {
@@ -75,9 +92,9 @@ export const useTeamClustersQuery = (teamId: string, options?: QueryOptions<List
 };
 
 const invalidateTeamClustersQuery = (teamId: string) => {
-    return queryClient.invalidateQueries({
-        queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId)
-    });
+    return Promise.all(teamClusterListQueryKeys(teamId).map((queryKey) => {
+        return queryClient.invalidateQueries({ queryKey });
+    }));
 };
 
 const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamCluster) => {
@@ -281,9 +298,7 @@ export const useCreateTeamClusterTransferRequestMutation = (
         ...options,
         onSuccess: withSuccess((_, variables) => {
             void invalidateTeamClusterTransferJobsQuery();
-            void queryClient.invalidateQueries({
-                queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(variables.teamId)
-            });
+            void invalidateTeamClustersQuery(variables.teamId);
         }, options)
     });
 };

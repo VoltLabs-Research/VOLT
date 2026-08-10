@@ -1,6 +1,5 @@
 import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
 import type { SceneArtifactProps, SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
-import type { LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
 import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
@@ -221,24 +220,6 @@ export interface LineExposureScope {
     timestep: string;
     analysisId: string;
     exposureId: string;
-}
-
-export interface CreateLineStyledModelInput extends LineExposureScope {
-    style?: LineStyleSpec;
-}
-
-/** `style` arrives as a JSON-encoded query parameter rather than a parsed object. */
-export interface GetLineStyledModelStreamInput extends LineExposureScope {
-    style?: string;
-}
-
-export interface GetLineEntityPropertiesInput extends LineExposureScope {
-    entityId: string;
-}
-
-export interface GetLineEntityPropertiesOutput {
-    entityId: number;
-    properties: Record<string, unknown>;
 }
 
 export interface ListTeamSceneArtifactsInput {

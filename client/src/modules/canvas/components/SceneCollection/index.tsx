@@ -1,4 +1,5 @@
 import AnalysisTreeNode from '../AnalysisTreeNode';
+import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
@@ -202,7 +203,7 @@ const SceneCollection = ({
                     resolveSceneRenderMetadata={(pluginId, exposureId) => {
                         return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                     }}
-                    plugin={pluginsById[section.analysis.plugin]}
+                    plugin={pluginsById[resolveAnalysisPluginId(section.analysis)]}
                     pluginsById={pluginsById}
                     selectionMode={selectionMode}
                     selectedScene={selectedScene}

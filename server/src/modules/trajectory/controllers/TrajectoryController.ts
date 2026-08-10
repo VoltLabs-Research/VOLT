@@ -317,42 +317,6 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    @Route(trajectoryRoutes.lineStyleModel)
-    async lineStyleGet(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const output = await this.service.getLineStyledModelStream(this.params(req));
-        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
-    }
-
-    @Route(trajectoryRoutes.lineStyleCreate)
-    async lineStyleCreate(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await this.service.createLineStyledModel(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
-    @Route(trajectoryRoutes.lineStyleRanges)
-    async lineStyleGetRanges(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const output = await this.service.getLineModelRangesStream(this.params(req));
-        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
-    }
-
-    @Route(trajectoryRoutes.lineStyleEntityProperties)
-    async lineStyleGetEntityProperties(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await this.service.getLineEntityProperties(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
     @Route(trajectoryRoutes.lodOctreeMetadata)
     async lodGetOctreeMetadata(
         @Req() req: AuthenticatedRequest,

@@ -108,11 +108,13 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'Secret Keys',
         loader: () => import('@/modules/team/components/SecretKeysListing'),
         requiredPermissions: ['team-secret-key:read'],
+        /*
+         * Deliberately under Settings rather than the sidebar: keys are team
+         * configuration you visit occasionally, not a daily working surface.
+         */
         navigation: {
-            section: DashboardNavigationSection.Secondary,
-            label: 'Secret Keys',
-            icon: DashboardNavigationIconKey.SecretKeys,
-            disabledReason: 'You do not have permission to view secret keys.'
+            section: DashboardNavigationSection.Settings,
+            label: 'Secret Keys'
         }
     },
     {

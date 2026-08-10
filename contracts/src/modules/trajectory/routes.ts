@@ -7,8 +7,7 @@ import type {
     CreateTrajectoryFolderInput,
     UpdateTrajectoryFolderInput,
     CreateColoredModelInput,
-    ApplyParticleFilterActionInput,
-    CreateLineStyledModelInput
+    ApplyParticleFilterActionInput
 } from './http';
 import type {
     Trajectory,
@@ -27,8 +26,6 @@ import type {
     ParticleFilterUniqueValuesResponse,
     ParticleFilterPreviewResponse,
     ApplyParticleFilterActionResponse,
-    CreateLineStyledModelResponse,
-    GetLineEntityPropertiesResponse,
     CanvasBootstrapResponse,
     CanvasTrajectoryResponse,
     CanvasSimulationCellResponse,
@@ -78,12 +75,6 @@ export const trajectoryRoutes = {
     particleFilterUniqueValues: get<ParticleFilterUniqueValuesResponse>('/api/teams/:teamId/trajectories/:trajectoryId/particle-filters/unique-values'),
     particleFilterModel: get<unknown>('/api/teams/:teamId/trajectories/:trajectoryId/particle-filters/model'),
     particleFilterApply: post<ApplyParticleFilterActionInput, ApplyParticleFilterActionResponse>('/api/teams/:teamId/trajectories/:trajectoryId/particle-filters'),
-
-    
-    lineStyleModel: get<unknown>('/api/teams/:teamId/trajectories/:trajectoryId/analyses/:analysisId/exposures/:exposureId/line-style/model'),
-    lineStyleCreate: post<CreateLineStyledModelInput, CreateLineStyledModelResponse>('/api/teams/:teamId/trajectories/:trajectoryId/analyses/:analysisId/exposures/:exposureId/line-style'),
-    lineStyleRanges: get<unknown>('/api/teams/:teamId/trajectories/:trajectoryId/analyses/:analysisId/exposures/:exposureId/line-style/ranges'),
-    lineStyleEntityProperties: get<GetLineEntityPropertiesResponse>('/api/teams/:teamId/trajectories/:trajectoryId/analyses/:analysisId/exposures/:exposureId/line-style/entities/:entityId'),
 
     
     lodOctreeMetadata: get<unknown>('/api/teams/:teamId/trajectories/:trajectoryId/analyses/:analysisId/exposures/:exposureId/octree-metadata'),

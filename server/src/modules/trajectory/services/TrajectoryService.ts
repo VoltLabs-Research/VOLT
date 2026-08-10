@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
-import lineStyleService from '@modules/trajectory/services/line-style/LineStyleService';
+import exposureOctreeService from '@modules/trajectory/services/exposure-octree/ExposureOctreeService';
 import particleFilterService, { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import sceneArtifactQueryService from '@modules/trajectory/services/trajectory/SceneArtifactQueryService';
@@ -19,7 +19,6 @@ import type {
     TrajectoryFolderQuery,
     TrajectoryFolderView
 } from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
-import type { CreateLineStyledModelResult, LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
 import type { DownloadStreamOutput } from '@shared/contracts/types';
 import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
@@ -29,7 +28,6 @@ import type {
     CloneTrajectoryInput,
     CloneTrajectoryOutput,
     CreateColoredModelInput,
-    CreateLineStyledModelInput,
     CreateTrajectoryUploadSessionInput,
     CreateTrajectoryUploadSessionOutput,
     DownloadSampleSimulationsOutput,
@@ -41,9 +39,6 @@ import type {
     GetColorCodingStatsInput,
     GetColorCodingStatsOutput,
     GetFilteredModelStreamInput,
-    GetLineEntityPropertiesInput,
-    GetLineEntityPropertiesOutput,
-    GetLineStyledModelStreamInput,
     GetParticleFilterPropertiesOutput,
     GetParticleFilterUniqueValuesInput,
     GetParticleFilterUniqueValuesOutput,
@@ -64,10 +59,6 @@ import type {
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 /** `style` travels as a JSON-encoded query parameter, so it needs decoding. */
-const parseLineStyle = (style: string | undefined): LineStyleSpec => (
-    style ? JSON.parse(style) as LineStyleSpec : {}
-);
-
 /**
  * `timestep` reaches these endpoints as a query parameter, so the key can simply
  * be absent. Without this the missing value travels all the way to the daemon and
@@ -280,38 +271,8 @@ export default class TrajectoryService {
         );
     }
 
-    createLineStyledModel(input: CreateLineStyledModelInput): Promise<CreateLineStyledModelResult> {
-        return lineStyleService.createStyledModel(
-            input.trajectoryId,
-            requireTimestep(input.timestep),
-            input.analysisId,
-            input.exposureId,
-            input.style ?? {}
-        );
-    }
-
-    getLineStyledModelStream(input: GetLineStyledModelStreamInput): Promise<StreamableOutput> {
-        return lineStyleService.getModelStreamResponse(
-            input.trajectoryId,
-            requireTimestep(input.timestep),
-            input.analysisId,
-            input.exposureId,
-            parseLineStyle(input.style)
-        );
-    }
-
-    getLineModelRangesStream(input: GetLineStyledModelStreamInput): Promise<StreamableOutput> {
-        return lineStyleService.getRangesStreamResponse(
-            input.trajectoryId,
-            requireTimestep(input.timestep),
-            input.analysisId,
-            input.exposureId,
-            input.style ? parseLineStyle(input.style) : undefined
-        );
-    }
-
     getOctreeMetadataStream(input: LineExposureScope): Promise<StreamableOutput> {
-        return lineStyleService.getOctreeMetadataStreamResponse(
+        return exposureOctreeService.getOctreeMetadataStreamResponse(
             input.trajectoryId,
             requireTimestep(input.timestep),
             input.analysisId,
@@ -319,35 +280,4 @@ export default class TrajectoryService {
         );
     }
 
-    /**
-     * Per-entity plugin properties for the line inspector. The daemon indexes by
-     * numeric entity id, so the path segment has to become a number.
-     */
-    async getLineEntityProperties(input: GetLineEntityPropertiesInput): Promise<GetLineEntityPropertiesOutput> {
-        const entityId = Number(input.entityId);
-        if (!Number.isInteger(entityId) || entityId < 0) {
-            throw ApplicationError.badRequest(ErrorCodes.LINE_ENTITY_ID_INVALID, 'The entity id must be a non-negative integer.');
-        }
-
-        const index = await atomPropertiesService.buildPluginIndexForAtomIds(
-            input.trajectoryId,
-            input.analysisId,
-            input.exposureId,
-            requireTimestep(input.timestep),
-            new Set([entityId])
-        );
-
-        const properties = index?.get(entityId);
-        if (!properties) {
-            throw ApplicationError.notFound(
-                ErrorCodes.LINE_ENTITY_NOT_FOUND,
-                `No entity ${entityId} found for exposure "${input.exposureId}" at timestep ${input.timestep}`
-            );
-        }
-
-        return {
-            entityId,
-            properties
-        };
-    }
 }

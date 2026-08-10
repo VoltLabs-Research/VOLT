@@ -4,7 +4,7 @@ import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 import type { Pos3D, ModelLoadingState } from '@/modules/fractal/contracts/model';
 import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
-import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
 
 export enum AnalysisStatus {
     Pending = 'pending',
@@ -42,7 +42,6 @@ export type UseGlbSceneParams = {
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
-    lineHighlight?: LineEntityHighlight;
     visibilityMask?: Uint8Array | null;
     selectionHighlightMask?: Uint8Array | null;
     selectionHighlightColor?: string | null;

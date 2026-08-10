@@ -2,7 +2,6 @@ import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { useCallback, useMemo } from 'react';
 import {
-    buildActivitySummary,
     buildAnalysisStatusMap,
     buildFrameStatusIndex,
     buildJobStatusCounts,
@@ -78,10 +77,6 @@ const useCanvasAnalysisStatus = ({
         return buildJobStatusCounts(groups, trajectoryId);
     }, [groups, trajectoryId]);
 
-    const activitySummary = useMemo(() => {
-        return buildActivitySummary(analyses, statusMap);
-    }, [analyses, statusMap]);
-
     const getAnalysisStatus = useCallback((analysisId: string): CanvasAnalysisStatus | undefined => {
         return statusMap.get(analysisId)?.status;
     }, [statusMap]);
@@ -120,7 +115,6 @@ const useCanvasAnalysisStatus = ({
         analyses,
         statusMap,
         counts,
-        activitySummary,
         getAnalysisStatus,
         isAnalysisInProgress,
         getAnalysisFrameStatus,

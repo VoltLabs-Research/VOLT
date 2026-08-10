@@ -58,7 +58,7 @@ export interface TrajectoryFolder extends BaseEntity{
     parent: string | null;
 }
 
-export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure' | 'line-style';
+export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
 
 export interface SceneArtifactParticleFilterPropertyCondition{
     kind?: 'property';
@@ -169,13 +169,6 @@ export interface ApplyParticleFilterActionResponse{
     fileId: string;
     atomsResult: number;
     action: string;
-}
-
-export type CreateLineStyledModelResponse = unknown;
-
-export interface GetLineEntityPropertiesResponse{
-    entityId: number;
-    properties: Record<string, unknown>;
 }
 
 export type CanvasBootstrapResponse = unknown;

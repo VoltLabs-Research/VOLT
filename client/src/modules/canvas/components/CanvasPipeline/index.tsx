@@ -6,11 +6,10 @@ import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
-import LineStyleStageEditor from './stage-editors/LineStyleStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useEffect, useState } from 'react';
-import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Spline, Trash2 } from 'lucide-react';
+import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage, StageType } from '../../store/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../store/canvas-pipeline';
@@ -27,7 +26,6 @@ interface CanvasPipelineProps {
 const STAGE_ICONS: Record<StageType, ReactNode> = {
     'analysis-plugin': <FlaskConical size={13} aria-hidden='true' />,
     'color-coding': <Palette size={13} aria-hidden='true' />,
-    'line-style': <Spline size={13} aria-hidden='true' />,
     'slice-plane': <Scissors size={13} aria-hidden='true' />,
     'expression-select': <Filter size={13} aria-hidden='true' />
 };
@@ -35,7 +33,6 @@ const STAGE_ICONS: Record<StageType, ReactNode> = {
 const STAGE_LABELS: Record<StageType, string> = {
     'analysis-plugin': 'Analysis',
     'color-coding': 'Color Coding',
-    'line-style': 'Line Style',
     'slice-plane': 'Slice Plane',
     'expression-select': 'Expression Select'
 };
@@ -54,7 +51,6 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
 // Stages that restyle the scene client-side can be toggled before the pipeline ever runs.
 const isLiveToggleStage = (stage: PipelineStage): boolean =>
     stage.type === 'color-coding'
-    || stage.type === 'line-style'
     || stage.type === 'expression-select';
 
 const CanvasPipeline = ({
@@ -118,14 +114,6 @@ const CanvasPipeline = ({
                         stageId={stage.id}
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
-                        currentTimestep={currentTimestep}
-                        canMutateCanvas={canMutateCanvas}
-                    />
-                );
-            case 'line-style':
-                return (
-                    <LineStyleStageEditor
-                        trajectoryId={trajectoryId}
                         currentTimestep={currentTimestep}
                         canMutateCanvas={canMutateCanvas}
                     />

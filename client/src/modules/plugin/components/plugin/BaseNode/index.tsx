@@ -1,4 +1,3 @@
-import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 import NodeDebugOutput from '@/modules/plugin/components/plugin/BaseNode/NodeDebugOutput';
 import NodeExecutionLog from '@/modules/plugin/components/plugin/BaseNode/NodeExecutionLog';
 import useNodeDebugView from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
@@ -113,9 +112,6 @@ const BaseNode = ({
                 })}
 
                 <Row gap='1'>
-                    <span className='flex items-center justify-center workflow-node-icon'>
-                        <DynamicIcon iconName={config.icon} />
-                    </span>
                     <Stack gap='02' className='f-1'>
                         <Heading level={3}>{nodeTitle ?? config.label}</Heading>
                         {description && (

@@ -2,6 +2,7 @@ import usePluginCatalog, { useEnsurePluginCatalogLoaded } from '@/modules/plugin
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
+import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
@@ -51,7 +52,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
             fallbackAnalyses: analyses
         });
     }, [analyses, analysisId, trajectoryId]);
-    const pluginId = selectedAnalysis?.plugin;
+    const pluginId = selectedAnalysis ? resolveAnalysisPluginId(selectedAnalysis) : undefined;
     const plugin = pluginId ? pluginsById[pluginId] : undefined;
 
     const pluginListingExposures = useMemo(() => {

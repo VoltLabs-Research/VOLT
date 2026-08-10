@@ -4,7 +4,6 @@ import type {
     SceneObjectType,
     PluginScene,
     ColorCodingScene,
-    LineStyleScene,
     ParticleFilterScene
 } from '@/modules/fractal/contracts/scene';
 
@@ -115,28 +114,6 @@ const buildParticleFilterUrl = (
     return buildBackendUrl(`/api/teams/${teamId}/trajectories/${trajectoryId}/particle-filters/model?${params.toString()}`);
 };
 
-const buildLineStyleUrl = (
-    mode: CanvasAccessMode,
-    teamId: string,
-    trajectoryId: string,
-    scene: LineStyleScene,
-    timestep: number
-): string | null => {
-    const { analysisId, exposureId, style } = scene;
-    if (!analysisId || !exposureId) return null;
-
-    if (mode === 'public') {
-        return null;
-    }
-
-    const params = new URLSearchParams({
-        timestep: String(timestep),
-        style: JSON.stringify(style ?? {})
-    });
-
-    return buildBackendUrl(`/api/teams/${teamId}/trajectories/${trajectoryId}/analyses/${analysisId}/exposures/${exposureId}/line-style/model?${params.toString()}`);
-};
-
 export const resolveGlbResource = ({
     teamId,
     trajectoryId,
@@ -169,13 +146,6 @@ export const resolveGlbResource = ({
         }
         case 'particle-filter': {
             const url = buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
-            return {
-                url,
-                resourceKey: url
-            };
-        }
-        case 'line-style': {
-            const url = buildLineStyleUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
             return {
                 url,
                 resourceKey: url
