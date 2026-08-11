@@ -141,8 +141,8 @@ const AnalysisTreeNode = ({
 
     const nameToneClass = {
         queued: 'text-warning [[data-theme=light]_&]:text-[#8a5300]',
-        running: 'text-accent [[data-theme=light]_&]:text-[#0a5fbf]',
-        completed: 'text-success [text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)] [[data-theme=light]_&]:text-[#0f7a34] [[data-theme=light]_&]:[text-shadow:0_0_10px_color-mix(in_srgb,#0f7a34_25%,transparent)]',
+        running: 'text-info [[data-theme=light]_&]:text-[#0a5fbf]',
+        completed: 'text-success [[data-theme=light]_&]:text-[#0f7a34]',
         failed: 'text-danger [[data-theme=light]_&]:text-[#c41e1e]'
     } as const;
 

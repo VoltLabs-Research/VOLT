@@ -143,5 +143,5 @@ export interface ClusterObjectStore {
 export const isObjectNotFoundError = (error: unknown): boolean => {
     if (!(error instanceof Error)) return false;
     const { code, statusCode } = error as { code?: string; statusCode?: number };
-    return code === 'NotFound' || code === 'NoSuchKey' || statusCode === 404;
+    return code === 'NotFound' || code === 'NoSuchKey' || code === 'ENOENT' || statusCode === 404;
 };

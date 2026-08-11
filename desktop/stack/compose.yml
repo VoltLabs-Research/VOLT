@@ -77,6 +77,7 @@ services:
       - SYS_NICE
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=8192
       COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-volt}
       HOST: 0.0.0.0
       PORT: ${DAEMON_PORT:-18080}
