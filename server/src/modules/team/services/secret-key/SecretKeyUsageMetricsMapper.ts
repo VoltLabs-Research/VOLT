@@ -14,14 +14,14 @@ import type {
     SecretKeyTeamUsageOverview
 } from '@volt/contracts/modules/team/domain';
 
-export interface TeamUsageMetrics {
+interface TeamUsageMetrics {
     overview: SecretKeyTeamUsageOverview;
     perKey: SecretKeyUsagePerKey[];
     daily: SecretKeyTeamDailySeries;
     topEndpoints: SecretKeyEndpointStat[];
 }
 
-export interface KeyUsageMetrics {
+interface KeyUsageMetrics {
     stats: KeyUsageMetricsStats;
     hourly: KeyUsageMetricsSeries;
     daily: KeyUsageMetricsSeries;

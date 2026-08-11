@@ -85,7 +85,7 @@ export interface LightsState {
     rectArea: RectAreaLightCfg;
 };
 
-export interface LightsActions {
+interface LightsActions {
     setGlobal: (g: Partial<LightsGlobal>) => void;
     setDirectional: (d: Partial<DirLight>) => void;
     setPoint: (p: Partial<PointLight>) => void;

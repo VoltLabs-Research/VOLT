@@ -22,7 +22,7 @@ export const isTeamMember = async (teamId: string, userId?: string | null): Prom
     });
 };
 
-export const membershipForbidden = (): ApplicationError => ApplicationError.forbidden(
+const membershipForbidden = (): ApplicationError => ApplicationError.forbidden(
     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
     'You are not a member of this team'
 );

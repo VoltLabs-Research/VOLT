@@ -14,7 +14,6 @@ import type {
     ArtifactUploadBatchJobPayload,
     ArtifactUploadBatchUpload,
     ArtifactUploadStageBufferInput,
-    ArtifactUploadStageFileInput,
     ArtifactUploadStageInput
 } from '@shared/contracts/types/artifact-upload';
 

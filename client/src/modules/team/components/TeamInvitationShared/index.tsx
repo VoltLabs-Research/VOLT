@@ -13,10 +13,10 @@ import type { ReactNode } from 'react';
  */
 
 /** `.team-invitation-page` */
-export const TEAM_INVITATION_PAGE_CLASS = 'flex flex-col items-center justify-center w-full h-dvh bg-background';
+const TEAM_INVITATION_PAGE_CLASS = 'flex flex-col items-center justify-center w-full h-dvh bg-background';
 
 /** `.team-invitation-card` */
-export const TEAM_INVITATION_CARD_CLASS = 'flex flex-col items-center gap-6 rounded-2xl text-center max-w-[480px] p-10';
+const TEAM_INVITATION_CARD_CLASS = 'flex flex-col items-center gap-6 rounded-2xl text-center max-w-[480px] p-10';
 
 /** `.team-invitation-details`, minus the flex direction each call site chooses. */
 export const TEAM_INVITATION_DETAILS_CLASS = 'p-4 bg-surface-tertiary w-full';

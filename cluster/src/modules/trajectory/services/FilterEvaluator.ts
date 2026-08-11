@@ -33,7 +33,7 @@ export interface PreviewFilterInput {
     externalValues?: InboundChunk;
 }
 
-export interface PreviewFilterResult {
+interface PreviewFilterResult {
     mask: Uint8Array;
     matchCount: number;
     totalAtoms: number;
@@ -53,7 +53,7 @@ export interface ExportColoredModelInput {
     externalValues?: InboundChunk;
 }
 
-export interface ExportColoredModelResult {
+interface ExportColoredModelResult {
     objectKey: string;
 }
 
@@ -67,7 +67,7 @@ export interface ExportParticleFilterModelInput {
     mask: InboundChunk;
 }
 
-export interface ExportParticleFilterModelResult {
+interface ExportParticleFilterModelResult {
     objectKey: string;
     atomsResult: number;
 }

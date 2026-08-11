@@ -28,6 +28,7 @@ const runBridge = (filePath: string): Promise<AseFrame[]> => new Promise((resolv
     });
 
     const frames: AseFrame[] = [];
+    let malformedLines = 0;
     const rl = readline.createInterface({ input: proc.stdout! });
 
     rl.on('line', (line) => {
@@ -35,6 +36,7 @@ const runBridge = (filePath: string): Promise<AseFrame[]> => new Promise((resolv
         try {
             frames.push(JSON.parse(line) as AseFrame);
         } catch {
+            malformedLines += 1;
         }
     });
 
@@ -44,8 +46,13 @@ const runBridge = (filePath: string): Promise<AseFrame[]> => new Promise((resolv
 
     proc.on('error', reject);
     proc.on('close', (code) => {
+        if (malformedLines > 0) {
+            process.stderr.write(`ase_import_bridge: dropped ${malformedLines} malformed line(s)\n`);
+        }
         if (code !== 0 && frames.length === 0) {
             reject(new Error(`ase_import_bridge exited ${code ?? 'null'} with no output`));
+        } else if (frames.length === 0 && malformedLines > 0) {
+            reject(new Error(`ase_import_bridge produced ${malformedLines} malformed line(s) and no parseable frames`));
         } else {
             resolve(frames);
         }

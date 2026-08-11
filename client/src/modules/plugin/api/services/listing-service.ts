@@ -30,7 +30,7 @@ export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
 }
 
-export interface PluginListingMeta extends Record<string, unknown> {
+interface PluginListingMeta extends Record<string, unknown> {
     pluginId: string;
     exposureName: string;
     exposureId: string;

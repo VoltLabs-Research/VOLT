@@ -7,9 +7,9 @@ import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFold
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/trajectory-upload-session';
 
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import { replaceTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryFrameStore';
 import { toTrajectoryRecord } from '@modules/trajectory/services/trajectory/trajectory-record';
 import {

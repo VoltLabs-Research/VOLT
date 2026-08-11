@@ -5,7 +5,22 @@ import {
     CanvasTreeSkeletonRows,
     MaybeContextMenu
 } from '../CanvasTree';
-import { Button, Tooltip } from '@voltstack/bravais';
+import { Tooltip, cn } from '@heroui/react';
+import {
+    CONFIG_TOOLTIP_BODY_CLASS,
+    CONFIG_TOOLTIP_CLASS,
+    CONFIG_TOOLTIP_EMPTY_CLASS,
+    CONFIG_TOOLTIP_WARNING_CLASS,
+    TREE_ANALYSIS_CONFIG_HINT_CLASS,
+    TREE_ANALYSIS_LABEL_GROUP_CLASS,
+    TREE_ANALYSIS_NAME_CLASS,
+    TREE_ANALYSIS_NAME_TONE_CLASS,
+    TREE_ITEM_CLASS,
+    TREE_ITEM_HOVER_CLASS,
+    TREE_ITEM_INDENT_CLASS,
+    TREE_ITEM_SELECTED_CLASS,
+    TREE_TOGGLE_CLASS
+} from '../ObjectsPanel/tree-classes';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
@@ -83,13 +98,13 @@ const AnalysisTreeNode = ({
     const inlineSummary = toInlineConfigSummary(analysis.config);
 
     const tooltipContent = isAnalysisInProgress || hasConfig || hasWorkflowPluginNodes ? (
-        <div className='canvas-tree-config-tooltip__content'>
+        <div className='flex flex-col'>
             {isAnalysisInProgress && (
-                <div className='canvas-tree-config-tooltip__warning'>
+                <div className={CONFIG_TOOLTIP_WARNING_CLASS}>
                     Analysis still running. Some options will be disabled until it finishes.
                 </div>
             )}
-            <div className='canvas-tree-config-tooltip__body'>
+            <div className={CONFIG_TOOLTIP_BODY_CLASS}>
                 {hasConfig || hasWorkflowPluginNodes ? (
                     <ExecutionConfigSummary
                         config={analysis.config}
@@ -97,7 +112,7 @@ const AnalysisTreeNode = ({
                         pluginsById={pluginsById}
                     />
                 ) : (
-                    <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
+                    <div className={CONFIG_TOOLTIP_EMPTY_CLASS}>No execution config captured for this analysis.</div>
                 )}
             </div>
         </div>
@@ -139,12 +154,12 @@ const AnalysisTreeNode = ({
         }
     ];
 
-    const nameClassName = [
-        'canvas-tree-analysis-name',
+    const nameClassName = cn(
+        TREE_ANALYSIS_NAME_CLASS,
         'truncate',
         isSelectedAnalysis ? 'text-foreground' : 'text-muted',
-        tone ? `canvas-tree-analysis-name--${tone}` : ''
-    ].filter(Boolean).join(' ');
+        tone && TREE_ANALYSIS_NAME_TONE_CLASS[tone]
+    );
 
     return (
         <>
@@ -153,37 +168,64 @@ const AnalysisTreeNode = ({
                 id={`canvas-ctx-analysis-${analysis._id}`}
                 options={analysisMenuOptions}
             >
-                <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-                    <div className={`canvas-tree-item text-xs flex items-center gap-2 text-muted select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
-                        <span className="canvas-tree-analysis-label-group">
+                {/*
+                  * `Tooltip.Trigger` IS the tree row rather than a wrapper around it: HeroUI
+                  * hard-codes `role='button'` on that part but spreads the caller's props
+                  * after it, so `role='treeitem'` wins and the `role='tree'` container keeps
+                  * a valid child. Wrapping instead would insert a `role='button'` element
+                  * between the two.
+                  */}
+                <Tooltip isDisabled={!tooltipContent}>
+                    <Tooltip.Trigger
+                        className={cn(
+                            'flex cursor-pointer select-none items-center gap-2 text-xs text-muted',
+                            TREE_ITEM_CLASS,
+                            TREE_ITEM_HOVER_CLASS,
+                            TREE_ITEM_INDENT_CLASS.base,
+                            isSelectedAnalysis && TREE_ITEM_SELECTED_CLASS
+                        )}
+                        onClick={handleSelectAnalysis}
+                        role='treeitem'
+                        aria-selected={isSelectedAnalysis}
+                        tabIndex={0}
+                        data-tour-id={tourTargetId}
+                    >
+                        <span className={TREE_ANALYSIS_LABEL_GROUP_CLASS}>
                             <span className={nameClassName} title={analysis.pluginDisplayName}>
                                 {analysis.pluginDisplayName}
                             </span>
                             {inlineSummary && (
-                                <span className="canvas-tree-analysis-config-hint truncate" title={inlineSummary}>
+                                <span className={TREE_ANALYSIS_CONFIG_HINT_CLASS} title={inlineSummary}>
                                     {inlineSummary}
                                 </span>
                             )}
                         </span>
                         <span className='flex-1' />
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
+                        {/*
+                          * A plain button: the handler's `stopPropagation()` is what stops the
+                          * chevron from also selecting the analysis, and `onPress` receives a
+                          * React Aria PressEvent with no such method (spec §4b).
+                          */}
+                        <button
+                            type='button'
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onToggle(analysis._id);
                             }}
-                            className="canvas-tree-toggle border-0 p-0"
+                            className={cn('flex cursor-pointer items-center justify-center', TREE_TOGGLE_CLASS)}
                             aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         >
                             {isExpanded
                                 ? <ChevronDown style={CHEVRON_STYLE} />
                                 : <ChevronRight style={CHEVRON_STYLE} />
                             }
-                        </Button>
-                    </div>
+                        </button>
+                    </Tooltip.Trigger>
+                    {tooltipContent && (
+                        <Tooltip.Content placement='right' className={CONFIG_TOOLTIP_CLASS}>
+                            {tooltipContent}
+                        </Tooltip.Content>
+                    )}
                 </Tooltip>
             </MaybeContextMenu>
 

@@ -77,7 +77,7 @@ export const resolvePluginNativeThreadBudget = (): number => {
     return Math.max(MIN_NATIVE_THREAD_BUDGET, getAvailableCpuCount() - RESERVED_DAEMON_CPUS);
 };
 
-export interface SystemMemorySample {
+interface SystemMemorySample {
     available?: number;
     free?: number;
 }

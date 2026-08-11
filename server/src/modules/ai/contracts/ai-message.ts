@@ -15,12 +15,12 @@ export interface AIConversationMessage {
     parts: AIMessageParts;
 }
 
-export interface AIMessageToolCall {
+interface AIMessageToolCall {
     toolName: string;
     input: unknown;
 }
 
-export interface AIMessageToolResult {
+interface AIMessageToolResult {
     toolName: string;
     input: unknown;
     output: unknown;

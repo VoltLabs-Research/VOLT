@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
+import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {

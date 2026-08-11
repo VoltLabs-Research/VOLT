@@ -6,8 +6,8 @@ import analysisExecutionLogService from '@modules/analysis/services/AnalysisExec
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import { StoragePlacementScopeType } from '@modules/cluster/contracts/storage-placement';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';

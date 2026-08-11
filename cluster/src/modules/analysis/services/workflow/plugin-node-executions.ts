@@ -7,7 +7,7 @@ import type {
 } from '@shared/contracts';
 import type { WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
 
-export interface WorkflowPluginReferenceSelectionWithConfig {
+interface WorkflowPluginReferenceSelectionWithConfig {
     pluginId: WorkflowPluginReferenceSelection['pluginId'];
     config: WorkflowNodeOutput;
 }

@@ -29,11 +29,11 @@ const parseUrl = (value: string): URL | null => {
 const shellUrlPrefix = (): string => process.env['ELECTRON_RENDERER_URL'] ?? 'file://';
 
 /** True when `url` is the bundled shell (or the dev server standing in for it). */
-export const isShellUrl = (url: string): boolean => {
+const isShellUrl = (url: string): boolean => {
     return url.length > 0 && url.startsWith(shellUrlPrefix());
 };
 
-export interface NavigationPolicy {
+interface NavigationPolicy {
     /** Origins the window is allowed to navigate to, besides the shell itself. */
     allowedOrigins: () => Promise<readonly string[]>;
 }

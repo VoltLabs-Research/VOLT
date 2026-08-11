@@ -22,7 +22,7 @@ import {
 
 const TOMBSTONE_TTL_MS = 600_000;
 
-export interface DroppedProjectedJobs {
+interface DroppedProjectedJobs {
     deletedJobs: number;
     deletedAnalyses: number;
 }

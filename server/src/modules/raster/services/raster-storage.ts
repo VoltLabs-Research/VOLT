@@ -1,6 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
 import {
     getAnalysisRasterFrameObjectName,

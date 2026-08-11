@@ -1,4 +1,4 @@
-export type BufferedQueueEnqueueResult = 'enqueued' | 'duplicate' | 'overflow';
+type BufferedQueueEnqueueResult = 'enqueued' | 'duplicate' | 'overflow';
 
 interface BufferedQueueEntry<T> {
     item: T;

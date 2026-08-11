@@ -1,12 +1,29 @@
 import { useCanvasPipelineStore } from '../../store/canvas-pipeline';
-import { EmptyState, SearchInput, Surface } from '@voltstack/bravais';
+import CanvasSearchInput from '../CanvasSearchInput';
+import { EmptyState, Typography } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
-import './CanvasPluginSearch.css';
+/**
+ * The five `.canvas-plugin-search-wrapper .search-input-*` rules reached into bravais's
+ * SearchInput internals to resize it; that vocabulary died with the library, so the size
+ * is asked for at the call site instead (spec §4f).
+ *
+ * `Surface variant='glass' radius='md'` is `bg-surface border border-border rounded-xl`:
+ * glass was flattened onto the solid surface before this migration.
+ */
+const WRAPPER_CLASS = 'w-[clamp(240px,32vw,440px)] min-w-0';
+
+const SEARCH_CONTAINER_CLASS = 'flex w-full min-h-9 items-center gap-2 rounded-xl px-3 py-1.5';
+
+const SEARCH_INPUT_CLASS = 'text-[0.8125rem] leading-[1.25] m-0 h-auto p-0';
+
+const RESULTS_CLASS = 'max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[99999]';
+
+const ITEM_CLASS = 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover';
 
 const MAX_RESULTS = 12;
 
@@ -134,13 +151,15 @@ const CanvasPluginSearch = () => {
         : undefined;
 
     return (
-        <div className='canvas-plugin-search-wrapper' ref={refs.setReference} {...getReferenceProps()}>
-            <SearchInput
+        <div className={WRAPPER_CLASS} ref={refs.setReference} {...getReferenceProps()}>
+            <CanvasSearchInput
                 ref={inputRef}
                 id={searchInputId}
                 placeholder='Search plugins…'
                 value={query}
                 variant='small'
+                containerClassName={SEARCH_CONTAINER_CLASS}
+                className={SEARCH_INPUT_CLASS}
                 aria-label='Search plugins'
                 role='combobox'
                 aria-autocomplete='list'
@@ -154,26 +173,27 @@ const CanvasPluginSearch = () => {
             />
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <Surface
-                        variant='glass'
-                        radius='md'
-                        overflow='y-auto'
+                    <div
                         ref={refs.setFloating}
-                        className='canvas-plugin-search-results panel-floating'
+                        className={RESULTS_CLASS}
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
                         {results.length === 0 ? (
-                            <div className='flex flex-row items-center justify-center canvas-plugin-search-empty'>
-                                <EmptyState
-                                    title={query ? 'No plugins match' : 'No plugins available'}
-                                    description={query
-                                        ? `Nothing matches "${query.trim()}". Try a different name.`
-                                        : 'Install or publish a plugin to see it listed here.'}
-                                />
+                            <div className='flex min-h-36 flex-row items-center justify-center p-4'>
+                                <EmptyState>
+                                    <Typography.Heading level={3}>
+                                        {query ? 'No plugins match' : 'No plugins available'}
+                                    </Typography.Heading>
+                                    <Typography.Paragraph size='sm'>
+                                        {query
+                                            ? `Nothing matches "${query.trim()}". Try a different name.`
+                                            : 'Install or publish a plugin to see it listed here.'}
+                                    </Typography.Paragraph>
+                                </EmptyState>
                             </div>
                         ) : (
-                            <div className='flex flex-col gap-1 p-2 canvas-plugin-search-list'
+                            <div className='flex flex-col gap-1 p-2'
                                 id={resultsListId}
                                 role='listbox'
                                 aria-label='Plugin search results'
@@ -188,7 +208,7 @@ const CanvasPluginSearch = () => {
                                             type='button'
                                             role='option'
                                             aria-selected={isActive}
-                                            className={`canvas-plugin-search-item flex items-center gap-2 p-2 rounded-lg ${isActive ? 'canvas-plugin-search-item--active' : ''}`}
+                                            className={isActive ? `${ITEM_CLASS} bg-surface-hover` : ITEM_CLASS}
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
@@ -199,7 +219,7 @@ const CanvasPluginSearch = () => {
                                 })}
                             </div>
                         )}
-                    </Surface>
+                    </div>
                 </FloatingPortal>
             )}
         </div>

@@ -1,4 +1,4 @@
-import { createDomainEvent } from '@shared/domain/events/createDomainEvent';
+import { createDomainEvent } from '@shared/domain/events/create-domain-event';
 import type { SceneArtifactUpsertBatch } from '@shared/contracts/channel/reverse-channel-plugin';
 import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
 

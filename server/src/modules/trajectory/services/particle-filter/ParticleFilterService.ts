@@ -1,5 +1,4 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import { ErrorCodes } from '@core/constants/error-codes';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
@@ -19,7 +18,6 @@ import type {
     ParticleFilterRequest
 } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
 import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';

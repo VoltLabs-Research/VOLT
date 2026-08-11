@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { Readable } from 'node:stream';
 
-export interface RunOptions{
+interface RunOptions{
     cwd?: string;
     env?: Record<string, string>;
     onStdout?: (line: string) => void;
@@ -20,7 +20,7 @@ export interface RunOptions{
     idleTimeoutMs?: number;
 }
 
-export class ProcessTimeoutError extends Error{
+class ProcessTimeoutError extends Error{
     constructor(public readonly kind: 'timeout' | 'idle', message: string){
         super(message);
         this.name = 'ProcessTimeoutError';

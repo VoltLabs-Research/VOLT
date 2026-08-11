@@ -2,8 +2,8 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryUploadSession from '@modules/trajectory/models/TrajectoryUploadSession';
 import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/trajectory-upload-session';
 
-import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import daemonAnalysisCompletionService from '@modules/cluster/services/daemon/DaemonAnalysisCompletionService';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { insertSimulationCells } from '@modules/simulation-cell/services/SimulationCellService';
 
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';

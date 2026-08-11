@@ -1,7 +1,7 @@
 import Controller from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import ClusterObjectTransferService from '@modules/cluster/services/ClusterObjectTransferService';
+import ClusterObjectTransferService from '@modules/cluster/services/object-store/ClusterObjectTransferService';
 import {
     applyObjectHeaders,
     applyRangeHeaders,

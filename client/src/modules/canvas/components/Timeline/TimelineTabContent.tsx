@@ -7,6 +7,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
 import type { ComponentProps, ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import { TAB_BODY_CLASS } from './timeline-classes';
 
 interface TimelineTabContentProps {
     activeTab: string;
@@ -20,7 +21,7 @@ interface TimelineTabContentProps {
 }
 
 const TabBody = ({ children }: { children: ReactNode }) => (
-    <div className='relative overflow-hidden flex-1 min-h-0 canvas-timeline-body'>
+    <div className={TAB_BODY_CLASS}>
         {children}
     </div>
 );

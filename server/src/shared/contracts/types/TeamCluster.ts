@@ -86,8 +86,6 @@ export interface TeamClusterProps {
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
     hostCapabilities: TeamClusterHostCapabilitiesProps | null;
-    isDemo: boolean;
-    demoExpiresAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }

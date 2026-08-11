@@ -197,7 +197,7 @@ const GroupManagementModal = ({
                 ))}
             </div>
 
-            <div className='p-6' id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0}>
+            <div id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0}>
                 {activeTab === Tab.General && (
                     <GeneralTab
                         groupName={groupName}

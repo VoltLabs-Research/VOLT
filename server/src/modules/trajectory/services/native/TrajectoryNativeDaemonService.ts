@@ -1,5 +1,5 @@
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import type {
     AtomPageResult,

@@ -15,8 +15,12 @@ import { useShallow } from 'zustand/react/shallow';
 import type { CanvasExposureDownloadParams } from '../canvas-panel-props';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-
-import './Timeline.css';
+import {
+    RULER_REGION_CLASS,
+    TIMELINE_HEIGHT_ACTIVE_CLASS,
+    TIMELINE_HEIGHT_CLASS,
+    TIMELINE_ROOT_CLASS
+} from './timeline-classes';
 
 const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
 const PLACEHOLDER_TICK_COUNT = 50;
@@ -148,8 +152,10 @@ const Timeline = ({
     }, [sceneRef]);
 
     return (
-        <div className={cn('flex flex-col overflow-hidden min-h-0', activeTab === TimelineTab.Timeline ? 'canvas-timeline canvas-timeline--timeline-active' : 'canvas-timeline')}
-        >
+        <div className={cn(
+            TIMELINE_ROOT_CLASS,
+            activeTab === TimelineTab.Timeline ? TIMELINE_HEIGHT_ACTIVE_CLASS : TIMELINE_HEIGHT_CLASS
+        )}>
             <TimelineHeader
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -174,7 +180,7 @@ const Timeline = ({
             />
 
             {activeTab === TimelineTab.Timeline && (
-                <div className='relative canvas-timeline-ruler-region' data-tour-id="canvas-timeline-ruler">
+                <div className={RULER_REGION_CLASS} data-tour-id='canvas-timeline-ruler'>
                     <TimelineRuler
                         rulerRef={rulerRef}
                         ticks={ticks}

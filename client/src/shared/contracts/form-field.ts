@@ -1,6 +1,19 @@
-import type { SelectOption } from '@voltstack/bravais';
 import type { ChangeEvent, InputHTMLAttributes, ReactNode, RefCallback } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
+
+/**
+ * One option of a select-like field.
+ *
+ * Declared here rather than imported, now that the design system that used to own
+ * it is gone. This is the single source: the canvas and plugin modules both derive
+ * their own `SelectOption` from `FieldRendererProps['options'][number]` instead of
+ * restating the shape, so widening it here widens it for them too.
+ */
+export interface SelectOption {
+    value: string;
+    title: string;
+    description?: string;
+};
 
 export interface SyntheticInputTarget {
     name: string;

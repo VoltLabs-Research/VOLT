@@ -1,4 +1,3 @@
-import { withDefaults, withNestedDefaults } from '@shared/application/utilities/with-defaults';
 import { singleton } from '@shared/application/utilities/singleton';
 import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { concurrencyTrackedWorkers, workersForScope } from '@shared/infrastructure/queues/worker-registry';
@@ -12,6 +11,22 @@ import type {
     TeamClusterDaemonRuntimeConfig,
     TeamClusterRuntimeRoleConfig
 } from '@shared/contracts/types/team-cluster-runtime';
+
+const withDefaults = <T extends object>(defaults: T, overrides?: Partial<T>): T => ({
+    ...defaults,
+    ...overrides
+});
+
+const withNestedDefaults = <T extends object>(defaults: T, overrides?: Partial<T>): T => {
+    const merged = {} as T;
+    for (const key of Object.keys(defaults) as Array<keyof T>) {
+        merged[key] = {
+            ...defaults[key],
+            ...overrides?.[key]
+        };
+    }
+    return merged;
+};
 
 interface QueueSettingsSnapshot {
     queueConcurrency: TeamClusterDaemonQueueConcurrency;

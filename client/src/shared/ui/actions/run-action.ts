@@ -1,4 +1,4 @@
-import { closeModal } from '@voltstack/bravais';
+import { closeModal } from '@/shared/ui/modal';
 import { confirmAction } from '@/shared/ui/hooks/use-confirm';
 import { isAbortError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/ui/hooks/toast';

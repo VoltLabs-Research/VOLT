@@ -2,7 +2,6 @@ import logger from '@shared/infrastructure/logger';
 import { Client } from 'pg';
 import { v4 } from 'uuid';
 import DomainEventSpoolEntry from '@shared/infrastructure/persistence/models/DomainEventSpoolEntry';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { EventName } from '@shared/events/EventGroup';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
@@ -50,7 +49,7 @@ const isPostgresUrl = (url: string | undefined): boolean =>
  * instead. That is the correct behaviour for a single-process deployment, not a
  * degraded one — cross-process fan-out is the only thing NOTIFY was providing.
  */
-class PostgresEventBus implements IEventBus {
+class PostgresEventBus {
     private readonly handlers = new Map<string, IEventHandler<IDomainEvent>[]>();
     private listener: Client | null = null;
     private listenerReady: Promise<void> | null = null;

@@ -2,9 +2,9 @@ import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { parseAseMetadata } from '@modules/trajectory/services/parsing/AseImportBridge';
 
-export type LammpsMetadataFormat = 'dump' | 'data';
+type LammpsMetadataFormat = 'dump' | 'data';
 
-export interface ParsedSimulationCellGeometry {
+interface ParsedSimulationCellGeometry {
     cell_vectors: [[number, number, number], [number, number, number], [number, number, number]];
     cell_origin: [number, number, number];
     periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };

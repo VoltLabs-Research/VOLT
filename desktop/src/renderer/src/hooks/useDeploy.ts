@@ -6,7 +6,7 @@ export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
 export type PreflightResult = AppEvents['deploy:preflight'];
 
-export interface PhaseProgress{
+interface PhaseProgress{
     status: PhaseStatus;
     detail?: string;
 }

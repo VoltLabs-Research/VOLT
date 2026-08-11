@@ -2,7 +2,7 @@ import SecretKeyUsageLog from '@modules/team/models/SecretKeyUsageLog';
 import type { SecretKeyEndpointStat, SecretKeyStatusCodeStat } from '@volt/contracts/modules/team/domain';
 import type { SelectQueryBuilder } from 'typeorm';
 
-export interface SecretKeyUsageOverview{
+interface SecretKeyUsageOverview{
     totalRequests: number;
     successRequests: number;
     avgResponseTime: number;
@@ -25,7 +25,7 @@ export interface SecretKeyUsageRequest{
     createdAt: Date;
 }
 
-export interface UsageCountByLabel{
+interface UsageCountByLabel{
     label: string;
     count: number;
 }

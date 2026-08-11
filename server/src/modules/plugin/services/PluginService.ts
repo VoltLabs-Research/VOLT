@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import ClusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';

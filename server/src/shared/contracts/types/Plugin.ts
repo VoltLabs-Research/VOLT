@@ -14,7 +14,7 @@ export enum WorkflowNodeType {
     SwitchCase = 'switch-case'
 }
 
-export interface WorkflowNodeDataLike {
+interface WorkflowNodeDataLike {
     exposure?: {
         name?: string;
         results?: string;
@@ -35,7 +35,7 @@ export interface WorkflowPropsLike {
     nodes: WorkflowNodeLike[];
 }
 
-export interface PluginExposureLike {
+interface PluginExposureLike {
     _id?: string;
     name?: string;
     export?: {

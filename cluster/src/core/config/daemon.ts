@@ -33,7 +33,6 @@ export interface DaemonConfig {
     bucketPrefix: string;
     /** Where the cluster's objects live on disk. */
     objectStoreRoot: string;
-    isDemoMode: boolean;
     /*
      * Where the control plane can reach this daemon's object gateway without going
      * through the reverse channel. Only set where the daemon is actually routable
@@ -46,8 +45,6 @@ export interface DaemonConfig {
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
 const DEFAULT_METRICS_INTERVAL_MS = 3_000;
 const DEFAULT_JUPYTER_IMAGE = 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main';
-
-const BOOLEAN_TRUTHY = new Set(['true', '1', 'yes']);
 
 const readRequiredString = (name: string): string => {
     const value = process.env[name];
@@ -71,11 +68,6 @@ const readNumberWithDefault = (name: string, fallback: number): number => {
 
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const readBooleanWithDefault = (name: string, fallback: boolean): boolean => {
-    const value = process.env[name];
-    return value ? BOOLEAN_TRUTHY.has(value.toLowerCase()) : fallback;
 };
 
 const normalizePath = (value: string): string => {
@@ -127,7 +119,6 @@ export const loadConfig = (): DaemonConfig => {
         allowedBuckets,
         bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
         objectStoreRoot: readStringWithDefault('OBJECT_STORE_ROOT', DAEMON_PATHS.objectStore),
-        isDemoMode: readBooleanWithDefault('DEMO_MODE', false),
         objectGatewayPublicBaseUrl: readOptionalString('OBJECT_GATEWAY_PUBLIC_BASE_URL')?.replace(/\/+$/g, '')
     };
 

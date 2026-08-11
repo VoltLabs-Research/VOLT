@@ -11,8 +11,6 @@ import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64
 import type { AnalysisDispatcher } from '@modules/analysis/services/AnalysisDispatcher';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
 
-const readCompressed = async <T>(compressed: string): Promise<T> => inflateBase64GzipJson<T>(compressed);
-
 @CommandGroup('analysis')
 export class AnalysisCommands {
     constructor(
@@ -39,10 +37,10 @@ export class AnalysisCommands {
             nestedPlugins,
             pluginReferenceExecutions
         ] = await Promise.all([
-            readCompressed<AnalysisStartRequest['trajectoryFrames']>(payload.trajectoryFramesCompressed),
-            readCompressed<AnalysisStartRequest['workflow']>(payload.workflowCompressed),
-            readCompressed<AnalysisStartRequest['nestedPlugins']>(payload.nestedPluginsCompressed),
-            readCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
+            inflateBase64GzipJson<AnalysisStartRequest['trajectoryFrames']>(payload.trajectoryFramesCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['workflow']>(payload.workflowCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['nestedPlugins']>(payload.nestedPluginsCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['pluginReferenceExecutions']>(
                 payload.pluginReferenceExecutionsCompressed
             )
         ]);

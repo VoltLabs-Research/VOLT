@@ -119,7 +119,7 @@ const ClusterTransferModal = ({
 
     return (
         <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative object store data and purges the source daemon listing tables after verify and switch complete.' footer={footer} onClose={handleClose}>
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 <div className='flex flex-col gap-2'>
                     <h3 className='text-sm font-medium text-muted'>Destination cluster</h3>
                     <p className='text-sm text-muted'>

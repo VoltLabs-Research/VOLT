@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';

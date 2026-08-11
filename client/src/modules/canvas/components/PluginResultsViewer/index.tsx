@@ -4,9 +4,37 @@ import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTab
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import ExposureChart from './ExposureChart';
 import { usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
-import { Button, IconButton, Tooltip } from '@voltstack/bravais';
+import { Button, CloseButton, Tooltip, cn } from '@heroui/react';
 
-import './PluginResultsViewer.css';
+/**
+ * `.canvas-results-*`. The three descendant rules on `.canvas-results-chart img` and
+ * `figcaption` move onto those elements — there is no `img` rendered here (the chart is
+ * an `ExposureChart`), so only the caption survives.
+ */
+const VIEWER_CLASS = 'absolute bottom-4 right-4 z-[200] flex max-h-[280px] w-full flex-col overflow-hidden rounded-xl border border-border bg-surface';
+
+const HEADER_CLASS = 'flex flex-row items-center justify-between border-b border-border px-2.5 py-1.5';
+
+const TABS_CLASS = 'flex flex-row items-center overflow-auto border-b border-border px-1.5 py-1';
+
+const CONTENT_CLASS = 'max-h-[180px] overflow-auto p-1.5';
+
+const CHARTS_CLASS = 'grid min-w-[320px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2';
+
+const CHART_CLASS = 'm-0 grid gap-1';
+
+const CHART_CAPTION_CLASS = 'truncate text-[0.6875rem] text-muted';
+
+/**
+ * bravais's `variant='solid'|'ghost' intent='canvas' size='sm'` tab chrome. A plain
+ * `<button role='tab'>` rather than a HeroUI `Button`, because `role` and `aria-selected`
+ * are not on its prop interface and a `role='tablist'` needs real tabs.
+ */
+const TAB_CLASS = 'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out';
+
+const TAB_ACTIVE_CLASS = 'bg-default text-foreground hover:bg-surface-hover';
+
+const TAB_IDLE_CLASS = 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground';
 
 interface PluginResultsViewerProps {
     pluginId: string;
@@ -37,9 +65,9 @@ const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
     }
     if (rows.length === 0) {
         return (
-            <figure className="canvas-results-chart">
+            <figure className={CHART_CLASS}>
                 <span className='text-xs text-muted' style={{ padding: '8px' }}>No row data available for chart.</span>
-                <figcaption>{artifact.displayName}</figcaption>
+                <figcaption className={CHART_CAPTION_CLASS}>{artifact.displayName}</figcaption>
             </figure>
         );
     }
@@ -59,28 +87,25 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
     const resolvedTeamId = teamId ?? undefined;
 
     return (
-        <div className='bg-surface border border-border flex flex-col absolute overflow-hidden w-full bottom-4 right-4 canvas-results-viewer'>
-            <div className='flex flex-row items-center justify-between canvas-results-header panel-header-bordered'>
+        <div className={VIEWER_CLASS}>
+            <div className={HEADER_CLASS}>
                 <h3 className='text-xs font-medium text-foreground'>{title}</h3>
                 <div className='flex flex-row items-center gap-2'>
                     {!isEmpty && (
-                        <Tooltip content="Download as XLSX">
+                        <Tooltip>
                             <Button
-                                variant="ghost"
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="text-xs canvas-btn-compact"
-                                onClick={download}
-                                isLoading={isDownloading}
+                                variant='ghost'
+                                size='sm'
+                                className='text-xs'
+                                onPress={download}
+                                isPending={isDownloading}
                             >
                                 Download
                             </Button>
+                            <Tooltip.Content placement='bottom'>Download as XLSX</Tooltip.Content>
                         </Tooltip>
                     )}
-                    <IconButton variant="ghost" size="sm" onClick={close} aria-label="Close results">
-                        ×
-                    </IconButton>
+                    <CloseButton onPress={close} aria-label='Close results' />
                 </div>
             </div>
 
@@ -90,25 +115,22 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                 </div>
             ) : (
                 <>
-                    <div className='flex flex-row items-center overflow-auto canvas-results-tabs' role="tablist">
+                    <div className={TABS_CLASS} role='tablist'>
                         {tabs.map((tab, index) => (
-                            <Button
+                            <button
                                 key={tab.key}
-                                role="tab"
+                                type='button'
+                                role='tab'
                                 aria-selected={activeTab === index}
-                                variant={activeTab === index ? 'solid' : 'ghost'}
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="text-xs canvas-btn-compact"
+                                className={cn(TAB_CLASS, activeTab === index ? TAB_ACTIVE_CLASS : TAB_IDLE_CLASS)}
                                 onClick={() => setActiveTab(index)}
                             >
                                 {tab.label}
-                            </Button>
+                            </button>
                         ))}
                     </div>
 
-                    <div className='overflow-auto canvas-results-content'>
+                    <div className={CONTENT_CLASS}>
                         {activeExposureName && (
                             <PluginExposureTable
                                 key={`${activeExposureName}-${analysisId}`}
@@ -129,7 +151,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                             />
                         )}
                         {activeChartArtifact && (
-                            <div className="canvas-results-charts">
+                            <div className={CHARTS_CLASS}>
                                 <ChartArtifactView
                                     artifact={activeChartArtifact}
                                     pluginId={pluginId}

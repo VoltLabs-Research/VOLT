@@ -15,13 +15,13 @@ import type {
     PlannedExecutionItem
 } from '@shared/contracts/types/http-analysis';
 
-export interface PlanAnalysisWorkflowInput {
+interface PlanAnalysisWorkflowInput {
     input: AnalysisStartRequestWithTrace;
     workflowEngine: WorkflowEngine;
     serializedTraceContext?: Record<string, string>;
 }
 
-export interface PlanAnalysisWorkflowResult {
+interface PlanAnalysisWorkflowResult {
     executionData: AnalysisJobExecutionData;
     jobs: AnalysisQueueJobPayload[];
 }

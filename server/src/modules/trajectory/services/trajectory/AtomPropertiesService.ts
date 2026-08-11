@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import {
     buildExposureAtomConfig,

@@ -1,6 +1,6 @@
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import type { DomainEventClass } from '@shared/domain/events/createDomainEvent';
+import type { DomainEventClass } from '@shared/domain/events/create-domain-event';
 import type { AuthenticatedMessageContext } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type {
@@ -9,24 +9,24 @@ import type {
     ImmediateTransportMessage
 } from '@shared/infrastructure/events/cluster-daemon-event-publisher';
 
-export interface BufferedMessageEnvelope {
+interface BufferedMessageEnvelope {
     readonly kind: 'buffered';
     readonly message: TeamClusterDaemonServerEventMessage;
     readonly options?: BufferedDaemonEventOptions;
 }
 
-export interface ImmediateMessageEnvelope {
+interface ImmediateMessageEnvelope {
     readonly kind: 'immediate';
     readonly message: ImmediateTransportMessage;
 }
 
-export type TransportMessageEnvelope = BufferedMessageEnvelope | ImmediateMessageEnvelope;
+type TransportMessageEnvelope = BufferedMessageEnvelope | ImmediateMessageEnvelope;
 
-export interface DomainEventTransportContext {
+interface DomainEventTransportContext {
     readonly messageContext: AuthenticatedMessageContext;
 }
 
-export type DomainEventTransportMapper<TPayload extends object> = (
+type DomainEventTransportMapper<TPayload extends object> = (
     payload: TPayload,
     context: DomainEventTransportContext
 ) => TransportMessageEnvelope | readonly TransportMessageEnvelope[] | null;

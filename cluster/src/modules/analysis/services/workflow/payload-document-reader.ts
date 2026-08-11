@@ -23,7 +23,7 @@ const INLINE_PAYLOAD_LIMIT_BYTES = 64 * 1024 * 1024;
 
 const PER_ATOM_JSON_PATH = '$."per-atom-properties"';
 
-export interface LargePayloadDocument {
+interface LargePayloadDocument {
     listing: JsonObject | null;
     subListingNames: string[];
     subListings: Record<string, JsonObject[]>;

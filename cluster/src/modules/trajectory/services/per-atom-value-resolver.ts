@@ -4,7 +4,7 @@ import { toBytes, type InboundChunk } from '@shared/contracts/channel/binary-env
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { ModifierScalarValues, PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 
-export interface PerAtomValueSource {
+interface PerAtomValueSource {
     trajectoryId: string;
     timestep: number;
     ownerClusterId: string;
@@ -15,7 +15,7 @@ export interface PerAtomValueSource {
     externalValues?: InboundChunk;
 }
 
-export type ResolvedPerAtomValues =
+type ResolvedPerAtomValues =
     | { parsed: ParsedTrajectory; valueType: 'number'; values: Float32Array }
     | { parsed: ParsedTrajectory; valueType: 'string'; values: Array<string | null> };
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { logger } from '@shared/infrastructure/logger';
 import { applyPreferredPlaneProcessPriority } from '@shared/infrastructure/utilities/process-priority';
 
-export interface PlaneProcessOptions {
+interface PlaneProcessOptions {
     label: string;
     script: string;
     restartDelayMs: number;

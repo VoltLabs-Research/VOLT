@@ -2,8 +2,7 @@ import service from '../api/scripting-service';
 import {
     buildKeys,
     createInvalidatingMutation,
-    createMutation,
-    createQuery
+    createMutation
 } from '@/shared/query';
 import type {
     CreateScriptingNotebookParams,
@@ -22,8 +21,6 @@ interface ScriptingQueryKeys {
 const KEYS = buildKeys<ScriptingQueryKeys>('scripting');
 
 export const scriptingNotebooksQueryKey = KEYS.notebooks;
-
-export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, service.listNotebooks);
 
 export const useCreateScriptingNotebookMutation = createInvalidatingMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
     service.createNotebook,

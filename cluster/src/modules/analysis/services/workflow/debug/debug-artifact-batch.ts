@@ -16,7 +16,7 @@ interface DebugArtifactRecord {
     fileName: string;
 }
 
-export interface DebugArtifactBatch {
+interface DebugArtifactBatch {
     stageBufferUpload(input: ArtifactStageBufferInput): Promise<void>;
     enqueue(): Promise<ArtifactUploadBatchEnqueueResult>;
     cleanup(): Promise<void>;

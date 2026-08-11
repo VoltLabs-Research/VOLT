@@ -22,7 +22,7 @@ import spatialAssembler from '@voltstack/spatial-assembler';
  * conversion worker reads it back off a job row, so a field renamed on one side
  * has to fail at compile time instead of at runtime.
  */
-export interface PreprocessTrajectoryInput {
+interface PreprocessTrajectoryInput {
     trajectoryId: string;
     timestep: number;
     ownerClusterId: string;

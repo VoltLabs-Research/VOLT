@@ -1,5 +1,3 @@
-import type { JsonObject } from '@shared/contracts/types/json';
-
 /**
  * Thrown to unwind out of a processor that has already put its job back.
  *
@@ -14,7 +12,7 @@ export class DeferJobError extends Error {
 }
 
 /** The attempt budget, as the processor sees it. */
-export interface QueueJobAttemptOptions {
+interface QueueJobAttemptOptions {
     attempts?: number;
 }
 
@@ -34,7 +32,7 @@ export interface QueueJobHandle<TPayload> {
     moveToDelayed(untilEpochMs: number): Promise<void>;
 }
 
-export interface QueueJobHandleContext<TPayload> {
+interface QueueJobHandleContext<TPayload> {
     id: string;
     queue: string;
     payload: TPayload;

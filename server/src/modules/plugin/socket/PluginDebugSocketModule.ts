@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import type { Plugin } from '@modules/plugin/contracts/plugin';

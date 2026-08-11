@@ -1,9 +1,8 @@
-import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
 import logger from '@shared/infrastructure/logger';
-import defaultTempStorageLifecycleService from '@shared/infrastructure/services/TempStorageLifecycleService';
+import defaultTempStorageLifecycleService, { type TempStorageLifecycleService } from '@shared/infrastructure/services/TempStorageLifecycleService';
 
 export const startTempStorageLifecycle = async (
-    tempStorageLifecycleService: ITempStorageLifecycleService = defaultTempStorageLifecycleService
+    tempStorageLifecycleService: TempStorageLifecycleService = defaultTempStorageLifecycleService
 ): Promise<void> => {
     try {
         await tempStorageLifecycleService.start();

@@ -1,4 +1,4 @@
-import { get, post, patch, del } from '../../shared/routing';
+import { get, post, patch } from '../../shared/routing';
 import type { Endpoint } from '../../shared/routing';
 import type {
     CreateTeamClusterInput,
@@ -15,9 +15,6 @@ import type {
     CreateTeamClusterResponse,
     GetTeamClusterResponse,
     TeamCluster,
-    ProvisionDemoTeamClusterResponse,
-    GetDemoTeamClusterStatusResponse,
-    DeleteDemoTeamClusterResponse,
     DeleteTeamClusterResponse,
     UpdateTeamClusterRoleResponse,
     UpdateTeamClusterQueueConcurrencyResponse,
@@ -47,10 +44,6 @@ const putStream = (path: string): Endpoint<never, void> => ({
 export const teamClusterRoutes = {
     list: get<TeamCluster>('/api/teams/:teamId/clusters'),
     create: post<CreateTeamClusterInput, CreateTeamClusterResponse>('/api/teams/:teamId/clusters'),
-
-    provisionDemo: post<never, ProvisionDemoTeamClusterResponse>('/api/teams/:teamId/clusters/demo'),
-    deleteDemo: del<DeleteDemoTeamClusterResponse>('/api/teams/:teamId/clusters/demo'),
-    getDemoStatus: get<GetDemoTeamClusterStatusResponse>('/api/teams/:teamId/clusters/demo/status'),
 
     getById: get<GetTeamClusterResponse>('/api/teams/:teamId/clusters/:teamClusterId'),
     getRuntimeSnapshot: get<GetTeamClusterRuntimeSnapshotResponse>('/api/teams/:teamId/clusters/:teamClusterId/runtime-snapshot'),

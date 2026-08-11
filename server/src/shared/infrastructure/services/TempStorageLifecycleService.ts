@@ -1,4 +1,3 @@
-import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
 import logger from '@shared/infrastructure/logger';
 import tempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
@@ -27,7 +26,7 @@ const PLUGIN_BINARY_CACHE_MAX_AGE_MS = 7 * 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_MAX_AGE_MS = 2 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_SEGMENT = '.tmp.';
 
-class TempStorageLifecycleService implements ITempStorageLifecycleService {
+export class TempStorageLifecycleService {
     private readonly tempFileService = tempFileService;
     private readonly tempRootPath: string;
     private readonly policies: TempStorageCleanupPolicy[];

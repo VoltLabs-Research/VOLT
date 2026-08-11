@@ -6,33 +6,33 @@ import type {
 } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 
-export interface WorkflowPlannerExecutedEvent {
+interface WorkflowPlannerExecutedEvent {
     node: WorkflowNode;
     output: WorkflowNodeOutput;
 
     startedAt: number;
 }
 
-export interface WorkflowPlannerSkippedEvent {
+interface WorkflowPlannerSkippedEvent {
     node: WorkflowNode;
     reason?: string;
     startedAt: number;
 }
 
-export interface WorkflowPlannerForEachEvent {
+interface WorkflowPlannerForEachEvent {
     node: WorkflowNode;
     output: WorkflowNodeOutput;
     items: WorkflowNodeOutput[];
     startedAt: number;
 }
 
-export interface WorkflowPlannerErrorEvent {
+interface WorkflowPlannerErrorEvent {
     node: WorkflowNode;
     error: unknown;
     startedAt: number;
 }
 
-export interface WorkflowPlannerHooks {
+interface WorkflowPlannerHooks {
 
     afterNodeExecuted?: (
         event: WorkflowPlannerExecutedEvent
@@ -45,19 +45,19 @@ export interface WorkflowPlannerHooks {
     onError?: (event: WorkflowPlannerErrorEvent) => void | Promise<void>;
 }
 
-export interface WorkflowPlanParams {
+interface WorkflowPlanParams {
     nodes: WorkflowNode[];
     context: WorkflowExecutionContext;
     shouldSkipNode: (node: WorkflowNode) => boolean;
     hooks?: WorkflowPlannerHooks;
 }
 
-export interface WorkflowPlannerForEachResult {
+interface WorkflowPlannerForEachResult {
     node: WorkflowNode;
     items: WorkflowNodeOutput[];
 }
 
-export interface WorkflowPlanningOutcome {
+interface WorkflowPlanningOutcome {
 
     forEach?: WorkflowPlannerForEachResult;
 

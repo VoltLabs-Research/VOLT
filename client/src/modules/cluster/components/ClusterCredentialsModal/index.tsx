@@ -114,7 +114,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                 />
             )}
         >
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 {!credentials && (
                     <PasswordConfirmationPrompt
                         description='Only reveal credentials when you need to inspect or repair the cluster services directly.'

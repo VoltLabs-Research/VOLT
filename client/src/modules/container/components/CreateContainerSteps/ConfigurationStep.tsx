@@ -10,7 +10,6 @@ import type { ContainerConfig, EnvVariableFormItem, PortMappingFormItem } from '
 import type { FieldConfig } from '@/shared/ui/components/EditableKeyValueCard';
 import type { Team } from '@volt/contracts/modules/team/domain';
 import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
-import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
 
 interface ConfigurationStepProps {
     config: ContainerConfig;
@@ -105,7 +104,6 @@ const ConfigurationStep = ({
     onBack,
     onNext
 }: ConfigurationStepProps) => {
-    const isDemoCluster = useDemoClusterStore((state) => state.isDemo);
     const portItems: PortMappingFormItem[] = config.ports.map(normalizePortMapping);
     const envItems: EnvVariableFormItem[] = config.env.map((item) => ({
         key: item.key,
@@ -238,17 +236,13 @@ const ConfigurationStep = ({
                         fieldType='checkbox'
                         label='Docker socket access'
                         name='mountDockerSocket'
-                        value={isDemoCluster ? false : config.mountDockerSocket}
-                        disabled={isDemoCluster}
+                        value={config.mountDockerSocket}
                         onChange={(event) => {
-                            if (isDemoCluster) return;
                             onConfigChange('mountDockerSocket', event.target.value === 'true');
                         }}
                     />
                     <p className='text-sm text-muted'>
-                        {isDemoCluster
-                            ? 'Disabled in demo mode — connect your own cluster to enable this option.'
-                            : 'Mounts /var/run/docker.sock inside the container.'}
+                        Mounts /var/run/docker.sock inside the container.
                     </p>
                 </OptionalConfigSection>
             </div>

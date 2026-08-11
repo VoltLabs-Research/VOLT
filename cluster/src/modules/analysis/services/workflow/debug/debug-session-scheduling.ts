@@ -30,7 +30,12 @@ export const getNextPendingNode = (session: DebugSession): WorkflowNode | null =
             continue;
         }
 
-        return session.nodeById.get(nodeId)!;
+        const node = session.nodeById.get(nodeId);
+        if (!node) {
+            throw new Error(`Pending workflow node ${nodeId} not found in debug session`);
+        }
+
+        return node;
     }
 
     return null;

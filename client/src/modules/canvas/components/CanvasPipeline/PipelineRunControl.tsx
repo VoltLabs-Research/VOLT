@@ -18,7 +18,7 @@ import {
 } from '../../utils/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
 import { useMemo, useState } from 'react';
 import type {
@@ -228,14 +228,12 @@ const PipelineRunControl = ({
             />
 
             <Button
-                variant='solid'
-                intent='brand'
+                variant='primary'
                 size='sm'
-                shape='rounded'
-                block
-                isLoading={executePipelineMutation.isPending}
-                onClick={() => { void handleExecute(); }}
-                disabled={!canExecute}
+                fullWidth
+                isPending={executePipelineMutation.isPending}
+                onPress={() => { void handleExecute(); }}
+                isDisabled={!canExecute}
             >
                 Execute
             </Button>

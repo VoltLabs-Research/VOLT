@@ -8,7 +8,7 @@ import type { EditMessageInput } from '@volt/contracts/modules/chat/http';
 
 export type EditMessageParams = ChatMessageScopedParams & EditMessageInput;
 
-export interface GetChatMessagesInput extends ChatScopedParams {
+interface GetChatMessagesInput extends ChatScopedParams {
     page: number;
     limit: number;
 }

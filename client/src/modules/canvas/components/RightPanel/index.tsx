@@ -3,8 +3,6 @@ import { memo } from 'react';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-import './RightPanel.css';
-
 interface RightPanelProps extends CanvasPanelActionProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;

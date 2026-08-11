@@ -16,7 +16,7 @@ const ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';
 const DEFAULT_SESSION_TTL_MS = 600_000;
 const RELAY_URL_ORIGIN = 'http://volt.local';
 
-export interface ContainerPortProxyAccessTokenContext {
+interface ContainerPortProxyAccessTokenContext {
     containerId: string;
     privatePort: number;
     publicPort: number;

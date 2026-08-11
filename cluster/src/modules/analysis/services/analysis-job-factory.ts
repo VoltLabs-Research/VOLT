@@ -7,7 +7,7 @@ import type {
     PlannedExecutionItem
 } from '@shared/contracts/types/http-analysis';
 
-export interface AnalysisJobFactoryContext {
+interface AnalysisJobFactoryContext {
     input: AnalysisStartRequest;
     serializedTraceContext?: Record<string, string>;
     totalItems: number;

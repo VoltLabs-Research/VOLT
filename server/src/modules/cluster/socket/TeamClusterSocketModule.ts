@@ -7,9 +7,9 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
-import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
-import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
+import teamClusterHeartbeatMonitor from '@modules/cluster/services/team-cluster/TeamClusterHeartbeatMonitor';
+import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
+import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import TeamClusterDaemonFrameRouter from '@modules/cluster/socket/TeamClusterDaemonFrameRouter';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,

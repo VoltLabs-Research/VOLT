@@ -4,7 +4,7 @@ import type { TeamClusterDaemonQueueScopeLimits } from '@shared/contracts/types/
 
 export type QueueScopeKey = keyof TeamClusterDaemonQueueScopeLimits;
 
-export type ScopeRelease = () => void;
+type ScopeRelease = () => void;
 
 const normalizeQueueScopeLimits = (
     queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits>

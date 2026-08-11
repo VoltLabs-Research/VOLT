@@ -34,7 +34,7 @@ export interface EnqueueRequest {
     backoffDelayMs: number | null;
 }
 
-export interface ReclaimedJobs {
+interface ReclaimedJobs {
     requeued: number;
     failed: number;
 }

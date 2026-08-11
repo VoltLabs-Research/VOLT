@@ -1,12 +1,9 @@
-import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
-import { pipeline } from 'node:stream/promises';
 
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { createZstdDecompressionStream } from '@shared/infrastructure/storage/storage-codec';
+import { downloadDumpObject } from '@shared/infrastructure/storage/download-dump-object';
 
 export const downloadCompressedDump = async (
     objectStore: ClusterObjectStore,
@@ -20,9 +17,12 @@ export const downloadCompressedDump = async (
     const localPath = join(localDir, `${localFileName}-${process.pid}-${randomUUID()}`);
     await mkdir(dirname(localPath), { recursive: true });
 
-    const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, normalized, { skipMetadata: true });
-    const decompressed = createZstdDecompressionStream(response.stream);
-    await pipeline(decompressed.stream, createWriteStream(localPath));
-    await decompressed.completion;
+    await downloadDumpObject({
+        objectStore,
+        ownerClusterId,
+        objectKey: normalized,
+        localPath,
+        decompress: true
+    });
     return localPath;
 };

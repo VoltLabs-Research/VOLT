@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import reverseWsHttpRelay from '@modules/cluster/services/ReverseWsHttpRelay';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import reverseWsHttpRelay from '@modules/cluster/services/reverse-channel/ReverseWsHttpRelay';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import containerPortProxyAccessTokenService from '@modules/container/services/ContainerPortProxyAccessTokenService';
 import type { ContainerPortRelayTarget } from '@modules/container/services/ContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';

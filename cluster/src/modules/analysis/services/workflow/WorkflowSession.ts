@@ -21,7 +21,7 @@ export interface WorkflowOutputsSnapshot {
     [nodeId: string]: WorkflowNodeOutput;
 }
 
-export interface WorkflowSessionParams {
+interface WorkflowSessionParams {
     outputs?: WorkflowOutputs;
     userConfig: WorkflowValueMap;
     runtimeArguments: WorkflowValueMap;
@@ -41,16 +41,16 @@ export interface WorkflowSessionParams {
     pipelineContext?: PipelineContext;
 }
 
-export interface WorkflowSessionDefinitionParams extends Omit<WorkflowSessionParams, 'workflow'> {
+interface WorkflowSessionDefinitionParams extends Omit<WorkflowSessionParams, 'workflow'> {
     workflow: WorkflowDefinition;
 }
 
-export interface WorkflowDumpSelection {
+interface WorkflowDumpSelection {
     dump: TrajectoryDumpDescriptor;
     index: number;
 }
 
-export interface WorkflowExposureMaps {
+interface WorkflowExposureMaps {
     exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
     exportNodeToExposureNodeId: Map<string, string>;
 }
@@ -220,7 +220,11 @@ export class WorkflowSession {
                 continue;
             }
 
-            const exposureData = node.data.exposure!;
+            const exposureData = node.data.exposure;
+            if (!exposureData || !exposureData.results) {
+                continue;
+            }
+
             const exportNode = workflow.findDescendantByType(node.id, WorkflowNodeType.Export);
             if (exportNode) {
                 exportNodeToExposureNodeId.set(exportNode.id, node.id);
@@ -228,8 +232,8 @@ export class WorkflowSession {
 
             exposuresByNodeId.set(node.id, {
                 nodeId: node.id,
-                name: exposureData.name!,
-                results: exposureData.results!,
+                name: exposureData.name ?? node.id,
+                results: exposureData.results,
                 id: exposureData.id,
                 export: exportNode ? exportNode.data.export : undefined
             });

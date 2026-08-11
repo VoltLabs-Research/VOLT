@@ -29,8 +29,6 @@ export const toTeamClusterLike = (entity: TeamClusterEntity): TeamCluster => ({
         queueScopeLimits: entity.queueScopeLimits,
         roleConfig: entity.roleConfig,
         hostCapabilities: entity.hostCapabilities,
-        isDemo: entity.isDemo,
-        demoExpiresAt: entity.demoExpiresAt,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt
     },

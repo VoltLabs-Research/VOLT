@@ -3,7 +3,7 @@ import type { FilterExpression } from '@modules/trajectory/services/trajectory/A
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 
-export interface ParticleFilterConditionInput {
+interface ParticleFilterConditionInput {
     property: string;
     operator: string;
     value: number | string;
@@ -19,7 +19,7 @@ export interface ParticleFilterRequest {
     conditions: ParticleFilterCondition[];
 }
 
-export interface ParticleFilterRequestInputLike {
+interface ParticleFilterRequestInputLike {
     combinator: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionInput[] | string;
 }

@@ -1,3 +1,4 @@
+import { EXECUTION_ROW_CLASS, EXECUTION_ROW_TONE_CLASS } from './execution-classes';
 import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import {
     extractTrajectoryTimesteps,
@@ -102,6 +103,19 @@ const filterRowsForCurrentTimestep = <T extends { timestep?: number }>(
     return rows.filter((row) => row.timestep === currentTimestep);
 };
 
+/**
+ * `.canvas-tree-execution-row` plus its tone. The tone class is looked up rather than
+ * interpolated so Tailwind sees complete literals, and an unknown status simply gets no
+ * tone — as before, where only these four had a rule.
+ */
+const resolveRowClassName = (status: string): string => {
+    const tone = status in EXECUTION_ROW_TONE_CLASS
+        ? EXECUTION_ROW_TONE_CLASS[status as keyof typeof EXECUTION_ROW_TONE_CLASS]
+        : '';
+
+    return tone ? `${EXECUTION_ROW_CLASS} ${tone}` : EXECUTION_ROW_CLASS;
+};
+
 export const buildAnalysisExecutionRows = ({
     analysis,
     trajectory,
@@ -130,7 +144,7 @@ export const buildAnalysisExecutionRows = ({
             status: child.status,
             cacheHit: child.cacheHit,
             durationMs: child.durationMs,
-            className: `canvas-tree-execution-row canvas-tree-execution-row--child canvas-tree-execution-row--${child.status}`,
+            className: resolveRowClassName(child.status),
             iconSource: child
         })),
         ...stageRows.map((stage) => ({
@@ -139,7 +153,7 @@ export const buildAnalysisExecutionRows = ({
             status: stage.status,
             cacheHit: stage.cacheHit,
             durationMs: stage.durationMs,
-            className: `canvas-tree-execution-row canvas-tree-execution-row--${stage.status}`,
+            className: resolveRowClassName(stage.status),
             iconSource: stage
         }))
     ];

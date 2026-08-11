@@ -37,7 +37,7 @@ import type { AnalysisStageStatus } from '@shared/contracts/channel/reverse-chan
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 
 /** Everything a nested plugin workflow inherits from the workflow that invoked it. */
-export interface NestedPluginWorkflowInput {
+interface NestedPluginWorkflowInput {
     nestedPlugins: NestedPluginDefinition[];
     outputs: WorkflowOutputs;
     dumpTarget: WorkflowDumpTarget;

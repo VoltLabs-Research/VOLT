@@ -40,7 +40,7 @@ import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-fr
 import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 
-export interface WorkflowExecuteInput {
+interface WorkflowExecuteInput {
     jobId: string;
     executionData: AnalysisJobExecutionData;
     outputs: WorkflowOutputs;

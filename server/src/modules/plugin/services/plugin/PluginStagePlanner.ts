@@ -23,7 +23,7 @@ import {
     WorkflowValidationMode,
     WorkflowValidatorService
 } from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import type { Analysis } from '@shared/contracts/types';

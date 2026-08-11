@@ -3,10 +3,10 @@ import { ProvenanceService } from '@modules/analysis/services/ProvenanceService'
 import pluginDebugSessionRegistry from '@modules/plugin/services/PluginDebugSessionRegistryService';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
-import clusterDaemonLifecycleService from '@modules/cluster/services/ClusterDaemonLifecycleService';
-import daemonSceneArtifactIngestService from '@modules/cluster/services/DaemonSceneArtifactIngestService';
-import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
-import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/reverse-channel-protocol';
+import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
+import daemonSceneArtifactIngestService from '@modules/cluster/services/daemon/DaemonSceneArtifactIngestService';
+import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
+import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,

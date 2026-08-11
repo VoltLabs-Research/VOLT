@@ -19,12 +19,12 @@ export interface ExporterEntry {
     arrayIndex: number | undefined;
 }
 
-export interface MeshVertex {
+interface MeshVertex {
     index: number;
     position: [number, number, number];
 }
 
-export interface MeshFacet {
+interface MeshFacet {
     vertices: [number, number, number];
 }
 
@@ -62,7 +62,7 @@ export interface AtomisticAtom {
  */
 export const ATOMISTIC_PARQUET_SOURCE_KEY = '__parquet_source__';
 
-export interface AtomisticParquetSourcePayload {
+interface AtomisticParquetSourcePayload {
     [ATOMISTIC_PARQUET_SOURCE_KEY]: string;
 }
 
@@ -127,7 +127,7 @@ export interface OctreeExportOptions {
     geometryBudget?: GeometryBudget;
 }
 
-export type ExportExecutionData = Required<Pick<JobIdentity, 'analysisId' | 'trajectoryId' | 'pluginId'>> & {
+type ExportExecutionData = Required<Pick<JobIdentity, 'analysisId' | 'trajectoryId' | 'pluginId'>> & {
     storageClusterId?: string;
 };
 

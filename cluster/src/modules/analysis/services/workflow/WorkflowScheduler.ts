@@ -21,7 +21,7 @@ interface WorkflowResolutionCache {
     resolvingNodeIds: Set<string>;
 }
 
-export interface WorkflowSchedulerParams {
+interface WorkflowSchedulerParams {
     workflow: WorkflowGraph;
     outputs: WorkflowOutputs;
     getNodeExecutionStatus: (nodeId: string) => WorkflowExecutionStatus;

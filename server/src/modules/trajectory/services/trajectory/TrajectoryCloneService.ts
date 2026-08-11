@@ -4,7 +4,7 @@ import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import { createTrajectoryCloneJobStats } from '@modules/trajectory/contracts/trajectory-clone-job';
 
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
 import trajectoryCloneRunner from '@modules/trajectory/services/trajectory/TrajectoryCloneRunner';

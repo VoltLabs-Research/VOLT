@@ -8,7 +8,7 @@ import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-wo
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 
 /** The mutable slice of the analysis environment this module reads and appends to. */
-export interface DumpLocalizationState {
+interface DumpLocalizationState {
     outputs: Map<string, WorkflowNodeOutput>;
     dumpTargets: WorkflowDumpTarget[];
     dumpLocalPaths: string[];

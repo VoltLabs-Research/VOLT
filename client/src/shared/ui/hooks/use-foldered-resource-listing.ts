@@ -1,6 +1,6 @@
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import type { Identifiable } from '@/shared/contracts/entity';
-import { closeModal, openModal } from '@voltstack/bravais';
+import { closeModal, openModal } from '@/shared/ui/modal';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import useFolderedListing from '@/shared/ui/hooks/use-foldered-listing';

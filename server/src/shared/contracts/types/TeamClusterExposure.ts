@@ -11,7 +11,7 @@ export enum TeamClusterServiceExposureStatus {
     Unavailable = 'unavailable'
 }
 
-export enum TeamClusterServiceExposureSourceKind {
+enum TeamClusterServiceExposureSourceKind {
     Container = 'container',
     Daemon = 'daemon'
 }

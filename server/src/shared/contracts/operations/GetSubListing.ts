@@ -1,8 +1,6 @@
 import type { GetSubListingInput as WireGetSubListingInput } from '@volt/contracts/modules/plugin/ai-tools';
 import type { SubListingColumn, SubListingRowData } from '@volt/contracts/modules/plugin/listing';
 
-export type { SubListingColumn, SubListingRowData };
-
 /**
  * The wire input plus the team scope the server resolves from the request.
  *

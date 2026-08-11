@@ -161,8 +161,6 @@ export interface TeamCluster{
     /** Null until the daemon's first heartbeat, which is not the same as "no runtime". */
     hostCapabilities: TeamClusterHostCapabilities | null;
     activeTransfers?: ClusterTransferJob[];
-    isDemo: boolean;
-    demoExpiresAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -249,20 +247,6 @@ export interface CreateTeamClusterResponse{
 
 export interface GetTeamClusterResponse{
     teamCluster: TeamCluster;
-}
-
-export interface ProvisionDemoTeamClusterResponse{
-    teamCluster: TeamCluster;
-}
-
-export interface GetDemoTeamClusterStatusResponse{
-    teamCluster: TeamCluster | null;
-    remainingMs: number | null;
-    hasActiveDemo: boolean;
-}
-
-export interface DeleteDemoTeamClusterResponse{
-    teardownScheduled: boolean;
 }
 
 export interface DeleteTeamClusterResponse{

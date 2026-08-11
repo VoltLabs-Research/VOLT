@@ -1,5 +1,5 @@
 import { COMMAND_GROUPS } from '@core/bootstrap/command-groups';
-import { getCommandRegistry } from '@shared/commands/CommandRegistry';
+import { registerCommandGroups } from '@shared/commands/CommandRegistry';
 import { logger } from '@shared/infrastructure/logger';
 import type { CommandTransport } from '@shared/contracts/channel/command-transport';
 
@@ -16,7 +16,7 @@ const mountCommands = (transport: CommandTransport): void => {
     const startedAt = Date.now();
     const factories = COMMAND_GROUPS;
 
-    getCommandRegistry().registerGroups(factories, transport);
+    registerCommandGroups(factories, transport);
 
     logger.info(`@command-bootstrap: mounted ${factories.length} command groups durationMs=${Date.now() - startedAt}`);
 };

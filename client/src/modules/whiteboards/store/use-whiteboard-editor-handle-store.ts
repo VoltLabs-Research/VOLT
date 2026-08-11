@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type WhiteboardDrawElementKind =
+type WhiteboardDrawElementKind =
     | 'rectangle'
     | 'ellipse'
     | 'diamond'

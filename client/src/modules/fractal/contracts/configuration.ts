@@ -3,7 +3,7 @@ export interface ConfigurationState {
     activeModifier: string;
 }
 
-export interface ConfigurationActions {
+interface ConfigurationActions {
     setActiveModifier: (modifier: string) => void;
     setActiveSidebarOption: (option: string) => void;
     reset: () => void;

@@ -28,7 +28,7 @@ const isCosmeticColorColumn = (name: string): boolean =>
 /** DuckDB types that cast to DOUBLE without inspecting any value. */
 const NUMERIC_TYPE_PATTERN = /^(BOOLEAN|[US]?TINYINT|[US]?SMALLINT|[US]?INTEGER|[US]?BIGINT|HUGEINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/;
 
-export interface SourceColumn {
+interface SourceColumn {
     name: string;
     type: string;
 }
@@ -41,7 +41,7 @@ interface ProjectedColumn {
     isNumeric: boolean;
 }
 
-export interface PropertyProjection {
+interface PropertyProjection {
     columnNames: string[];
     rowCount: number;
     /** Runs the projection and writes the parquet at `outputPath`. */

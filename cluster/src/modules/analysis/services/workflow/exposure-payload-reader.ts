@@ -11,7 +11,7 @@ import {
 } from '@modules/analysis/services/workflow/payload-document-reader';
 import { ATOMISTIC_PARQUET_SOURCE_KEY } from '@modules/plugin/services/exports/export-node-processor-types';
 
-export interface WorkflowExposurePayloadReadResult {
+interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
     subListingNames: string[];
     subListings: Record<string, JsonObject[]>;
@@ -43,7 +43,7 @@ const normalizeValue = (value: unknown): unknown => {
     return value;
 };
 
-export const normalizeParquetRow = (row: JsonObject): JsonObject => {
+const normalizeParquetRow = (row: JsonObject): JsonObject => {
     const out: JsonObject = {};
     for (const [key, value] of Object.entries(row)) {
         out[key] = normalizeValue(value) as JsonObject[string];

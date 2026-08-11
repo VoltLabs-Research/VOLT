@@ -1,17 +1,17 @@
 
 import type { AnalysisConfig } from '@shared/contracts/types/AnalysisProps';
 
-export interface AnalysisListTeamCluster {
+interface AnalysisListTeamCluster {
     _id: string;
     name?: string;
 }
 
-export interface AnalysisListTrajectory {
+interface AnalysisListTrajectory {
     _id: string;
     name?: string;
 }
 
-export interface AnalysisListUser {
+interface AnalysisListUser {
     _id: string;
     firstName?: string;
     lastName?: string;

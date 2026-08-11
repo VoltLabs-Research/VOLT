@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import ApplicationError from '@shared/application/errors/ApplicationError';

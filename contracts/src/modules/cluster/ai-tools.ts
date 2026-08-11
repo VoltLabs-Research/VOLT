@@ -71,7 +71,3 @@ export interface RevealClusterCredentialsInput{
      */
     password: string;
 }
-
-export interface ManageDemoClusterInput{
-    action: 'provision' | 'status' | 'delete';
-}

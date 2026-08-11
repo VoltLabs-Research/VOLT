@@ -3,8 +3,8 @@ import { STATIC_ROOT } from '@core/config/paths';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import ClusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import PluginService from '@modules/plugin/services/PluginService';
 import {
     ANALYSIS_LIST_MAX_LIMIT,

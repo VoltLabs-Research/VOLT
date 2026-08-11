@@ -38,7 +38,7 @@ import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-m
  * `text-accent-foreground`, which is the token that actually tracks the accent in
  * both themes.
  */
-export interface StepperStep<K extends string> {
+interface StepperStep<K extends string> {
     key: K;
     content: ReactNode;
 }

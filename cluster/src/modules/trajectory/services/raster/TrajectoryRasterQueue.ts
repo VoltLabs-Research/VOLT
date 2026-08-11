@@ -11,10 +11,29 @@ import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/servic
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 import { buildRasterJobPayload, type ParsedRasterModel } from '@modules/trajectory/services/raster-job-factory';
-import { toQueuedJobNotification } from '@shared/application/utilities/to-queued-job-notification';
 import { mapLimited } from '@shared/application/utilities/map-limited';
+import type { QueuedJobNotification } from '@shared/contracts/types/http-analysis';
+import type { JobIdentity } from '@shared/contracts/types/job-identity';
 
 const RASTER_JOB_NAME = 'Rasterize trajectory preview';
+
+interface QueueJobLike extends JobIdentity {
+    queueType: string;
+}
+
+const toQueuedJobNotification = <TJob extends QueueJobLike>(
+    job: TJob,
+    name: string
+): QueuedJobNotification => ({
+    jobId: job.jobId,
+    teamId: job.teamId,
+    trajectoryId: job.trajectoryId,
+    analysisId: job.analysisId,
+    pluginId: job.pluginId,
+    timestep: job.timestep,
+    queueType: job.queueType,
+    name
+});
 
 interface AutoPreviewRasterizationConfig {
     timestep: number;

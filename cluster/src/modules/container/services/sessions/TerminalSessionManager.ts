@@ -1,4 +1,5 @@
 import { errorMessage } from '@shared/application/utilities/error-message';
+import { logger } from '@shared/infrastructure/logger';
 import { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { withTimeout } from '@shared/infrastructure/observability/daemon-instrumentation';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@core/constants/reverse-channel';
@@ -128,7 +129,9 @@ export class TerminalSessionManager {
         terminalState.attachment.exec.resize({
             rows: payload.rows,
             cols: payload.cols
-        }).catch(() => {});
+        }).catch((error) => {
+            logger.warn(`Failed to resize terminal session ${payload.sessionId}: ${errorMessage(error)}`);
+        });
         return true;
     }
 

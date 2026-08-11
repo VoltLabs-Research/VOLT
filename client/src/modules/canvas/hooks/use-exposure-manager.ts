@@ -15,7 +15,7 @@ import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { RenderableExposurePayload, ListSceneArtifactsInput } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
-export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
+type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
 export interface ExposureEntry {
     state: ExposureLoadState;

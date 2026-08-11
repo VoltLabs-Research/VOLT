@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
-export type DragAxisLock = 'x' | 'y' | 'z';
+type DragAxisLock = 'x' | 'y' | 'z';
 
 export const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 

@@ -2,7 +2,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
 import exposureOctreeService from '@modules/trajectory/services/exposure-octree/ExposureOctreeService';
 import particleFilterService, { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
-import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
 import sceneArtifactQueryService from '@modules/trajectory/services/trajectory/SceneArtifactQueryService';
 import trajectoryCatalogService from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
 import trajectoryDownloadService from '@modules/trajectory/services/trajectory/TrajectoryDownloadService';

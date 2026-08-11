@@ -29,7 +29,7 @@ import { cn } from '@heroui/react';
  * kept: a list of dots is a list of live regions today, which is arguably a bug,
  * but changing it changes what a screen reader announces.
  */
-export type ClusterDotTone = 'success' | 'warning' | 'danger' | 'neutral';
+type ClusterDotTone = 'success' | 'warning' | 'danger' | 'neutral';
 
 const DOT_CLASS = 'relative inline-block size-2 shrink-0 rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]';
 

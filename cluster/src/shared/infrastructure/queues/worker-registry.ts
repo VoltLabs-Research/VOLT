@@ -6,16 +6,16 @@ import type { TeamClusterDaemonQueueConcurrency } from '@shared/contracts/types/
  * `always` workers serve the trajectory pipeline every daemon owes its cluster;
  * `compute` workers only run where the control plane has granted the compute role.
  */
-export type WorkerStartScope = 'always' | 'compute';
+type WorkerStartScope = 'always' | 'compute';
 
 /** What the coordinator needs of a worker, independent of which queue it drains. */
-export interface ManagedWorker {
+interface ManagedWorker {
     start(concurrency: number): void;
     stop(): Promise<void>;
     setConcurrency(concurrency: number): void;
 }
 
-export interface WorkerRegistration {
+interface WorkerRegistration {
     name: string;
     scope: WorkerStartScope;
     concurrencyKey: keyof TeamClusterDaemonQueueConcurrency;

@@ -5,7 +5,7 @@ import fsPromises from 'node:fs/promises';
 import { tmpName } from 'tmp-promise';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 
-export interface UploadBufferToObjectStoreInput {
+interface UploadBufferToObjectStoreInput {
     objectStore: ScopedClusterObjectStore;
     bucket: string;
     objectKey: string;

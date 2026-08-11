@@ -7,8 +7,17 @@ import { buildAnalysisExecutionRows } from './execution-rows';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-
-import './AnalysisExecutionOverlay.css';
+import { cn } from '@heroui/react';
+import {
+    EXECUTION_BLOCK_CLASS,
+    EXECUTION_CHIP_CLASS,
+    EXECUTION_ICON_CLASS,
+    EXECUTION_ICON_TONE_CLASS,
+    EXECUTION_LABEL_CLASS,
+    EXECUTION_META_CLASS,
+    OVERLAY_CLASS,
+    OVERLAY_COMPLETED_CLASS
+} from './execution-classes';
 
 interface AnalysisExecutionOverlayProps {
     trajectory?: Trajectory | null;
@@ -100,23 +109,31 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
     }
 
     const isFullyCompleted = rows.every((row) => row.status === 'completed' || row.status === 'cached');
-    const overlayClassName = [
-        'canvas-analysis-execution-overlay',
-        isFullyCompleted ? 'canvas-analysis-execution-overlay--completed' : ''
-    ].filter(Boolean).join(' ');
 
     return (
-        <div className={overlayClassName}>
-            <div className="canvas-tree-execution-block" role="group" aria-label={`${analysis.pluginDisplayName} execution timeline`}>
+        <div className={cn(
+            'canvas-analysis-execution-overlay',
+            OVERLAY_CLASS,
+            isFullyCompleted && `canvas-analysis-execution-overlay--completed ${OVERLAY_COMPLETED_CLASS}`
+        )}>
+            <div className={EXECUTION_BLOCK_CLASS} role='group' aria-label={`${analysis.pluginDisplayName} execution timeline`}>
                 {rows.map((row) => (
                     <div key={row.key} className={row.className}>
-                        <span className={`canvas-tree-execution-icon canvas-tree-execution-icon--${row.status}`}>
+                        <span className={cn(
+                            EXECUTION_ICON_CLASS,
+                            row.status in EXECUTION_ICON_TONE_CLASS && EXECUTION_ICON_TONE_CLASS[row.status as keyof typeof EXECUTION_ICON_TONE_CLASS]
+                        )}>
                             {getStageIcon(row.iconSource)}
                         </span>
-                        <span className='truncate canvas-tree-execution-label'>{row.label}</span>
-                        {row.cacheHit && <span className='canvas-tree-execution-chip'>cached</span>}
+                        {/*
+                          * `data-execution-label` replaces the `.canvas-tree-execution-label`
+                          * class the row's tone rule selected: the tone lives on the row, and a
+                          * descendant variant needs something to aim at.
+                          */}
+                        <span data-execution-label className={EXECUTION_LABEL_CLASS}>{row.label}</span>
+                        {row.cacheHit && <span className={`${EXECUTION_META_CLASS} ${EXECUTION_CHIP_CLASS}`}>cached</span>}
                         {row.durationMs !== undefined && (
-                            <span className='canvas-tree-execution-duration'>{formatDuration(row.durationMs)}</span>
+                            <span className={EXECUTION_META_CLASS}>{formatDuration(row.durationMs)}</span>
                         )}
                     </div>
                 ))}

@@ -349,6 +349,70 @@ html[data-volt-desktop][data-volt-maximized] #root {
 }
 
 /**
+ * ─── Canvas chrome that has no utility form ──────────────────────────────────
+ *
+ * Four rules survived the canvas module's 32 deleted stylesheets. Each is here
+ * because of a specific mechanical limit, not because it was inconvenient to
+ * convert. The `animation` and marker classes stay at their call sites.
+ */
+
+/* A `@keyframes` block has no utility form. The shorthand that uses it does, and
+   stayed at the call site as `animate-[canvas-drawer-backdrop-in_180ms_ease-out]`.
+   No reduced-motion pair is needed: the global block above already forces
+   `animation-duration: 0.01ms` on everything. */
+@keyframes canvas-drawer-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Same, and this one cannot be decomposed into utilities at all: the badge is
+   centred with `translateX(-50%)`, so that translate has to be restated in both
+   steps or the element jumps to the left edge for the animation's duration. */
+@keyframes ai-viewer-badge-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/*
+ * On the desktop shell the canvas toolbar *is* the OS titlebar for /canvas/*.
+ * The second rule is an ancestor attribute plus a descendant `:is()` over four
+ * element types and a class — a selector no utility on a single element can
+ * produce, because the no-drag has to reach HeroUI internals (Button roots, Input,
+ * the WindowControls subtree) that the module never renders directly.
+ */
+[data-volt-desktop] .canvas-top-toolbar {
+    -webkit-app-region: drag;
+}
+
+[data-volt-desktop] .canvas-top-toolbar :is(button, input, a, [role='button'], .volt-window-controls) {
+    -webkit-app-region: no-drag;
+}
+
+/*
+ * Two separate limits here. `backdrop-filter` with three functions in one value
+ * cannot be composed from Tailwind's `backdrop-*` utilities — they each write the
+ * same declaration through their own variables, so one wins and the rest are lost.
+ * And the completed state transitions `mask-image`, which must carry its
+ * `-webkit-` twin *inside* the transition list; a utility cannot write the same
+ * property name twice, and the hover reset then needs the pair again.
+ */
+.canvas-analysis-execution-overlay {
+    backdrop-filter: blur(8px) brightness(1.3) saturate(0.6);
+}
+
+.canvas-analysis-execution-overlay--completed {
+    -webkit-mask-image: linear-gradient(to bottom left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.72) 48%, rgba(0, 0, 0, 0.28) 100%);
+    mask-image: linear-gradient(to bottom left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.72) 48%, rgba(0, 0, 0, 0.28) 100%);
+    transition: mask-image 140ms ease, -webkit-mask-image 140ms ease;
+}
+
+.canvas-analysis-execution-overlay--completed:hover,
+.canvas-analysis-execution-overlay--completed:focus-within {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
+
+/**
  * ─── TEMPORARY: bravais token compatibility shim ─────────────────────────────
  *
  * DELETE THIS BLOCK once `find src -name '*.css'` returns only this file and
@@ -534,14 +598,23 @@ html[data-volt-desktop][data-volt-maximized] #root {
  * same reason as reduced motion below: a guarantee that depends on each author
  * remembering a modifier is not a guarantee. `min-height` (not `height`) so it
  * only ever grows a control.
+ *
+ * **In `@layer components` on purpose.** Unlayered, this rule outranked Tailwind's
+ * `utilities` layer and silently overrode deliberately compact controls — the
+ * canvas transport bar (`max-md:[&_button]:min-h-[1.875rem]`, 30px) and the
+ * viewport floating column both express their size as utilities, and both grew to
+ * 44px on a touch device. Inside `components` it becomes a floor that an explicit
+ * utility can still opt out of, which is what a default should be.
  */
-@media (pointer: coarse) and (width < 64rem) {
-    .button--sm {
-        min-height: 2.75rem;
-    }
+@layer components {
+    @media (pointer: coarse) and (width < 64rem) {
+        .button--sm {
+            min-height: 2.75rem;
+        }
 
-    .button--sm.button--icon-only {
-        min-width: 2.75rem;
+        .button--sm.button--icon-only {
+            min-width: 2.75rem;
+        }
     }
 }
 

@@ -8,7 +8,7 @@ export interface BufferedDaemonEventOptions {
 
 export type ImmediateTransportMessage = ExposureSnapshotMessage | RuntimeProgressMessage | TeamClusterDaemonServerEventMessage;
 
-export interface ClusterDaemonEventPublisherClient {
+interface ClusterDaemonEventPublisherClient {
     getDaemonPassword(): string;
     getTeamClusterId(): string;
 }

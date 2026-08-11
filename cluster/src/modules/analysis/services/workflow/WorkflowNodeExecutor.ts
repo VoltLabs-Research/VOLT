@@ -5,7 +5,7 @@ import type {
 } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 
-export interface WorkflowNodeExecutionResult {
+interface WorkflowNodeExecutionResult {
     node: WorkflowNode;
     status: 'executed' | 'skipped';
     output?: WorkflowNodeOutput;

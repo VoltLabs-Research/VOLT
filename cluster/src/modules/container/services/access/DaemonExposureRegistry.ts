@@ -29,14 +29,9 @@ import type Dockerode from 'dockerode';
 import type { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
 import { ExposureSnapshotUpdatedEvent } from '@modules/container/events/container-events';
 import type { VoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
+import type { VoltEventChannelConnection } from '@modules/container/socket/connection/VoltEventChannelConnection';
 
 type ContainerInfo = Dockerode.ContainerInfo;
-
-/** Just the readiness surface of the event channel, so this stays unit-testable. */
-interface DaemonEventTransport {
-    isReady(): boolean;
-    onReady(listener: () => void): () => void;
-}
 
 interface ContainerExposureContext {
     container: ContainerInfo;
@@ -72,7 +67,7 @@ export class DaemonExposureRegistry {
         private readonly dockerRuntime: DockerRuntime,
         private readonly voltCloudConnection: VoltCloudConnection,
         private readonly eventDispatcher: EventDispatcher,
-        private readonly eventTransport: DaemonEventTransport
+        private readonly eventTransport: VoltEventChannelConnection
     ) {}
 
     start(): void {
@@ -80,7 +75,9 @@ export class DaemonExposureRegistry {
             return;
         }
 
-        this.sync().catch(() => {});
+        this.sync().catch((error) => {
+            logger.warn(`Daemon exposure startup sync failed: ${errorMessage(error)}`);
+        });
 
         /*
          * Without this the server spends up to one sync interval after its own restart
@@ -90,11 +87,15 @@ export class DaemonExposureRegistry {
          * emitted on its connect is dropped for want of a transport.
          */
         this.stopListeningForReconnect = this.eventTransport.onReady(() => {
-            this.sync().catch(() => {});
+            this.sync().catch((error) => {
+                logger.warn(`Daemon exposure sync on event channel reconnect failed: ${errorMessage(error)}`);
+            });
         });
 
         this.syncTimer = setInterval(() => {
-            this.sync().catch(() => {});
+            this.sync().catch((error) => {
+                logger.warn(`Daemon exposure interval sync failed: ${errorMessage(error)}`);
+            });
         }, EXPOSURE_SYNC_INTERVAL_MS);
 
         this.syncTimer.unref();
@@ -227,7 +228,8 @@ export class DaemonExposureRegistry {
                 teamId,
                 websocketPorts: readPortSet(labels[WEBSOCKET_PORTS_LABEL_KEY])
             };
-        } catch {
+        } catch (error) {
+            logger.warn(`Failed to inspect container ${container.Id} for exposures: ${errorMessage(error)}`);
             return null;
         }
     }
@@ -334,11 +336,14 @@ export class DaemonExposureRegistry {
             return;
         }
 
-        this.eventDispatcher.publish(new ExposureSnapshotUpdatedEvent({ exposures })).catch((error) => {
-            logger.warn(`Failed to publish exposure snapshot event: ${errorMessage(error)}`);
-        });
-        this.lastSentSnapshotSignature = snapshotSignature;
-        this.lastPublishedGeneration = generation;
+        this.eventDispatcher.publish(new ExposureSnapshotUpdatedEvent({ exposures }))
+            .then(() => {
+                this.lastSentSnapshotSignature = snapshotSignature;
+                this.lastPublishedGeneration = generation;
+            })
+            .catch((error) => {
+                logger.warn(`Failed to publish exposure snapshot event: ${errorMessage(error)}`);
+            });
     }
 };
 

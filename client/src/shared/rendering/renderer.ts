@@ -20,7 +20,7 @@ export interface RenderingOption<TValue> {
     title: string;
 };
 
-export interface RendererCreateSettings {
+interface RendererCreateSettings {
     antialias: boolean;
     alpha: boolean;
     depth: boolean;
@@ -33,7 +33,7 @@ export interface RendererCreateSettings {
     powerPreference: PowerPreference;
 };
 
-export interface RendererRuntimeSettings {
+interface RendererRuntimeSettings {
     toneMapping: ToneMappingMode;
     toneMappingExposure: number;
     outputColorSpace: OutputCS;
@@ -237,7 +237,7 @@ export const resolveOutputColorSpace = (colorSpace: OutputCS): string => {
 export type RendererCreateState = RendererCreateSettings;
 export type RendererRuntimeState = RendererRuntimeSettings;
 
-export interface RendererSettingsActions {
+interface RendererSettingsActions {
     setCreate: (partial: Partial<RendererCreateState>) => void;
     setRuntime: (partial: Partial<RendererRuntimeState>) => void;
     resetCreate: () => void;

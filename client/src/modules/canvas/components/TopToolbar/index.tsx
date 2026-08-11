@@ -10,6 +10,7 @@ import WorkspaceTabs from '../WorkspaceTabs';
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
@@ -77,9 +78,9 @@ const TOOLBAR_CENTER_CLASS = 'pointer-events-none absolute inset-y-0 left-[calc(
 const TOOLBAR_INFO_CLASS = 'flex flex-1 flex-row items-center justify-end gap-1 pr-3 max-md:hidden';
 
 /** `.canvas-toolbar-options--desktop` / `--mobile`. */
-const TOOLBAR_OPTIONS_DESKTOP_CLASS = 'contents max-md:hidden';
+const TOOLBAR_OPTIONS_DESKTOP_CLASS = 'contents';
 
-const TOOLBAR_OPTIONS_MOBILE_CLASS = 'hidden max-md:flex max-md:h-[var(--canvas-header-height,40px)] max-md:w-full max-md:min-w-0 max-md:flex-nowrap max-md:items-center max-md:justify-center max-md:gap-0.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:whitespace-nowrap max-md:px-1.5 max-md:[&>*]:shrink-0';
+const TOOLBAR_OPTIONS_MOBILE_CLASS = 'flex max-md:h-[var(--canvas-header-height,40px)] max-md:w-full max-md:min-w-0 max-md:flex-nowrap max-md:items-center max-md:justify-center max-md:gap-0.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:whitespace-nowrap max-md:px-1.5 max-md:[&>*]:shrink-0';
 
 /** `.canvas-toolbar-menus` */
 const TOOLBAR_MENUS_CLASS = 'flex flex-row items-center gap-1 px-4 max-md:flex-none max-md:overflow-visible max-md:p-0 max-md:[&>*]:shrink-0';
@@ -184,6 +185,22 @@ const TopToolbar = ({
             <ChevronLeft size={16} aria-hidden='true' />
         </Button>
     );
+    /*
+     * The options row must EXIST once, not twice.
+     *
+     * It used to be rendered for both breakpoints with CSS hiding the inactive copy
+     * (`contents max-md:hidden` / `hidden max-md:flex`). That worked while the menu
+     * popover rendered inline — the hidden container hid it too. HeroUI's popover
+     * portals to `document.body`, so it escapes `display: none`: both copies share
+     * the `openMenu` state, both open, and the hidden copy's trigger has no
+     * geometry, so its menu lands at the top-left corner of the viewport. That is
+     * the duplicate menu.
+     *
+     * Choosing the row in JS also stops `WorkspaceTabs` from being mounted twice.
+     * `48rem` is Tailwind's `md`, so this matches the `max-md:` variants exactly.
+     */
+    const isMobileViewport = useMedia('(width < 48rem)');
+
     const renderToolbarOptions = (
         isMobile: boolean,
         menuIdPrefix = 'menu'
@@ -209,7 +226,7 @@ const TopToolbar = ({
 
     return (
         <header className={cn(TOOLBAR_CLASS, 'canvas-top-toolbar flex items-stretch')}>
-            {renderToolbarOptions(true, 'mobile-menu')}
+            {isMobileViewport && renderToolbarOptions(true, 'mobile-menu')}
 
             <div className={TOOLBAR_MAIN_CLASS}>
                 <input
@@ -239,7 +256,7 @@ const TopToolbar = ({
                         </div>
                     )}
 
-                    {renderToolbarOptions(false)}
+                    {!isMobileViewport && renderToolbarOptions(false)}
                 </div>
 
                 <div className={TOOLBAR_CENTER_CLASS}>

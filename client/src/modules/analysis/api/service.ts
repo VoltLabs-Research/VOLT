@@ -16,7 +16,7 @@ export interface GetAnalysesParams {
     search?: string;
 }
 
-export type AnalysisLogStream = 'stdout' | 'stderr' | 'system';
+type AnalysisLogStream = 'stdout' | 'stderr' | 'system';
 export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export interface AnalysisLogSegment {

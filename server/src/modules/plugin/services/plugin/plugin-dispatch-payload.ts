@@ -34,7 +34,7 @@ export interface RoutePluginExecutionInput {
  * heavier projections (stages, child analyses, artifact bookkeeping) are left out
  * of the dispatch payload on purpose.
  */
-export type DaemonAnalysisPayload = { _id: string } & Pick<
+type DaemonAnalysisPayload = { _id: string } & Pick<
     AnalysisProps,
     'plugin' | 'pluginDisplayName' | 'computeClusterId' | 'storageClusterId' | 'config'
     | 'trajectory' | 'createdBy' | 'totalFrames' | 'startedAt' | 'finishedAt'
@@ -45,7 +45,7 @@ export type DaemonAnalysisPayload = { _id: string } & Pick<
  * Both payload roots widen to `Record<string, unknown>` because that is the shape
  * the daemon command channel accepts.
  */
-export interface PluginDispatchPayload extends Record<string, unknown> {
+interface PluginDispatchPayload extends Record<string, unknown> {
     analysis: DaemonAnalysisPayload;
     analysisId: string;
     pluginId: string;

@@ -6,6 +6,7 @@ import type {
     WorkflowValue
 } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
+import { WorkflowValueResolver } from '@modules/analysis/services/workflow/WorkflowValueResolver';
 import { isArgumentVisible } from '@modules/analysis/services/workflow/nodes/argument-visibility';
 import {
     applyPluginReferenceMappings,
@@ -116,8 +117,8 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             }
 
             const value = this.readConfiguredArgumentValue(definition, argumentKey, context);
-            values[argumentKey] = this.registry.shouldResolveExpression(value)
-                ? await this.registry.resolveExpressionValue(value, context, nodeId)
+            values[argumentKey] = WorkflowValueResolver.shouldResolveExpression(value)
+                ? await this.registry.createValueResolver(context, nodeId).resolveExpressionValue(value)
                 : value;
         }
 

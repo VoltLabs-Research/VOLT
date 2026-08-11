@@ -31,7 +31,7 @@ const DROP_TARGET = 'relative transition-[box-shadow] duration-[160ms]';
 
 const DROP_TARGET_OVER = 'is-drag-over shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--info)_62%,transparent)]';
 
-export interface SimulationBreadcrumbItem {
+interface SimulationBreadcrumbItem {
     key: string;
     title: string;
     folderId: string | null;

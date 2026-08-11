@@ -20,6 +20,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 
 process.on('uncaughtException', (error: Error) => {
     logger.error(`@daemon: uncaught exception: ${error.stack || error.message}`);
+    process.exit(1);
 });
 
 const startDaemon = async (): Promise<void> => {

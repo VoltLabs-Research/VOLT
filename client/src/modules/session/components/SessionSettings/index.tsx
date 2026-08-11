@@ -225,7 +225,7 @@ const SessionSettings = () => {
                     />
                 }
             >
-                <p className='text-sm text-muted p-6'>
+                <p className='text-sm text-muted'>
                     Are you sure you want to revoke {otherSessionsCount} other{' '}
                     {otherSessionsCount === 1 ? 'session' : 'sessions'}? This action cannot be undone.
                 </p>

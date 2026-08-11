@@ -1,7 +1,7 @@
 import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@shared/contracts';
 import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
 import { MAX_EXPLORER_DOCUMENTS, buildAttachmentContentDisposition, normalizeExplorerPath, toExplorerDocument, toWebReadableStream } from '@modules/container/services/remote-access/shared';
-import type { RemoteExplorerEntry, RemoteExplorerDocument, RemoteExplorerNode } from '@shared/contracts';
+import type { RemoteExplorerEntry, RemoteExplorerNode } from '@shared/contracts';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';
 import { getDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
 import { PluginListingRow } from '@modules/plugin/models/plugin-listing-row-model';

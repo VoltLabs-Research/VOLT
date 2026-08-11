@@ -17,7 +17,7 @@ import type {
     LammpsUnits
 } from '@shared/domain/catalog';
 
-export interface ParsedTrajectoryMetadata {
+interface ParsedTrajectoryMetadata {
     headers: string[];
     simulationCell: ParsedSimulationCell;
     units: LammpsUnits;
@@ -43,7 +43,7 @@ export interface AtomsPageInput extends TrajectoryFrameLookupInput {
     limit: number;
 }
 
-export interface AtomsPageRow {
+interface AtomsPageRow {
     id: number;
     type: number;
     x: number;
@@ -52,7 +52,7 @@ export interface AtomsPageRow {
     [property: string]: number;
 }
 
-export interface AtomsPageResult {
+interface AtomsPageResult {
     atoms: AtomsPageRow[];
     totalAtoms: number;
     nativeProperties: string[];
@@ -61,13 +61,13 @@ export interface AtomsPageResult {
     elementTable: ElementTableEntry[];
 }
 
-export interface PropertyStatsResult {
+interface PropertyStatsResult {
     min: number;
     max: number;
     dtype: ColumnDType;
 }
 
-export interface UniqueValuesResult {
+interface UniqueValuesResult {
     values: number[];
     dtype: ColumnDType;
 }

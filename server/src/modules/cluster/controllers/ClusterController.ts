@@ -5,10 +5,9 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
-import ClusterService from '@modules/cluster/services/ClusterService';
-import clusterDemoService from '@modules/cluster/services/ClusterDemoService';
-import clusterRemoteExplorerService from '@modules/cluster/services/ClusterRemoteExplorerService';
-import clusterRuntimeSettingsService from '@modules/cluster/services/ClusterRuntimeSettingsService';
+import ClusterService from '@modules/cluster/services/core/ClusterService';
+import clusterRemoteExplorerService from '@modules/cluster/services/remote-explorer/ClusterRemoteExplorerService';
+import clusterRuntimeSettingsService from '@modules/cluster/services/core/ClusterRuntimeSettingsService';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
@@ -37,33 +36,6 @@ export default class ClusterController extends ClusterControllerBase {
     ): Promise<void>{
         const value = await this.#service.create(this.params(req));
         BaseResponse.success(res, value, HttpStatus.Created);
-    }
-
-    @Route(teamClusterRoutes.provisionDemo)
-    async provisionDemo(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await clusterDemoService.provisionDemo(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.Created);
-    }
-
-    @Route(teamClusterRoutes.deleteDemo)
-    async deleteDemo(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await clusterDemoService.deleteDemo(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
-    @Route(teamClusterRoutes.getDemoStatus)
-    async getDemoStatus(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await clusterDemoService.getDemoStatus(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(teamClusterRoutes.getById)

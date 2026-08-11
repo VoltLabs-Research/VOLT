@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import TeamClusterObjectStoreProxyService from '@modules/cluster/services/TeamClusterObjectStoreProxyService';
+import TeamClusterObjectStoreProxyService from '@modules/cluster/services/object-gateway/TeamClusterObjectStoreProxyService';
 import {
     applyObjectHeaders,
     applyRangeHeaders,

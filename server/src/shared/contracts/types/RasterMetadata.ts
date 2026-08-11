@@ -1,14 +1,13 @@
 import { RasterMetadataStatus } from '@volt/contracts/modules/raster/domain';
 import { assertSameFields } from '@shared/contracts/assert-wire-match';
 import type {
-    RasterFrameMetadata,
     RasterTrajectoryMetadata,
     RasterAnalysisMetadata,
     RasterMetadata as WireRasterMetadata
 } from '@volt/contracts/modules/raster/domain';
 
 export { RasterMetadataStatus };
-export type { RasterFrameMetadata, RasterTrajectoryMetadata, RasterAnalysisMetadata };
+export type { RasterTrajectoryMetadata, RasterAnalysisMetadata };
 
 /**
  * The persisted shape. Identical to the wire type except that the timestamps are

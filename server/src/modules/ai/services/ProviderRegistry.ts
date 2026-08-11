@@ -16,7 +16,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-export interface SdkOptions{
+interface SdkOptions{
     apiKey?: string;
     baseURL?: string;
 }

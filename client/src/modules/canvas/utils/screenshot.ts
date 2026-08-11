@@ -1,5 +1,5 @@
-export type ScreenshotResolutionPreset = 'viewport' | 'hd' | 'full-hd' | '4k' | 'custom';
-export type ScreenshotAnglePreset = 'current' | 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric' | 'ground-isometric';
+type ScreenshotResolutionPreset = 'viewport' | 'hd' | 'full-hd' | '4k' | 'custom';
+type ScreenshotAnglePreset = 'current' | 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric' | 'ground-isometric';
 
 export interface ScreenshotSettings {
     resolutionPreset: ScreenshotResolutionPreset;

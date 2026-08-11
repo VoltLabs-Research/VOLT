@@ -15,7 +15,7 @@ import spatialAssembler from '@voltstack/spatial-assembler';
 
 /** Assembles tube geometry for line-like entities and encodes it as a GLB plus range sidecar. */
 
-export interface ProcessedLineGeometry {
+interface ProcessedLineGeometry {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
@@ -28,12 +28,12 @@ export interface ProcessedLineGeometry {
     };
 }
 
-export interface LineGeometryHooks {
+interface LineGeometryHooks {
     includeEntity?: (entity: LineEntity) => boolean;
     getEntityColor?: (entity: LineEntity) => [number, number, number, number];
 }
 
-export const resolveEntityCategory = (entity: LineEntity, property: string): string => {
+const resolveEntityCategory = (entity: LineEntity, property: string): string => {
     const value = entity[property];
     return value === null || value === undefined ? '' : String(value);
 };

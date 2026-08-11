@@ -11,7 +11,7 @@ import { isArgumentVisible } from '@modules/analysis/services/workflow/nodes/arg
 
 type PluginReferenceSelections = WorkflowPluginReferenceValueWithSelections['selections'];
 
-export interface PluginReferencePlanningItem {
+interface PluginReferencePlanningItem {
     referencePath: string;
     pluginId: string;
     config: WorkflowNodeOutput;

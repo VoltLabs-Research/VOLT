@@ -204,7 +204,7 @@ const CreateContainer = () => {
                     />
                 }
             >
-                <div className='flex flex-col gap-3 p-6'>
+                <div className='flex flex-col gap-3'>
                     <FormFieldRHF
                         label='Docker image'
                         placeholder='e.g., nginx:latest, mysql:8.0'

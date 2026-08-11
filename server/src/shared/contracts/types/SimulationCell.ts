@@ -1,7 +1,7 @@
 export type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
 import type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
 
-export interface SimulationCellTrajectoryReference {
+interface SimulationCellTrajectoryReference {
     _id?: string;
     name?: string;
 }

@@ -50,8 +50,8 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
         nodeId: string
     ): Promise<boolean> {
         const [left, right] = await Promise.all([
-            this.registry.resolveExpressionValue(condition.leftExpression ?? '', context, nodeId),
-            this.registry.resolveExpressionValue(condition.rightExpression ?? '', context, nodeId)
+            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.leftExpression ?? ''),
+            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.rightExpression ?? '')
         ]);
 
         const isMatch = condition.handler === 'is_equal_to'

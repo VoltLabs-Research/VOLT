@@ -1,6 +1,6 @@
 import type { GetScriptingSessionStatusResponse } from '@volt/contracts/modules/scripting/domain';
 
-export interface WaitForReadyScriptingSessionOptions {
+interface WaitForReadyScriptingSessionOptions {
     isCancelled?: () => boolean;
     onPending?: (session: GetScriptingSessionStatusResponse) => Promise<void> | void;
 };
@@ -10,7 +10,7 @@ interface ScriptingSessionLoader {
     readSession: (session: GetScriptingSessionStatusResponse) => Promise<GetScriptingSessionStatusResponse>;
 };
 
-export interface WaitForReadyScriptingSessionResult {
+interface WaitForReadyScriptingSessionResult {
     session: GetScriptingSessionStatusResponse;
     timedOut: boolean;
 };

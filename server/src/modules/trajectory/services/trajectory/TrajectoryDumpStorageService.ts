@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/application/errors/ApplicationError';

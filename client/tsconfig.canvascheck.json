@@ -1,4 +1,0 @@
-{
-    "extends": "./tsconfig.json",
-    "include": ["src/modules/canvas", "src/**/*.d.ts"]
-}

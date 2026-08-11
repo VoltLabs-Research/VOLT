@@ -3,12 +3,12 @@ import { useMemo } from 'react';
 import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
 
-export interface ActivityHeatmapDayData {
+interface ActivityHeatmapDayData {
     activity: DailyActivityHeatmapDetailEntry[];
     minutesOnline: number;
 };
 
-export interface ActivityHeatmapDay {
+interface ActivityHeatmapDay {
     date: string;
     count: number;
     level: number;
@@ -19,18 +19,18 @@ export interface ActivityHeatmapDay {
  * One square. `day` is null for the leading and trailing squares that pad the first
  * and last calendar weeks out to seven rows — they occupy a grid slot and nothing else.
  */
-export interface ActivityHeatmapCell {
+interface ActivityHeatmapCell {
     key: string;
     day: ActivityHeatmapDay | null;
 };
 
 /** One column. `monthLabel` is empty unless a new month starts in this column. */
-export interface ActivityHeatmapWeek {
+interface ActivityHeatmapWeek {
     key: string;
     monthLabel: string;
 };
 
-export interface ActivityHeatmapTooltipState {
+interface ActivityHeatmapTooltipState {
     activity: DailyActivityHeatmapDetailEntry[];
     dateLabel: string;
     minutesOnline: number;
@@ -39,7 +39,7 @@ export interface ActivityHeatmapTooltipState {
 
 const DAYS_PER_WEEK = 7;
 
-export const ACTIVITY_HEATMAP_LEGEND: { label: string; level: number }[] = [
+const ACTIVITY_HEATMAP_LEGEND: { label: string; level: number }[] = [
     {
         label: 'No activity',
         level: 0

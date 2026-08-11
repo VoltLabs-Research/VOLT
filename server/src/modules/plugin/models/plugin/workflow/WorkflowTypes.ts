@@ -17,23 +17,22 @@ export interface ModifierNodeData {
 }
 
 /*
- * `ArgumentType` and `ArgumentVisibilityOperator` are wire enums: the client sends
- * them and the daemon executes on them, so they are re-exported from
- * `@volt/contracts` rather than declared again here. There used to be a second
- * `ArgumentType` enum in this file with the same eight values under different
- * member names, which meant adding an argument type required editing two files
- * with nothing to catch a mismatch.
+ * `ArgumentType` is a wire enum: the client sends it and the daemon executes on
+ * it, so it is re-exported from `@volt/contracts` rather than declared again
+ * here. There used to be a second `ArgumentType` enum in this file with the same
+ * eight values under different member names, which meant adding an argument type
+ * required editing two files with nothing to catch a mismatch.
  */
-export { ArgumentType, ArgumentVisibilityOperator };
+export { ArgumentType };
 
 export const ArgumentVisibilityOperators = Object.values(ArgumentVisibilityOperator);
 
-export interface ArgumentOption {
+interface ArgumentOption {
     key: string;
     label: string;
 }
 
-export interface ArgumentOptionSource {
+interface ArgumentOptionSource {
     argument?: string;
     valueField?: string;
     labelField?: string;
@@ -205,7 +204,7 @@ interface SwitchCaseNodeData {
     defaultCase?: boolean;
 }
 
-export interface WorkflowNodeData {
+interface WorkflowNodeData {
     modifier?: ModifierNodeData;
     arguments?: ArgumentsNodeData;
     context?: ContextNodeData;

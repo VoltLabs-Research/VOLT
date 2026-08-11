@@ -10,8 +10,14 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Button, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { Button, Popover } from '@heroui/react';
+import {
+    PLUGIN_CONFIG_PANEL_CLASS,
+    PLUGIN_POPOVER_CONTENT_CLASS
+} from './pipeline-classes';
 import { Filter, FlaskConical, Palette, Play, Plus, Scissors } from 'lucide-react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -21,6 +27,25 @@ interface PipelineHeaderActionsProps {
     currentTimestep?: number;
     canMutateCanvas?: boolean;
 }
+
+/** `.canvas-pipeline__menu-group` — a section label inside the add menu. */
+const MENU_GROUP_CLASS = 'px-2 pb-0.5 pt-1 text-xs font-semibold uppercase tracking-[0.05em] text-muted';
+
+/** bravais's `PopoverMenuItem size='sm'`, translated by value. */
+const MENU_ITEM_CLASS = 'flex w-full min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-xs text-foreground hover:bg-default';
+
+interface AddMenuItemProps {
+    icon: ReactNode;
+    label: string;
+    onSelect: () => void;
+}
+
+const AddMenuItem = ({ icon, label, onSelect }: AddMenuItemProps) => (
+    <button type='button' role='menuitem' className={MENU_ITEM_CLASS} onClick={onSelect}>
+        {icon}
+        <span className='min-w-0 flex-1 truncate'>{label}</span>
+    </button>
+);
 
 const PipelineHeaderActions = ({
     trajectory,
@@ -33,6 +58,9 @@ const PipelineHeaderActions = ({
     const addStage = useCanvasPipelineStore((s) => s.addStage);
     const orderedStageCount = useStages(trajectoryId).filter(isOrderedPipelineStage).length;
 
+    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const closeAddMenu = () => setIsAddMenuOpen(false);
+
     const handleAdd = (type: StageType, config: StageConfig) => {
         addStage(type, config, trajectoryId);
     };
@@ -44,20 +72,22 @@ const PipelineHeaderActions = ({
                 triggerAction='click'
                 placement='left-start'
                 ariaLabel='Run pipeline'
-                className='context-menu-popover--plugin-config'
+                className={PLUGIN_CONFIG_PANEL_CLASS}
                 trigger={
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        shape='rounded'
-                        iconOnly
-                        leftIcon={<Play size={13} />}
-                        disabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
-                        aria-label='Run pipeline'
-                    />
+                    <span className='inline-flex'>
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            isIconOnly
+                            isDisabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
+                            aria-label='Run pipeline'
+                        >
+                            <Play size={13} />
+                        </Button>
+                    </span>
                 }
                 content={(close) => (
-                    <div className='flex flex-col gap-2 canvas-plugin-popover-content'>
+                    <div className={`gap-2 ${PLUGIN_POPOVER_CONTENT_CLASS}`}>
                         <span className='text-xs font-medium text-muted'>Pipeline</span>
                         <PipelineRunControl
                             trajectory={trajectory}
@@ -70,65 +100,56 @@ const PipelineHeaderActions = ({
                 )}
             />
 
-            <Popover
-                id='canvas-pipeline-add-menu'
-                noPadding
-                className='context-menu-popover context-menu-popover--md'
-                trigger={
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        shape='rounded'
-                        leftIcon={<Plus size={12} />}
-                        disabled={!canMutateCanvas || !trajectoryId}
-                        aria-label='Add pipeline stage'
-                        className='text-xs'
-                    >
-                        Add new
-                    </Button>
-                }
-            >
-                {(close) => (
-                    <PopoverMenu label='Add pipeline stage'>
-                        <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted canvas-pipeline__menu-group'>View</span>
-                        <PopoverMenuItem
+            <Popover isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
+                {/* The Button is the Root's direct child — see MenuPopover for why. */}
+                <Button
+                    variant='ghost'
+                    size='sm'
+                    isDisabled={!canMutateCanvas || !trajectoryId}
+                    aria-label='Add pipeline stage'
+                    className='text-xs'
+                >
+                    <Plus size={12} />
+                    Add new
+                </Button>
+
+                <Popover.Content placement='bottom start'>
+                    <Popover.Dialog id='canvas-pipeline-add-menu' aria-label='Add pipeline stage' className='flex min-w-45 max-w-80 flex-col p-1'>
+                        <span className={MENU_GROUP_CLASS}>View</span>
+                        <AddMenuItem
                             icon={<Scissors size={13} aria-hidden='true' />}
                             label='Slice Plane'
-                            size='sm'
-                            onClick={() => { handleAdd('slice-plane', { ...DEFAULT_SLICE_PLANE_STAGE_CONFIG }); close(); }}
+                            onSelect={() => { handleAdd('slice-plane', { ...DEFAULT_SLICE_PLANE_STAGE_CONFIG }); closeAddMenu(); }}
                         />
-                        <PopoverMenuItem
+                        <AddMenuItem
                             icon={<Filter size={13} aria-hidden='true' />}
                             label='Expression Select'
-                            size='sm'
-                            onClick={() => { handleAdd('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG }); close(); }}
+                            onSelect={() => { handleAdd('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG }); closeAddMenu(); }}
                         />
-                        <PopoverMenuItem
+                        <AddMenuItem
                             icon={<Palette size={13} aria-hidden='true' />}
                             label='Color Coding'
-                            size='sm'
-                            onClick={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); close(); }}
+                            onSelect={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); closeAddMenu(); }}
                         />
                         {modifiers.length > 0 && (
-                            <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted canvas-pipeline__menu-group'>Plugins</span>
+                            <span className={MENU_GROUP_CLASS}>Plugins</span>
                         )}
                         {modifiers.map((modifier) => (
-                            <PopoverMenuItem
+                            <AddMenuItem
                                 key={modifier.pluginId}
                                 icon={<FlaskConical size={13} aria-hidden='true' />}
                                 label={modifier.name}
-                                size='sm'
-                                onClick={() => {
+                                onSelect={() => {
                                     handleAdd('analysis-plugin', {
                                         pluginId: modifier.pluginId,
                                         argValues: {}
                                     });
-                                    close();
+                                    closeAddMenu();
                                 }}
                             />
                         ))}
-                    </PopoverMenu>
-                )}
+                    </Popover.Dialog>
+                </Popover.Content>
             </Popover>
         </div>
     );

@@ -234,7 +234,7 @@ export const ErrorCodes = createErrorCodes({
 
 const ERROR_CODE_SET = new Set<string>(Object.values(ErrorCodes));
 
-export const isErrorCode = (value: unknown): value is ErrorCode => {
+const isErrorCode = (value: unknown): value is ErrorCode => {
     return typeof value === 'string' && ERROR_CODE_SET.has(value);
 };
 

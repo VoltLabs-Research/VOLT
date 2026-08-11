@@ -1,9 +1,9 @@
 import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import { cascadeDeleteEach } from '@shared/events/cascadeDeleteEach';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import PluginService from '@modules/plugin/services/PluginService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';

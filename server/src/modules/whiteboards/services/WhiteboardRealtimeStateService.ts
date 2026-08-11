@@ -1,5 +1,5 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 import {
     EMPTY_WHITEBOARD_SCENE,

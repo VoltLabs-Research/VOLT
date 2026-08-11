@@ -3,7 +3,7 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-export interface AnalysisExecutionMetadata {
+interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
 }
 

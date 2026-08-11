@@ -20,7 +20,7 @@ import type { AnalysisQueueJobPayload } from '@shared/contracts/types/http-analy
 import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import type { ArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import { processAnalysisJob } from '@modules/analysis/workers/processAnalysisJob';
+import { processAnalysisJob } from '@modules/analysis/workers/process-analysis-job';
 import type { AnalysisProvenanceCollector } from '@modules/analysis/services/AnalysisProvenanceCollector';
 
 export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {

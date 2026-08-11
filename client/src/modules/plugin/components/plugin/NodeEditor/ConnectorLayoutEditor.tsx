@@ -82,10 +82,9 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
             {handleDefinitions.map((handleDefinition, index) => {
                 const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
-                // bravais's `rounded-lg` was 16px, which is HeroUI's `rounded-2xl` (spec §3b).
                 return (
                     <div
-                        className={cn('rounded-2xl border border-border p-3', index === 0 ? 'mt-0' : 'mt-3')}
+                        className={cn('rounded-lg border border-border p-3', index === 0 ? 'mt-0' : 'mt-3')}
                         key={handleDefinition.id}
                     >
                         <div className='mb-3 flex flex-row items-center justify-between gap-2'>

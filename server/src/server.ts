@@ -14,7 +14,7 @@ import app from './core/config/express';
 import scriptingJupyterProxyService from './modules/scripting/services/ScriptingJupyterProxyService';
 import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
 import { socketModules } from './modules/socket/socket/socket-modules';
-import { ClusterTransferRunner } from './modules/cluster/services/ClusterTransferRunner';
+import { ClusterTransferRunner } from './modules/cluster/services/transfer/ClusterTransferRunner';
 import containerPortRelayLifecycleService, { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
 import containerTerminalSocketModule from './modules/container/socket/ContainerTerminalSocketModule';
 import chatSocketModule from './modules/chat/socket/ChatSocketModule';

@@ -34,7 +34,7 @@ export interface ColumnDef {
     width?: number;
 }
 
-export interface PluginListingDocumentsMeta extends Record<string, unknown> {
+interface PluginListingDocumentsMeta extends Record<string, unknown> {
     pluginId: string;
     exposureName: string;
     exposureId: string;

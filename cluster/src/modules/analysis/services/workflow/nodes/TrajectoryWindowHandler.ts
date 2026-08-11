@@ -14,7 +14,7 @@ interface WorkflowTrajectoryWindowOutput extends WorkflowNodeOutput {
     outputPath: string | undefined;
 }
 
-export interface TrajectoryWindowPlanItem {
+interface TrajectoryWindowPlanItem {
     primaryTimestep: number;
     windowTimesteps: number[];
 }

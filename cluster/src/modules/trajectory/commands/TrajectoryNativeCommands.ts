@@ -5,7 +5,7 @@ import { getFilterEvaluator } from '@modules/trajectory/services/FilterEvaluator
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GlbExporter, PreprocessTrajectoryInput } from '@modules/trajectory/services/glb/GlbExporter';
+import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import type {
     AtomsPageInput,
     PropertyStatsInput,
@@ -25,7 +25,7 @@ import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/traject
  * Per-atom analysis data is an opt-in extension of an atoms page: passing an
  * `analysisId` also requires the cluster that owns the analysis artifacts.
  */
-export interface AtomsCommandInput extends AtomsPageInput {
+interface AtomsCommandInput extends AtomsPageInput {
     analysisId?: string;
 }
 

@@ -1,13 +1,13 @@
-import type { DomainEventClass } from '@shared/domain/events/createDomainEvent';
+import type { DomainEventClass } from '@shared/domain/events/create-domain-event';
 import type { AuthenticatedMessageContext } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
 
-export type StatusTripleEventMap<TPayload extends object, TStatus extends string> = {
+type StatusTripleEventMap<TPayload extends object, TStatus extends string> = {
     readonly [K in TStatus]: DomainEventClass<TPayload> | DomainEventClass<TPayload & { error: string }>;
 };
 
-export interface StatusTripleOptions<TPayload extends object, TStatus extends string> {
+interface StatusTripleOptions<TPayload extends object, TStatus extends string> {
     readonly bridge: DomainEventBridge;
     readonly events: StatusTripleEventMap<TPayload, TStatus>;
     readonly buildMessage: (

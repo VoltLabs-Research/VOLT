@@ -1,5 +1,4 @@
-import { cn } from '@heroui/react';
-import './CanvasPipeline.css';
+import { Checkbox, cn } from '@heroui/react';
 import { useCanvasPipelineStore, useStages } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
@@ -8,7 +7,24 @@ import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEd
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { Checkbox, Text } from '@voltstack/bravais';
+import {
+    PIPELINE_CLASS,
+    PIPELINE_LIST_CLASS,
+    PLUGIN_CONFIG_PANEL_CLASS,
+    PLUGIN_POPOVER_CONTENT_CLASS,
+    STAGE_ACTIONS_CLASS,
+    STAGE_ACTION_CLASS,
+    STAGE_ACTION_REMOVE_CLASS,
+    STAGE_CLASS,
+    STAGE_DRAGGING_CLASS,
+    STAGE_GEAR_CLASS,
+    STAGE_GRIP_CLASS,
+    STAGE_HEADER_CLASS,
+    STAGE_HEADER_DISABLED_CLASS,
+    STAGE_ICON_CLASS,
+    STAGE_LABEL_CLASS,
+    STAGE_SELECT_CLASS
+} from './pipeline-classes';
 import { memo, useEffect, useState } from 'react';
 import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -127,14 +143,14 @@ const CanvasPipeline = ({
     }
 
     return (
-        <div className='flex flex-col gap-2 canvas-pipeline'>
-            <div className='flex flex-col gap-1 canvas-pipeline__list'>
+        <div className={PIPELINE_CLASS}>
+            <div className={PIPELINE_LIST_CLASS}>
                 {stages.map((stage) => {
                     const label = stageLabel(stage, pluginNameById);
                     const canToggle = isLiveToggleStage(stage) || stage.executed;
 
                     return (
-                        <div className={`canvas-pipeline-stage ${dragId === stage.id ? 'canvas-pipeline-stage--dragging' : ''}`}
+                        <div className={cn(STAGE_CLASS, dragId === stage.id && STAGE_DRAGGING_CLASS)}
                             key={stage.id}
                             draggable
                             onDragStart={() => setDragId(stage.id)}
@@ -142,9 +158,8 @@ const CanvasPipeline = ({
                             onDragOver={(e) => { e.preventDefault(); }}
                             onDrop={() => handleDrop(stage.id)}
                         >
-                            <div className={cn('flex flex-row items-center gap-2', `canvas-pipeline-stage__header ${!stage.enabled ? 'canvas-pipeline-stage__header--disabled' : ''}`)}
-                            >
-                                <span className='canvas-pipeline-stage__grip' aria-hidden='true'>
+                            <div className={cn(STAGE_HEADER_CLASS, !stage.enabled && STAGE_HEADER_DISABLED_CLASS)}>
+                                <span className={STAGE_GRIP_CLASS} aria-hidden='true'>
                                     <GripVertical size={12} />
                                 </span>
 
@@ -153,51 +168,62 @@ const CanvasPipeline = ({
                                     triggerAction='click'
                                     placement='left-start'
                                     ariaLabel={`${label} settings`}
-                                    className='context-menu-popover--plugin-config'
+                                    className={PLUGIN_CONFIG_PANEL_CLASS}
                                     trigger={
                                         <button
                                             type='button'
-                                            className='canvas-pipeline-stage__select select-none'
+                                            className={STAGE_SELECT_CLASS}
                                             aria-label={`${label} settings`}
                                         >
-                                            <span className='canvas-pipeline-stage__icon'>{STAGE_ICONS[stage.type]}</span>
-                                            <Text
-                                                size='sm'
-                                                tone={stage.enabled ? 'secondary' : 'muted'}
-                                                truncate
-                                                className='canvas-pipeline-stage__label'
-                                            >
+                                            <span className={STAGE_ICON_CLASS}>{STAGE_ICONS[stage.type]}</span>
+                                            {/* bravais `Text tone='secondary'|'muted'` — both collapse to `text-muted` (spec §3a). */}
+                                            <span className={cn(STAGE_LABEL_CLASS, 'text-muted')}>
                                                 {label}
-                                            </Text>
-                                            <span className='canvas-pipeline-stage__gear' aria-hidden='true'>
+                                            </span>
+                                            <span className={STAGE_GEAR_CLASS} aria-hidden='true'>
                                                 <Settings size={12} />
                                             </span>
                                         </button>
                                     }
                                     content={(close) => (
-                                        <div className='flex flex-col canvas-plugin-popover-content'>
+                                        <div className={PLUGIN_POPOVER_CONTENT_CLASS}>
                                             {renderStageEditor(stage, close)}
                                         </div>
                                     )}
                                 />
 
-                                <div className='flex flex-row items-center gap-1 shrink-0 canvas-pipeline-stage__actions'>
+                                <div className={STAGE_ACTIONS_CLASS}>
                                     <button
                                         type='button'
-                                        className='canvas-pipeline-stage__action canvas-pipeline-stage__action--remove'
+                                        className={cn(STAGE_ACTION_CLASS, STAGE_ACTION_REMOVE_CLASS)}
                                         onClick={() => removeStage(stage.id, trajectoryId)}
                                         aria-label='Remove stage'
                                         title='Remove'
                                     >
                                         <Trash2 size={12} aria-hidden='true' />
                                     </button>
-                                    <Checkbox
-                                        checked={stage.enabled}
-                                        disabled={!canToggle}
-                                        onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
-                                        aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
+                                    {/*
+                                      * `title` is not on HeroUI's Checkbox prop surface, so the
+                                      * hover hint moves to a wrapping span — a Tooltip here would
+                                      * add a tab stop to every stage row.
+                                      */}
+                                    <span
+                                        className='inline-flex'
                                         title={canToggle ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
-                                    />
+                                    >
+                                        <Checkbox
+                                            isSelected={stage.enabled}
+                                            isDisabled={!canToggle}
+                                            onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
+                                            aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
+                                        >
+                                            <Checkbox.Content>
+                                                <Checkbox.Control>
+                                                    <Checkbox.Indicator />
+                                                </Checkbox.Control>
+                                            </Checkbox.Content>
+                                        </Checkbox>
+                                    </span>
                                 </div>
                             </div>
                         </div>

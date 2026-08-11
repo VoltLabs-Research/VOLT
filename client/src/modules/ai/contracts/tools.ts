@@ -29,7 +29,7 @@ export interface ClientToolResult {
     data?: unknown;
 }
 
-export interface ClientToolEffectDescription {
+interface ClientToolEffectDescription {
     
     label: string;
     

@@ -9,7 +9,7 @@ import { probeRemoteEndpoint } from '@/services/RemoteProbe';
 import { openExternalUrl, sendToShell } from '@/services/WindowSecurity';
 import type { ConfirmOptions } from '@/types/global';
 
-export interface IpcDeps{
+interface IpcDeps{
     deploy: Deploy;
     appConfig: AppConfig;
     loadShell: (hash?: string) => void;

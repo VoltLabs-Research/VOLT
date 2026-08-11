@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 
 export type ExcalidrawProps = ComponentProps<typeof Excalidraw>;
 
-export type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
+type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
 
 export type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];
 

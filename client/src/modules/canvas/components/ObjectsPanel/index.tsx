@@ -13,7 +13,7 @@ import SceneCollection from '../SceneCollection';
 import { Layers } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
-import { Button } from '@voltstack/bravais';
+
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
@@ -22,8 +22,16 @@ import type { ArtifactSection } from './use-artifact-sections';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
-
-import './ObjectsPanel.css';
+import {
+    OBJECTS_PANEL_BOTTOM_CLASS,
+    OBJECTS_PANEL_CLASS,
+    OBJECTS_PANEL_COMPACT_CLASS,
+    OBJECTS_PANEL_TOP_CLASS,
+    RASTER_PANELS_CLASS,
+    RASTER_PANEL_ACTIVE_CLASS,
+    RASTER_PANEL_SUMMARY_ACTIVE_CLASS,
+    RASTER_PANEL_SUMMARY_CLASS
+} from './tree-classes';
 
 interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
@@ -183,17 +191,15 @@ const ObjectsPanel = ({
                 icon={<Layers style={PANEL_ICON_STYLE} />}
                 expanded={isActive}
                 onExpandedChange={(next) => { if (next) onSetActiveRasterContainer?.(selection.id); }}
-                extraClassName={isActive ? 'canvas-raster-container-panel--active' : ''}
+                extraClassName={isActive ? RASTER_PANEL_ACTIVE_CLASS : ''}
                 headerAction={(
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        shape='pill'
-                        className={`canvas-raster-container-panel__summary ${isActive ? 'is-active' : ''}`}
+                    <button
+                        type='button'
+                        className={cn(RASTER_PANEL_SUMMARY_CLASS, isActive && RASTER_PANEL_SUMMARY_ACTIVE_CLASS)}
                         onClick={() => onSetActiveRasterContainer?.(selection.id)}
                     >
                         {selection.label}
-                    </Button>
+                    </button>
                 )}
             >
                 {isActive && (
@@ -260,8 +266,8 @@ const ObjectsPanel = ({
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
 
     return (
-        <div className={cn('flex flex-col min-h-0', `canvas-objects-panel${isAnalysisCompact ? ' canvas-objects-panel--analysis-compact' : ''}`)}>
-            <div className="canvas-objects-panel__top">
+        <div className={cn(OBJECTS_PANEL_CLASS, isAnalysisCompact && OBJECTS_PANEL_COMPACT_CLASS)}>
+            <div className={OBJECTS_PANEL_TOP_CLASS}>
                 {showSceneCollection && (
                     <RightCollapsible
                         title="Visual Elements"
@@ -269,10 +275,10 @@ const ObjectsPanel = ({
                         expanded={sceneCollectionOpen}
                         onExpandedChange={setSceneCollectionOpen}
                         collapsible={!isAnalysisCompact || populatedSections.length > 0}
-                        tourId="canvas-analyses-section"
+                        tourId='canvas-analyses-section'
                     >
                         {isRasterWorkspace && !isAnalysisCompact ? (
-                            <div className='flex flex-col gap-2 canvas-raster-container-panels'>
+                            <div className={RASTER_PANELS_CLASS}>
                                 {rasterContainerSelections.map(renderRasterContainerPanel)}
                             </div>
                         ) : (
@@ -295,7 +301,7 @@ const ObjectsPanel = ({
             </div>
 
             {!isAnalysisCompact && (
-                <div className="canvas-objects-panel__bottom">
+                <div className={OBJECTS_PANEL_BOTTOM_CLASS}>
                     {artifactSections.map(renderArtifactSection)}
                 </div>
             )}

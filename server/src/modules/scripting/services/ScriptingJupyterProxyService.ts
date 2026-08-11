@@ -7,8 +7,8 @@ import {
     JUPYTER_PROXY_BASE_PATH,
     PROXY_URL_ORIGIN
 } from '@modules/scripting/services/ScriptingJupyterProxySupport';
-import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
-import reverseWsHttpRelay from '@modules/cluster/services/ReverseWsHttpRelay';
+import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
+import reverseWsHttpRelay from '@modules/cluster/services/reverse-channel/ReverseWsHttpRelay';
 import type { TeamClusterServiceExposure } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';

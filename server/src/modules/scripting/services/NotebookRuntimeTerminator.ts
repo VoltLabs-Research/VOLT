@@ -1,7 +1,7 @@
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
+import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 
 class NotebookRuntimeTerminator {

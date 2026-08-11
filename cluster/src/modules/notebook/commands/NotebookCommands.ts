@@ -1,3 +1,5 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
+import { logger } from '@shared/infrastructure/logger';
 import { getJupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
 import { getDaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
 import type { CreateNotebookSessionRequest } from '@shared/contracts';
@@ -15,7 +17,9 @@ export class NotebookCommands {
     @Command('session.create', { status: 201 })
     async createSession(payload: CreateNotebookSessionRequest) {
         const response = await this.jupyterRuntime.ensureSession(payload);
-        await this.daemonExposureRegistry.sync().catch(() => {});
+        await this.daemonExposureRegistry.sync().catch((error) => {
+            logger.warn(`Failed to sync exposures after notebook session create: ${errorMessage(error)}`);
+        });
         return response;
     }
 }

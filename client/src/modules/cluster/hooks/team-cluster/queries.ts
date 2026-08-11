@@ -5,20 +5,17 @@ import type { QueryKey } from '@tanstack/react-query';
 import type {
     CreateTeamClusterParams,
     CreateTeamClusterTransferRequestParams,
-    DeleteDemoTeamClusterParams,
     DeleteTeamClusterParams,
     ListTeamClusterTransferJobsParams,
     ListTeamClusterTransferJobsResponse,
     ListTeamClustersParams,
     ListTeamClustersResponse,
-    ProvisionDemoTeamClusterParams,
     RegenerateTeamClusterEnrollmentTokenParams,
     RevealTeamClusterCredentialsParams,
     UpdateTeamClusterQueueConcurrencyParams,
     UpdateTeamClusterRoleParams
 } from '@/modules/cluster/api/service';
-import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteDemoTeamClusterResponse, DeleteTeamClusterResponse, ProvisionDemoTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse, RevealTeamClusterCredentialsResponse, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
-import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse, RevealTeamClusterCredentialsResponse, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/modules/cluster/domain';
 
 interface TeamClusterQueryKeyMap {
@@ -141,24 +138,6 @@ const removeTeamClusterQueryData = (teamId: string, teamClusterId: string) => {
     });
 };
 
-const markDemoTeamClusterDeletingQueryData = (teamId: string) => {
-    queryClient.setQueryData<ListTeamClustersResponse>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
-        if (!current) {
-            return current;
-        }
-
-        return {
-            ...current,
-            data: current.data.map((cluster) => cluster.isDemo
-                ? {
-                    ...cluster,
-                    status: TeamClusterStatus.Deleting
-                }
-                : cluster)
-        };
-    });
-};
-
 export const applyTeamClusterLifecycleEvent = (event: TeamClusterLifecycleEvent) => {
     if (event.deleted) {
         removeTeamClusterQueryData(event.teamId, event.teamClusterId);
@@ -255,36 +234,6 @@ export const useUpdateTeamClusterRoleMutation = (
         ...options,
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
-        }, options)
-    });
-};
-
-export const useProvisionDemoTeamClusterMutation = (
-    options?: MutationOptions<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterParams>
-) => {
-    return createMutation<ProvisionDemoTeamClusterResponse, ProvisionDemoTeamClusterParams>(
-        teamClusterService.provisionDemo
-    )({
-        ...options,
-        onSuccess: withSuccess((data, variables) => {
-            upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
-        }, options)
-    });
-};
-
-export const useDeleteDemoTeamClusterMutation = (
-    options?: MutationOptions<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterParams>
-) => {
-    return createMutation<DeleteDemoTeamClusterResponse, DeleteDemoTeamClusterParams>(
-        teamClusterService.deleteDemo
-    )({
-        ...options,
-        onSuccess: withSuccess((data, variables) => {
-            if (data.teardownScheduled) {
-                markDemoTeamClusterDeletingQueryData(variables.teamId);
-            }
-
-            void invalidateTeamClustersQuery(variables.teamId);
         }, options)
     });
 };

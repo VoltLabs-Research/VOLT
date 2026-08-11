@@ -5,13 +5,9 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { DaemonConfig } from '@core/config/daemon';
+import { createQaCheckHarness } from './qa-check-harness';
 
-let failures = 0;
-const check = (label: string, actual: unknown, expected: unknown): void => {
-    const ok = JSON.stringify(actual) === JSON.stringify(expected);
-    if (!ok) failures += 1;
-    console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${label.padEnd(56)} esperado=${JSON.stringify(expected)} obtenido=${JSON.stringify(actual)}`);
-};
+const { check, finish } = createQaCheckHarness(56);
 
 const collect = async (stream: Readable): Promise<Buffer> => {
     const chunks: Buffer[] = [];
@@ -132,8 +128,7 @@ const main = async (): Promise<void> => {
     check('40 lecturas no fugan descriptores', openAfter - openBefore <= 2, true);
 
     await fs.rm(root, { recursive: true, force: true });
-    console.log(`\n${failures === 0 ? 'TODO OK' : `${failures} FALLOS`}`);
-    process.exit(failures === 0 ? 0 : 1);
+    finish();
 };
 
 main().catch((error: unknown) => {

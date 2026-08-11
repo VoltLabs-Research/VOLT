@@ -127,7 +127,7 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
             onClose={onClose}
             width='960px'
         >
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 <SearchField
                     value={search}
                     onChange={setSearch}

@@ -10,7 +10,7 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
  * produces it; it stays structurally identical, so consumers in other modules are
  * unaffected.
  */
-export interface TrajectorySelectOption {
+interface TrajectorySelectOption {
     value: string;
     title: string;
     description?: string;

@@ -1,5 +1,5 @@
-export type AtomScalar = string | number | boolean | null;
-export type AtomVector = AtomScalar[];
+type AtomScalar = string | number | boolean | null;
+type AtomVector = AtomScalar[];
 export type AtomPropertyValue = AtomScalar | AtomVector;
 export type AtomId = string | number;
 

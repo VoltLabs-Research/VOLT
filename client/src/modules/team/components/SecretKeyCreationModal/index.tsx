@@ -126,7 +126,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                 />
             }
         >
-            <div className='p-6'>
+            <div>
                 <form id={SECRET_KEY_CREATION_FORM_ID} onSubmit={handleFormSubmit}>
                     <div className='flex flex-col gap-6'>
                     {generatedKey ? (

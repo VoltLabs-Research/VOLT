@@ -1,3 +1,4 @@
+import { TREE_ARTIFACT_LABEL_CLASS, TREE_ARTIFACT_LABEL_TONE_CLASS } from '../ObjectsPanel/tree-classes';
 import { AlertCircle, Atom, Clock3, LoaderCircle, UploadCloud } from 'lucide-react';
 import { isRenderableSceneExporter } from '../../utils/plugin-exposure-export';
 
@@ -51,19 +52,24 @@ export const buildArtifactRows = (
     return rows;
 };
 
+/**
+ * `.canvas-tree-artifact-label` and its status tone. The tone is looked up rather than
+ * interpolated, so every class Tailwind has to see is a complete literal, and `ready`
+ * has no entry because the stylesheet only tinted the *other* states.
+ */
 export const buildArtifactNameClassName = (
     artifact: AnalysisExpectedArtifact | undefined,
     isRecentlyReady: boolean
 ): string => {
-    const classes = ['canvas-tree-artifact-label'];
-
     if (isRecentlyReady) {
-        classes.push('canvas-tree-artifact-label--ready-recent');
-    } else if (artifact && artifact.status !== 'ready') {
-        classes.push(`canvas-tree-artifact-label--${artifact.status}`);
+        return `${TREE_ARTIFACT_LABEL_CLASS} ${TREE_ARTIFACT_LABEL_TONE_CLASS['ready-recent']}`;
     }
 
-    return classes.join(' ');
+    if (artifact && artifact.status !== 'ready') {
+        return `${TREE_ARTIFACT_LABEL_CLASS} ${TREE_ARTIFACT_LABEL_TONE_CLASS[artifact.status]}`;
+    }
+
+    return TREE_ARTIFACT_LABEL_CLASS;
 };
 
 export const getArtifactIcon = (status: AnalysisArtifactStatus) => {

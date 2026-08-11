@@ -1,7 +1,7 @@
 import type { FlatAtomProperties, PerAtomParquetSource, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { PluginExposureEntityKind } from '@shared/infrastructure/storage/storage-codec';
 
-export interface PluginExposureRequestBase {
+interface PluginExposureRequestBase {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;

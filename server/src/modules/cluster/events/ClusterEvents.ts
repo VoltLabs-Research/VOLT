@@ -1,6 +1,6 @@
 import { DefineEventGroup, Event } from '@shared/events/EventGroup';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
-import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';

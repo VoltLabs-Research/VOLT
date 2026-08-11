@@ -3,7 +3,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 
 export type ComparisonOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 
-export interface ParticleMaskEvaluation {
+interface ParticleMaskEvaluation {
     mask: Uint8Array;
     matchCount: number;
 }

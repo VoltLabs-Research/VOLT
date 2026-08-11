@@ -34,7 +34,7 @@ export const NODE_WRAPPER_BADGE_CLASS = 'pt-5';
 export const NODE_BADGE_CLASS = 'absolute top-0 left-1/2 -translate-x-1/2 z-[1] pointer-events-none whitespace-nowrap rounded-full px-[0.4rem] py-[0.05rem] text-[0.6rem] font-semibold';
 
 /** `.workflow-node` */
-export const NODE_CLASS = 'relative max-w-[300px] rounded-2xl border border-border bg-surface px-6 py-4 transition-[border-color,opacity,box-shadow] duration-200 ease-out';
+export const NODE_CLASS = 'relative max-w-[300px] rounded-lg border border-border bg-surface px-6 py-4 transition-[border-color,opacity,box-shadow] duration-200 ease-out';
 
 /** `.workflow-node--selected` */
 export const NODE_SELECTED_CLASS = 'border-accent';
@@ -72,10 +72,10 @@ export const NODE_DEBUG_OUTPUT_CLASS = 'absolute left-1/2 top-[calc(100%+2rem)] 
 export const NODE_DEBUG_TREE_CLASS = 'flex flex-col gap-2 font-mono text-xs leading-normal';
 
 /** `.workflow-node-debug-error` */
-export const NODE_DEBUG_ERROR_CLASS = 'flex flex-col gap-1 rounded-2xl bg-danger/8 p-2 text-xs text-danger';
+export const NODE_DEBUG_ERROR_CLASS = 'flex flex-col gap-1 rounded-lg bg-danger/8 p-2 text-xs text-danger';
 
 /** `.workflow-node-debug-skipped` */
-export const NODE_DEBUG_SKIPPED_CLASS = 'flex flex-col gap-[0.35rem] rounded-2xl bg-border-secondary/8 p-2 text-xs text-border-secondary';
+export const NODE_DEBUG_SKIPPED_CLASS = 'flex flex-col gap-[0.35rem] rounded-lg bg-border-secondary/8 p-2 text-xs text-border-secondary';
 
 /** `.workflow-node-debug-stack` */
 export const NODE_DEBUG_STACK_CLASS = 'm-0 whitespace-pre-wrap break-all font-mono text-[0.625rem] opacity-80';

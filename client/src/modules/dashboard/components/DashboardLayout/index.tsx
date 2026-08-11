@@ -17,12 +17,6 @@ import {
 } from '@/modules/dashboard/utils/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
-import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
-import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
-import { useDemoClusterStore } from '@/modules/cluster/store/use-demo-cluster-store';
-import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { isTeamClusterUsable } from '@/modules/cluster/utils/is-team-cluster-usable';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
@@ -76,22 +70,6 @@ const DashboardLayout = () => {
     const { teams } = useTeamData();
     const location = useLocation();
     const prefersReducedMotion = usePrefersReducedMotion();
-    const selectedTeamId = useSelectedTeamId();
-    const setDemoFromCluster = useDemoClusterStore((state) => state.setFromCluster);
-    const clearDemo = useDemoClusterStore((state) => state.clear);
-    const demoTeamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
-        enabled: Boolean(selectedTeamId)
-    });
-
-    useEffect(() => {
-        const clusters = demoTeamClustersQuery.data?.data ?? [];
-        const demoCluster = clusters.find((cluster) => cluster.isDemo && isTeamClusterUsable(cluster)) ?? null;
-        if (demoCluster) {
-            setDemoFromCluster(demoCluster);
-        } else {
-            clearDemo();
-        }
-    }, [demoTeamClustersQuery.data, setDemoFromCluster, clearDemo]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsedOverride, setSidebarCollapsedOverride] = useState(false);
@@ -169,7 +147,6 @@ const DashboardLayout = () => {
                 />
 
                 <div className={cn(CONTENT_WRAPPER, sidebarCollapsed ? CONTENT_WRAPPER_COLLAPSED : CONTENT_WRAPPER_EXPANDED)}>
-                    <DemoExpirationBanner />
                     {!headerHidden && (
                         <DashboardHeader
                             setSidebarOpen={setSidebarOpen}
@@ -195,8 +172,6 @@ const DashboardLayout = () => {
                     </div>
 
                     {!headerHidden && <DashboardBottomBar />}
-
-                    <DemoWelcomeModal />
                 </div>
 
                 <JobsDrawer />

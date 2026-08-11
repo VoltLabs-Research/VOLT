@@ -21,7 +21,7 @@ export enum StoragePlacementState {
     Deleting = 'deleting'
 }
 
-export const DEFAULT_STORAGE_PLACEMENT_STATE: StoragePlacementStateContract = StoragePlacementState.Active;
+const DEFAULT_STORAGE_PLACEMENT_STATE: StoragePlacementStateContract = StoragePlacementState.Active;
 
 const normalizeStoragePlacementBuckets = (
     buckets: StoragePlacementBucketRef[]

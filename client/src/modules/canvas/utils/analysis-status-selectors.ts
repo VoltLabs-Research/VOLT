@@ -47,7 +47,7 @@ export interface JobStatusCounts {
     failed: number;
 }
 
-export interface FrameStatusIndex {
+interface FrameStatusIndex {
     /** Status of each frame taken as a whole, across every analysis on it. */
     aggregateByTimestep: Map<number, FrameJobGroupStatus>;
     /** Status of one analysis on one frame, which is what the ruler colours. */
@@ -124,7 +124,7 @@ const STATUS_RANK: Record<string, number> = {
  * visibly uploading. The job view is still worth having — it promotes an analysis
  * whose row has not caught up yet — so it may only move the status forward.
  */
-export const mergeAnalysisStatus = (
+const mergeAnalysisStatus = (
     persisted: CanvasAnalysisStatus,
     derived?: CanvasAnalysisStatus
 ): CanvasAnalysisStatus => {

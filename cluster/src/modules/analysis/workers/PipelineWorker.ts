@@ -23,7 +23,7 @@ import type { PipelineQueueJobPayload } from '@shared/contracts/types/http-analy
 import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import type { ArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import { processPipelineJob } from '@modules/analysis/workers/processPipelineJob';
+import { processPipelineJob } from '@modules/analysis/workers/process-pipeline-job';
 
 export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
     protected readonly queueName = PIPELINE_QUEUE_NAME;

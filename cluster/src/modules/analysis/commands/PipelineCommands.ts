@@ -12,8 +12,6 @@ import { extractDaemonTraceContext } from '@shared/infrastructure/observability/
 import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64-json';
 import type { PipelineDispatcher } from '@modules/analysis/services/PipelineDispatcher';
 
-const readCompressed = async <T>(compressed: string): Promise<T> => inflateBase64GzipJson<T>(compressed);
-
 @CommandGroup('pipeline')
 export class PipelineCommands {
     constructor(private readonly pipelineDispatcher: PipelineDispatcher) {}
@@ -71,10 +69,10 @@ export class PipelineCommands {
             nestedPlugins,
             pluginReferenceExecutions
         ] = await Promise.all([
-            readCompressed<AnalysisStartRequest['trajectoryFrames']>(plugin.trajectoryFramesCompressed),
-            readCompressed<AnalysisStartRequest['workflow']>(plugin.workflowCompressed),
-            readCompressed<AnalysisStartRequest['nestedPlugins']>(plugin.nestedPluginsCompressed),
-            readCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(plugin.pluginReferenceExecutionsCompressed)
+            inflateBase64GzipJson<AnalysisStartRequest['trajectoryFrames']>(plugin.trajectoryFramesCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['workflow']>(plugin.workflowCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['nestedPlugins']>(plugin.nestedPluginsCompressed),
+            inflateBase64GzipJson<AnalysisStartRequest['pluginReferenceExecutions']>(plugin.pluginReferenceExecutionsCompressed)
         ]);
 
         return {

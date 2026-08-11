@@ -18,9 +18,9 @@ import { augmentedPath } from '@/services/DockerBinary';
  * interpolated from user input.
  */
 
-export type ProvisionAction = 'start' | 'install';
+type ProvisionAction = 'start' | 'install';
 
-export interface ProvisionAttempt{
+interface ProvisionAttempt{
     action: ProvisionAction;
     /** False when this platform has no automatic path for the action. */
     attempted: boolean;

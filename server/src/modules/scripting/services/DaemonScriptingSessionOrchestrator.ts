@@ -1,5 +1,5 @@
 import type { NotebookContainerStage, ScriptingSessionJupyter } from '@volt/contracts/modules/scripting/domain';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import { attachScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';

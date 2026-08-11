@@ -24,7 +24,7 @@ export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
         const switchStatement = node.data.switchStatement as WorkflowSwitchStatementData | undefined;
         const expression = switchStatement?.expression;
         const normalizedResolvedValue = expression
-            ? await this.registry.resolveComparableString(expression, context, node.id)
+            ? await this.registry.createValueResolver(context, node.id).resolveComparableString(expression)
             : '';
         const caseNodes = context.workflow.getChildren(node.id, 'cases')
             .filter((candidate): candidate is WorkflowNode => candidate.type === WorkflowNodeType.SwitchCase);

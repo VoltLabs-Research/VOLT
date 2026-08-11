@@ -12,7 +12,7 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
  * bravais's `SelectOption`, kept locally now that the design system is gone. The
  * shape is unchanged, so `MyTeam`'s `roleOptions` still builds the same objects.
  */
-export interface TeamRoleSelectOption {
+interface TeamRoleSelectOption {
     value: string;
     title: string;
     description?: string;

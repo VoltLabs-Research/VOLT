@@ -1,3 +1,5 @@
+import { errorMessage } from '@shared/application/utilities/error-message';
+import { logger } from '@shared/infrastructure/logger';
 import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
 import type { PluginExecutionRuntime } from '@shared/contracts/types/plugin-execution';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
@@ -94,7 +96,10 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             result,
             extraOutput: {
                 outputFiles: execution.includeOutputFiles
-                    ? await fs.readdir(execution.outputDir).catch(() => [])
+                    ? await fs.readdir(execution.outputDir).catch((error) => {
+                        logger.warn(`Failed to list entrypoint output dir ${execution.outputDir}: ${errorMessage(error)}`);
+                        return [];
+                    })
                     : undefined
             }
         });

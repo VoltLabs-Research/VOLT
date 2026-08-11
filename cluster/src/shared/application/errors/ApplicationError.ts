@@ -1,6 +1,6 @@
 import type { ErrorCode } from '@core/constants/error-codes';
 
-export interface ApplicationErrorOptions {
+interface ApplicationErrorOptions {
     statusCode?: number;
     details?: unknown;
     cause?: unknown;

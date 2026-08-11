@@ -4,7 +4,7 @@ import type { ContainerStatsViewData } from '../services/container-stats-view';
 
 const HISTORY_POINTS = 60;
 
-export interface MetricSeries {
+interface MetricSeries {
     values: number[];
     peak: number;
     avg: number;

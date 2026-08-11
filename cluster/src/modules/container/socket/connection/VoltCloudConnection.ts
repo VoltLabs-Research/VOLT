@@ -74,7 +74,7 @@ export class VoltCloudConnection {
         try {
             this.client.emit(message);
         } catch (err) {
-            logger.warn(`Failed to emit message to VoltCloud: ${errorMessage(err)}`);
+            logger.warn(`Failed to emit ${message.type} message to VoltCloud: ${errorMessage(err)}`);
         }
     }
 

@@ -1,4 +1,4 @@
-export interface BoundsCell {
+interface BoundsCell {
     minX: number;
     minY: number;
     minZ: number;
@@ -7,7 +7,7 @@ export interface BoundsCell {
     maxZ: number;
 }
 
-export interface LODCell {
+interface LODCell {
     bounds: BoundsCell;
     level: number;
     childIndices?: number[] | null;
@@ -15,7 +15,7 @@ export interface LODCell {
     firstAtomIndex: number;
 }
 
-export interface FeatureBudget {
+interface FeatureBudget {
     maxGeometry: number;
     decimation?: number;
 }
@@ -34,7 +34,7 @@ export interface OctreeMetadata {
     geometryBudget?: GeometryBudget;
 }
 
-export interface OctreeBuildOptions {
+interface OctreeBuildOptions {
     leafCellMaxAtoms: number;
     maxDepth: number;
     geometryBudget?: GeometryBudget;
@@ -136,7 +136,9 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
     }];
 
     while (stack.length > 0) {
-        const { node, indices } = stack.pop()!;
+        const frame = stack.pop();
+        if (!frame) break;
+        const { node, indices } = frame;
         if (indices.length <= leafMax || node.level >= maxDepth) {
             continue;
         }

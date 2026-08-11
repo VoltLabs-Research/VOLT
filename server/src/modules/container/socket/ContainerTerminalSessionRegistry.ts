@@ -23,7 +23,7 @@ export const CONTAINER_TERMINAL_EVENTS = {
     ERROR: 'container:error'
 } as const;
 
-export interface SharedTerminalSession {
+interface SharedTerminalSession {
     readonly attachment: ContainerTerminalAttachment;
     readonly containerKey: string;
     readonly participants: Set<string>;

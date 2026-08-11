@@ -1,11 +1,21 @@
-import type { DeleteOptions, ITempFileService, TempFileOptions } from '@shared/domain/port/ITempFileService';
 import logger from '@shared/infrastructure/logger';
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { v4 } from 'uuid';
 
-class TempFileService implements ITempFileService {
+interface TempFileOptions {
+    prefix?: string;
+    extension?: string;
+    subdir?: string;
+}
+
+interface DeleteOptions {
+    recursive?: boolean;
+    force?: boolean;
+}
+
+class TempFileService {
     private readonly TEMP_DIR: string;
 
     constructor() {

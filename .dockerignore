@@ -1,8 +1,6 @@
-# Deliberately NOT `**/node_modules`: the client's temporary Tailwind side-prefix
-# lives at client/.local-deps/node_modules (see the LOCAL LINK block in
-# client/vite.config.ts) and the image build needs it until bravais >= 1.0.5 is
-# published and Tailwind becomes a real dependency. A blanket glob silently
-# emptied it, which is why the client image could not be rebuilt.
+# Listed per-app rather than as `**/node_modules` so a nested module directory
+# that the build genuinely needs cannot be emptied by a blanket glob — that is what
+# once made the client image unbuildable.
 client/node_modules
 server/node_modules
 cluster/node_modules

@@ -5,14 +5,14 @@ import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
  * Human-in-the-loop gate. `true` always asks the user to confirm before the
  * tool runs; a predicate decides per call from the model-supplied input.
  */
-export type AIToolApproval<TInput> = boolean | ((input: TInput) => boolean | Promise<boolean>);
+type AIToolApproval<TInput> = boolean | ((input: TInput) => boolean | Promise<boolean>);
 
 /**
  * JSON Schema for a tool's keyword arguments. Always produced by
  * `typia.llm.parameters<TInput>()`, so the TypeScript type is the only source
  * of truth — there is no schema DSL to keep in sync.
  */
-export interface AIToolParameters {
+interface AIToolParameters {
     type: 'object';
     properties: Record<string, unknown>;
     required?: readonly string[];
@@ -21,7 +21,7 @@ export interface AIToolParameters {
 }
 
 /** Produced by `typia.createValidate<TInput>()`; rejects malformed model output. */
-export type AIToolValidator<TInput> = (input: unknown) => IValidation<TInput>;
+type AIToolValidator<TInput> = (input: unknown) => IValidation<TInput>;
 
 /** The three things a model needs to know about a tool, plus the optional approval gate. */
 interface AIToolMetadata<TInput> {

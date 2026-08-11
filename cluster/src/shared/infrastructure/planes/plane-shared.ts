@@ -1,8 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 import { logger } from '@shared/infrastructure/logger';
 
-export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
+const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
+const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
 export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
 
 /*
@@ -17,12 +17,12 @@ export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
  */
 const SKIP_PER_MESSAGE_DEFLATE = false as unknown as { threshold: number };
 
-export interface PlaneTransportOptions {
+interface PlaneTransportOptions {
     /* Set on planes whose payloads arrive pre-compressed. */
     skipCompression?: boolean;
 }
 
-export const createPlaneSocket = (
+const createPlaneSocket = (
     voltCloudUrl: string,
     transport: PlaneTransportOptions = {}
 ): Socket =>
@@ -61,19 +61,19 @@ export const registerSignalHandlers = (stop: () => void): void => {
     process.once('SIGTERM', shutdown);
 };
 
-export interface PlaneSocketConfig {
+interface PlaneSocketConfig {
     voltCloudUrl: string;
     teamClusterId: string;
     daemonPassword: string;
 }
 
-export interface PlaneSocketHandlers {
+interface PlaneSocketHandlers {
     onRegistered?: () => void;
     onDisconnected?: (reason: string) => void;
     onError?: (message: string) => void;
 }
 
-export interface PlaneSocketConnection {
+interface PlaneSocketConnection {
     socket: Socket;
     isRegistered: () => boolean;
 }

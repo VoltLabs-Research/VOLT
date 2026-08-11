@@ -13,7 +13,7 @@ export interface DashboardGlobalSearchItem {
     disabled?: boolean;
 }
 
-export interface DashboardGlobalSearchSection {
+interface DashboardGlobalSearchSection {
     key: GlobalSearchSectionKey;
     items: DashboardGlobalSearchItem[];
 }

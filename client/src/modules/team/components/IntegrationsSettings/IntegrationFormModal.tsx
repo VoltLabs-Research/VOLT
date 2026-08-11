@@ -1,4 +1,4 @@
-import { Button, Description, Label, ListBox, Select, Spinner, Switch } from '@heroui/react';
+import { Button, Label, ListBox, Select, Spinner, Switch } from '@heroui/react';
 import { Modal, closeModal } from '@/shared/ui/modal';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IntegrationModelList from './IntegrationModelList';
@@ -19,7 +19,6 @@ const TEAM_AI_INTEGRATION_FORM_ID = 'team-ai-integration-form';
 interface IntegrationSelectOption {
     value: string;
     title: string;
-    description?: string;
 }
 
 interface IntegrationFormModalProps {
@@ -49,8 +48,7 @@ const IntegrationFormModal = ({
 
     const providerSelectOptions: IntegrationSelectOption[] = availableProviders.map((catalogItem) => ({
         value: catalogItem.id,
-        title: catalogItem.name,
-        description: catalogItem.description
+        title: catalogItem.name
     }));
 
     const modelOptions: IntegrationSelectOption[] = draft.enabledModels.map((model) => ({
@@ -128,7 +126,10 @@ const IntegrationFormModal = ({
                 </>
             )}
         >
-            <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-6' onSubmit={handleSubmit}>
+            {/* No padding here: HeroUI's modal body already pads the dialog, and the two
+                stacked. Every other modal in the app relies on that same body padding, so
+                the duplicate is dropped here rather than making this one dialog special. */}
+            <form id={TEAM_AI_INTEGRATION_FORM_ID} onSubmit={handleSubmit}>
                 <div className='flex flex-col gap-4'>
                     {!editingProvider ? (
                         <div className='flex flex-col gap-2'>
@@ -160,7 +161,6 @@ const IntegrationFormModal = ({
                                             <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
                                                 <ListBox.ItemIndicator />
                                                 <Label>{option.title}</Label>
-                                                {option.description && <Description>{option.description}</Description>}
                                             </ListBox.Item>
                                         ))}
                                     </ListBox>

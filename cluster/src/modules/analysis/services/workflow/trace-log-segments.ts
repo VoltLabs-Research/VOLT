@@ -37,7 +37,7 @@ const serializeOutput = (output: InlineWorkflowTraceNode['output']): string | nu
     return truncate(serialized, MAX_SERIALIZED_OUTPUT_LENGTH);
 };
 
-export interface BuildTraceLogSegmentsOptions {
+interface BuildTraceLogSegmentsOptions {
     success: boolean;
 }
 

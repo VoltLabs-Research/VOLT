@@ -17,7 +17,7 @@ export interface ProvisionAccount{
     autoJoinNewUsers?: boolean;
 }
 
-export interface BootstrapProps{
+interface BootstrapProps{
     appConfig: AppConfig;
     serverOrigin: string;
     account?: ProvisionAccount;

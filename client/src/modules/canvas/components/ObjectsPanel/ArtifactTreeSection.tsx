@@ -18,7 +18,17 @@ import {
 } from '../../utils/tree-menus';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button } from '@voltstack/bravais';
+import { cn } from '@heroui/react';
+import {
+    TREE_CONTAINER_CLASS,
+    TREE_GROUP_CHEVRON_CLASS,
+    TREE_GROUP_CHEVRON_COLLAPSED_CLASS,
+    TREE_GROUP_CLASS,
+    TREE_GROUP_COUNT_CLASS,
+    TREE_GROUP_HEADER_CLASS,
+    TREE_ITEM_TEXT_CLASS,
+    TREE_SHOW_MORE_CLASS
+} from './tree-classes';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
@@ -125,22 +135,24 @@ const ArtifactTreeSection = ({
         const groupId = `canvas-ctx-${section.id}-group-${timestep}`;
 
         return (
-            <div key={timestep} className="canvas-tree-group" role="treeitem" aria-expanded={isExpanded} aria-level={1}>
-                <Button
-                    variant='ghost'
-                    size='sm'
-                    align='start'
-                    block
+            <div key={timestep} className={TREE_GROUP_CLASS} role='treeitem' aria-expanded={isExpanded} aria-level={1}>
+                {/*
+                  * A plain button: `.canvas-tree-group-header` stripped bravais's Button back
+                  * to a bare left-aligned row, and it needs `aria-controls`, which is not on
+                  * HeroUI's closed prop interface.
+                  */}
+                <button
+                    type='button'
                     id={groupId}
-                    className='canvas-tree-group-header gap-2'
+                    className={cn('flex items-center gap-2', TREE_GROUP_HEADER_CLASS)}
                     onClick={() => section.toggleTimestep(timestep)}
                     aria-expanded={isExpanded}
                     aria-controls={isExpanded ? `${groupId}-children` : undefined}
                 >
-                    <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={CHEVRON_STYLE} />
-                    <span className="canvas-tree-item__text">{timestep}</span>
-                    <span className="canvas-tree-group-count">{group.length}</span>
-                </Button>
+                    <ChevronIcon className={cn(TREE_GROUP_CHEVRON_CLASS, !isExpanded && TREE_GROUP_CHEVRON_COLLAPSED_CLASS)} style={CHEVRON_STYLE} />
+                    <span className={TREE_ITEM_TEXT_CLASS}>{timestep}</span>
+                    <span className={TREE_GROUP_COUNT_CLASS}>{group.length}</span>
+                </button>
 
                 {isExpanded && (
                     <div id={`${groupId}-children`} role="group">
@@ -160,7 +172,7 @@ const ArtifactTreeSection = ({
             expanded={section.open}
             onExpandedChange={section.setOpen}
         >
-            <div className='flex flex-col gap-1 overflow-auto canvas-tree-container' role="tree" aria-label={section.ariaLabel}>
+            <div className={TREE_CONTAINER_CLASS} role='tree' aria-label={section.ariaLabel}>
                 {timesteps.length === 0 ? (
                     <CanvasTreeEmptyRow label={isLoading ? 'Loading...' : 'No models generated'} />
                 ) : (
@@ -168,14 +180,13 @@ const ArtifactTreeSection = ({
                 )}
 
                 {hiddenCount > 0 && (
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        className='canvas-tree-show-more text-xs text-muted'
+                    <button
+                        type='button'
+                        className={TREE_SHOW_MORE_CLASS}
                         onClick={section.showMoreTimesteps}
                     >
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)
-                    </Button>
+                    </button>
                 )}
             </div>
         </RightCollapsible>

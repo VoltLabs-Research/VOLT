@@ -13,7 +13,7 @@ type SliderRowDef =
     | (BaseRow & { get: () => number; set: (value: number) => void })
     | (BaseRow & { value: number; onChange: (value: number) => void });
 
-export type SectionDef = {
+type SectionDef = {
     key: string;
     title: string;
     enabled: boolean;

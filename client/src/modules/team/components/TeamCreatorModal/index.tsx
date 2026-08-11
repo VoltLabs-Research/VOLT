@@ -103,7 +103,7 @@ export const TeamCreatorModal = ({
                 />
             )}
         >
-            <form id={TEAM_CREATOR_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='flex flex-col gap-6 p-6'>
+            <form id={TEAM_CREATOR_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className='flex flex-col gap-6'>
                 <FormFieldRHF
                     name='name'
                     control={form.control}

@@ -1,10 +1,7 @@
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
-
 const POST_AUTH_DESTINATION_STORAGE_KEY = 'volt:auth:post-auth-destination';
 const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';
 const ONBOARDING_PATH = '/onboarding';
 const CLUSTER_ONBOARDING_PATH = '/onboarding/cluster/setup';
-const CLUSTER_ONBOARDING_CHOICE_PATH = '/onboarding/cluster/choice';
 
 interface ResolvePostAuthDestinationInput {
     queryNext?: string | null;
@@ -85,10 +82,7 @@ export const getOnboardingRedirectPath = (destination?: string | null): string =
 };
 
 export const getClusterOnboardingRedirectPath = (destination?: string | null): string => {
-    return buildOnboardingRedirectPath(
-        destination,
-        isDemoClusterFeatureEnabled() ? CLUSTER_ONBOARDING_CHOICE_PATH : CLUSTER_ONBOARDING_PATH
-    );
+    return buildOnboardingRedirectPath(destination, CLUSTER_ONBOARDING_PATH);
 };
 
 export const getPostAuthRedirectPath = (destination: string): string => {

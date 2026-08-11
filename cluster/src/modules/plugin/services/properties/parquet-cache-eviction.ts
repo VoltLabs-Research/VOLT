@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { DAEMON_PATHS } from '@core/config/paths';
+import { logger } from '@shared/infrastructure/logger';
 
 /** Keeps the on-disk plugin parquet cache under its byte budget, evicting the oldest files first. */
 
@@ -50,7 +51,8 @@ export const sweepPluginParquetCache = async (): Promise<void> => {
             await fs.rm(`${entry.filePath}.signature`, { force: true });
             totalBytes -= entry.size;
         }
-    } catch {
+    } catch (error) {
+        logger.warn({ err: error }, 'Failed to sweep plugin parquet cache');
     } finally {
         sweepInFlight = false;
     }

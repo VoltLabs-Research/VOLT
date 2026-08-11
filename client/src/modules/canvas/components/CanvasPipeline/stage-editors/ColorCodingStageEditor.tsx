@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GradientPreview from '../../GradientPreview';
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
@@ -204,14 +204,12 @@ const ColorCodingStageEditor = ({
             )}
 
             <Button
-                variant='solid'
-                intent='brand'
+                variant='primary'
                 size='sm'
-                shape='rounded'
-                block
-                isLoading={isApplying}
-                onClick={() => { void handleApply(); }}
-                disabled={!canApply || isLoading}
+                fullWidth
+                isPending={isApplying}
+                onPress={() => { void handleApply(); }}
+                isDisabled={!canApply || isLoading}
                 className='text-xs'
             >
                 Apply (bake)

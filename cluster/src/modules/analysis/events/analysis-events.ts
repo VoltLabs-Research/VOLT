@@ -1,4 +1,4 @@
-import { createDomainEvent } from '@shared/domain/events/createDomainEvent';
+import { createDomainEvent } from '@shared/domain/events/create-domain-event';
 import type {
     AnalysisStageStatusPayload,
     AnalysisLogChunkPayload,

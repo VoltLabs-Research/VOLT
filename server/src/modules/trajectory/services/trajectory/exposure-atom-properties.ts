@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import PluginEntity from '@modules/plugin/models/Plugin';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import ApplicationError from '@shared/application/errors/ApplicationError';

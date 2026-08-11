@@ -3,19 +3,19 @@ import { fetchLatestRelease } from '@/services/Repository';
 import { installRelease, resolveExtractedPath } from '@/services/SoftwareUpdater';
 import { assertDevPaths } from '@/services/devPaths';
 
-export interface SourceResolverProps{
+interface SourceResolverProps{
     downloadDir: string;
     appConfig: AppConfig;
 }
 
-export interface ResolvedSources{
+interface ResolvedSources{
     env: Record<string, string>;
     changed: boolean;
     
     commit: () => Promise<void>;
 }
 
-export interface RepoUpdateStatus{
+interface RepoUpdateStatus{
     repoId: string;
     installed: string | null;
     latest: string;

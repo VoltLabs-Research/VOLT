@@ -5,7 +5,7 @@ import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import PluginService from '@modules/plugin/services/PluginService';
 import RasterService from '@modules/raster/services/RasterService';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';

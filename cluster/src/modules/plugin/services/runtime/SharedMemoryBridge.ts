@@ -11,7 +11,7 @@ const DEFAULT_FRAME_MMAP_ROOT = path.resolve(process.cwd(), 'storage', 'plugin-f
 const FRAME_MMAP_ROOT_ENV = 'PLUGIN_FRAME_MMAP_DIR';
 const FRAME_MMAP_FILE_PREFIX = 'volt-plugin-frame-';
 
-export interface SharedFrameHandle {
+interface SharedFrameHandle {
     path: string | null;
     bindings: PluginFrameColumnBinding[];
     release(): Promise<void>;

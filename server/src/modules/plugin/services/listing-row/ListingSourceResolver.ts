@@ -1,7 +1,7 @@
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { IsNull, Not, type FindOptionsWhere } from 'typeorm';
 
-export interface ResolvedListingSource {
+interface ResolvedListingSource {
     teamClusterId: string;
     analysisId: string;
 }

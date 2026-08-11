@@ -1,4 +1,4 @@
-export interface CommandOptions {
+interface CommandOptions {
     readonly raw?: boolean;
     readonly status?: number;
 }
@@ -9,16 +9,16 @@ export interface CommandMethodMetadata {
     readonly propertyKey: string;
 }
 
-export interface CommandGroupMetadata {
+interface CommandGroupMetadata {
     readonly namespace: string;
     readonly commands: readonly CommandMethodMetadata[];
 }
 
-export type CommandGroupClass = new (...args: never[]) => object;
+type CommandGroupClass = new (...args: never[]) => object;
 
-export type CommandPayload = object | undefined;
+type CommandPayload = object | undefined;
 
-export type CommandHandlerMap = Record<string, (payload: CommandPayload) => unknown>;
+type CommandHandlerMap = Record<string, (payload: CommandPayload) => unknown>;
 
 export interface CommandGroupFactory {
     (): CommandHandlerMap;

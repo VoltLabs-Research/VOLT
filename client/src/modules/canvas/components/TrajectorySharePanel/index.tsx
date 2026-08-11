@@ -1,8 +1,14 @@
 import CopyableField from '@/shared/ui/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
-import { CloseButton, Divider } from '@voltstack/bravais';
+import { CloseButton, Separator } from '@heroui/react';
 
-import './TrajectorySharePanel.css';
+/**
+ * `.trajectory-share-link-field .copyable-field-value { font-size: 0.7rem }` reached into
+ * `CopyableField`, which is a shared component, so it stays a descendant rule — written
+ * as a variant on this element so it still outranks the base utilities that component now
+ * carries (spec §5b.3).
+ */
+const LINK_FIELD_CLASS = 'px-2.5 py-2 [&_.copyable-field-value]:text-[0.7rem]';
 
 interface TrajectorySharePanelProps {
     trajectoryId: string;
@@ -24,15 +30,15 @@ const TrajectorySharePanel = ({
     const shareUrl = buildCanvasUrl(trajectoryId);
 
     return (
-        <div className='flex flex-col trajectory-share-panel'>
-            <div className='flex flex-row items-center justify-between shrink-0 trajectory-share-panel-header'>
+        <div className='flex h-auto flex-col'>
+            <div className='flex shrink-0 flex-row items-center justify-between border-b border-border px-3 py-2.5'>
                 <h4 className='text-xs font-medium text-foreground'>
                     Share trajectory
                 </h4>
-                {onClose && <CloseButton onClick={onClose} />}
+                {onClose && <CloseButton onPress={onClose} aria-label='Close share panel' />}
             </div>
 
-            <div className='flex flex-col gap-3 trajectory-share-panel-body'>
+            <div className='flex flex-col gap-3 p-3'>
                 {canManageVisibility ? (
                     <TrajectoryVisibilityToggle
                         trajectoryId={trajectoryId}
@@ -51,13 +57,13 @@ const TrajectorySharePanel = ({
                     </div>
                 )}
 
-                <Divider />
+                <Separator />
 
                 <div className='flex flex-col gap-2'>
                     <CopyableField
                         value={shareUrl}
                         successMessage='Canvas link copied'
-                        className='trajectory-share-link-field'
+                        className={LINK_FIELD_CLASS}
                     />
                 </div>
             </div>

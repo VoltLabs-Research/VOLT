@@ -41,18 +41,18 @@ export interface CanvasGridSettingsState {
     rotation: [number, number, number];
 }
 
-export interface CanvasGridSettingsActions {
+interface CanvasGridSettingsActions {
     setGrid: (partial: Partial<CanvasGridSettingsState>) => void;
     reset: () => void;
 }
 
-export interface EnvironmentConfigActions {
+interface EnvironmentConfigActions {
     setBackgroundColor: (color: string) => void;
     setFogConfig: (config: Partial<FogConfig>) => void;
     reset: () => void;
 }
 
-export interface CameraSettingsActions {
+interface CameraSettingsActions {
     setType: (type: CameraSettingsState['type']) => void;
     setPosition: (position: CameraSettingsState['position']) => void;
     setUp: (up: CameraSettingsState['up']) => void;
@@ -62,7 +62,7 @@ export interface CameraSettingsActions {
     reset: () => void;
 }
 
-export interface EffectsConfigActions {
+interface EffectsConfigActions {
     setSSAOEffect: (config: Partial<SSAOEffectConfig>) => void;
     setBloomEffect: (config: Partial<BloomEffectConfig>) => void;
     setChromaticAberration: (config: Partial<ChromaticAberrationConfig>) => void;
@@ -73,8 +73,8 @@ export interface EffectsConfigActions {
     reset: () => void;
 }
 
-export type PerspectiveSettings = PerspectiveCameraSettings;
-export type OrthographicSettings = OrthographicCameraSettings;
+type PerspectiveSettings = PerspectiveCameraSettings;
+type OrthographicSettings = OrthographicCameraSettings;
 export type CameraSettingsState = CameraSettings;
 export type CameraSettingsStore = CameraSettingsState & CameraSettingsActions;
 export type OrbitControlsState = OrbitControlsSettings;
@@ -93,7 +93,7 @@ export type SepiaEffectConfig = SepiaSettings;
 export type EffectsConfigState = EffectsSettings;
 export type EffectsConfigStore = EffectsConfigState & EffectsConfigActions;
 
-export interface OrbitControlsActions {
+interface OrbitControlsActions {
     set: (partial: Partial<OrbitControlsState>) => void;
     setTarget: (t: [number, number, number]) => void;
     reset: () => void;

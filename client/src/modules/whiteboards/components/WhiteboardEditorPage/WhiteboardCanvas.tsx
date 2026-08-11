@@ -8,7 +8,7 @@ import type {
     RenderTopRightUI
 } from '@/modules/whiteboards/contracts/excalidraw';
 
-export interface WhiteboardCanvasProps {
+interface WhiteboardCanvasProps {
     name: string;
     initialData: ExcalidrawProps['initialData'];
     onChange: ExcalidrawChangeHandler;

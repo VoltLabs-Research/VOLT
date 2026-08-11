@@ -1,7 +1,7 @@
 import type { SileoPosition } from 'sileo';
 
-export type ContextualTipSurface = 'page' | 'feature' | 'action';
-export type ContextualTipDismissMode = 'manual' | 'auto';
+type ContextualTipSurface = 'page' | 'feature' | 'action';
+type ContextualTipDismissMode = 'manual' | 'auto';
 
 export interface ContextualTipDefinition {
     surface: ContextualTipSurface;
@@ -14,7 +14,7 @@ export interface ContextualTipDefinition {
     position?: SileoPosition;
 };
 
-export const CONTEXTUAL_TIPS = {
+const CONTEXTUAL_TIPS = {
     'canvas-shortcuts': {
         surface: 'page',
         dismissMode: 'manual',

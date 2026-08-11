@@ -13,7 +13,7 @@ import type { WorkflowScheduler } from '@modules/analysis/services/workflow/Work
 import type { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-export type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
+type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
 
 export interface InlineWorkflowTraceNode {
     traceId: string;
@@ -34,11 +34,11 @@ export interface WorkflowTraceCounter {
     value: number;
 }
 
-export interface WorkflowTraceDetails {
+interface WorkflowTraceDetails {
     trace: InlineWorkflowTraceNode[];
 }
 
-export const WORKFLOW_TRACE_ERROR_CODE = ErrorCodes.WORKFLOW_TRACE;
+const WORKFLOW_TRACE_ERROR_CODE = ErrorCodes.WORKFLOW_TRACE;
 
 export const createWorkflowTraceFailure = (
     message: string,
@@ -61,7 +61,7 @@ export const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | u
     return details?.trace;
 };
 
-export const MAX_TRACE_STRING_LENGTH = 8 * 1024;
+const MAX_TRACE_STRING_LENGTH = 8 * 1024;
 
 const NOISY_TRACE_FIELDS = new Set(['stdout', 'stderr', 'pluginResult']);
 
@@ -106,7 +106,7 @@ const sanitizeTraceOutput = (
     return sanitizeTraceValue(output, undefined) as WorkflowNodeOutput;
 };
 
-export interface WorkflowWalkerPluginExecution {
+interface WorkflowWalkerPluginExecution {
     output: WorkflowNodeOutput;
 
     trace?: InlineWorkflowTraceNode[];
@@ -127,7 +127,7 @@ export interface WorkflowWalkerDelegate {
     reportNodeFailed?(node: WorkflowNode, error: unknown): void | Promise<void>;
 }
 
-export interface WorkflowWalkerOptions {
+interface WorkflowWalkerOptions {
     graph: WorkflowGraph;
     session: WorkflowSession;
 

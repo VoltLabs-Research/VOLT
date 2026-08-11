@@ -59,11 +59,6 @@ services:
     build:
       context: ${VOLT_SOURCE_DIR}
       dockerfile: client/Dockerfile.stack
-      # Sibling bravais checkout, needed while the client resolves bravais from
-      # ../../bravais/dist instead of npm (unpublished 1.0.5). Remove together
-      # with the LOCAL LINK block in client/vite.config.ts.
-      additional_contexts:
-        bravais-dist: ${VOLT_SOURCE_DIR}/../bravais/dist
     image: volt-client:local
     restart: unless-stopped
     depends_on: [volt-server]

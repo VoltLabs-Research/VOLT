@@ -2,18 +2,16 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import ClusterService from '@modules/cluster/services/ClusterService';
-import clusterDaemonLifecycleService from '@modules/cluster/services/ClusterDaemonLifecycleService';
-import clusterDemoService from '@modules/cluster/services/ClusterDemoService';
-import clusterRemoteExplorerService from '@modules/cluster/services/ClusterRemoteExplorerService';
-import clusterRuntimeSettingsService from '@modules/cluster/services/ClusterRuntimeSettingsService';
+import ClusterService from '@modules/cluster/services/core/ClusterService';
+import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
+import clusterRemoteExplorerService from '@modules/cluster/services/remote-explorer/ClusterRemoteExplorerService';
+import clusterRuntimeSettingsService from '@modules/cluster/services/core/ClusterRuntimeSettingsService';
 import type {
     ClusterRefInput,
     GenerateClusterInstallManifestInput,
     ListClusterTransferJobsInput,
     ListClustersInput,
     ListRemoteClusterFilesInput,
-    ManageDemoClusterInput,
     RevealClusterCredentialsInput,
     UpdateClusterQueueConcurrencyInput,
     UpdateClusterRoleInput
@@ -225,39 +223,6 @@ export default class ClusterAIToolController extends AIToolController {
                     }
                 }
             }
-        };
-    }
-
-    @AITool({
-        name: 'manage_demo_cluster',
-        description: 'Provision, check the status of, or delete the team\'s ephemeral demo cluster.',
-        parameters: typia.llm.parameters<ManageDemoClusterInput>(),
-        validate: typia.createValidate<ManageDemoClusterInput>(),
-        needsApproval: (input) => input.action === 'delete'
-    })
-    async manageDemoCluster(input: ManageDemoClusterInput & AIToolScope) {
-        if (input.action === 'provision') {
-            const result = await clusterDemoService.provisionDemo(input);
-            return {
-                summary: `Demo cluster "${result.teamCluster.name}" provisioned.`,
-                data: result
-            };
-        }
-
-        if (input.action === 'delete') {
-            const result = await clusterDemoService.deleteDemo(input);
-            return {
-                summary: result.teardownScheduled ? 'Demo cluster teardown scheduled.' : 'No active demo cluster to delete.',
-                data: result
-            };
-        }
-
-        const result = await clusterDemoService.getDemoStatus(input);
-        return {
-            summary: result.hasActiveDemo
-                ? `Active demo cluster${result.remainingMs !== null ? ` (${Math.max(0, Math.round(result.remainingMs / 60000))} min remaining)` : ''}.`
-                : 'No active demo cluster.',
-            data: result
         };
     }
 }

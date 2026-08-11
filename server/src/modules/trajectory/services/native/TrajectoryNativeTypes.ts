@@ -22,7 +22,7 @@ export interface FrameMetadata {
     };
 }
 
-export interface AtomPageEntry {
+interface AtomPageEntry {
     id: number;
     type: number;
     x: number;

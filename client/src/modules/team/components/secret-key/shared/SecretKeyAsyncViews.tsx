@@ -39,7 +39,7 @@ const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
     </div>
 );
 
-export const SecretKeyRecoveryView = ({
+const SecretKeyRecoveryView = ({
     header,
     title,
     description,
@@ -56,7 +56,7 @@ export const SecretKeyRecoveryView = ({
     </SecretKeyPageShell>
 );
 
-export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps) => (
+const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps) => (
     <SecretKeyPageShell header={header}>
         <div className='flex p-12 items-center justify-center'>
             <p className='text-base text-muted'>{message}</p>

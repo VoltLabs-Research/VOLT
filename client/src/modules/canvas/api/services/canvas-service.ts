@@ -61,7 +61,7 @@ interface PublicCanvasFrame {
     simulationCell: string;
 }
 
-export interface PublicCanvasTrajectory {
+interface PublicCanvasTrajectory {
     _id: string;
     name: string;
     status: string;

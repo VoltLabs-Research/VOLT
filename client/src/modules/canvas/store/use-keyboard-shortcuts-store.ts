@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ShortcutScope = 'global' | 'canvas';
+type ShortcutScope = 'global' | 'canvas';
 
 export interface Shortcut {
     id: string;

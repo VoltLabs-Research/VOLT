@@ -2,7 +2,7 @@ import { canAccessByPermissions } from '@/modules/team/utils/team/permission-eva
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import { Loader } from '@voltstack/bravais';
+import { Spinner } from '@heroui/react';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
@@ -12,6 +12,32 @@ import { Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import type { RouteConfig, RouteLoader } from '@/app/routes/types';
+
+/*
+ * The route-loading fallback, inline rather than as a component.
+ *
+ * bravais's `Loader` was a 12-piece CSS spinner with a visible label and an
+ * `aria-live` region; HeroUI's `Spinner` covers the visual, so what remains is the
+ * announcement and the positioning contract. `fillParent` fills the dashboard's
+ * content area; otherwise it covers the viewport, which is what `isFixed` defaulted
+ * to. The label is announced politely and atomically so a screen reader hears the
+ * whole phrase once rather than character by character.
+ */
+const renderRouteLoader = (label?: string, fillParent = false) => (
+    <div
+        className={fillParent ? 'absolute inset-0 flex items-center justify-center' : 'fixed inset-0 flex items-center justify-center'}
+        role='status'
+        aria-live='polite'
+        aria-atomic={true}
+        aria-label={label ?? 'Loading'}
+    >
+        <div className='flex flex-col items-center gap-8'>
+            <Spinner size='lg' />
+            {label && <span className='text-sm text-muted text-center leading-normal'>{label}</span>}
+        </div>
+    </div>
+);
+
 
 interface RoutePermissionGuardProps {
     route: RouteConfig;
@@ -57,7 +83,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     }
 
     if (!hasHydratedSelection) {
-        return <Loader scale={0.6} label='Loading teams…' announce fillParent={isDashboardRoute} />;
+        return renderRouteLoader('Loading teams…', isDashboardRoute);
     }
 
     if (!selectedTeamId) {
@@ -71,7 +97,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     }
 
     if (isPermissionsLoading) {
-        return <Loader scale={0.6} label='Checking access…' announce fillParent={isDashboardRoute} />;
+        return renderRouteLoader('Checking access…', isDashboardRoute);
     }
 
     if (!isScopeReady) {
@@ -100,14 +126,7 @@ const renderRouteElement = (route: RouteConfig) => {
     return (
         <RoutePermissionGuard route={route}>
             <Suspense
-                fallback={(
-                    <Loader
-                        scale={0.6}
-                        label={isDashboardRoute ? 'Loading workspace…' : undefined}
-                        announce
-                        fillParent={isDashboardRoute}
-                    />
-                )}
+                fallback={renderRouteLoader(isDashboardRoute ? 'Loading workspace…' : undefined, isDashboardRoute)}
             >
                 <Component />
             </Suspense>
@@ -158,7 +177,7 @@ export const renderProtectedRoutes = () => {
             <Route
                 path={DASHBOARD_ROUTE_PREFIX}
                 element={(
-                    <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce fillParent />}>
+                    <Suspense fallback={renderRouteLoader('Loading workspace…', true)}>
                         <LazyDashboardLayout />
                     </Suspense>
                 )}

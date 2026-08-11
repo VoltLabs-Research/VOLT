@@ -25,7 +25,7 @@ export interface DownloadPluginListingParams {
     format?: ExportType;
 }
 
-export interface DownloadAnalysisListingParams {
+interface DownloadAnalysisListingParams {
     analysisId: string;
     format?: ExportType;
     includeConfig?: boolean;

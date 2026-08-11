@@ -1,7 +1,7 @@
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 
-export const isTeamClusterUsable = (cluster: Pick<TeamCluster, 'status'>): boolean => {
+const isTeamClusterUsable = (cluster: Pick<TeamCluster, 'status'>): boolean => {
     return cluster.status === TeamClusterStatus.Connected;
 };
 

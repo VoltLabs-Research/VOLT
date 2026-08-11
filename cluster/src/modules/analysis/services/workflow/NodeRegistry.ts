@@ -10,7 +10,7 @@ import { WorkflowModifierHandler } from '@modules/analysis/services/workflow/nod
 import { WorkflowSwitchCaseHandler, WorkflowSwitchStatementHandler } from '@modules/analysis/services/workflow/nodes/SwitchStatementHandler';
 import { WorkflowValueResolver } from '@modules/analysis/services/workflow/WorkflowValueResolver';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput, WorkflowValue } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 
 type WorkflowNodePhase = 'planning' | 'runtime';
 
@@ -87,30 +87,6 @@ export class WorkflowNodeRegistry {
             context,
             currentNodeId
         });
-    }
-
-    resolveReference(ref: string, context: WorkflowExecutionContext, currentNodeId?: string): WorkflowValue {
-        return this.createValueResolver(context, currentNodeId).resolveReference(ref);
-    }
-
-    shouldResolveExpression(value: WorkflowValue): value is string {
-        return WorkflowValueResolver.shouldResolveExpression(value);
-    }
-
-    resolveExpressionValue(
-        expression: string,
-        context: WorkflowExecutionContext,
-        currentNodeId?: string
-    ): Promise<WorkflowValue> {
-        return this.createValueResolver(context, currentNodeId).resolveExpressionValue(expression);
-    }
-
-    resolveComparableString(
-        expression: string,
-        context: WorkflowExecutionContext,
-        currentNodeId?: string
-    ): Promise<string> {
-        return this.createValueResolver(context, currentNodeId).resolveComparableString(expression);
     }
 };
 

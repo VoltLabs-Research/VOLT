@@ -24,7 +24,7 @@ const sharedExposurePrefix = (
 ): string =>
     `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/shared-${exposureId}/`;
 
-export interface PersistSharedExposureInput {
+interface PersistSharedExposureInput {
     ownerClusterId: string;
     trajectoryId: string;
     analysisId: string;
@@ -33,7 +33,7 @@ export interface PersistSharedExposureInput {
     sourcePath: string;
 }
 
-export interface FetchSharedExposureInput {
+interface FetchSharedExposureInput {
     ownerClusterId: string;
     trajectoryId: string;
     analysisId: string;

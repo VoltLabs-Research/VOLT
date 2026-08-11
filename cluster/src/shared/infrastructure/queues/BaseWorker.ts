@@ -14,7 +14,7 @@ const SCOPE_DEFERRED_RETRY_JITTER_MS = 1_500;
 const nextScopeDeferredRetryMs = (): number =>
     SCOPE_DEFERRED_RETRY_MS + Math.floor(Math.random() * SCOPE_DEFERRED_RETRY_JITTER_MS);
 
-export interface BaseWorkerDependencies {
+interface BaseWorkerDependencies {
     queueService: QueueService;
     scopeLimitsRegistry?: QueueScopeLimitsRegistry;
 }

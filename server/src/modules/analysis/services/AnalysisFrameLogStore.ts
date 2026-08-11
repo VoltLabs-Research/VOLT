@@ -3,7 +3,7 @@ import type {
     AnalysisFrameLogIdentity,
     StoredAnalysisFrameLogRecord
 } from '@modules/analysis/contracts/analysis-execution-log';
-import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Buffer } from 'node:buffer';
 

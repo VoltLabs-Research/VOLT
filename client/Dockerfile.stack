@@ -4,13 +4,6 @@
 # Build context is the VOLT root, because the client compiles `@volt/contracts`
 # from source.
 #
-# Until bravais >= 1.0.5 is published, `client/vite.config.ts` resolves bravais
-# from the sibling checkout's dist (`../../bravais/dist`), which sits outside
-# this context. Compose injects it as the named context `bravais-dist`
-# (see desktop/stack/compose.yml), and the COPY below places it exactly where
-# the alias resolves to from /app/client. Once 1.0.5 ships and the LOCAL LINK
-# block in vite.config.ts is deleted, drop that COPY and the named context.
-#
 # Deliberately no VITE_SERVER_ENDPOINT build arg: `backend-origin.ts` falls back
 # to `window.location.origin`, and nginx proxies the API on that same origin. That
 # is what makes one prebuilt image usable by every deployment instead of one build
@@ -30,7 +23,6 @@ COPY contracts /app/contracts
 COPY sdk/node/VoltClient /app/sdk/node/VoltClient
 RUN cd /app/sdk/node/VoltClient && npm install --no-audit --no-fund && npm run build
 
-COPY --from=bravais-dist . /bravais/dist
 COPY client .
 RUN npm run build
 

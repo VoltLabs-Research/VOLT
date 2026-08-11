@@ -2,12 +2,12 @@ import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-han
 
 export type JobLifecycleStatus = 'started' | 'completed' | 'failed';
 
-export interface JobLifecycleCleanupContext {
+interface JobLifecycleCleanupContext {
     reachedTerminal: boolean;
     error: Error | null;
 }
 
-export interface JobLifecycleHandlers {
+interface JobLifecycleHandlers {
     reportStatus: (status: JobLifecycleStatus, error?: string) => void;
     cleanup?: (context: JobLifecycleCleanupContext) => Promise<void> | void;
 

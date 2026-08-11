@@ -5,7 +5,7 @@ import {
     WorkflowNodeType
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
-export interface WorkflowViewport {
+interface WorkflowViewport {
     x: number;
     y: number;
     zoom: number;

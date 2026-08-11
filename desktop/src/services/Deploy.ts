@@ -20,7 +20,7 @@ const imagesOverlayFile = (composeFile: string): string =>
 /** The services `compose.images.yml` replaces with a published image. */
 const PREBUILT_SERVICES = ['volt-server', 'volt-client', 'cluster-daemon'];
 
-export interface DeployProps{
+interface DeployProps{
     composeFile: string;
     appConfig: AppConfig;
     sources: SourceResolver;

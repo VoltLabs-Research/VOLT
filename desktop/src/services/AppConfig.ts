@@ -1,7 +1,7 @@
 import { readFile, writeFile, chmod } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
-export interface AppConfigProps{
+interface AppConfigProps{
     configFile: string;
 }
 

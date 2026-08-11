@@ -1,7 +1,7 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { LiquidToggle, Modal, closeModal } from '@voltstack/bravais';
-import './AnalysisListingDownloadModal.css';
+import { Modal, closeModal } from '@/shared/ui/modal';
+import { Switch } from '@heroui/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -166,17 +166,24 @@ const AnalysisListingDownloadModal = ({
         value: boolean,
         onChange: (nextValue: boolean) => void
     ) => (
-        <div className='flex flex-row items-center justify-between gap-4 analysis-listing-download-modal__option-row' key={rowKey}>
-            <p className='text-xs text-foreground analysis-listing-download-modal__option-label' id={`${fieldKey}-label`}>
+        <div className='flex min-h-9 w-full min-w-0 flex-row items-center justify-between gap-4' key={rowKey}>
+            <p className='min-w-0 flex-1 truncate text-xs text-foreground' id={`${fieldKey}-label`}>
                 {label}
             </p>
-            <div className='analysis-listing-download-modal__option-toggle'>
-                <LiquidToggle
+            <div className='ml-3 flex-none'>
+                {/* bravais's `LiquidToggle` was a switch: `pressed`/`onChange` become `isSelected`/`onChange`. */}
+                <Switch
                     id={`${fieldKey}-toggle`}
-                    pressed={value}
+                    isSelected={value}
                     onChange={onChange}
                     aria-labelledby={`${fieldKey}-label`}
-                />
+                >
+                    <Switch.Content>
+                        <Switch.Control>
+                            <Switch.Thumb />
+                        </Switch.Control>
+                    </Switch.Content>
+                </Switch>
             </div>
         </div>
     );
@@ -211,7 +218,7 @@ const AnalysisListingDownloadModal = ({
                 />
             )}
         >
-            <div className='flex flex-col gap-4 p-6 analysis-listing-download-modal'>
+            <div className='flex min-w-[min(42rem,80vw)] max-w-full flex-col gap-4'>
                 {isLoading && (
                     <p className='text-xs text-muted'>
                         Loading available listings and sublistings...
@@ -227,11 +234,11 @@ const AnalysisListingDownloadModal = ({
                 {!isLoading && !hasError && optionsData && (
                     <>
                         {!hasAvailableOptions ? (
-                            <p className='text-xs text-muted analysis-listing-download-modal__empty'>
+                            <p className='py-2 text-xs text-muted'>
                                 This analysis does not expose downloadable CSV files.
                             </p>
                         ) : (
-                            <div className='flex flex-col gap-2 analysis-listing-download-modal__options'>
+                            <div className='flex max-h-64 w-full max-w-[450px] flex-col gap-2 overflow-auto pr-1'>
                                 {optionsData.hasConfig && renderOptionRow(
                                     'analysis-download-config',
                                     'analysis-download-config',

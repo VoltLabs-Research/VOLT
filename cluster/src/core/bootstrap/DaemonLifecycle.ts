@@ -4,7 +4,6 @@ import { getConfig } from '@core/config/daemon';
 import mountCommands from '@core/bootstrap/mount-commands';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import { getDomainEventBridge } from '@core/bootstrap/mount-event-mappers';
-import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getQueueMaintenance } from '@shared/infrastructure/queues/QueueMaintenance';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';

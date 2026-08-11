@@ -1,8 +1,6 @@
-import { createWriteStream } from 'node:fs';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { createZstdDecompressionStream, isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { downloadDumpObject } from '@shared/infrastructure/storage/download-dump-object';
 import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import type { TrajectoryFrameSource } from '@shared/contracts/types/trajectory-frame-store';
 
@@ -26,21 +24,14 @@ export const downloadTrajectoryDumps = async (
     const frames: TrajectoryFrameSource[] = [];
 
     for (const dump of dumps) {
-        const response = await objectStore.getStream(
-            ownerClusterId,
-            ObjectBucketName.Dumps,
-            dump.objectKey,
-            { skipMetadata: true }
-        );
         const dumpPath = path.join(tempDirectory, `timestep-${dump.timestep}.dump`);
-
-        if (isZstdObjectKey(dump.objectKey)) {
-            const decompressed = createZstdDecompressionStream(response.stream);
-            await pipeline(decompressed.stream, createWriteStream(dumpPath));
-            await decompressed.completion;
-        } else {
-            await pipeline(response.stream, createWriteStream(dumpPath));
-        }
+        await downloadDumpObject({
+            objectStore,
+            ownerClusterId,
+            objectKey: dump.objectKey,
+            localPath: dumpPath,
+            decompress: isZstdObjectKey(dump.objectKey)
+        });
 
         frames.push({
             timestep: dump.timestep,

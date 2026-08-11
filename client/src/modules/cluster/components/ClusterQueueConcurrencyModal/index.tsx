@@ -266,7 +266,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
 
     return (
         <Modal id={CLUSTER_QUEUE_CONCURRENCY_MODAL_ID} title={`Queue settings for ${clusterName}`} description='Configure worker concurrency for runtime queues.' footer={footer} onClose={handleClose}>
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 <div className='flex flex-col gap-4'>
                     {QUEUE_FIELDS.map((field) => (
                         <div className='flex flex-col gap-1' key={field.key}>

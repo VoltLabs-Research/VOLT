@@ -4,11 +4,23 @@ import { triggerShortcutAction } from '../../utils/shortcut-actions';
 import formatKeyName from '../../utils/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, closeModal, openModal, SearchInput } from '@voltstack/bravais';
+import CanvasSearchInput from '../CanvasSearchInput';
+import { Modal, closeModal, openModal } from '@/shared/ui/modal';
 
 import type { Shortcut } from '../../store/use-keyboard-shortcuts-store';
 
-import './CommandPalette.css';
+/**
+ * `.canvas-command-palette__*`. `--color-bg-hover` is `--surface-hover`, and
+ * `--color-border-subtle` / `--color-bg-subtle` were never defined even before this
+ * refactor, so the key cap falls back to the literals the stylesheet supplied.
+ */
+const PALETTE_CLASS = 'max-w-[560px] w-[min(560px,calc(100vw-2rem))]';
+
+const LIST_CLASS = 'm-0 flex max-h-[420px] list-none flex-col gap-1 overflow-y-auto pt-2';
+
+const ITEM_CLASS = 'flex cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 transition-colors duration-[120ms] ease-out hover:bg-surface-hover';
+
+const KEY_CLASS = 'inline-flex items-center rounded border border-white/10 bg-white/[0.03] px-[0.4rem] py-[0.15rem] font-mono text-xs leading-none text-muted';
 
 const MODAL_ID = 'canvas-command-palette';
 
@@ -117,12 +129,12 @@ const CommandPalette = () => {
     return (
         <Modal
             id={MODAL_ID}
-            className='canvas-command-palette'
+            className={PALETTE_CLASS}
             width='560px'
             onClose={() => useCommandPaletteStore.getState().close()}
         >
             <div className='flex flex-col gap-2 p-3' onKeyDown={handleKeyDown}>
-                <SearchInput
+                <CanvasSearchInput
                     ref={inputRef}
                     id='canvas-command-palette-input'
                     aria-label='Search commands'
@@ -132,14 +144,14 @@ const CommandPalette = () => {
                     data-modal-initial-focus='true'
                 />
 
-                <ul className='flex flex-col gap-1 canvas-command-palette__list'
+                <ul className={LIST_CLASS}
                     ref={listRef}
                     role='listbox'
                     aria-label='Available commands'
                     aria-activedescendant={filteredItems[activeIndex] ? `canvas-command-${filteredItems[activeIndex].id}` : undefined}
                 >
                     {filteredItems.length === 0 && (
-                        <li className='text-sm text-muted canvas-command-palette__empty'>No commands match "{query}"</li>
+                        <li className='px-3 py-4 text-center text-sm text-muted'>No commands match "{query}"</li>
                     )}
                     {filteredItems.map((item, index) => (
                         <li
@@ -148,7 +160,7 @@ const CommandPalette = () => {
                             data-command-index={index}
                             role='option'
                             aria-selected={index === activeIndex}
-                            className={`canvas-command-palette__item flex items-center justify-between gap-2${index === activeIndex ? ' is-active' : ''}`}
+                            className={index === activeIndex ? `${ITEM_CLASS} bg-surface-hover` : ITEM_CLASS}
                             onMouseEnter={() => setActiveIndex(index)}
                             onClick={() => runCommand(item)}
                         >
@@ -160,7 +172,7 @@ const CommandPalette = () => {
                                 {item.keys.map((key, keyIndex) => (
                                     <span className='flex flex-row items-center gap-1' key={key}>
                                         {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
-                                        <kbd className='canvas-command-palette__key font-mono text-xs'>{formatKeyName(key)}</kbd>
+                                        <kbd className={KEY_CLASS}>{formatKeyName(key)}</kbd>
                                     </span>
                                 ))}
                             </div>

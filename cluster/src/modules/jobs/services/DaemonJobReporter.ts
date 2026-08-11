@@ -1,6 +1,7 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getEventDispatcher, type EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import type { DomainEventClass, PayloadOf } from '@shared/domain/events/createDomainEvent';
+import type { DomainEventClass, PayloadOf } from '@shared/domain/events/create-domain-event';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,
@@ -23,14 +24,21 @@ import {
     RasterStartedEvent
 } from '@modules/trajectory/events/trajectory-events';
 
-interface ReporterEntry<TEvent extends DomainEventClass<any>> {
+/*
+ * A construct signature with a `never` parameter is the one upper bound every
+ * `DomainEventClass<P>` satisfies: constructor parameters are contravariant, so
+ * `DomainEventClass<object>` is not a supertype of the concrete event classes.
+ */
+type AnyDomainEventClass = new (payload: never) => IDomainEvent;
+
+interface ReporterEntry<TEvent extends AnyDomainEventClass> {
     readonly event: TEvent;
     readonly skipIf?: (input: PayloadOf<TEvent>) => boolean;
 }
 
-type ReporterSpec<TEvent extends DomainEventClass<any>> = TEvent | ReporterEntry<TEvent>;
+type ReporterSpec<TEvent extends AnyDomainEventClass> = TEvent | ReporterEntry<TEvent>;
 
-const entry = <TEvent extends DomainEventClass<any>>(spec: ReporterSpec<TEvent>): ReporterEntry<TEvent> =>
+const entry = <TEvent extends AnyDomainEventClass>(spec: ReporterSpec<TEvent>): ReporterEntry<TEvent> =>
     typeof spec === 'function' ? { event: spec } : spec;
 
 const REPORT_MAP = {
@@ -55,14 +63,12 @@ const REPORT_MAP = {
     ArtifactUploadStarted: ArtifactUploadStartedEvent,
     ArtifactUploadCompleted: ArtifactUploadCompletedEvent,
     ArtifactUploadFailed: ArtifactUploadFailedEvent
-} as const satisfies Record<string, ReporterSpec<DomainEventClass<any>>>;
+} as const;
 
 type ReportKey = keyof typeof REPORT_MAP;
 type EventFor<K extends ReportKey> = (typeof REPORT_MAP)[K] extends ReporterEntry<infer E>
     ? E
-    : (typeof REPORT_MAP)[K] extends DomainEventClass<any>
-        ? (typeof REPORT_MAP)[K]
-        : never;
+    : (typeof REPORT_MAP)[K];
 
 export type DaemonJobReporter = {
     [K in ReportKey as `report${K}`]: (input: PayloadOf<EventFor<K>>) => Promise<void>;
@@ -70,7 +76,7 @@ export type DaemonJobReporter = {
 
 const createDaemonJobReporterService = (eventDispatcher: EventDispatcher): DaemonJobReporter => {
     const entries = Object.entries(REPORT_MAP).map(([key, spec]) => {
-        const { event: EventClass, skipIf } = entry(spec as ReporterSpec<DomainEventClass<any>>);
+        const { event: EventClass, skipIf } = entry(spec as ReporterSpec<DomainEventClass<object>>);
         const method = (input: object): Promise<void> => {
             if (skipIf?.(input)) {
                 return Promise.resolve();

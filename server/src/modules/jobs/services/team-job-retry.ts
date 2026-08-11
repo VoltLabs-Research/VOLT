@@ -1,6 +1,6 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import type {
     RetryTeamJobsResult,

@@ -53,7 +53,7 @@ export interface FileWithPath {
     path: string;
 };
 
-export interface ProcessedFileSystemEntry {
+interface ProcessedFileSystemEntry {
     files: FileWithPath[];
     folderName: string | null;
     /**

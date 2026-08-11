@@ -1,4 +1,5 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import { logger } from '@shared/infrastructure/logger';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
@@ -46,7 +47,18 @@ export class JobControl {
                 REMOVED_ANALYSIS_JOB_TOMBSTONE_TTL_SECONDS
             );
             stopProcess(jobId);
-            await this.queueService.removeJobById(jobId).catch(() => false);
+            let removed = false;
+            try {
+                removed = await this.queueService.removeJobById(jobId);
+            } catch (error) {
+                logger.error({
+                    err: error,
+                    jobId
+                }, 'Failed to remove running job from queue');
+            }
+            if (!removed) {
+                continue;
+            }
             affectedJobIds.push(jobId);
         }
 

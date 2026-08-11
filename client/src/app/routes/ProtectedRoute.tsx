@@ -17,10 +17,36 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';
 import ConfirmActionModal from '@/shared/ui/components/ConfirmActionModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import { Loader } from '@voltstack/bravais';
+import { Spinner } from '@heroui/react';
 import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
+
+/*
+ * The route-loading fallback, inline rather than as a component.
+ *
+ * bravais's `Loader` was a 12-piece CSS spinner with a visible label and an
+ * `aria-live` region; HeroUI's `Spinner` covers the visual, so what remains is the
+ * announcement and the positioning contract. `fillParent` fills the dashboard's
+ * content area; otherwise it covers the viewport, which is what `isFixed` defaulted
+ * to. The label is announced politely and atomically so a screen reader hears the
+ * whole phrase once rather than character by character.
+ */
+const renderRouteLoader = (label?: string, fillParent = false) => (
+    <div
+        className={fillParent ? 'absolute inset-0 flex items-center justify-center' : 'fixed inset-0 flex items-center justify-center'}
+        role='status'
+        aria-live='polite'
+        aria-atomic={true}
+        aria-label={label ?? 'Loading'}
+    >
+        <div className='flex flex-col items-center gap-8'>
+            <Spinner size='lg' />
+            {label && <span className='text-sm text-muted text-center leading-normal'>{label}</span>}
+        </div>
+    </div>
+);
+
 
 interface ProtectedRouteProps{
     mode: RouteMode;
@@ -180,7 +206,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     }, [hasToken, isAuthenticated, mode]);
 
     if(!isInitialized || isLoading){
-        return renderProtectedContent(<Loader scale={0.6} label='Loading workspace…' announce />);
+        return renderProtectedContent(renderRouteLoader('Loading workspace…'));
     }
 
     if(mode === RouteMode.Protected){
@@ -200,7 +226,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         }
 
         if(isTeamsLoading && teams.length === 0){
-            return renderProtectedContent(<Loader scale={0.6} label='Loading teams…' announce />);
+            return renderProtectedContent(renderRouteLoader('Loading teams…'));
         }
 
         if(!hasTeam){
@@ -210,11 +236,11 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
                 );
             }
 
-            return renderProtectedContent(<Loader scale={0.6} label='Loading teams…' announce />);
+            return renderProtectedContent(renderRouteLoader('Loading teams…'));
         }
 
         if (isClusterCheckLoading) {
-            return renderProtectedContent(<Loader scale={0.6} label='Checking cluster access…' announce />);
+            return renderProtectedContent(renderRouteLoader('Checking cluster access…'));
         }
 
         if (shouldRedirectToOnboarding) {

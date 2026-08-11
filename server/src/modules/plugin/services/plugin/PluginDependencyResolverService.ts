@@ -25,7 +25,7 @@ interface PluginDependencyReference {
     pluginId: string;
 }
 
-export interface PluginReferenceValidationResult {
+interface PluginReferenceValidationResult {
     executions: PluginReferenceExecutionRequest[];
     plugins: Plugin[];
     errors: string[];

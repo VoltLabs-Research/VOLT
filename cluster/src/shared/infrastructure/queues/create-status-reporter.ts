@@ -3,7 +3,7 @@ import { errorMessage } from '@shared/application/utilities/error-message';
 import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
 import type { JobLifecycleStatus } from '@shared/infrastructure/queues/with-job-lifecycle';
 
-export interface StatusReporterTriple<P> {
+interface StatusReporterTriple<P> {
     started: (payload: P) => Promise<void>;
     completed: (payload: P) => Promise<void>;
     failed: (payload: Failed<P>) => Promise<void>;

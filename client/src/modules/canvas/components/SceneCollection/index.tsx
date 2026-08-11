@@ -1,3 +1,4 @@
+import { TREE_CONTAINER_CLASS } from '../ObjectsPanel/tree-classes';
 import AnalysisTreeNode from '../AnalysisTreeNode';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
@@ -162,7 +163,7 @@ const SceneCollection = ({
     );
 
     return (
-        <div className='flex flex-col gap-1 overflow-auto canvas-tree-container' role="tree" aria-label="Scene hierarchy">
+        <div className={TREE_CONTAINER_CLASS} role='tree' aria-label='Scene hierarchy'>
             {showDefaultScene && (
                 <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}

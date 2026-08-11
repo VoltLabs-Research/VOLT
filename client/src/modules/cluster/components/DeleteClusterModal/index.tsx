@@ -78,7 +78,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 />
             )}
         >
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 {!result && (
                     <PasswordConfirmationPrompt
                         description='Confirm your password to continue with the uninstall and delete flow.'

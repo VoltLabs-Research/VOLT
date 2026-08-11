@@ -1,5 +1,7 @@
 import { CanvasTreeRow } from '../CanvasTree';
 import { buildArtifactNameClassName, getArtifactIcon } from './artifact-rows';
+import { TREE_ARTIFACT_ICON_CLASS, TREE_ARTIFACT_ICON_TONE_CLASS } from '../ObjectsPanel/tree-classes';
+import { cn } from '@heroui/react';
 
 import type { AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
 
@@ -21,7 +23,10 @@ const PendingArtifactRow = ({ artifact, fallbackName, isRecentlyReady }: Pending
             indent='lg'
             disabled
             icon={(
-                <span className={`canvas-tree-artifact-icon canvas-tree-artifact-icon--${status}`} title={status}>
+                <span
+                    className={cn(TREE_ARTIFACT_ICON_CLASS, status !== 'pending' && TREE_ARTIFACT_ICON_TONE_CLASS[status])}
+                    title={status}
+                >
                     {getArtifactIcon(status)}
                 </span>
             )}

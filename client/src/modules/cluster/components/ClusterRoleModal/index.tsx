@@ -82,7 +82,7 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
 
     return (
         <Modal id={CLUSTER_ROLE_MODAL_ID} title={`Runtime role for ${clusterName}`} description='Control whether this cluster behaves as a combined node, storage authority, or compute-only worker.' footer={footer} onClose={handleClose}>
-            <div className='flex flex-col gap-4 p-6'>
+            <div className='flex flex-col gap-4'>
                 <div className='flex flex-col gap-2'>
                     <h3 className='text-sm font-medium text-muted'>Cluster scheduling role</h3>
                     <p className='text-sm text-muted'>{saveMessage}</p>

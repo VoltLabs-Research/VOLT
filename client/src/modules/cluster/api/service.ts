@@ -1,4 +1,4 @@
-import { createService, del, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
+import { createService, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
@@ -9,9 +9,7 @@ import type {
     ClusterResourceLimitsResponse,
     CreateTeamClusterResponse,
     CreateTeamClusterTransferRequestResponse,
-    DeleteDemoTeamClusterResponse,
     DeleteTeamClusterResponse,
-    ProvisionDemoTeamClusterResponse,
     RegenerateTeamClusterEnrollmentTokenResponse,
     RevealTeamClusterCredentialsResponse,
     TeamCluster,
@@ -44,10 +42,6 @@ export type UpdateTeamClusterQueueConcurrencyParams = TeamClusterScopedParams & 
 export type UpdateTeamClusterRoleParams = TeamClusterScopedParams & UpdateTeamClusterRoleInput;
 
 export type RegenerateTeamClusterEnrollmentTokenParams = TeamClusterScopedParams;
-
-export type ProvisionDemoTeamClusterParams = TeamScopedParams;
-
-export type DeleteDemoTeamClusterParams = TeamScopedParams;
 
 export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParams;
 
@@ -90,12 +84,6 @@ const teamClusterEndpoints = {
     ),
     updateRole: patch<UpdateTeamClusterRoleParams, UpdateTeamClusterRoleResponse>(
         '/:teamId/clusters/:teamClusterId/role'
-    ),
-    provisionDemo: post<ProvisionDemoTeamClusterParams, ProvisionDemoTeamClusterResponse>(
-        '/:teamId/clusters/demo'
-    ),
-    deleteDemo: del<DeleteDemoTeamClusterParams, DeleteDemoTeamClusterResponse>(
-        '/:teamId/clusters/demo'
     )
 };
 

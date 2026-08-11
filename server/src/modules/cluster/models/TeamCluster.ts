@@ -22,11 +22,6 @@ import type {
 @Index(['team', 'status', 'createdAt'])
 @Index(['status', 'lastHeartbeatAt'])
 @Index(['status', 'updatedAt'])
-@Index(['team', 'isDemo'], {
-    unique: true,
-    where: '"isDemo" = true AND "status" NOT IN (\'deleting\', \'delete-failed\')'
-})
-@Index(['isDemo', 'demoExpiresAt'])
 export default class TeamCluster extends BaseModel{
     @Column('varchar')
     name!: string;
@@ -103,18 +98,6 @@ export default class TeamCluster extends BaseModel{
         nullable: true
     })
     hostCapabilities!: TeamClusterHostCapabilitiesProps | null;
-
-    @Column({
-        type: 'boolean',
-        default: false
-    })
-    isDemo!: boolean;
-
-    @Column({
-        type: Date,
-        nullable: true
-    })
-    demoExpiresAt!: Date | null;
 
     get effectiveCapabilities(): TeamClusterEffectiveCapabilitiesProps{
         return resolveEffectiveCapabilitiesFromRoleConfig(this.roleConfig);

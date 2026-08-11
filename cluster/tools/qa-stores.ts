@@ -2,13 +2,9 @@ import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/inf
 import { getDaemonEntities } from '@core/bootstrap/entities';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import * as store from '@shared/infrastructure/queues/queue-job-store';
+import { createQaCheckHarness } from './qa-check-harness';
 
-let failures = 0;
-const check = (label: string, actual: unknown, expected: unknown) => {
-    const ok = JSON.stringify(actual) === JSON.stringify(expected);
-    if (!ok) failures += 1;
-    console.log(`  ${ok ? 'OK  ' : 'FAIL'} ${label.padEnd(52)} esperado=${JSON.stringify(expected)} obtenido=${JSON.stringify(actual)}`);
-};
+const { check, finish } = createQaCheckHarness(52);
 
 const STATE_KEYS = ['k1', 'k2', 'lst', 'nunca-existio'];
 const JOB_KEYS = ['qa-1', 'qa-2', 'qa-3', 'qa-retry', 'qa-stall'];
@@ -98,7 +94,6 @@ const main = async () => {
     for (const k of JOB_KEYS) await store.removeJobByKey(k);
     await s.deleteKeys(STATE_KEYS);
     await disconnectDaemonDataSource();
-    console.log(`\n${failures === 0 ? 'TODO OK' : failures + ' FALLOS'}`);
-    process.exit(failures === 0 ? 0 : 1);
+    finish();
 };
 main().catch((e) => { console.error('EXCEPCION', e); process.exit(1); });

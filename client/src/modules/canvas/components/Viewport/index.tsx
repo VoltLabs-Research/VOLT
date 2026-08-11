@@ -21,7 +21,16 @@ import type { ScreenshotComposition } from '@/modules/fractal/contracts/screensh
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode, RefObject } from 'react';
 
-import './Viewport.css';
+/**
+ * `.canvas-viewport-gradient` — a vignette that only exists in dark mode, and that
+ * `prefers-reduced-motion` turned off entirely (it reads as motion against a rotating
+ * scene). Both are theme/media-scoped background swaps of one element, so both are
+ * variants on it: the base is transparent and the dark theme paints.
+ *
+ * `motion-reduce:bg-none` cancels it because the global reduced-motion block in
+ * `index.css` only neutralises durations, not a painted gradient.
+ */
+const VIEWPORT_GRADIENT_CLASS = 'pointer-events-none absolute inset-0 bg-none [[data-theme=dark]_&]:bg-[radial-gradient(60%_60%_at_50%_50%,transparent_0%,color-mix(in_srgb,var(--background)_25%,transparent)_100%)] motion-reduce:bg-none';
 
 interface ViewportProps {
     trajectory: Trajectory | null | undefined;
@@ -173,10 +182,10 @@ const Viewport = ({
     const resolvedTimestep = currentTimestep ?? 0;
 
     return (
-        <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-viewport'>
-            <div className='relative flex-1 min-h-0 canvas-viewport-body'>
+        <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden'>
+            <div className='relative min-h-0 flex-1'>
                 {bodyContent && (
-                    <div className='flex relative w-full h-full flex-1 min-h-0 canvas-viewport-body-content'>
+                    <div className='relative flex h-full w-full min-h-0 flex-1'>
                         {bodyContent}
                     </div>
                 )}
@@ -227,7 +236,7 @@ const Viewport = ({
                     </div>
                 )}
 
-                {!hideGradient && <div className='absolute inset-0 canvas-viewport-gradient' />}
+                {!hideGradient && <div className={VIEWPORT_GRADIENT_CLASS} />}
 
                 {analysisOverlay}
 

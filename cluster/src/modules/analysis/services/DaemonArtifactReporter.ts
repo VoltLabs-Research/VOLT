@@ -37,13 +37,13 @@ export class DaemonArtifactReporter {
 
             void this.enqueuePublish(batch);
         });
-        this.batcher.on('error', logAndSwallow('warn', {}, 'Artifact batcher error'));
+        this.batcher.on('error', logAndSwallow('error', {}, 'Artifact batcher error'));
     }
 
     async reportArtifact(input: ReportArtifactInput): Promise<void> {
         this.pendingArtifacts.set(input.objectName, input);
         void this.batcher.add(input.objectName).catch(
-            logAndSwallow('warn', { objectName: input.objectName }, 'Failed to enqueue artifact batch item')
+            logAndSwallow('error', { objectName: input.objectName }, 'Failed to enqueue artifact batch item')
         );
     }
 
@@ -67,7 +67,7 @@ export class DaemonArtifactReporter {
 
                 await safeExecute(
                     () => this.eventDispatcher.publish(new SceneArtifactBatchReportedEvent({ items: batch })),
-                    logAndSwallow('warn', {}, 'Failed to flush scene artifact batch event')
+                    logAndSwallow('error', {}, 'Failed to flush scene artifact batch event')
                 );
             });
 

@@ -4,13 +4,13 @@ import { getQueueNotifier } from '@shared/infrastructure/queues/QueueNotifier';
 import { DeferJobError, createQueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 import { claimNextJob, completeJob, deferJob, failJob, renewLease } from '@shared/infrastructure/queues/queue-job-store';
 import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
-import type { QueueJob } from '@shared/infrastructure/queues/queue-job-model';
+import type { QueueJob, QueueJobState } from '@shared/infrastructure/queues/queue-job-model';
 
-export type QueueJobProcessor<TPayload> = (payload: TPayload, job: QueueJobHandle<TPayload>) => Promise<void>;
+type QueueJobProcessor<TPayload> = (payload: TPayload, job: QueueJobHandle<TPayload>) => Promise<void>;
 
-export type QueueWorkerFailedListener = (job: QueueJobHandle<unknown> | null, error: Error) => void;
+type QueueWorkerFailedListener = (job: QueueJobHandle<unknown> | null, error: Error) => void;
 
-export interface QueueWorkerOptions {
+interface QueueWorkerOptions {
     concurrency: number;
     leaseDurationMs: number;
     pollIntervalMs: number;
@@ -155,7 +155,13 @@ export class QueueWorker<TPayload> {
                     queue: this.queue,
                     jobId: claimed.id
                 }, '@queue-worker: lease lost while job was still running');
-            }).catch(() => undefined);
+            }).catch((renewalError: unknown) => {
+                logger.error({
+                    err: renewalError,
+                    queue: this.queue,
+                    jobId: claimed.id
+                }, '@queue-worker: lease renewal failed');
+            });
         }, Math.max(1_000, Math.floor(this.options.leaseDurationMs / LEASE_RENEWAL_DIVISOR)));
         renewal.unref();
 
@@ -171,7 +177,16 @@ export class QueueWorker<TPayload> {
             }
 
             const failure = error instanceof Error ? error : new Error(String(error));
-            const state = await failJob(claimed.id, failure.message).catch(() => 'failed' as const);
+            let state: QueueJobState | null = null;
+            try {
+                state = await failJob(claimed.id, failure.message);
+            } catch (recordError) {
+                logger.error({
+                    err: recordError,
+                    queue: this.queue,
+                    jobId: claimed.id
+                }, '@queue-worker: could not record job failure; job may remain active');
+            }
 
             for (const listener of this.failedListeners) {
                 try {

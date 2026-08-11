@@ -8,7 +8,7 @@ import type { BinaryExecutorService } from '@modules/plugin/services/runtime/Bin
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import type { WorkflowExecutionContext, WorkflowNode } from '@shared/contracts/types/workflow.types';
 
-export interface DebugNodeExecutionDependencies {
+interface DebugNodeExecutionDependencies {
     nodeExecutor: WorkflowNodeExecutor;
     debugEnvironment: DebugEnvironment;
     workflowRuntime: WorkflowRuntime;
@@ -130,13 +130,21 @@ export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): Deb
 
         const result = await deps.nodeExecutor.executeNode(node, await buildContext(session, node));
         if (result.status === 'skipped') {
+            if (typeof result.reason !== 'string') {
+                throw new Error(`Node ${node.id} was skipped without a reason`);
+            }
+
             return {
                 status: 'skipped',
-                reason: result.reason!
+                reason: result.reason
             };
         }
 
-        const output = result.output!;
+        const output = result.output;
+        if (!output) {
+            throw new Error(`Node ${node.id} was executed without producing output`);
+        }
+
         if (output.skipped === true && typeof output.reason === 'string') {
             return {
                 status: 'skipped',

@@ -40,6 +40,7 @@ interface AnalysisExecutionLogSinkOptions {
 
 const DEFAULT_FLUSH_INTERVAL_MS = 250;
 const DEFAULT_MAX_BUFFERED_BYTES = 8 * 1024;
+const MAX_CONSECUTIVE_FLUSH_FAILURES = 3;
 
 const createBufferedExecutionLogSink = (
     options: BufferedExecutionLogSinkOptions
@@ -52,6 +53,7 @@ const createBufferedExecutionLogSink = (
     let bufferedBytes = 0;
     let flushTimer: NodeJS.Timeout | null = null;
     let flushQueue: Promise<void> = Promise.resolve();
+    let consecutiveFlushFailures = 0;
 
     const enqueueFlush = async (): Promise<void> => {
         if (flushTimer) {
@@ -68,10 +70,35 @@ const createBufferedExecutionLogSink = (
         buffer = [];
         bufferedBytes = 0;
 
-        flushQueue = flushQueue
-            .catch(() => undefined)
-            .then(() => flushSegments(segments))
-            .catch((err) => logger.warn({ err }, 'Failed to flush buffered execution logs'));
+        flushQueue = flushQueue.then(async () => {
+            try {
+                await flushSegments(segments);
+                consecutiveFlushFailures = 0;
+            } catch (error) {
+                consecutiveFlushFailures += 1;
+                if (consecutiveFlushFailures >= MAX_CONSECUTIVE_FLUSH_FAILURES) {
+                    consecutiveFlushFailures = 0;
+                    logger.error({
+                        err: error,
+                        droppedSegments: segments.length
+                    }, 'Dropping execution log segments after repeated flush failures');
+                    return;
+                }
+                logger.warn({
+                    err: error,
+                    attempt: consecutiveFlushFailures
+                }, 'Failed to flush execution logs; requeueing segments');
+                buffer = [...segments, ...buffer];
+                bufferedBytes += segments.reduce((sum, segment) => sum + Buffer.byteLength(segment.text, 'utf8'), 0);
+                if (!flushTimer) {
+                    flushTimer = setTimeout(() => {
+                        flushTimer = null;
+                        enqueueFlush();
+                    }, flushIntervalMs);
+                    flushTimer.unref();
+                }
+            }
+        });
 
         await flushQueue;
     };

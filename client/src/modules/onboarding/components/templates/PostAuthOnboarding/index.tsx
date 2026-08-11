@@ -4,7 +4,6 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { hasUsableTeamCluster } from '@/modules/cluster/utils/is-team-cluster-usable';
-import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utils/demo-feature';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
@@ -44,9 +43,7 @@ const PostAuthOnboarding = () => {
     const isClustersLoading = teamClustersQuery.isLoading && Boolean(selectedTeamId);
     const isLoading = isTeamsLoading || isClustersLoading;
     const hasTeam = teams.length > 0 || Boolean(selectedTeamId);
-    const clusterDestination = isDemoClusterFeatureEnabled()
-        ? '/onboarding/cluster/choice'
-        : getClusterOnboardingRedirectPath(next);
+    const clusterDestination = getClusterOnboardingRedirectPath(next);
 
     if (teamClustersQuery.isError && selectedTeamId) {
         throw teamClustersQuery.error;

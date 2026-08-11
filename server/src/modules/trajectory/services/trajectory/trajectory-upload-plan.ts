@@ -1,5 +1,5 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 import type {

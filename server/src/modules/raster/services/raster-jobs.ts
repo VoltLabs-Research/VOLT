@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
-import teamClusterDaemonClient from '@modules/cluster/services/TeamClusterDaemonClient';
+import daemonAnalysisCompletionService from '@modules/cluster/services/daemon/DaemonAnalysisCompletionService';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';

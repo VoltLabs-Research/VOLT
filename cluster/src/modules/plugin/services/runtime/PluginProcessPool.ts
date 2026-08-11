@@ -145,7 +145,8 @@ export class PluginProcessPool {
 
     private popIdle(group: PluginProcessGroup): PluginProcessChannel | null {
         while (group.idle.length > 0) {
-            const candidate = group.idle.shift()!;
+            const candidate = group.idle.shift();
+            if (!candidate) break;
             if (!candidate.isClosed) {
                 group.active.add(candidate);
                 return candidate;

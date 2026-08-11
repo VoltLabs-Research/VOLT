@@ -1,7 +1,7 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 
-export type EventHandler = (event: IDomainEvent) => Promise<void> | void;
+type EventHandler = (event: IDomainEvent) => Promise<void> | void;
 
 export class EventDispatcher {
     private readonly handlers = new Map<string, Set<EventHandler>>();

@@ -12,11 +12,11 @@ import type { EntityManager } from 'typeorm';
  */
 
 /** A deadline on its own, for the writes that cannot also be conditional. */
-export interface KeyValueTtlOptions {
+interface KeyValueTtlOptions {
     ttlMs?: number;
 }
 
-export interface KeyValueWriteOptions extends KeyValueTtlOptions {
+interface KeyValueWriteOptions extends KeyValueTtlOptions {
     /** Mirrors Redis `SET … NX`: the write lands only when no live entry holds the key. */
     ifNotExists?: boolean;
 }

@@ -1,10 +1,32 @@
-import { Button } from '@voltstack/bravais';
+import { Button } from '@heroui/react';
 import { Check, ChevronRight, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import './CanvasAnalysisDiscoveryTour.css';
 
 const TOUR_STORAGE_KEY_PREFIX = 'volt:tutorial:canvas-analysis-discovery:v1';
+/**
+ * `CanvasAnalysisDiscoveryTour.css`.
+ *
+ * The spotlight scrim IS a shadow: a 9999px spread paints everything outside the cut-out,
+ * which is why the element is `fixed` with no background of its own. The `transition` on
+ * `top`/`left`/`width`/`height` is what animates it between steps, because the geometry is
+ * set imperatively from `layout.spotlightStyle` — so it stays a transition, not a
+ * transform.
+ *
+ * `--accent-blue` is the accent, and `--canvas-floating-surface-border` was `0`, so the
+ * card's border falls back to nothing rather than to the `1px solid` fallback the
+ * shorthand named.
+ */
+const TOUR_CLASS = 'pointer-events-none fixed inset-0 z-[260]';
+
+const SPOTLIGHT_CLASS = 'fixed rounded-xl border border-[color-mix(in_srgb,var(--accent)_72%,white_12%)] shadow-[0_0_0_9999px_rgba(0,0,0,0.22),0_0_0_5px_color-mix(in_srgb,var(--accent)_20%,transparent),0_12px_34px_rgba(0,0,0,0.28)] transition-[top,left,width,height] duration-[180ms] ease-out-fluid max-md:rounded-[10px] max-md:shadow-[0_0_0_9999px_rgba(0,0,0,0.16),0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent),0_10px_28px_rgba(0,0,0,0.22)]';
+
+const CARD_CLASS = 'pointer-events-auto fixed flex flex-col gap-2.5 rounded-[14px] border-0 bg-surface p-3.5 text-foreground shadow-[0_18px_48px_rgba(0,0,0,0.3)] max-md:max-w-[calc(100vw-1.5rem)] max-md:rounded-xl max-md:p-3';
+
+const STEP_BADGE_CLASS = 'inline-flex min-h-[1.35rem] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] px-[0.45rem] text-[0.68rem] font-bold text-accent';
+
+const CLOSE_CLASS = 'inline-flex size-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted hover:bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)] hover:text-foreground focus-visible:bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)] focus-visible:text-foreground';
+
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 const TARGET_GAP = 12;
@@ -300,26 +322,26 @@ const CanvasAnalysisDiscoveryTour = ({
     };
 
     return (
-        <div className='canvas-analysis-tour' aria-live='polite'>
+        <div className={TOUR_CLASS} aria-live='polite'>
             {layout && (
                 <div
-                    className='canvas-analysis-tour__spotlight'
+                    className={SPOTLIGHT_CLASS}
                     style={layout.spotlightStyle}
                     aria-hidden='true'
                 />
             )}
 
             <section
-                className='canvas-analysis-tour__card canvas-overlay-glass'
+                className={CARD_CLASS}
                 style={cardStyle}
                 role='dialog'
                 aria-label='Analysis discovery tutorial'
             >
-                <div className='canvas-analysis-tour__header'>
-                    <span className='canvas-analysis-tour__step'>{stepIndex + 1} / {steps.length}</span>
+                <div className='flex items-center justify-between gap-3'>
+                    <span className={STEP_BADGE_CLASS}>{stepIndex + 1} / {steps.length}</span>
                     <button
                         type='button'
-                        className='canvas-analysis-tour__close'
+                        className={CLOSE_CLASS}
                         onClick={completeTour}
                         aria-label='Skip tutorial'
                         title='Skip tutorial'
@@ -327,28 +349,24 @@ const CanvasAnalysisDiscoveryTour = ({
                         <X size={13} aria-hidden='true' />
                     </button>
                 </div>
-                <h2 className='canvas-analysis-tour__title'>{activeStep.title}</h2>
-                <p className='canvas-analysis-tour__description'>{activeStep.description}</p>
-                <div className='canvas-analysis-tour__actions'>
+                <h2 className='m-0 text-[0.95rem] font-[650] leading-[1.2] tracking-normal'>{activeStep.title}</h2>
+                <p className='m-0 text-[0.8rem] leading-[1.45] text-muted'>{activeStep.description}</p>
+                <div className='flex items-center justify-end gap-2 pt-0.5'>
                     <Button
                         variant='ghost'
-                        intent='canvas'
                         size='sm'
-                        shape='rounded'
-                        className='canvas-analysis-tour__skip'
-                        onClick={completeTour}
+                        className='text-muted'
+                        onPress={completeTour}
                     >
                         Skip
                     </Button>
                     <Button
-                        variant='solid'
-                        intent='canvas'
+                        variant='secondary'
                         size='sm'
-                        shape='rounded'
-                        rightIcon={!isLastStep ? <ChevronRight size={13} /> : <Check size={13} />}
-                        onClick={goToNextStep}
+                        onPress={goToNextStep}
                     >
                         {isLastStep ? 'Done' : 'Next'}
+                        {!isLastStep ? <ChevronRight size={13} /> : <Check size={13} />}
                     </Button>
                 </div>
             </section>

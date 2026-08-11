@@ -1,12 +1,10 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type {

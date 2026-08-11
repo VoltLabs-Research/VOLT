@@ -2,7 +2,15 @@ import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import './AnalysisLogPanel.css';
+/**
+ * `.canvas-analysis-log-stream`. `--color-surface-0` / `-1` are `--surface` and
+ * `--surface-secondary`; the two `color-mix` stops stay literal because the gradient is
+ * the point.
+ */
+const LOG_STREAM_CLASS = 'min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_86%,transparent)_0%,color-mix(in_srgb,var(--surface-secondary)_92%,transparent)_100%)]';
+
+/** `.canvas-analysis-log-terminal` */
+const LOG_TERMINAL_CLASS = 'm-0 whitespace-pre-wrap break-words px-4 pb-[1.1rem] pt-[0.85rem] font-mono text-[0.72rem] leading-[1.55] text-foreground';
 
 interface AnalysisLogPanelProps {
     analysisId?: string;
@@ -99,18 +107,18 @@ const AnalysisLogPanel = ({
     }, [activityStatus, error, isLoading, live, segments.length]);
 
     return (
-        <div className='flex flex-col flex-1 min-h-0 canvas-analysis-log-panel'>
-            <div className='overflow-y-auto flex-1 min-h-0 canvas-analysis-log-stream' ref={scrollRef}>
+        <div className='flex h-full min-h-0 flex-1 flex-col'>
+            <div className={LOG_STREAM_CLASS} ref={scrollRef}>
                 {helperText ? (
-                    <div className='flex flex-row items-center justify-center flex-1 min-h-0 canvas-analysis-log-empty'>
+                    <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>
                     </div>
                 ) : (
-                    <pre className='canvas-analysis-log-terminal font-mono m-0'>
+                    <pre className={LOG_TERMINAL_CLASS}>
                         {segments.map((segment, index) => (
                             <span
                                 key={`${segment.occurredAt}-${index}`}
-                                className={`canvas-analysis-log-terminal-chunk canvas-analysis-log-terminal-chunk--${segment.stream}`}
+                                data-stream={segment.stream}
                                 title={formatOccurredAt(segment.occurredAt)}
                             >
                                 {segment.text}

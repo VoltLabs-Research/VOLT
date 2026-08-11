@@ -18,7 +18,7 @@ import type { EnqueueRequest, QueueJobCounts } from '@shared/infrastructure/queu
 import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
 import type { JsonObject } from '@shared/contracts/types/json';
 
-export interface CreateWorkerOptions {
+interface CreateWorkerOptions {
     concurrency?: number;
 }
 
@@ -26,12 +26,12 @@ export interface QueuePayload {
     jobId?: string;
 }
 
-export interface EnqueueBackoff {
+interface EnqueueBackoff {
     type: string;
     delay: number;
 }
 
-export interface EnqueueOptions {
+interface EnqueueOptions {
     preserveExistingJob?: boolean;
     attempts?: number;
     backoff?: EnqueueBackoff;

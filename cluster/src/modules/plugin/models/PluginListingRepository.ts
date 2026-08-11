@@ -100,7 +100,7 @@ const readPage = async <T extends ObjectLiteral>(input: {
     };
 };
 
-export class TypeOrmPluginListingRepository {
+class TypeOrmPluginListingRepository {
     private get listings(): Repository<PluginListingRow> {
         return getDaemonDataSource().getRepository(PluginListingRow);
     }

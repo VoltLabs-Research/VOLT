@@ -22,7 +22,7 @@ import fs from 'node:fs/promises';
 const isParquetExposure = (resultsFileName: string): boolean =>
     resultsFileName.toLowerCase().endsWith('.parquet');
 
-export class DefaultResultProcessor implements ResultProcessorService {
+class DefaultResultProcessor implements ResultProcessorService {
     constructor(
         private readonly pluginListingRepository: PluginListingRepository,
         private readonly pluginPropertyStore: PluginPropertyStore

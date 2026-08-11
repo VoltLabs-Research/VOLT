@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
-import { StatusBadge } from '@voltstack/bravais';
+import { statusBadgeClass } from '@/shared/ui/status-vocabulary';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
@@ -39,7 +39,6 @@ interface PopulatedNameColumnOptions<TRow> {
 interface EnumColumnOptions<TRow> {
     width?: number;
     sortable?: boolean;
-    size?: 'default' | 'compact';
     resolveValue?: (value: unknown, row: TRow) => string;
     resolveLabel?: (value: string) => string;
 };
@@ -85,7 +84,7 @@ export function statusColumn<TRow = unknown>(
         sortable: options?.sortable ?? false,
         render: (value: unknown, row: TRow) => {
             const status = options?.resolveStatus ? options.resolveStatus(value, row) : String(value);
-            return <StatusBadge status={status} />;
+            return <span className={statusBadgeClass(status)}>{status}</span>;
         },
         skeleton: {
             variant: 'rounded',
@@ -239,9 +238,7 @@ export function enumColumn<TRow = unknown>(
         render: (value: unknown, row: TRow) => {
             const raw = options?.resolveValue ? options.resolveValue(value, row) : String(value ?? '');
             const displayLabel = options?.resolveLabel ? options.resolveLabel(raw) : undefined;
-            return displayLabel
-                ? <StatusBadge status={raw} size={options?.size}>{displayLabel}</StatusBadge>
-                : <StatusBadge status={raw} size={options?.size} />;
+            return <span className={statusBadgeClass(raw)}>{displayLabel ?? raw}</span>;
         },
         skeleton: {
             variant: 'rounded',

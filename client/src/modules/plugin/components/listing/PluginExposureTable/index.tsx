@@ -15,7 +15,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import { TABLE_RECOVERY_STATE_CLASS } from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 
-export interface PluginExposureTableProps {
+interface PluginExposureTableProps {
     pluginId: string;
     exposureName?: string;
     exposureId?: string;

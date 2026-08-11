@@ -57,7 +57,7 @@ export const PALETTE_LIST_CLASS = 'flex flex-col gap-6 overflow-y-auto p-8';
 export const EMPTY_STATE_CLASS = 'absolute inset-0 z-10 flex flex-row items-center justify-center pointer-events-none';
 
 /** `.canvas-empty-state-card` */
-export const EMPTY_STATE_CARD_CLASS = 'pointer-events-auto flex max-w-[420px] flex-col items-center gap-4 rounded-2xl border border-border bg-surface px-12 py-10 text-center max-[768px]:max-w-[calc(100vw-2rem)] max-[768px]:px-5 max-[768px]:py-6';
+export const EMPTY_STATE_CARD_CLASS = 'pointer-events-auto flex max-w-[420px] flex-col items-center gap-4 border border-border bg-surface px-12 py-10 text-center max-[768px]:max-w-[calc(100vw-2rem)] max-[768px]:px-5 max-[768px]:py-6';
 
 /**
  * `.canvas-empty-state-icon-wrapper`. `--status-info-bg` is `--info-soft` and

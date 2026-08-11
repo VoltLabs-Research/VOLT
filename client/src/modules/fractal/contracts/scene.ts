@@ -1,4 +1,4 @@
-export interface SlicePlaneNormal {
+interface SlicePlaneNormal {
     x: number;
     y: number;
     z: number;
@@ -19,7 +19,7 @@ export enum ParticleFilterSceneCombinator {
     Or = 'OR'
 }
 
-export interface ParticleFilterPropertySceneCondition {
+interface ParticleFilterPropertySceneCondition {
     kind?: 'property';
     property: string;
     operator: string;
@@ -34,7 +34,7 @@ export interface SceneRenderMetadata {
     defaultLineWidth?: number;
 }
 
-export interface SceneVisualOverride {
+interface SceneVisualOverride {
     opacity?: number;
     lineWidth?: number;
     color?: string;

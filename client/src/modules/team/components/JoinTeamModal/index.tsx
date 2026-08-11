@@ -85,7 +85,7 @@ export const JoinTeamModal = ({
             <form
                 id={JOIN_TEAM_FORM_ID}
                 onSubmit={form.handleSubmit(onSubmit)}
-                className='flex flex-col gap-6 p-6'
+                className='flex flex-col gap-6'
             >
                 <FormFieldRHF
                     name='code'

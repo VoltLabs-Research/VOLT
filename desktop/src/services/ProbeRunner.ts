@@ -1,13 +1,13 @@
 import { spawn } from 'node:child_process';
 
-export interface ProbeResult{
+interface ProbeResult{
     code: number | null;
     errno?: string;
     stdout: string;
     stderr: string;
 }
 
-export interface ProbeOptions{
+interface ProbeOptions{
     env?: Record<string, string>;
     timeoutMs?: number;
 }

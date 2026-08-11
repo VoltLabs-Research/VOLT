@@ -21,7 +21,7 @@ import type {
 } from '@volt/contracts/modules/scripting/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
+import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 
 const LOCK_TTL_MS = 90_000;
