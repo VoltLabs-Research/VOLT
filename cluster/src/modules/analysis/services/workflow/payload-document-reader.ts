@@ -64,6 +64,20 @@ interface LargePayloadDocument {
     exportData: JsonObject | null;
 }
 
+export interface PayloadDocumentReadOptions {
+    /**
+     * Leaves `sub_listings` unread.
+     *
+     * A mesh describes its geometry twice: once under `export`, which the exporter turns
+     * into the GLB the viewer loads, and once under `sub_listings` as one row per vertex
+     * and one per facet. Reading the second copy is not cheap — it is the `unnestedArray`
+     * shape, and it ends as a row per entry in Postgres, which measured ~109 s for the
+     * 1.18M entries of a 2.5M-atom defect mesh. Nothing consumes those rows: the counts
+     * the listing shows come from `main_listing`, and the geometry comes from the GLB.
+     */
+    skipSubListings?: boolean;
+}
+
 const readSingleValue = async (
     connection: DuckDBConnection,
     sql: string,
@@ -89,8 +103,29 @@ export const measurePayloadBytes = async (
 
 export const isPayloadTooLargeForJs = (bytes: number): boolean => bytes > INLINE_PAYLOAD_LIMIT_BYTES;
 
-const payloadSource = (filePath: string): string =>
-    `(SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1)`;
+/**
+ * The document, decompressed once per read instead of once per query.
+ *
+ * Taking a document apart needs a dozen statements — measure, list the keys, ask each
+ * section's type, count the flattened rows — and each one used to carry its own
+ * `read_parquet(...)`, so the whole payload was decompressed again every time. On the
+ * ~100 MB document a 2.5M-atom defect mesh produces that showed up as the 4 s and 11 s
+ * gaps between the exposure starting and its flatten actually running.
+ *
+ * The table is per-connection, and the caller owns the connection, so it is created and
+ * dropped inside a single read.
+ */
+const PAYLOAD_TABLE = '__volt_payload_document';
+
+const materializePayloadDocument = async (
+    connection: DuckDBConnection,
+    filePath: string
+): Promise<void> => {
+    await connection.run(
+        `CREATE OR REPLACE TEMP TABLE ${PAYLOAD_TABLE} AS `
+        + `SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1`
+    );
+};
 
 const escapeJsonPathSegment = (key: string): string => key.replace(/"/g, '\\"');
 
@@ -106,7 +141,7 @@ const measureJsonPathBytes = async (
     const value = await readSingleValue(
         connection,
         `SELECT strlen(CAST(json_extract(payload, ${sqlString(valuePath)}) AS VARCHAR)) AS bytes `
-        + `FROM ${payloadSource(filePath)}`,
+        + `FROM ${PAYLOAD_TABLE}`,
         'bytes'
     );
     return Number(value ?? 0);
@@ -127,7 +162,7 @@ const extractJson = async (
     const raw = await readSingleValue(
         connection,
         `SELECT CAST(json_extract(payload, ${sqlString(valuePath)}) AS VARCHAR) AS value `
-        + `FROM ${payloadSource(filePath)}`,
+        + `FROM ${PAYLOAD_TABLE}`,
         'value'
     );
     return parseExtracted(raw);
@@ -172,7 +207,7 @@ const listJsonKeys = async (
     // VARCHAR would produce `[a, b]`, which is not JSON.
     const raw = await readSingleValue(
         connection,
-        `SELECT json_keys(${target}) AS keys FROM ${payloadSource(filePath)}`,
+        `SELECT json_keys(${target}) AS keys FROM ${PAYLOAD_TABLE}`,
         'keys'
     );
     return Array.isArray(raw) ? raw.map((key) => String(key)) : [];
@@ -185,7 +220,7 @@ const jsonTypeAt = async (
 ): Promise<string | null> => {
     const raw = await readSingleValue(
         connection,
-        `SELECT json_type(payload, ${sqlString(valuePath)}) AS kind FROM ${payloadSource(filePath)}`,
+        `SELECT json_type(payload, ${sqlString(valuePath)}) AS kind FROM ${PAYLOAD_TABLE}`,
         'kind'
     );
     return typeof raw === 'string' ? raw.toUpperCase() : null;
@@ -198,7 +233,7 @@ const jsonArrayLength = async (
 ): Promise<number> => {
     const raw = await readSingleValue(
         connection,
-        `SELECT json_array_length(payload, ${sqlString(valuePath)}) AS length FROM ${payloadSource(filePath)}`,
+        `SELECT json_array_length(payload, ${sqlString(valuePath)}) AS length FROM ${PAYLOAD_TABLE}`,
         'length'
     );
     return Number(raw ?? 0);
@@ -213,7 +248,7 @@ const jsonArrayLength = async (
 const unnestedArray = (filePath: string, valuePath: string): string =>
     'WITH __items AS ('
     + `SELECT UNNEST(CAST(json_extract(payload, ${sqlString(valuePath)}) AS JSON[])) AS item `
-    + `FROM ${payloadSource(filePath)}), `
+    + `FROM ${PAYLOAD_TABLE}), `
     + '__ordered AS (SELECT ROW_NUMBER() OVER () - 1 AS ordinal, item FROM __items)';
 
 /**
@@ -235,7 +270,7 @@ const unnestedArray = (filePath: string, valuePath: string): string =>
 const typedArrayRows = (filePath: string, valuePath: string, itemSchema: string): string =>
     'WITH __parsed AS ('
     + `SELECT from_json(json_extract(payload, ${sqlString(valuePath)}), ${sqlString(`[${itemSchema}]`)}) AS items `
-    + `FROM ${payloadSource(filePath)}), `
+    + `FROM ${PAYLOAD_TABLE}), `
     + '__ordered AS (SELECT UNNEST(items) AS item, generate_subscripts(items, 1) - 1 AS ordinal FROM __parsed)';
 
 const copyToParquet = (projection: string, outputPath: string): string =>
@@ -280,7 +315,7 @@ const flattenPerAtomProperties = async (
         projection =
             'WITH items AS ('
             + `SELECT UNNEST(CAST(json_extract(payload, ${sqlString(PER_ATOM_JSON_PATH)}) AS JSON[])) AS item `
-            + `FROM ${payloadSource(filePath)}) `
+            + `FROM ${PAYLOAD_TABLE}) `
             + `SELECT ${columns} FROM items`;
     } else if (kind === 'OBJECT') {
         const keys = await listJsonKeys(connection, filePath, PER_ATOM_JSON_PATH);
@@ -294,7 +329,7 @@ const flattenPerAtomProperties = async (
                 + `${sqlString(`${PER_ATOM_JSON_PATH}."${escapeJsonPathSegment(key)}"`)}) AS JSON[])) `
                 + `AS ${quoteIdentifier(key)}`)
             .join(', ');
-        projection = `SELECT ${columns} FROM ${payloadSource(filePath)}`;
+        projection = `SELECT ${columns} FROM ${PAYLOAD_TABLE}`;
     } else {
         return null;
     }
@@ -659,7 +694,22 @@ const readMainListingScalars = async (
 export const readLargePayloadDocument = async (
     connection: DuckDBConnection,
     filePath: string,
-    workingDirectory: string
+    workingDirectory: string,
+    options: PayloadDocumentReadOptions = {}
+): Promise<LargePayloadDocument> => {
+    await materializePayloadDocument(connection, filePath);
+    try {
+        return await readMaterializedDocument(connection, filePath, workingDirectory, options);
+    } finally {
+        await connection.run(`DROP TABLE IF EXISTS ${PAYLOAD_TABLE}`);
+    }
+};
+
+const readMaterializedDocument = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    workingDirectory: string,
+    options: PayloadDocumentReadOptions
 ): Promise<LargePayloadDocument> => {
     const topLevelKeys = await listJsonKeys(connection, filePath, null);
     const outputPrefix = path.join(workingDirectory, path.basename(filePath));
@@ -682,7 +732,7 @@ export const readLargePayloadDocument = async (
     }
 
     const subListingSources: SubListingBatchSource[] = [];
-    if (topLevelKeys.includes('sub_listings')) {
+    if (topLevelKeys.includes('sub_listings') && !options.skipSubListings) {
         for (const name of await listJsonKeys(connection, filePath, '$.sub_listings')) {
             const source = await flattenSubListing(
                 connection,

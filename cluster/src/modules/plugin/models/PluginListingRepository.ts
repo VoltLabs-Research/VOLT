@@ -30,6 +30,27 @@ import type {
  */
 const WRITE_CHUNK_SIZE = 1000;
 
+/**
+ * Inserts a whole sub-listing batch with one statement and five parameters.
+ *
+ * The rows arrive as a single JSON array and are expanded inside Postgres, so the batch
+ * size stops being bound by the 65535-parameter ceiling and stops costing one round trip
+ * per 1000 rows. That ceiling is why the previous path chunked at `WRITE_CHUNK_SIZE` and
+ * issued ~1180 parameterised upserts for a single mesh sub-listing — measured at ~109 s
+ * for the 1.18M rows a 2.5M-atom defect mesh emits, against 1.8 s for the 2.5M per-atom
+ * rows the columnar path writes to parquet.
+ *
+ * The keys are one character each because they repeat once per row in the payload.
+ * `ON CONFLICT` is kept even though the caller deletes the set first: it makes a rerun
+ * that overlaps an interrupted one idempotent rather than a constraint error.
+ */
+const SUB_LISTING_INSERT_SQL = `
+    INSERT INTO plugin_sub_listing_rows ("_id", analysis, "exposureId", timestep, "subListingName", row)
+    SELECT batch.i, $2, $3, $4, $5, batch.r
+    FROM jsonb_to_recordset($1::jsonb) AS batch(i text, r jsonb)
+    ON CONFLICT ("_id") DO UPDATE SET row = EXCLUDED.row
+`;
+
 const chunk = <T>(items: T[], size: number): T[][] => {
     const chunks: T[][] = [];
     for (let index = 0; index < items.length; index += size) {
@@ -206,24 +227,28 @@ class TypeOrmPluginListingRepository {
                 /* Positional across the whole sub-listing, not per batch. */
                 let index = 0;
                 for await (const batch of input.rowBatches) {
-                    const rows = batch.map((row) => ({
-                        _id: buildPluginSubListingRowId(
+                    if (batch.length === 0) {
+                        continue;
+                    }
+
+                    const payload = batch.map((row) => ({
+                        i: buildPluginSubListingRowId(
                             input.analysis,
                             input.exposureId,
                             input.timestep,
                             input.subListingName,
                             index++
                         ),
-                        analysis: input.analysis,
-                        exposureId: input.exposureId,
-                        timestep: input.timestep,
-                        subListingName: input.subListingName,
-                        row
+                        r: row
                     }));
 
-                    for (const writeChunk of chunk(rows, WRITE_CHUNK_SIZE)) {
-                        await repository.upsert(writeChunk as never, ['_id']);
-                    }
+                    await manager.query(SUB_LISTING_INSERT_SQL, [
+                        JSON.stringify(payload),
+                        input.analysis,
+                        input.exposureId,
+                        input.timestep,
+                        input.subListingName
+                    ]);
                 }
             }
         });

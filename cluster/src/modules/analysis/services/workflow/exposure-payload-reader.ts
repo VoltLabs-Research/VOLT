@@ -10,6 +10,7 @@ import {
     measurePayloadBytes,
     readLargePayloadDocument
 } from '@modules/analysis/services/workflow/payload-document-reader';
+import type { PayloadDocumentReadOptions } from '@modules/analysis/services/workflow/payload-document-reader';
 
 interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
@@ -75,7 +76,10 @@ const emptyResult = (): WorkflowExposurePayloadReadResult => ({
     exportData: null
 });
 
-const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadResult => {
+const extractFromDocument = (
+    document: JsonObject,
+    options: PayloadDocumentReadOptions = {}
+): WorkflowExposurePayloadReadResult => {
     const mainListing = document.main_listing as JsonObject | undefined;
 
     const exportData: JsonObject = {};
@@ -86,7 +90,9 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
     }
 
     const sources: SubListingBatchSource[] = [];
-    const subListings = document.sub_listings as Record<string, JsonObject | JsonObject[]> | undefined;
+    const subListings = options.skipSubListings
+        ? undefined
+        : document.sub_listings as Record<string, JsonObject | JsonObject[]> | undefined;
     if (subListings) {
         for (const [name, value] of Object.entries(subListings)) {
             if (Array.isArray(value)) {
@@ -220,7 +226,8 @@ const summarizeAtomTable = async (
 };
 
 export const readWorkflowExposurePayload = async (
-    filePath: string
+    filePath: string,
+    options: PayloadDocumentReadOptions = {}
 ): Promise<WorkflowExposurePayloadReadResult> => {
     const connection = await DuckDBConnection.create();
     try {
@@ -240,7 +247,8 @@ export const readWorkflowExposurePayload = async (
                 const document = await readLargePayloadDocument(
                     connection,
                     filePath,
-                    path.dirname(filePath)
+                    path.dirname(filePath),
+                    options
                 );
                 return {
                     listing: document.listing,
@@ -261,7 +269,7 @@ export const readWorkflowExposurePayload = async (
             if (payload === undefined) {
                 return emptyResult();
             }
-            return extractFromDocument(JSON.parse(payload) as JsonObject);
+            return extractFromDocument(JSON.parse(payload) as JsonObject, options);
         }
 
         if (

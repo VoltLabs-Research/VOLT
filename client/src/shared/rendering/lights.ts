@@ -112,13 +112,20 @@ const DARK_LIGHTS_DEFAULTS: LightsThemeDefaults = {
     rectAreaColor: '#f0f0f0'
 };
 
+/*
+ * The four illuminants match the dark defaults on purpose: a light's colour is what it
+ * casts, not a UI token, and these were the light theme's foreground (`#1d1d1f`), which
+ * colour management resolves to 0.0123 linear — a lamp that emits almost nothing. Only
+ * the hemisphere's sky and ground stay theme-tinted, because that light stands in for the
+ * surroundings, and a white page does bounce differently than a near-black one.
+ */
 const LIGHT_LIGHTS_DEFAULTS: LightsThemeDefaults = {
-    directionalColor: '#1d1d1f',
-    pointColor: '#1d1d1f',
-    spotColor: '#1d1d1f',
+    directionalColor: '#f0f0f0',
+    pointColor: '#f0f0f0',
+    spotColor: '#f0f0f0',
     hemisphereSkyColor: '#5ac8fa',
     hemisphereGroundColor: '#d1d1d6',
-    rectAreaColor: '#1d1d1f'
+    rectAreaColor: '#f0f0f0'
 };
 
 const isDarkTheme = (): boolean => {

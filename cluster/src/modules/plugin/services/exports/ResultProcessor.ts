@@ -86,6 +86,15 @@ class DefaultResultProcessor implements ResultProcessorService {
         await reportStage('running');
 
         try {
+            /*
+             * A mesh's `sub_listings` is its geometry a second time — one row per vertex
+             * and one per facet — and nothing reads it: the viewer loads the GLB the
+             * export produces, and the counts the listing shows come from `main_listing`.
+             * Persisting it cost ~109 s of the 114 s a 2.5M-atom defect mesh took, so the
+             * reader is told not to even flatten it.
+             */
+            const skipSubListings = exposure.export?.exporter === 'MeshExporter';
+
             let {
                 listing: listingPayload,
                 subListingNames,
@@ -94,7 +103,7 @@ class DefaultResultProcessor implements ResultProcessorService {
                 perAtomSource,
                 entityKind,
                 exportData: exportPayload
-            } = await readWorkflowExposurePayload(outputFilePath);
+            } = await readWorkflowExposurePayload(outputFilePath, { skipSubListings });
 
             const isChartOnlyExposure = exposure.export?.exporter === 'ChartExporter';
             if (!isChartOnlyExposure) {

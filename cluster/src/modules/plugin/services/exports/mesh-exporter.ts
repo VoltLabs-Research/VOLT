@@ -144,8 +144,15 @@ const processMeshFromParquet = async (
         }
 
         const positions = new Float32Array(vertexCount * 3);
+        /*
+         * `FLOAT` and `INTEGER` rather than the parquet's `DOUBLE`/`BIGINT`: the node
+         * binding hands back a `bigint` object for every BIGINT value, so the index
+         * columns alone allocated one per element. A mesh cannot exceed the `Uint32Array`
+         * that carries its indices anyway, and the positions land in a `Float32Array`.
+         */
         const positionsResult = await connection.stream(
-            `SELECT x, y, z FROM read_parquet(${sqlString(source.vertices)}) ORDER BY slot`
+            'SELECT CAST(x AS FLOAT) AS x, CAST(y AS FLOAT) AS y, CAST(z AS FLOAT) AS z '
+            + `FROM read_parquet(${sqlString(source.vertices)}) ORDER BY slot`
         );
         let positionOffset = 0;
         /*
@@ -182,7 +189,8 @@ const processMeshFromParquet = async (
             'WITH vertex_map AS ('
             + `SELECT vertex_id, MAX(slot) AS slot FROM read_parquet(${sqlString(source.vertices)}) `
             + 'WHERE vertex_id IS NOT NULL GROUP BY vertex_id) '
-            + 'SELECT va.slot AS ia, vb.slot AS ib, vc.slot AS ic '
+            + 'SELECT CAST(va.slot AS INTEGER) AS ia, CAST(vb.slot AS INTEGER) AS ib, '
+            + 'CAST(vc.slot AS INTEGER) AS ic '
             + `FROM read_parquet(${sqlString(source.facets)}) f `
             + 'JOIN vertex_map va ON va.vertex_id = f.a '
             + 'JOIN vertex_map vb ON vb.vertex_id = f.b '

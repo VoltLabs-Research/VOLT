@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { execFileSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
 const os = require('node:os');
 const path = require('node:path');
 
@@ -75,12 +75,32 @@ const isDevMode = process.argv.includes('--dev');
 const command = isDevMode ? path.join(packageRoot, 'node_modules', '.bin', 'tsx') : process.execPath;
 const commandArgs = isDevMode ? ['src/daemon.ts'] : [path.join(packageRoot, 'dist', 'daemon.js')];
 
-try {
-    execFileSync(command, commandArgs, {
-        stdio: 'inherit',
-        cwd: packageRoot,
-        env: process.env
+const child = spawn(command, commandArgs, {
+    stdio: 'inherit',
+    cwd: packageRoot,
+    env: process.env
+});
+
+/*
+ * `daemon.ts` releases queue leases, drains the plugin pool and closes the planes from
+ * its own SIGTERM handler, and that only happens if the signal reaches it. This wrapper
+ * sits between the container's PID 1 and the daemon, so it has to pass signals down: a
+ * synchronous exec takes the signal itself and leaves the daemon orphaned until the
+ * runtime's SIGKILL, which strands every lease it was holding.
+ */
+for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) {
+    process.on(signal, () => {
+        if (child.exitCode === null && child.signalCode === null) {
+            child.kill(signal);
+        }
     });
-} catch (err) {
-    process.exit(err.status || 1);
 }
+
+child.on('error', (err) => {
+    console.error(`[start] Could not launch ${command}: ${err.message}`);
+    process.exit(1);
+});
+
+child.on('exit', (code, signal) => {
+    process.exit(signal ? 128 + (os.constants.signals[signal] ?? 0) : code ?? 0);
+});

@@ -48,7 +48,8 @@ export const CanvasTreeRow = ({
                 ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
                 : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
             isActive && 'text-accent',
-            disabled ? 'cursor-not-allowed opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
+            /* `not-allowed` claims the row can never be used; every disabled row here is one the analysis has simply not reached yet. */
+            disabled ? 'cursor-default opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
             !disabled && onClick && 'cursor-pointer',
             className
         )}
