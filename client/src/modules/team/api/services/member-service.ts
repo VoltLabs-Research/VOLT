@@ -1,4 +1,4 @@
-import { createService, paginated, patch, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { createService, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { teamMemberRoutes } from '@volt/contracts/modules/team/routes';
 
 import type { PaginatedResponse } from '@voltstack/voltclient';
@@ -18,13 +18,13 @@ export interface RemoveTeamMemberInput {
     memberId: string;
 }
 
-export type UpdateTeamMemberParams = TeamScopedParams & { memberId: string } & UpdateTeamMemberInput;
+export type UpdateTeamMemberParams = TeamScopedParams & { teamMemberId: string } & UpdateTeamMemberInput;
 
 const routes = serviceRoutes('/teams');
 
 const endpoints = {
     getAll: paginated<GetTeamMembersInput, PaginatedResponse<TeamMemberStats>>(routes.path(teamMemberRoutes.list)),
-    update: patch<UpdateTeamMemberParams, TeamMember>('/:teamId/members/:memberId'),
+    update: routes.route<UpdateTeamMemberParams, TeamMember>(teamMemberRoutes.update),
     remove: routes.route<RemoveTeamMemberInput, void>(teamMemberRoutes.remove, { unwrap: 'void' })
 };
 

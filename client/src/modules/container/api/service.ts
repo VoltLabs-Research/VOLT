@@ -1,4 +1,5 @@
-import { createService, paginated, get, post, patch, del } from '@/app/core/http/utils/create-service';
+import { createService, paginated, get, post, patch, del, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { containerRoutes } from '@volt/contracts/modules/container/routes';
 import {
     createFolderCrudEndpoints,
     type FolderCreateParams,
@@ -84,6 +85,8 @@ interface CreateContainerPortAccessUrlParams {
 
 const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(normalizePortMapping);
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
     getAll: paginated<GetContainersParams, PaginatedResponse<Container>>('/containers'),
     getById: get<ContainerRouteParams, Container>('/containers/:containerId', {
@@ -133,7 +136,13 @@ const endpoints = {
         FolderUpdateParams,
         FolderDeleteParams,
         ContainerFolder
-    >('/container-folders'),
+    >({
+        list: containerRoutes.listFolders,
+        get: containerRoutes.getFolder,
+        create: containerRoutes.createFolder,
+        update: containerRoutes.updateFolder,
+        remove: containerRoutes.removeFolder
+    }, routes.path),
     createPortAccessUrl: post<CreateContainerPortAccessUrlParams, ContainerPortAccessUrl>('/containers/:containerId/ports/:privatePort/access-url', {
         client: 'scoped',
         omit: ['teamId'],

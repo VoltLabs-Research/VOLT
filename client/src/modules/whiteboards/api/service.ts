@@ -8,7 +8,8 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 
-import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
+import { createService, custom, del, download, get, paginated, patch, post, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { whiteboardRoutes } from '@volt/contracts/modules/whiteboards/routes';
 import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { WhiteboardStoredScene } from '@/modules/whiteboards/contracts/excalidraw';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
@@ -66,6 +67,8 @@ interface CreateAssetUploadApiResponse {
     data: CreateAssetUploadResult;
 }
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const folderEndpoints = createFolderCrudEndpoints<
     FolderListParams,
     FolderGetParams,
@@ -73,7 +76,13 @@ const folderEndpoints = createFolderCrudEndpoints<
     FolderUpdateParams,
     FolderDeleteParams,
     WhiteboardFolder
->('/whiteboard-folders');
+>({
+    list: whiteboardRoutes.listFolders,
+    get: whiteboardRoutes.getFolder,
+    create: whiteboardRoutes.createFolder,
+    update: whiteboardRoutes.updateFolder,
+    remove: whiteboardRoutes.removeFolder
+}, routes.path);
 
 const endpoints = {
     listWhiteboards: paginated<ListWhiteboardsParams, PaginatedResponse<Whiteboard>>('/whiteboards'),

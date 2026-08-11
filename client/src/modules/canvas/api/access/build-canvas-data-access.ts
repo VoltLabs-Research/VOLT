@@ -104,7 +104,7 @@ const buildRbac = (): CanvasDataAccess => ({
     getParticleFilterProperties: (params) => particleFilterService.getProperties(params),
     getParticleFilterUniqueValues: (params) => particleFilterService.getUniqueValues(params),
     previewParticleFilter: (params) => particleFilterService.preview(params),
-    getPluginById: ({ pluginId }) => pluginService.getById({ _id: pluginId }),
+    getPluginById: ({ pluginId }) => pluginService.getById({ pluginId }),
     getPluginListing: ({ trajectoryId: _trajectoryId, ...rest }) => listingService.getListing(rest),
     getSubListing: ({ trajectoryId: _trajectoryId, ...rest }) => listingService.getSubListing(rest),
     getAnalysesByTrajectory: (params) => analysisService.getByTrajectoryId(params),

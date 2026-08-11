@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 const useLoadPlugin = (id: string | undefined) => {
     const { data: plugin, isLoading, error } = usePluginByIdQuery(
-        { _id: id! },
+        { pluginId: id! },
         { enabled: !!id }
     );
 

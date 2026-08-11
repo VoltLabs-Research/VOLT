@@ -52,9 +52,9 @@ export const PLUGIN_QUERY_KEYS = {
 };
 
 const savePlugin = async (input: SavePluginInput): Promise<Plugin> => {
-    if (input._id) {
+    if (input.pluginId) {
         return pluginService.update({
-            _id: input._id,
+            pluginId: input.pluginId,
             workflow: input.workflow
         });
     }
@@ -72,7 +72,7 @@ const buildPluginByIdQueryOptions = (params: GetPluginInput) => {
         queryKey: withAccessMode(accessState.mode, PLUGIN_QUERY_KEYS.pluginById(params)),
         queryFn: () => dataAccess.getPluginById({
             trajectoryId,
-            pluginId: params._id
+            pluginId: params.pluginId
         })
     };
 };
@@ -116,7 +116,7 @@ export const useRegistrySearchQuery = createQuery<SearchRegistryInput, SearchReg
 
 const pluginEntityCache = createEntityCacheResource<Plugin>({
     listKey: PLUGIN_QUERY_KEYS.all,
-    detailKey: (id) => PLUGIN_QUERY_KEYS.pluginById({ _id: id }),
+    detailKey: (id) => PLUGIN_QUERY_KEYS.pluginById({ pluginId: id }),
     onUpsert: (plugin) => {
         patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => {
             if (!page.data.some((currentPlugin) => currentPlugin._id === plugin._id)) {
@@ -158,7 +158,7 @@ export const useSavePluginMutation = managePluginEntityMutation<SavePluginInput>
 
 export const useDeletePluginMutation = managePluginEntityMutation<DeletePluginInput, void>(
     pluginService.delete,
-    (_data, { _id }) => pluginEntityCache.remove(_id)
+    (_data, { pluginId }) => pluginEntityCache.remove(pluginId)
 );
 
 export const useExportPluginMutation = createMutation<Blob, ExportPluginInput>(pluginService.exportPlugin);

@@ -10,7 +10,7 @@ const useExportPlugin = () => {
         try {
             await showPromise(
                 async () => {
-                    const blob = await exportPluginMutationResult.mutateAsync({ _id: id });
+                    const blob = await exportPluginMutationResult.mutateAsync({ pluginId: id });
                     triggerBrowserDownload(blob, filename);
                 },
                 {

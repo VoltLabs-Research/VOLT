@@ -25,7 +25,7 @@ const useSaveWorkflow = () => {
 
             const plugin = await showPromise(
                 savePluginMutationResult.mutateAsync({
-                    _id: currentPluginId || undefined,
+                    pluginId: currentPluginId || undefined,
                     workflow
                 }),
                 {

@@ -127,6 +127,8 @@ type RequestArgsWithTimeout = NonNullable<Parameters<VoltClient['request']>[2]> 
     timeoutMs: number;
 };
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const folderEndpoints = createFolderCrudEndpoints<
     FolderListParams,
     FolderGetParams,
@@ -134,9 +136,13 @@ const folderEndpoints = createFolderCrudEndpoints<
     FolderUpdateParams,
     FolderDeleteParams,
     TrajectoryFolder
->('/trajectory-folders');
-
-const routes = serviceRoutes('/teams', { rbac: true });
+>({
+    list: trajectoryRoutes.listFolders,
+    get: trajectoryRoutes.getFolder,
+    create: trajectoryRoutes.createFolder,
+    update: trajectoryRoutes.updateFolder,
+    remove: trajectoryRoutes.removeFolder
+}, routes.path);
 
 const endpoints = {
     getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>(routes.path(trajectoryRoutes.list)),

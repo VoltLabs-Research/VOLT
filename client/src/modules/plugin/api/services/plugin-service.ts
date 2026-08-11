@@ -1,4 +1,4 @@
-import { createService, paginated, get, patch, del, download, custom, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { createService, paginated, download, custom, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
@@ -22,7 +22,7 @@ export interface ClonePluginInput {
 }
 
 export interface DeletePluginInput {
-    _id: string;
+    pluginId: string;
 }
 
 export interface PipelineStageInput {
@@ -39,11 +39,11 @@ export interface ExportAnalysisResultsInput {
 }
 
 export interface ExportPluginInput {
-    _id: string;
+    pluginId: string;
 }
 
 export interface GetPluginInput {
-    _id: string;
+    pluginId: string;
 }
 
 export interface GetPluginsInput {
@@ -72,11 +72,11 @@ export interface ListPluginTeamClustersInput {
 export type ListPluginTeamClustersResponse = PaginatedResponse<PluginTeamClusterOption>;
 
 export interface SavePluginInput {
-    _id?: string;
+    pluginId?: string;
     workflow: IWorkflow;
 }
 
-export type UpdatePluginParams = { _id: string } & UpdatePluginInput;
+export type UpdatePluginParams = { pluginId: string } & UpdatePluginInput;
 
 export interface UploadBinaryParams{
     pluginId: string;
@@ -108,15 +108,15 @@ const routes = serviceRoutes('/teams', { rbac: true });
 
 const endpoints = {
     getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>(routes.path(pluginRoutes.list)),
-    getById: get<GetPluginInput, Plugin>('/plugins/:_id'),
+    getById: routes.route<GetPluginInput, Plugin>(pluginRoutes.get),
     create: routes.route<CreatePluginInput, Plugin>(pluginRoutes.create, {
         unwrap: { field: 'plugin' }
     }),
-    update: patch<UpdatePluginParams, Plugin>('/plugins/:_id'),
+    update: routes.route<UpdatePluginParams, Plugin>(pluginRoutes.update),
     clone: routes.route<ClonePluginInput, Plugin>(pluginRoutes.clone, {
         unwrap: { field: 'plugin' }
     }),
-    delete: del<DeletePluginInput>('/plugins/:_id'),
+    delete: routes.route<DeletePluginInput, void>(pluginRoutes.remove, { unwrap: 'void' }),
     uploadBinary: custom<UploadBinaryParams, UploadBinaryResponse>(async ({ getClient }, params) => {
         const targetResponse = await getClient().request<{ data: UploadBinaryTarget }>(
             'PATCH',
@@ -161,7 +161,7 @@ const endpoints = {
         return commitResponse.data;
     }),
     deleteBinary: routes.route<DeleteBinaryInput, void>(pluginRoutes.removeBinary, { unwrap: 'void' }),
-    exportPlugin: download<ExportPluginInput>('GET', '/plugins/:_id/export'),
+    exportPlugin: download<ExportPluginInput>('GET', routes.path(pluginRoutes.exportPlugin)),
     exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', routes.path(pluginRoutes.exportListingRowsByAnalysisId)),
     importPlugin: routes.route<ImportPluginInput, Plugin>(pluginRoutes.importPlugin, {
         body: ({ file }) => buildFileFormData([{

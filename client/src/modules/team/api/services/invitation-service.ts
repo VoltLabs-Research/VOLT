@@ -38,8 +38,9 @@ const endpoints = {
         teamInvitationRoutes.getByIdPublic, { client: 'invitations' }
     ),
     getPending: get<GetPendingInvitationsInput, TeamInvitation[], PaginatedResponse<TeamInvitation>>(
-        '/:teamId/invitations?status=pending', {
+        routes.team.path(teamInvitationRoutes.list), {
             client: 'team',
+            query: () => ({ status: 'pending' }),
             map: (result) => result.data
         }
     ),

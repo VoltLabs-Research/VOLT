@@ -30,7 +30,7 @@ const usePluginCatalog = () => {
         if (existing) return existing;
 
         const { fetchPluginById, syncPluginEntityCaches } = await import('./queries');
-        return fetchPluginById({ _id: id }, {
+        return fetchPluginById({ pluginId: id }, {
             staleTime: 5 * 60 * 1000
         }).then((plugin) => {
             syncPluginEntityCaches(plugin);

@@ -59,7 +59,7 @@ export default function useTeamMemberListingActions({
         await runAction({
             action: () => updateTeamMemberMutation.mutateAsync({
                 teamId: selectedTeam._id,
-                memberId,
+                teamMemberId: memberId,
                 role: roleId
             }),
             toast: updateRoleToastOptions

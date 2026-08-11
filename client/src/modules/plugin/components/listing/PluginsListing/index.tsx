@@ -157,7 +157,7 @@ const PluginsListing = () => {
     const handleStatusChange = useCallback(async (plugin: Plugin, action: PluginStatusAction) => {
         await runAction({
             action: () => updatePluginMutation.mutateAsync({
-                _id: plugin._id,
+                pluginId: plugin._id,
                 status: action.status
             }),
             toast: createPromiseToastOptions({
@@ -200,7 +200,7 @@ const PluginsListing = () => {
             delete: {
                 handler: async ({ item }) => {
                     await runAction({
-                        action: () => deletePluginMutation.mutateAsync({ _id: item._id }),
+                        action: () => deletePluginMutation.mutateAsync({ pluginId: item._id }),
                         toast: DELETE_PLUGIN_TOAST_OPTIONS
                     });
                 },
