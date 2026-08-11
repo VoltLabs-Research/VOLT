@@ -71,7 +71,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         }
 
         if (group.overallStatus === FrameJobGroupStatus.Running) {
-            return 'text-foreground';
+            return 'text-info [[data-theme=light]_&]:text-[#0a5fbf]';
         }
 
         if (group.overallStatus === FrameJobGroupStatus.Queued) {

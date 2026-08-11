@@ -4,6 +4,7 @@ import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shar
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type { PluginListingTransferRow } from '@modules/plugin/models/plugin-listing-repository-contract';
+import type { SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
 
 /** Flattens an exposure payload into the precomputed listing rows the UI reads. */
 
@@ -62,23 +63,44 @@ export const precomputeListingRows = async (
     }]);
 };
 
+/**
+ * Persists the sub-listings a batch at a time.
+ *
+ * The batches come from the reader, which never holds a whole sub-listing: a mesh over
+ * a multi-million-atom frame describes tens of millions of entries, so both the read
+ * and the write have to stay bounded.
+ */
 export const precomputeSubListingRows = async (
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
-    subListings: Record<string, JsonObject[]>,
+    subListings: SubListingBatchSource[],
     timestep: number
 ): Promise<void> => {
     const { analysisId } = executionData.identity;
-    const inputs = Object.entries(subListings)
-        .filter(([, rows]) => rows.length > 0)
-        .map(([subListingName, rows]) => ({
+    const inputs = subListings
+        .filter((source) => source.rowCount > 0)
+        .map((source) => ({
             analysis: analysisId,
             exposureId: exposure.nodeId,
             timestep,
-            subListingName,
-            rows: rows as PluginListingTransferRow[]
+            subListingName: source.name,
+            rowBatches: source.readBatches() as AsyncIterable<PluginListingTransferRow[]>
         }));
+
+    if (inputs.length === 0) {
+        return;
+    }
+
+    logger.debug(
+        {
+            analysis: analysisId,
+            exposureId: exposure.nodeId,
+            timestep,
+            subListings: subListings.map((source) => `${source.name}=${source.rowCount}`)
+        },
+        'Persisting precomputed sub-listing rows'
+    );
 
     await pluginListingRepository.replaceSubListingRows(inputs);
 };

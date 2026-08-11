@@ -1,7 +1,12 @@
+import { DuckDBConnection } from '@duckdb/node-api';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
+import { logger } from '@shared/infrastructure/logger';
+import { stageExportBufferUpload, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
-import type { ExportExecutionInput, ExportMaterial, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
+import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';
+import { sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
+import type { ExportExecutionInput, ExportMaterial, InlineMeshInput, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
+import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const computeBounds = (positions: Float32Array) => {
@@ -79,10 +84,7 @@ const computeNormals = (positions: Float32Array, indices: Uint32Array): Float32A
     return normals;
 };
 
-const processMesh = (
-    mesh: MeshInput,
-    smoothIterations: number | undefined
-): {
+interface ProcessedMesh {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
@@ -94,7 +96,130 @@ const processMesh = (
         maxY: number;
         maxZ: number;
     };
-} | null => {
+}
+
+const finishMesh = (
+    positions: Float32Array,
+    indices: Uint32Array,
+    smoothIterations: number | undefined
+): ProcessedMesh => {
+    if (smoothIterations && smoothIterations > 0) {
+        spatialAssembler.taubinSmooth(positions, indices, smoothIterations);
+    }
+
+    return {
+        positions,
+        normals: computeNormals(positions, indices),
+        indices,
+        bounds: computeBounds(positions)
+    };
+};
+
+/**
+ * Builds the geometry straight from the two parquet tables a payload-document mesh was
+ * split into.
+ *
+ * The facet-to-vertex resolution is the join DuckDB does below, so the 16-million-entry
+ * `Map` the inline path needs never exists; `MAX(slot)` reproduces its last-write-wins
+ * behaviour for a repeated vertex index, and the inner joins drop a facet that names an
+ * unknown vertex exactly as the inline filter did. Rows arrive one chunk at a time and
+ * go straight into the typed arrays, so peak memory is the geometry itself.
+ */
+const processMeshFromParquet = async (
+    source: MeshParquetSource,
+    smoothIterations: number | undefined
+): Promise<ProcessedMesh | null> => {
+    const connection = await DuckDBConnection.create();
+
+    try {
+        const countsReader = await connection.runAndReadAll(
+            `SELECT (SELECT COUNT(*) FROM read_parquet(${sqlString(source.vertices)})) AS vertices, `
+            + `(SELECT COUNT(*) FROM read_parquet(${sqlString(source.facets)})) AS facets`
+        );
+        const counts = countsReader.getRowObjectsJS()[0] ?? {};
+        const vertexCount = Number(counts.vertices ?? 0);
+        const facetCount = Number(counts.facets ?? 0);
+        if (vertexCount === 0 || facetCount === 0) {
+            return null;
+        }
+
+        const positions = new Float32Array(vertexCount * 3);
+        const positionsResult = await connection.stream(
+            `SELECT x, y, z FROM read_parquet(${sqlString(source.vertices)}) ORDER BY slot`
+        );
+        let positionOffset = 0;
+        for (let chunk = await positionsResult.fetchChunk(); chunk; chunk = await positionsResult.fetchChunk()) {
+            const rows = chunk.rowCount;
+            if (rows === 0) break;
+            const xs = chunk.getColumnVector(0);
+            const ys = chunk.getColumnVector(1);
+            const zs = chunk.getColumnVector(2);
+            for (let row = 0; row < rows; row += 1) {
+                const base = positionOffset * 3;
+                positions[base] = Number(xs.getItem(row) ?? 0);
+                positions[base + 1] = Number(ys.getItem(row) ?? 0);
+                positions[base + 2] = Number(zs.getItem(row) ?? 0);
+                positionOffset += 1;
+            }
+            await yieldToEventLoop();
+        }
+
+        /* Upper bound: the joins can only drop facets, never add them. */
+        const indices = new Uint32Array(facetCount * 3);
+        const trianglesResult = await connection.stream(
+            'WITH vertex_map AS ('
+            + `SELECT vertex_id, MAX(slot) AS slot FROM read_parquet(${sqlString(source.vertices)}) `
+            + 'WHERE vertex_id IS NOT NULL GROUP BY vertex_id) '
+            + 'SELECT va.slot AS ia, vb.slot AS ib, vc.slot AS ic '
+            + `FROM read_parquet(${sqlString(source.facets)}) f `
+            + 'JOIN vertex_map va ON va.vertex_id = f.a '
+            + 'JOIN vertex_map vb ON vb.vertex_id = f.b '
+            + 'JOIN vertex_map vc ON vc.vertex_id = f.c '
+            + 'ORDER BY f.ord'
+        );
+        let indexOffset = 0;
+        for (let chunk = await trianglesResult.fetchChunk(); chunk; chunk = await trianglesResult.fetchChunk()) {
+            const rows = chunk.rowCount;
+            if (rows === 0) break;
+            const ia = chunk.getColumnVector(0);
+            const ib = chunk.getColumnVector(1);
+            const ic = chunk.getColumnVector(2);
+            for (let row = 0; row < rows; row += 1) {
+                indices[indexOffset] = Number(ia.getItem(row) ?? 0);
+                indices[indexOffset + 1] = Number(ib.getItem(row) ?? 0);
+                indices[indexOffset + 2] = Number(ic.getItem(row) ?? 0);
+                indexOffset += 3;
+            }
+            await yieldToEventLoop();
+        }
+
+        if (indexOffset === 0) {
+            return null;
+        }
+
+        logger.info(
+            {
+                vertexCount,
+                facetCount,
+                triangleCount: indexOffset / 3
+            },
+            'Built mesh geometry from parquet source'
+        );
+
+        return finishMesh(
+            positions,
+            indexOffset < indices.length ? indices.subarray(0, indexOffset) : indices,
+            smoothIterations
+        );
+    } finally {
+        connection.closeSync();
+    }
+};
+
+const processMesh = (
+    mesh: InlineMeshInput,
+    smoothIterations: number | undefined
+): ProcessedMesh | null => {
     if (mesh.vertices.length === 0 || mesh.facets.length === 0) {
         return null;
     }
@@ -141,16 +266,7 @@ const processMesh = (
         indices[base + 2] = facet[2];
     });
 
-    if (smoothIterations && smoothIterations > 0) {
-        spatialAssembler.taubinSmooth(positions, indices, smoothIterations);
-    }
-
-    return {
-        positions,
-        normals: computeNormals(positions, indices),
-        indices,
-        bounds: computeBounds(positions)
-    };
+    return finishMesh(positions, indices, smoothIterations);
 };
 
 const DEFAULT_MESH_MATERIAL: ExportMaterial = {
@@ -158,6 +274,41 @@ const DEFAULT_MESH_MATERIAL: ExportMaterial = {
     metallic: 0.05,
     roughness: 0.9,
     emissive: [0, 0, 0]
+};
+
+/**
+ * Taubin iterations applied when the export node does not ask for a specific count.
+ *
+ * A defect mesh arrives straight off a Delaunay tessellation, so untouched it reads
+ * as the pile of tetrahedra it is rather than as a surface. This matches the default
+ * OVITO uses for the same mesh, and OpenDXA derives from OVITO, so the two stay
+ * visually comparable for anyone checking one against the other. Taubin alternates
+ * its two passes precisely so the iterations do not shrink the surface the way plain
+ * Laplacian smoothing would.
+ *
+ * Every mesh export used to skip smoothing entirely, because the material and the
+ * line options had defaults and this one did not.
+ */
+const DEFAULT_MESH_SMOOTH_ITERATIONS = 8;
+
+/**
+ * Upper bound on the iterations a plugin may ask for.
+ *
+ * The count reaches a native call that walks every triangle once per iteration, and
+ * it arrives unvalidated from a plugin's own JSON. Without a ceiling a stray value
+ * would keep the daemon busy for as long as the number says.
+ */
+const MAX_MESH_SMOOTH_ITERATIONS = 50;
+
+const resolveSmoothIterations = (requested: number | undefined): number => {
+    if (requested === undefined) {
+        return DEFAULT_MESH_SMOOTH_ITERATIONS;
+    }
+    /* An explicit 0 means "do not smooth", so `??` above and no `||` anywhere. */
+    if (!Number.isFinite(requested) || requested <= 0) {
+        return 0;
+    }
+    return Math.min(Math.round(requested), MAX_MESH_SMOOTH_ITERATIONS);
 };
 
 export const exportMeshArtifact = async (
@@ -171,7 +322,11 @@ export const exportMeshArtifact = async (
         ...DEFAULT_MESH_MATERIAL,
         ...options.material
     };
-    const processed = processMesh(exportData, options.smoothIterations);
+    const smoothIterations = resolveSmoothIterations(options.smoothIterations);
+    const parquetSource = readMeshParquetSource(exportData);
+    const processed = parquetSource
+        ? await processMeshFromParquet(parquetSource, smoothIterations)
+        : processMesh(exportData as InlineMeshInput, smoothIterations);
     if (!processed) {
         await stageExportBufferUpload(input, {
             exporter: 'MeshExporter',

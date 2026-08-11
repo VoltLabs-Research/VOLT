@@ -14,7 +14,7 @@ interface FrameGroupProps {
 
 const FRAME_STATUS_TONE_CLASS_NAMES: Record<FrameJobGroupStatus, string> = {
     [FrameJobGroupStatus.Queued]: 'text-warning',
-    [FrameJobGroupStatus.Running]: 'text-foreground',
+    [FrameJobGroupStatus.Running]: 'text-info [[data-theme=light]_&]:text-[#0a5fbf]',
     [FrameJobGroupStatus.Completed]: 'text-success',
     [FrameJobGroupStatus.Failed]: 'text-danger',
     [FrameJobGroupStatus.Partial]: 'text-muted'

@@ -80,8 +80,10 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
+export const useAIChatContextOptional = (): AIChatContextValue | null => useContext(AIChatContext);
+
 export const useAIChatContext = (): AIChatContextValue => {
-    const context = useContext(AIChatContext);
+    const context = useAIChatContextOptional();
     if (!context) {
         throw new Error('useAIChatContext must be used within an AIChatProvider');
     }

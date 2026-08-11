@@ -77,7 +77,13 @@ services:
       - SYS_NICE
     environment:
       NODE_ENV: production
-      NODE_OPTIONS: --max-old-space-size=8192
+      # The daemon sizes its own V8 heap from the memory it can actually see (see
+      # cluster/scripts/start.js), because this file is shipped to every enrolled
+      # host and a fixed ceiling fits none of them: the 8 GB it used to hardcode
+      # was the whole of a small laptop and a third of a 31 GB workstation, where
+      # it turned a large frame's mesh flattening into a fatal heap error. Set
+      # DAEMON_HEAP_MB to pin the ceiling on a host that shares its RAM.
+      DAEMON_HEAP_MB: ${DAEMON_HEAP_MB-}
       COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-volt}
       HOST: 0.0.0.0
       PORT: ${DAEMON_PORT:-18080}

@@ -218,7 +218,7 @@ const AnalysisListingDownloadModal = ({
                 />
             )}
         >
-            <div className='flex min-w-[min(42rem,80vw)] max-w-full flex-col gap-4'>
+            <div className='flex w-full min-w-0 flex-col gap-4'>
                 {isLoading && (
                     <p className='text-xs text-muted'>
                         Loading available listings and sublistings...

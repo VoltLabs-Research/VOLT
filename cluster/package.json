@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node scripts/copy-static-assets.js",
     "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
-    "dev": "tsx src/daemon.ts",
+    "dev": "node scripts/start.js --dev",
     "lint": "eslint .",
     "start": "node scripts/start.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",

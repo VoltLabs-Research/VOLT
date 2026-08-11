@@ -1,7 +1,7 @@
 {
-    "total": 78,
+    "total": 76,
     "counts": {
-        "no-cross-module-imports": 47,
+        "no-cross-module-imports": 45,
         "no-circular": 31
     }
 }

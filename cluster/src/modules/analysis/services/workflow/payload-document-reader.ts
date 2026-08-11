@@ -1,32 +1,65 @@
-import type { DuckDBConnection } from '@duckdb/node-api';
+import { DuckDBConnection } from '@duckdb/node-api';
 import path from 'node:path';
+import { logger } from '@shared/infrastructure/logger';
 import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import type { PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
+import type { MeshParquetSource, SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
+import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 
 /**
- * Reads a `payload`-document exposure without ever holding the document in JS.
+ * Reads a `payload`-document exposure without ever holding an unbounded value in JS.
  *
  * Plugins may report an exposure as one JSON blob in a single `payload` column. Small
- * ones are parsed directly, but a per-atom document for a multi-million-atom frame
- * runs past V8's maximum string length (~512 MB) and the read fails outright with
- * "Cannot create a string longer than 0x1fffffe8 characters" — the document cannot be
- * held, let alone parsed.
+ * ones are parsed directly, but nothing bounds the big ones: a per-atom document for a
+ * multi-million-atom frame, or a defect mesh over the same frame, runs past V8's
+ * maximum string length (~512 MB) and the read fails outright with "Cannot create a
+ * string longer than 0x1fffffe8 characters" — the value cannot be held, let alone
+ * parsed. Splitting the document is not enough either, because a single section (the
+ * mesh under `export`, the vertex list under `sub_listings`) is itself past the
+ * ceiling.
  *
- * Every piece is therefore pulled out with DuckDB's JSON functions: the listing and
- * sub-listings are small enough to cross into JS on their own, and the per-atom array
- * is flattened straight to a parquet file that the columnar property path consumes.
+ * So every section is pulled out with DuckDB's JSON functions and only ever crosses
+ * into JS in a bounded form:
+ *
+ *  - `main_listing` is a handful of counters, extracted whole, with a scalar-only
+ *    fallback if a plugin ever puts something enormous there.
+ *  - each `sub_listings` entry becomes a parquet of one JSON row per entry, streamed
+ *    back to the caller in pages.
+ *  - the per-atom array is flattened straight to a parquet that the columnar property
+ *    path consumes.
+ *  - the mesh and atomistic sections of `export` are flattened to parquet too, and the
+ *    exporters read columns out of those files.
+ *
+ * The only sections still inlined are the ones the contract keeps aggregated (chart
+ * series, exporter options), and those are size-checked before they are read.
  */
 
 /** Documents below this stay on the simple path; V8's own ceiling is ~512 MB. */
 const INLINE_PAYLOAD_LIMIT_BYTES = 64 * 1024 * 1024;
 
+/**
+ * Ceiling for any single value still read as a string. Far below V8's limit so the
+ * decoded string, the parsed objects and whatever the caller builds from them all fit
+ * at once.
+ */
+const INLINE_VALUE_LIMIT_BYTES = 32 * 1024 * 1024;
+
+/** Rows per sub-listing page. Each row is one small JSON object. */
+const SUB_LISTING_PAGE_ROWS = 20_000;
+
 const PER_ATOM_JSON_PATH = '$."per-atom-properties"';
+
+const MESH_EXPORTER = 'MeshExporter';
+const ATOMISTIC_EXPORTER = 'AtomisticExporter';
+
+/** Colour keys an atom may carry, matching the exporter's own precedence. */
+const ATOM_COLOR_KEYS = ['color', 'structure_color', 'rgb', 'base_color'] as const;
 
 interface LargePayloadDocument {
     listing: JsonObject | null;
     subListingNames: string[];
-    subListings: Record<string, JsonObject[]>;
+    subListingSources: SubListingBatchSource[];
     perAtomSource: PerAtomParquetSource | null;
     exportData: JsonObject | null;
 }
@@ -59,28 +92,82 @@ export const isPayloadTooLargeForJs = (bytes: number): boolean => bytes > INLINE
 const payloadSource = (filePath: string): string =>
     `(SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1)`;
 
-const extractJson = async (
+const escapeJsonPathSegment = (key: string): string => key.replace(/"/g, '\\"');
+
+const jsonPath = (...segments: string[]): string =>
+    `$${segments.map((segment) => `."${escapeJsonPathSegment(segment)}"`).join('')}`;
+
+/** Byte size of one section, again measured inside the engine. */
+const measureJsonPathBytes = async (
     connection: DuckDBConnection,
     filePath: string,
-    jsonPath: string
-): Promise<unknown> => {
-    const raw = await readSingleValue(
+    valuePath: string
+): Promise<number> => {
+    const value = await readSingleValue(
         connection,
-        `SELECT CAST(json_extract(payload, ${sqlString(jsonPath)}) AS VARCHAR) AS value FROM ${payloadSource(filePath)}`,
-        'value'
+        `SELECT strlen(CAST(json_extract(payload, ${sqlString(valuePath)}) AS VARCHAR)) AS bytes `
+        + `FROM ${payloadSource(filePath)}`,
+        'bytes'
     );
+    return Number(value ?? 0);
+};
+
+const parseExtracted = (raw: unknown): unknown => {
     if (typeof raw !== 'string' || raw.length === 0 || raw === 'null') {
         return null;
     }
     return JSON.parse(raw);
 };
 
+const extractJson = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    valuePath: string
+): Promise<unknown> => {
+    const raw = await readSingleValue(
+        connection,
+        `SELECT CAST(json_extract(payload, ${sqlString(valuePath)}) AS VARCHAR) AS value `
+        + `FROM ${payloadSource(filePath)}`,
+        'value'
+    );
+    return parseExtracted(raw);
+};
+
+/**
+ * Extracts a section only when it is small enough to survive the trip.
+ *
+ * Returns `null` and says so in the log when it is not, which keeps one oversized
+ * section from taking the whole exposure down: everything with a columnar path is
+ * handled elsewhere, and what is left is aggregated by contract.
+ */
+const extractJsonIfSmall = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    valuePath: string,
+    describe: string
+): Promise<unknown> => {
+    const bytes = await measureJsonPathBytes(connection, filePath, valuePath);
+    if (bytes > INLINE_VALUE_LIMIT_BYTES) {
+        logger.warn(
+            {
+                path: filePath,
+                jsonPath: valuePath,
+                bytes,
+                limitBytes: INLINE_VALUE_LIMIT_BYTES
+            },
+            `Payload section ${describe} is too large to read as JSON and has no columnar path; skipping it`
+        );
+        return null;
+    }
+    return extractJson(connection, filePath, valuePath);
+};
+
 const listJsonKeys = async (
     connection: DuckDBConnection,
     filePath: string,
-    jsonPath: string | null
+    valuePath: string | null
 ): Promise<string[]> => {
-    const target = jsonPath === null ? 'payload' : `json_extract(payload, ${sqlString(jsonPath)})`;
+    const target = valuePath === null ? 'payload' : `json_extract(payload, ${sqlString(valuePath)})`;
     // `json_keys` yields a DuckDB LIST, which arrives as a JS array; casting it to
     // VARCHAR would produce `[a, b]`, which is not JSON.
     const raw = await readSingleValue(
@@ -94,17 +181,52 @@ const listJsonKeys = async (
 const jsonTypeAt = async (
     connection: DuckDBConnection,
     filePath: string,
-    jsonPath: string
+    valuePath: string
 ): Promise<string | null> => {
     const raw = await readSingleValue(
         connection,
-        `SELECT json_type(payload, ${sqlString(jsonPath)}) AS kind FROM ${payloadSource(filePath)}`,
+        `SELECT json_type(payload, ${sqlString(valuePath)}) AS kind FROM ${payloadSource(filePath)}`,
         'kind'
     );
     return typeof raw === 'string' ? raw.toUpperCase() : null;
 };
 
-const escapeJsonPathSegment = (key: string): string => key.replace(/"/g, '\\"');
+const jsonArrayLength = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    valuePath: string
+): Promise<number> => {
+    const raw = await readSingleValue(
+        connection,
+        `SELECT json_array_length(payload, ${sqlString(valuePath)}) AS length FROM ${payloadSource(filePath)}`,
+        'length'
+    );
+    return Number(raw ?? 0);
+};
+
+/**
+ * Unnests a JSON array of the document into rows, ordinal first.
+ *
+ * `ROW_NUMBER() OVER ()` numbers the elements in the order `UNNEST` produced them,
+ * which is the order they appear in the document.
+ */
+const unnestedArray = (filePath: string, valuePath: string): string =>
+    'WITH __items AS ('
+    + `SELECT UNNEST(CAST(json_extract(payload, ${sqlString(valuePath)}) AS JSON[])) AS item `
+    + `FROM ${payloadSource(filePath)}), `
+    + '__ordered AS (SELECT ROW_NUMBER() OVER () - 1 AS ordinal, item FROM __items)';
+
+const copyToParquet = (projection: string, outputPath: string): string =>
+    `COPY (${projection}) TO ${sqlString(outputPath)} (FORMAT PARQUET, COMPRESSION ZSTD)`;
+
+const countParquetRows = async (
+    connection: DuckDBConnection,
+    filePath: string
+): Promise<number> => Number(await readSingleValue(
+    connection,
+    `SELECT COUNT(*) AS total FROM read_parquet(${sqlString(filePath)})`,
+    'total'
+) ?? 0);
 
 /**
  * Flattens the document's per-atom array or column map into a parquet file.
@@ -155,21 +277,361 @@ const flattenPerAtomProperties = async (
         return null;
     }
 
-    await connection.run(
-        `COPY (SELECT ROW_NUMBER() OVER () - 1 AS atom_index, * FROM (${projection})) `
-        + `TO ${sqlString(outputPath)} (FORMAT PARQUET, COMPRESSION ZSTD)`
-    );
+    await connection.run(copyToParquet(
+        `SELECT ROW_NUMBER() OVER () - 1 AS atom_index, * FROM (${projection})`,
+        outputPath
+    ));
 
-    const rowCount = Number(await readSingleValue(
-        connection,
-        `SELECT COUNT(*) AS total FROM read_parquet(${sqlString(outputPath)})`,
-        'total'
-    ) ?? 0);
+    const rowCount = await countParquetRows(connection, outputPath);
 
     return rowCount > 0 ? {
         filePath: outputPath,
         rowCount
     } : null;
+};
+
+/**
+ * Splits `export.MeshExporter` into a vertex table and a facet table.
+ *
+ * Only the ids are kept for facets; resolving them against the vertex table is the
+ * exporter's job and stays inside DuckDB there, so no per-vertex map is ever built in
+ * JS. A vertex whose own `index` is missing gets a null id and therefore matches no
+ * facet, exactly as a `undefined` map key did before.
+ */
+const flattenMesh = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    sectionPath: string,
+    outputPrefix: string
+): Promise<MeshParquetSource | null> => {
+    if (await jsonTypeAt(connection, filePath, `${sectionPath}.vertices`) !== 'ARRAY') {
+        return null;
+    }
+    if (await jsonTypeAt(connection, filePath, `${sectionPath}.facets`) !== 'ARRAY') {
+        return null;
+    }
+
+    const verticesPath = `${outputPrefix}.mesh-vertices.parquet`;
+    const facetsPath = `${outputPrefix}.mesh-facets.parquet`;
+
+    await connection.run(copyToParquet(
+        `${unnestedArray(filePath, `${sectionPath}.vertices`)} `
+        + 'SELECT ordinal AS slot, '
+        + `TRY_CAST(json_extract_string(item, '$.index') AS BIGINT) AS vertex_id, `
+        + `TRY_CAST(json_extract_string(item, '$.position[0]') AS DOUBLE) AS x, `
+        + `TRY_CAST(json_extract_string(item, '$.position[1]') AS DOUBLE) AS y, `
+        + `TRY_CAST(json_extract_string(item, '$.position[2]') AS DOUBLE) AS z `
+        + 'FROM __ordered',
+        verticesPath
+    ));
+
+    await connection.run(copyToParquet(
+        `${unnestedArray(filePath, `${sectionPath}.facets`)} `
+        + 'SELECT ordinal AS ord, '
+        + `TRY_CAST(json_extract_string(item, '$.vertices[0]') AS BIGINT) AS a, `
+        + `TRY_CAST(json_extract_string(item, '$.vertices[1]') AS BIGINT) AS b, `
+        + `TRY_CAST(json_extract_string(item, '$.vertices[2]') AS BIGINT) AS c `
+        + 'FROM __ordered',
+        facetsPath
+    ));
+
+    const [vertexCount, facetCount] = await Promise.all([
+        countParquetRows(connection, verticesPath),
+        countParquetRows(connection, facetsPath)
+    ]);
+    logger.info(
+        {
+            path: filePath,
+            vertexCount,
+            facetCount
+        },
+        'Flattened payload mesh section to parquet'
+    );
+
+    return vertexCount > 0 && facetCount > 0 ? {
+        vertices: verticesPath,
+        facets: facetsPath
+    } : null;
+};
+
+/**
+ * Flattens `export.AtomisticExporter` — an object of one atom array per bucket — into
+ * the same columnar shape the exposure parquet has, so the atomistic exporter's
+ * existing parquet path reads it unchanged.
+ *
+ * `atom_index` is a single running counter over the buckets in document order, which
+ * is what makes the exporter order buckets, and colour them by position, the way the
+ * inline path did. All four colour columns are always emitted: an absent key is a null
+ * list, which the exporter already skips on its way down the precedence chain.
+ */
+const flattenAtomisticExport = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    sectionPath: string,
+    outputPath: string
+): Promise<string | null> => {
+    const buckets = await listJsonKeys(connection, filePath, sectionPath);
+    if (buckets.length === 0) {
+        return null;
+    }
+
+    const colorColumns = ATOM_COLOR_KEYS
+        .map((key) => `TRY_CAST(json_extract(item, '$."${key}"') AS DOUBLE[]) AS ${quoteIdentifier(key)}`)
+        .join(', ');
+
+    await connection.run(
+        'CREATE OR REPLACE TEMP TABLE __atomistic_flat ('
+        + 'bucket VARCHAR, bucket_ordinal BIGINT, row_ordinal BIGINT, '
+        + 'x DOUBLE, y DOUBLE, z DOUBLE, '
+        + `${ATOM_COLOR_KEYS.map((key) => `${quoteIdentifier(key)} DOUBLE[]`).join(', ')})`
+    );
+
+    try {
+        for (let bucketOrdinal = 0; bucketOrdinal < buckets.length; bucketOrdinal += 1) {
+            const bucket = buckets[bucketOrdinal];
+            const bucketPath = `${sectionPath}."${escapeJsonPathSegment(bucket)}"`;
+            if (await jsonTypeAt(connection, filePath, bucketPath) !== 'ARRAY') {
+                continue;
+            }
+
+            await connection.run(
+                'INSERT INTO __atomistic_flat '
+                + `${unnestedArray(filePath, bucketPath)} `
+                + `SELECT ${sqlString(bucket)}, ${bucketOrdinal}, ordinal, `
+                + `TRY_CAST(json_extract_string(item, '$.pos[0]') AS DOUBLE), `
+                + `TRY_CAST(json_extract_string(item, '$.pos[1]') AS DOUBLE), `
+                + `TRY_CAST(json_extract_string(item, '$.pos[2]') AS DOUBLE), `
+                + `${colorColumns} `
+                + 'FROM __ordered'
+            );
+        }
+
+        await connection.run(copyToParquet(
+            'SELECT bucket, '
+            + 'ROW_NUMBER() OVER (ORDER BY bucket_ordinal, row_ordinal) - 1 AS atom_index, '
+            + `x, y, z, ${ATOM_COLOR_KEYS.map((key) => quoteIdentifier(key)).join(', ')} `
+            + 'FROM __atomistic_flat',
+            outputPath
+        ));
+    } finally {
+        await connection.run('DROP TABLE IF EXISTS __atomistic_flat');
+    }
+
+    const rowCount = await countParquetRows(connection, outputPath);
+    logger.info(
+        {
+            path: filePath,
+            bucketCount: buckets.length,
+            atomCount: rowCount
+        },
+        'Flattened payload atomistic section to parquet'
+    );
+
+    return rowCount > 0 ? outputPath : null;
+};
+
+/**
+ * Reads one exporter's section, columnar where the entity count is unbounded.
+ *
+ * An exporter with no columnar path keeps the inline read, guarded by size — chart
+ * series and exporter options are aggregates, not per-entity data.
+ */
+const readExporterSection = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    sectionPath: string,
+    exporter: string,
+    outputPrefix: string
+): Promise<unknown> => {
+    if (exporter === MESH_EXPORTER) {
+        const mesh = await flattenMesh(connection, filePath, sectionPath, outputPrefix);
+        return mesh ? { [PARQUET_SOURCE_KEY]: mesh } : null;
+    }
+
+    if (exporter === ATOMISTIC_EXPORTER) {
+        const source = await flattenAtomisticExport(
+            connection,
+            filePath,
+            sectionPath,
+            `${outputPrefix}.atomistic.parquet`
+        );
+        return source ? { [PARQUET_SOURCE_KEY]: source } : null;
+    }
+
+    return extractJsonIfSmall(connection, filePath, sectionPath, `export.${exporter}`);
+};
+
+/**
+ * Rebuilds one `export`-like key of the document.
+ *
+ * The contract allows both an object of exporters and an array of such objects, and
+ * `resolveExporterEntries` on the consuming side reads either.
+ */
+const readExportKey = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    key: string,
+    outputPrefix: string
+): Promise<unknown> => {
+    const keyPath = jsonPath(key);
+    const kind = await jsonTypeAt(connection, filePath, keyPath);
+
+    if (kind === 'ARRAY') {
+        const length = await jsonArrayLength(connection, filePath, keyPath);
+        const entries: unknown[] = [];
+        for (let index = 0; index < length; index += 1) {
+            const elementPath = `${keyPath}[${index}]`;
+            const exporters = await listJsonKeys(connection, filePath, elementPath);
+            const element: JsonObject = {};
+            for (const exporter of exporters) {
+                const section = await readExporterSection(
+                    connection,
+                    filePath,
+                    `${elementPath}."${escapeJsonPathSegment(exporter)}"`,
+                    exporter,
+                    `${outputPrefix}.${index}.${exporter}`
+                );
+                if (section !== null) {
+                    element[exporter] = section as JsonObject[string];
+                }
+            }
+            entries.push(element);
+        }
+        return entries.length > 0 ? entries : null;
+    }
+
+    if (kind !== 'OBJECT') {
+        return null;
+    }
+
+    const exporters = await listJsonKeys(connection, filePath, keyPath);
+    const section: JsonObject = {};
+    for (const exporter of exporters) {
+        const value = await readExporterSection(
+            connection,
+            filePath,
+            `${keyPath}."${escapeJsonPathSegment(exporter)}"`,
+            exporter,
+            `${outputPrefix}.${exporter}`
+        );
+        if (value !== null) {
+            section[exporter] = value as JsonObject[string];
+        }
+    }
+
+    return Object.keys(section).length > 0 ? section : null;
+};
+
+/**
+ * Pages a flattened sub-listing back out of its parquet.
+ *
+ * The pages are cut on the ordinal rather than with `OFFSET` so each statement prunes
+ * to the row groups it needs instead of rescanning the file, and the rows keep the
+ * document's order — which is what makes the positional row ids stable across reruns.
+ */
+const streamSubListingRows = (filePath: string, rowCount: number) =>
+    async function* readBatches(): AsyncIterable<JsonObject[]> {
+        const connection = await DuckDBConnection.create();
+        try {
+            for (let start = 0; start < rowCount; start += SUB_LISTING_PAGE_ROWS) {
+                const reader = await connection.runAndReadAll(
+                    `SELECT row_json FROM read_parquet(${sqlString(filePath)}) `
+                    + `WHERE ordinal >= ${start} AND ordinal < ${start + SUB_LISTING_PAGE_ROWS} `
+                    + 'ORDER BY ordinal'
+                );
+                const batch: JsonObject[] = [];
+                for (const row of reader.getRowObjectsJS()) {
+                    const parsed = parseExtracted(row.row_json);
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        batch.push(parsed as JsonObject);
+                    }
+                }
+                if (batch.length > 0) {
+                    yield batch;
+                }
+            }
+        } finally {
+            connection.closeSync();
+        }
+    };
+
+/**
+ * Flattens one sub-listing to a parquet of one JSON row per entry.
+ *
+ * Each row stays a JSON string instead of being projected into columns: the entries
+ * are small individually, their keys are the plugin's own, and this keeps the rows
+ * byte-identical to what the inline path produced.
+ */
+const flattenSubListing = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    name: string,
+    outputPath: string
+): Promise<SubListingBatchSource | null> => {
+    const entryPath = jsonPath('sub_listings', name);
+    const kind = await jsonTypeAt(connection, filePath, entryPath);
+
+    if (kind === 'OBJECT') {
+        /* A single object counts as a one-row sub-listing, as on the inline path. */
+        const value = await extractJsonIfSmall(connection, filePath, entryPath, `sub_listings.${name}`);
+        if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+            return null;
+        }
+        const rows = [value as JsonObject];
+        return {
+            name,
+            rowCount: 1,
+            readBatches: async function* readBatches() {
+                yield rows;
+            }
+        };
+    }
+
+    if (kind !== 'ARRAY') {
+        return null;
+    }
+
+    await connection.run(copyToParquet(
+        `${unnestedArray(filePath, entryPath)} `
+        + 'SELECT ordinal, CAST(item AS VARCHAR) AS row_json FROM __ordered',
+        outputPath
+    ));
+
+    const rowCount = await countParquetRows(connection, outputPath);
+    if (rowCount === 0) {
+        return null;
+    }
+
+    return {
+        name,
+        rowCount,
+        readBatches: streamSubListingRows(outputPath, rowCount)
+    };
+};
+
+/**
+ * Falls back to reading `main_listing` one scalar at a time.
+ *
+ * Only reached if a plugin puts something enormous in there; the listing consumer
+ * drops non-scalar entries anyway, so nothing it uses is lost.
+ */
+const readMainListingScalars = async (
+    connection: DuckDBConnection,
+    filePath: string
+): Promise<JsonObject | null> => {
+    const listing: JsonObject = {};
+    for (const key of await listJsonKeys(connection, filePath, '$.main_listing')) {
+        const keyPath = jsonPath('main_listing', key);
+        const kind = await jsonTypeAt(connection, filePath, keyPath);
+        if (kind === 'OBJECT' || kind === 'ARRAY' || kind === null) {
+            continue;
+        }
+        const value = await extractJson(connection, filePath, keyPath);
+        if (value !== null) {
+            listing[key] = value as JsonObject[string];
+        }
+    }
+    return Object.keys(listing).length > 0 ? listing : null;
 };
 
 export const readLargePayloadDocument = async (
@@ -178,36 +640,36 @@ export const readLargePayloadDocument = async (
     workingDirectory: string
 ): Promise<LargePayloadDocument> => {
     const topLevelKeys = await listJsonKeys(connection, filePath, null);
+    const outputPrefix = path.join(workingDirectory, path.basename(filePath));
 
-    const listing = topLevelKeys.includes('main_listing')
-        ? await extractJson(connection, filePath, '$.main_listing')
-        : null;
+    let listing: unknown = null;
+    if (topLevelKeys.includes('main_listing')) {
+        listing = await extractJsonIfSmall(connection, filePath, '$.main_listing', 'main_listing')
+            ?? await readMainListingScalars(connection, filePath);
+    }
 
     const exportData: JsonObject = {};
     for (const key of topLevelKeys) {
         if (key !== 'export' && !key.startsWith('export.')) {
             continue;
         }
-        const value = await extractJson(connection, filePath, `$."${escapeJsonPathSegment(key)}"`);
+        const value = await readExportKey(connection, filePath, key, `${outputPrefix}.${key}`);
         if (value !== null) {
             exportData[key] = value as JsonObject[string];
         }
     }
 
-    const subListings: Record<string, JsonObject[]> = {};
+    const subListingSources: SubListingBatchSource[] = [];
     if (topLevelKeys.includes('sub_listings')) {
         for (const name of await listJsonKeys(connection, filePath, '$.sub_listings')) {
-            const value = await extractJson(
+            const source = await flattenSubListing(
                 connection,
                 filePath,
-                `$.sub_listings."${escapeJsonPathSegment(name)}"`
+                name,
+                `${outputPrefix}.sub-listing.${name}.parquet`
             );
-            if (value === null) {
-                continue;
-            }
-            const rows = Array.isArray(value) ? value as JsonObject[] : [value as JsonObject];
-            if (rows.length > 0) {
-                subListings[name] = rows;
+            if (source) {
+                subListingSources.push(source);
             }
         }
     }
@@ -216,14 +678,14 @@ export const readLargePayloadDocument = async (
         ? await flattenPerAtomProperties(
             connection,
             filePath,
-            path.join(workingDirectory, `${path.basename(filePath)}.per-atom.parquet`)
+            `${outputPrefix}.per-atom.parquet`
         )
         : null;
 
     return {
         listing: listing ? { main_listing: listing as JsonObject } : null,
-        subListingNames: Object.keys(subListings),
-        subListings,
+        subListingNames: subListingSources.map((source) => source.name),
+        subListingSources,
         perAtomSource,
         exportData: Object.keys(exportData).length > 0 ? exportData : null
     };

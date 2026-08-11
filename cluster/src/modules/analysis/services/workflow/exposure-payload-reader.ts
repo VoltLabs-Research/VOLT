@@ -1,4 +1,5 @@
-import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
+import type { SubListingBatchSource, WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
+import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 import { DuckDBConnection } from '@duckdb/node-api';
 import type { PerAtomParquetSource, PerAtomProperties } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
@@ -9,18 +10,31 @@ import {
     measurePayloadBytes,
     readLargePayloadDocument
 } from '@modules/analysis/services/workflow/payload-document-reader';
-import { ATOMISTIC_PARQUET_SOURCE_KEY } from '@modules/plugin/services/exports/export-node-processor-types';
 
 interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
     subListingNames: string[];
-    subListings: Record<string, JsonObject[]>;
+    /**
+     * One entry per named sub-listing, handed over as row batches. A payload document
+     * can describe tens of millions of entries, so no path here holds a whole
+     * sub-listing in one array.
+     */
+    subListings: SubListingBatchSource[];
     perAtomProperties: PerAtomProperties | null;
     /** Set instead of `perAtomProperties` when the atoms stay in the plugin's parquet. */
     perAtomSource: PerAtomParquetSource | null;
     entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
+
+/** Wraps rows already in memory in the batch contract the streaming path uses. */
+const inlineSubListing = (name: string, rows: JsonObject[]): SubListingBatchSource => ({
+    name,
+    rowCount: rows.length,
+    readBatches: async function* readBatches() {
+        yield rows;
+    }
+});
 
 const PER_ATOM_KEY = 'per-atom-properties';
 const DEFAULT_BUCKET_NAME = 'All';
@@ -54,7 +68,7 @@ const normalizeParquetRow = (row: JsonObject): JsonObject => {
 const emptyResult = (): WorkflowExposurePayloadReadResult => ({
     listing: null,
     subListingNames: [],
-    subListings: {},
+    subListings: [],
     perAtomProperties: null,
     perAtomSource: null,
     entityKind: 'atoms',
@@ -71,27 +85,24 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
         }
     }
 
-    const subListingNames = new Set<string>();
-    const subListingRows = new Map<string, JsonObject[]>();
+    const sources: SubListingBatchSource[] = [];
     const subListings = document.sub_listings as Record<string, JsonObject | JsonObject[]> | undefined;
     if (subListings) {
         for (const [name, value] of Object.entries(subListings)) {
             if (Array.isArray(value)) {
                 if (value.length > 0) {
-                    subListingNames.add(name);
-                    subListingRows.set(name, value);
+                    sources.push(inlineSubListing(name, value));
                 }
             } else if (Object.keys(value).length > 0) {
-                subListingNames.add(name);
-                subListingRows.set(name, [value]);
+                sources.push(inlineSubListing(name, [value]));
             }
         }
     }
 
     return {
         listing: mainListing ? { main_listing: mainListing } : null,
-        subListingNames: Array.from(subListingNames),
-        subListings: Object.fromEntries(subListingRows),
+        subListingNames: sources.map((source) => source.name),
+        subListings: sources,
         perAtomProperties: (document[PER_ATOM_KEY] as PerAtomProperties | null | undefined) ?? null,
         perAtomSource: null,
         entityKind: 'atoms',
@@ -132,7 +143,7 @@ const reconstructFromPointsTable = (
                 : { bonds: rows.length }
         },
         subListingNames: propertyRows.length > 0 ? [kind] : [],
-        subListings: propertyRows.length > 0 ? { [kind]: propertyRows } : {},
+        subListings: propertyRows.length > 0 ? [inlineSubListing(kind, propertyRows)] : [],
         perAtomProperties: propertyRows as PerAtomProperties,
         perAtomSource: null,
         entityKind: 'lines',
@@ -195,7 +206,7 @@ const summarizeAtomTable = async (
             }
         },
         subListingNames: structures.length > 0 ? ['structures'] : [],
-        subListings: structures.length > 0 ? { structures } : {},
+        subListings: structures.length > 0 ? [inlineSubListing('structures', structures)] : [],
         perAtomProperties: null,
         perAtomSource: {
             filePath,
@@ -203,7 +214,7 @@ const summarizeAtomTable = async (
         },
         entityKind: 'atoms',
         exportData: totalAtoms > 0
-            ? { export: { AtomisticExporter: { [ATOMISTIC_PARQUET_SOURCE_KEY]: filePath } } }
+            ? { export: { AtomisticExporter: { [PARQUET_SOURCE_KEY]: filePath } } }
             : null
     };
 };
@@ -234,7 +245,7 @@ export const readWorkflowExposurePayload = async (
                 return {
                     listing: document.listing,
                     subListingNames: document.subListingNames,
-                    subListings: document.subListings,
+                    subListings: document.subListingSources,
                     perAtomProperties: null,
                     perAtomSource: document.perAtomSource,
                     entityKind: 'atoms',

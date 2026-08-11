@@ -181,6 +181,9 @@ class TypeOrmPluginListingRepository {
      * set is deleted rather than upserted over: positional ids would otherwise leave
      * the tail of the previous run behind. Delete and insert share a transaction so a
      * reader never observes a half-replaced sub-listing.
+     *
+     * Rows are drained from their batch stream and written as they arrive, so a
+     * sub-listing of any length costs one batch of heap rather than all of it.
      */
     async replaceSubListingRows(inputs: ReplaceSubListingRowsInput[]): Promise<void> {
         if (inputs.length === 0) {
@@ -199,23 +202,29 @@ class TypeOrmPluginListingRepository {
                 });
             }
 
-            const rows = inputs.flatMap((input) => input.rows.map((row, index) => ({
-                _id: buildPluginSubListingRowId(
-                    input.analysis,
-                    input.exposureId,
-                    input.timestep,
-                    input.subListingName,
-                    index
-                ),
-                analysis: input.analysis,
-                exposureId: input.exposureId,
-                timestep: input.timestep,
-                subListingName: input.subListingName,
-                row
-            })));
+            for (const input of inputs) {
+                /* Positional across the whole sub-listing, not per batch. */
+                let index = 0;
+                for await (const batch of input.rowBatches) {
+                    const rows = batch.map((row) => ({
+                        _id: buildPluginSubListingRowId(
+                            input.analysis,
+                            input.exposureId,
+                            input.timestep,
+                            input.subListingName,
+                            index++
+                        ),
+                        analysis: input.analysis,
+                        exposureId: input.exposureId,
+                        timestep: input.timestep,
+                        subListingName: input.subListingName,
+                        row
+                    }));
 
-            for (const batch of chunk(rows, WRITE_CHUNK_SIZE)) {
-                await repository.upsert(batch as never, ['_id']);
+                    for (const writeChunk of chunk(rows, WRITE_CHUNK_SIZE)) {
+                        await repository.upsert(writeChunk as never, ['_id']);
+                    }
+                }
             }
         });
     }

@@ -1,7 +1,5 @@
-import { Theme } from '@/shared/ui/hooks/use-theme';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { Toaster } from 'sileo';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 const POPOVER_STYLE = {
     padding: 0,
@@ -11,22 +9,21 @@ const POPOVER_STYLE = {
     overflow: 'visible'
 } as const;
 
+/*
+ * No `theme` prop on purpose: sileo would stamp its own data-theme on the
+ * viewport and re-resolve the app's CSS variables against it. Leaving it
+ * unset lets toasts inherit the app theme straight from documentElement,
+ * and every toast fills with the app's tertiary surface by default.
+ */
+const TOASTER_DEFAULTS = {
+    fill: 'var(--surface-tertiary)'
+};
+
 const AppToaster = () => {
     const popoverRef = useRef<HTMLDivElement>(null);
-    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
     useEffect(() => {
-        const popoverElement = popoverRef.current;
-
-        if (popoverElement) {
-            popoverElement.showPopover();
-        }
-
-        const unsubscribeTheme = subscribeToAppTheme(setTheme);
-
-        return () => {
-            unsubscribeTheme();
-        };
+        popoverRef.current?.showPopover();
     }, []);
 
     return (
@@ -38,7 +35,7 @@ const AppToaster = () => {
         >
             <Toaster
                 position='bottom-right'
-                theme={theme === Theme.Dark ? 'light' : 'dark'}
+                options={TOASTER_DEFAULTS}
             />
         </div>
     );

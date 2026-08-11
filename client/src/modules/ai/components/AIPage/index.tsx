@@ -5,7 +5,7 @@ import AIConversationSidebar from '@/modules/ai/components/AIConversationSidebar
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import ResizeHandle from '@/modules/canvas/components/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
-import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
+import { AIChatProvider, useAIChatContext, useAIChatContextOptional } from '@/modules/ai/providers/AIChatProvider';
 import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
@@ -20,7 +20,7 @@ interface AIPageRouteParams extends Params {
     conversationId?: string;
 }
 
-const AIPage = () => {
+const AIPageContent = () => {
     useTip('ai-spreadsheet-panel');
 
     const navigate = useNavigate();
@@ -246,6 +246,24 @@ const AIPage = () => {
                 {workspaceContent}
             </div>
         </div>
+    );
+};
+
+/*
+ * Mounted under DashboardLayout the page inherits the layout's provider; on
+ * any other mount path it provisions its own instead of crashing the tree.
+ */
+const AIPage = () => {
+    const hasChatContext = useAIChatContextOptional() !== null;
+
+    if (hasChatContext) {
+        return <AIPageContent />;
+    }
+
+    return (
+        <AIChatProvider>
+            <AIPageContent />
+        </AIChatProvider>
     );
 };
 

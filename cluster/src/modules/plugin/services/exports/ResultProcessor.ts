@@ -135,7 +135,7 @@ class DefaultResultProcessor implements ResultProcessorService {
 
             listingPayload = null;
             subListingNames = [];
-            subListings = {};
+            subListings = [];
             perAtomProperties = null;
             perAtomSource = null;
 

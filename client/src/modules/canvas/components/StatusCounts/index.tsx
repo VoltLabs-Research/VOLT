@@ -45,7 +45,7 @@ const BADGES: { key: string; Icon: ComponentType<{ style: React.CSSProperties }>
 const StatusCounts = ({ hideZero = false, ...counts }: StatusCountsProps) => {
     const toneClass = {
         queued: 'text-warning',
-        running: 'text-foreground',
+        running: 'text-info',
         completed: 'text-success',
         failed: 'text-danger'
     } as const;

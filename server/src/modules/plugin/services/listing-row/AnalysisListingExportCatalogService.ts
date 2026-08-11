@@ -43,14 +43,27 @@ const emptyExcludedExposures = (): ExcludedExposureSet => ({
     names: new Set<string>()
 });
 
+/*
+ * Query-string clients serialise the selection as a single comma-separated
+ * value, while JSON callers send a real array; accept both.
+ */
+const toSelectionArray = (selectionIds?: string | string[]): string[] | undefined => {
+    if (selectionIds === undefined) {
+        return undefined;
+    }
+
+    return Array.isArray(selectionIds) ? selectionIds : selectionIds.split(',');
+};
+
 /** An absent selection means "export everything"; an empty one means "nothing". */
-const normalizeSelectionSet = (selectionIds?: string[]): Set<string> | null => {
-    if (!selectionIds) {
+const normalizeSelectionSet = (selectionIds?: string | string[]): Set<string> | null => {
+    const selectionArray = toSelectionArray(selectionIds);
+    if (!selectionArray) {
         return null;
     }
 
     return new Set(
-        selectionIds
+        selectionArray
             .map((selectionId) => selectionId.trim())
             .filter((selectionId) => selectionId && selectionId !== EMPTY_SELECTION_SENTINEL)
     );
@@ -91,7 +104,11 @@ export class AnalysisListingExportCatalogService {
 
     async buildExportPayload(input: ExportListingRowsByAnalysisIdInput): Promise<ExportListingRowsByAnalysisIdOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(input.analysisId);
-        const config = (input.includeConfig ?? true) ? analysis?.config : undefined;
+        /* Query strings deliver booleans as "true"/"false" text; honour the text form too. */
+        const includeConfig = typeof input.includeConfig === 'boolean'
+            ? input.includeConfig
+            : String(input.includeConfig ?? 'true') !== 'false';
+        const config = includeConfig ? analysis?.config : undefined;
         const rows = await this.collectEnrichedListingRows(teamClusterId, input.analysisId, excludedExposures);
 
         return {

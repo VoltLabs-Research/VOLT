@@ -3,6 +3,8 @@ import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-uploa
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { JobIdentity } from '@shared/contracts/types/job-identity';
 import type { GeometryBudget } from '@shared/domain/octree';
+import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
+import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 
 export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'BondExporter' | 'ChartExporter' | 'ConfigurationExporter';
 
@@ -28,10 +30,29 @@ interface MeshFacet {
     vertices: [number, number, number];
 }
 
-export interface MeshInput {
+export interface InlineMeshInput {
     vertices: MeshVertex[];
     facets: MeshFacet[];
 }
+
+interface MeshParquetSourcePayload {
+    [PARQUET_SOURCE_KEY]: MeshParquetSource;
+}
+
+export type MeshInput = InlineMeshInput | MeshParquetSourcePayload;
+
+const isMeshParquetSource = (value: unknown): value is MeshParquetSource => {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    const candidate = value as Partial<MeshParquetSource>;
+    return typeof candidate.vertices === 'string' && typeof candidate.facets === 'string';
+};
+
+export const readMeshParquetSource = (exportData: MeshInput): MeshParquetSource | null => {
+    const candidate = (exportData as MeshParquetSourcePayload)[PARQUET_SOURCE_KEY];
+    return isMeshParquetSource(candidate) ? candidate : null;
+};
 
 export interface LineEntity {
     id: number;
@@ -60,7 +81,7 @@ export interface AtomisticAtom {
  * instead of an inline atom list. Lets the exporter stream positions columnar for
  * frames whose atom count makes a JS array untenable.
  */
-export const ATOMISTIC_PARQUET_SOURCE_KEY = '__parquet_source__';
+export const ATOMISTIC_PARQUET_SOURCE_KEY = PARQUET_SOURCE_KEY;
 
 interface AtomisticParquetSourcePayload {
     [ATOMISTIC_PARQUET_SOURCE_KEY]: string;
