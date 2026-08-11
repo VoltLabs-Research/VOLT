@@ -290,36 +290,74 @@ const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudD
         const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
         let offset = 0;
 
-        for (let bucketIndex = 0; bucketIndex < buckets.length; bucketIndex += 1) {
-            const bucket = buckets[bucketIndex];
-            const fallbackColor = colorForType(bucket.name, bucketIndex);
-            const reader = await connection.runAndReadAll(
-                'SELECT '
-                + `TRY_CAST(${quoteIdentifier('x')} AS DOUBLE) AS x, `
-                + `TRY_CAST(${quoteIdentifier('y')} AS DOUBLE) AS y, `
-                + `TRY_CAST(${quoteIdentifier('z')} AS DOUBLE) AS z`
-                + (colorProjection ? `, ${colorProjection}` : '')
-                + ` FROM read_parquet(${sqlString(filePath)}) `
-                + (hasBucket ? `WHERE ${bucketExpression} = ${sqlString(bucket.name)} ` : '')
-                + `ORDER BY ${orderExpression}`
+        /*
+         * One scan, not one per bucket.
+         *
+         * This used to issue a statement per bucket, each re-reading and re-sorting the
+         * whole parquet to pull out the rows of that one bucket. Buckets are clusters, so
+         * their count tracks the defect structure rather than the atom count: a coherent
+         * regions document from a 2.5M-atom frame reached 164224 of them, and the export
+         * stopped finishing at all. `atom_index` is a running counter assigned in bucket
+         * order, so ordering the whole file by it once yields the identical sequence the
+         * per-bucket loop produced.
+         *
+         * The fallback colour still comes from the bucket's position, resolved from the
+         * bucket summary already read above. Rows arrive grouped, so the lookup only
+         * happens when the bucket changes.
+         */
+        const fallbackColors = new Map(
+            buckets.map((bucket, bucketIndex) => [bucket.name, colorForType(bucket.name, bucketIndex)])
+        );
+        const firstBucketColor = fallbackColors.get(buckets[0].name) ?? colorForType(buckets[0].name, 0);
+
+        const result = await connection.stream(
+            'SELECT '
+            + `${bucketExpression} AS bucket, `
+            + `TRY_CAST(${quoteIdentifier('x')} AS DOUBLE) AS x, `
+            + `TRY_CAST(${quoteIdentifier('y')} AS DOUBLE) AS y, `
+            + `TRY_CAST(${quoteIdentifier('z')} AS DOUBLE) AS z`
+            + (colorProjection ? `, ${colorProjection}` : '')
+            + ` FROM read_parquet(${sqlString(filePath)}) `
+            + `ORDER BY ${orderExpression}`
+        );
+
+        const colorColumnCount = colorSources.length * 3;
+        let currentBucketName: string | null = null;
+        let fallbackColor = firstBucketColor;
+
+        for (let chunk = await result.fetchChunk(); chunk; chunk = await result.fetchChunk()) {
+            const rows = chunk.rowCount;
+            if (rows === 0) break;
+
+            const bucketVector = chunk.getColumnVector(0);
+            const xVector = chunk.getColumnVector(1);
+            const yVector = chunk.getColumnVector(2);
+            const zVector = chunk.getColumnVector(3);
+            const colorVectors = Array.from(
+                { length: colorColumnCount },
+                (_unused, index) => chunk.getColumnVector(4 + index)
             );
 
-            const columns = reader.getColumnsObjectJS();
-            const xs = columns.x ?? [];
-            const ys = columns.y ?? [];
-            const zs = columns.z ?? [];
+            for (let row = 0; row < rows; row += 1) {
+                if (offset >= totalAtoms) break;
 
-            for (let row = 0; row < xs.length; row += 1) {
-                const x = toNullableNumber(xs[row]) ?? 0;
-                const y = toNullableNumber(ys[row]) ?? 0;
-                const z = toNullableNumber(zs[row]) ?? 0;
+                const bucketName = String(bucketVector.getItem(row) ?? '');
+                if (bucketName !== currentBucketName) {
+                    currentBucketName = bucketName;
+                    fallbackColor = fallbackColors.get(bucketName) ?? firstBucketColor;
+                }
+
+                const x = toNullableNumber(xVector.getItem(row)) ?? 0;
+                const y = toNullableNumber(yVector.getItem(row)) ?? 0;
+                const z = toNullableNumber(zVector.getItem(row)) ?? 0;
 
                 let color: [number, number, number] | null = null;
                 for (let sourceIndex = 0; sourceIndex < colorSources.length && !color; sourceIndex += 1) {
+                    const base = sourceIndex * 3;
                     color = normalizeColorComponents(
-                        toNullableNumber(columns[`c${sourceIndex}_0`]?.[row]),
-                        toNullableNumber(columns[`c${sourceIndex}_1`]?.[row]),
-                        toNullableNumber(columns[`c${sourceIndex}_2`]?.[row])
+                        toNullableNumber(colorVectors[base]?.getItem(row)),
+                        toNullableNumber(colorVectors[base + 1]?.getItem(row)),
+                        toNullableNumber(colorVectors[base + 2]?.getItem(row))
                     );
                 }
                 const resolved = color ?? fallbackColor;

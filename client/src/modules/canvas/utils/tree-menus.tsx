@@ -45,7 +45,7 @@ export const buildLineWidthSubmenu = (value: number, defaultValue: number, onCha
     <SliderSubmenu
         label='Line Width'
         min={Math.max(0.01, defaultValue * 0.25)}
-        max={Math.max(defaultValue * 3, defaultValue + 0.25)}
+        max={Math.max(defaultValue * 12, defaultValue + 2)}
         step={Math.max(0.01, defaultValue * 0.05)}
         value={value}
         onChange={onChange}
