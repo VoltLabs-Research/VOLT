@@ -20,7 +20,6 @@ export enum DashboardNavigationIconKey {
 
     SettingsGeneral = 'settings-general',
     SettingsAuthentication = 'settings-authentication',
-    SettingsTheme = 'settings-theme',
     SettingsIntegrations = 'settings-integrations',
     SettingsSessions = 'settings-sessions',
     SecretKeys = 'secret-keys'

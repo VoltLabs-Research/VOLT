@@ -198,7 +198,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] overflow-y-auto rounded-xl border border-border bg-surface shadow-overlay z-[99999] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                    <div ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] overflow-y-auto rounded-xl border border-border bg-surface shadow-overlay z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
                         <p className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
                         </p>

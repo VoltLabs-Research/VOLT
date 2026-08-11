@@ -9,10 +9,9 @@ import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from
 interface JobGroupProps {
     group: TrajectoryJobGroupType;
     defaultExpanded?: boolean;
-    statusPresentation?: 'badge' | 'trajectory-name';
 };
 
-const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge' }: JobGroupProps) => {
+const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
     const containsTransferJobs = useMemo(() => {
         return group.frameGroups.some((frame) => frame.jobs.some((job) => job.queueType === 'cluster_transfer'));
     }, [group.frameGroups]);
@@ -50,7 +49,6 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
                         group={group}
                         isExpanded={isExpanded}
                         contentId={contentId}
-                        statusPresentation={statusPresentation}
                         onToggle={handleToggle}
                     />
                 )}

@@ -7,12 +7,12 @@ import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { openModal } from '@/shared/ui/modal/use-modal-store';
+import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { Spinner } from '@heroui/react';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
+import { useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { formatDistanceToNow } from 'date-fns';
 import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Play, ScanSearch, Trash2 } from 'lucide-react';
 import { sileo } from 'sileo';
@@ -143,6 +143,7 @@ export default function SimulationCardFooter({
     const { data: jobGroups = [] } = teamJobsGroups();
     const requestedRasterTrajectoryIds = useTeamJobsStore((state) => state.requestedRasterTrajectoryIds);
     const setJobsScope = useJobsDrawerStore((state) => state.setScope);
+    const openSidePanel = useDashboardSidePanelStore((state) => state.open);
     const [isDeleting, setIsDeleting] = useState(false);
     const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
     const isRasterizing = triggerRasterizationMutation.isPending;
@@ -172,8 +173,8 @@ export default function SimulationCardFooter({
             trajectoryId,
             trajectoryName: name
         });
-        openModal(DASHBOARD_DRAWER_IDS.jobs);
-    }, [setJobsScope, trajectoryId, name]);
+        openSidePanel('jobs');
+    }, [setJobsScope, openSidePanel, trajectoryId, name]);
 
     const handleExport = useCallback(() => {
         void downloadTrajectory({

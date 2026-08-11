@@ -4,12 +4,14 @@ import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
-import { Alert, Button } from '@heroui/react';
+import { Theme, useTheme } from '@/shared/ui/hooks/use-theme';
+import { Alert, Button, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { Trash2 } from 'lucide-react';
+import { Monitor, Moon, Sun, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import type { Key } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';
 
 const AVATAR_TOAST_OPTIONS = createPromiseToastOptions({
@@ -17,6 +19,12 @@ const AVATAR_TOAST_OPTIONS = createPromiseToastOptions({
     success: 'Avatar updated',
     error: 'Failed to upload avatar'
 });
+
+const THEME_OPTIONS = [
+    { value: Theme.System, label: 'System', icon: Monitor },
+    { value: Theme.Light, label: 'Light', icon: Sun },
+    { value: Theme.Dark, label: 'Dark', icon: Moon }
+] as const;
 
 const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Deleting account...',
@@ -30,6 +38,12 @@ const GeneralSettings = () => {
     const updateMe = useUpdateMeMutation();
     const deleteMe = useDeleteMeMutation();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const { preference, setTheme } = useTheme();
+
+    const handleThemeChange = (keys: Set<Key>) => {
+        const [next] = keys;
+        if(next !== undefined) setTheme(next as Theme);
+    };
 
     const handleAvatarUpload = async (file: File) => {
         setIsUploadingAvatar(true);
@@ -86,6 +100,26 @@ const GeneralSettings = () => {
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
                 </div>
+            </div>
+            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+                <SettingsSectionHeader
+                    title="Appearance"
+                    description="Choose your preferred theme for the interface" />
+                <ToggleButtonGroup
+                    size='sm'
+                    selectionMode='single'
+                    disallowEmptySelection
+                    selectedKeys={[preference]}
+                    onSelectionChange={handleThemeChange}
+                    aria-label='Theme'
+                >
+                    {THEME_OPTIONS.map((option) => (
+                        <ToggleButton key={option.value} id={option.value}>
+                            <option.icon size={14} aria-hidden='true' />
+                            {option.label}
+                        </ToggleButton>
+                    ))}
+                </ToggleButtonGroup>
             </div>
             <Alert status='danger' role='region' aria-label='Delete Account'>
                 <Alert.Content>

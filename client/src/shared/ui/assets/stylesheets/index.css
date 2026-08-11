@@ -1,5 +1,22 @@
 @import '@heroui/styles';
 
+/*
+ * Overlay layering scale. Floating surfaces (context menus, popovers,
+ * autocomplete) sit above app chrome; modals sit above floating surfaces.
+ * Floating elements opened from inside a modal portal into the modal's top
+ * layer (see ModalTopLayer), so they stack within the modal regardless.
+ */
+:root {
+    --z-floating: 500;
+    --z-modal: 600;
+}
+
+/* heroui hardcodes z-50 on backdrops; the scale above puts modals over floating surfaces. */
+.modal__backdrop,
+.drawer__backdrop {
+    z-index: var(--z-modal);
+}
+
 @theme {
     --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;

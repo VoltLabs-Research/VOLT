@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react';
-import WhiteboardEditorSkeleton from './WhiteboardEditorSkeleton';
+import WhiteboardEditorLoader from './WhiteboardEditorLoader';
 import useWhiteboardCanvasBridge from '@/modules/whiteboards/hooks/use-whiteboard-canvas-bridge';
 import useWhiteboardImageInsertion from '@/modules/whiteboards/hooks/use-whiteboard-image-insertion';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
@@ -149,9 +149,9 @@ const WhiteboardEditorPage = () => {
                 onChange={handleImagePickerChange}
             />
             {isLoading ? (
-                <WhiteboardEditorSkeleton />
+                <WhiteboardEditorLoader />
             ) : (
-                <Suspense fallback={<WhiteboardEditorSkeleton />}>
+                <Suspense fallback={<WhiteboardEditorLoader />}>
                     <WhiteboardCanvas
                         name={whiteboard?.title ?? 'Untitled Whiteboard'}
                         initialData={excalidrawInitialData}

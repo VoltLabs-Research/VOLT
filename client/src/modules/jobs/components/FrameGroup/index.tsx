@@ -1,8 +1,8 @@
-import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
-import JobStatusBadge from '@/modules/jobs/components/JobStatusBadge';
+import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import { cn } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -10,6 +10,14 @@ import type { FrameJobGroup, Job } from '@volt/contracts/modules/jobs/domain';
 
 interface FrameGroupProps {
     frame: FrameJobGroup;
+};
+
+const FRAME_STATUS_TONE_CLASS_NAMES: Record<FrameJobGroupStatus, string> = {
+    [FrameJobGroupStatus.Queued]: 'text-warning',
+    [FrameJobGroupStatus.Running]: 'text-foreground',
+    [FrameJobGroupStatus.Completed]: 'text-success',
+    [FrameJobGroupStatus.Failed]: 'text-danger',
+    [FrameJobGroupStatus.Partial]: 'text-muted'
 };
 
 const FrameGroup = ({ frame }: FrameGroupProps) => {
@@ -24,7 +32,6 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         : frame.timestep >= 0
             ? `Frame ${frame.timestep}`
             : 'General';
-    const statusLabel = FRAME_GROUP_STATUS_LABELS[frame.overallStatus];
     const jobs = frame.jobs.map((job: Job, index: number) => (
         <JobQueue key={job.jobId || `job-${index}`} job={job} isChild />
     ));
@@ -45,9 +52,8 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                 aria-controls={contentId}
             >
                 <div className='flex flex-row items-center justify-between w-full'>
-                    <p className='text-xs text-muted'>{label}</p>
+                    <p className={cn('text-xs', FRAME_STATUS_TONE_CLASS_NAMES[frame.overallStatus])}>{label}</p>
                     <div className='flex flex-row items-center gap-2'>
-                        <JobStatusBadge status={frame.overallStatus}>{statusLabel}</JobStatusBadge>
                         <motion.i
                             className='text-xs text-muted'
                             animate={{ rotate: isExpanded ? 90 : 0 }}

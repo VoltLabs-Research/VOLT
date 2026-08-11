@@ -128,13 +128,13 @@ const NAVIGATION_DESTINATIONS = {
         description: 'Manage roles'
     },
     secret_keys: {
-        pathTemplate: '/dashboard/secret-keys',
+        pathTemplate: '/dashboard/settings/secret-keys',
         requiredParams: [],
         requiredPermissions: ['team-secret-key:read'],
         description: 'Secret keys'
     },
     secret_key_metrics: {
-        pathTemplate: '/dashboard/secret-keys/metrics',
+        pathTemplate: '/dashboard/settings/secret-keys/metrics',
         requiredParams: [],
         description: 'Secret key metrics'
     },
@@ -147,11 +147,6 @@ const NAVIGATION_DESTINATIONS = {
         pathTemplate: '/dashboard/settings/authentication',
         requiredParams: [],
         description: 'Authentication settings'
-    },
-    settings_theme: {
-        pathTemplate: '/dashboard/settings/theme',
-        requiredParams: [],
-        description: 'Theme settings'
     },
     settings_integrations: {
         pathTemplate: '/dashboard/settings/integrations',

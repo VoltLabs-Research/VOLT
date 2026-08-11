@@ -11,7 +11,6 @@ interface JobsHistoryViewerProps {
     queueFilter?: string;
     displayMode?: 'full' | 'children-only';
     autoSelectAnalysis?: boolean;
-    groupStatusPresentation?: 'badge' | 'trajectory-name';
 };
 
 const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
@@ -19,8 +18,7 @@ const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         trajectoryId,
         queueFilter,
         displayMode = 'children-only',
-        autoSelectAnalysis = true,
-        groupStatusPresentation = 'badge'
+        autoSelectAnalysis = true
     } = props;
     const { groups, isConnected, isLoading } = useTeamJobs({ subscribe: false });
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
@@ -56,14 +54,13 @@ const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     }, [autoSelectAnalysis, hasActiveJobs, resetTracking]);
 
     return (
-        <div className='flex flex-col p-3 overflow-y-auto w-full h-full'>
+        <div className='flex flex-col w-full h-full'>
             <JobsHistory
                 trajectoryId={trajectoryId}
                 queueFilter={queueFilter}
                 groups={groups}
                 isLoading={isLoading}
                 displayMode={displayMode}
-                groupStatusPresentation={groupStatusPresentation}
             />
         </div>
     );

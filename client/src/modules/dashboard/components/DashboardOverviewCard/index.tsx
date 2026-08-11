@@ -74,7 +74,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     const lineColor = getTrendColor(isPositiveTrend);
 
     return (
-        <DashboardCard className='group/card col-span-3 p-0 min-h-[130px] transition-[background-color,border-color] duration-200 ease-[ease] hover:bg-surface-tertiary max-[1200px]:col-span-6 max-[768px]:col-span-12' isRelative={true} overflowHidden={true}>
+        <DashboardCard className='group/card col-span-3 p-0 min-h-[130px] transition-[border-color] duration-200 ease-[ease] max-[1200px]:col-span-6 max-[768px]:col-span-12' isRelative={true} overflowHidden={true}>
             {isClickable ? (
                 <button
                     type='button'

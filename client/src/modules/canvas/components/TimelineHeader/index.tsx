@@ -114,7 +114,7 @@ const TimelineHeader = ({
                 role='tab'
                 aria-selected={isActive}
                 className={cn(
-                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
+                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
                     isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
                 )}
                 onClick={() => onTabChange(tab.id)}

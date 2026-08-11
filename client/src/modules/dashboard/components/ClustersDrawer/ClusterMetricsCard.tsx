@@ -1,8 +1,9 @@
-import { ToggleButton, ToggleButtonGroup, cn } from '@heroui/react';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import { formatNetworkSpeed } from '@/modules/cluster/utils/format-network';
+import { Card, Chip, Label, ProgressBar, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import { useState } from 'react';
 import type { ClusterLiveMetricsVariant } from '@/modules/cluster/utils/cluster-live-metrics-status';
+import type { ChipProps } from '@heroui/react';
 import type { ClusterMetrics, TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { Key } from 'react';
 
@@ -59,6 +60,13 @@ const CLUSTER_ROLE_LABELS: Record<TeamClusterRole, string> = {
     'storage-server': 'Storage server'
 };
 
+const STATUS_CHIP_COLORS: Record<ClusterLiveMetricsVariant, ChipProps['color']> = {
+    success: 'success',
+    warning: 'warning',
+    danger: 'danger',
+    inactive: 'default'
+};
+
 const clampPercent = (value: number): number => Math.min(100, Math.max(0, value));
 
 const ClusterProgressMetric = ({ label, percent, detail }: ClusterProgressMetricProps) => {
@@ -67,58 +75,38 @@ const ClusterProgressMetric = ({ label, percent, detail }: ClusterProgressMetric
     const title = detail ? `${label} · ${clamped.toFixed(0)}% · ${detail}` : `${label} · ${clamped.toFixed(0)}%`;
 
     return (
-        <div
-            className='grid grid-cols-[64px_1fr_40px] items-center gap-3 min-w-0'
-            role='group'
-            aria-label={title}
-            title={title}
-        >
-            <span className='text-[0.8125rem] font-medium text-muted'>{label}</span>
-            <div
-                className='h-[5px] overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--muted)_18%,transparent)]'
-                role='progressbar'
-                aria-valuenow={Math.round(clamped)}
-                aria-valuemin={0}
-                aria-valuemax={100}
+        <div className='flex min-w-0 flex-col gap-1' role='group' aria-label={title} title={title}>
+            <ProgressBar
                 aria-label={label}
+                value={Math.round(clamped)}
+                color={isCritical ? 'danger' : 'default'}
+                size='sm'
             >
-                <div
-                    className={cn('h-full rounded-[inherit] [transition:width_0.4s_cubic-bezier(0.32,0.72,0,1),background-color_0.15s_ease]', isCritical ? 'bg-danger' : 'bg-muted')}
-                    style={{ width: `${clamped}%` }}
-                />
-            </div>
-            <span className={cn('text-[0.8125rem] font-medium text-right tabular-nums', isCritical ? 'text-danger' : 'text-muted')}>
-                {Math.round(clamped)}%
-            </span>
+                <Label>{label}</Label>
+                <ProgressBar.Output>{`${Math.round(clamped)}%`}</ProgressBar.Output>
+                <ProgressBar.Track>
+                    <ProgressBar.Fill style={{ width: `${clamped}%` }} />
+                </ProgressBar.Track>
+            </ProgressBar>
+            {detail && (
+                <span className='text-xs text-muted tabular-nums'>
+                    {detail}
+                </span>
+            )}
         </div>
     );
 };
 
-const ClusterUsageMetric = ({ label, usage }: ClusterUsageMetricProps) => {
-    const detail = `${usage.used.toFixed(1)} / ${usage.total.toFixed(1)} GB`;
-
-    return (
-        <>
-            <ClusterProgressMetric
-                label={label}
-                percent={usage.total > 0 ? (usage.used / usage.total) * 100 : 0}
-                detail={detail}
-            />
-            <span className='pl-[calc(64px+0.75rem)] text-xs text-muted tabular-nums'>
-                {detail}
-            </span>
-        </>
-    );
-};
+const ClusterUsageMetric = ({ label, usage }: ClusterUsageMetricProps) => (
+    <ClusterProgressMetric
+        label={label}
+        percent={usage.total > 0 ? (usage.used / usage.total) * 100 : 0}
+        detail={`${usage.used.toFixed(1)} / ${usage.total.toFixed(1)} GB`}
+    />
+);
 
 const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: ClusterMetricsCardProps) => {
     const [activeMetric, setActiveMetric] = useState<ClusterMetricTabId>('cpu');
-    const statusBadgeTones: Record<ClusterLiveMetricsVariant, string> = {
-        success: 'text-success',
-        warning: 'text-warning',
-        danger: 'text-danger',
-        inactive: 'text-muted'
-    };
     const liveMetricsStatus = getClusterLiveMetricsStatus({
         metrics: liveMetrics,
         isMetricsConnected
@@ -134,88 +122,84 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
     };
 
     return (
-        <div className='flex flex-col gap-[0.875rem] rounded-2xl border border-border bg-surface-secondary px-[1.125rem] py-4 transition-[border-color,box-shadow] duration-150 ease-[ease] hover:shadow-[0_0_0_1px_var(--border)]'>
-            <div className='flex flex-row items-center justify-between gap-4 min-w-0'>
-                <div className='flex flex-col gap-1 min-w-0'>
-                    <span className='text-sm font-semibold text-foreground truncate'>
-                        {teamCluster.name}
-                    </span>
-                    <span className='text-xs text-muted'>
-                        {CLUSTER_ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}
-                    </span>
+        <Card variant='secondary'>
+            <Card.Header>
+                <div className='flex w-full flex-row items-center justify-between gap-3 min-w-0'>
+                    <div className='flex min-w-0 flex-col gap-0.5'>
+                        <Card.Title className='truncate'>{teamCluster.name}</Card.Title>
+                        <Card.Description>{CLUSTER_ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}</Card.Description>
+                    </div>
+                    <Chip color={STATUS_CHIP_COLORS[liveMetricsStatus.variant]} variant='soft' size='sm' className='shrink-0'>
+                        <Chip.Label>{liveMetricsStatus.label}</Chip.Label>
+                    </Chip>
                 </div>
-                <span className={cn('inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium uppercase', statusBadgeTones[liveMetricsStatus.variant])}>
-                    {liveMetricsStatus.label}
-                </span>
-            </div>
+            </Card.Header>
 
-            {liveMetrics === null
-                ? (
+            {liveMetrics !== null && (
+                <Card.Content>
+                    <ToggleButtonGroup
+                        size='sm'
+                        selectionMode='single'
+                        disallowEmptySelection
+                        selectedKeys={[activeMetric]}
+                        onSelectionChange={handleMetricChange}
+                        aria-label={`${teamCluster.name} metrics view`}
+                    >
+                        {CLUSTER_METRIC_TABS.map((tab) => (
+                            <ToggleButton key={tab.id} id={tab.id}>
+                                {tab.label}
+                            </ToggleButton>
+                        ))}
+                    </ToggleButtonGroup>
+
+                    <div className='flex flex-col gap-3 mt-2'>
+                        {activeMetric === 'cpu' && (
+                            <ClusterProgressMetric
+                                label='CPU'
+                                percent={liveMetrics.cpu.usage}
+                                detail={`${liveMetrics.cpu.cores} cores`}
+                            />
+                        )}
+
+                        {activeMetric === 'memory' && (
+                            <ClusterUsageMetric label='Memory' usage={liveMetrics.memory} />
+                        )}
+
+                        {activeMetric === 'disk' && (
+                            <ClusterUsageMetric label='Disk' usage={liveMetrics.disk} />
+                        )}
+
+                        {activeMetric === 'network' && (
+                            <div className='flex flex-col gap-1.5' role='group' aria-label='Network activity'>
+                                <div className='flex items-center justify-between gap-3 tabular-nums'>
+                                    <span className='text-sm font-medium text-muted'>Incoming</span>
+                                    <span className='text-sm text-foreground tabular-nums whitespace-nowrap'>
+                                        <span aria-hidden='true'>↓</span> {formatNetworkSpeed(liveMetrics.network.incoming)}
+                                    </span>
+                                </div>
+                                <div className='flex items-center justify-between gap-3 tabular-nums'>
+                                    <span className='text-sm font-medium text-muted'>Outgoing</span>
+                                    <span className='text-sm text-foreground tabular-nums whitespace-nowrap'>
+                                        <span aria-hidden='true'>↑</span> {formatNetworkSpeed(liveMetrics.network.outgoing)}
+                                    </span>
+                                </div>
+                                <span className='text-xs text-muted tabular-nums'>
+                                    Latency · {Math.round(liveMetrics.responseTimes.self)} ms
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </Card.Content>
+            )}
+
+            {liveMetrics === null && (
+                <Card.Content>
                     <span className='text-xs text-muted leading-[1.4]'>
                         {liveMetricsStatus.label}
                     </span>
-                )
-                : (
-                    <>
-                        <ToggleButtonGroup
-                            size='sm'
-                            selectionMode='single'
-                            disallowEmptySelection
-                            selectedKeys={[activeMetric]}
-                            onSelectionChange={handleMetricChange}
-                            aria-label={`${teamCluster.name} metrics view`}
-                        >
-                            {CLUSTER_METRIC_TABS.map((tab) => (
-                                <ToggleButton key={tab.id} id={tab.id}>
-                                    {tab.label}
-                                </ToggleButton>
-                            ))}
-                        </ToggleButtonGroup>
-                        <div className='flex flex-col mt-3 gap-2'>
-                            {activeMetric === 'cpu' && (
-                                <>
-                                    <ClusterProgressMetric
-                                        label='CPU'
-                                        percent={liveMetrics.cpu.usage}
-                                        detail={`${liveMetrics.cpu.cores} cores`}
-                                    />
-                                    <span className='pl-[calc(64px+0.75rem)] text-xs text-muted tabular-nums'>
-                                        {liveMetrics.cpu.cores} cores
-                                    </span>
-                                </>
-                            )}
-
-                            {activeMetric === 'memory' && (
-                                <ClusterUsageMetric label='Memory' usage={liveMetrics.memory} />
-                            )}
-
-                            {activeMetric === 'disk' && (
-                                <ClusterUsageMetric label='Disk' usage={liveMetrics.disk} />
-                            )}
-
-                            {activeMetric === 'network' && (
-                                <div className='flex flex-col gap-1.5' role='group' aria-label='Network activity'>
-                                    <div className='flex items-center justify-between gap-3 tabular-nums'>
-                                        <span className='text-[0.8125rem] font-medium text-muted'>Incoming</span>
-                                        <span className='text-[0.8125rem] text-foreground tabular-nums whitespace-nowrap'>
-                                            <span aria-hidden='true'>↓</span> {formatNetworkSpeed(liveMetrics.network.incoming)}
-                                        </span>
-                                    </div>
-                                    <div className='flex items-center justify-between gap-3 tabular-nums'>
-                                        <span className='text-[0.8125rem] font-medium text-muted'>Outgoing</span>
-                                        <span className='text-[0.8125rem] text-foreground tabular-nums whitespace-nowrap'>
-                                            <span aria-hidden='true'>↑</span> {formatNetworkSpeed(liveMetrics.network.outgoing)}
-                                        </span>
-                                    </div>
-                                    <span className='mt-0.5 text-xs text-muted tabular-nums'>
-                                        Latency · {Math.round(liveMetrics.responseTimes.self)} ms
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
-        </div>
+                </Card.Content>
+            )}
+        </Card>
     );
 };
 

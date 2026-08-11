@@ -211,7 +211,7 @@ const ContextMenuPopover = ({
                             ref={handleFloatingRef}
                             id={id}
                             className={cn(
-                                'z-[99999] max-w-[320px] overflow-visible rounded-xl border border-border bg-overlay text-foreground shadow-lg',
+                                'z-[var(--z-floating)] max-w-[320px] overflow-visible rounded-xl border border-border bg-overlay text-foreground shadow-lg',
                                 { sm: 'min-w-[124px]', md: 'min-w-[180px]' }[size],
                                 className
                             )}

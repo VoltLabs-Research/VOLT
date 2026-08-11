@@ -13,7 +13,6 @@ interface JobsHistoryProps {
     groups: TJG[];
     isLoading: boolean;
     displayMode?: 'full' | 'children-only';
-    groupStatusPresentation?: 'badge' | 'trajectory-name';
 };
 
 const JobsHistory = ({
@@ -21,8 +20,7 @@ const JobsHistory = ({
     queueFilter,
     groups,
     isLoading,
-    displayMode = 'full',
-    groupStatusPresentation = 'badge'
+    displayMode = 'full'
 }: JobsHistoryProps) => {
     const filteredGroups = useMemo(() => {
         let result = groups;
@@ -55,7 +53,6 @@ const JobsHistory = ({
             <JobGroup
                 key={group.trajectoryId}
                 group={group}
-                statusPresentation={groupStatusPresentation}
             />
         );
     });

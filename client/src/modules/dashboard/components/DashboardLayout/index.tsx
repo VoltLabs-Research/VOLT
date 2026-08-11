@@ -12,8 +12,7 @@ import AppNav from '@/modules/dashboard/components/AppNav';
 import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
 import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
 import SettingsNav from '@/modules/dashboard/components/SettingsNav';
-import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
-import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
+import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePanel';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
@@ -154,9 +153,9 @@ const DashboardLayout = () => {
                     data-rail={rail}
                     inert={headerHidden || (!isRailViewport && !sidebarOpen)}
                     className={cn(
-                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
+                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent pt-5 transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
                         {
-                            expanded: 'w-[280px] min-[1024.05px]:w-56',
+                            expanded: 'w-[280px] min-[1024.05px]:w-60',
                             collapsed: 'w-[280px] min-[1024.05px]:w-16',
                             hidden: 'w-[280px] min-[1024.05px]:w-0'
                         }[rail],
@@ -176,7 +175,7 @@ const DashboardLayout = () => {
                         <Tooltip.Content placement='bottom'>Close sidebar</Tooltip.Content>
                     </Tooltip>
 
-                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pb-2'>
+                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pt-2 pb-2'>
                         <AppNav
                             active={panel === 'app'}
                             collapsed={collapsed}
@@ -188,8 +187,8 @@ const DashboardLayout = () => {
 
                     <div
                         className={cn(
-                            'flex flex-col gap-2 border-t border-border p-3',
-                            collapsed && 'items-center p-2'
+                            'flex flex-col gap-2 border-t border-border p-0',
+                            collapsed && 'items-center'
                         )}
                     >
                         {!singleTenant && (
@@ -233,7 +232,7 @@ const DashboardLayout = () => {
                     </div>
                 </aside>
 
-                <div className='flex h-dvh min-w-0 flex-1 flex-col overflow-hidden'>
+                <div className='flex h-dvh min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface'>
                     {!headerHidden && (
                         <DashboardHeader
                             setSidebarOpen={setSidebarOpen}
@@ -261,8 +260,8 @@ const DashboardLayout = () => {
                     {!headerHidden && <DashboardBottomBar />}
                 </div>
 
-                <JobsDrawer />
-                <ClustersDrawer />
+                <DashboardSidePanel />
+
                 <ActivityDrawer />
                 <PresenceDrawer />
             </main>

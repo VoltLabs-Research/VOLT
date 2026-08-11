@@ -2,7 +2,6 @@ import { cn } from '@heroui/react';
 import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
-import JobStatusBadge from '@/modules/jobs/components/JobStatusBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
@@ -16,7 +15,6 @@ interface JobGroupHeaderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     group: TrajectoryJobGroup;
     isExpanded: boolean;
     contentId: string;
-    statusPresentation: 'badge' | 'trajectory-name';
     onToggle: () => void;
 };
 
@@ -24,7 +22,6 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     group,
     isExpanded,
     contentId,
-    statusPresentation,
     onToggle,
     ...buttonProps
 }, ref) => {
@@ -69,10 +66,6 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     }, [group.overallStatus, showCompletedHighlight]);
 
     const nameToneClassName = useMemo(() => {
-        if (statusPresentation !== 'trajectory-name') {
-            return '';
-        }
-
         if (showCompletedHighlight) {
             return 'text-success text-shadow-[0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]';
         }
@@ -85,35 +78,38 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
             return 'text-warning';
         }
 
+        if (group.overallStatus === FrameJobGroupStatus.Completed) {
+            return 'text-success';
+        }
+
+        if (group.overallStatus === FrameJobGroupStatus.Failed) {
+            return 'text-danger';
+        }
+
         return '';
-    }, [group.overallStatus, showCompletedHighlight, statusPresentation]);
+    }, [group.overallStatus, showCompletedHighlight]);
 
     return (
         <button
             ref={ref}
             type='button'
-            className='w-full min-h-[3.25rem] border-0 bg-transparent text-left select-none rounded-2xl transition-colors duration-200 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
+            className='w-full min-h-[3.25rem] border-0 bg-transparent text-left select-none rounded-xl transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
             onClick={onToggle}
             aria-expanded={isExpanded}
             aria-controls={contentId}
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
             {...buttonProps}
         >
-            <div className='flex flex-row items-center justify-between gap-2 p-4 w-full'>
-                <div className='flex flex-col gap-2'>
-                    <h3 className={cn('text-xs font-semibold text-foreground truncate max-w-[200px] [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
+            <div className='flex flex-row items-center justify-between gap-3 px-3 py-3 w-full'>
+                <div className='flex min-w-0 flex-col gap-0.5'>
+                    <h3 className={cn('text-sm font-medium text-foreground truncate [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
                         {group.trajectoryName}
                     </h3>
-                    <p className='text-xs text-muted'>
+                    <p className='text-xs text-muted tabular-nums'>
                         {summaryLabel}
                     </p>
                 </div>
-                <div className='flex flex-row items-center gap-4'>
-                    {statusPresentation === 'badge' && (
-                        <JobStatusBadge status={group.overallStatus}>
-                            {statusLabel}
-                        </JobStatusBadge>
-                    )}
+                <div className='flex shrink-0 flex-row items-center gap-2'>
                     <motion.i
                         className='text-xs text-muted'
                         animate={{ rotate: isExpanded ? 90 : 0 }}

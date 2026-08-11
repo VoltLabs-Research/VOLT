@@ -1,11 +1,10 @@
-import { Spinner } from '@heroui/react';
-import { Modal } from '@/shared/ui/modal/Modal';
+import { CloseButton, Spinner } from '@heroui/react';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
 import ClusterMetricsCard from '@/modules/dashboard/components/ClustersDrawer/ClusterMetricsCard';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
+import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { useMemo } from 'react';
 import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { ReactNode } from 'react';
@@ -20,6 +19,7 @@ const ClustersDrawer = () => {
     const clusterManagement = useClusterManagement();
     const teamClusters = clusterManagement.clusters;
     const { clusters, isConnected } = useClusterMetrics();
+    const close = useDashboardSidePanelStore((state) => state.close);
 
     const orderedClusters = useMemo(() => {
         return [...teamClusters].sort((left, right) => {
@@ -64,7 +64,7 @@ const ClustersDrawer = () => {
     const isBlockingLoading = clusterManagement.isLoading && teamClusters.length === 0;
 
     let clustersContent: ReactNode = (
-        <div className='flex flex-col min-h-0 flex-1 overflow-y-auto gap-2.5 pr-1'>
+        <div className='flex flex-col min-h-0 flex-1 overflow-y-auto gap-3'>
             {orderedClusters.map((teamCluster) => (
                 <ClusterMetricsCard
                     key={teamCluster._id}
@@ -84,18 +84,21 @@ const ClustersDrawer = () => {
         clustersContent = clustersEmptyState;
     }
 
+    const description = `${orderedClusters.length} cluster${orderedClusters.length === 1 ? '' : 's'}${!isConnected && orderedClusters.length > 0 ? ' · live metrics offline' : ''}`;
+
     return (
-        <Modal
-            id={DASHBOARD_DRAWER_IDS.clusters}
-            placement='right'
-            title='Clusters'
-            description={`${orderedClusters.length} cluster${orderedClusters.length === 1 ? '' : 's'}${!isConnected && orderedClusters.length > 0 ? ' · live metrics offline' : ''}`}
-            lazyMount
-        >
-            <div className='flex h-full min-h-0 flex-col p-6'>
+        <div className='flex h-full min-h-0 flex-col'>
+            <header className='flex items-start justify-between gap-3 px-6 pt-5 pb-4'>
+                <div className='flex min-w-0 flex-col gap-1'>
+                    <h2 className='text-base font-semibold text-foreground'>Clusters</h2>
+                    <p className='text-sm text-muted'>{description}</p>
+                </div>
+                <CloseButton onPress={close} aria-label='Close clusters panel' />
+            </header>
+            <div className='flex h-full min-h-0 flex-col'>
                 {clustersContent}
             </div>
-        </Modal>
+        </div>
     );
 };
 

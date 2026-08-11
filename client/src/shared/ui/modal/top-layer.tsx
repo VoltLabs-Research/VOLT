@@ -1,4 +1,5 @@
 import { UNSAFE_PortalProvider } from 'react-aria';
+import FloatingRootContext, { TopLayerRootContext } from '@/shared/ui/contexts/FloatingRootContext';
 import { createContext, useCallback, useContext } from 'react';
 import type { ReactNode } from 'react';
 
@@ -19,7 +20,13 @@ export const ModalTopLayer = ({ root, children }: ModalTopLayerProps) => {
     return (
         <ModalTopLayerContext.Provider value={root}>
             <UNSAFE_PortalProvider getContainer={getContainer}>
-                {children}
+                {/* Floating-ui surfaces opened from inside the modal portal into its
+                    top layer, so they stack within the modal instead of behind it. */}
+                <FloatingRootContext.Provider value={root ?? undefined}>
+                    <TopLayerRootContext.Provider value={root ?? undefined}>
+                        {children}
+                    </TopLayerRootContext.Provider>
+                </FloatingRootContext.Provider>
             </UNSAFE_PortalProvider>
         </ModalTopLayerContext.Provider>
     );

@@ -165,7 +165,7 @@ const TopToolbar = ({
         <header className='absolute left-0 top-0 z-[4] block select-none bg-background right-[var(--canvas-right-overlay-size,0px)] min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:overflow-hidden canvas-top-toolbar flex items-stretch'>
             {isMobileViewport && renderToolbarOptions(true, 'mobile-menu')}
 
-            <div className='relative grid h-[var(--canvas-header-height,55px)] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-stretch max-md:hidden'>
+            <div className='relative grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-stretch max-md:hidden'>
                 <input
                     ref={fileInputRef}
                     type='file'

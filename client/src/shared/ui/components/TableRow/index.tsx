@@ -148,8 +148,8 @@ const TableRow = <T extends Identifiable>({
             style={rowStyle}
             className={cn(
                 {
-                    default: 'flex items-center cursor-pointer border-b border-border last:border-b-0 px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                    compact: 'flex items-center cursor-pointer border-b border-border last:border-b-0 box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+                    default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
+                    compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
                 }[density],
                 isSelected && 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]',
                 isDragging && 'opacity-65 shadow-[inset_0_0_0_1px_var(--accent)]',

@@ -8,7 +8,7 @@ const populatedModelRoutes: Record<string, string> = {
     Container: '/dashboard/containers',
     ScriptingNotebook: '/dashboard/notebooks',
     Whiteboard: '/dashboard/whiteboards',
-    SecretKey: '/dashboard/secret-keys'
+    SecretKey: '/dashboard/settings/secret-keys'
 };
 
 export const getModelListingRoute = (modelName: string): string | null => {

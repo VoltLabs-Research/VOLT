@@ -53,16 +53,6 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
-        path: '/dashboard/settings/theme',
-        title: 'Theme Settings',
-        loader: () => import('@/modules/auth/components/ThemeSettings'),
-        navigation: {
-            section: DashboardNavigationSection.Settings,
-            label: 'Theme',
-            icon: DashboardNavigationIconKey.SettingsTheme
-        }
-    },
-    {
         path: '/dashboard/settings/integrations',
         title: 'Integrations Settings',
         loader: () => import('@/modules/team/components/IntegrationsSettings'),
@@ -109,7 +99,7 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
-        path: '/dashboard/secret-keys',
+        path: '/dashboard/settings/secret-keys',
         title: 'Secret Keys',
         loader: () => import('@/modules/team/components/SecretKeysListing'),
         requiredPermissions: ['team-secret-key:read'],
@@ -121,13 +111,13 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
-        path: '/dashboard/secret-keys/metrics',
+        path: '/dashboard/settings/secret-keys/metrics',
         title: 'Secret Key Metrics',
         loader: () => import('@/modules/team/components/SecretKeyMetrics'),
         requiredPermissions: ['team-secret-key:read']
     },
     {
-        path: '/dashboard/secret-keys/:secretKeyId',
+        path: '/dashboard/settings/secret-keys/:secretKeyId',
         title: 'Secret Key',
         loader: () => import('@/modules/team/components/SecretKeyUsage'),
         requiredPermissions: ['team-secret-key:read']

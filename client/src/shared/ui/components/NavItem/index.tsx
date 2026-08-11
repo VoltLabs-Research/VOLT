@@ -33,7 +33,7 @@ const NavItem = ({
 }: NavItemProps) => {
     const className = cn(
         'flex h-11 w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-md bg-transparent px-2 text-left text-sm transition-colors duration-150 ease-out-fluid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground lg:h-8',
-        ({ 0: '', 1: 'pl-8', 2: 'pl-[3.25rem]' } as const)[depth],
+        ({ 0: '', 1: 'pl-11', 2: 'pl-16' } as const)[depth],
         !isDisabled && !isActive && 'font-normal text-muted hover:text-foreground',
         !isDisabled && isActive && 'font-medium text-foreground',
         isDisabled && 'cursor-not-allowed font-normal text-muted opacity-50',

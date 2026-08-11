@@ -12,6 +12,7 @@ import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
+import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { useMemo } from 'react';
 import { ArrowDown, ArrowUp, Cpu, HardDrive, MemoryStick, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -56,6 +57,7 @@ const DashboardBottomBar = () => {
     const selectedTeam = useSelectedTeam();
     const singleTenant = useSingleTenant();
     const setJobsScope = useJobsDrawerStore((state) => state.setScope);
+    const openSidePanel = useDashboardSidePanelStore((state) => state.open);
 
     const jobCounts = useJobStatusCounts();
 
@@ -127,11 +129,11 @@ const DashboardBottomBar = () => {
 
     const openJobsDrawer = () => {
         setJobsScope({ trajectoryId: null });
-        openModal(DASHBOARD_DRAWER_IDS.jobs);
+        openSidePanel('jobs');
     };
 
     return (
-        <footer className='shrink-0 bg-background' aria-label='Workspace status'>
+        <footer className='shrink-0 border-t border-border' aria-label='Workspace status'>
             <div className='flex flex-row items-center gap-2 h-9 overflow-x-auto overscroll-x-contain px-3'>
                 <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
                     <StatusCounts
@@ -145,7 +147,7 @@ const DashboardBottomBar = () => {
                 {showClusters && <Separator orientation='vertical' className='h-[18px] self-center' />}
 
                 {showClusters && (
-                    <BottomBarSegment label='clusters' onClick={() => openModal(DASHBOARD_DRAWER_IDS.clusters)}>
+                    <BottomBarSegment label='clusters' onClick={() => openSidePanel('clusters')}>
                         <BottomBarMetric
                             icon={<Cpu size={13} />}
                             value={`${clusterMetrics.avgCpu}%`}

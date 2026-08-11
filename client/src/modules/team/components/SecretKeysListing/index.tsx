@@ -108,7 +108,7 @@ export default function SecretKeysListing() {
             viewUsage: {
                 label: 'View Usage',
                 icon: ChartLine,
-                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}`),
+                handler: ({ item: key }) => navigate(`/dashboard/settings/secret-keys/${key._id}`),
                 requiredPermission: 'team-secret-key:read'
             },
             copy: {
@@ -163,11 +163,11 @@ export default function SecretKeysListing() {
     }, []);
 
     const handleOpenMetrics = useCallback(() => {
-        navigate('/dashboard/secret-keys/metrics');
+        navigate('/dashboard/settings/secret-keys/metrics');
     }, [navigate]);
 
     const handleOpenSecretKey = useCallback((secretKeyId: string) => {
-        navigate(`/dashboard/secret-keys/${secretKeyId}`);
+        navigate(`/dashboard/settings/secret-keys/${secretKeyId}`);
     }, [navigate]);
 
     const getRowMenuOptions = useCallback((item: SecretKey, selectedKeys: SecretKey[]) => {

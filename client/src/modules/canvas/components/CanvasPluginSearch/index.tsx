@@ -157,7 +157,7 @@ const CanvasPluginSearch = () => {
                 <FloatingPortal root={floatingRoot}>
                     <div
                         ref={refs.setFloating}
-                        className='max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[99999]'
+                        className='max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[var(--z-floating)]'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >

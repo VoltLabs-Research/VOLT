@@ -6,7 +6,6 @@ import {
     LayoutGrid,
     MonitorSmartphone,
     Paintbrush,
-    Palette,
     Plug,
     ShieldCheck,
     SlidersHorizontal,
@@ -61,10 +60,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.SettingsAuthentication]: {
         inactive: ShieldCheck,
         active: ShieldCheck
-    },
-    [DashboardNavigationIconKey.SettingsTheme]: {
-        inactive: Palette,
-        active: Palette
     },
     [DashboardNavigationIconKey.SettingsIntegrations]: {
         inactive: Plug,

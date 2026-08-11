@@ -1,12 +1,9 @@
-import { Button, Spinner, cn } from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import { JOB_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
-import JobStatusBadge from '@/modules/jobs/components/JobStatusBadge';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
-import { Check, Clock, Redo2, TriangleAlert, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Redo2 } from 'lucide-react';
 import type { Job } from '@volt/contracts/modules/jobs/domain';
 
 interface JobQueueProps {
@@ -15,8 +12,6 @@ interface JobQueueProps {
 };
 
 interface StatusConfigEntry {
-    icon: ReactNode;
-
     toneClassName: string;
 };
 
@@ -47,27 +42,21 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
 
     const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
         [JobStatus.Completed]: {
-            icon: <Check />,
             toneClassName: 'text-success'
         },
         [JobStatus.Running]: {
-            icon: <Spinner size='sm' color='current' />,
             toneClassName: 'text-info'
         },
         [JobStatus.Queued]: {
-            icon: <Clock />,
             toneClassName: 'text-warning'
         },
         [JobStatus.Retrying]: {
-            icon: <Redo2 />,
             toneClassName: 'text-warning'
         },
         [JobStatus.QueuedAfterFailure]: {
-            icon: <TriangleAlert />,
             toneClassName: 'text-danger'
         },
         [JobStatus.Failed]: {
-            icon: <X />,
             toneClassName: 'text-danger'
         }
     };
@@ -78,7 +67,6 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
     const hasFrameTimestep = job.timestep !== undefined && job.timestep >= 0;
-    const statusLabel = JOB_STATUS_LABELS[job.status];
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
 
@@ -100,16 +88,10 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                 isChild && 'ml-3 border-l border-border rounded-none'
             )}
         >
-            <span className={cn('inline-flex items-center justify-center shrink-0 text-base', statusEntry.toneClassName)} aria-hidden='true'>
-                {statusEntry.icon}
-            </span>
             <div className='flex flex-col gap-1 flex-1 min-w-0'>
-                <div className='flex flex-row items-center justify-between flex-wrap gap-2'>
-                    <h3 className='text-xs font-semibold text-foreground truncate tracking-[0.15px] leading-[1.2]'>
-                        {getJobDisplayName(job)}
-                    </h3>
-                    <JobStatusBadge status={job.status}>{statusLabel}</JobStatusBadge>
-                </div>
+                <h3 className={cn('text-xs font-medium truncate tracking-[0.15px] leading-[1.2]', statusEntry.toneClassName)}>
+                    {getJobDisplayName(job)}
+                </h3>
                 <div className='flex flex-row items-center flex-wrap gap-2'>
                     <p className={cn('flex items-center gap-2 text-xs leading-[1.3]', statusEntry.toneClassName)}>
                         {hasFrameTimestep && <span>Frame {job.timestep}</span>}

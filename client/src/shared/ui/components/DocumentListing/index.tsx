@@ -216,7 +216,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
         }
 
         return (
-            <div ref={scrollContainerRef} className='flex-1 overflow-auto [overflow-anchor:none] max-md:overflow-visible'>
+            <div ref={scrollContainerRef} className='flex-1 overflow-auto bg-surface [overflow-anchor:none] max-md:overflow-visible'>
                 <motion.div
                     initial={prefersReducedMotion ? false : {
                         opacity: 0,

@@ -121,8 +121,8 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
             <div key={`${keyPrefix}-${rowIndex}`} className={cn({
-                default: 'flex items-center cursor-pointer border-b border-border last:border-b-0 px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                compact: 'flex items-center cursor-pointer border-b border-border last:border-b-0 box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+                default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
+                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
             }[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
                 {columns.map((col, colIdx) => {
                     const skeleton = col.skeleton ?? {
@@ -278,11 +278,11 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <div className='flex h-full flex-col rounded-xl border border-border bg-surface max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className='flex h-full flex-col max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
                 <div className={{
-                    default: 'sticky top-0 z-[2] flex rounded-t-xl border-b border-border bg-surface-secondary px-6 py-3 max-md:px-4 max-md:py-3',
-                    compact: 'sticky top-0 z-10 flex border-b border-border bg-surface-secondary px-2 py-1'
+                    default: 'sticky top-0 z-[2] flex rounded-t-xl bg-surface-secondary px-6 py-3 max-md:px-4 max-md:py-3',
+                    compact: 'sticky top-0 z-10 flex bg-surface-secondary px-2 py-1'
                 }[density]} role='row' style={{
                     minWidth: `${minContentWidth}px`,
                     gap: `${resolvedGap}px`
